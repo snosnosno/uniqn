@@ -99,8 +99,20 @@ export const setupTestData = async () => {
   }
 };
 
-export const promoteToStaff = async (userId: string, userName: string, jobRole: string, postingId: string, managerId: string) => {
-  console.log('🚀 promoteToStaff function called:', { userId, userName, jobRole, postingId, managerId });
+export const promoteToStaff = async (
+  userId: string, 
+  userName: string, 
+  jobRole: string, 
+  postingId: string, 
+  managerId: string, 
+  assignedRole?: string, 
+  assignedTime?: string,
+  email?: string,
+  phone?: string
+) => {
+  console.log('🚀 promoteToStaff function called:', { 
+    userId, userName, jobRole, postingId, managerId, assignedRole, assignedTime, email, phone 
+  });
   
   if (!userId || !jobRole || !userName || !postingId || !managerId) {
     console.error("User ID, User Name, Job Role, Posting ID, and Manager ID are required to promote to staff.");
@@ -115,10 +127,16 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
     if (!staffSnap.exists()) {
       console.log('🎆 Creating new staff document');
       await setDoc(staffRef, {
+        userId: userId,
         name: userName,
+        email: email || '',
+        phone: phone || '',
         userRole: 'staff',
         jobRole: [jobRole],
+        role: jobRole, // 호환성을 위해 단일 role 필드도 설정
         assignedEvents: [postingId],
+        assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
+        assignedTime: assignedTime || '', // 지원자에서 확정된 시간
         createdAt: new Date(),
         managerId: managerId,
         postingId: postingId,
@@ -128,8 +146,15 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
       console.log('🔄 Updating existing staff document');
       // Update existing staff document with new job role and event assignment
       await updateDoc(staffRef, {
+        userId: userId,
+        name: userName,
+        email: email || '',
+        phone: phone || '',
         jobRole: arrayUnion(jobRole),
+        role: jobRole, // 가장 최근 역할로 업데이트
         assignedEvents: arrayUnion(postingId),
+        assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
+        assignedTime: assignedTime || '', // 지원자에서 확정된 시간
         postingId: postingId, // 최신 공고 ID로 업데이트
         managerId: managerId // 관리자 ID도 업데이트
       });

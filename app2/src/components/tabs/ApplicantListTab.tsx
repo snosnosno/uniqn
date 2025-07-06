@@ -150,7 +150,11 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           applicant.applicantName, 
           jobRole, 
           jobPosting.id, 
-          currentUser.uid
+          currentUser.uid,
+          role,      // assignedRole - 지원자에서 확정된 역할
+          timeSlot,  // assignedTime - 지원자에서 확정된 시간
+          applicant.email || '', // email 정보
+          applicant.phone || ''  // phone 정보
         );
         console.log('✅ promoteToStaff 성공!');
       }
