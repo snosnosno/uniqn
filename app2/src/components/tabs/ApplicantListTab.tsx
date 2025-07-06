@@ -23,7 +23,7 @@ interface Applicant {
 }
 
 interface ApplicantListTabProps {
-  jobPosting: any; // JobPosting interface will be used later
+  jobPosting?: any; // JobPosting interface will be used later
 }
 
 const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
@@ -207,6 +207,17 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       [applicantId]: { timeSlot: timeSlot || '', role: role || '' }
     }));
   };
+
+  // Early return if no job posting data
+  if (!jobPosting) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center min-h-96">
+          <div className="text-lg text-gray-500">공고 정보를 불러올 수 없습니다.</div>
+        </div>
+      </div>
+    );
+  }
 
   if (loadingApplicants) {
     return (
