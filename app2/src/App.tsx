@@ -38,6 +38,7 @@ import AdminEventsListPage from './pages/admin/EventsListPage';
 import AdminEventNewPage from './pages/admin/EventNewPage';
 import AdminEventDetailPage from './pages/admin/EventDetailPage';
 import JobPostingAdminPage from './pages/JobPostingAdminPage';
+import JobPostingDetailPage from './pages/JobPostingDetailPage';
 import StaffListPage from './pages/StaffListPage';
 import StaffNewPage from './pages/StaffNewPage';
 import PayrollAdminPage from './pages/admin/PayrollAdminPage';
@@ -105,6 +106,7 @@ const App: React.FC = () => {
                     <Route path="events/new" element={<AdminEventNewPage />} />
                     <Route path="events/:eventId" element={<AdminEventDetailPage />} />
                     <Route path="job-postings" element={<JobPostingAdminPage />} />
+                    <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
                     <Route path="dealer-rotation" element={<DealerRotationPage />} />
                     <Route path="shift-schedule" element={<ShiftSchedulePage />} />
                     <Route path="payroll" element={<PayrollAdminPage />} />

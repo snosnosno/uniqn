@@ -9,7 +9,8 @@ export interface Applicant {
   phone?: string;
   role: string;
   timeSlot: string;
-  date?: string;
+  date?: string; // 지원 날짜 (기존 호환성)
+  assignedDate?: string; // yyyy-MM-dd format - 확정된 스태프 할당 날짜
   createdAt: any; // Firebase Timestamp
   status: 'pending' | 'confirmed' | 'rejected';
   jobPostingId: string;
@@ -196,6 +197,89 @@ export class JobPostingUtils {
       (staff.date === date || !staff.date) // date가 없으면 모든 날짜에 적용
     ).length;
   }
+  
+  /**
+   * 특정 날짜에 지원한 지원자들 필터링
+   * @param applicants 지원자 목록
+   * @param date yyyy-MM-dd 형식
+   * @returns 해당 날짜에 지원한 지원자 목록
+   */
+  static getApplicantsByDate(applicants: Applicant[], date: string): Applicant[] {
+    return applicants.filter(applicant => 
+      applicant.assignedDate === date || 
+      applicant.date === date
+    );
+  }
+  
+  /**
+   * 특정 날짜에 할당된 확정 스태프들 필터링
+   * @param staff 확정 스태프 목록
+   * @param date yyyy-MM-dd 형식
+   * @returns 해당 날짜에 할당된 확정 스태프 목록
+   */
+  static getConfirmedStaffByDate(staff: ConfirmedStaff[], date: string): ConfirmedStaff[] {
+    return staff.filter(s => s.date === date);
+  }
+  
+  /**
+   * 날짜별 지원자 통계 계산
+   * @param applicants 지원자 목록
+   * @returns 날짜별 지원자 수 맵
+   */
+  static getApplicantStatsByDate(applicants: Applicant[]): Map<string, number> {
+    const stats = new Map<string, number>();
+    
+    applicants.forEach(applicant => {
+      const date = applicant.assignedDate || applicant.date;
+      if (date) {
+        stats.set(date, (stats.get(date) || 0) + 1);
+      }
+    });
+    
+    return stats;
+  }
+  
+  /**
+   * 날짜별 요구인원 대비 확정 스태프 비율 계산
+   * @param jobPosting 공고
+   * @param date yyyy-MM-dd 형식
+   * @returns 0-1 사이의 비율
+   */
+  static getDateFulfillmentRate(jobPosting: JobPosting, date: string): number {
+    if (!this.hasDateSpecificRequirements(jobPosting)) {
+      return 0;
+    }
+    
+    const dateReq = jobPosting.dateSpecificRequirements?.find(dr => dr.date === date);
+    if (!dateReq) return 0;
+    
+    let totalRequired = 0;
+    let totalConfirmed = 0;
+    
+    dateReq.timeSlots.forEach(ts => {
+      ts.roles.forEach(role => {
+        totalRequired += role.count;
+        totalConfirmed += this.getConfirmedStaffCount(jobPosting, date, ts.time, role.name);
+      });
+    });
+    
+    return totalRequired > 0 ? totalConfirmed / totalRequired : 0;
+  }
+  
+  /**
+   * 일자별 다른 인원 요구사항이 있는 공고의 전체 완료 여부 확인
+   * @param jobPosting 공고
+   * @returns 모든 날짜의 요구사항이 충족되면 true
+   */
+  static isAllDateRequirementsFulfilled(jobPosting: JobPosting): boolean {
+    if (!this.hasDateSpecificRequirements(jobPosting)) {
+      return false;
+    }
+    
+    return jobPosting.dateSpecificRequirements?.every(dateReq => 
+      this.getDateFulfillmentRate(jobPosting, dateReq.date) >= 1.0
+    ) || false;
+  }
 }
 
 // 타입 가드 함수들
@@ -215,4 +299,163 @@ export const isValidJobPosting = (obj: any): obj is JobPosting => {
          typeof obj.title === 'string' &&
          typeof obj.status === 'string' &&
          (obj.status === 'open' || obj.status === 'closed');
+};
+
+/**
+ * 지원자 인터페이스 유효성 검증
+ * @param obj 검증할 객체
+ * @returns 지원자 인터페이스 준수 여부
+ */
+export const isValidApplicant = (obj: any): obj is Applicant => {
+  return obj && 
+         typeof obj.id === 'string' &&
+         typeof obj.userId === 'string' &&
+         typeof obj.name === 'string' &&
+         typeof obj.role === 'string' &&
+         typeof obj.timeSlot === 'string' &&
+         typeof obj.status === 'string' &&
+         ['pending', 'confirmed', 'rejected'].includes(obj.status) &&
+         (!obj.date || typeof obj.date === 'string') &&
+         (!obj.assignedDate || typeof obj.assignedDate === 'string') &&
+         (!obj.assignedDate || /^\d{4}-\d{2}-\d{2}$/.test(obj.assignedDate)); // yyyy-MM-dd 형식 검증
+};
+
+/**
+ * 날짜 형식 유효성 검증
+ * @param dateString 검증할 날짜 문자열
+ * @returns yyyy-MM-dd 형식 준수 여부
+ */
+export const isValidDateString = (dateString: string): boolean => {
+  if (!dateString) return false;
+  
+  // yyyy-MM-dd 형식 검증
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(dateString)) return false;
+  
+  // 실제 날짜 유효성 검증
+  const date = new Date(dateString);
+  return date.toISOString().split('T')[0] === dateString;
+};
+
+/**
+ * 일자별 요구사항 인터페이스 유효성 검증
+ * @param obj 검증할 객체
+ * @returns DateSpecificRequirement 인터페이스 준수 여부
+ */
+export const isValidDateSpecificRequirement = (obj: any): obj is DateSpecificRequirement => {
+  return obj && 
+         typeof obj.date === 'string' &&
+         isValidDateString(obj.date) &&
+         Array.isArray(obj.timeSlots) &&
+         obj.timeSlots.every(isValidTimeSlot);
+};
+
+// ===========================================
+// 마감 로직 관련 헬퍼 함수들
+// ===========================================
+
+/**
+ * 특정 날짜의 모든 요구사항이 충족되었는지 확인
+ * @param jobPosting 공고 데이터
+ * @param dateReq 날짜별 요구사항
+ * @returns 해당 날짜의 모든 요구사항 충족 여부
+ */
+export const checkDateRequirementsFulfilled = (jobPosting: any, dateReq: DateSpecificRequirement): boolean => {
+  return dateReq.timeSlots.every(timeSlot => {
+    return timeSlot.roles.every(role => {
+      const confirmedCount = getConfirmedStaffCountByDate(
+        jobPosting, dateReq.date, timeSlot.time, role.name
+      );
+      return confirmedCount >= role.count;
+    });
+  });
+};
+
+/**
+ * 일자별 요구사항이 있는 공고의 모든 날짜 요구사항이 충족되었는지 확인
+ * @param jobPosting 공고 데이터
+ * @returns 모든 날짜의 요구사항 충족 여부
+ */
+export const checkAllDateRequirementsFulfilled = (jobPosting: any): boolean => {
+  if (!JobPostingUtils.hasDateSpecificRequirements(jobPosting)) {
+    return false; // 일자별 요구사항이 없으면 기존 로직 사용
+  }
+  
+  return jobPosting.dateSpecificRequirements.every((dateReq: DateSpecificRequirement) => {
+    return checkDateRequirementsFulfilled(jobPosting, dateReq);
+  });
+};
+
+/**
+ * 기존 timeSlots 기반 요구사항이 모두 충족되었는지 확인
+ * @param jobPosting 공고 데이터
+ * @returns 기존 요구사항 충족 여부
+ */
+export const checkTraditionalRequirementsFulfilled = (jobPosting: any): boolean => {
+  if (!jobPosting.timeSlots || !Array.isArray(jobPosting.timeSlots)) {
+    return false;
+  }
+  
+  // 필요한 인원 수 계산
+  const requiredCounts: { [key: string]: number } = {};
+  jobPosting.timeSlots.forEach((ts: any) => {
+    if (ts.roles && Array.isArray(ts.roles)) {
+      ts.roles.forEach((r: any) => {
+        const key = `${ts.time}-${r.name}`;
+        requiredCounts[key] = r.count;
+      });
+    }
+  });
+  
+  // 확정된 인원 수 계산
+  const confirmedCounts: { [key: string]: number } = (jobPosting.confirmedStaff || []).reduce((acc: any, staff: any) => {
+    const key = `${staff.timeSlot}-${staff.role}`;
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  
+  // 모든 요구사항이 충족되었는지 확인
+  return Object.keys(requiredCounts).every(key => {
+    return (confirmedCounts[key] || 0) >= requiredCounts[key];
+  });
+};
+
+/**
+ * 공고를 마감해야 하는지 판단
+ * @param jobPosting 공고 데이터
+ * @returns 마감 여부
+ */
+export const shouldCloseJobPosting = (jobPosting: any): boolean => {
+  if (JobPostingUtils.hasDateSpecificRequirements(jobPosting)) {
+    // 일자별 요구사항이 있는 경우
+    return checkAllDateRequirementsFulfilled(jobPosting);
+  } else {
+    // 기존 timeSlots 기반 요구사항인 경우
+    return checkTraditionalRequirementsFulfilled(jobPosting);
+  }
+};
+
+/**
+ * 날짜별 확정 스태프 수를 계산하는 헬퍼 함수
+ * @param jobPosting 공고 데이터
+ * @param date 날짜 (yyyy-MM-dd)
+ * @param timeSlot 시간 슬롯
+ * @param roleName 역할명
+ * @returns 확정 스태프 수
+ */
+export const getConfirmedStaffCountByDate = (
+  jobPosting: any, 
+  date: string, 
+  timeSlot: string, 
+  roleName: string
+): number => {
+  if (!jobPosting.confirmedStaff || !Array.isArray(jobPosting.confirmedStaff)) {
+    return 0;
+  }
+  
+  return jobPosting.confirmedStaff.filter((staff: any) => {
+    return staff.date === date && 
+           staff.timeSlot === timeSlot && 
+           staff.role === roleName;
+  }).length;
 };
