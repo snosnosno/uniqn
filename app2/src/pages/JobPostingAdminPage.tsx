@@ -1,40 +1,37 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp, query, doc, updateDoc, where, getDocs, deleteDoc, arrayUnion, runTransaction, getDoc, Timestamp } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db, promoteToStaff } from '../firebase';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { collection, addDoc, serverTimestamp, query, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import DateDropdownSelector from '../components/DateDropdownSelector';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // Import centralized type definitions
 import { 
   RoleRequirement, 
   TimeSlot, 
+  DateSpecificRequirement,
   ConfirmedStaff,
   JobPostingUtils 
 } from '../types/jobPosting';
 
-interface Applicant {
-    id: string;
-    applicantName: string;
-    applicantId: string;
-    status: 'applied' | 'confirmed' | 'rejected';
-    assignedRole?: string;
-    assignedTime?: string;
-    appliedAt: any;
-    // 추가된 사용자 정보
-    gender?: string;
-    age?: number;
-    experience?: string;
-}
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  
+  // Memoized query for better performance
   const jobPostingsQuery = useMemo(() => query(collection(db, 'jobPostings')), []);
   const [jobPostingsSnap, loading] = useCollection(jobPostingsQuery);
-  const jobPostings = useMemo(() => jobPostingsSnap?.docs.map(d => ({ id: d.id, ...d.data() })), [jobPostingsSnap]);
+  
+  // Memoized filtered job postings for better performance
+  const jobPostings = useMemo(() => 
+    jobPostingsSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [],
+    [jobPostingsSnap]
+  );
   
   const getTodayString = () => new Date().toISOString().split('T')[0];
   
@@ -43,6 +40,8 @@ const JobPostingAdminPage = () => {
     title: '',
     type: 'application', // 모집 유형: 'application'(지원) 또는 'fixed'(고정)
     timeSlots: [initialTimeSlot],
+    dateSpecificRequirements: [] as DateSpecificRequirement[], // 일자별 요구사항
+    usesDifferentDailyRequirements: false, // 일자별 다른 인원 요구사항 사용 여부
     description: '',
     status: 'open',
     location: '서울',
@@ -53,12 +52,7 @@ const JobPostingAdminPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<any>(null);
   const [isMatching, setIsMatching] = useState<string | null>(null);
-  const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
-  const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: { timeSlot: string, role: string } }>({});
-
 
   // 모든 JobRole을 포함하도록 확장된 역할 목록
   const predefinedRoles = [
@@ -222,6 +216,11 @@ const JobPostingAdminPage = () => {
     }
   };
 
+  // Navigate to detail page for comprehensive management
+  const handleNavigateToDetail = (postId: string) => {
+    navigate(`/admin/job-posting/${postId}`);
+  };
+
   // Form handlers
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -264,7 +263,100 @@ const JobPostingAdminPage = () => {
     newTimeSlots[timeSlotIndex].roles = newTimeSlots[timeSlotIndex].roles.filter((_, i) => i !== roleIndex);
     setFormData(prev => ({ ...prev, timeSlots: newTimeSlots }));
   };
-
+  
+  // 일자별 요구사항 관리 함수들
+  const handleDifferentDailyRequirementsToggle = (enabled: boolean) => {
+    if (enabled) {
+      // 기존 timeSlots를 날짜 범위에 맞게 복사하여 dateSpecificRequirements 생성
+      const dates = generateDateRange(formData.startDate, formData.endDate);
+      const dateSpecificRequirements = dates.map(date => ({
+        date,
+        timeSlots: formData.timeSlots.map(ts => ({ ...ts, date }))
+      }));
+      
+      setFormData(prev => ({
+        ...prev,
+        usesDifferentDailyRequirements: true,
+        dateSpecificRequirements
+      }));
+    } else {
+      // 일자별 요구사항을 기본 timeSlots로 변환
+      const timeSlots = formData.dateSpecificRequirements.length > 0
+        ? formData.dateSpecificRequirements[0].timeSlots.map(ts => ({ time: ts.time, roles: ts.roles }))
+        : formData.timeSlots;
+      
+      setFormData(prev => ({
+        ...prev,
+        usesDifferentDailyRequirements: false,
+        dateSpecificRequirements: [],
+        timeSlots
+      }));
+    }
+  };
+  
+  const generateDateRange = (startDate: string, endDate: string): string[] => {
+    const dates: string[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    
+    return dates;
+  };
+  
+  const handleDateSpecificTimeSlotChange = (dateIndex: number, timeSlotIndex: number, value: string) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].time = value;
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+  
+  const handleDateSpecificRoleChange = (
+    dateIndex: number, 
+    timeSlotIndex: number, 
+    roleIndex: number, 
+    field: 'name' | 'count', 
+    value: string | number
+  ) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    const roleValue = field === 'count' ? (Number(value) < 1 ? 1 : Number(value)) : value;
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles[roleIndex] = {
+      ...newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles[roleIndex],
+      [field]: roleValue
+    };
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+  
+  const addDateSpecificTimeSlot = (dateIndex: number) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots.push({
+      time: '',
+      roles: [{ name: 'dealer', count: 1 }],
+      date: newDateSpecificRequirements[dateIndex].date
+    });
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+  
+  const removeDateSpecificTimeSlot = (dateIndex: number, timeSlotIndex: number) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots = newDateSpecificRequirements[dateIndex].timeSlots.filter((_, i) => i !== timeSlotIndex);
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+  
+  const addDateSpecificRole = (dateIndex: number, timeSlotIndex: number) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.push({ name: 'dealer', count: 1 });
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+  
+  const removeDateSpecificRole = (dateIndex: number, timeSlotIndex: number, roleIndex: number) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles = 
+      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.filter((_, i) => i !== roleIndex);
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+  
   // Edit Modal Handlers
     const handleEditTimeSlotChange = (timeSlotIndex: number, value: string) => {
         const newTimeSlots = [...currentPost.timeSlots];
@@ -305,22 +397,51 @@ const JobPostingAdminPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-     if (formData.timeSlots.some(ts => !ts.time || ts.roles.some(r => !r.name || r.count < 1))) {
-      alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
-      return;
+    
+    // 일자별 요구사항 사용 여부에 따른 유효성 검사
+    if (formData.usesDifferentDailyRequirements) {
+      // 일자별 요구사항 검사
+      if (formData.dateSpecificRequirements.some(dateReq => 
+        dateReq.timeSlots.some(ts => !ts.time || ts.roles.some(r => !r.name || r.count < 1))
+      )) {
+        alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
+        return;
+      }
+    } else {
+      // 기존 timeSlots 검사
+      if (formData.timeSlots.some(ts => !ts.time || ts.roles.some(r => !r.name || r.count < 1))) {
+        alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
+        return;
+      }
     }
+    
     if (!currentUser) {
         alert(t('jobPostingAdmin.alerts.notLoggedIn'));
         return;
     }
+    
     setIsSubmitting(true);
     try {
-      // Extract unique roles from timeSlots for filtering
-      const requiredRoles = Array.from(new Set(
-        formData.timeSlots.flatMap(ts => ts.roles.map(r => r.name))
-      ));
+      // JobPostingUtils를 사용하여 필요한 역할들 추출
+      let requiredRoles: string[];
       
-      // Create search index for text search
+      if (formData.usesDifferentDailyRequirements) {
+        // 일자별 요구사항에서 역할 추출
+        const roleSet = new Set<string>();
+        formData.dateSpecificRequirements.forEach(dateReq => {
+          dateReq.timeSlots.forEach(ts => {
+            ts.roles.forEach(role => roleSet.add(role.name));
+          });
+        });
+        requiredRoles = Array.from(roleSet);
+      } else {
+        // 기존 timeSlots에서 역할 추출
+        requiredRoles = Array.from(new Set(
+          formData.timeSlots.flatMap(ts => ts.roles.map(r => r.name))
+        ));
+      }
+      
+      // 검색 인덱스 생성
       const searchIndex = [
         formData.title,
         formData.location,
@@ -328,21 +449,41 @@ const JobPostingAdminPage = () => {
         ...requiredRoles
       ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
       
-      await addDoc(collection(db, 'jobPostings'), {
-        ...formData,
-        startDate: Timestamp.fromDate(new Date(formData.startDate)), // Convert to Timestamp
-        endDate: Timestamp.fromDate(new Date(formData.endDate)), // Convert to Timestamp
-        requiredRoles, // Add for role filtering
-        searchIndex, // Add for text search
-        managerId: currentUser.uid, // Add managerId
+      // Firebase에 저장할 데이터 준비
+      const jobPostingData: any = {
+        title: formData.title,
+        type: formData.type,
+        description: formData.description,
+        status: formData.status,
+        location: formData.location,
+        startDate: Timestamp.fromDate(new Date(formData.startDate)),
+        endDate: Timestamp.fromDate(new Date(formData.endDate)),
+        requiredRoles,
+        searchIndex,
+        managerId: currentUser.uid,
         createdAt: serverTimestamp(),
         confirmedStaff: [],
-      });
+      };
+      
+      // 일자별 요구사항 사용 여부에 따라 데이터 추가
+      if (formData.usesDifferentDailyRequirements) {
+        jobPostingData.dateSpecificRequirements = formData.dateSpecificRequirements;
+        // 호환성을 위해 기본 timeSlots도 저장 (첫 번째 날짜의 timeSlots를 변환)
+        jobPostingData.timeSlots = JobPostingUtils.convertToLegacyTimeSlots(formData.dateSpecificRequirements);
+      } else {
+        jobPostingData.timeSlots = formData.timeSlots;
+      }
+      
+      await addDoc(collection(db, 'jobPostings'), jobPostingData);
       alert(t('jobPostingAdmin.alerts.createSuccess'));
+      
+      // 폼 데이터 초기화
       setFormData({
         title: '',
         type: 'application',
         timeSlots: [initialTimeSlot],
+        dateSpecificRequirements: [],
+        usesDifferentDailyRequirements: false,
         description: '',
         status: 'open',
         location: '서울',
@@ -356,6 +497,7 @@ const JobPostingAdminPage = () => {
       setIsSubmitting(false);
     }
   };
+  
 
   const handleAutoMatch = async (jobPostingId: string) => {
     // This function will need significant updates for the new data structure.
@@ -425,174 +567,6 @@ const JobPostingAdminPage = () => {
     }
   };
 
-  const handleViewApplicants = async (postId: string) => {
-    setCurrentPost(jobPostings?.find(p => p.id === postId) || null);
-    setLoadingApplicants(true);
-    setIsApplicantsModalOpen(true);
-    try {
-        const q = query(collection(db, 'applications'), where('postId', '==', postId));
-        const querySnapshot = await getDocs(q);
-        const fetchedApplicants = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Applicant));
-        
-        // 사용자 정보를 추가로 가져오기
-        const applicantsWithUserInfo = await Promise.all(
-            fetchedApplicants.map(async (applicant) => {
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', applicant.applicantId));
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        return {
-                            ...applicant,
-                            gender: userData.gender,
-                            age: userData.age,
-                            experience: userData.experience
-                        };
-                    }
-                    return applicant;
-                } catch (error) {
-                    console.error(`Error fetching user data for ${applicant.applicantId}:`, error);
-                    return applicant;
-                }
-            })
-        );
-        
-        setApplicants(applicantsWithUserInfo);
-        
-        const initialAssignments: { [key: string]: { timeSlot: string, role: string } } = {};
-        applicantsWithUserInfo.forEach(applicant => {
-            if (applicant.assignedTime && applicant.assignedRole) {
-                initialAssignments[applicant.id] = { timeSlot: applicant.assignedTime, role: applicant.assignedRole };
-            } else {
-                 // Find first available role or default
-                const firstAvailable = currentPost?.timeSlots?.[0]?.roles?.[0];
-                initialAssignments[applicant.id] = { timeSlot: currentPost?.timeSlots?.[0]?.time || '', role: firstAvailable?.name || 'dealer' };
-            }
-        });
-        setSelectedAssignment(initialAssignments);
-
-    } catch (error) {
-        console.error("Error fetching applicants: ", error);
-        alert(t('jobPostingAdmin.alerts.fetchApplicantsFailed'));
-    } finally {
-        setLoadingApplicants(false);
-    }
-  };
-    
-  const handleConfirmApplicant = async (applicant: Applicant) => {
-    const assignment = selectedAssignment[applicant.id];
-    if (!assignment || !assignment.timeSlot || !assignment.role) {
-        alert(t('jobPostingAdmin.alerts.selectRoleToAssign'));
-        return;
-    }
-    if (!currentPost) return;
-
-    const { timeSlot, role } = assignment;
-    const jobPostingRef = doc(db, "jobPostings", currentPost.id);
-    const applicationRef = doc(db, "applications", applicant.id);
-
-    try {
-        await runTransaction(db, async (transaction) => {
-            const jobPostingDoc = await transaction.get(jobPostingRef);
-            if (!jobPostingDoc.exists()) throw "Job posting does not exist!";
-
-            const postData = jobPostingDoc.data();
-            const confirmedStaff: ConfirmedStaff[] = postData.confirmedStaff || [];
-            
-            const isAlreadyConfirmed = confirmedStaff.some(staff => staff.userId === applicant.applicantId);
-            if (isAlreadyConfirmed) {
-                alert(t('jobPostingAdmin.alerts.applicantAlreadyConfirmed'));
-                return;
-            }
-            
-            const newConfirmedStaffMember = { userId: applicant.applicantId, role, timeSlot };
-
-            transaction.update(jobPostingRef, {
-                confirmedStaff: arrayUnion(newConfirmedStaffMember)
-            });
-            transaction.update(applicationRef, {
-                status: 'confirmed',
-                assignedRole: role,
-                assignedTime: timeSlot,
-            });
-        });
-        
-        // 지원자를 스태프로 승격
-        console.log('🔍 JobPostingAdminPage - 지원자 확정 시도:', {
-            applicantId: applicant.applicantId,
-            applicantName: applicant.applicantName,
-            role,
-            postId: currentPost.id,
-            managerId: currentUser?.uid
-        });
-        
-        if (currentUser) {
-            // role 값을 적절한 JobRole 형식으로 변환
-            const jobRoleMap: { [key: string]: string } = {
-                'dealer': 'Dealer',
-                'floor': 'Floor',
-                'serving': 'Server',
-                'tournament_director': 'Tournament Director',
-                'chip_master': 'Chip Master', 
-                'registration': 'Registration',
-                'security': 'Security',
-                'cashier': 'Cashier'
-            };
-            const jobRole = jobRoleMap[role] || role.charAt(0).toUpperCase() + role.slice(1);
-            
-            await promoteToStaff(
-                applicant.applicantId, 
-                applicant.applicantName, 
-                jobRole, 
-                currentPost.id, 
-                currentUser.uid
-            );
-            console.log('✅ promoteToStaff 성공!');
-        }
-        
-        alert(t('jobPostingAdmin.alerts.applicantConfirmSuccess'));
-        await checkAndClosePosting(currentPost.id);
-        handleViewApplicants(currentPost.id); // Refresh applicants list
-    } catch (error) {
-        console.error("Error confirming applicant: ", error);
-        alert(t('jobPostingAdmin.alerts.applicantConfirmFailed'));
-    }
-  };
-
-  const checkAndClosePosting = async (postId: string) => {
-      const jobPostingRef = doc(db, 'jobPostings', postId);
-      try {
-        const jobPostingDoc = await getDoc(jobPostingRef);
-        if(!jobPostingDoc.exists()){
-          return;
-        }
-        const post = jobPostingDoc.data();
-
-        const requiredCounts: { [key: string]: number } = {};
-        post.timeSlots.forEach((ts: TimeSlot) => {
-            ts.roles.forEach((r: RoleRequirement) => {
-                const key = `${ts.time}-${r.name}`;
-                requiredCounts[key] = (requiredCounts[key] || 0) + r.count;
-            });
-        });
-
-        const confirmedCounts: { [key: string]: number } = (post.confirmedStaff || []).reduce((acc: any, staff: ConfirmedStaff) => {
-            const key = `${staff.timeSlot}-${staff.role}`;
-            acc[key] = (acc[key] || 0) + 1;
-            return acc;
-        }, {});
-
-        const isFullyStaffed = Object.keys(requiredCounts).every(key => (confirmedCounts[key] || 0) >= requiredCounts[key]);
-
-        if (isFullyStaffed) {
-            await updateDoc(jobPostingRef, { status: 'closed' });
-            alert(t('jobPostingAdmin.alerts.postingClosed'));
-        }
-      } catch (error) {
-          console.error("Error checking and closing posting: ", error);
-      }
-  };
-
-
   return (
     <div className="container mx-auto p-4">
       <div className="mb-8">
@@ -651,53 +625,164 @@ const JobPostingAdminPage = () => {
             </div>
   
             <div className="space-y-6">
-                <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.timeAndRoles')}</label>
-                {formData.timeSlots.map((timeSlot, tsIndex) => (
-                    <div key={tsIndex} className="p-4 border border-gray-200 rounded-md">
-                        <div className="flex items-center space-x-2 mb-4">
-                            <label htmlFor={`time-slot-${tsIndex}`} className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
-                            <input
-                                type="time"
-                                id={`time-slot-${tsIndex}`}
-                                value={timeSlot.time}
-                                onChange={(e) => handleTimeSlotChange(tsIndex, e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            />
-                            {formData.timeSlots.length > 1 && (
-                                <button type="button" onClick={() => removeTimeSlot(tsIndex)} className="text-red-600 hover:text-red-800">
-                                    {t('jobPostingAdmin.create.removeTimeSlot')}
+                <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.timeAndRoles')}</label>
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="usesDifferentDailyRequirements"
+                            checked={formData.usesDifferentDailyRequirements}
+                            onChange={(e) => handleDifferentDailyRequirementsToggle(e.target.checked)}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="usesDifferentDailyRequirements" className="ml-2 text-sm text-gray-700">
+                            일자별 다른 인원 요구사항
+                        </label>
+                    </div>
+                </div>
+                
+                {!formData.usesDifferentDailyRequirements ? (
+                    // 기존 방식: 전체 기간 공통 timeSlots
+                    <>
+                        {formData.timeSlots.map((timeSlot, tsIndex) => (
+                            <div key={tsIndex} className="p-4 border border-gray-200 rounded-md">
+                                <div className="flex items-center space-x-2 mb-4">
+                                    <label htmlFor={`time-slot-${tsIndex}`} className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
+                                    <input
+                                        type="time"
+                                        id={`time-slot-${tsIndex}`}
+                                        value={timeSlot.time}
+                                        onChange={(e) => handleTimeSlotChange(tsIndex, e.target.value)}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        required
+                                    />
+                                    {formData.timeSlots.length > 1 && (
+                                        <button type="button" onClick={() => removeTimeSlot(tsIndex)} className="text-red-600 hover:text-red-800">
+                                            {t('jobPostingAdmin.create.removeTimeSlot')}
+                                        </button>
+                                    )}
+                                </div>
+                                {timeSlot.roles.map((role, rIndex) => (
+                                    <div key={rIndex} className="flex items-center space-x-2 mb-2">
+                                        <div className="flex-1">
+                                            <select 
+                                                value={role.name} 
+                                                onChange={(e) => handleRoleChange(tsIndex, rIndex, 'name', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required
+                                            >
+                                                <option value="" disabled>{t('jobPostingAdmin.create.roleNamePlaceholder')}</option>
+                                                {predefinedRoles.map(r => <option key={r} value={r}>{t(`jobPostingAdmin.create.${r}`)}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="w-24">
+                                            <input type="number" value={role.count} min="1" onChange={(e) => handleRoleChange(tsIndex, rIndex, 'count', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required />
+                                        </div>
+                                        {timeSlot.roles.length > 1 && (
+                                            <button type="button" onClick={() => removeRole(tsIndex, rIndex)} className="text-red-600 hover:text-red-800 text-sm">{t('jobPostingAdmin.create.remove')}</button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button type="button" onClick={() => addRole(tsIndex)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                    + {t('jobPostingAdmin.create.addRole')}
                                 </button>
-                            )}
-                        </div>
-                        {timeSlot.roles.map((role, rIndex) => (
-                            <div key={rIndex} className="flex items-center space-x-2 mb-2">
-                                <div className="flex-1">
-                                    <select 
-                                        value={role.name} 
-                                        onChange={(e) => handleRoleChange(tsIndex, rIndex, 'name', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required
-                                    >
-                                        <option value="" disabled>{t('jobPostingAdmin.create.roleNamePlaceholder')}</option>
-                                        {predefinedRoles.map(r => <option key={r} value={r}>{t(`jobPostingAdmin.create.${r}`)}</option>)}
-                                    </select>
-                                </div>
-                                <div className="w-24">
-                                    <input type="number" value={role.count} min="1" onChange={(e) => handleRoleChange(tsIndex, rIndex, 'count', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required />
-                                </div>
-                                {timeSlot.roles.length > 1 && (
-                                    <button type="button" onClick={() => removeRole(tsIndex, rIndex)} className="text-red-600 hover:text-red-800 text-sm">{t('jobPostingAdmin.create.remove')}</button>
-                                )}
                             </div>
                         ))}
-                        <button type="button" onClick={() => addRole(tsIndex)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            + {t('jobPostingAdmin.create.addRole')}
+                        <button type="button" onClick={addTimeSlot} className="text-indigo-600 hover:text-indigo-800 font-medium">
+                            + {t('jobPostingAdmin.create.addTimeSlot')}
                         </button>
+                    </>
+                ) : (
+                    // 일자별 요구사항 방식
+                    <div className="space-y-4">
+                        {formData.dateSpecificRequirements.map((dateReq, dateIndex) => (
+                            <div key={dateReq.date} className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                                <h4 className="text-lg font-semibold mb-3 text-blue-800">
+                                    {new Date(dateReq.date).toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        weekday: 'short'
+                                    })}
+                                </h4>
+                                
+                                {dateReq.timeSlots.map((timeSlot, tsIndex) => (
+                                    <div key={tsIndex} className="p-3 border border-gray-200 rounded-md bg-white mb-3">
+                                        <div className="flex items-center space-x-2 mb-3">
+                                            <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
+                                            <input
+                                                type="time"
+                                                value={timeSlot.time}
+                                                onChange={(e) => handleDateSpecificTimeSlotChange(dateIndex, tsIndex, e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                required
+                                            />
+                                            {dateReq.timeSlots.length > 1 && (
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => removeDateSpecificTimeSlot(dateIndex, tsIndex)} 
+                                                    className="text-red-600 hover:text-red-800 text-sm"
+                                                >
+                                                    {t('jobPostingAdmin.create.removeTimeSlot')}
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        {timeSlot.roles.map((role, rIndex) => (
+                                            <div key={rIndex} className="flex items-center space-x-2 mb-2">
+                                                <div className="flex-1">
+                                                    <select 
+                                                        value={role.name} 
+                                                        onChange={(e) => handleDateSpecificRoleChange(dateIndex, tsIndex, rIndex, 'name', e.target.value)}
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" 
+                                                        required
+                                                    >
+                                                        <option value="" disabled>{t('jobPostingAdmin.create.roleNamePlaceholder')}</option>
+                                                        {predefinedRoles.map(r => <option key={r} value={r}>{t(`jobPostingAdmin.create.${r}`)}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="w-24">
+                                                    <input 
+                                                        type="number" 
+                                                        value={role.count} 
+                                                        min="1" 
+                                                        onChange={(e) => handleDateSpecificRoleChange(dateIndex, tsIndex, rIndex, 'count', e.target.value)} 
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" 
+                                                        required 
+                                                    />
+                                                </div>
+                                                {timeSlot.roles.length > 1 && (
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => removeDateSpecificRole(dateIndex, tsIndex, rIndex)} 
+                                                        className="text-red-600 hover:text-red-800 text-sm"
+                                                    >
+                                                        {t('jobPostingAdmin.create.remove')}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        
+                                        <button 
+                                            type="button" 
+                                            onClick={() => addDateSpecificRole(dateIndex, tsIndex)} 
+                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                        >
+                                            + {t('jobPostingAdmin.create.addRole')}
+                                        </button>
+                                    </div>
+                                ))}
+                                
+                                <button 
+                                    type="button" 
+                                    onClick={() => addDateSpecificTimeSlot(dateIndex)} 
+                                    className="text-indigo-600 hover:text-indigo-800 font-medium"
+                                >
+                                    + {t('jobPostingAdmin.create.addTimeSlot')}
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                ))}
-                <button type="button" onClick={addTimeSlot} className="text-indigo-600 hover:text-indigo-800 font-medium">
-                    + {t('jobPostingAdmin.create.addTimeSlot')}
-                </button>
+                )}
             </div>
   
             <div>
@@ -719,7 +804,7 @@ const JobPostingAdminPage = () => {
       <div>
         <h1 className="text-2xl font-bold mb-4">{t('jobPostingAdmin.manage.title')}</h1>
         <div className="space-y-4">
-            {loading && <p>{t('jobPostingAdmin.manage.loading')}</p>}
+            {loading && <div className="flex justify-center"><LoadingSpinner /></div>}
             {jobPostings?.map((post: any) => {
                 const formattedStartDate = formatDate(post.startDate);
                 const formattedEndDate = formatDate(post.endDate);
@@ -757,10 +842,10 @@ const JobPostingAdminPage = () => {
                             <div className='flex flex-col items-end'>
                                 <div className="flex mb-2">
                                     <button
-                                        onClick={() => handleViewApplicants(post.id)}
-                                        className="mr-2 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                                        onClick={() => handleNavigateToDetail(post.id)}
+                                        className="mr-2 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                                     >
-                                        {t('jobPostingAdmin.manage.applicants')}
+                                        {t('jobPostingAdmin.manage.detailManagement', '상세 관리')}
                                     </button>
                                     <button
                                         onClick={() => handleOpenEditModal(post)}
@@ -772,7 +857,7 @@ const JobPostingAdminPage = () => {
                                 <button 
                                     onClick={() => handleAutoMatch(post.id)}
                                     disabled={post.status !== 'open' || isMatching === post.id}
-                                    className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                                    className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400"
                                 >
                                     {isMatching === post.id ? t('jobPostingAdmin.manage.matching') : t('jobPostingAdmin.manage.button')}
                                 </button>
@@ -787,7 +872,15 @@ const JobPostingAdminPage = () => {
         {isEditModalOpen && currentPost && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                 <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('jobPostingAdmin.edit.title')}</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium leading-6 text-gray-900">{t('jobPostingAdmin.edit.title')}</h3>
+                        <Link 
+                            to={`/admin/job-posting/${currentPost.id}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                            상세 관리 페이지로 이동 →
+                        </Link>
+                    </div>
                     <form onSubmit={handleUpdatePost} className="space-y-4">
                          <div>
                             <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.postingTitle')}</label>
@@ -895,75 +988,6 @@ const JobPostingAdminPage = () => {
                             <button type="submit" className="py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">{t('jobPostingAdmin.edit.save')}</button>
                         </div>
                     </form>
-                </div>
-            </div>
-        )}
-  
-        {isApplicantsModalOpen && (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('jobPostingAdmin.applicants.title')}</h3>
-                    {loadingApplicants ? (
-                        <p>{t('jobPostingAdmin.applicants.loading')}</p>
-                    ) : (
-                        <ul className="space-y-3">
-                            {applicants.length > 0 ? applicants.map(applicant => (
-                                <li key={applicant.id} className="p-3 border rounded-md flex justify-between items-center">
-                                    <div className="flex-grow">
-                                      <p className="font-semibold">{applicant.applicantName}</p>
-                                      <div className="flex flex-wrap gap-2 text-sm text-gray-600 mt-1">
-                                        <span>{t('jobPostingAdmin.applicants.gender', '성별')}: {applicant.gender ? t(`gender.${applicant.gender}`, applicant.gender) : 'N/A'}</span>
-                                        <span>{t('jobPostingAdmin.applicants.age', '나이')}: {applicant.age || 'N/A'}{t('jobPostingAdmin.applicants.ageUnit', '세')}</span>
-                                        <span>{t('jobPostingAdmin.applicants.experience', '경력')}: {applicant.experience || 'N/A'}</span>
-                                      </div>
-                                      <p className="text-sm text-gray-600 mt-1">
-                                        {t('jobPostingAdmin.applicants.status')}
-                                        <span className={`font-medium ${applicant.status === 'confirmed' ? 'text-green-600' : 'text-blue-600'}`}>{t(`jobPostingAdmin.applicants.statusValue.${applicant.status}`, applicant.status)}</span>
-                                        {(applicant.assignedTime || applicant.assignedRole) && (
-                                            ` (${applicant.assignedTime || 'N/A'} / ${applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`, applicant.assignedRole) : 'N/A'})`
-                                        )}
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Link to={`/profile/${applicant.applicantId}`} target="_blank" className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">
-                                          {t('jobPostingAdmin.applicants.viewProfile', '프로필 보기')}
-                                        </Link>
-                                        {applicant.status === 'applied' && (
-                                            <>
-                                                <select 
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                                                    value={selectedAssignment[applicant.id] ? `${selectedAssignment[applicant.id]?.timeSlot}__${selectedAssignment[applicant.id]?.role}` : ''}
-                                                    onChange={(e) => {
-                                                        const [timeSlot, role] = e.target.value.split('__');
-                                                        setSelectedAssignment(prev => ({ ...prev, [applicant.id]: { timeSlot, role } }));
-                                                    }}
-                                                >
-                                                    <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
-                                                    {currentPost?.timeSlots?.flatMap((ts: TimeSlot) => 
-                                                        ts.roles.map((r: RoleRequirement) => (
-                                                            <option key={`${ts.time}-${r.name}`} value={`${ts.time}__${r.name}`}>
-                                                                {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
-                                                            </option>
-                                                        ))
-                                                    )}
-                                                </select>
-                                                <button 
-                                                    onClick={() => handleConfirmApplicant(applicant)}
-                                                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                                                    disabled={!selectedAssignment[applicant.id]}
-                                                >
-                                                    {t('jobPostingAdmin.applicants.confirm')}
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </li>
-                            )) : <p>{t('jobPostingAdmin.applicants.none')}</p>}
-                        </ul>
-                    )}
-                    <div className="flex justify-end mt-4">
-                        <button onClick={() => setIsApplicantsModalOpen(false)} className="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-700">{t('jobPostingAdmin.applicants.close')}</button>
-                    </div>
                 </div>
             </div>
         )}
