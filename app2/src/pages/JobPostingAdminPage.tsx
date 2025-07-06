@@ -127,6 +127,78 @@ const JobPostingAdminPage = () => {
     }
   };
 
+  // 안전한 날짜 변환 함수들
+  const convertToDateString = (dateInput: any): string => {
+    if (!dateInput) return '';
+    
+    try {
+      let date: Date;
+      
+      // Handle Firebase Timestamp object
+      if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
+        date = new Date(dateInput.seconds * 1000);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'string') {
+        // 이미 yyyy-MM-dd 형식인지 확인
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+          return dateInput;
+        }
+        date = new Date(dateInput);
+      } else {
+        console.warn('Unknown date format:', dateInput);
+        return '';
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date:', dateInput);
+        return '';
+      }
+      
+      // Convert to yyyy-MM-dd format for HTML date input
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error converting date to string:', error, dateInput);
+      return '';
+    }
+  };
+
+  const convertToTimestamp = (dateInput: any): any => {
+    if (!dateInput) return null;
+    
+    try {
+      let date: Date;
+      
+      // Handle Firebase Timestamp object (이미 Timestamp라면 그대로 반환)
+      if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
+        return dateInput; // 이미 Timestamp 객체
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'string') {
+        date = new Date(dateInput);
+      } else {
+        console.warn('Unknown date format for Timestamp conversion:', dateInput);
+        return null;
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date for Timestamp conversion:', dateInput);
+        return null;
+      }
+      
+      return Timestamp.fromDate(date);
+    } catch (error) {
+      console.error('Error converting to Timestamp:', error, dateInput);
+      return null;
+    }
+  };
+
   // Form handlers
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -271,8 +343,8 @@ const JobPostingAdminPage = () => {
     setCurrentPost({
         ...post,
         timeSlots: post.timeSlots && post.timeSlots.length > 0 ? post.timeSlots : [initialTimeSlot],
-        startDate: post.startDate || '',
-        endDate: post.endDate || '',
+        startDate: convertToDateString(post.startDate),
+        endDate: convertToDateString(post.endDate),
     });
     setIsEditModalOpen(true);
   };
@@ -303,8 +375,8 @@ const JobPostingAdminPage = () => {
       const { id, ...postData } = currentPost;
       await updateDoc(postRef, {
         ...postData,
-        startDate: Timestamp.fromDate(new Date(currentPost.startDate)), // Convert to Timestamp
-        endDate: Timestamp.fromDate(new Date(currentPost.endDate)), // Convert to Timestamp
+        startDate: convertToTimestamp(currentPost.startDate), // Safe conversion to Timestamp
+        endDate: convertToTimestamp(currentPost.endDate), // Safe conversion to Timestamp
         requiredRoles, // Add for role filtering
         searchIndex // Add for text search
       });

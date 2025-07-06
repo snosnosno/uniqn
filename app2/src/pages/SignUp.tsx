@@ -51,7 +51,7 @@ const SignUp: React.FC = () => {
       });
 
       const successMessage = role === 'staff' 
-        ? t('signUp.dealerSuccessMessage') 
+        ? t('signUp.staffSuccessMessage') 
         : t('signUp.managerSuccessMessage');
       
       setModalInfo({
