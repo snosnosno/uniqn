@@ -60,8 +60,8 @@ type SortKey = keyof StaffData;
 const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
-  const { addToast } = useToast();
-  const { confirmedStaff, refreshJobPosting } = useJobPostingContext();
+    const { showSuccess, showError, showWarning } = useToast();
+  const { staff, refreshJobPosting } = useJobPostingContext();
   
   const [staffData, setStaffData] = useState<StaffData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -168,7 +168,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     };
 
     fetchJobPostingStaff();
-  }, [currentUser, jobPosting?.id, t, confirmedStaff]); // confirmedStaff 추가로 실시간 동기화
+    }, [currentUser, jobPosting?.id, t, staff]); // staff 추가로 실시간 동기화
 
   // 편집 기능 핸들러
   const handleCellClick = (rowId: string, field: keyof StaffData, currentValue: any) => {
@@ -225,12 +225,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         )
       );
       
-      addToast(t('staffManagement.updateSuccess'), 'success');
+            showSuccess(t('staffManagement.updateSuccess'));
       console.log(`스태프 ${field} 필드가 성공적으로 업데이트되었습니다:`, newValue);
     } catch (error: any) {
       console.error('스태프 정보 업데이트 오류:', error);
       setError(error.message || t('staffListPage.updateError'));
-      addToast(t('staffManagement.updateError'), 'error');
+            showError(t('staffManagement.updateError'));
       return;
     }
     
@@ -269,7 +269,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   const handleWorkTimeUpdate = (updatedWorkLog: any) => {
     console.log('근무 시간이 업데이트되었습니다:', updatedWorkLog);
-    addToast(t('staffManagement.workTimeUpdateSuccess'), 'success');
+        showSuccess(t('staffManagement.workTimeUpdateSuccess'));
   };
   
   // 예외 상황 처리 함수
@@ -290,7 +290,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     console.log('예외 상황이 업데이트되었습니다:', updatedWorkLog);
     setIsExceptionModalOpen(false);
     setSelectedExceptionWorkLog(null);
-    addToast(t('staffManagement.exceptionUpdateSuccess'), 'success');
+        showSuccess(t('staffManagement.exceptionUpdateSuccess'));
   };
   
   // 급여 처리 관련 함수들
@@ -303,7 +303,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       setIsPayrollModalOpen(true);
     } catch (error) {
       console.error('급여 데이터 생성 오류:', error);
-      addToast(t('staffManagement.payrollGenerationError'), 'error');
+            showError(t('staffManagement.payrollGenerationError'));
     } finally {
       setIsGeneratingPayroll(false);
     }
@@ -311,7 +311,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   const handleExportPayrollCSV = () => {
     if (payrollData.length === 0) {
-      addToast(t('payroll.noDataToExport', '내보낼 급여 데이터가 없습니다.'), 'warning');
+            showWarning(t('payroll.noDataToExport', '내보낼 급여 데이터가 없습니다.'));
       return;
     }
     
@@ -325,7 +325,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    addToast(t('payroll.exportSuccess'), 'success');
+        showSuccess(t('payroll.exportSuccess'));
   };
   
   // 스태프 삭제 기능
@@ -342,12 +342,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       // 로컬 상태에서 삭제
       setStaffData(prevData => prevData.filter(staff => staff.id !== staffId));
       
-      addToast(t('staffManagement.deleteSuccess'), 'success');
+            showSuccess(t('staffManagement.deleteSuccess'));
       setError('');
     } catch (error: any) {
       console.error('스태프 삭제 오류:', error);
       setError(t('staffManagement.deleteError'));
-      addToast(t('staffManagement.deleteError'), 'error');
+            showError(t('staffManagement.deleteError'));
     }
   };
 
