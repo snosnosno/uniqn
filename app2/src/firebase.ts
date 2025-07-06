@@ -129,7 +129,9 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
       // Update existing staff document with new job role and event assignment
       await updateDoc(staffRef, {
         jobRole: arrayUnion(jobRole),
-        assignedEvents: arrayUnion(postingId)
+        assignedEvents: arrayUnion(postingId),
+        postingId: postingId, // 최신 공고 ID로 업데이트
+        managerId: managerId // 관리자 ID도 업데이트
       });
       console.log(`Staff document updated for user: ${userName} (${userId}). Added role: ${jobRole} for posting: ${postingId}`);
     }

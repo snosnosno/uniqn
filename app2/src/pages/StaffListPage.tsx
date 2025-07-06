@@ -201,10 +201,23 @@ const StaffListPage: React.FC = () => {
         
         // 스태프 데이터에 구인공고 제목 매핑
         const staffListWithPostingTitles = staffList.map(staff => {
-          const posting = postingsData.find(p => p.id === staff.postingId);
+          // assignedEvents 배열에 있는 모든 공고 제목 가져오기
+          let postingTitles: string[] = [];
+          
+          if (staff.assignedEvents && Array.isArray(staff.assignedEvents)) {
+            postingTitles = staff.assignedEvents.map(eventId => {
+              const posting = postingsData.find(p => p.id === eventId);
+              return posting ? posting.title : `공고 ${eventId}`;
+            });
+          } else if (staff.postingId) {
+            // 레거시 데이터 지원
+            const posting = postingsData.find(p => p.id === staff.postingId);
+            postingTitles = [posting ? posting.title : `공고 ${staff.postingId}`];
+          }
+          
           return {
             ...staff,
-            postingTitle: posting ? posting.title : '구인공고 없음'
+            postingTitle: postingTitles.length > 0 ? postingTitles.join(', ') : '구인공고 없음'
           };
         });
         
