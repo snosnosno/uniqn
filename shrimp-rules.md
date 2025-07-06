@@ -220,6 +220,117 @@ const { t } = useTranslation();
     └── No → 기존 쿼리 함수 확장
 ```
 
+## 도구 사용 최적화 가이드
+
+### 터미널 명령 안전 실행 패턴
+
+#### 🔴 터미널 무한 대기 문제 해결법
+**문제**: 터미널 명령이 완료되어도 AI가 응답 대기 상태로 멈춤
+
+**해결법**:
+```bash
+# 1. 백그라운드 실행 활용
+run_terminal_cmd(command="git push origin master", is_background=true)
+
+# 2. 완료 신호와 함께 실행
+"git push origin master && echo 'PUSH_COMPLETED'"
+
+# 3. 타임아웃 추가
+"timeout 30 git push origin master || echo 'Command completed'"
+
+# 4. 분할 실행
+git status → git push (background) → git log --oneline -1
+```
+
+#### 안전한 터미널 실행 체크리스트
+- ✅ 긴 명령은 `is_background: true` 설정
+- ✅ 완료 신호 추가: `&& echo "COMPLETED"`
+- ✅ 타임아웃 설정 고려
+- ✅ 분할 실행으로 검증 가능
+
+### 파일 수정 도구 선택 가이드
+
+#### 🔧 도구 선택 결정 트리
+```
+파일 수정 필요
+├── 파일 크기 < 100줄 + 수정 라인 < 3줄
+│   └── search_replace ✅ (3초, 안전)
+├── 패턴 명확 + 컨텍스트 충분
+│   └── mcp_filesystem_edit_file ✅ (10초, 검증됨)
+├── 복잡한 수정 또는 불확실
+│   └── mcp_filesystem_write_file ✅ (30초, 전체 교체)
+└── 최후의 수단
+    └── edit_file_lines (dryRun 필수, 단순 수정만)
+```
+
+#### 🟢 search_replace 사용 패턴 (권장)
+```typescript
+// 1단계: 대상 텍스트 확인
+grep_search("정확한 텍스트 패턴")
+
+// 2단계: 충분한 컨텍스트 포함
+old_string: "이전 줄\n수정할 줄\n다음 줄"
+new_string: "이전 줄\n새로운 줄\n다음 줄"
+
+// 3단계: 결과 확인
+read_file(수정된 파일)
+```
+
+#### 🟡 edit_file_lines 사용 시 필수 절차
+```bash
+# 1. 파일 상태 확인
+get_file_lines(path, lineNumbers, context: 5)
+
+# 2. dryRun 테스트 (필수)
+edit_file_lines(dryRun: true)
+
+# 3. diff 검토 후 적용
+approve_edit(stateId)
+
+# 4. 결과 검증
+get_file_lines(path, lineNumbers, context: 2)
+```
+
+### 안전성 단계별 접근법
+
+#### 🟢 완전 안전 (Zero Risk)
+- **적용**: 중요 파일, 복잡한 로직, 처음 접하는 코드
+- **패턴**: `read → search → replace → verify`
+- **도구**: `search_replace` 주 사용
+- **보장**: 100% 코드 손상 방지
+
+#### 🟡 검증된 안전 (Verified Safe)
+- **적용**: 단순 수정, 패턴이 명확한 경우
+- **패턴**: `parallel_read → targeted_edit → immediate_verify`
+- **도구**: `mcp_filesystem_edit_file`
+- **조건**: 충분한 컨텍스트 + 고유 패턴 확인
+
+#### 🔴 격리된 위험 (Isolated Risk)
+- **적용**: 대규모 변경, 새 파일 생성
+- **패턴**: `backup → full_replace → compile_test → rollback_ready`
+- **도구**: `mcp_filesystem_write_file`
+- **조건**: 백업 필수 + 테스트 환경
+
+### 문제 발생 시 복구 절차
+
+#### 터미널 무한 대기 시
+1. **사용자 스킵 대기**: Ctrl+C 또는 수동 중단
+2. **백그라운드 전환**: `is_background: true` 재실행
+3. **분할 실행**: 작은 단위로 나누어 실행
+4. **결과 확인**: 별도 명령으로 상태 체크
+
+#### 파일 수정 실패 시
+1. **Git 상태 확인**: `git status`
+2. **변경사항 되돌리기**: `git checkout -- <파일명>`
+3. **안전한 도구 재선택**: `search_replace` 우선
+4. **단계별 검증**: 각 수정 후 즉시 확인
+
+#### 코드 손상 발생 시
+1. **즉시 중단**: 추가 수정 금지
+2. **Git 리셋**: `git reset --hard HEAD`
+3. **백업 복원**: 이전 커밋으로 되돌리기
+4. **원인 분석**: 도구 선택 재검토
+
 ## 금지사항
 
 ### 절대 금지
@@ -229,6 +340,9 @@ const { t } = useTranslation();
 - **직접 DOM 조작** (React 패턴 위반)
 - **any 타입 남용** (타입 안정성 훼손)
 - **하드코딩된 문자열** (다국어 지원 위반)
+- **터미널 무한 대기 방치** (백그라운드 실행 필수)
+- **edit_file_lines dryRun 생략** (안전성 검증 필수)
+- **복잡한 파일 수정에 edit_file_lines 사용** (search_replace 우선)
 
 ### 주의사항
 - 기존 데이터베이스 스키마 변경 시 마이그레이션 필수
@@ -264,7 +378,8 @@ const { t } = useTranslation();
 
 ---
 
-**문서 버전**: v1.0  
+**문서 버전**: v1.1  
 **최종 업데이트**: 2025년 1월  
 **적용 대상**: T-HOLDEM 프로젝트 AI 에이전트  
-**검토 주기**: 주요 기능 추가 시마다
+**검토 주기**: 주요 기능 추가 시마다  
+**v1.1 개선사항**: 터미널 무한 대기 문제 해결법, 파일 수정 도구 선택 가이드, 안전성 단계별 접근법 추가
