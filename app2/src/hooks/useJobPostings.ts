@@ -2,44 +2,27 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { getDocs, startAfter, limit } from 'firebase/firestore';
 import { buildFilteredQuery } from '../firebase';
 
-export interface JobPostingFilters {
-  location: string;
-  type: string;
-  startDate: string;
-  role: string;
-  month?: string; // Optional month filter (01-12)
-  day?: string;   // Optional day filter (01-31)
-  searchTerms?: string[]; // Optional search terms
-}
+// Import types from centralized type definitions
+import {
+  JobPostingFilters,
+  JobPosting,
+  TimeSlot,
+  RoleRequirement,
+  ConfirmedStaff,
+  JobPostingUtils
+} from '../types/jobPosting';
+// Re-export types for backward compatibility
+export type {
+  JobPostingFilters,
+  JobPosting,
+  TimeSlot,
+  RoleRequirement,
+  ConfirmedStaff
+} from '../types/jobPosting';
 
-export interface RoleRequirement {
-  name: string;
-  count: number;
-}
-
-export interface TimeSlot {
-  time: string;
-  roles: RoleRequirement[];
-}
-
-export interface JobPosting {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  type: string;
-  status: 'open' | 'closed';
-  startDate: any;
-  endDate: any;
-  createdAt: any;
-  managerId?: string;
-  timeSlots?: TimeSlot[];
-  confirmedStaff?: { userId: string; role: string; timeSlot: string; }[];
-  searchIndex?: string[];
-  requirements?: any[];
-  manager?: string;
-  [key: string]: any;
-}
+export {
+  JobPostingUtils
+} from '../types/jobPosting';
 
 export const useJobPostings = (filters: JobPostingFilters) => {
   return useQuery({
