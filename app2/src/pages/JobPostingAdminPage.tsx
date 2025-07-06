@@ -825,16 +825,42 @@ const JobPostingAdminPage = () => {
                                 <p className="text-sm text-gray-500 mb-1">
                                     {t('jobPostingAdmin.manage.date')}: {post.endDate && post.endDate !== post.startDate ? `${formattedStartDate} ~ ${formattedEndDate}` : formattedStartDate}
                                 </p>
-                                {post.timeSlots?.map((ts: TimeSlot, index: number) => (
-                                    <div key={index} className="mt-2 pl-4 border-l-2 border-gray-200">
-                                        <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
-                                        <div className="text-sm text-gray-600">
-                                            {ts.roles.map((r: RoleRequirement, i: number) => (
-                                                <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
-                                            ))}
-                                        </div>
+                                {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
+                                {JobPostingUtils.hasDateSpecificRequirements(post) ? (
+                                    /* 일자별 다른 인원 요구사항이 있는 경우 */
+                                    <div className="mt-2">
+                                        <p className="text-sm font-medium text-blue-600 mb-2">📅 일자별 다른 인원 요구사항</p>
+                                        {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
+                                            <div key={dateIndex} className="mt-3 pl-4 border-l-2 border-blue-300 bg-blue-50 rounded-r p-2">
+                                                <div className="text-sm font-medium text-blue-800 mb-2">
+                                                    📅 {formatDate(dateReq.date)} 일정
+                                                </div>
+                                                {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                                                    <div key={`${dateIndex}-${tsIndex}`} className="mt-1 pl-3 border-l border-blue-200 bg-white rounded-r p-1">
+                                                        <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
+                                                        <div className="text-sm text-gray-600">
+                                                            {ts.roles.map((r: RoleRequirement, i: number) => (
+                                                                <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                ) : (
+                                    /* 기존 방식: 전체 기간 공통 timeSlots */
+                                    post.timeSlots?.map((ts: TimeSlot, index: number) => (
+                                        <div key={index} className="mt-2 pl-4 border-l-2 border-gray-200">
+                                            <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
+                                            <div className="text-sm text-gray-600">
+                                                {ts.roles.map((r: RoleRequirement, i: number) => (
+                                                    <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                                 <p className="text-sm text-gray-500 mt-2">
                                     {t('jobPostingAdmin.create.description')}: {post.description}
                                 </p>
