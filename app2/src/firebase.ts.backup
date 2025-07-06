@@ -1,4 +1,4 @@
-// Firebase ì´ˆê¸°??ï¿½??ï¿½ì¦/DB ?ï¿½ìŠ¤?ï¿½ìŠ¤ export
+// Firebase ì´ˆê¸°??ë°??¸ì¦/DB ?¸ìŠ¤?´ìŠ¤ export
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, doc, collection, getDocs, writeBatch, getDoc, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
@@ -26,14 +26,14 @@ export const functions = getFunctions(app);
 const isEmulator = process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true';
 
 if (isEmulator) {
-  console.log('?ï¿½ï¿½ Connecting to Firebase Emulators...');
+  console.log('?”§ Connecting to Firebase Emulators...');
   
   try {
     // Connect Auth Emulator
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
     console.log('??Connected to Firebase Auth emulator');
   } catch (error) {
-    console.log('?ï¿½ï¿½ Auth emulator already connected or not available');
+    console.log('?“ Auth emulator already connected or not available');
   }
   
   try {
@@ -41,7 +41,7 @@ if (isEmulator) {
     connectFirestoreEmulator(db, 'localhost', 8080);
     console.log('??Connected to Firebase Firestore emulator');
   } catch (error) {
-    console.log('?ï¿½ï¿½ Firestore emulator already connected or not available');
+    console.log('?“ Firestore emulator already connected or not available');
   }
   
   try {
@@ -49,12 +49,12 @@ if (isEmulator) {
     connectFunctionsEmulator(functions, 'localhost', 5001);
     console.log('??Connected to Firebase Functions emulator');
   } catch (error) {
-    console.log('?ï¿½ï¿½ Functions emulator already connected or not available');
+    console.log('?“ Functions emulator already connected or not available');
   }
   
-  console.log('?ï¿½ï¿½ All Firebase services connected to emulators!');
+  console.log('?Ž¯ All Firebase services connected to emulators!');
 } else {
-  console.log('?ï¿½ï¿½ Using production Firebase services');
+  console.log('?Œ Using production Firebase services');
 }
 
 export const setupTestData = async () => {
@@ -100,7 +100,7 @@ export const setupTestData = async () => {
 };
 
 export const promoteToStaff = async (userId: string, userName: string, jobRole: string, postingId: string, managerId: string) => {
-  console.log('?ï¿½ï¿½ promoteToStaff ?ï¿½ìˆ˜ ?ï¿½ì¶œ:', { userId, userName, jobRole, postingId, managerId });
+  console.log('?” promoteToStaff ?¨ìˆ˜ ?¸ì¶œ:', { userId, userName, jobRole, postingId, managerId });
   
   if (!userId || !jobRole || !userName || !postingId || !managerId) {
     console.error("User ID, User Name, Job Role, Posting ID, and Manager ID are required to promote to staff.");
@@ -110,10 +110,10 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
   const staffRef = doc(db, 'staff', userId);
   
   try {
-    console.log('?ï¿½ï¿½ staff ë¬¸ì„œ ?ï¿½ì¸ ?ï¿½ë„:', userId);
+    console.log('?” staff ë¬¸ì„œ ?•ì¸ ?œë„:', userId);
     const staffSnap = await getDoc(staffRef);
     if (!staffSnap.exists()) {
-      console.log('???ï¿½ë¡œ??staff ë¬¸ì„œ ?ï¿½ì„± ?ï¿½ë„');
+      console.log('???ˆë¡œ??staff ë¬¸ì„œ ?ì„± ?œë„');
       await setDoc(staffRef, {
         name: userName,
         userRole: 'staff',
@@ -125,8 +125,8 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
       });
       console.log(`??New staff document created for user: ${userName} (${userId}) with role: ${jobRole}`);
     } else {
-      console.log('?ï¿½ï¿½ ê¸°ì¡´ staff ë¬¸ì„œ ?ï¿½ë°?ï¿½íŠ¸ ?ï¿½ë„');
-      // ?ï¿½íƒœ??ë¬¸ì„œê°€ ?ï¿½ìœ¼ï¿½?jobRole ï¿½??ï¿½ë²¤??ì°¸ì—¬ ?ï¿½ë ¥ ?ï¿½ë°?ï¿½íŠ¸
+      console.log('?”„ ê¸°ì¡´ staff ë¬¸ì„œ ?…ë°?´íŠ¸ ?œë„');
+      // ?¤íƒœ??ë¬¸ì„œê°€ ?ˆìœ¼ë©?jobRole ë°??´ë²¤??ì°¸ì—¬ ?´ë ¥ ?…ë°?´íŠ¸
       await updateDoc(staffRef, {
         jobRole: arrayUnion(jobRole),
         assignedEvents: arrayUnion(postingId)
@@ -151,24 +151,24 @@ export const buildFilteredQuery = (
   const jobPostingsRef = collection(db, 'jobPostings');
   let queryConstraints: any[] = [];
   
-  console.log('?ï¿½ï¿½ Building query with filters:', filters);
+  console.log('?” Building query with filters:', filters);
   
   // Always filter for open status
   queryConstraints.push(where('status', '==', 'open'));
   
   // Handle search queries with location/type support
   if (filters.searchTerms && filters.searchTerms.length > 0) {
-    console.log('?ï¿½ï¿½ Search mode activated with terms:', filters.searchTerms);
+    console.log('?” Search mode activated with terms:', filters.searchTerms);
     queryConstraints.push(where('searchIndex', 'array-contains-any', filters.searchTerms));
     
     // Add location filter if specified (has index: status + searchIndex + location + createdAt)
     if (filters.location && filters.location !== 'all') {
-      console.log('?ï¿½ï¿½ Search + Location filter applied:', filters.location);
+      console.log('?” Search + Location filter applied:', filters.location);
       queryConstraints.push(where('location', '==', filters.location));
     }
     // Add type filter if specified and no location (has index: status + searchIndex + type + createdAt)
     else if (filters.type && filters.type !== 'all') {
-      console.log('?ï¿½ï¿½ Search + Type filter applied:', filters.type);
+      console.log('?” Search + Type filter applied:', filters.type);
       queryConstraints.push(where('type', '==', filters.type));
     }
     
@@ -177,13 +177,13 @@ export const buildFilteredQuery = (
   } 
   // Handle date-based queries (prioritized because of range query limitations)
   else if (filters.startDate) {
-    console.log('?ï¿½ï¿½ Date filter applied:', filters.startDate);
+    console.log('?” Date filter applied:', filters.startDate);
     
     // Create date at start of day to match job postings
     const filterDate = new Date(filters.startDate);
     filterDate.setHours(0, 0, 0, 0);
     const startDateTimestamp = Timestamp.fromDate(filterDate);
-    console.log('?ï¿½ï¿½ Converted date to Timestamp:', startDateTimestamp);
+    console.log('?” Converted date to Timestamp:', startDateTimestamp);
     
     queryConstraints.push(where('startDate', '>=', startDateTimestamp));
     
@@ -191,18 +191,18 @@ export const buildFilteredQuery = (
     // Note: Firebase doesn't allow inequality + array-contains in same query
     // So we prioritize role filter and do client-side filtering for others
     if (filters.role && filters.role !== 'all') {
-      console.log('?ï¿½ï¿½ Date + Role filter applied (prioritized):', filters.role);
+      console.log('?” Date + Role filter applied (prioritized):', filters.role);
       queryConstraints.push(where('requiredRoles', 'array-contains', filters.role));
       // Note: location/type will be filtered client-side
     }
     // Add location filter if no role filter (has index: status + location + startDate)
     else if (filters.location && filters.location !== 'all') {
-      console.log('?ï¿½ï¿½ Date + Location filter applied:', filters.location);
+      console.log('?” Date + Location filter applied:', filters.location);
       queryConstraints.push(where('location', '==', filters.location));
     }
     // Add type filter if no role/location filter (has index: status + type + startDate)
     else if (filters.type && filters.type !== 'all') {
-      console.log('?ï¿½ï¿½ Date + Type filter applied:', filters.type);
+      console.log('?” Date + Type filter applied:', filters.type);
       queryConstraints.push(where('type', '==', filters.type));
     }
     
@@ -213,19 +213,19 @@ export const buildFilteredQuery = (
   else {
     // Add location filter
     if (filters.location && filters.location !== 'all') {
-      console.log('?ï¿½ï¿½ Location filter applied:', filters.location);
+      console.log('?” Location filter applied:', filters.location);
       queryConstraints.push(where('location', '==', filters.location));
     }
     
     // Add type filter
     if (filters.type && filters.type !== 'all') {
-      console.log('?ï¿½ï¿½ Type filter applied:', filters.type);
+      console.log('?” Type filter applied:', filters.type);
       queryConstraints.push(where('type', '==', filters.type));
     }
     
     // Add role filter
     if (filters.role && filters.role !== 'all') {
-      console.log('?ï¿½ï¿½ Role filter applied:', filters.role);
+      console.log('?” Role filter applied:', filters.role);
       queryConstraints.push(where('requiredRoles', 'array-contains', filters.role));
     }
     
@@ -241,8 +241,8 @@ export const buildFilteredQuery = (
   // Add limit (default 20 for regular queries, customizable for infinite scroll)
   queryConstraints.push(limit(pagination?.limit || 20));
   
-  console.log('?ï¿½ï¿½ Final query constraints count:', queryConstraints.length);
-  console.log('?ï¿½ï¿½ Query constraints:', queryConstraints.map((c, i) => `${i}: ${c.type || 'unknown'}`));
+  console.log('?” Final query constraints count:', queryConstraints.length);
+  console.log('?” Query constraints:', queryConstraints.map((c, i) => `${i}: ${c.type || 'unknown'}`));
   
   return query(jobPostingsRef, ...queryConstraints);
 };
@@ -399,7 +399,7 @@ export const migrateJobPostingsDateFormat = async (): Promise<void> => {
 const generateSearchIndexForJobPosting = (title: string, description: string): string[] => {
   const text = `${title} ${description}`.toLowerCase();
   const words = text
-    .replace(/[^\w\sê°€-íž£]/g, ' ')
+    .replace(/[^\w\sê°€-??/g, ' ')
     .split(/\s+/)
     .filter(word => word.length > 1);
   
@@ -408,7 +408,7 @@ const generateSearchIndexForJobPosting = (title: string, description: string): s
 
 // Run all migrations for job postings
 export const runJobPostingsMigrations = async (): Promise<void> => {
-  console.log('?ï¿½ï¿½ Starting all job postings migrations...');
+  console.log('?”„ Starting all job postings migrations...');
   
   try {
     await migrateJobPostingsRequiredRoles();
