@@ -189,7 +189,7 @@ const StaffListPage: React.FC = () => {
           } as StaffData;
         });
 
-        setStaffData(staffList);
+        // staffList는 나중에 구인공고 제목과 매핑된 후에 설정됩니다.
 
         // JobPostings 정보는 필터링을 위해서만 최소한으로 가져옵니다.
         console.log('🔍 구인공고 가져오기 시작 - 현재 사용자 ID:', currentUser.uid);
@@ -198,6 +198,19 @@ const StaffListPage: React.FC = () => {
         console.log('🔍 구인공고 결과 개수:', postingsSnapshot.size);
         const postingsData = postingsSnapshot.docs.map(doc => ({ id: doc.id, title: doc.data().title }));
         console.log('🔍 구인공고 데이터:', postingsData);
+        
+        // 스태프 데이터에 구인공고 제목 매핑
+        const staffListWithPostingTitles = staffList.map(staff => {
+          const posting = postingsData.find(p => p.id === staff.postingId);
+          return {
+            ...staff,
+            postingTitle: posting ? posting.title : '구인공고 없음'
+          };
+        });
+        
+        console.log('🔍 구인공고 제목이 매핑된 스태프 데이터:', staffListWithPostingTitles);
+        
+        setStaffData(staffListWithPostingTitles);
         setJobPostings(postingsData);
 
       } catch (e) {
