@@ -49,6 +49,7 @@ interface StaffData {
   assignedEvents?: string[]; // 스태프가 등록된 모든 공고 ID 배열
   assignedRole?: string;     // 지원자에서 확정된 역할
   assignedTime?: string;     // 지원자에서 확정된 시간
+  assignedDate?: string;     // 할당된 날짜 (yyyy-MM-dd 형식)
 }
 
 interface StaffManagementTabProps {
@@ -372,7 +373,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         staff.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         staff.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         staff.assignedRole?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.assignedTime?.toLowerCase().includes(searchTerm.toLowerCase())
+        staff.assignedTime?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        staff.assignedDate?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -510,6 +512,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       할당 시간
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      할당 날짜
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('signUp.phoneLabel')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -540,6 +545,16 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {staff.assignedTime || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {staff.assignedDate ? (
+                          <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                            </svg>
+                            {staff.assignedDate}
+                          </div>
+                        ) : <span className="text-gray-400 text-xs">No Date</span>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {staff.phone || '-'}

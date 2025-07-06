@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, runTransaction, getDoc } from 'firebase/firestore';
 import { db, promoteToStaff } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { RoleRequirement, TimeSlot } from '../../types/jobPosting';
-
+import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement } from '../../types/jobPosting';
 // Applicant interface (extracted from JobPostingAdminPage)
 interface Applicant {
   id: string;
@@ -18,6 +17,7 @@ interface Applicant {
   gender?: string;
   age?: number;
   experience?: string;
+  assignedDate?: string;    // 할당된 날짜 (yyyy-MM-dd 형식)
   email?: string;
   phoneNumber?: string;
 }
@@ -32,7 +32,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: { timeSlot: string, role: string } }>({});
+  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: { timeSlot: string, role: string, date?: string } }>({});
 
   // Load applicants when component mounts or jobPosting changes
   useEffect(() => {
@@ -104,7 +104,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     }
     if (!jobPosting) return;
 
-    const { timeSlot, role } = assignment;
+    const { timeSlot, role, date } = assignment;
     const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
     const applicationRef = doc(db, "applications", applicant.id);
 
@@ -116,6 +116,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             userId: applicant.applicantId,
             role: role,
             timeSlot: timeSlot,
+            date: date || undefined  // 날짜 정보 추가
           })
         });
         
@@ -124,6 +125,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           status: 'confirmed',
           assignedRole: role,
           assignedTime: timeSlot,
+          assignedDate: date || undefined  // 지원자에게 할당된 날짜 저장
         });
       });
 
@@ -160,7 +162,18 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       }
       
       alert(t('jobPostingAdmin.alerts.applicantConfirmSuccess'));
-      await checkAndClosePosting(jobPosting.id);
+      
+      // 새로운 통합 마감 로직 사용
+      const jobPostingDoc = await getDoc(jobPostingRef);
+      if (jobPostingDoc.exists()) {
+        const updatedPost = jobPostingDoc.data();
+        if (shouldCloseJobPosting(updatedPost)) {
+          await updateDoc(jobPostingRef, { status: 'closed' });
+          alert(t('jobPostingAdmin.alerts.postingClosed'));
+          console.log('✅ 모든 요구사항 충족으로 자동 마감됨');
+        }
+      }
+      
       loadApplicants(jobPosting.id); // Refresh applicants list
     } catch (error) {
       console.error("Error confirming applicant: ", error);
@@ -168,47 +181,24 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     }
   };
 
-  const checkAndClosePosting = async (postId: string) => {
-    const jobPostingRef = doc(db, 'jobPostings', postId);
-    try {
-      const jobPostingDoc = await getDoc(jobPostingRef);
-      if (!jobPostingDoc.exists()) return;
-      
-      const post = jobPostingDoc.data();
-      
-      // Calculate required staff counts
-      const requiredCounts: { [key: string]: number } = {};
-      if (post.timeSlots) {
-        post.timeSlots.forEach((ts: TimeSlot) => {
-          ts.roles.forEach((r: RoleRequirement) => {
-            const key = `${ts.time}-${r.name}`;
-            requiredCounts[key] = r.count;
-          });
-        });
-      }
 
-      const confirmedCounts: { [key: string]: number } = (post.confirmedStaff || []).reduce((acc: any, staff: any) => {
-        const key = `${staff.timeSlot}-${staff.role}`;
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
-
-      const isFullyStaffed = Object.keys(requiredCounts).every(key => (confirmedCounts[key] || 0) >= requiredCounts[key]);
-
-      if (isFullyStaffed) {
-        await updateDoc(jobPostingRef, { status: 'closed' });
-        alert(t('jobPostingAdmin.alerts.postingClosed'));
-      }
-    } catch (error) {
-      console.error('Error checking posting status:', error);
-    }
-  };
 
   const handleAssignmentChange = (applicantId: string, value: string) => {
-    const [timeSlot, role] = value.split('__');
+    // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
+    const parts = value.split('__');
+    let timeSlot = '', role = '', date = '';
+    
+    if (parts.length === 3) {
+      // 날짜별 요구사항: date__timeSlot__role
+      [date, timeSlot, role] = parts;
+    } else if (parts.length === 2) {
+      // 기존 형식: timeSlot__role
+      [timeSlot, role] = parts;
+    }
+    
     setSelectedAssignment(prev => ({
       ...prev,
-      [applicantId]: { timeSlot: timeSlot || '', role: role || '' }
+      [applicantId]: { timeSlot: timeSlot || '', role: role || '', date: date || undefined }
     }));
   };
 
@@ -278,11 +268,30 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                 {applicant.status === 'applied' && (
                   <div className="ml-4 flex items-center space-x-2">
                     <select
-                      value={selectedAssignment[applicant.id] ? `${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}` : ''}
+                      value={
+                        selectedAssignment[applicant.id] 
+                          ? selectedAssignment[applicant.id].date 
+                            ? `${selectedAssignment[applicant.id].date}__${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
+                            : `${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
+                          : ''
+                      }
                       onChange={(e) => handleAssignmentChange(applicant.id, e.target.value)}
                       className="text-sm border border-gray-300 rounded px-2 py-1"
                     >
                       <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
+                      
+                      {/* 날짜별 요구사항 */}
+                      {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
+                        dateReq.timeSlots.flatMap((ts: TimeSlot) =>
+                          ts.roles.map((r: RoleRequirement) => (
+                            <option key={`${dateReq.date}-${ts.time}-${r.name}`} value={`${dateReq.date}__${ts.time}__${r.name}`}>
+                              📅 {dateReq.date} | {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
+                            </option>
+                          ))
+                        )
+                      )}
+                      
+                      {/* 기존 방식 timeSlots */}
                       {jobPosting?.timeSlots?.flatMap((ts: TimeSlot) => 
                         ts.roles.map((r: RoleRequirement) => (
                           <option key={`${ts.time}-${r.name}`} value={`${ts.time}__${r.name}`}>
@@ -304,7 +313,12 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                 {applicant.status === 'confirmed' && applicant.assignedRole && applicant.assignedTime && (
                   <div className="ml-4 text-sm text-green-600">
                     <p className="font-medium">{t('jobPostingAdmin.applicants.confirmed')}</p>
-                    <p>{applicant.assignedTime} - {t(`jobPostingAdmin.create.${applicant.assignedRole}`, applicant.assignedRole)}</p>
+                    <p>
+                      {applicant.assignedDate && (
+                        <span className="text-blue-600 font-medium">📅 {applicant.assignedDate} | </span>
+                      )}
+                      {applicant.assignedTime} - {t(`jobPostingAdmin.create.${applicant.assignedRole}`, applicant.assignedRole)}
+                    </p>
                   </div>
                 )}
               </div>
