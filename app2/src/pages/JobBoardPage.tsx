@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 import { useInfiniteJobPostings, JobPosting, TimeSlot, RoleRequirement } from '../hooks/useJobPostings';
+import { JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobPostingSkeleton from '../components/JobPostingSkeleton';
@@ -65,7 +66,7 @@ const JobBoardPage = () => {
   
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<JobPosting | null>(null);
-  const [selectedAssignment, setSelectedAssignment] = useState<{ timeSlot: string, role: string } | null>(null);
+    const [selectedAssignment, setSelectedAssignment] = useState<{ timeSlot: string, role: string, date?: string } | null>(null);
     
   useEffect(() => {
     if (!currentUser || !jobPostings) return;
@@ -200,6 +201,7 @@ const JobBoardPage = () => {
         appliedAt: serverTimestamp(),
         assignedRole: selectedAssignment.role,
         assignedTime: selectedAssignment.timeSlot,
+        assignedDate: selectedAssignment.date, // 일자별 다른 인원 요구사항의 경우 날짜 정보 저장
       });
 
       showSuccess(t('jobBoard.alerts.applicationSuccess'));
@@ -457,16 +459,41 @@ const JobBoardPage = () => {
                     <p className="text-sm text-gray-500 mb-1">
                                             {t('jobPostingAdmin.manage.date')}: {formattedStartDate} ~ {formattedEndDate}
                     </p>
-                    {post.timeSlots?.map((ts: TimeSlot, index: number) => (
-                      <div key={index} className="mt-2 pl-4 border-l-2 border-gray-200">
-                        <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
-                        <div className="text-sm text-gray-600">
-                          {ts.roles.map((r: RoleRequirement, i: number) => (
-                            <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
+                    {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
+                    {JobPostingUtils.hasDateSpecificRequirements(post) ? (
+                      /* 일자별 다른 인원 요구사항이 있는 경우 */
+                      post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
+                        <div key={dateIndex} className="mt-3">
+                          <div className="text-sm font-medium text-blue-600 mb-2">
+                            📅 {formatDate(dateReq.date)} 일정
+                          </div>
+                          {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                            <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 border-l-2 border-blue-200 bg-blue-50 rounded-r">
+                              <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
+                              <div className="text-sm text-gray-600">
+                                {ts.roles.map((r: RoleRequirement, roleIndex: number) => (
+                                  <span key={roleIndex} className="mr-4">
+                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
                           ))}
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      /* 기존 방식: 전체 기간 공통 timeSlots */
+                      post.timeSlots?.map((ts: TimeSlot, index: number) => (
+                        <div key={index} className="mt-2 pl-4 border-l-2 border-gray-200">
+                          <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
+                          <div className="text-sm text-gray-600">
+                            {ts.roles.map((r: RoleRequirement, i: number) => (
+                              <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
                     <p className="text-sm text-gray-500 mt-2">
                       {t('jobPostingAdmin.create.description')}: {post.description}
                     </p>
@@ -521,24 +548,59 @@ const JobBoardPage = () => {
                 <select
                   id="assignment"
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  value={selectedAssignment ? `${selectedAssignment.timeSlot}__${selectedAssignment.role}` : ''}
+                  value={selectedAssignment ? (
+                    selectedAssignment.date 
+                      ? `${selectedAssignment.date}__${selectedAssignment.timeSlot}__${selectedAssignment.role}`
+                      : `${selectedAssignment.timeSlot}__${selectedAssignment.role}`
+                  ) : ''}
                   onChange={(e) => {
-                    const [timeSlot, role] = e.target.value.split('__');
-                    setSelectedAssignment({ timeSlot, role });
+                    const parts = e.target.value.split('__');
+                    if (parts.length === 3) {
+                      // 일자별 다른 인원 요구사항: date__timeSlot__role
+                      const [date, timeSlot, role] = parts;
+                      setSelectedAssignment({ date, timeSlot, role });
+                    } else {
+                      // 기존 방식: timeSlot__role
+                      const [timeSlot, role] = parts;
+                      setSelectedAssignment({ timeSlot, role });
+                    }
                   }}
-                >
+                  >
                   <option value="" disabled>{t('jobBoard.applyModal.selectPlaceholder')}</option>
-                  {selectedPost.timeSlots?.flatMap((ts: TimeSlot) => 
-                    ts.roles.map((r: RoleRequirement) => {
-                      const value = `${ts.time}__${r.name}`;
-                      const confirmedCount = selectedPost.confirmedStaff?.filter(staff => staff.timeSlot === ts.time && staff.role === r.name).length || 0;
-                      const isFull = confirmedCount >= r.count;
-                      return (
-                        <option key={value} value={value} disabled={isFull}>
-                          {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} ({isFull ? t('jobBoard.applyModal.full') : `${confirmedCount}/${r.count}`})
-                        </option>
-                      );
-                    })
+                  {/* 일자별 다른 인원 요구사항이 있는 경우 */}
+                  {JobPostingUtils.hasDateSpecificRequirements(selectedPost) ? (
+                    selectedPost.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
+                      dateReq.timeSlots.flatMap((ts: TimeSlot) =>
+                        ts.roles.map((r: RoleRequirement) => {
+                          const value = `${dateReq.date}__${ts.time}__${r.name}`;
+                          const confirmedCount = selectedPost.confirmedStaff?.filter(staff => 
+                            staff.timeSlot === ts.time && 
+                            staff.role === r.name && 
+                            staff.date === dateReq.date
+                          ).length || 0;
+                          const isFull = confirmedCount >= r.count;
+                          return (
+                            <option key={value} value={value} disabled={isFull}>
+                              📅 {formatDate(dateReq.date)} - {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} ({isFull ? t('jobBoard.applyModal.full') : `${confirmedCount}/${r.count}`})
+                            </option>
+                          );
+                        })
+                      )
+                    )
+                  ) : (
+                    /* 기존 방식: 전체 기간 공통 timeSlots */
+                    selectedPost.timeSlots?.flatMap((ts: TimeSlot) => 
+                      ts.roles.map((r: RoleRequirement) => {
+                        const value = `${ts.time}__${r.name}`;
+                        const confirmedCount = selectedPost.confirmedStaff?.filter(staff => staff.timeSlot === ts.time && staff.role === r.name).length || 0;
+                        const isFull = confirmedCount >= r.count;
+                        return (
+                          <option key={value} value={value} disabled={isFull}>
+                            {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} ({isFull ? t('jobBoard.applyModal.full') : `${confirmedCount}/${r.count}`})
+                          </option>
+                        );
+                      })
+                    )
                   )}
                 </select>
               </div>

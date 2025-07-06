@@ -3,46 +3,14 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { JobPosting } from '../types/jobPosting';
+import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
 import ApplicantListTab from '../components/tabs/ApplicantListTab';
-// Placeholder tab components (ApplicantsTab replaced with ApplicantListTab)
+import StaffManagementTab from '../components/tabs/StaffManagementTab';
+import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
+import EventManagementTab from '../components/tabs/EventManagementTab';
+import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
+import { JobPostingProvider } from '../contexts/JobPostingContext';
 
-
-const StaffManagementTab: React.FC = () => (
-  <div className="p-6">
-    <h3 className="text-lg font-medium mb-4">스태프 관리</h3>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <p className="text-gray-600">스태프 관리 기능이 곧 추가될 예정입니다.</p>
-    </div>
-  </div>
-);
-
-const EventManagementTab: React.FC = () => (
-  <div className="p-6">
-    <h3 className="text-lg font-medium mb-4">이벤트 관리</h3>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <p className="text-gray-600">이벤트 관리 기능은 추후 개발 예정입니다.</p>
-    </div>
-  </div>
-);
-
-const ShiftManagementTab: React.FC<{ jobPosting?: JobPosting | null }> = ({ jobPosting }) => (
-  <div className="p-6">
-    <h3 className="text-lg font-medium mb-4">시프트 관리</h3>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <p className="text-gray-600">시프트 관리 기능이 곧 추가될 예정입니다.</p>
-    </div>
-  </div>
-);
-
-const PayrollTab: React.FC<{ jobPosting?: JobPosting | null }> = ({ jobPosting }) => (
-  <div className="p-6">
-    <h3 className="text-lg font-medium mb-4">급여 처리</h3>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <p className="text-gray-600">급여 처리 기능이 곧 추가될 예정입니다.</p>
-    </div>
-  </div>
-);
 
 type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
 
@@ -57,10 +25,10 @@ const tabs: TabConfig[] = [
   { id: 'staff', label: '스태프 관리', component: StaffManagementTab },
   { id: 'events', label: '이벤트 관리', component: EventManagementTab },
   { id: 'shifts', label: '시프트 관리', component: ShiftManagementTab },
-  { id: 'payroll', label: '급여 처리', component: PayrollTab },
+  { id: 'payroll', label: '급여 처리', component: PayrollProcessingTab },
 ];
 
-const JobPostingDetailPage: React.FC = () => {
+const JobPostingDetailPageContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -219,7 +187,37 @@ const JobPostingDetailPage: React.FC = () => {
             </div>
           </div>
           
-          {jobPosting.timeSlots && jobPosting.timeSlots.length > 0 && (
+          {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
+          {JobPostingUtils.hasDateSpecificRequirements(jobPosting) ? (
+            /* 일자별 다른 인원 요구사항이 있는 경우 */
+            <div className="mt-4">
+              <span className="font-medium text-gray-700">시간대 및 역할 (일자별 다른 인원 요구사항):</span>
+              <div className="mt-2 space-y-4">
+                {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
+                  <div key={dateIndex} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="text-sm font-medium text-blue-800 mb-3">
+                      📅 {formatDate(dateReq.date)} 일정
+                    </div>
+                    <div className="space-y-2">
+                      {dateReq.timeSlots.map((ts, tsIndex) => (
+                        <div key={`${dateIndex}-${tsIndex}`} className="pl-4 border-l-2 border-blue-300 bg-white rounded-r p-2">
+                          <p className="font-semibold text-gray-700">{ts.time}</p>
+                          <div className="text-sm text-gray-600">
+                            {ts.roles.map((role, roleIndex) => (
+                              <span key={roleIndex} className="mr-4">
+                                {role.name}: {role.count}명
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : jobPosting.timeSlots && jobPosting.timeSlots.length > 0 ? (
+            /* 기존 방식: 전체 기간 공통 timeSlots */
             <div className="mt-4">
               <span className="font-medium text-gray-700">시간대 및 역할:</span>
               <div className="mt-2 space-y-2">
@@ -237,7 +235,7 @@ const JobPostingDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
           
           {jobPosting.description && (
             <div className="mt-4">
@@ -274,6 +272,27 @@ const JobPostingDetailPage: React.FC = () => {
         <ActiveTabComponent jobPosting={jobPosting} />
       </div>
     </div>
+  );
+};
+
+const JobPostingDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+
+  if (!id) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-red-800 mb-2">오류 발생</h2>
+          <p className="text-red-600 mb-4">공고 ID가 필요합니다.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <JobPostingProvider jobPostingId={id}>
+      <JobPostingDetailPageContent />
+    </JobPostingProvider>
   );
 };
 
