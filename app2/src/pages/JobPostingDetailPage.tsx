@@ -4,16 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { JobPosting } from '../types/jobPosting';
+import ApplicantListTab from '../components/tabs/ApplicantListTab';
+// Placeholder tab components (ApplicantsTab replaced with ApplicantListTab)
 
-// Placeholder tab components
-const ApplicantsTab: React.FC = () => (
-  <div className="p-6">
-    <h3 className="text-lg font-medium mb-4">지원자 목록</h3>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <p className="text-gray-600">지원자 목록 기능이 곧 추가될 예정입니다.</p>
-    </div>
-  </div>
-);
 
 const StaffManagementTab: React.FC = () => (
   <div className="p-6">
@@ -33,16 +26,16 @@ const EventManagementTab: React.FC = () => (
   </div>
 );
 
-const ShiftManagementTab: React.FC = () => (
+const ShiftManagementTab: React.FC<{ jobPosting?: JobPosting | null }> = ({ jobPosting }) => (
   <div className="p-6">
     <h3 className="text-lg font-medium mb-4">시프트 관리</h3>
     <div className="bg-gray-50 p-4 rounded-lg">
-      <p className="text-gray-600">시프트 관리 기능은 추후 개발 예정입니다.</p>
+      <p className="text-gray-600">시프트 관리 기능이 곧 추가될 예정입니다.</p>
     </div>
   </div>
 );
 
-const PayrollTab: React.FC = () => (
+const PayrollTab: React.FC<{ jobPosting?: JobPosting | null }> = ({ jobPosting }) => (
   <div className="p-6">
     <h3 className="text-lg font-medium mb-4">급여 처리</h3>
     <div className="bg-gray-50 p-4 rounded-lg">
@@ -56,11 +49,11 @@ type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
 interface TabConfig {
   id: TabType;
   label: string;
-  component: React.FC;
+  component: React.FC<{ jobPosting?: JobPosting | null }>;
 }
 
 const tabs: TabConfig[] = [
-  { id: 'applicants', label: '지원자 목록', component: ApplicantsTab },
+  { id: 'applicants', label: '지원자 목록', component: ApplicantListTab },
   { id: 'staff', label: '스태프 관리', component: StaffManagementTab },
   { id: 'events', label: '이벤트 관리', component: EventManagementTab },
   { id: 'shifts', label: '시프트 관리', component: ShiftManagementTab },
@@ -151,7 +144,7 @@ const JobPostingDetailPage: React.FC = () => {
   }, [id]);
 
   // Get active tab component
-  const ActiveTabComponent = tabs.find(tab => tab.id === activeTab)?.component || ApplicantsTab;
+  const ActiveTabComponent = tabs.find(tab => tab.id === activeTab)?.component || ApplicantListTab;
 
   if (loading) {
     return (
@@ -278,7 +271,7 @@ const JobPostingDetailPage: React.FC = () => {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg shadow-md">
-        <ActiveTabComponent />
+        <ActiveTabComponent jobPosting={jobPosting} />
       </div>
     </div>
   );
