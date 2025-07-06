@@ -192,9 +192,12 @@ const StaffListPage: React.FC = () => {
         setStaffData(staffList);
 
         // JobPostings 정보는 필터링을 위해서만 최소한으로 가져옵니다.
+        console.log('🔍 구인공고 가져오기 시작 - 현재 사용자 ID:', currentUser.uid);
         const postingsQuery = query(collection(db, 'jobPostings'), where('managerId', '==', currentUser.uid));
         const postingsSnapshot = await getDocs(postingsQuery);
+        console.log('🔍 구인공고 결과 개수:', postingsSnapshot.size);
         const postingsData = postingsSnapshot.docs.map(doc => ({ id: doc.id, title: doc.data().title }));
+        console.log('🔍 구인공고 데이터:', postingsData);
         setJobPostings(postingsData);
 
       } catch (e) {
@@ -728,9 +731,13 @@ const StaffListPage: React.FC = () => {
           onChange={(e) => setFilterPostId(e.target.value)}
         >
           <option value="">구인공고 ({t('common.all', 'All')})</option>
-          {jobPostings.map(post => (
-            <option key={post.id} value={post.id}>{post.title}</option>
-          ))}
+          {jobPostings.length > 0 ? (
+            jobPostings.map(post => (
+              <option key={post.id} value={post.id}>{post.title}</option>
+            ))
+          ) : (
+            <option disabled>구인공고가 없습니다</option>
+          )}
         </select>
         <select
           className="w-full md:w-1/3 p-2 border border-gray-300 rounded-md"

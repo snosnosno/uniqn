@@ -100,7 +100,7 @@ export const setupTestData = async () => {
 };
 
 export const promoteToStaff = async (userId: string, userName: string, jobRole: string, postingId: string, managerId: string) => {
-  console.log('?�� promoteToStaff ?�수 ?�출:', { userId, userName, jobRole, postingId, managerId });
+  console.log('🚀 promoteToStaff function called:', { userId, userName, jobRole, postingId, managerId });
   
   if (!userId || !jobRole || !userName || !postingId || !managerId) {
     console.error("User ID, User Name, Job Role, Posting ID, and Manager ID are required to promote to staff.");
@@ -110,10 +110,10 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
   const staffRef = doc(db, 'staff', userId);
   
   try {
-    console.log('?�� staff 문서 ?�인 ?�도:', userId);
+    console.log('🔍 Checking existing staff document for:', userId);
     const staffSnap = await getDoc(staffRef);
     if (!staffSnap.exists()) {
-      console.log('???�로??staff 문서 ?�성 ?�도');
+      console.log('🎆 Creating new staff document');
       await setDoc(staffRef, {
         name: userName,
         userRole: 'staff',
@@ -123,10 +123,10 @@ export const promoteToStaff = async (userId: string, userName: string, jobRole: 
         managerId: managerId,
         postingId: postingId,
       });
-      console.log(`??New staff document created for user: ${userName} (${userId}) with role: ${jobRole}`);
-    } else {
-      console.log('?�� 기존 staff 문서 ?�데?�트 ?�도');
-      // ?�태??문서가 ?�으�?jobRole �??�벤??참여 ?�력 ?�데?�트
+      console.log(`✅ New staff document created for user: ${userName} (${userId}) with role: ${jobRole}`);
+      } else {
+      console.log('🔄 Updating existing staff document');
+      // Update existing staff document with new job role and event assignment
       await updateDoc(staffRef, {
         jobRole: arrayUnion(jobRole),
         assignedEvents: arrayUnion(postingId)
