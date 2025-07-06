@@ -5,7 +5,16 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db, promoteToStaff } from '../firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { useAuth } from '../contexts/AuthContext';
+import DateDropdownSelector from '../components/DateDropdownSelector';
+
+// Import centralized type definitions
+import { 
+  RoleRequirement, 
+  TimeSlot, 
+  ConfirmedStaff,
+  JobPostingUtils 
+} from '../types/jobPosting';
 
 interface Applicant {
     id: string;
@@ -20,32 +29,15 @@ interface Applicant {
     age?: number;
     experience?: string;
 }
-
-interface RoleRequirement {
-    name: string;
-    count: number;
-}
-
-interface TimeSlot {
-    time: string;
-    roles: RoleRequirement[];
-}
-
-interface ConfirmedStaff {
-    userId: string;
-    role: string;
-    timeSlot: string;
-}
-
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth(); // Get current user
+  const { currentUser } = useAuth();
   const jobPostingsQuery = useMemo(() => query(collection(db, 'jobPostings')), []);
   const [jobPostingsSnap, loading] = useCollection(jobPostingsQuery);
   const jobPostings = useMemo(() => jobPostingsSnap?.docs.map(d => ({ id: d.id, ...d.data() })), [jobPostingsSnap]);
-
+  
   const getTodayString = () => new Date().toISOString().split('T')[0];
-
+  
   const initialTimeSlot = { time: '09:00', roles: [{ name: 'dealer', count: 1 }] };
   const [formData, setFormData] = useState({
     title: '',
@@ -166,6 +158,37 @@ const JobPostingAdminPage = () => {
       console.error('Error converting date to string:', error, dateInput);
       return '';
     }
+  };
+
+  // DateDropdownSelector 호환성을 위한 변환 함수들
+  const dateStringToDropdownValue = (dateString: string): { year?: string; month?: string; day?: string } => {
+    if (!dateString) return {};
+    
+    try {
+      const [year, month, day] = dateString.split('-');
+      return {
+        year: year || '',
+        month: month || '',
+        day: day || ''
+      };
+    } catch (error) {
+      console.error('Error converting date string to dropdown value:', error, dateString);
+      return {};
+    }
+  };
+
+  const dropdownValueToDateString = (value: { year?: string; month?: string; day?: string }): string => {
+    const { year, month, day } = value;
+    
+    if (!year || !month || !day) {
+      return '';
+    }
+    
+    // Ensure proper formatting with leading zeros
+    const formattedMonth = month.padStart(2, '0');
+    const formattedDay = day.padStart(2, '0');
+    
+    return `${year}-${formattedMonth}-${formattedDay}`;
   };
 
   const convertToTimestamp = (dateInput: any): any => {
@@ -610,12 +633,20 @@ const JobPostingAdminPage = () => {
   
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
-                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.startDate')}</label>
-                    <input type="date" name="startDate" id="startDate" value={formData.startDate} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <DateDropdownSelector
+                        value={dateStringToDropdownValue(formData.startDate)}
+                        onChange={(value) => setFormData(prev => ({ ...prev, startDate: dropdownValueToDateString(value) }))}
+                        label={t('jobPostingAdmin.create.startDate')}
+                        className="mt-1"
+                    />
                 </div>
                 <div>
-                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.endDate')}</label>
-                    <input type="date" name="endDate" id="endDate" value={formData.endDate} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <DateDropdownSelector
+                        value={dateStringToDropdownValue(formData.endDate)}
+                        onChange={(value) => setFormData(prev => ({ ...prev, endDate: dropdownValueToDateString(value) }))}
+                        label={t('jobPostingAdmin.create.endDate')}
+                        className="mt-1"
+                    />
                 </div>
             </div>
   
@@ -779,12 +810,20 @@ const JobPostingAdminPage = () => {
                         </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div>
-                                <label htmlFor="edit-startDate" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.startDate')}</label>
-                                <input type="date" id="edit-startDate" value={currentPost.startDate} onChange={(e) => setCurrentPost({...currentPost, startDate: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <DateDropdownSelector
+                                    value={dateStringToDropdownValue(currentPost.startDate)}
+                                    onChange={(value) => setCurrentPost({...currentPost, startDate: dropdownValueToDateString(value)})}
+                                    label={t('jobPostingAdmin.edit.startDate')}
+                                    className="mt-1"
+                                />
                             </div>
                             <div>
-                                <label htmlFor="edit-endDate" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.endDate')}</label>
-                                <input type="date" id="edit-endDate" value={currentPost.endDate} onChange={(e) => setCurrentPost({...currentPost, endDate: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <DateDropdownSelector
+                                    value={dateStringToDropdownValue(currentPost.endDate)}
+                                    onChange={(value) => setCurrentPost({...currentPost, endDate: dropdownValueToDateString(value)})}
+                                    label={t('jobPostingAdmin.edit.endDate')}
+                                    className="mt-1"
+                                />
                             </div>
                         </div>
                         
