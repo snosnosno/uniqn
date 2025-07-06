@@ -45,7 +45,8 @@ interface StaffData {
   notes?: string;
   postingId: string;
   postingTitle: string;
-}
+  assignedEvents?: string[]; // 스태프가 등록된 모든 공고 ID 배열
+  }
 
 interface UserData {
   id: string;
@@ -205,7 +206,7 @@ const StaffListPage: React.FC = () => {
           let postingTitles: string[] = [];
           
           if (staff.assignedEvents && Array.isArray(staff.assignedEvents)) {
-            postingTitles = staff.assignedEvents.map(eventId => {
+            postingTitles = staff.assignedEvents.map((eventId: string) => {
               const posting = postingsData.find(p => p.id === eventId);
               return posting ? posting.title : `공고 ${eventId}`;
             });
