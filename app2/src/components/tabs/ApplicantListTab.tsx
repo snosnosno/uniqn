@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, runTransaction, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, runTransaction, getDoc } from 'firebase/firestore';
 import { db, promoteToStaff } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement } from '../../types/jobPosting';
@@ -291,6 +291,64 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     );
   };
 
+  // 확정 취소 핸들러 함수
+  const handleCancelConfirmation = async (applicant: Applicant) => {
+    if (!jobPosting) return;
+
+    // 확정 취소 확인 대화상자
+    const confirmed = window.confirm(
+      `${applicant.applicantName}님의 확정을 취소하시겠습니까?\n\n취소 시 다음 작업이 수행됩니다:\n• 지원자 상태가 '지원함'으로 변경됩니다\n• 할당된 역할/시간/날짜가 초기화됩니다\n• 확정 스태프 목록에서 제거됩니다`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
+      const applicationRef = doc(db, "applications", applicant.id);
+
+      await runTransaction(db, async (transaction) => {
+        // 1. applications 컬렉션에서 상태 및 할당 정보 초기화
+        transaction.update(applicationRef, {
+          status: 'applied',
+          assignedRole: null,
+          assignedTime: null,
+          assignedDate: null,
+          assignedRoles: null,
+          assignedTimes: null,
+          assignedDates: null,
+          confirmedAt: null,
+          cancelledAt: new Date()
+        });
+
+        // 2. jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거
+        if (jobPosting.confirmedStaff && jobPosting.confirmedStaff.length > 0) {
+          const staffEntriesToRemove = jobPosting.confirmedStaff.filter(
+            (staff: any) => staff.userId === applicant.applicantId
+          );
+
+          // 각 항목을 개별적으로 제거
+          staffEntriesToRemove.forEach((staffEntry: any) => {
+            transaction.update(jobPostingRef, {
+              confirmedStaff: arrayRemove(staffEntry)
+            });
+          });
+        }
+      });
+
+      console.log(`✅ 지원자 확정 취소 완료: ${applicant.applicantName}`);
+      
+      // 3. 성공 알림
+      alert(`${applicant.applicantName}님의 확정이 취소되었습니다.`);
+
+      // 4. 지원자 목록 새로고침
+      loadApplicants(jobPosting.id);
+
+    } catch (error) {
+      console.error('Error cancelling confirmation:', error);
+      alert('확정 취소 중 오류가 발생했습니다.');
+    }
+  };
+
   // Early return if no job posting data
   if (!jobPosting) {
     return (
@@ -372,7 +430,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                   </span>
                                 )}
                                 <span className="mr-2">⏰ {selection.time}</span>
-                                <span>👤 {t(`jobPostingAdmin.create.${selection.role}`, selection.role)}</span>
+                                                                   <span>👤 {selection.role ? t(`jobPostingAdmin.create.${selection.role}`) : selection.role}</span>
                               </div>
                             ))}
                           </div>
@@ -495,15 +553,48 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                   );
                 })()}
                 
-                {applicant.status === 'confirmed' && applicant.assignedRole && applicant.assignedTime && (
-                  <div className="ml-4 text-sm text-green-600">
-                    <p className="font-medium">{t('jobPostingAdmin.applicants.confirmed')}</p>
-                    <p>
-                      {applicant.assignedDate && (
-                        <span className="text-blue-600 font-medium">📅 {applicant.assignedDate} | </span>
-                      )}
-                      {applicant.assignedTime} - {t(`jobPostingAdmin.create.${applicant.assignedRole}`, applicant.assignedRole)}
-                    </p>
+                {applicant.status === 'confirmed' && (
+                  <div className="ml-4 text-sm space-y-2">
+                    <div className="text-green-600">
+                      <p className="font-medium">{t('jobPostingAdmin.applicants.confirmed')}</p>
+                      {(() => {
+                        // 확정된 지원자의 선택 정보 표시
+                        const confirmedSelections = getApplicantSelections(applicant);
+                        if (confirmedSelections.length > 0) {
+                          return (
+                            <div className="space-y-1">
+                              {confirmedSelections.map((selection, index) => (
+                                <div key={index} className="flex items-center space-x-2">
+                                  {selection.date && (
+                                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                                      📅 {formatDate(selection.date)}
+                                    </span>
+                                  )}
+                                  <span>⏰ {selection.time}</span>
+                                  <span>👤 {t(`jobPostingAdmin.create.${selection.role}`, selection.role)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        
+                        // 기존 단일 선택 지원자 표시 (하위 호환성)
+                        return (
+                          <p>
+                            {applicant.assignedDate && (
+                              <span className="text-blue-600 font-medium">📅 {applicant.assignedDate} | </span>
+                            )}
+                            {applicant.assignedTime} - {applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`) : applicant.assignedRole}
+                          </p>
+                        );
+                      })()}
+                    </div>
+                    <button 
+                      onClick={() => handleCancelConfirmation(applicant)}
+                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium"
+                    >
+                      ❌ 확정 취소
+                    </button>
                   </div>
                 )}
               </div>
