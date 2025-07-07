@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, runTrans
 import { db, promoteToStaff } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement } from '../../types/jobPosting';
-// Applicant interface (extracted from JobPostingAdminPage)
+// Applicant interface (extended for multiple selections)
 interface Applicant {
   id: string;
   applicantName: string;
@@ -20,6 +20,11 @@ interface Applicant {
   assignedDate?: string;    // 할당된 날짜 (yyyy-MM-dd 형식)
   email?: string;
   phoneNumber?: string;
+  
+  // 다중 선택 지원을 위한 새로운 필드들 (하위 호환성을 위해 선택적)
+  assignedRoles?: string[];   // 선택한 역할들
+  assignedTimes?: string[];   // 선택한 시간들
+  assignedDates?: string[];   // 선택한 날짜들
 }
 
 interface ApplicantListTabProps {
@@ -183,6 +188,59 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
 
 
 
+  // 다중 선택 지원 헬퍼 함수들
+  const hasMultipleSelections = (applicant: Applicant): boolean => {
+    return !!(applicant.assignedRoles?.length || 
+              applicant.assignedTimes?.length || 
+              applicant.assignedDates?.length);
+  };
+  
+  const formatDate = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+  
+  const getApplicantSelections = (applicant: Applicant) => {
+    // 다중 선택이 있는 경우
+    if (hasMultipleSelections(applicant)) {
+      const selections = [];
+      const maxLength = Math.max(
+        applicant.assignedRoles?.length || 0,
+        applicant.assignedTimes?.length || 0,
+        applicant.assignedDates?.length || 0
+      );
+      
+      for (let i = 0; i < maxLength; i++) {
+        selections.push({
+          role: applicant.assignedRoles?.[i] || '',
+          time: applicant.assignedTimes?.[i] || '',
+          date: applicant.assignedDates?.[i] || ''
+        });
+      }
+      return selections;
+    }
+    
+    // 기존 단일 선택 방식
+    if (applicant.assignedRole && applicant.assignedTime) {
+      return [{
+        role: applicant.assignedRole,
+        time: applicant.assignedTime,
+        date: applicant.assignedDate || ''
+      }];
+    }
+    
+    return [];
+  };
+
   const handleAssignmentChange = (applicantId: string, value: string) => {
     // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
     const parts = value.split('__');
@@ -263,53 +321,141 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                     {applicant.email && <p><span className="font-medium">{t('profile.email')}:</span> {applicant.email}</p>}
                     {applicant.phoneNumber && <p><span className="font-medium">{t('profile.phone')}:</span> {applicant.phoneNumber}</p>}
                   </div>
+                  {/* 지원자가 선택한 시간대들 표시 */}
+                  {(() => {
+                    const selections = getApplicantSelections(applicant);
+                    if (selections.length > 0) {
+                      return (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <p className="font-medium text-blue-800 mb-2">
+                            {hasMultipleSelections(applicant) 
+                              ? `🎯 지원한 시간대 (${selections.length}개):` 
+                              : '🎯 지원한 시간대:'}
+                          </p>
+                          <div className="space-y-1">
+                            {selections.map((selection, index) => (
+                              <div key={index} className="text-sm text-blue-700 flex items-center">
+                                {selection.date && (
+                                  <span className="inline-flex items-center px-2 py-1 mr-2 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                                    📅 {formatDate(selection.date)}
+                                  </span>
+                                )}
+                                <span className="mr-2">⏰ {selection.time}</span>
+                                <span>👤 {t(`jobPostingAdmin.create.${selection.role}`, selection.role)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
-                {applicant.status === 'applied' && (
-                  <div className="ml-4 flex items-center space-x-2">
-                    <select
-                      value={
-                        selectedAssignment[applicant.id] 
-                          ? selectedAssignment[applicant.id].date 
-                            ? `${selectedAssignment[applicant.id].date}__${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
-                            : `${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
-                          : ''
-                      }
-                      onChange={(e) => handleAssignmentChange(applicant.id, e.target.value)}
-                      className="text-sm border border-gray-300 rounded px-2 py-1"
-                    >
-                      <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
-                      
-                      {/* 날짜별 요구사항 */}
-                      {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
-                        dateReq.timeSlots.flatMap((ts: TimeSlot) =>
+                {applicant.status === 'applied' && (() => {
+                  const selections = getApplicantSelections(applicant);
+                  
+                  // 다중 선택이 있는 경우 - 선택한 옵션들만 표시
+                  if (selections.length > 0) {
+                    return (
+                      <div className="ml-4 space-y-3">
+                        <div className="text-sm font-medium text-gray-700 mb-2">
+                          🎯 확정할 시간대 선택 ({selections.length}개 옵션 중 1개):
+                        </div>
+                        <div className="space-y-2">
+                          {selections.map((selection, index) => {
+                            const optionValue = selection.date 
+                              ? `${selection.date}__${selection.time}__${selection.role}`
+                              : `${selection.time}__${selection.role}`;
+                            const isSelected = selectedAssignment[applicant.id] && 
+                              selectedAssignment[applicant.id].timeSlot === selection.time &&
+                              selectedAssignment[applicant.id].role === selection.role &&
+                              (selectedAssignment[applicant.id].date || '') === (selection.date || '');
+                              
+                            return (
+                              <label key={index} className={`flex items-center p-2 border rounded cursor-pointer ${
+                                isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}>
+                                <input
+                                  type="radio"
+                                  name={`assignment-${applicant.id}`}
+                                  checked={isSelected}
+                                  onChange={() => handleAssignmentChange(applicant.id, optionValue)}
+                                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                                />
+                                <div className="ml-3 flex-1">
+                                  <div className="flex items-center space-x-2 text-sm">
+                                    {selection.date && (
+                                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                                        📅 {formatDate(selection.date)}
+                                      </span>
+                                    )}
+                                    <span className="text-gray-700">⏰ {selection.time}</span>
+                                    <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`, selection.role)}</span>
+                                  </div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <button 
+                          onClick={() => handleConfirmApplicant(applicant)}
+                          className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          disabled={!selectedAssignment[applicant.id] || !selectedAssignment[applicant.id].timeSlot || !selectedAssignment[applicant.id].role}
+                        >
+                          ✓ 선택한 시간대로 확정
+                        </button>
+                      </div>
+                    );
+                  }
+                  
+                  // 다중 선택이 없는 경우 - 기존 방식 유지
+                  return (
+                    <div className="ml-4 flex items-center space-x-2">
+                      <select
+                        value={
+                          selectedAssignment[applicant.id] 
+                            ? selectedAssignment[applicant.id].date 
+                              ? `${selectedAssignment[applicant.id].date}__${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
+                              : `${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
+                            : ''
+                        }
+                        onChange={(e) => handleAssignmentChange(applicant.id, e.target.value)}
+                        className="text-sm border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
+                        
+                        {/* 날짜별 요구사항 */}
+                        {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
+                          dateReq.timeSlots.flatMap((ts: TimeSlot) =>
+                            ts.roles.map((r: RoleRequirement) => (
+                              <option key={`${dateReq.date}-${ts.time}-${r.name}`} value={`${dateReq.date}__${ts.time}__${r.name}`}>
+                                📅 {dateReq.date} | {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
+                              </option>
+                            ))
+                          )
+                        )}
+                        
+                        {/* 기존 방식 timeSlots */}
+                        {jobPosting?.timeSlots?.flatMap((ts: TimeSlot) => 
                           ts.roles.map((r: RoleRequirement) => (
-                            <option key={`${dateReq.date}-${ts.time}-${r.name}`} value={`${dateReq.date}__${ts.time}__${r.name}`}>
-                              📅 {dateReq.date} | {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
+                            <option key={`${ts.time}-${r.name}`} value={`${ts.time}__${r.name}`}>
+                              {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
                             </option>
                           ))
-                        )
-                      )}
-                      
-                      {/* 기존 방식 timeSlots */}
-                      {jobPosting?.timeSlots?.flatMap((ts: TimeSlot) => 
-                        ts.roles.map((r: RoleRequirement) => (
-                          <option key={`${ts.time}-${r.name}`} value={`${ts.time}__${r.name}`}>
-                            {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    <button 
-                      onClick={() => handleConfirmApplicant(applicant)}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                      disabled={!selectedAssignment[applicant.id] || !selectedAssignment[applicant.id].timeSlot || !selectedAssignment[applicant.id].role}
-                    >
-                      {t('jobPostingAdmin.applicants.confirm')}
-                    </button>
-                  </div>
-                )}
-
+                        )}
+                      </select>
+                      <button 
+                        onClick={() => handleConfirmApplicant(applicant)}
+                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                        disabled={!selectedAssignment[applicant.id] || !selectedAssignment[applicant.id].timeSlot || !selectedAssignment[applicant.id].role}
+                      >
+                        {t('jobPostingAdmin.applicants.confirm')}
+                      </button>
+                    </div>
+                  );
+                })()}
+                
                 {applicant.status === 'confirmed' && applicant.assignedRole && applicant.assignedTime && (
                   <div className="ml-4 text-sm text-green-600">
                     <p className="font-medium">{t('jobPostingAdmin.applicants.confirmed')}</p>
