@@ -291,7 +291,8 @@ const JobBoardPage = () => {
       // 기존 호환성을 위해 첫 번째 선택값 사용
       const firstSelection = selectedAssignments[0];
       
-      await addDoc(collection(db, 'applications'), {
+      // Firebase용 데이터 객체 구성 (undefined 값 제거)
+      const applicationData: any = {
         applicantId: currentUser.uid,
         applicantName: staffDoc.data().name || t('jobBoard.unknownApplicant'),
         postId: selectedPost.id,
@@ -302,13 +303,22 @@ const JobBoardPage = () => {
         // 기존 단일 선택 필드 (하위 호환성)
         assignedRole: firstSelection.role,
         assignedTime: firstSelection.timeSlot,
-        assignedDate: firstSelection.date,
         
         // 새로운 다중 선택 필드
         assignedRoles: assignedRoles,
         assignedTimes: assignedTimes,
-        assignedDates: assignedDates.length > 0 ? assignedDates : undefined,
-      });
+      };
+
+      // 조건부로 필드 추가 (undefined 방지)
+      if (firstSelection.date) {
+        applicationData.assignedDate = firstSelection.date;
+      }
+      
+      if (assignedDates.length > 0) {
+        applicationData.assignedDates = assignedDates;
+      }
+
+      await addDoc(collection(db, 'applications'), applicationData);
 
       showSuccess(`지원이 완료되었습니다! (선택한 항목: ${selectedAssignments.length}개)`);
       setAppliedJobs(prev => new Map(prev).set(selectedPost.id, 'applied'));
