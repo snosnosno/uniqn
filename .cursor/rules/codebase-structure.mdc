@@ -100,8 +100,6 @@ graph TB
 2. **Manager** (매니저): 이벤트 및 스태프 관리
 3. **Staff** (스태프): 개인 업무 및 출석 관리
 
-> **중요**: 기존 "Dealer" 역할은 "Staff"로 마이그레이션되었습니다. 코드에서는 `role: 'staff'`로 사용되지만, 일부 디렉토리명(예: `pages/dealer/`)은 아직 기존 이름을 유지하고 있습니다.
-
 ### 권한 체계 (Mermaid)
 ```mermaid
 graph TB

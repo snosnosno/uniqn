@@ -48,7 +48,7 @@ import DealerRotationPage from './pages/DealerRotationPage';
 import UserManagementPage from './pages/admin/UserManagementPage'; // Import the new page
 
 // Dealer Pages
-import DealerEventsListPage from './pages/dealer/DealerEventsListPage';
+import DealerEventsListPage from './pages/staff/DealerEventsListPage';
 
 // A component to handle role-based redirection
 const HomeRedirect: React.FC = () => {

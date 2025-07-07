@@ -76,7 +76,7 @@ export class MigrationUtils {
   static isLegacyApplication(applicant: Applicant): boolean {
     this.log(LogLevel.DEBUG, 'Checking if application is legacy format', { applicantId: applicant.id });
     
-    const hasLegacyFields = !!(applicant.assignedRole && applicant.assignedTime);
+    const hasLegacyFields = !!(applicant.role && applicant.timeSlot);
     const hasNewFields = !!(applicant.assignedRoles?.length || 
                            applicant.assignedTimes?.length || 
                            applicant.assignedDates?.length);
@@ -117,8 +117,8 @@ export class MigrationUtils {
       }
 
       // 단일 선택 데이터 검증
-      if (!applicant.assignedRole || !applicant.assignedTime) {
-        const error = 'Invalid legacy data: missing assignedRole or assignedTime';
+      if (!applicant.role || !applicant.timeSlot) {
+        const error = 'Invalid legacy data: missing role or timeSlot';
         this.log(LogLevel.ERROR, error, { applicant });
         return {
           success: false,
@@ -131,16 +131,16 @@ export class MigrationUtils {
       // 새로운 형식으로 변환
       const convertedApplicant: Applicant = {
         ...applicant,
-        assignedRoles: [applicant.assignedRole],
-        assignedTimes: [applicant.assignedTime],
+        assignedRoles: [applicant.role],
+        assignedTimes: [applicant.timeSlot],
         assignedDates: applicant.assignedDate ? [applicant.assignedDate] : []
       };
 
       this.log(LogLevel.INFO, 'Successfully converted single to multiple selection', {
         applicantId: applicant.id,
         original: {
-          role: applicant.assignedRole,
-          time: applicant.assignedTime,
+          role: applicant.role,
+          time: applicant.timeSlot,
           date: applicant.assignedDate
         },
         converted: {
@@ -242,8 +242,8 @@ export class MigrationUtils {
       // 단일 선택 형식으로 변환
       const convertedApplicant: Applicant = {
         ...applicant,
-        assignedRole: firstRole,
-        assignedTime: firstTime,
+        role: firstRole,
+        timeSlot: firstTime,
         assignedDate: firstDate || undefined
       };
 
@@ -256,8 +256,8 @@ export class MigrationUtils {
         },
         converted: {
           role: firstRole,
-          time: firstTime,
-          date: firstDate
+          timeSlot: firstTime,
+          assignedDate: firstDate
         }
       });
 
