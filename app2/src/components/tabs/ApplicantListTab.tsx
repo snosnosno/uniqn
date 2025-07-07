@@ -297,7 +297,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
 
     // 확정 취소 확인 대화상자
     const confirmed = window.confirm(
-      `${applicant.applicantName}님의 확정을 취소하시겠습니까?\n\n취소 시 다음 작업이 수행됩니다:\n• 지원자 상태가 '지원함'으로 변경됩니다\n• 할당된 역할/시간/날짜가 초기화됩니다\n• 확정 스태프 목록에서 제거됩니다`
+      `${applicant.applicantName}님의 확정을 취소하시겠습니까?\n\n취소 시 다음 작업이 수행됩니다:\n• 지원자 상태가 '지원함'으로 변경됩니다\n• 원래 지원한 시간대는 유지됩니다\n• 확정 스태프 목록에서 제거됩니다\n• 다시 확정 선택이 가능해집니다`
     );
 
     if (!confirmed) return;
@@ -307,17 +307,18 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       const applicationRef = doc(db, "applications", applicant.id);
 
       await runTransaction(db, async (transaction) => {
-        // 1. applications 컬렉션에서 상태 및 할당 정보 초기화
+        // 1. applications 컬렉션에서 상태 변경 (원래 지원 정보는 유지)
         transaction.update(applicationRef, {
           status: 'applied',
+          // 확정 시 추가된 단일 선택 필드들은 제거
           assignedRole: null,
           assignedTime: null,
           assignedDate: null,
-          assignedRoles: null,
-          assignedTimes: null,
-          assignedDates: null,
+          // 확정 관련 필드 제거
           confirmedAt: null,
           cancelledAt: new Date()
+          // 원래 지원 정보(assignedRoles[], assignedTimes[], assignedDates[])는 유지
+          // 이것들이 체크박스에 표시되는 원본 데이터입니다
         });
 
         // 2. jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거
