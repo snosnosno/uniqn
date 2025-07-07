@@ -17,10 +17,15 @@ const JobBoardPage = () => {
   const { currentUser } = useAuth();
   const { showSuccess, showError, showInfo, showWarning } = useToast();
   
-
+  // 탭 상태 관리
+  const [activeTab, setActiveTab] = useState<'jobs' | 'myApplications'>('jobs');
 
   const [appliedJobs, setAppliedJobs] = useState<Map<string, string>>(new Map());
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  
+  // 내 지원 현황 데이터
+  const [myApplications, setMyApplications] = useState<any[]>([]);
+  const [loadingMyApplications, setLoadingMyApplications] = useState(false);
   
   
   
@@ -86,6 +91,70 @@ const JobBoardPage = () => {
 
     fetchAppliedJobs();
   }, [jobPostings, currentUser]);
+
+  // 내 지원 현황 가져오기
+  const fetchMyApplications = async () => {
+    if (!currentUser) return;
+    
+    setLoadingMyApplications(true);
+    try {
+      // 사용자의 모든 지원 내역 가져오기
+      const applicationsQuery = query(
+        collection(db, 'applications'), 
+        where('applicantId', '==', currentUser.uid)
+      );
+      const applicationsSnapshot = await getDocs(applicationsQuery);
+      
+      const applicationsData = await Promise.all(
+        applicationsSnapshot.docs.map(async (applicationDoc) => {
+          const applicationData = applicationDoc.data();
+          
+          // 해당 구인 정보 가져오기
+          try {
+            const jobPostingDoc = await getDoc(doc(db, 'jobPostings', applicationData.postId));
+            const jobPostingData = jobPostingDoc.exists() ? jobPostingDoc.data() : null;
+            
+            return {
+              id: applicationDoc.id,
+              ...applicationData,
+              jobPosting: jobPostingData ? {
+                id: jobPostingDoc.id,
+                ...jobPostingData
+              } : null
+            };
+          } catch (error) {
+            console.error('Error fetching job posting:', error);
+            return {
+              id: applicationDoc.id,
+              ...applicationData,
+              jobPosting: null
+            };
+          }
+        })
+      );
+      
+      // 최신 지원 순으로 정렬
+      applicationsData.sort((a, b) => {
+        const aDate = (a as any).appliedAt?.seconds || 0;
+        const bDate = (b as any).appliedAt?.seconds || 0;
+        return bDate - aDate;
+      });
+      
+      setMyApplications(applicationsData);
+    } catch (error) {
+      console.error('Error fetching my applications:', error);
+      showError('지원 현황을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingMyApplications(false);
+    }
+  };
+
+  // 탭 변경 시 데이터 로딩
+  useEffect(() => {
+    if (activeTab === 'myApplications' && currentUser) {
+      fetchMyApplications();
+    }
+  }, [activeTab, currentUser]);
   
   // Filter handlers
   const handleFilterChange = (key: string, value: string) => {
@@ -302,6 +371,30 @@ const JobBoardPage = () => {
     <JobBoardErrorBoundary>
       <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4">
         <h1 className="text-2xl font-bold mb-4">{t('jobBoard.title')}</h1>
+        
+        {/* 탭 네비게이션 */}
+        <div className="flex space-x-4 mb-6 border-b">
+          <button
+            onClick={() => setActiveTab('jobs')}
+            className={`pb-2 px-4 font-medium transition-colors ${
+              activeTab === 'jobs'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            구인 목록
+          </button>
+          <button
+            onClick={() => setActiveTab('myApplications')}
+            className={`pb-2 px-4 font-medium transition-colors ${
+              activeTab === 'myApplications'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            내 지원 현황
+          </button>
+        </div>
       
         {/* Error Handling */}
         {error && (
@@ -333,10 +426,11 @@ const JobBoardPage = () => {
         )}
       
         
-      
-      
-        {/* Filter Component */}
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        {/* 구인 목록 탭 */}
+        {activeTab === 'jobs' && (
+          <>
+            {/* Filter Component */}
+            <div className="bg-white p-4 rounded-lg shadow-md mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Location Filter */}
             <div>
@@ -721,17 +815,150 @@ const JobBoardPage = () => {
               </div>
               )}
         
-        {/* Infinite Scroll Loading Indicator */}
-        <div ref={loadMoreRef} className="flex justify-center py-4">
-          {isFetchingNextPage && (
-            <LoadingSpinner size="md" text="추가 공고를 불러오는 중..." />
-          )}
-          {!hasNextPage && jobPostings.length > 0 && (
-            <p className="text-gray-500 text-center py-4">
-              더 이상 공고가 없습니다.
-            </p>
-          )}
-        </div>
+            {/* Infinite Scroll Loading Indicator */}
+            <div ref={loadMoreRef} className="flex justify-center py-4">
+              {isFetchingNextPage && (
+                <LoadingSpinner size="md" text="추가 공고를 불러오는 중..." />
+              )}
+              {!hasNextPage && jobPostings.length > 0 && (
+                <p className="text-gray-500 text-center py-4">
+                  더 이상 공고가 없습니다.
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* 내 지원 현황 탭 */}
+        {activeTab === 'myApplications' && (
+          <div>
+            {loadingMyApplications ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner size="lg" text="지원 현황을 불러오는 중..." />
+              </div>
+            ) : myApplications.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-500 text-lg mb-2">📋</div>
+                <p className="text-gray-500 mb-4">아직 지원한 공고가 없습니다.</p>
+                <button
+                  onClick={() => setActiveTab('jobs')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  구인 공고 보러가기
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">내 지원 현황 ({myApplications.length}건)</h2>
+                  <button
+                    onClick={fetchMyApplications}
+                    disabled={loadingMyApplications}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-sm"
+                  >
+                    {loadingMyApplications ? '새로고침 중...' : '🔄 새로고침'}
+                  </button>
+                </div>
+                
+                {myApplications.map((application) => (
+                  <div key={application.id} className="bg-white rounded-lg shadow-md p-6 border">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {application.jobPosting?.title || '삭제된 공고'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          지원일: {formatDate(application.appliedAt)}
+                        </p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        application.status === 'confirmed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : application.status === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {application.status === 'confirmed' ? '✅ 확정' : 
+                         application.status === 'rejected' ? '❌ 미선정' : '⏳ 대기중'}
+                      </div>
+                    </div>
+
+                    {application.jobPosting && (
+                      <div className="mb-4 text-sm text-gray-600">
+                        <p>📍 {application.jobPosting.location}</p>
+                        <p>📅 {formatDate(application.jobPosting.startDate)} ~ {formatDate(application.jobPosting.endDate)}</p>
+                      </div>
+                    )}
+
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium text-gray-900 mb-3">지원한 시간대</h4>
+                      
+                      {/* 다중 선택 지원 정보 표시 */}
+                      {application.assignedRoles && application.assignedTimes ? (
+                        <div className="space-y-2">
+                          {application.assignedTimes.map((time: string, index: number) => (
+                            <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                {application.assignedDates && application.assignedDates[index] && (
+                                  <span className="text-blue-600 font-medium">📅 {application.assignedDates[index]} | </span>
+                                )}
+                                <span className="text-gray-700">⏰ {time}</span>
+                                {application.assignedRoles[index] && (
+                                                                     <span className="ml-2 text-gray-600">
+                                     - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRoles[index]}`, application.assignedRoles[index]))}
+                                   </span>
+                                )}
+                              </div>
+                              {application.status === 'confirmed' && (
+                                <span className="ml-2 text-green-600 text-sm font-medium">확정됨</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* 단일 선택 지원 정보 표시 (하위 호환성) */
+                        <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            {application.assignedDate && (
+                              <span className="text-blue-600 font-medium">📅 {application.assignedDate} | </span>
+                            )}
+                            <span className="text-gray-700">⏰ {application.assignedTime}</span>
+                                                         {application.assignedRole && (
+                               <span className="ml-2 text-gray-600">
+                                 - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRole}`, application.assignedRole))}
+                               </span>
+                             )}
+                          </div>
+                          {application.status === 'confirmed' && (
+                            <span className="ml-2 text-green-600 text-sm font-medium">확정됨</span>
+                          )}
+                        </div>
+                      )}
+
+                      {application.status === 'confirmed' && application.confirmedAt && (
+                        <p className="text-sm text-green-600 mt-2">
+                          ✅ 확정일: {formatDate(application.confirmedAt)}
+                        </p>
+                      )}
+                      
+                      {application.status === 'applied' && application.jobPosting && (
+                        <div className="mt-4 flex space-x-2">
+                          <button
+                            onClick={() => handleCancelApplication(application.postId)}
+                            disabled={isProcessing === application.postId}
+                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm"
+                          >
+                            {isProcessing === application.postId ? '취소 중...' : '지원 취소'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </JobBoardErrorBoundary>
   );
