@@ -37,7 +37,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: { timeSlot: string, role: string, date?: string } }>({});
+  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: Array<{ timeSlot: string, role: string, date?: string }> }>({});
 
   // Load applicants when component mounts or jobPosting changes
   useEffect(() => {
@@ -79,17 +79,10 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
 
       setApplicants(applicantsWithUserInfo);
       
-      // 초기 할당 상태 설정
-      const initialAssignments: { [key: string]: { timeSlot: string, role: string } } = {};
+      // 초기 할당 상태 설정 (다중 선택용 배열)
+      const initialAssignments: { [key: string]: Array<{ timeSlot: string, role: string, date?: string }> } = {};
       applicantsWithUserInfo.forEach(applicant => {
-        if (applicant.assignedTime && applicant.assignedRole) {
-          initialAssignments[applicant.id] = {
-            timeSlot: applicant.assignedTime,
-            role: applicant.assignedRole
-          };
-        } else {
-          initialAssignments[applicant.id] = { timeSlot: '', role: '' };
-        }
+        initialAssignments[applicant.id] = []; // 빈 배열로 초기화
       });
       setSelectedAssignment(initialAssignments);
 
@@ -102,42 +95,50 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   };
 
   const handleConfirmApplicant = async (applicant: Applicant) => {
-    const assignment = selectedAssignment[applicant.id];
-    if (!assignment || !assignment.timeSlot || !assignment.role) {
+    const assignments = selectedAssignment[applicant.id];
+    if (!assignments || assignments.length === 0) {
       alert(t('jobPostingAdmin.alerts.selectRoleToAssign'));
       return;
     }
     if (!jobPosting) return;
 
-    const { timeSlot, role, date } = assignment;
     const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
     const applicationRef = doc(db, "applications", applicant.id);
 
     try {
       await runTransaction(db, async (transaction) => {
-        // Update job posting with confirmed staff
-        transaction.update(jobPostingRef, {
-          confirmedStaff: arrayUnion({
-            userId: applicant.applicantId,
-            role: role,
-            timeSlot: timeSlot,
-            date: date || undefined  // 날짜 정보 추가
-          })
+        // Update job posting with all confirmed staff assignments
+        assignments.forEach(assignment => {
+          const { timeSlot, role, date } = assignment;
+          transaction.update(jobPostingRef, {
+            confirmedStaff: arrayUnion({
+              userId: applicant.applicantId,
+              role: role,
+              timeSlot: timeSlot,
+              date: date || undefined  // 날짜 정보 추가
+            })
+          });
         });
         
-        // Update application status
+        // Update application status with multiple assignments
         transaction.update(applicationRef, {
           status: 'confirmed',
-          assignedRole: role,
-          assignedTime: timeSlot,
-          assignedDate: date || undefined  // 지원자에게 할당된 날짜 저장
+          // 기존 단일 필드는 첫 번째 항목으로 설정 (하위 호환성)
+          assignedRole: assignments[0].role,
+          assignedTime: assignments[0].timeSlot,
+          assignedDate: assignments[0].date || undefined,
+          // 새로운 다중 선택 필드들
+          assignedRoles: assignments.map(a => a.role),
+          assignedTimes: assignments.map(a => a.timeSlot),
+          assignedDates: assignments.map(a => a.date).filter(d => d !== undefined)
         });
       });
 
-      console.log('지원자 확정 및 공고 업데이트 완료!');
+      console.log(`지원자 확정 및 공고 업데이트 완료! (${assignments.length}개 시간대)`);
       
-      // promoteToStaff 호출 (선택사항)
-      if (currentUser) {
+      // promoteToStaff 호출 - 첫 번째 assignment로 호출 (기존 함수 호환성)
+      if (currentUser && assignments.length > 0) {
+        const firstAssignment = assignments[0];
         // role 값을 적절한 JobRole 형식으로 변환
         const jobRoleMap: { [key: string]: string } = {
           'dealer': 'Dealer',
@@ -150,7 +151,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           'other': 'Other'
         };
         
-        const jobRole = jobRoleMap[role] || 'Other';
+        const jobRole = jobRoleMap[firstAssignment.role] || 'Other';
         
         await promoteToStaff(
           applicant.applicantId, 
@@ -158,15 +159,15 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           jobRole, 
           jobPosting.id, 
           currentUser.uid,
-          role,      // assignedRole - 지원자에서 확정된 역할
-          timeSlot,  // assignedTime - 지원자에서 확정된 시간
+          firstAssignment.role,      // assignedRole - 지원자에서 확정된 역할
+          firstAssignment.timeSlot,  // assignedTime - 지원자에서 확정된 시간
           applicant.email || '', // email 정보
-                    applicant.phoneNumber || ''  // phone 정보
+          applicant.phoneNumber || ''  // phone 정보
         );
         console.log('✅ promoteToStaff 성공!');
       }
       
-      alert(t('jobPostingAdmin.alerts.applicantConfirmSuccess'));
+      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${assignments.length}개 시간대 확정)`);
       
       // 새로운 통합 마감 로직 사용
       const jobPostingDoc = await getDoc(jobPostingRef);
@@ -241,7 +242,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     return [];
   };
 
-  const handleAssignmentChange = (applicantId: string, value: string) => {
+  // 다중 선택용 체크박스 토글 함수
+  const handleMultipleAssignmentToggle = (applicantId: string, value: string, isChecked: boolean) => {
     // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
     const parts = value.split('__');
     let timeSlot = '', role = '', date = '';
@@ -254,10 +256,39 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       [timeSlot, role] = parts;
     }
     
-    setSelectedAssignment(prev => ({
-      ...prev,
-      [applicantId]: { timeSlot: timeSlot || '', role: role || '', date: date || undefined }
-    }));
+    const newAssignment = { timeSlot: timeSlot || '', role: role || '', date: date || undefined };
+    
+    setSelectedAssignment(prev => {
+      const currentAssignments = prev[applicantId] || [];
+      
+      if (isChecked) {
+        // 체크됨: 배열에 추가
+        return {
+          ...prev,
+          [applicantId]: [...currentAssignments, newAssignment]
+        };
+      } else {
+        // 체크 해제됨: 배열에서 제거
+        return {
+          ...prev,
+          [applicantId]: currentAssignments.filter(assignment => 
+            !(assignment.timeSlot === timeSlot && 
+              assignment.role === role && 
+              assignment.date === (date || undefined))
+          )
+        };
+      }
+    });
+  };
+
+  // 특정 assignment가 선택되었는지 확인하는 헬퍼 함수
+  const isAssignmentSelected = (applicantId: string, timeSlot: string, role: string, date?: string): boolean => {
+    const assignments = selectedAssignment[applicantId] || [];
+    return assignments.some(assignment => 
+      assignment.timeSlot === timeSlot && 
+      assignment.role === role && 
+      assignment.date === (date || undefined)
+    );
   };
 
   // Early return if no job posting data
@@ -355,33 +386,30 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                 {applicant.status === 'applied' && (() => {
                   const selections = getApplicantSelections(applicant);
                   
-                  // 다중 선택이 있는 경우 - 선택한 옵션들만 표시
+                  // 다중 선택이 있는 경우 - 체크박스로 여러 개 선택 가능
                   if (selections.length > 0) {
+                    const selectedCount = selectedAssignment[applicant.id]?.length || 0;
                     return (
                       <div className="ml-4 space-y-3">
                         <div className="text-sm font-medium text-gray-700 mb-2">
-                          🎯 확정할 시간대 선택 ({selections.length}개 옵션 중 1개):
+                          ✅ 확정할 시간대 선택 ({selections.length}개 옵션 중 {selectedCount}개 선택):
                         </div>
                         <div className="space-y-2">
                           {selections.map((selection, index) => {
                             const optionValue = selection.date 
                               ? `${selection.date}__${selection.time}__${selection.role}`
                               : `${selection.time}__${selection.role}`;
-                            const isSelected = selectedAssignment[applicant.id] && 
-                              selectedAssignment[applicant.id].timeSlot === selection.time &&
-                              selectedAssignment[applicant.id].role === selection.role &&
-                              (selectedAssignment[applicant.id].date || '') === (selection.date || '');
+                            const isSelected = isAssignmentSelected(applicant.id, selection.time, selection.role, selection.date);
                               
                             return (
                               <label key={index} className={`flex items-center p-2 border rounded cursor-pointer ${
                                 isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:bg-gray-50'
                               }`}>
                                 <input
-                                  type="radio"
-                                  name={`assignment-${applicant.id}`}
+                                  type="checkbox"
                                   checked={isSelected}
-                                  onChange={() => handleAssignmentChange(applicant.id, optionValue)}
-                                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                                  onChange={(e) => handleMultipleAssignmentToggle(applicant.id, optionValue, e.target.checked)}
+                                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                                 />
                                 <div className="ml-3 flex-1">
                                   <div className="flex items-center space-x-2 text-sm">
@@ -401,26 +429,37 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         <button 
                           onClick={() => handleConfirmApplicant(applicant)}
                           className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                          disabled={!selectedAssignment[applicant.id] || !selectedAssignment[applicant.id].timeSlot || !selectedAssignment[applicant.id].role}
+                          disabled={selectedCount === 0}
                         >
-                          ✓ 선택한 시간대로 확정
+                          ✓ 선택한 시간대로 확정 ({selectedCount}개)
                         </button>
                       </div>
                     );
                   }
                   
-                  // 다중 선택이 없는 경우 - 기존 방식 유지
+                  // 다중 선택이 없는 경우 - 기존 방식 유지 (단일 선택)
                   return (
                     <div className="ml-4 flex items-center space-x-2">
                       <select
-                        value={
-                          selectedAssignment[applicant.id] 
-                            ? selectedAssignment[applicant.id].date 
-                              ? `${selectedAssignment[applicant.id].date}__${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
-                              : `${selectedAssignment[applicant.id].timeSlot}__${selectedAssignment[applicant.id].role}`
-                            : ''
-                        }
-                        onChange={(e) => handleAssignmentChange(applicant.id, e.target.value)}
+                        value={''}
+                        onChange={(e) => {
+                          // 단일 선택 처리 - 기존 선택을 모두 지우고 새로운 선택 추가
+                          if (e.target.value) {
+                            const parts = e.target.value.split('__');
+                            let timeSlot = '', role = '', date = '';
+                            
+                            if (parts.length === 3) {
+                              [date, timeSlot, role] = parts;
+                            } else if (parts.length === 2) {
+                              [timeSlot, role] = parts;
+                            }
+                            
+                            setSelectedAssignment(prev => ({
+                              ...prev,
+                              [applicant.id]: [{ timeSlot, role, date: date || undefined }]
+                            }));
+                          }
+                        }}
                         className="text-sm border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
@@ -445,13 +484,13 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                           ))
                         )}
                       </select>
-                      <button 
-                        onClick={() => handleConfirmApplicant(applicant)}
-                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                        disabled={!selectedAssignment[applicant.id] || !selectedAssignment[applicant.id].timeSlot || !selectedAssignment[applicant.id].role}
-                      >
-                        {t('jobPostingAdmin.applicants.confirm')}
-                      </button>
+                                              <button 
+                          onClick={() => handleConfirmApplicant(applicant)}
+                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                          disabled={!selectedAssignment[applicant.id] || selectedAssignment[applicant.id].length === 0}
+                        >
+                          {t('jobPostingAdmin.applicants.confirm')}
+                        </button>
                     </div>
                   );
                 })()}
