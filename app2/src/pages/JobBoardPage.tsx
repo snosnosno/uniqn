@@ -140,12 +140,72 @@ const JobBoardPage = () => {
         return bDate - aDate;
       });
       
-      setMyApplications(applicationsData);
+      // 삭제된 공고의 applications 필터링
+      const validApplications = applicationsData.filter(app => app.jobPosting !== null);
+      setMyApplications(validApplications);
     } catch (error) {
       console.error('Error fetching my applications:', error);
       showError('지원 현황을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoadingMyApplications(false);
+    }
+  };
+
+  // 기존 orphaned applications 정리 함수
+  const cleanupOrphanedApplications = async () => {
+    if (!currentUser) return;
+    
+    try {
+      showInfo('orphaned applications 정리 중...');
+      
+      // 사용자의 모든 applications 가져오기
+      const applicationsQuery = query(
+        collection(db, 'applications'), 
+        where('applicantId', '==', currentUser.uid)
+      );
+      const applicationsSnapshot = await getDocs(applicationsQuery);
+      
+      const orphanedApplications: string[] = [];
+      
+      // 각 application의 jobPosting 존재 여부 확인
+      await Promise.all(
+        applicationsSnapshot.docs.map(async (applicationDoc) => {
+          const applicationData = applicationDoc.data();
+          
+          try {
+            const jobPostingDoc = await getDoc(doc(db, 'jobPostings', applicationData.postId));
+            
+            // jobPosting이 존재하지 않으면 orphaned로 분류
+            if (!jobPostingDoc.exists()) {
+              orphanedApplications.push(applicationDoc.id);
+            }
+          } catch (error) {
+            console.error('Error checking job posting:', error);
+            // 오류가 발생해도 orphaned로 간주
+            orphanedApplications.push(applicationDoc.id);
+          }
+        })
+      );
+      
+      // orphaned applications 삭제
+      if (orphanedApplications.length > 0) {
+        await Promise.all(
+          orphanedApplications.map(appId => 
+            deleteDoc(doc(db, 'applications', appId))
+          )
+        );
+        
+        showSuccess(`${orphanedApplications.length}개의 orphaned applications이 정리되었습니다.`);
+        
+        // 정리 후 데이터 새로고침
+        fetchMyApplications();
+      } else {
+        showInfo('정리할 orphaned applications가 없습니다.');
+      }
+      
+    } catch (error) {
+      console.error('Error cleaning up orphaned applications:', error);
+      showError('orphaned applications 정리 중 오류가 발생했습니다.');
     }
   };
 
@@ -861,13 +921,23 @@ const JobBoardPage = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold">내 지원 현황 ({myApplications.length}건)</h2>
-                  <button
-                    onClick={fetchMyApplications}
-                    disabled={loadingMyApplications}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-sm"
-                  >
-                    {loadingMyApplications ? '새로고침 중...' : '🔄 새로고침'}
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={cleanupOrphanedApplications}
+                      disabled={loadingMyApplications}
+                      className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm"
+                      title="삭제된 공고의 지원 내역을 정리합니다"
+                    >
+                      🗑️ 데이터 정리
+                    </button>
+                    <button
+                      onClick={fetchMyApplications}
+                      disabled={loadingMyApplications}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-sm"
+                    >
+                      {loadingMyApplications ? '새로고침 중...' : '🔄 새로고침'}
+                    </button>
+                  </div>
                 </div>
                 
                 {myApplications.map((application) => (
