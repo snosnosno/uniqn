@@ -66,7 +66,7 @@ const JobBoardPage = () => {
   
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<JobPosting | null>(null);
-    const [selectedAssignment, setSelectedAssignment] = useState<{ timeSlot: string, role: string, date?: string } | null>(null);
+    const [selectedAssignments, setSelectedAssignments] = useState<{ timeSlot: string, role: string, date?: string }[]>([]);
     
   useEffect(() => {
     if (!currentUser || !jobPostings) return;
@@ -171,7 +171,29 @@ const JobBoardPage = () => {
   const handleOpenApplyModal = (post: JobPosting) => {
     setSelectedPost(post);
     setIsApplyModalOpen(true);
-    setSelectedAssignment(null);
+    setSelectedAssignments([]);
+  };
+  
+  // 다중 선택 관리 함수
+  const handleMultipleAssignmentChange = (assignment: { timeSlot: string, role: string, date?: string }, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedAssignments(prev => [...prev, assignment]);
+    } else {
+      setSelectedAssignments(prev => prev.filter(item => 
+        !(item.timeSlot === assignment.timeSlot && 
+          item.role === assignment.role && 
+          item.date === assignment.date)
+      ));
+    }
+  };
+  
+  // 선택된 항목 확인 함수
+  const isAssignmentSelected = (assignment: { timeSlot: string, role: string, date?: string }) => {
+    return selectedAssignments.some(item => 
+      item.timeSlot === assignment.timeSlot && 
+      item.role === assignment.role && 
+      item.date === assignment.date
+    );
   };
   
   const handleApply = async () => {
@@ -179,8 +201,8 @@ const JobBoardPage = () => {
       showError(t('jobBoard.alerts.loginRequired'));
       return;
     }
-    if (!selectedPost || !selectedAssignment) {
-        showWarning(t('jobBoard.alerts.selectAssignment'));
+    if (!selectedPost || selectedAssignments.length === 0) {
+        showWarning('최소 1개 이상의 시간대/역할을 선택해주세요.');
         return;
     }
 
@@ -192,6 +214,14 @@ const JobBoardPage = () => {
         return;
       }
       
+      // 다중 선택 데이터 준비
+      const assignedRoles = selectedAssignments.map(item => item.role);
+      const assignedTimes = selectedAssignments.map(item => item.timeSlot);
+      const assignedDates = selectedAssignments.map(item => item.date).filter(Boolean);
+      
+      // 기존 호환성을 위해 첫 번째 선택값 사용
+      const firstSelection = selectedAssignments[0];
+      
       await addDoc(collection(db, 'applications'), {
         applicantId: currentUser.uid,
         applicantName: staffDoc.data().name || t('jobBoard.unknownApplicant'),
@@ -199,12 +229,19 @@ const JobBoardPage = () => {
         postTitle: selectedPost.title,
         status: 'applied',
         appliedAt: serverTimestamp(),
-        assignedRole: selectedAssignment.role,
-        assignedTime: selectedAssignment.timeSlot,
-        assignedDate: selectedAssignment.date, // 일자별 다른 인원 요구사항의 경우 날짜 정보 저장
+        
+        // 기존 단일 선택 필드 (하위 호환성)
+        assignedRole: firstSelection.role,
+        assignedTime: firstSelection.timeSlot,
+        assignedDate: firstSelection.date,
+        
+        // 새로운 다중 선택 필드
+        assignedRoles: assignedRoles,
+        assignedTimes: assignedTimes,
+        assignedDates: assignedDates.length > 0 ? assignedDates : undefined,
       });
 
-      showSuccess(t('jobBoard.alerts.applicationSuccess'));
+      showSuccess(`지원이 완료되었습니다! (선택한 항목: ${selectedAssignments.length}개)`);
       setAppliedJobs(prev => new Map(prev).set(selectedPost.id, 'applied'));
       setIsApplyModalOpen(false);
       setSelectedPost(null);
@@ -543,67 +580,128 @@ const JobBoardPage = () => {
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
               <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('jobBoard.applyModal.title', { postTitle: selectedPost.title })}</h3>
-              <div>
-                <label htmlFor="assignment" className="block text-sm font-medium text-gray-700">{t('jobBoard.applyModal.selectAssignment')}</label>
-                <select
-                  id="assignment"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  value={selectedAssignment ? (
-                    selectedAssignment.date 
-                      ? `${selectedAssignment.date}__${selectedAssignment.timeSlot}__${selectedAssignment.role}`
-                      : `${selectedAssignment.timeSlot}__${selectedAssignment.role}`
-                  ) : ''}
-                  onChange={(e) => {
-                    const parts = e.target.value.split('__');
-                    if (parts.length === 3) {
-                      // 일자별 다른 인원 요구사항: date__timeSlot__role
-                      const [date, timeSlot, role] = parts;
-                      setSelectedAssignment({ date, timeSlot, role });
-                    } else {
-                      // 기존 방식: timeSlot__role
-                      const [timeSlot, role] = parts;
-                      setSelectedAssignment({ timeSlot, role });
-                    }
-                  }}
-                  >
-                  <option value="" disabled>{t('jobBoard.applyModal.selectPlaceholder')}</option>
-                  {/* 일자별 다른 인원 요구사항이 있는 경우 */}
-                  {JobPostingUtils.hasDateSpecificRequirements(selectedPost) ? (
-                    selectedPost.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
-                      dateReq.timeSlots.flatMap((ts: TimeSlot) =>
-                        ts.roles.map((r: RoleRequirement) => {
-                          const value = `${dateReq.date}__${ts.time}__${r.name}`;
+              
+              {/* 선택된 항목들 미리보기 */}
+              {selectedAssignments.length > 0 && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <h4 className="text-sm font-medium text-green-800 mb-2">선택된 항목 ({selectedAssignments.length}개):</h4>
+                  <div className="space-y-1">
+                    {selectedAssignments.map((assignment, index) => (
+                      <div key={index} className="text-xs text-green-700">
+                        {assignment.date ? `📅 ${formatDate(assignment.date)} - ` : ''}
+                        ⏰ {assignment.timeSlot} - 👤 {t(`jobPostingAdmin.create.${assignment.role}`, assignment.role)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="max-h-64 overflow-y-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-3">시간대 및 역할 선택 (여러 개 선택 가능)</label>
+                
+                {/* 일자별 다른 인원 요구사항이 있는 경우 */}
+                {JobPostingUtils.hasDateSpecificRequirements(selectedPost) ? (
+                  selectedPost.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
+                    <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-3">
+                        📅 {formatDate(dateReq.date)}
+                      </h4>
+                      {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                        <div key={tsIndex} className="mb-4 pl-4 border-l-2 border-blue-300">
+                          <div className="text-sm font-medium text-gray-700 mb-2">⏰ {ts.time}</div>
+                          <div className="space-y-2">
+                            {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                              const assignment = { timeSlot: ts.time, role: r.name, date: dateReq.date };
+                              const confirmedCount = selectedPost.confirmedStaff?.filter(staff => 
+                                staff.timeSlot === ts.time && 
+                                staff.role === r.name && 
+                                staff.date === dateReq.date
+                              ).length || 0;
+                              const isFull = confirmedCount >= r.count;
+                              const isSelected = isAssignmentSelected(assignment);
+                              
+                              return (
+                                <label 
+                                  key={roleIndex} 
+                                  className={`flex items-center p-2 rounded cursor-pointer ${
+                                    isFull ? 'bg-gray-100 cursor-not-allowed' : 
+                                    isSelected ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    disabled={isFull}
+                                    onChange={(e) => handleMultipleAssignmentChange(assignment, e.target.checked)}
+                                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                                  />
+                                  <span className={`ml-3 text-sm ${
+                                    isFull ? 'text-gray-400' : 'text-gray-700'
+                                  }`}>
+                                    👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
+                                    <span className={`ml-2 text-xs ${
+                                      isFull ? 'text-red-500 font-medium' : 'text-gray-500'
+                                    }`}>
+                                      ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
+                                    </span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))
+                ) : (
+                  /* 기존 방식: 전체 기간 공통 timeSlots */
+                  selectedPost.timeSlots?.map((ts: TimeSlot, tsIndex: number) => (
+                    <div key={tsIndex} className="mb-4 border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm font-medium text-gray-700 mb-3">⏰ {ts.time}</div>
+                      <div className="space-y-2">
+                        {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                          const assignment = { timeSlot: ts.time, role: r.name };
                           const confirmedCount = selectedPost.confirmedStaff?.filter(staff => 
                             staff.timeSlot === ts.time && 
-                            staff.role === r.name && 
-                            staff.date === dateReq.date
+                            staff.role === r.name
                           ).length || 0;
                           const isFull = confirmedCount >= r.count;
+                          const isSelected = isAssignmentSelected(assignment);
+                          
                           return (
-                            <option key={value} value={value} disabled={isFull}>
-                              📅 {formatDate(dateReq.date)} - {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} ({isFull ? t('jobBoard.applyModal.full') : `${confirmedCount}/${r.count}`})
-                            </option>
+                            <label 
+                              key={roleIndex} 
+                              className={`flex items-center p-2 rounded cursor-pointer ${
+                                isFull ? 'bg-gray-100 cursor-not-allowed' : 
+                                isSelected ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={isFull}
+                                onChange={(e) => handleMultipleAssignmentChange(assignment, e.target.checked)}
+                                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                              />
+                              <span className={`ml-3 text-sm ${
+                                isFull ? 'text-gray-400' : 'text-gray-700'
+                              }`}>
+                                👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
+                                <span className={`ml-2 text-xs ${
+                                  isFull ? 'text-red-500 font-medium' : 'text-gray-500'
+                                }`}>
+                                  ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
+                                </span>
+                              </span>
+                            </label>
                           );
-                        })
-                      )
-                    )
-                  ) : (
-                    /* 기존 방식: 전체 기간 공통 timeSlots */
-                    selectedPost.timeSlots?.flatMap((ts: TimeSlot) => 
-                      ts.roles.map((r: RoleRequirement) => {
-                        const value = `${ts.time}__${r.name}`;
-                        const confirmedCount = selectedPost.confirmedStaff?.filter(staff => staff.timeSlot === ts.time && staff.role === r.name).length || 0;
-                        const isFull = confirmedCount >= r.count;
-                        return (
-                          <option key={value} value={value} disabled={isFull}>
-                            {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} ({isFull ? t('jobBoard.applyModal.full') : `${confirmedCount}/${r.count}`})
-                          </option>
-                        );
-                      })
-                    )
-                  )}
-                </select>
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
+              
               <div className="flex justify-end mt-4 space-x-2">
                 <button 
                   onClick={() => setIsApplyModalOpen(false)} 
@@ -613,15 +711,15 @@ const JobBoardPage = () => {
                 </button>
                 <button 
                   onClick={handleApply} 
-                  disabled={!selectedAssignment || isProcessing === selectedPost.id} 
+                  disabled={selectedAssignments.length === 0 || isProcessing === selectedPost.id} 
                   className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 min-h-[48px] text-sm sm:text-base"
                 >
-                  {isProcessing ? t('jobBoard.applying') : t('jobBoard.applyModal.confirm')}
+                  {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개 선택)`}
                 </button>
               </div>
-            </div>
-          </div>
-        )}
+              </div>
+              </div>
+              )}
         
         {/* Infinite Scroll Loading Indicator */}
         <div ref={loadMoreRef} className="flex justify-center py-4">
