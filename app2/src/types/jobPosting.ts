@@ -15,8 +15,26 @@ export interface Applicant {
   status: 'pending' | 'confirmed' | 'rejected';
   jobPostingId: string;
   additionalInfo?: string;
+  
+  // 다중 선택 지원을 위한 새로운 필드들 (하위 호환성을 위해 선택적)
+  assignedRoles?: string[]; // 선택한 역할들
+  assignedTimes?: string[]; // 선택한 시간들
+  assignedDates?: string[]; // 선택한 날짜들
 }
 
+
+// 다중 선택 관련 유틸리티 타입들
+export interface MultipleSelection {
+  roles: string[];
+  times: string[];
+  dates: string[];
+}
+
+export interface SelectionItem {
+  timeSlot: string;
+  role: string;
+  date?: string;
+}
 
 // 기존 타입들 (기존 호환성 유지)
 export interface RoleRequirement {
@@ -280,6 +298,90 @@ export class JobPostingUtils {
       this.getDateFulfillmentRate(jobPosting, dateReq.date) >= 1.0
     ) || false;
   }
+  
+  // ===== 다중 선택 지원을 위한 헬퍼 함수들 =====
+  
+  /**
+   * 단일 선택을 다중 선택 형식으로 변환
+   * @param applicant 기존 단일 선택 지원자
+   * @returns 다중 선택 필드가 추가된 Applicant
+   */
+  static convertSingleToMultiple(applicant: Applicant): Applicant {
+    return {
+      ...applicant,
+      assignedRoles: applicant.assignedRoles || [applicant.role],
+      assignedTimes: applicant.assignedTimes || [applicant.timeSlot],
+      assignedDates: applicant.assignedDates || (applicant.assignedDate ? [applicant.assignedDate] : [])
+    };
+  }
+  
+  /**
+   * 다중 선택에서 첫 번째 값을 단일 선택 필드로 변환
+   * @param applicant 다중 선택 지원자
+   * @returns 단일 선택 필드가 업데이트된 Applicant
+   */
+  static convertMultipleToSingle(applicant: Applicant): Applicant {
+    return {
+      ...applicant,
+      role: applicant.assignedRoles?.[0] || applicant.role,
+      timeSlot: applicant.assignedTimes?.[0] || applicant.timeSlot,
+      assignedDate: applicant.assignedDates?.[0] || applicant.assignedDate
+    };
+  }
+  
+  /**
+   * 지원자가 다중 선택을 사용하는지 확인
+   * @param applicant 지원자
+   * @returns 다중 선택 사용 여부
+   */
+  static hasMultipleSelections(applicant: Applicant): boolean {
+    return !!(applicant.assignedRoles?.length || 
+              applicant.assignedTimes?.length || 
+              applicant.assignedDates?.length);
+  }
+  
+  /**
+   * 다중 선택 데이터의 유효성 검증
+   * @param selection 다중 선택 데이터
+   * @returns 유효성 검증 결과
+   */
+  static validateMultipleSelections(selection: MultipleSelection): boolean {
+    return Array.isArray(selection.roles) && selection.roles.length > 0 &&
+           Array.isArray(selection.times) && selection.times.length > 0 &&
+           Array.isArray(selection.dates);
+  }
+  
+  /**
+   * 다중 선택에서 선택 아이템 목록 생성
+   * @param selection 다중 선택 데이터
+   * @returns SelectionItem 배열
+   */
+  static generateSelectionItems(selection: MultipleSelection): SelectionItem[] {
+    const items: SelectionItem[] = [];
+    
+    selection.times.forEach(time => {
+      selection.roles.forEach(role => {
+        if (selection.dates.length > 0) {
+          selection.dates.forEach(date => {
+            items.push({ timeSlot: time, role, date });
+          });
+        } else {
+          items.push({ timeSlot: time, role });
+        }
+      });
+    });
+    
+    return items;
+  }
+  
+  /**
+   * 레거시 지원자 데이터 판별 (기존 단일 선택 형식)
+   * @param applicant 지원자
+   * @returns 레거시 형식 여부
+   */
+  static isLegacyApplication(applicant: Applicant): boolean {
+    return !this.hasMultipleSelections(applicant);
+  }
 }
 
 // 타입 가드 함수들
@@ -302,12 +404,12 @@ export const isValidJobPosting = (obj: any): obj is JobPosting => {
 };
 
 /**
- * 지원자 인터페이스 유효성 검증
+ * 지원자 인터페이스 유효성 검증 (다중 선택 지원)
  * @param obj 검증할 객체
  * @returns 지원자 인터페이스 준수 여부
  */
 export const isValidApplicant = (obj: any): obj is Applicant => {
-  return obj && 
+  const isBasicValid = obj && 
          typeof obj.id === 'string' &&
          typeof obj.userId === 'string' &&
          typeof obj.name === 'string' &&
@@ -317,7 +419,17 @@ export const isValidApplicant = (obj: any): obj is Applicant => {
          ['pending', 'confirmed', 'rejected'].includes(obj.status) &&
          (!obj.date || typeof obj.date === 'string') &&
          (!obj.assignedDate || typeof obj.assignedDate === 'string') &&
-         (!obj.assignedDate || /^\d{4}-\d{2}-\d{2}$/.test(obj.assignedDate)); // yyyy-MM-dd 형식 검증
+         (!obj.assignedDate || /^\d{4}-\d{2}-\d{2}$/.test(obj.assignedDate));
+  
+  if (!isBasicValid) return false;
+  
+  // 다중 선택 필드 검증 (선택적)
+  const isMultipleFieldsValid = 
+    (!obj.assignedRoles || (Array.isArray(obj.assignedRoles) && obj.assignedRoles.every((r: any) => typeof r === 'string'))) &&
+    (!obj.assignedTimes || (Array.isArray(obj.assignedTimes) && obj.assignedTimes.every((t: any) => typeof t === 'string'))) &&
+    (!obj.assignedDates || (Array.isArray(obj.assignedDates) && obj.assignedDates.every((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))));
+  
+  return isMultipleFieldsValid;
 };
 
 /**
