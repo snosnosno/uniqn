@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, lazy } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp, query, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, doc, updateDoc, deleteDoc, Timestamp, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
@@ -638,14 +638,33 @@ const JobPostingAdminPage = () => {
   };
   
   const handleDelete = async (postId: string) => {
-    if (window.confirm(t('jobPostingAdmin.alerts.confirmDelete'))) {
+    const confirmMessage = `${t('jobPostingAdmin.alerts.confirmDelete')}\n\n⚠️ 주의사항:\n• 해당 공고의 모든 지원 내역이 함께 삭제됩니다\n• 삭제된 데이터는 복구할 수 없습니다\n• 확정된 지원자가 있다면 별도로 알림을 주세요`;
+    
+    if (window.confirm(confirmMessage)) {
         try {
+            // 1. 해당 공고에 대한 모든 applications 찾기
+            const applicationsQuery = query(
+                collection(db, 'applications'), 
+                where('postId', '==', postId)
+            );
+            const applicationsSnapshot = await getDocs(applicationsQuery);
+            
+            // 2. 모든 applications 삭제
+            const deleteApplicationPromises = applicationsSnapshot.docs.map(applicationDoc => 
+                deleteDoc(doc(db, 'applications', applicationDoc.id))
+            );
+            
+            // 3. 모든 applications 삭제 완료 대기
+            await Promise.all(deleteApplicationPromises);
+            
+            // 4. jobPosting 삭제
             await deleteDoc(doc(db, 'jobPostings', postId));
-            alert(t('jobPostingAdmin.alerts.deleteSuccess'));
+            
+            alert(`${t('jobPostingAdmin.alerts.deleteSuccess')}\n\n삭제된 데이터:\n• 공고: 1건\n• 지원 내역: ${applicationsSnapshot.docs.length}건`);
             setIsEditModalOpen(false);
         } catch (error) {
-            console.error("Error deleting job posting: ", error);
-            alert(t('jobPostingAdmin.alerts.deleteFailed'));
+            console.error("Error deleting job posting and related applications: ", error);
+            alert(`${t('jobPostingAdmin.alerts.deleteFailed')}\n\n오류 상세:\n${error instanceof Error ? error.message : '알 수 없는 오류'}`);
         }
     }
   };
