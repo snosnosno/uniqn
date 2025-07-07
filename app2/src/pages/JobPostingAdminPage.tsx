@@ -394,6 +394,87 @@ const JobPostingAdminPage = () => {
         newTimeSlots[timeSlotIndex].roles = newTimeSlots[timeSlotIndex].roles.filter((_: any, i: number) => i !== roleIndex);
         setCurrentPost((prev: any) => ({ ...prev, timeSlots: newTimeSlots }));
     };
+    
+    // 편집 모달 일자별 요구사항 관리 함수들
+    const handleEditDifferentDailyRequirementsToggle = (enabled: boolean) => {
+    if (enabled) {
+      // 기존 timeSlots를 날짜 범위에 맞게 복사하여 dateSpecificRequirements 생성
+      const dates = generateDateRange(currentPost.startDate, currentPost.endDate);
+      const dateSpecificRequirements = dates.map(date => ({
+        date,
+        timeSlots: currentPost.timeSlots.map((ts: TimeSlot) => ({ ...ts, date }))
+      }));
+      
+      setCurrentPost((prev: any) => ({
+        ...prev,
+        usesDifferentDailyRequirements: true,
+        dateSpecificRequirements
+      }));
+    } else {
+      // 일자별 요구사항을 기본 timeSlots로 변환
+      const timeSlots = currentPost.dateSpecificRequirements && currentPost.dateSpecificRequirements.length > 0
+        ? currentPost.dateSpecificRequirements[0].timeSlots.map((ts: any) => ({ time: ts.time, roles: ts.roles }))
+        : currentPost.timeSlots;
+      
+      setCurrentPost((prev: any) => ({
+        ...prev,
+        usesDifferentDailyRequirements: false,
+        dateSpecificRequirements: [],
+        timeSlots
+      }));
+    }
+    };
+    
+    const handleEditDateSpecificTimeSlotChange = (dateIndex: number, timeSlotIndex: number, value: string) => {
+    const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].time = value;
+    setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+    };
+    
+    const handleEditDateSpecificRoleChange = (
+    dateIndex: number, 
+    timeSlotIndex: number, 
+    roleIndex: number, 
+    field: 'name' | 'count', 
+    value: string | number
+    ) => {
+    const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
+    const roleValue = field === 'count' ? (Number(value) < 1 ? 1 : Number(value)) : value;
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles[roleIndex] = {
+      ...newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles[roleIndex],
+      [field]: roleValue
+    };
+    setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+    };
+    
+    const addEditDateSpecificTimeSlot = (dateIndex: number) => {
+    const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots.push({
+      time: '',
+      roles: [{ name: 'dealer', count: 1 }],
+      date: newDateSpecificRequirements[dateIndex].date
+    });
+    setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+    };
+    
+    const removeEditDateSpecificTimeSlot = (dateIndex: number, timeSlotIndex: number) => {
+    const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots = newDateSpecificRequirements[dateIndex].timeSlots.filter((_, i) => i !== timeSlotIndex);
+    setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+    };
+    
+    const addEditDateSpecificRole = (dateIndex: number, timeSlotIndex: number) => {
+    const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.push({ name: 'dealer', count: 1 });
+    setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+    };
+    
+    const removeEditDateSpecificRole = (dateIndex: number, timeSlotIndex: number, roleIndex: number) => {
+    const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles = 
+      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.filter((_, i) => i !== roleIndex);
+    setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -510,6 +591,8 @@ const JobPostingAdminPage = () => {
         timeSlots: post.timeSlots && post.timeSlots.length > 0 ? post.timeSlots : [initialTimeSlot],
         startDate: convertToDateString(post.startDate),
         endDate: convertToDateString(post.endDate),
+        usesDifferentDailyRequirements: JobPostingUtils.hasDateSpecificRequirements(post),
+        dateSpecificRequirements: post.dateSpecificRequirements || [],
     });
     setIsEditModalOpen(true);
   };
@@ -947,7 +1030,25 @@ const JobPostingAdminPage = () => {
                         </div>
                         
                         <div className="space-y-6">
-                            <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.timeAndRoles')}</label>
+                            <div className="flex items-center justify-between">
+                                <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.timeAndRoles')}</label>
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="edit-usesDifferentDailyRequirements"
+                                        checked={currentPost.usesDifferentDailyRequirements || false}
+                                        onChange={(e) => handleEditDifferentDailyRequirementsToggle(e.target.checked)}
+                                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="edit-usesDifferentDailyRequirements" className="ml-2 text-sm text-gray-700">
+                                        일자별 다른 인원 요구사항
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {!currentPost.usesDifferentDailyRequirements ? (
+                                // 기존 방식: 전체 기간 공통 timeSlots
+                                <>
                             {currentPost.timeSlots.map((timeSlot: TimeSlot, tsIndex: number) => (
                                 <div key={tsIndex} className="p-4 border border-gray-200 rounded-md">
                                     <div className="flex items-center space-x-2 mb-4">
@@ -993,7 +1094,100 @@ const JobPostingAdminPage = () => {
                             <button type="button" onClick={addEditTimeSlot} className="text-indigo-600 hover:text-indigo-800 font-medium">
                                 + {t('jobPostingAdmin.edit.addTimeSlot')}
                             </button>
-                        </div>
+                                </>
+                            ) : (
+                                // 일자별 요구사항 방식
+                                <div className="space-y-4">
+                                    {currentPost.dateSpecificRequirements?.map((dateReq: any, dateIndex: number) => (
+                                        <div key={dateReq.date} className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                                            <h4 className="text-lg font-semibold mb-3 text-blue-800">
+                                                {new Date(dateReq.date).toLocaleDateString('ko-KR', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    weekday: 'short'
+                                                })}
+                                            </h4>
+                                            
+                                            {dateReq.timeSlots.map((timeSlot: any, tsIndex: number) => (
+                                                <div key={tsIndex} className="p-3 border border-gray-200 rounded-md bg-white mb-3">
+                                                    <div className="flex items-center space-x-2 mb-3">
+                                                        <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.time')}</label>
+                                                        <input
+                                                            type="time"
+                                                            value={timeSlot.time}
+                                                            onChange={(e) => handleEditDateSpecificTimeSlotChange(dateIndex, tsIndex, e.target.value)}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            required
+                                                        />
+                                                        {dateReq.timeSlots.length > 1 && (
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => removeEditDateSpecificTimeSlot(dateIndex, tsIndex)} 
+                                                                className="text-red-600 hover:text-red-800 text-sm"
+                                                            >
+                                                                {t('jobPostingAdmin.edit.removeTimeSlot')}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {timeSlot.roles.map((role: any, rIndex: number) => (
+                                                        <div key={rIndex} className="flex items-center space-x-2 mb-2">
+                                                            <div className="flex-1">
+                                                                <select 
+                                                                    value={role.name} 
+                                                                    onChange={(e) => handleEditDateSpecificRoleChange(dateIndex, tsIndex, rIndex, 'name', e.target.value)}
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" 
+                                                                    required
+                                                                >
+                                                                    <option value="" disabled>{t('jobPostingAdmin.edit.roleNamePlaceholder', '역할 선택')}</option>
+                                                                    {predefinedRoles.map(r => <option key={r} value={r}>{t(`jobPostingAdmin.edit.${r}`)}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div className="w-24">
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={role.count} 
+                                                                    min="1" 
+                                                                    onChange={(e) => handleEditDateSpecificRoleChange(dateIndex, tsIndex, rIndex, 'count', e.target.value)} 
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" 
+                                                                    required 
+                                                                />
+                                                            </div>
+                                                            {timeSlot.roles.length > 1 && (
+                                                                <button 
+                                                                    type="button" 
+                                                                    onClick={() => removeEditDateSpecificRole(dateIndex, tsIndex, rIndex)} 
+                                                                    className="text-red-600 hover:text-red-800 text-sm"
+                                                                >
+                                                                    {t('jobPostingAdmin.edit.remove')}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => addEditDateSpecificRole(dateIndex, tsIndex)} 
+                                                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                    >
+                                                        + {t('jobPostingAdmin.edit.addRole')}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            
+                                            <button 
+                                                type="button" 
+                                                onClick={() => addEditDateSpecificTimeSlot(dateIndex)} 
+                                                className="text-indigo-600 hover:text-indigo-800 font-medium"
+                                            >
+                                                + {t('jobPostingAdmin.edit.addTimeSlot')}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            </div>
                         
                         <div>
                             <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.description')}</label>
