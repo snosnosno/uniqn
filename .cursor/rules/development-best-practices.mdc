@@ -1,0 +1,269 @@
+# 🛠️ T-HOLDEM 개발 모범 사례 규칙
+
+**alwaysApply: true**
+
+---
+
+## 🎯 **개발 과정에서 발견된 핵심 개선사항들**
+
+### 1. **Firebase 데이터 처리 필수 규칙**
+
+#### ❌ **절대 금지**
+```typescript
+// undefined 값을 Firebase에 저장 시도
+const data = {
+  field: potentiallyUndefinedValue  // 🚫 Firebase 오류 발생
+};
+```
+
+#### ✅ **반드시 준수**
+```typescript
+// 조건부 객체 생성으로 undefined 방지
+const data = {
+  ...baseData,
+  ...(value && { field: value }),
+  ...(array.length > 0 && { arrayField: array })
+};
+```
+
+### 2. **관련 데이터 삭제 패턴**
+
+#### ❌ **위험한 패턴**
+```typescript
+// 메인 데이터만 삭제 (고아 데이터 발생)
+await deleteDoc(doc(db, 'collection', id));
+```
+
+#### ✅ **안전한 패턴**
+```typescript
+// 1. 관련 데이터 먼저 조회
+const relatedQuery = query(
+  collection(db, 'relatedCollection'),
+  where('parentId', '==', id)
+);
+const relatedDocs = await getDocs(relatedQuery);
+
+// 2. 관련 데이터 먼저 삭제
+const deletePromises = relatedDocs.docs.map(doc => 
+  deleteDoc(doc.ref)
+);
+await Promise.all(deletePromises);
+
+// 3. 메인 데이터 마지막에 삭제
+await deleteDoc(doc(db, 'collection', id));
+```
+
+### 3. **TypeScript 컴파일 안전성**
+
+#### ❌ **컴파일 오류 유발**
+```typescript
+// 타입 추론 실패 상황
+.filter((_, i) => i !== index)
+.map((item, i) => ({ ...item, index: i }))
+```
+
+#### ✅ **명시적 타입 지정**
+```typescript
+// 명시적 타입 어노테이션
+.filter((_: any, i: number) => i !== index)
+.map((item: ItemType, i: number) => ({ ...item, index: i }))
+```
+
+### 4. **상태 관리 및 데이터 보존 패턴**
+
+#### ❌ **데이터 손실 위험**
+```typescript
+// 확인 취소 시 모든 데이터 삭제
+const updatedData = {
+  status: 'applied',
+  // 기존 배열 데이터 손실 위험
+};
+```
+
+#### ✅ **데이터 보존 패턴**
+```typescript
+// 원본 데이터 보존하면서 확인 데이터만 제거
+const updatedData = {
+  ...existingData,
+  status: 'applied',
+  // 확인 관련 필드만 제거
+  confirmedAt: deleteField(),
+  assignedRole: deleteField(),
+  assignedTime: deleteField(),
+  assignedDate: deleteField(),
+  // 원본 배열 필드는 보존
+  // assignedRoles, assignedTimes, assignedDates 유지
+};
+```
+
+### 5. **UI 피드백 및 상태 관리**
+
+#### ❌ **사용자 경험 저하**
+```typescript
+// 피드백 없는 비동기 작업
+const handleSubmit = async () => {
+  await saveData();
+  // 사용자가 완료 여부를 알 수 없음
+};
+```
+
+#### ✅ **완전한 피드백 시스템**
+```typescript
+const handleSubmit = async () => {
+  try {
+    setLoading(true);
+    await saveData();
+    showToast('성공적으로 저장되었습니다', 'success');
+    // 필요시 리다이렉트 또는 상태 업데이트
+  } catch (error) {
+    showToast('저장 중 오류가 발생했습니다', 'error');
+    console.error('Save error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+---
+
+## 🔧 **개발 워크플로우 개선사항**
+
+### 1. **Shrimp-AI 규칙 v4.0 적용**
+
+#### 🥇 **1순위: search_replace (90% 사용)**
+- 단순한 텍스트 교체
+- 1-2분 내 완료
+- 높은 안전성
+
+#### 🥈 **2순위: mcp_filesystem_edit_file (8% 사용)**
+- 여러 줄 수정
+- 5-10분 완료
+- 미리보기 지원
+
+#### 🥉 **3순위: mcp_filesystem_write_file (2% 사용)**
+- 파일 전체 교체
+- 15-30분 완료
+- 백업 필수
+
+### 2. **Git 커밋 메시지 표준화**
+
+#### ✅ **표준 형식**
+```bash
+feat: 새로운 기능 추가
+fix: 버그 수정
+docs: 문서 업데이트
+style: 코드 스타일 개선
+refactor: 리팩토링
+test: 테스트 추가
+chore: 기타 작업
+```
+
+#### ✅ **상세 설명 포함**
+```bash
+feat: Add multiple time slot selection for applicant confirmation
+
+- Modified ApplicantListTab to support multiple time slot selection
+- Changed from radio buttons to checkboxes for multi-selection
+- Enhanced handleConfirmApplicant function for multiple assignments
+- Maintains backward compatibility with single selection fallback
+```
+
+### 3. **파일 수정 전 필수 확인사항**
+
+#### 📋 **체크리스트**
+- [ ] 파일 읽기로 현재 상태 확인
+- [ ] 수정 대상 패턴 grep_search로 사전 확인
+- [ ] 충분한 컨텍스트 포함 (3-5줄)
+- [ ] 고유한 패턴 사용
+- [ ] 수정 후 즉시 Git 커밋
+
+---
+
+## 🚀 **성능 최적화 가이드라인**
+
+### 1. **Firebase 쿼리 최적화**
+```typescript
+// ❌ 비효율적인 쿼리
+const allDocs = await getDocs(collection(db, 'applications'));
+const filtered = allDocs.docs.filter(doc => 
+  doc.data().jobPostingId === targetId
+);
+
+// ✅ 효율적인 쿼리
+const applicationsQuery = query(
+  collection(db, 'applications'),
+  where('jobPostingId', '==', targetId)
+);
+const applications = await getDocs(applicationsQuery);
+```
+
+### 2. **배치 처리 패턴**
+```typescript
+// ❌ 순차 처리 (느림)
+for (const doc of docs) {
+  await deleteDoc(doc.ref);
+}
+
+// ✅ 병렬 처리 (빠름)
+const deletePromises = docs.map(doc => deleteDoc(doc.ref));
+await Promise.all(deletePromises);
+```
+
+---
+
+## 📊 **모니터링 및 로깅**
+
+### 1. **오류 로깅 표준**
+```typescript
+try {
+  await riskyOperation();
+} catch (error) {
+  console.error('Operation failed:', {
+    operation: 'specificOperation',
+    error: error.message,
+    timestamp: new Date().toISOString(),
+    userId: user?.uid,
+    additionalContext: relevantData
+  });
+  throw error; // 적절한 에러 핸들링
+}
+```
+
+### 2. **성능 모니터링**
+```typescript
+const startTime = performance.now();
+await longRunningOperation();
+const endTime = performance.now();
+console.log(`Operation completed in ${endTime - startTime}ms`);
+```
+
+---
+
+## 🔍 **코드 리뷰 체크포인트**
+
+### 1. **Firebase 관련**
+- [ ] undefined 값 Firebase 저장 방지
+- [ ] 관련 데이터 삭제 순서 확인
+- [ ] 적절한 에러 핸들링
+
+### 2. **TypeScript 관련**
+- [ ] 명시적 타입 어노테이션
+- [ ] 인터페이스 확장 시 호환성 확인
+- [ ] 컴파일 오류 제거
+
+### 3. **사용자 경험 관련**
+- [ ] 로딩 상태 표시
+- [ ] 성공/실패 피드백
+- [ ] 에러 메시지 사용자 친화적
+
+### 4. **데이터 일관성**
+- [ ] 원본 데이터 보존
+- [ ] 고아 데이터 방지
+- [ ] 트랜잭션 처리
+
+---
+
+**문서 버전**: 1.0.0  
+**최종 업데이트**: 2025년 1월  
+**적용 범위**: T-HOLDEM 프로젝트 전체  
+**기반 경험**: 실제 개발 과정에서 발견된 문제점들과 해결책
