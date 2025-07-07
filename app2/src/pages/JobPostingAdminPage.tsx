@@ -459,7 +459,7 @@ const JobPostingAdminPage = () => {
     
     const removeEditDateSpecificTimeSlot = (dateIndex: number, timeSlotIndex: number) => {
     const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
-    newDateSpecificRequirements[dateIndex].timeSlots = newDateSpecificRequirements[dateIndex].timeSlots.filter((_, i) => i !== timeSlotIndex);
+    newDateSpecificRequirements[dateIndex].timeSlots = newDateSpecificRequirements[dateIndex].timeSlots.filter((_: any, i: number) => i !== timeSlotIndex);
     setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
     };
     
@@ -472,7 +472,7 @@ const JobPostingAdminPage = () => {
     const removeEditDateSpecificRole = (dateIndex: number, timeSlotIndex: number, roleIndex: number) => {
     const newDateSpecificRequirements = [...currentPost.dateSpecificRequirements];
     newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles = 
-      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.filter((_, i) => i !== roleIndex);
+      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.filter((_: any, i: number) => i !== roleIndex);
     setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
     };
 
