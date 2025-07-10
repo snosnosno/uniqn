@@ -45,6 +45,7 @@ const JobPostingAdminPage = () => {
     description: '',
     status: 'open',
     location: '서울',
+    detailedAddress: '',
     startDate: getTodayString(),
     endDate: getTodayString(),
   });
@@ -526,6 +527,7 @@ const JobPostingAdminPage = () => {
       const searchIndex = [
         formData.title,
         formData.location,
+        formData.detailedAddress,
         formData.description,
         ...requiredRoles
       ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
@@ -537,6 +539,7 @@ const JobPostingAdminPage = () => {
         description: formData.description,
         status: formData.status,
         location: formData.location,
+        detailedAddress: formData.detailedAddress,
         startDate: Timestamp.fromDate(new Date(formData.startDate)),
         endDate: Timestamp.fromDate(new Date(formData.endDate)),
         requiredRoles,
@@ -568,6 +571,7 @@ const JobPostingAdminPage = () => {
         description: '',
         status: 'open',
         location: '서울',
+        detailedAddress: '',
         startDate: getTodayString(),
         endDate: getTodayString(),
       });
@@ -616,6 +620,7 @@ const JobPostingAdminPage = () => {
       const searchIndex = [
         currentPost.title,
         currentPost.location,
+        currentPost.detailedAddress || '',
         currentPost.description,
         ...requiredRoles
       ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
@@ -704,6 +709,18 @@ const JobPostingAdminPage = () => {
                     <select name="location" id="location" value={formData.location} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         {locations.map(loc => <option key={loc} value={loc}>{t(`locations.${loc}`, loc)}</option>)}
                     </select>
+                </div>
+                <div>
+                    <label htmlFor="detailedAddress" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.detailedAddress')}</label>
+                    <input 
+                        type="text" 
+                        name="detailedAddress" 
+                        id="detailedAddress" 
+                        value={formData.detailedAddress} 
+                        onChange={handleFormChange} 
+                        placeholder={t('jobPostingAdmin.create.detailedAddressPlaceholder')}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" 
+                    />
                 </div>
             </div>
   
@@ -923,6 +940,7 @@ const JobPostingAdminPage = () => {
                                 </div>
                                 <p className="text-sm text-gray-500 mb-1">
                                     {t('jobPostingAdmin.manage.location')}: {String(t(`locations.${post.location}`, post.location))}
+                                    {post.detailedAddress && <span className="text-gray-400"> - {post.detailedAddress}</span>}
                                 </p>
                                 <p className="text-sm text-gray-500 mb-1">
                                     {t('jobPostingAdmin.manage.date')}: {post.endDate && post.endDate !== post.startDate ? `${formattedStartDate} ~ ${formattedEndDate}` : formattedStartDate}
@@ -1027,6 +1045,17 @@ const JobPostingAdminPage = () => {
                                 <select id="edit-location" name="location" value={currentPost.location} onChange={(e) => setCurrentPost({...currentPost, location: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                     {locations.map(loc => <option key={loc} value={loc}>{t(`locations.${loc}`, loc)}</option>)}
                                 </select>
+                            </div>
+                            <div>
+                                <label htmlFor="edit-detailedAddress" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.detailedAddress')}</label>
+                                <input 
+                                    type="text" 
+                                    id="edit-detailedAddress" 
+                                    value={currentPost.detailedAddress || ''} 
+                                    onChange={(e) => setCurrentPost({...currentPost, detailedAddress: e.target.value})} 
+                                    placeholder={t('jobPostingAdmin.edit.detailedAddressPlaceholder')}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" 
+                                />
                             </div>
                         </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
