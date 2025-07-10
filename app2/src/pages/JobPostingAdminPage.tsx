@@ -46,6 +46,8 @@ const JobPostingAdminPage = () => {
     status: 'open',
     location: '서울',
     detailedAddress: '',
+    preQuestions: [] as any[], // 사전질문 배열
+    usesPreQuestions: false, // 사전질문 사용 여부
     startDate: getTodayString(),
     endDate: getTodayString(),
   });
@@ -358,6 +360,75 @@ const JobPostingAdminPage = () => {
     setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
   };
   
+  // 사전질문 관리 함수들
+  const handlePreQuestionsToggle = (enabled: boolean) => {
+    if (enabled) {
+      setFormData(prev => ({
+        ...prev,
+        usesPreQuestions: true,
+        preQuestions: [{
+          id: Date.now().toString(),
+          question: '',
+          required: false,
+          type: 'text',
+          options: []
+        }]
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        usesPreQuestions: false,
+        preQuestions: []
+      }));
+    }
+  };
+
+  const addPreQuestion = () => {
+    const newQuestion = {
+      id: Date.now().toString(),
+      question: '',
+      required: false,
+      type: 'text',
+      options: []
+    };
+    setFormData(prev => ({
+      ...prev,
+      preQuestions: [...prev.preQuestions, newQuestion]
+    }));
+  };
+
+  const removePreQuestion = (questionIndex: number) => {
+    const newPreQuestions = formData.preQuestions.filter((_, i) => i !== questionIndex);
+    setFormData(prev => ({ ...prev, preQuestions: newPreQuestions }));
+  };
+
+  const handlePreQuestionChange = (questionIndex: number, field: string, value: any) => {
+    const newPreQuestions = [...formData.preQuestions];
+    newPreQuestions[questionIndex] = { ...newPreQuestions[questionIndex], [field]: value };
+    setFormData(prev => ({ ...prev, preQuestions: newPreQuestions }));
+  };
+
+  const addPreQuestionOption = (questionIndex: number) => {
+    const newPreQuestions = [...formData.preQuestions];
+    if (!newPreQuestions[questionIndex].options) {
+      newPreQuestions[questionIndex].options = [];
+    }
+    newPreQuestions[questionIndex].options!.push('');
+    setFormData(prev => ({ ...prev, preQuestions: newPreQuestions }));
+  };
+
+  const removePreQuestionOption = (questionIndex: number, optionIndex: number) => {
+    const newPreQuestions = [...formData.preQuestions];
+    newPreQuestions[questionIndex].options = newPreQuestions[questionIndex].options!.filter((_: string, i: number) => i !== optionIndex);
+    setFormData(prev => ({ ...prev, preQuestions: newPreQuestions }));
+  };
+
+  const handlePreQuestionOptionChange = (questionIndex: number, optionIndex: number, value: string) => {
+    const newPreQuestions = [...formData.preQuestions];
+    newPreQuestions[questionIndex].options![optionIndex] = value;
+    setFormData(prev => ({ ...prev, preQuestions: newPreQuestions }));
+  };
+  
   // Edit Modal Handlers
     const handleEditTimeSlotChange = (timeSlotIndex: number, value: string) => {
         const newTimeSlots = [...currentPost.timeSlots];
@@ -476,6 +547,75 @@ const JobPostingAdminPage = () => {
       newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].roles.filter((_: any, i: number) => i !== roleIndex);
     setCurrentPost((prev: any) => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
     };
+    
+    // 편집 모달 사전질문 관리 함수들
+    const handleEditPreQuestionsToggle = (enabled: boolean) => {
+      if (enabled) {
+        setCurrentPost((prev: any) => ({
+          ...prev,
+          usesPreQuestions: true,
+          preQuestions: [{
+            id: Date.now().toString(),
+            question: '',
+            required: false,
+            type: 'text',
+            options: []
+          }]
+        }));
+      } else {
+        setCurrentPost((prev: any) => ({
+          ...prev,
+          usesPreQuestions: false,
+          preQuestions: []
+        }));
+      }
+    };
+
+    const addEditPreQuestion = () => {
+      const newQuestion = {
+        id: Date.now().toString(),
+        question: '',
+        required: false,
+        type: 'text',
+        options: []
+      };
+      setCurrentPost((prev: any) => ({
+        ...prev,
+        preQuestions: [...(prev.preQuestions || []), newQuestion]
+      }));
+    };
+
+    const removeEditPreQuestion = (questionIndex: number) => {
+      const newPreQuestions = (currentPost.preQuestions || []).filter((_: any, i: number) => i !== questionIndex);
+      setCurrentPost((prev: any) => ({ ...prev, preQuestions: newPreQuestions }));
+    };
+
+    const handleEditPreQuestionChange = (questionIndex: number, field: string, value: any) => {
+      const newPreQuestions = [...(currentPost.preQuestions || [])];
+      newPreQuestions[questionIndex] = { ...newPreQuestions[questionIndex], [field]: value };
+      setCurrentPost((prev: any) => ({ ...prev, preQuestions: newPreQuestions }));
+    };
+
+    const addEditPreQuestionOption = (questionIndex: number) => {
+      const newPreQuestions = [...(currentPost.preQuestions || [])];
+      if (!newPreQuestions[questionIndex].options) {
+        newPreQuestions[questionIndex].options = [];
+      }
+      newPreQuestions[questionIndex].options!.push('');
+      setCurrentPost((prev: any) => ({ ...prev, preQuestions: newPreQuestions }));
+    };
+
+    const removeEditPreQuestionOption = (questionIndex: number, optionIndex: number) => {
+      const newPreQuestions = [...(currentPost.preQuestions || [])];
+      newPreQuestions[questionIndex].options = newPreQuestions[questionIndex].options!.filter((_: string, i: number) => i !== optionIndex);
+      setCurrentPost((prev: any) => ({ ...prev, preQuestions: newPreQuestions }));
+    };
+
+    const handleEditPreQuestionOptionChange = (questionIndex: number, optionIndex: number, value: string) => {
+      const newPreQuestions = [...(currentPost.preQuestions || [])];
+      newPreQuestions[questionIndex].options![optionIndex] = value;
+      setCurrentPost((prev: any) => ({ ...prev, preQuestions: newPreQuestions }));
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -493,6 +633,14 @@ const JobPostingAdminPage = () => {
       // 기존 timeSlots 검사
       if (formData.timeSlots.some(ts => !ts.time || ts.roles.some(r => !r.name || r.count < 1))) {
         alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
+        return;
+      }
+    }
+    
+    // 사전질문 유효성 검사
+    if (formData.usesPreQuestions) {
+      if (formData.preQuestions.some(q => !q.question.trim() || (q.type === 'select' && (!q.options || q.options.length === 0)))) {
+        alert(t('jobPostingAdmin.alerts.invalidPreQuestion', '사전질문 정보가 올바르지 않습니다.'));
         return;
       }
     }
@@ -540,6 +688,7 @@ const JobPostingAdminPage = () => {
         status: formData.status,
         location: formData.location,
         detailedAddress: formData.detailedAddress,
+        preQuestions: formData.usesPreQuestions ? formData.preQuestions : undefined,
         startDate: Timestamp.fromDate(new Date(formData.startDate)),
         endDate: Timestamp.fromDate(new Date(formData.endDate)),
         requiredRoles,
@@ -572,6 +721,8 @@ const JobPostingAdminPage = () => {
         status: 'open',
         location: '서울',
         detailedAddress: '',
+        preQuestions: [],
+        usesPreQuestions: false,
         startDate: getTodayString(),
         endDate: getTodayString(),
       });
@@ -597,6 +748,8 @@ const JobPostingAdminPage = () => {
         endDate: convertToDateString(post.endDate),
         usesDifferentDailyRequirements: JobPostingUtils.hasDateSpecificRequirements(post),
         dateSpecificRequirements: post.dateSpecificRequirements || [],
+        usesPreQuestions: !!(post.preQuestions && post.preQuestions.length > 0),
+        preQuestions: post.preQuestions || [],
     });
     setIsEditModalOpen(true);
   };
@@ -907,6 +1060,138 @@ const JobPostingAdminPage = () => {
             <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.description')}</label>
                 <textarea name="description" id="description" value={formData.description} onChange={handleFormChange} rows={4} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+            </div>
+            
+            {/* 사전질문 섹션 */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.preQuestions')}</label>
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="usesPreQuestions"
+                            checked={formData.usesPreQuestions}
+                            onChange={(e) => handlePreQuestionsToggle(e.target.checked)}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="usesPreQuestions" className="ml-2 text-sm text-gray-700">
+                            {t('jobPostingAdmin.create.usePreQuestions')}
+                        </label>
+                    </div>
+                </div>
+                
+                {formData.usesPreQuestions && (
+                    <div className="space-y-4">
+                        {formData.preQuestions.map((question: any, qIndex: number) => (
+                            <div key={question.id} className="p-4 border border-gray-200 rounded-md bg-gray-50">
+                                <div className="space-y-3">
+                                    {/* 질문 내용 */}
+                                    <div>
+                                        <label htmlFor={`question-${qIndex}`} className="block text-sm font-medium text-gray-700">
+                                            {t('jobPostingAdmin.create.question')} {qIndex + 1}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id={`question-${qIndex}`}
+                                            value={question.question}
+                                            onChange={(e) => handlePreQuestionChange(qIndex, 'question', e.target.value)}
+                                            placeholder={t('jobPostingAdmin.create.questionPlaceholder')}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            required
+                                        />
+                                    </div>
+                                    
+                                    {/* 질문 설정 */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label htmlFor={`question-type-${qIndex}`} className="block text-sm font-medium text-gray-700">
+                                                {t('jobPostingAdmin.create.questionType')}
+                                            </label>
+                                            <select
+                                                id={`question-type-${qIndex}`}
+                                                value={question.type}
+                                                onChange={(e) => handlePreQuestionChange(qIndex, 'type', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            >
+                                                <option value="text">{t('jobPostingAdmin.create.typeText')}</option>
+                                                <option value="textarea">{t('jobPostingAdmin.create.typeTextarea')}</option>
+                                                <option value="select">{t('jobPostingAdmin.create.typeSelect')}</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id={`question-required-${qIndex}`}
+                                                checked={question.required}
+                                                onChange={(e) => handlePreQuestionChange(qIndex, 'required', e.target.checked)}
+                                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                            />
+                                            <label htmlFor={`question-required-${qIndex}`} className="ml-2 text-sm text-gray-700">
+                                                {t('jobPostingAdmin.create.requiredQuestion')}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* 선택형 질문 옵션 */}
+                                    {question.type === 'select' && (
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                {t('jobPostingAdmin.create.selectOptions')}
+                                            </label>
+                                            {(question.options || []).map((option: string, oIndex: number) => (
+                                                <div key={oIndex} className="flex items-center space-x-2">
+                                                    <input
+                                                        type="text"
+                                                        value={option}
+                                                        onChange={(e) => handlePreQuestionOptionChange(qIndex, oIndex, e.target.value)}
+                                                        placeholder={t('jobPostingAdmin.create.optionPlaceholder')}
+                                                        className="flex-1 rounded-md border-gray-300 shadow-sm"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removePreQuestionOption(qIndex, oIndex)}
+                                                        className="text-red-600 hover:text-red-800 text-sm"
+                                                    >
+                                                        {t('jobPostingAdmin.create.remove')}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => addPreQuestionOption(qIndex)}
+                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                            >
+                                                + {t('jobPostingAdmin.create.addOption')}
+                                            </button>
+                                        </div>
+                                    )}
+                                    
+                                    {/* 질문 삭제 버튼 */}
+                                    {formData.preQuestions.length > 1 && (
+                                        <div className="flex justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => removePreQuestion(qIndex)}
+                                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                            >
+                                                {t('jobPostingAdmin.create.removeQuestion')}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                        
+                        <button
+                            type="button"
+                            onClick={addPreQuestion}
+                            className="text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                            + {t('jobPostingAdmin.create.addQuestion')}
+                        </button>
+                    </div>
+                )}
             </div>
             <div className="flex justify-end space-x-2">
               <button type="button" onClick={() => setIsCreateFormVisible(false)} className="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-700">
@@ -1240,6 +1525,138 @@ const JobPostingAdminPage = () => {
                         <div>
                             <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.description')}</label>
                             <textarea id="edit-description" value={currentPost.description} onChange={(e) => setCurrentPost({...currentPost, description: e.target.value})} rows={4} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        </div>
+                        
+                        {/* 편집 모달 사전질문 섹션 */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.preQuestions')}</label>
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="edit-usesPreQuestions"
+                                        checked={currentPost.usesPreQuestions || false}
+                                        onChange={(e) => handleEditPreQuestionsToggle(e.target.checked)}
+                                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="edit-usesPreQuestions" className="ml-2 text-sm text-gray-700">
+                                        {t('jobPostingAdmin.edit.usePreQuestions')}
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {currentPost.usesPreQuestions && (
+                                <div className="space-y-4">
+                                    {(currentPost.preQuestions || []).map((question: any, qIndex: number) => (
+                                        <div key={question.id} className="p-4 border border-gray-200 rounded-md bg-gray-50">
+                                            <div className="space-y-3">
+                                                {/* 질문 내용 */}
+                                                <div>
+                                                    <label htmlFor={`edit-question-${qIndex}`} className="block text-sm font-medium text-gray-700">
+                                                        {t('jobPostingAdmin.edit.question')} {qIndex + 1}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        id={`edit-question-${qIndex}`}
+                                                        value={question.question}
+                                                        onChange={(e) => handleEditPreQuestionChange(qIndex, 'question', e.target.value)}
+                                                        placeholder={t('jobPostingAdmin.edit.questionPlaceholder')}
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        required
+                                                    />
+                                                </div>
+                                                
+                                                {/* 질문 설정 */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label htmlFor={`edit-question-type-${qIndex}`} className="block text-sm font-medium text-gray-700">
+                                                            {t('jobPostingAdmin.edit.questionType')}
+                                                        </label>
+                                                        <select
+                                                            id={`edit-question-type-${qIndex}`}
+                                                            value={question.type}
+                                                            onChange={(e) => handleEditPreQuestionChange(qIndex, 'type', e.target.value)}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        >
+                                                            <option value="text">{t('jobPostingAdmin.edit.typeText')}</option>
+                                                            <option value="textarea">{t('jobPostingAdmin.edit.typeTextarea')}</option>
+                                                            <option value="select">{t('jobPostingAdmin.edit.typeSelect')}</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`edit-question-required-${qIndex}`}
+                                                            checked={question.required}
+                                                            onChange={(e) => handleEditPreQuestionChange(qIndex, 'required', e.target.checked)}
+                                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                                        />
+                                                        <label htmlFor={`edit-question-required-${qIndex}`} className="ml-2 text-sm text-gray-700">
+                                                            {t('jobPostingAdmin.edit.requiredQuestion')}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* 선택형 질문 옵션 */}
+                                                {question.type === 'select' && (
+                                                    <div className="space-y-2">
+                                                        <label className="block text-sm font-medium text-gray-700">
+                                                            {t('jobPostingAdmin.edit.selectOptions')}
+                                                        </label>
+                                                        {(question.options || []).map((option: string, oIndex: number) => (
+                                                            <div key={oIndex} className="flex items-center space-x-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={option}
+                                                                    onChange={(e) => handleEditPreQuestionOptionChange(qIndex, oIndex, e.target.value)}
+                                                                    placeholder={t('jobPostingAdmin.edit.optionPlaceholder')}
+                                                                    className="flex-1 rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeEditPreQuestionOption(qIndex, oIndex)}
+                                                                    className="text-red-600 hover:text-red-800 text-sm"
+                                                                >
+                                                                    {t('jobPostingAdmin.edit.remove')}
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => addEditPreQuestionOption(qIndex)}
+                                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                        >
+                                                            + {t('jobPostingAdmin.edit.addOption')}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* 질문 삭제 버튼 */}
+                                                {(currentPost.preQuestions || []).length > 1 && (
+                                                    <div className="flex justify-end">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeEditPreQuestion(qIndex)}
+                                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                                        >
+                                                            {t('jobPostingAdmin.edit.removeQuestion')}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    
+                                    <button
+                                        type="button"
+                                        onClick={addEditPreQuestion}
+                                        className="text-indigo-600 hover:text-indigo-800 font-medium"
+                                    >
+                                        + {t('jobPostingAdmin.edit.addQuestion')}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.status')}</label>
