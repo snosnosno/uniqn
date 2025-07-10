@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PreQuestion, PreQuestionAnswer } from '../types/jobPosting';
-import { useToast } from '../hooks/useToast';
+import { useToast } from '../contexts/ToastContext';
 
 interface PreQuestionModalProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   jobPostingId
 }) => {
   const { t } = useTranslation();
-  const { showToast } = useToast();
+  const { showSuccess, showError, showWarning } = useToast();
   
   // 답변 상태 관리
   const [answers, setAnswers] = useState<{ [questionId: string]: string }>({});
@@ -67,9 +67,8 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     for (const question of requiredQuestions) {
       const answer = answers[question.id];
       if (!answer || answer.trim() === '') {
-        showToast(
-          `"${question.question}" ${t('jobBoard.preQuestion.requiredField')}`,
-          'error'
+        showError(
+          `"${question.question}" ${t('jobBoard.preQuestion.requiredField')}`
         );
         return false;
       }
@@ -99,12 +98,12 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
       // localStorage 정리
       localStorage.removeItem(getStorageKey());
       
-      showToast(t('jobBoard.preQuestion.success'), 'success');
+      showSuccess(t('jobBoard.preQuestion.success'));
       onClose();
       
     } catch (error) {
       console.error('Failed to submit pre-questions:', error);
-      showToast(t('jobBoard.preQuestion.error'), 'error');
+      showError(t('jobBoard.preQuestion.error'));
     } finally {
       setIsSubmitting(false);
     }

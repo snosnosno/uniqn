@@ -66,6 +66,32 @@ service cloud.firestore {
         allow read: if isSignedIn() && (isOwner(staffId) || isPrivileged());
         allow write: if isSignedIn() && isOwner(staffId);
     }
+
+    // --- Job Postings Collection ---
+    match /jobPostings/{postId} {
+      allow read: if isSignedIn();
+      allow write: if isPrivileged();
+      
+      // Validate required fields and new fields
+      allow create: if isPrivileged() && 
+        request.resource.data.keys().hasAll(['title', 'description', 'location', 'status']) &&
+        (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
+        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list);
+      
+      allow update: if isPrivileged() && 
+        (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
+        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list);
+    }
+
+    // --- Applications Collection ---
+    match /applications/{applicationId} {
+      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.applicantId);
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
+        request.resource.data.keys().hasAll(['applicantId', 'postId', 'status']) &&
+        (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
+      allow update: if isPrivileged();
+      allow delete: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.applicantId);
+    }
     
     // Fallback rule: deny all other access
     match /{document=**} {
