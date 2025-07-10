@@ -11,6 +11,8 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobPostingSkeleton from '../components/JobPostingSkeleton';
 import JobBoardErrorBoundary from '../components/JobBoardErrorBoundary';
+import PreQuestionModal from '../components/PreQuestionModal';
+import { PreQuestionAnswer } from '../types/jobPosting';
 
 const JobBoardPage = () => {
   const { t } = useTranslation();
@@ -72,6 +74,11 @@ const JobBoardPage = () => {
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<JobPosting | null>(null);
     const [selectedAssignments, setSelectedAssignments] = useState<{ timeSlot: string, role: string, date?: string }[]>([]);
+  
+  // 사전질문 모달 관련 상태
+  const [isPreQuestionModalOpen, setIsPreQuestionModalOpen] = useState(false);
+  const [preQuestionCompleted, setPreQuestionCompleted] = useState<Map<string, boolean>>(new Map());
+  const [preQuestionAnswers, setPreQuestionAnswers] = useState<Map<string, PreQuestionAnswer[]>>(new Map());
     
   useEffect(() => {
     if (!currentUser || !jobPostings) return;
@@ -241,6 +248,30 @@ const JobBoardPage = () => {
     }
   };
 
+  // 사전질문 유무 확인 헬퍼 함수
+  const hasPreQuestions = (post: JobPosting) => {
+    return post.preQuestions && post.preQuestions.length > 0;
+  };
+
+  // 사전질문 모달 핸들러
+  const handleOpenPreQuestionModal = (post: JobPosting) => {
+    setSelectedPost(post);
+    setIsPreQuestionModalOpen(true);
+  };
+
+  const handlePreQuestionComplete = (answers: PreQuestionAnswer[]) => {
+    if (!selectedPost) return;
+    
+    // 사전질문 완료 상태 업데이트
+    setPreQuestionCompleted(prev => new Map(prev).set(selectedPost.id, true));
+    setPreQuestionAnswers(prev => new Map(prev).set(selectedPost.id, answers));
+    setIsPreQuestionModalOpen(false);
+    
+    // 사전질문 완료 후 자동으로 지원하기 모달 열기
+    setIsApplyModalOpen(true);
+    setSelectedAssignments([]);
+  };
+
   const handleOpenApplyModal = (post: JobPosting) => {
     setSelectedPost(post);
     setIsApplyModalOpen(true);
@@ -295,6 +326,9 @@ const JobBoardPage = () => {
       // 기존 호환성을 위해 첫 번째 선택값 사용
       const firstSelection = selectedAssignments[0];
       
+      // 사전질문 답변 가져오기
+      const answers = preQuestionAnswers.get(selectedPost.id);
+      
       // Firebase용 데이터 객체 구성 (undefined 값 제거)
       const applicationData: any = {
         applicantId: currentUser.uid,
@@ -312,6 +346,11 @@ const JobBoardPage = () => {
         assignedRoles: assignedRoles,
         assignedTimes: assignedTimes,
       };
+
+      // 사전질문 답변이 있으면 추가
+      if (answers && answers.length > 0) {
+        applicationData.preQuestionAnswers = answers;
+      }
 
       // 조건부로 필드 추가 (undefined 방지)
       if (firstSelection.date) {
@@ -668,13 +707,44 @@ const JobBoardPage = () => {
                         </button>
                       )
                     ) : (
-                      <button
-                        onClick={() => handleOpenApplyModal(post)}
-                        disabled={isProcessing === post.id}
-                        className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-                      >
-                        {isProcessing === post.id ? t('jobBoard.applying') : t('jobBoard.applyNow')}
-                      </button>
+                      <div className="w-full space-y-2">
+                        {hasPreQuestions(post) ? (
+                          <>
+                            {/* 사전질문이 있는 경우 */}
+                            <button
+                              onClick={() => handleOpenPreQuestionModal(post)}
+                              disabled={isProcessing === post.id}
+                              className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                            >
+                              📝 사전질문 확인
+                            </button>
+                            <button
+                              onClick={() => handleOpenApplyModal(post)}
+                              disabled={isProcessing === post.id || !preQuestionCompleted.get(post.id)}
+                              className={`w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                                preQuestionCompleted.get(post.id) 
+                                  ? 'bg-green-600 hover:bg-green-700' 
+                                  : 'bg-gray-400 cursor-not-allowed'
+                              } disabled:bg-gray-400`}
+                            >
+                              {isProcessing === post.id 
+                                ? t('jobBoard.applying') 
+                                : preQuestionCompleted.get(post.id) 
+                                  ? '✅ 지원하기' 
+                                  : '🔒 지원하기 (사전질문 필요)'}
+                            </button>
+                          </>
+                        ) : (
+                          /* 사전질문이 없는 경우 - 기존 방식 */
+                          <button
+                            onClick={() => handleOpenApplyModal(post)}
+                            disabled={isProcessing === post.id}
+                            className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                          >
+                            {isProcessing === post.id ? t('jobBoard.applying') : t('jobBoard.applyNow')}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -686,7 +756,7 @@ const JobBoardPage = () => {
         {/* Apply Modal */}
         {isApplyModalOpen && selectedPost && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div className="relative top-4 sm:top-20 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
               <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('jobBoard.applyModal.title', { postTitle: selectedPost.title })}</h3>
               
               {/* 선택된 항목들 미리보기 */}
@@ -828,6 +898,17 @@ const JobBoardPage = () => {
               </div>
               </div>
               )}
+
+        {/* PreQuestion Modal */}
+        {isPreQuestionModalOpen && selectedPost && selectedPost.preQuestions && (
+          <PreQuestionModal
+            isOpen={isPreQuestionModalOpen}
+            onClose={() => setIsPreQuestionModalOpen(false)}
+            onComplete={handlePreQuestionComplete}
+            questions={selectedPost.preQuestions}
+            jobPostingId={selectedPost.id}
+          />
+        )}
         
             {/* Infinite Scroll Loading Indicator */}
             <div ref={loadMoreRef} className="flex justify-center py-4">
