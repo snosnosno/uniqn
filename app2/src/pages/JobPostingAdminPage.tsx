@@ -688,7 +688,7 @@ const JobPostingAdminPage = () => {
         status: formData.status,
         location: formData.location,
         detailedAddress: formData.detailedAddress,
-        preQuestions: formData.usesPreQuestions ? formData.preQuestions : undefined,
+        ...(formData.usesPreQuestions && formData.preQuestions.length > 0 ? { preQuestions: formData.preQuestions } : {}),
         startDate: Timestamp.fromDate(new Date(formData.startDate)),
         endDate: Timestamp.fromDate(new Date(formData.endDate)),
         requiredRoles,
@@ -779,13 +779,17 @@ const JobPostingAdminPage = () => {
       ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
       
       const { id, ...postData } = currentPost;
-      await updateDoc(postRef, {
-        ...postData,
+      
+      // Firebase용 업데이트 데이터 구성 (undefined 필드 제거)
+      const updateData: any = {
+        ...Object.fromEntries(Object.entries(postData).filter(([_, value]) => value !== undefined)),
         startDate: convertToTimestamp(currentPost.startDate), // Safe conversion to Timestamp
         endDate: convertToTimestamp(currentPost.endDate), // Safe conversion to Timestamp
         requiredRoles, // Add for role filtering
         searchIndex // Add for text search
-      });
+      };
+      
+      await updateDoc(postRef, updateData);
       alert(t('jobPostingAdmin.alerts.updateSuccess'));
       setIsEditModalOpen(false);
       setCurrentPost(null);

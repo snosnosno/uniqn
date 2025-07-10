@@ -5,23 +5,41 @@
   "locations": {
     "seoul": "Seoul",
     "gyeonggi": "Gyeonggi",
+    "경기": "Gyeonggi",
     "incheon": "Incheon",
+    "인천": "Incheon",
     "gangwon": "Gangwon",
+    "강원": "Gangwon",
     "daejeon": "Daejeon",
+    "대전": "Daejeon",
     "sejong": "Sejong",
+    "세종": "Sejong",
     "chungnam": "Chungnam",
+    "충남": "Chungnam",
     "chungbuk": "Chungbuk",
+    "충북": "Chungbuk",
     "gwangju": "Gwangju",
+    "광주": "Gwangju",
     "jeonnam": "Jeonnam",
+    "전남": "Jeonnam",
     "jeonbuk": "Jeonbuk",
+    "전북": "Jeonbuk",
     "daegu": "Daegu",
+    "대구": "Daegu",
     "gyeongbuk": "Gyeongbuk",
+    "경북": "Gyeongbuk",
     "busan": "Busan",
+    "부산": "Busan",
     "ulsan": "Ulsan",
+    "울산": "Ulsan",
     "gyeongnam": "Gyeongnam",
+    "경남": "Gyeongnam",
     "jeju": "Jeju",
+    "제주": "Jeju",
     "overseas": "Overseas",
-    "other": "Other"
+    "해외": "Overseas",
+    "other": "Other",
+    "기타": "Other"
   },
   "gender": {
     "male": "Male",
@@ -88,7 +106,6 @@
     "invalidEmailError": "The email address format is not valid.",
     "weakPasswordError": "The password is too weak. Please use a stronger password.",
     "backToLogin": "Back to Login",
-    
     "genderLabel": "Gender",
     "genderMale": "Male",
     "genderFemale": "Female"
@@ -282,15 +299,23 @@
   },
   "roles": {
     "dealer": "Dealer",
-    "manager": "Manager",
-    "admin": "Admin",
-    "pending_manager": "Pending Manager"
+    "floor": "Floor",
+    "serving": "Serving",
+    "tournament_director": "Tournament Director",
+    "chip_master": "Chip Master",
+    "registration": "Registration",
+    "security": "Security",
+    "cashier": "Cashier"
   },
   "common": {
     "cancel": "Cancel",
     "save": "Save",
     "saving": "Saving...",
-    "all": "All"
+    "all": "All",
+    "sort": "Sort",
+    "none": "None",
+    "refresh": "Refresh",
+    "loading": "Loading..."
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -530,6 +555,20 @@
     "viewDetails": "View Details",
     "unknownApplicant": "Unknown Applicant",
     "confirmed": "Confirmed",
+    "preQuestion": {
+      "checkButton": "📝 Pre-screening Questions",
+      "completeFirst": "Please complete the pre-screening questions first",
+      "modalTitle": "Pre-screening Questions",
+      "noQuestions": "No pre-screening questions available.",
+      "submit": "Submit Answers",
+      "submitting": "Submitting...",
+      "success": "Pre-screening questions submitted successfully!",
+      "error": "Error submitting pre-screening questions.",
+      "completed": "✓ Pre-screening Completed",
+      "requiredField": "Required field",
+      "answerPlaceholder": "Enter your answer...",
+      "selectOption": "Select an option"
+    },
     "applyModal": {
       "title": "Apply for '{{postTitle}}'",
       "selectAssignment": "Select Time & Role",
@@ -537,8 +576,8 @@
       "full": "Full",
       "cancel": "Cancel",
       "confirm": "Confirm Application"
-      },
-      "filters": {
+    },
+    "filters": {
       "location": "Location",
       "allLocations": "All Locations",
       "type": "Recruitment Type",
@@ -550,7 +589,7 @@
         "label": "Search",
         "placeholder": "Search in title or description..."
       }
-      }
+    }
   },
   "jobPostingAdmin": {
     "alerts": {
@@ -592,6 +631,21 @@
       "security": "Security",
       "cashier": "Cashier",
       "description": "Description / Requirements",
+      "detailedAddress": "Detailed Address",
+      "detailedAddressPlaceholder": "Enter detailed address",
+      "preQuestions": "Pre-screening Questions (Optional)",
+      "addPreQuestion": "Add Question",
+      "removePreQuestion": "Remove Question",
+      "questionText": "Question Text",
+      "questionPlaceholder": "Enter your question",
+      "questionType": "Answer Type",
+      "questionTypeText": "Short Text",
+      "questionTypeTextarea": "Long Text",
+      "questionTypeSelect": "Multiple Choice",
+      "questionRequired": "Required",
+      "questionOptional": "Optional",
+      "addOption": "Add Option",
+      "optionPlaceholder": "Enter option text",
       "submitting": "Submitting...",
       "location": "Location",
       "startDate": "Start Date",
@@ -638,6 +692,21 @@
       "security": "Security",
       "cashier": "Cashier",
       "description": "Description",
+      "detailedAddress": "Detailed Address",
+      "detailedAddressPlaceholder": "Enter detailed address",
+      "preQuestions": "Pre-screening Questions (Optional)",
+      "addPreQuestion": "Add Question",
+      "removePreQuestion": "Remove Question",
+      "questionText": "Question Text",
+      "questionPlaceholder": "Enter your question",
+      "questionType": "Answer Type",
+      "questionTypeText": "Short Text",
+      "questionTypeTextarea": "Long Text",
+      "questionTypeSelect": "Multiple Choice",
+      "questionRequired": "Required",
+      "questionOptional": "Optional",
+      "addOption": "Add Option",
+      "optionPlaceholder": "Enter option text",
       "status": "Status",
       "statusOpen": "Open",
       "statusClosed": "Closed",
@@ -672,10 +741,12 @@
       }
     },
     "unknownUser": "Unknown User"
-    },
+  },
   "profile": {
     "residentId": "Resident ID",
-    "gender": "Gender"
+    "gender": "Gender",
+    "region": "Region",
+    "selectRegion": "Please select a region"
   },
   "profilePage": {
     "eventIdMissing": "Event ID is missing",
@@ -723,8 +794,8 @@
     "residentId": "Resident ID:",
     "gender": "Gender:",
     "viewPayroll": "Payroll History"
-    },
-    "payrollPage": {
+  },
+  "payrollPage": {
     "title": "Payroll History",
     "loading": "Loading payroll data...",
     "accessDenied": "Access denied.",
@@ -751,7 +822,7 @@
     "statusPending": "Pending",
     "noPayroll": "No payroll history",
     "noPayrollMessage": "No payroll history has been generated yet."
-    },
+  },
   "participantLivePage": {
     "notFound": "Participant not found (ID: {{id}})",
     "announcements": "📢 Announcements",
@@ -851,62 +922,61 @@
     "save": "Save",
     "assignedDealer": "assigned",
     "minuteInterval": "minute interval"
+  },
+  "attendance": {
+    "status": {
+      "not_started": "Not Started",
+      "checked_in": "Checked In",
+      "checked_out": "Checked Out",
+      "absent": "Absent"
     },
-    "attendance": {
-      "status": {
-        "not_started": "Not Started",
-        "checked_in": "Checked In",
-        "checked_out": "Checked Out",
-        "absent": "Absent"
-      },
-      "labels": {
-        "checkIn": "Check In Time",
-        "checkOut": "Check Out Time",
-        "scheduled": "Scheduled Time",
-        "actual": "Actual Time",
-        "totalHours": "Total Hours",
-        "attendanceStatus": "Attendance Status",
-        "workingHours": "Working Hours",
-        "breakTime": "Break Time"
-      },
-      "actions": {
-        "checkIn": "Check In",
-        "checkOut": "Check Out",
-        "editTime": "Edit Time",
-        "generateQR": "Generate QR",
-        "scanQR": "Scan QR"
-      },
-      "messages": {
-        "checkInSuccess": "Check-in recorded successfully!",
-        "checkOutSuccess": "Check-out recorded successfully!",
-        "alreadyCheckedIn": "Already checked in.",
-        "alreadyCheckedOut": "Already checked out.",
-        "qrCodeGenerated": "QR code generated.",
-        "attendanceError": "Error occurred while recording attendance.",
-        "timeUpdated": "Time updated successfully.",
-        "updateError": "Error occurred while updating time."
-        }
-        },
-        "editWorkTime": "Edit Work Time",
-        "date": "Date",
-        "eventId": "Event ID",
-        "scheduledTimes": "Scheduled Times",
-        "scheduledStartTime": "Scheduled Start Time",
-        "scheduledEndTime": "Scheduled End Time",
-        "actualTimes": "Actual Times",
-        "actualStartTime": "Actual Start Time",
-        "actualEndTime": "Actual End Time",
-        "workTimeSummary": "Work Time Summary",
-        "scheduledMinutes": "Scheduled Minutes",
-        "actualMinutes": "Actual Minutes",
-        "validation": {
-        "startTimeRequired": "Please enter start time.",
-        "endTimeRequired": "Please enter end time.",
-        "invalidTimeFormat": "Please enter valid time format (HH:MM).",
-        "endTimeAfterStart": "End time must be after start time."
-        }
-        },
-    "errors": {
+    "labels": {
+      "checkIn": "Check In Time",
+      "checkOut": "Check Out Time",
+      "scheduled": "Scheduled Time",
+      "actual": "Actual Time",
+      "totalHours": "Total Hours",
+      "attendanceStatus": "Attendance Status",
+      "workingHours": "Working Hours",
+      "breakTime": "Break Time"
+    },
+    "actions": {
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "editTime": "Edit Time",
+      "generateQR": "Generate QR",
+      "scanQR": "Scan QR"
+    },
+    "messages": {
+      "checkInSuccess": "Check-in recorded successfully!",
+      "checkOutSuccess": "Check-out recorded successfully!",
+      "alreadyCheckedIn": "Already checked in.",
+      "alreadyCheckedOut": "Already checked out.",
+      "qrCodeGenerated": "QR code generated.",
+      "attendanceError": "Error occurred while recording attendance.",
+      "timeUpdated": "Time updated successfully.",
+      "updateError": "Error occurred while updating time."
+    },
+    "editWorkTime": "Edit Work Time",
+    "date": "Date",
+    "eventId": "Event ID",
+    "scheduledTimes": "Scheduled Times",
+    "scheduledStartTime": "Scheduled Start Time",
+    "scheduledEndTime": "Scheduled End Time",
+    "actualTimes": "Actual Times",
+    "actualStartTime": "Actual Start Time",
+    "actualEndTime": "Actual End Time",
+    "workTimeSummary": "Work Time Summary",
+    "scheduledMinutes": "Scheduled Minutes",
+    "actualMinutes": "Actual Minutes",
+    "validation": {
+      "startTimeRequired": "Please enter start time.",
+      "endTimeRequired": "Please enter end time.",
+      "invalidTimeFormat": "Please enter valid time format (HH:MM).",
+      "endTimeAfterStart": "End time must be after start time."
+    }
+  },
+  "errors": {
     "title": "An error has occurred",
     "general": "A temporary error has occurred. Please try again later.",
     "network": "There is a network connection issue. Please check your internet connection.",
@@ -924,50 +994,49 @@
     "4": "Thu",
     "5": "Fri",
     "6": "Sat"
+  },
+  "exceptions": {
+    "late": {
+      "description": "Late ({{minutes}} minutes)"
     },
-    "exceptions": {
-      "late": {
-        "description": "Late ({{minutes}} minutes)"
-      },
-      "earlyLeave": {
-        "description": "Early leave ({{minutes}} minutes early)"
-      },
-      "absence": {
-        "description": "No check-in record"
-      },
-      "overtime": {
-        "description": "Overtime ({{minutes}} minutes over)"
-      },
-      "managerNote": "Manager Note",
-      "managerNotePlaceholder": "Enter description for exception...",
-      "edit": "Edit",
-      "note": "Note",
-      "updateSuccess": "Exception updated successfully",
-      "updateError": "Failed to update exception"
+    "earlyLeave": {
+      "description": "Early leave ({{minutes}} minutes early)"
     },
-    "payroll": {
-      "calculate": "Calculate Payroll",
-      "generating": "Generating Payroll...",
-      "export": "Export Payroll CSV",
-      "noDataToExport": "No payroll data to export.",
-      "summary": {
-        "title": "Payroll Summary",
-        "totalHours": "Total Hours",
-        "regularHours": "Regular",
-        "overtimeHours": "Overtime",
-        "totalPay": "Total Pay",
-        "basePay": "Base Pay",
-        "exceptions": "Exceptions",
-        "deductions": "Deductions"
-      },
-      "details": {
-        "title": "Staff Payroll Details",
-        "staffName": "Staff Name",
-        "workHours": "Work Hours",
-        "overtime": "Overtime",
-        "exceptions": "Exceptions",
-        "totalPay": "Total Pay"
-      }
+    "absence": {
+      "description": "No check-in record"
+    },
+    "overtime": {
+      "description": "Overtime ({{minutes}} minutes over)"
+    },
+    "managerNote": "Manager Note",
+    "managerNotePlaceholder": "Enter description for exception...",
+    "edit": "Edit",
+    "note": "Note",
+    "updateSuccess": "Exception updated successfully",
+    "updateError": "Failed to update exception"
+  },
+  "payroll": {
+    "calculate": "Calculate Payroll",
+    "generating": "Generating Payroll...",
+    "export": "Export Payroll CSV",
+    "noDataToExport": "No payroll data to export.",
+    "summary": {
+      "title": "Payroll Summary",
+      "totalHours": "Total Hours",
+      "regularHours": "Regular",
+      "overtimeHours": "Overtime",
+      "totalPay": "Total Pay",
+      "basePay": "Base Pay",
+      "exceptions": "Exceptions",
+      "deductions": "Deductions"
+    },
+    "details": {
+      "title": "Staff Payroll Details",
+      "staffName": "Staff Name",
+      "workHours": "Work Hours",
+      "overtime": "Overtime",
+      "exceptions": "Exceptions",
+      "totalPay": "Total Pay"
     }
-    }
-    }
+  }
+}
