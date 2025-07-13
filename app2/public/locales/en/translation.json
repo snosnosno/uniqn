@@ -315,7 +315,8 @@
     "sort": "Sort",
     "none": "None",
     "refresh": "Refresh",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "comingSoon": "Coming Soon"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -751,7 +752,9 @@
         "applied": "Applied",
         "confirmed": "Confirmed",
         "rejected": "Rejected"
-      }
+      },
+      "status_confirmed": "Confirmed",
+      "confirmed": "Confirmed"
     },
     "unknownUser": "Unknown User"
   },
