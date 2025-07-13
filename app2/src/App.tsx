@@ -34,9 +34,7 @@ import ShiftSchedulePage from './pages/ShiftSchedulePage';
 
 // Admin Pages
 import DashboardPage from './pages/admin/DashboardPage';
-import AdminEventsListPage from './pages/admin/EventsListPage';
-import AdminEventNewPage from './pages/admin/EventNewPage';
-import AdminEventDetailPage from './pages/admin/EventDetailPage';
+
 import JobPostingAdminPage from './pages/JobPostingAdminPage';
 import JobPostingDetailPage from './pages/JobPostingDetailPage';
 import StaffListPage from './pages/StaffListPage';
@@ -48,12 +46,12 @@ import DealerRotationPage from './pages/DealerRotationPage';
 import UserManagementPage from './pages/admin/UserManagementPage'; // Import the new page
 
 // Dealer Pages
-import DealerEventsListPage from './pages/staff/DealerEventsListPage';
+
 
 // A component to handle role-based redirection
 const HomeRedirect: React.FC = () => {
   const { isAdmin } = useAuth(); // isAdmin is kept for compatibility
-  return isAdmin ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/events" replace />;
+  return isAdmin ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/profile" replace />;
 };
 
 // Create a client with optimized cache settings
@@ -91,7 +89,7 @@ const App: React.FC = () => {
                   <Route path="payroll/:userId" element={<PayrollPage />} />
                   
                   {/* Dealer facing routes */}
-                  <Route path="events" element={<DealerEventsListPage />} />
+                  
                   <Route path="jobs" element={<JobBoardPage />} />
                   <Route path="attendance" element={<AttendancePage />} />
                   <Route path="available-times" element={<AvailableTimesPage />} />
@@ -102,9 +100,7 @@ const App: React.FC = () => {
                     <Route path="staff" element={<StaffListPage />} />
                     <Route path="staff/new" element={<StaffNewPage />} />
                     
-                    <Route path="events" element={<AdminEventsListPage />} />
-                    <Route path="events/new" element={<AdminEventNewPage />} />
-                    <Route path="events/:eventId" element={<AdminEventDetailPage />} />
+                    
                     <Route path="job-postings" element={<JobPostingAdminPage />} />
                     <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
                     <Route path="dealer-rotation" element={<DealerRotationPage />} />
