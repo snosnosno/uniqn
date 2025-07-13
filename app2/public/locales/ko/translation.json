@@ -316,7 +316,8 @@
     "sort": "정렬",
     "none": "없음",
     "refresh": "새로고침",
-    "loading": "로딩 중..."
+    "loading": "로딩 중...",
+    "comingSoon": "향후 업데이트 예정"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -759,7 +760,9 @@
         "confirmed": "확정",
         "rejected": "거절"
       },
-      "status_applied": "지원함"
+      "status_applied": "지원함",
+      "status_confirmed": "확정됨",
+      "confirmed": "확정"
     },
     "unknownUser": "알 수 없는 사용자"
   },
