@@ -1,385 +1,215 @@
-# T-HOLDEM 프로젝트 개발 가이드라인
-
-> AI 에이전트 전용 개발 규칙 - 홀덤 토너먼트 운영 플랫폼
+# T-HOLDEM 프로젝트 AI 개발 규칙
 
 ## 프로젝트 개요
 
-### 기술 스택
-- **Frontend**: React 18 + TypeScript + Tailwind CSS
-- **Backend**: Firebase (Firestore, Authentication, Cloud Functions)
-- **다국어**: i18next (한국어 기본, 영어 보조)
-- **라우팅**: React Router v6
-- **상태관리**: React Context API
+- **프로젝트명**: T-HOLDEM (홀덤 토너먼트 운영 플랫폼)
+- **기술 스택**: React 18 + TypeScript + Firebase + Tailwind CSS
+- **아키텍처**: SPA with Firebase Backend (Firestore + Functions + Auth)
+- **핵심 기능**: 구인구직, 급여 관리, 교대 스케줄, 토너먼트 운영
 
-### 핵심 모듈
-- 인증 시스템 (스태프/매니저/관리자 권한)
-- 구인구직 관리
-- 스태프 관리 및 출석 체크
-- 토너먼트 운영
-- 급여 처리 시스템
+## 필수 디렉토리 구조 규칙
 
-## 프로젝트 아키텍처
+### React 애플리케이션 (app2/)
+- **app2/src/pages/**: 페이지 컴포넌트 (admin/, staff/ 하위 디렉토리로 역할별 분리)
+- **app2/src/components/**: 재사용 가능한 컴포넌트
+- **app2/src/components/tabs/**: 탭 기반 컴포넌트 모음
+- **app2/src/hooks/**: 커스텀 훅 (use로 시작하는 명명 규칙)
+- **app2/src/contexts/**: React Context (AuthContext, ToastContext, TournamentContext)
+- **app2/src/types/**: TypeScript 타입 정의 파일
+- **app2/src/utils/**: 유틸리티 함수 및 헬퍼
+- **app2/public/locales/**: 다국어 번역 파일 (ko/, en/)
 
-### 디렉토리 구조
-```
-T-HOLDEM/
-├── app2/src/                    # React 애플리케이션
-│   ├── pages/                   # 페이지 컴포넌트
-│   │   ├── admin/              # 관리자 전용 페이지
-│   │   └── dealer/             # 딜러 전용 페이지
-│   ├── components/             # 재사용 컴포넌트
-│   ├── hooks/                  # 커스텀 훅
-│   ├── contexts/               # React Context
-│   ├── utils/                  # 유틸리티 함수
-│   └── firebase.ts             # Firebase 설정 및 쿼리 함수
-├── functions/                   # Firebase Cloud Functions
-└── public/locales/             # 다국어 리소스
-    ├── ko/                     # 한국어 (기본)
-    └── en/                     # 영어
-```
+### Firebase 백엔드 (functions/)
+- **functions/src/**: Cloud Functions 소스코드
+- **functions/test/**: 함수 테스트 코드
 
-### 핵심 파일 관계도
-- **App.tsx** ↔ **Layout.tsx**: 라우팅과 네비게이션 동기화 필수
-- **firebase.ts** ↔ **모든 페이지**: 데이터베이스 쿼리 중앙 관리
-- **AuthContext.tsx** ↔ **권한 컴포넌트**: 인증 상태 동기화
-- **다국어 파일**: ko/translation.json ↔ en/translation.json 동시 업데이트 필요
+## 타입 정의 우선 개발 규칙
 
-## 코딩 표준
+### 새로운 기능 개발시 순서
+1. **타입 정의 먼저**: app2/src/types/에서 인터페이스 정의
+2. **Firebase 스키마**: Firestore 컬렉션 구조 설계
+3. **컴포넌트 구현**: 타입 안전성 보장하며 구현
+4. **번역 키 추가**: 다국어 지원 필수
 
-### 명명 규칙
-- **컴포넌트**: PascalCase (UserList.tsx)
-- **훅**: camelCase + use 접두사 (useAuth.ts)
-- **페이지**: PascalCase + Page 접미사 (StaffListPage.tsx)
-- **유틸리티**: camelCase (formatDate.ts)
-- **상수**: UPPER_SNAKE_CASE
+### 타입 정의 규칙
+- **인터페이스 명명**: PascalCase 사용 (예: JobPosting, UserProfile)
+- **Firebase 타입**: Timestamp 처리를 위한 any 타입 허용
+- **하위 호환성**: 기존 데이터 구조 파괴 금지
+- **선택적 필드**: 새 필드는 optional(?:) 사용
 
-### TypeScript 규칙
-- 모든 컴포넌트에 Props interface 정의 필수
-- Firebase 데이터는 별도 interface 정의
-- any 타입 사용 금지, unknown 사용 권장
+## Firebase 사용 필수 규칙
 
-### 스타일링 규칙
-- **Tailwind CSS만 사용** - 다른 CSS 프레임워크 금지
-- 반응형 디자인: `sm:` `md:` `lg:` 접두사 필수
-- 색상 팔레트: blue, green, red, gray 계열만 사용
-- 일관된 간격: `p-4` `m-4` `space-y-4` 패턴 사용
+### Firestore 컬렉션 표준
+- **users**: 사용자 프로필 및 인증 정보
+- **events**: 토너먼트 이벤트
+- **jobPostings**: 구인 공고
+- **applications**: 지원 내역
+- **shiftSchedules**: 교대 스케줄
+- **workLogs**: 근무 기록
 
-## 기능 구현 표준
+### Firebase 타입 안전성 규칙
+- **Timestamp 변환**: 직접 사용 금지, 변환 함수 필수 사용
+- **실시간 동기화**: useCollection 훅 사용
+- **에러 처리**: try-catch 블록 및 Toast 메시지 필수
 
-### Firebase 연동 규칙
-- **모든 Firestore 쿼리는 firebase.ts에서 함수로 분리**
-- 실시간 리스너 사용 시 cleanup 함수 필수 구현
-- 에러 처리 및 로딩 상태 관리 필수
-- 트랜잭션 사용 시 롤백 시나리오 고려
+### Firebase Functions 규칙
+- **함수 명명**: camelCase 사용 (예: recordAttendance, logAction)
+- **CORS 설정**: 프론트엔드 도메인 허용 필수
+- **인증 검증**: 모든 민감한 함수에서 사용자 인증 확인
 
-```typescript
-// ✅ 좋은 예시
-export const getStaffList = async (managerId: string) => {
-  try {
-    const query = query(
-      collection(db, 'staff'),
-      where('managerId', '==', managerId)
-    );
-    const snapshot = await getDocs(query);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Staff list fetch error:', error);
-    throw error;
-  }
-};
+## 역할 기반 접근 제어 필수 규칙
 
-// ❌ 나쁜 예시 - 컴포넌트에서 직접 쿼리
-const StaffList = () => {
-  const snapshot = await getDocs(collection(db, 'staff')); // 금지
-};
-```
+### 역할 분류 (role 필드)
+- **admin**: 전체 시스템 관리 권한
+- **manager**: 이벤트 및 스태프 관리 권한  
+- **staff**: 개인 업무 및 출석 관리 권한
 
-### 인증 및 권한 관리
-- **AuthContext 사용 필수** - 직접 Firebase Auth 호출 금지
-- 페이지별 권한 체크: `PrivateRoute` 또는 `RoleBasedRoute` 컴포넌트 래핑
-- 권한 레벨: `staff` < `manager` < `admin`
+### 라우팅 보안 규칙
+- **PrivateRoute**: 로그인 필수 페이지에 사용
+- **RoleBasedRoute**: 역할별 접근 제한 페이지에 사용
+- **권한 검증**: useAuth 훅의 isAdmin, currentUser 활용
 
-```typescript
-// ✅ 권한 체크 필수
-<RoleBasedRoute allowedRoles={['manager', 'admin']}>
-  <StaffManagementPage />
-</RoleBasedRoute>
-```
+### 페이지 접근 권한
+- **admin/**: admin 역할만 접근 가능
+- **staff/**: staff, manager, admin 역할 접근 가능
+- **공통 페이지**: 모든 로그인 사용자 접근 가능
 
-### 다국어 처리 규칙
-- **모든 사용자 표시 텍스트는 useTranslation 사용 필수**
-- fallback 문자열 반드시 제공
-- 번역 키는 `페이지명.섹션명.항목명` 패턴 사용
+## 다국어 지원 필수 규칙
 
-```typescript
-// ✅ 좋은 예시
-const { t } = useTranslation();
-<button>{t('staffList.actions.delete', '삭제')}</button>
+### 번역 파일 구조
+- **app2/public/locales/ko/translation.json**: 한국어 (기본)
+- **app2/public/locales/en/translation.json**: 영어
 
-// ❌ 하드코딩 금지
-<button>삭제</button>
-```
+### 번역 사용 규칙
+- **useTranslation 훅**: const { t } = useTranslation() 필수
+- **번역 키 사용**: t('keyName') 형태로 사용
+- **하드코딩 금지**: 직접 텍스트 작성 절대 금지
+- **키 명명 규칙**: 점(.) 표기법 사용 (예: 'jobBoard.apply.title')
 
-### 상태 관리 패턴
+### 번역 키 추가 순서
+1. **한국어 번역 먼저**: ko/translation.json에 추가
+2. **영어 번역 후**: en/translation.json에 동일 키 추가
+3. **컴포넌트 적용**: t() 함수로 사용
+
+## 반응형 디자인 필수 규칙
+
+### Tailwind CSS 사용 규칙
+- **모바일 우선**: 기본 스타일 → sm: → md: → lg: 순서
+- **그리드 시스템**: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 패턴
+- **버튼 크기**: 모바일에서 최소 48px 높이 (min-h-[48px])
+- **모달 크기**: 모바일에서 전체 너비, 데스크톱에서 적절한 최대 너비
+
+### 모달 반응형 규칙
+- **모바일**: w-full max-w-[95%] min-h-[80vh]
+- **태블릿**: max-w-2xl 
+- **데스크톱**: max-w-4xl max-h-[90vh]
+
+## 컴포넌트 개발 필수 규칙
+
+### 컴포넌트 구조 규칙
+- **함수형 컴포넌트**: React.FC 타입 사용 선택적
+- **Props 인터페이스**: 컴포넌트별 Props 인터페이스 정의
+- **기본값 설정**: defaultProps 또는 ES6 기본 매개변수 사용
+- **메모이제이션**: React.memo 적절히 활용
+
+### 커스텀 훅 규칙
+- **명명 규칙**: use로 시작 (예: useAuth, useToast)
+- **의존성 배열**: useEffect, useMemo, useCallback 의존성 정확히 명시
+- **에러 처리**: 훅 내부에서 에러 상태 관리
+
+### 상태 관리 규칙
 - **로컬 상태**: useState 사용
-- **전역 상태**: Context API 사용 (Redux 금지)
-- **서버 상태**: 커스텀 훅으로 캐싱 구현
+- **전역 상태**: React Context 사용 (AuthContext, ToastContext)
+- **서버 상태**: react-firebase-hooks 사용
 
-## 프레임워크별 사용 표준
+## 에러 처리 및 사용자 경험 규칙
 
-### React 패턴
-- 함수형 컴포넌트만 사용 (클래스 컴포넌트 금지)
-- 커스텀 훅으로 로직 분리
-- useEffect cleanup 함수 필수 구현
-- 조건부 렌더링 시 null 반환보다 빈 fragment 사용
+### Toast 메시지 규칙
+- **성공 메시지**: useToast 훅의 showToast('message', 'success')
+- **에러 메시지**: useToast 훅의 showToast('message', 'error')  
+- **로딩 상태**: LoadingSpinner 컴포넌트 사용
+- **사용자 친화적**: 기술적 오류 메시지 대신 이해하기 쉬운 메시지
 
-### Firebase 사용 규칙
-- **보안 규칙 수정 금지** - 기존 firestore.rules 유지
-- Cloud Functions 수정 시 배포 전 로컬 테스트 필수
-- 인덱스 생성 시 firestore.indexes.json 업데이트
+### 폼 검증 규칙
+- **실시간 검증**: onChange 이벤트에서 검증
+- **제출 전 검증**: onSubmit에서 최종 검증
+- **에러 표시**: 필드별 에러 메시지 표시
+- **비활성화**: 검증 실패시 제출 버튼 비활성화
 
-### Tailwind CSS 사용법
-- 커스텀 CSS 클래스 생성 금지
-- 유틸리티 클래스만 사용
-- 복잡한 레이아웃은 Grid/Flexbox 조합 사용
+## 데이터 호환성 유지 규칙
 
-## 워크플로우 표준
+### 기존 데이터 보호
+- **필드 추가**: 기존 필드 유지하며 새 필드는 optional
+- **타입 변경**: 기존 타입과 호환 가능한 형태로만 변경
+- **마이그레이션**: 데이터 구조 변경시 마이그레이션 스크립트 필요
 
-### 페이지 추가 워크플로우
-1. `app2/src/pages/`에 컴포넌트 생성
-2. `App.tsx`에 라우트 추가
-3. `Layout.tsx`에 네비게이션 메뉴 추가
-4. 권한 체크 컴포넌트로 래핑
-5. 다국어 리소스 추가 (`ko/`, `en/`)
+### 하위 호환성 패턴
+- **다중 선택 지원**: 기존 단일 선택 + 새로운 다중 선택 동시 지원
+- **타입 체크**: JobPostingUtils.hasMultipleSelections() 같은 유틸리티 사용
+- **폴백 처리**: 새 필드 없을 때 기존 필드 사용하는 로직
 
-### 데이터 모델 변경 워크플로우
-1. TypeScript interface 먼저 정의
-2. Firebase 쿼리 함수 업데이트
-3. 기존 데이터 마이그레이션 스크립트 작성
-4. 관련 컴포넌트 동시 업데이트
+## 멀티파일 조정 필수 규칙
 
-### 컴포넌트 개발 워크플로우
-1. Props interface 정의
-2. 기본 구조 구현
-3. 스타일링 (Tailwind만 사용)
-4. 이벤트 핸들러 구현
-5. 에러 상태 처리
-6. 로딩 상태 처리
+### 타입 정의 수정시
+1. **app2/src/types/**: 타입 인터페이스 수정
+2. **관련 컴포넌트**: 타입 사용하는 모든 컴포넌트 업데이트
+3. **번역 파일**: 새로운 필드에 대한 번역 키 추가
 
-## 핵심 파일 상호작용 표준
+### 새로운 페이지 추가시
+1. **app2/src/pages/**: 페이지 컴포넌트 생성
+2. **app2/src/App.tsx**: 라우팅 설정 추가
+3. **app2/src/components/Layout.tsx**: 네비게이션 메뉴 추가
+4. **RoleBasedRoute**: 필요시 권한 설정
 
-### 필수 동시 수정 파일들
+### API/Firebase Functions 변경시
+1. **functions/src/**: Cloud Functions 수정
+2. **프론트엔드**: 함수 호출 부분 업데이트
+3. **타입 정의**: 요청/응답 타입 업데이트
 
-#### 새 페이지 추가 시
-- `App.tsx` - 라우트 정의
-- `Layout.tsx` - 네비게이션 메뉴
-- `public/locales/ko/translation.json` - 한국어 라벨
-- `public/locales/en/translation.json` - 영어 라벨
+## 절대 금지 사항
 
-#### 권한 관련 수정 시
-- `AuthContext.tsx` - 권한 로직
-- `PrivateRoute.tsx` 또는 `RoleBasedRoute.tsx` - 라우트 보호
-- 관련 페이지 컴포넌트 - 권한 체크
+### 보안 관련 금지사항
+- **클라이언트 권한 검증 의존**: 서버에서 권한 재검증 필수
+- **민감 정보 로깅**: 개인정보, 인증 토큰 로그 출력 금지
+- **하드코딩된 시크릿**: API 키, 비밀번호 코드에 포함 금지
 
-#### Firebase 스키마 변경 시
-- `firebase.ts` - 쿼리 함수
-- TypeScript interfaces - 타입 정의
-- 관련 컴포넌트들 - 데이터 사용 부분
+### 데이터 관련 금지사항
+- **직접 Timestamp 사용**: Firebase Timestamp 변환 함수 사용 필수
+- **undefined Firebase 저장**: undefined 값 Firestore 저장 금지
+- **타입 안전성 무시**: any 타입 남용 금지
 
-### 의존성 체크리스트
-- **Toast 알림**: ToastContext 사용 필수
-- **폼 유효성**: 사용자 입력 시 검증 로직 필수
-- **에러 처리**: try-catch + Toast 알림 + 콘솔 로그
-- **로딩 상태**: 모든 비동기 작업에 로딩 UI 필수
+### UI/UX 관련 금지사항
+- **하드코딩된 텍스트**: 다국어 지원 위반하는 직접 텍스트 금지
+- **접근성 무시**: 키보드 내비게이션, 스크린 리더 고려 필수
+- **모바일 미고려**: 데스크톱만 고려한 UI 금지
 
-## AI 의사결정 표준
+## 파일 명명 및 구조 규칙
 
-### 우선순위 판단 기준
-1. **보안** > 성능 > 사용자 경험 > 개발 편의성
-2. **기존 워크플로우 호환성** > 새로운 기능
-3. **안정성** > 최신 기술 도입
-4. **유지보수성** > 코드 간결성
+### 파일 명명 규칙
+- **컴포넌트**: PascalCase.tsx (예: JobBoardPage.tsx)
+- **훅**: camelCase.ts (예: useAuth.ts)
+- **유틸리티**: camelCase.ts (예: timeUtils.ts)
+- **타입**: camelCase.ts (예: jobPosting.ts)
 
-### 모호한 상황 처리
-- 권한 관련: 더 엄격한 보안 선택
-- UI/UX 관련: 더 단순하고 직관적인 방법 선택
-- 성능 관련: 측정 가능한 개선만 적용
-- 기능 추가: 기존 기능과의 일관성 우선
+### 컴포넌트 내부 구조
+- **Import 순서**: React → 라이브러리 → 프로젝트 내부
+- **인터페이스 정의**: 컴포넌트 위에 Props 인터페이스 정의
+- **스타일**: Tailwind CSS 클래스 사용, 인라인 스타일 최소화
 
-### 의사결정 트리
-```
-새 기능 요청
-├── 기존 권한 시스템과 호환? 
-│   ├── Yes → 기존 패턴 따라 구현
-│   └── No → 보안 검토 후 권한 시스템 확장
-├── 기존 UI 패턴과 일치?
-│   ├── Yes → 기존 컴포넌트 재사용
-│   └── No → 새 컴포넌트 생성 (일관성 유지)
-└── Firebase 스키마 변경 필요?
-    ├── Yes → 마이그레이션 계획 수립 필수
-    └── No → 기존 쿼리 함수 확장
-```
+## 성능 최적화 규칙
 
-## 도구 사용 최적화 가이드
+### React 최적화
+- **불필요한 리렌더링**: React.memo, useMemo, useCallback 적절히 사용
+- **키 속성**: 리스트 렌더링시 고유한 key 속성 필수
+- **코드 분할**: React.lazy로 필요시 동적 import
 
-### 터미널 명령 안전 실행 패턴
-
-#### 🔴 터미널 무한 대기 문제 해결법
-**문제**: 터미널 명령이 완료되어도 AI가 응답 대기 상태로 멈춤
-
-**해결법**:
-```bash
-# 1. 백그라운드 실행 활용
-run_terminal_cmd(command="git push origin master", is_background=true)
-
-# 2. 완료 신호와 함께 실행
-"git push origin master && echo 'PUSH_COMPLETED'"
-
-# 3. 타임아웃 추가
-"timeout 30 git push origin master || echo 'Command completed'"
-
-# 4. 분할 실행
-git status → git push (background) → git log --oneline -1
-```
-
-#### 안전한 터미널 실행 체크리스트
-- ✅ 긴 명령은 `is_background: true` 설정
-- ✅ 완료 신호 추가: `&& echo "COMPLETED"`
-- ✅ 타임아웃 설정 고려
-- ✅ 분할 실행으로 검증 가능
-
-### 파일 수정 도구 선택 가이드
-
-#### 🔧 도구 선택 결정 트리
-```
-파일 수정 필요
-├── 파일 크기 < 100줄 + 수정 라인 < 3줄
-│   └── search_replace ✅ (3초, 안전)
-├── 패턴 명확 + 컨텍스트 충분
-│   └── mcp_filesystem_edit_file ✅ (10초, 검증됨)
-├── 복잡한 수정 또는 불확실
-│   └── mcp_filesystem_write_file ✅ (30초, 전체 교체)
-└── 최후의 수단
-    └── edit_file_lines (dryRun 필수, 단순 수정만)
-```
-
-#### 🟢 search_replace 사용 패턴 (권장)
-```typescript
-// 1단계: 대상 텍스트 확인
-grep_search("정확한 텍스트 패턴")
-
-// 2단계: 충분한 컨텍스트 포함
-old_string: "이전 줄\n수정할 줄\n다음 줄"
-new_string: "이전 줄\n새로운 줄\n다음 줄"
-
-// 3단계: 결과 확인
-read_file(수정된 파일)
-```
-
-#### 🟡 edit_file_lines 사용 시 필수 절차
-```bash
-# 1. 파일 상태 확인
-get_file_lines(path, lineNumbers, context: 5)
-
-# 2. dryRun 테스트 (필수)
-edit_file_lines(dryRun: true)
-
-# 3. diff 검토 후 적용
-approve_edit(stateId)
-
-# 4. 결과 검증
-get_file_lines(path, lineNumbers, context: 2)
-```
-
-### 안전성 단계별 접근법
-
-#### 🟢 완전 안전 (Zero Risk)
-- **적용**: 중요 파일, 복잡한 로직, 처음 접하는 코드
-- **패턴**: `read → search → replace → verify`
-- **도구**: `search_replace` 주 사용
-- **보장**: 100% 코드 손상 방지
-
-#### 🟡 검증된 안전 (Verified Safe)
-- **적용**: 단순 수정, 패턴이 명확한 경우
-- **패턴**: `parallel_read → targeted_edit → immediate_verify`
-- **도구**: `mcp_filesystem_edit_file`
-- **조건**: 충분한 컨텍스트 + 고유 패턴 확인
-
-#### 🔴 격리된 위험 (Isolated Risk)
-- **적용**: 대규모 변경, 새 파일 생성
-- **패턴**: `backup → full_replace → compile_test → rollback_ready`
-- **도구**: `mcp_filesystem_write_file`
-- **조건**: 백업 필수 + 테스트 환경
-
-### 문제 발생 시 복구 절차
-
-#### 터미널 무한 대기 시
-1. **사용자 스킵 대기**: Ctrl+C 또는 수동 중단
-2. **백그라운드 전환**: `is_background: true` 재실행
-3. **분할 실행**: 작은 단위로 나누어 실행
-4. **결과 확인**: 별도 명령으로 상태 체크
-
-#### 파일 수정 실패 시
-1. **Git 상태 확인**: `git status`
-2. **변경사항 되돌리기**: `git checkout -- <파일명>`
-3. **안전한 도구 재선택**: `search_replace` 우선
-4. **단계별 검증**: 각 수정 후 즉시 확인
-
-#### 코드 손상 발생 시
-1. **즉시 중단**: 추가 수정 금지
-2. **Git 리셋**: `git reset --hard HEAD`
-3. **백업 복원**: 이전 커밋으로 되돌리기
-4. **원인 분석**: 도구 선택 재검토
-
-## 금지사항
-
-### 절대 금지
-- **Firebase 설정 파일 수정** (firebase.json, firestore.rules)
-- **인증 로직 우회** (AuthContext 무시)
-- **CSS 프레임워크 혼용** (Tailwind 외 금지)
-- **직접 DOM 조작** (React 패턴 위반)
-- **any 타입 남용** (타입 안정성 훼손)
-- **하드코딩된 문자열** (다국어 지원 위반)
-- **터미널 무한 대기 방치** (백그라운드 실행 필수)
-- **edit_file_lines dryRun 생략** (안전성 검증 필수)
-- **복잡한 파일 수정에 edit_file_lines 사용** (search_replace 우선)
-
-### 주의사항
-- 기존 데이터베이스 스키마 변경 시 마이그레이션 필수
-- 권한 체크 없는 민감한 기능 접근 금지
-- 에러 처리 없는 Firebase 쿼리 금지
-- 로딩 상태 없는 비동기 작업 금지
-
-### 프로젝트별 제약
-- **홀덤 용어**: 정확한 포커 용어 사용 필수
-- **권한 구분**: 스태프/매니저/관리자 명확히 구분
-- **급여 계산**: 기존 로직과 호환성 보장
-- **토너먼트 상태**: 비즈니스 로직 일관성 유지
-
-## 예외 상황 가이드
-
-### 긴급 수정 시
-1. 최소한의 변경으로 문제 해결
-2. 임시 해결책이라도 타입 안전성 유지
-3. 수정 후 즉시 로그 확인
-4. 사용자에게 명확한 피드백 제공
-
-### 레거시 코드 발견 시
-1. 기존 동작 유지가 최우선
-2. 점진적 개선 계획 수립
-3. 새 코드는 현재 표준 적용
-4. 호환성 깨는 변경 금지
-
-### 성능 이슈 발생 시
-1. 원인 정확히 파악 후 수정
-2. 캐싱보다 쿼리 최적화 우선
-3. 사용자 경험 저하 방지
-4. 측정 가능한 개선만 적용
+### Firebase 최적화
+- **쿼리 최적화**: where 절 사용하여 필요한 데이터만 조회
+- **인덱스 활용**: 복합 쿼리시 Firestore 인덱스 설정
+- **실시간 리스너**: 필요한 경우만 실시간 업데이트 사용
 
 ---
 
-**문서 버전**: v1.1  
-**최종 업데이트**: 2025년 1월  
-**적용 대상**: T-HOLDEM 프로젝트 AI 에이전트  
-**검토 주기**: 주요 기능 추가 시마다  
-**v1.1 개선사항**: 터미널 무한 대기 문제 해결법, 파일 수정 도구 선택 가이드, 안전성 단계별 접근법 추가
+**마지막 업데이트**: 2025년 1월
+**적용 범위**: T-HOLDEM 프로젝트 전체
+**준수 의무**: AI 에이전트 필수 준수

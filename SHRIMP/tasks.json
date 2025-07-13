@@ -1,174 +1,347 @@
 {
   "tasks": [
     {
-      "id": "5d6b6222-73a1-46f4-9e7a-c3149d356911",
-      "name": "다중 선택 지원을 위한 TypeScript 인터페이스 확장",
-      "description": "지원자의 다중 시간대 선택을 지원하기 위해 기존 Applicant 인터페이스를 확장하고, 새로운 다중 선택 관련 타입들을 정의합니다. 기존 단일 선택 필드는 하위 호환성을 위해 유지하면서 새로운 배열 필드들을 추가합니다.",
-      "notes": "기존 assignedRole, assignedTime 필드는 하위 호환성을 위해 유지해야 합니다. 새로운 배열 필드는 선택적(optional)으로 정의합니다.",
+      "id": "f6d6afa4-81f6-4757-94c9-7dcd1dbee064",
+      "name": "Layout 네비게이션에서 이벤트 관리 메뉴 제거",
+      "description": "Layout.tsx에서 '이벤트 관리' 네비게이션 메뉴를 제거합니다. /admin/events 링크와 관련 아이콘을 삭제하여 사용자가 더 이상 Events 관리 페이지에 접근할 수 없도록 합니다.",
+      "notes": "다른 기능에서 동일한 아이콘을 사용할 수 있으므로 아이콘 import 자체는 유지 필요",
       "status": "completed",
       "dependencies": [],
-      "createdAt": "2025-07-07T17:33:50.665Z",
-      "updatedAt": "2025-07-07T17:38:19.859Z",
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:38:39.383Z",
       "relatedFiles": [
         {
-          "path": "app2/src/types/jobPosting.ts",
+          "path": "app2/src/components/Layout.tsx",
           "type": "TO_MODIFY",
-          "description": "Applicant 인터페이스 확장",
-          "lineStart": 1,
-          "lineEnd": 50
+          "description": "이벤트 관리 네비게이션 메뉴 제거",
+          "lineStart": 70,
+          "lineEnd": 90
+        }
+      ],
+      "implementationGuide": "Layout.tsx 파일에서 다음 작업을 수행: 1) nav.manageEvents 번역 키를 사용하는 NavItem 컴포넌트 제거, 2) /admin/events 경로 참조 삭제, 3) FaCalendarAlt 아이콘이 Events 관리용으로 사용되는 부분 제거",
+      "verificationCriteria": "Layout.tsx에서 이벤트 관리 메뉴가 완전히 제거되고, 다른 관리자 메뉴들은 정상적으로 표시되는지 확인. TypeScript 컴파일 오류가 없어야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "Layout.tsx에서 이벤트 관리 메뉴를 성공적으로 제거했습니다. /admin/events 경로를 참조하는 NavItem 컴포넌트가 완전히 삭제되었으며, 다른 관리자 메뉴들은 정상적으로 유지되었습니다. FaCalendarAlt 아이콘은 shift-schedule에서도 사용되므로 import는 그대로 유지했습니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
+      "completedAt": "2025-07-13T10:38:39.383Z"
+    },
+    {
+      "id": "edfa8576-8fb8-45b9-ba42-408d7a2fdde5",
+      "name": "App.tsx에서 Events 관련 라우팅 제거",
+      "description": "App.tsx에서 Events 관리자 페이지들의 라우팅을 제거합니다. /admin/events, /admin/events/new, /admin/events/:eventId 경로들과 관련 import 구문을 삭제합니다.",
+      "notes": "DealerEventsListPage는 별도 작업에서 처리하므로 이 단계에서는 건드리지 않음",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "f6d6afa4-81f6-4757-94c9-7dcd1dbee064"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:39:46.116Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/App.tsx",
+          "type": "TO_MODIFY",
+          "description": "Events 관리자 페이지 라우팅 및 import 제거",
+          "lineStart": 30,
+          "lineEnd": 35
         },
         {
-          "path": "app2/src/components/tabs/ApplicantListTab.tsx",
-          "type": "REFERENCE",
-          "description": "현재 Applicant 인터페이스 사용 현황 확인",
-          "lineStart": 5,
+          "path": "app2/src/App.tsx",
+          "type": "TO_MODIFY",
+          "description": "Events 관련 Route 컴포넌트 제거",
+          "lineStart": 100,
+          "lineEnd": 110
+        }
+      ],
+      "implementationGuide": "App.tsx 파일에서 다음 작업 수행: 1) AdminEventsListPage, AdminEventNewPage, AdminEventDetailPage import 구문 제거, 2) /admin/events 관련 Route 컴포넌트들 제거, 3) 제거된 import로 인한 unused import 정리",
+      "verificationCriteria": "App.tsx에서 Events 관리자 페이지 관련 import와 라우팅이 완전히 제거되고, TypeScript 컴파일 오류가 없으며, 다른 라우팅은 정상 작동해야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "App.tsx에서 Events 관리자 페이지 관련 라우팅을 성공적으로 제거했습니다. AdminEventsListPage, AdminEventNewPage, AdminEventDetailPage의 import 구문과 /admin/events 관련 Route 컴포넌트들을 완전히 삭제했습니다. DealerEventsListPage는 지침에 따라 그대로 유지했으며, 다른 라우팅들은 정상적으로 작동합니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
+      "completedAt": "2025-07-13T10:39:46.115Z"
+    },
+    {
+      "id": "a27b43f6-0899-4038-8ce2-94f5609f3724",
+      "name": "Events 관리자 페이지 파일들 삭제",
+      "description": "Events 관리자 시스템의 핵심 페이지 파일들을 안전하게 삭제합니다. EventsListPage.tsx, EventNewPage.tsx, EventDetailPage.tsx 파일들을 Git을 통해 삭제합니다.",
+      "notes": "git rm 사용으로 파일 추적 이력도 함께 정리됨. 실수로 다른 파일을 삭제하지 않도록 주의",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "edfa8576-8fb8-45b9-ba42-408d7a2fdde5"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:49:36.355Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/pages/admin/EventsListPage.tsx",
+          "type": "TO_MODIFY",
+          "description": "삭제할 Events 목록 페이지"
+        },
+        {
+          "path": "app2/src/pages/admin/EventNewPage.tsx",
+          "type": "TO_MODIFY",
+          "description": "삭제할 Events 생성 페이지"
+        },
+        {
+          "path": "app2/src/pages/admin/EventDetailPage.tsx",
+          "type": "TO_MODIFY",
+          "description": "삭제할 Events 상세 페이지"
+        }
+      ],
+      "implementationGuide": "다음 파일들을 git rm 명령어로 삭제: 1) app2/src/pages/admin/EventsListPage.tsx, 2) app2/src/pages/admin/EventNewPage.tsx, 3) app2/src/pages/admin/EventDetailPage.tsx. 각 파일 삭제 후 git commit으로 변경사항 저장",
+      "verificationCriteria": "지정된 파일들이 완전히 삭제되고 git 이력에 반영됨. 파일 시스템에서 해당 파일들이 더 이상 존재하지 않아야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "Events 관리자 페이지 파일들을 성공적으로 삭제했습니다. EventsListPage.tsx, EventNewPage.tsx, EventDetailPage.tsx 세 파일을 git rm 명령어로 안전하게 제거했으며, Git 이력에도 정상적으로 반영되었습니다. 파일 시스템에서 해당 파일들이 완전히 사라진 것을 확인했고, 다른 admin 페이지들은 정상적으로 유지되고 있습니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
+      "completedAt": "2025-07-13T10:49:36.354Z"
+    },
+    {
+      "id": "cde28c06-8966-4ffc-b65e-eb0ba103ef9a",
+      "name": "useEvents.ts 훅 삭제",
+      "description": "사용되지 않는 useEvents.ts 훅을 삭제합니다. 이 훅은 Events 관리자 페이지들에서 실제로 사용되지 않으므로 안전하게 제거할 수 있습니다.",
+      "notes": "실제로 사용되지 않는 훅이므로 안전한 삭제 가능. 혹시라도 다른 곳에서 사용 중이라면 해당 import도 함께 정리",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "a27b43f6-0899-4038-8ce2-94f5609f3724"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:50:32.972Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/hooks/useEvents.ts",
+          "type": "TO_MODIFY",
+          "description": "삭제할 useEvents 훅 파일"
+        }
+      ],
+      "implementationGuide": "app2/src/hooks/useEvents.ts 파일을 git rm 명령어로 삭제하고 git commit으로 변경사항 저장. 다른 파일에서 이 훅을 import하는 부분이 있는지 검색하여 함께 제거",
+      "verificationCriteria": "useEvents.ts 파일이 완전히 삭제되고, 다른 파일에서 이 훅을 참조하는 import 구문이 없어야 함. TypeScript 컴파일 오류가 발생하지 않아야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "useEvents.ts 훅을 성공적으로 삭제했습니다. 먼저 다른 파일에서 해당 훅을 import하고 있는지 검색하여 사용되지 않는 것을 확인했고, git rm 명령어로 안전하게 제거했습니다. Git 커밋도 완료되었으며, hooks 디렉토리에서 해당 파일이 완전히 사라진 것을 확인했습니다. 다른 훅 파일들은 정상적으로 유지되고 있습니다.",
+      "completedAt": "2025-07-13T10:50:32.970Z"
+    },
+    {
+      "id": "27b0c1f9-da60-44ae-9529-848146805e95",
+      "name": "Events 관련 번역 키 정리",
+      "description": "번역 파일에서 삭제된 Events 페이지들과 관련된 번역 키들을 제거합니다. eventsList, eventNew, eventDetail 섹션과 nav.manageEvents 키를 한국어/영어 번역 파일에서 삭제합니다.",
+      "notes": "다른 기능에서 사용되는 번역 키는 건드리지 않고, Events 관리자 페이지 전용 키들만 선별하여 제거",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "cde28c06-8966-4ffc-b65e-eb0ba103ef9a"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:53:01.157Z",
+      "relatedFiles": [
+        {
+          "path": "app2/public/locales/ko/translation.json",
+          "type": "TO_MODIFY",
+          "description": "한국어 번역에서 Events 관련 키 제거"
+        },
+        {
+          "path": "app2/public/locales/en/translation.json",
+          "type": "TO_MODIFY",
+          "description": "영어 번역에서 Events 관련 키 제거"
+        }
+      ],
+      "implementationGuide": "다음 번역 파일들을 수정: 1) app2/public/locales/ko/translation.json에서 eventsList, eventNew, eventDetail 섹션 제거 및 nav.manageEvents 키 삭제, 2) app2/public/locales/en/translation.json에서 동일한 키들 제거",
+      "verificationCriteria": "번역 파일에서 Events 관리자 페이지 관련 키들이 제거되고, JSON 문법 오류가 없으며, 다른 번역 키들은 정상적으로 유지되어야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "Events 관련 번역 키들을 성공적으로 정리했습니다. 한국어와 영어 번역 파일에서 nav.manageEvents 키, eventsList 섹션, eventNew 섹션, eventDetail 섹션을 모두 제거했습니다. JSON 문법 오류 없이 깔끔하게 정리되었으며, 다른 번역 키들은 정상적으로 유지되고 있습니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
+      "completedAt": "2025-07-13T10:53:01.155Z"
+    },
+    {
+      "id": "2debf349-0695-4753-a896-e918a7f713e1",
+      "name": "PayrollAdminPage 공고 선택 기능 수정",
+      "description": "PayrollAdminPage에서 공고 목록을 가져오는 기능을 수정합니다. 삭제된 Events 페이지 시스템과 독립적으로 작동하도록 JobPosting 컬렉션을 직접 사용하는 방식으로 변경합니다.",
+      "notes": "급여 관리는 JobPosting 기반이 더 적절함. Events 시스템과의 의존성을 완전히 제거하여 독립적인 기능으로 구현",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "27b0c1f9-da60-44ae-9529-848146805e95"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:55:14.859Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/pages/admin/PayrollAdminPage.tsx",
+          "type": "TO_MODIFY",
+          "description": "공고 선택 기능으로 변경"
+        }
+      ],
+      "implementationGuide": "PayrollAdminPage.tsx에서 Events 관련 로직을 JobPosting 기반으로 변경: 1) Events 컬렉션 대신 jobPostings 컬렉션에서 데이터 가져오기, 2) 이벤트 선택 UI를 공고 선택 UI로 변경, 3) 관련 번역 키 업데이트",
+      "verificationCriteria": "PayrollAdminPage에서 JobPosting 컬렉션을 사용하여 공고 목록을 정상적으로 표시하고, Events 시스템에 대한 의존성이 완전히 제거되어야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "PayrollAdminPage를 성공적으로 JobPosting 기반으로 변경했습니다. Events 컬렉션 대신 jobPostings 컬렉션을 사용하도록 수정하고, Cloud Functions 호출 매개변수도 eventId에서 jobPostingId로 변경했습니다. UI는 \"공고 선택\"으로 변경되어 직관적이며, Events 시스템에 대한 의존성이 완전히 제거되었습니다. JobPosting 타입을 적절히 활용하여 타입 안정성도 확보했습니다.",
+      "completedAt": "2025-07-13T10:55:14.858Z"
+    },
+    {
+      "id": "95d35b9f-2689-4df8-ac04-b0669b6f1bba",
+      "name": "HomeRedirect 라우팅 변경",
+      "description": "App.tsx의 HomeRedirect 컴포넌트를 수정하여 non-admin 사용자가 /events 대신 /profile로 리다이렉트되도록 변경합니다.",
+      "notes": "관리자 라우팅은 변경하지 않고 일반 사용자(스태프) 라우팅만 변경. ProfilePage는 이미 완전한 개인 대시보드 기능 제공",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "2debf349-0695-4753-a896-e918a7f713e1"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:56:17.062Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/App.tsx",
+          "type": "TO_MODIFY",
+          "description": "HomeRedirect 컴포넌트의 라우팅 변경",
+          "lineStart": 50,
+          "lineEnd": 55
+        }
+      ],
+      "implementationGuide": "App.tsx의 HomeRedirect 컴포넌트에서 다음 수정: Navigate to='/events'를 Navigate to='/profile'로 변경. isAdmin 조건은 유지하여 관리자는 여전히 /admin/dashboard로 이동하도록 함",
+      "verificationCriteria": "HomeRedirect에서 non-admin 사용자가 /profile로 정상적으로 리다이렉트되고, admin 사용자는 기존과 동일하게 /admin/dashboard로 이동해야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "HomeRedirect 컴포넌트의 라우팅을 성공적으로 변경했습니다. non-admin 사용자가 /events 대신 /profile로 리다이렉트되도록 수정했으며, admin 사용자는 기존과 동일하게 /admin/dashboard로 이동합니다. ProfilePage가 스태프들의 새로운 홈페이지 역할을 하게 되었고, DealerEventsListPage에서 벗어나 더 개인화된 사용자 경험을 제공할 수 있게 되었습니다.",
+      "completedAt": "2025-07-13T10:56:17.061Z"
+    },
+    {
+      "id": "adda144c-061b-46a3-839b-45cad47f4ceb",
+      "name": "Layout dashboard 버튼 라우팅 변경",
+      "description": "Layout.tsx의 네비게이션에서 dashboard 버튼이 non-admin 사용자의 경우 /events 대신 /profile로 이동하도록 수정합니다.",
+      "notes": "관리자는 기존과 동일하게 /admin/dashboard로 이동하고, 일반 사용자만 /profile로 변경. ProfilePage가 스태프의 새로운 홈페이지 역할",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "95d35b9f-2689-4df8-ac04-b0669b6f1bba"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:57:15.088Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/Layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "dashboard 네비게이션 버튼 라우팅 변경",
+          "lineStart": 80,
+          "lineEnd": 85
+        }
+      ],
+      "implementationGuide": "Layout.tsx의 NavItem 컴포넌트에서 dashboard 링크 수정: to={isAdmin ? '/admin/dashboard' : '/events'}를 to={isAdmin ? '/admin/dashboard' : '/profile'}로 변경",
+      "verificationCriteria": "Layout의 dashboard 버튼이 non-admin 사용자를 /profile로 정상적으로 라우팅하고, admin 사용자는 기존과 동일하게 작동해야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "Layout의 dashboard 버튼 라우팅을 성공적으로 변경했습니다. non-admin 사용자가 dashboard 버튼을 클릭하면 /events 대신 /profile로 이동하도록 수정했으며, admin 사용자는 기존과 동일하게 /admin/dashboard로 이동합니다. 이로써 네비게이션 시스템에서도 ProfilePage가 스태프의 홈페이지 역할을 하게 되었고, 일관된 사용자 경험을 제공할 수 있게 되었습니다.",
+      "completedAt": "2025-07-13T10:57:15.087Z"
+    },
+    {
+      "id": "167e2281-4b42-4630-823f-07ae179e6afb",
+      "name": "RoleBasedRoute 리다이렉트 경로 변경",
+      "description": "RoleBasedRoute.tsx에서 권한이 없는 사용자를 /events 대신 /profile로 리다이렉트하도록 수정합니다.",
+      "notes": "권한이 없는 사용자가 관리자 페이지 접근 시 ProfilePage로 이동하도록 변경. 보안 정책은 유지하면서 사용자 경험 개선",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "adda144c-061b-46a3-839b-45cad47f4ceb"
+        }
+      ],
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T10:58:27.159Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/RoleBasedRoute.tsx",
+          "type": "TO_MODIFY",
+          "description": "unauthorized 사용자 리다이렉트 경로 변경",
+          "lineStart": 20,
           "lineEnd": 25
         }
       ],
-      "implementationGuide": "1. app2/src/types/ 디렉토리에서 기존 타입 파일들 확인\\n2. Applicant 인터페이스에 다음 필드 추가:\\n   - assignedRoles?: string[] (선택한 역할들)\\n   - assignedTimes?: string[] (선택한 시간들)\\n   - assignedDates?: string[] (선택한 날짜들)\\n3. 다중 선택 관련 유틸리티 타입 정의:\\n   - MultipleSelection 인터페이스\\n   - SelectionItem 타입\\n4. JobPosting 인터페이스에 다중 지원자 관련 필드 추가 검토",
-      "verificationCriteria": "1. TypeScript 컴파일 오류 없이 새로운 인터페이스가 정의됨\\n2. 기존 코드에서 타입 오류가 발생하지 않음\\n3. 새로운 다중 선택 필드들이 올바르게 정의됨\\n4. 유틸리티 타입들이 재사용 가능하게 설계됨",
-      "analysisResult": "T-HOLDEM 구인 공고 시스템에서 다중 시간대 지원 기능을 개선하여 지원자가 여러 시간대를 선택할 수 있고, 관리자가 유연하게 인력을 배치할 수 있도록 하는 시스템입니다. React + TypeScript + Firebase 환경에서 기존 아키텍처를 유지하면서 하위 호환성을 보장하는 점진적 개선을 목표로 합니다.",
-      "summary": "TypeScript 인터페이스 확장이 성공적으로 완료되었습니다. Applicant 인터페이스에 다중 선택을 위한 필드들(assignedRoles[], assignedTimes[], assignedDates[])이 추가되었고, 관련 유틸리티 타입들과 JobPostingUtils 헬퍼 함수들이 구현되었습니다. 기존 코드와의 호환성이 유지되며 TypeScript 컴파일 오류가 없음을 확인했습니다.",
-      "completedAt": "2025-07-07T17:38:19.858Z"
+      "implementationGuide": "RoleBasedRoute.tsx에서 Navigate to='/events'를 Navigate to='/profile'로 변경. 권한 확인 로직은 유지하고 리다이렉트 경로만 변경",
+      "verificationCriteria": "RoleBasedRoute에서 권한 없는 사용자가 /profile로 정상적으로 리다이렉트되고, 권한이 있는 사용자는 원래 페이지에 접근할 수 있어야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "RoleBasedRoute의 권한 없는 사용자 리다이렉트 경로를 성공적으로 변경했습니다. /events 대신 /profile로 리다이렉트되도록 수정했으며, 권한 확인 로직은 그대로 유지하여 보안 정책을 보장합니다. 이제 권한이 없는 사용자가 관리자 페이지에 접근을 시도할 때 ProfilePage로 안전하게 이동하여 더 나은 사용자 경험을 제공할 수 있게 되었습니다.",
+      "completedAt": "2025-07-13T10:58:27.158Z"
     },
     {
-      "id": "6f935283-5173-4e7e-9018-5dc760b46cb0",
-      "name": "JobPostingAdminPage 수정 모달에 일자별 요구사항 기능 추가",
-      "description": "현재 생성 폼에만 있는 일자별 다른 인원 요구사항 기능을 수정 모달에도 추가합니다. 토글 버튼과 날짜별 시간대/역할 관리 UI를 포함한 완전한 기능을 구현합니다.",
-      "notes": "기존 생성 폼의 코드 패턴을 최대한 재사용하여 일관성을 유지합니다. currentPost 상태 관리 시 usesDifferentDailyRequirements 필드를 추가로 관리해야 합니다.",
-      "status": "completed",
-      "dependencies": [],
-      "createdAt": "2025-07-07T17:33:50.665Z",
-      "updatedAt": "2025-07-07T17:44:18.405Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/pages/JobPostingAdminPage.tsx",
-          "type": "TO_MODIFY",
-          "description": "수정 모달 섹션과 관련 함수들",
-          "lineStart": 360,
-          "lineEnd": 600
-        },
-        {
-          "path": "app2/src/pages/JobPostingAdminPage.tsx",
-          "type": "REFERENCE",
-          "description": "생성 폼의 일자별 요구사항 구현 참조",
-          "lineStart": 267,
-          "lineEnd": 359
-        }
-      ],
-      "implementationGuide": "1. handleEditDifferentDailyRequirementsToggle 함수 구현\\n2. 일자별 요구사항 관리 함수들 추가:\\n   - handleEditDateSpecificTimeSlotChange\\n   - handleEditDateSpecificRoleChange\\n   - addEditDateSpecificTimeSlot/Role\\n   - removeEditDateSpecificTimeSlot/Role\\n3. 수정 모달 UI에 토글 체크박스 추가\\n4. 일자별 요구사항 렌더링 섹션 추가\\n5. 생성 폼과 동일한 UI/UX 패턴 적용",
-      "verificationCriteria": "1. 수정 모달에서 일자별 요구사항 토글이 정상 작동함\\n2. 토글 활성화 시 날짜별 시간대/역할 관리 UI가 표시됨\\n3. 시간대 추가/삭제, 역할 추가/삭제 기능이 정상 작동함\\n4. 수정된 데이터가 올바르게 저장됨\\n5. 생성 폼과 동일한 UI/UX 제공됨",
-      "analysisResult": "T-HOLDEM 구인 공고 시스템에서 다중 시간대 지원 기능을 개선하여 지원자가 여러 시간대를 선택할 수 있고, 관리자가 유연하게 인력을 배치할 수 있도록 하는 시스템입니다. React + TypeScript + Firebase 환경에서 기존 아키텍처를 유지하면서 하위 호환성을 보장하는 점진적 개선을 목표로 합니다.",
-      "summary": "JobPostingAdminPage 수정 모달에 일자별 요구사항 기능이 성공적으로 추가되었습니다. 토글 체크박스를 통해 일반 요구사항과 일자별 요구사항을 전환할 수 있으며, 일자별 요구사항 모드에서는 날짜별로 시간대와 역할 요구사항을 독립적으로 관리할 수 있습니다. 생성 폼과 동일한 패턴으로 구현되어 일관성이 유지됩니다.",
-      "completedAt": "2025-07-07T17:44:18.405Z"
-    },
-    {
-      "id": "4075279e-47d2-4bc2-b277-93b6956334e8",
-      "name": "JobBoardPage 다중 시간대 선택 기능 구현",
-      "description": "지원자가 하나의 시간대/역할만 선택하는 현재 시스템을 다중 선택이 가능하도록 변경합니다. 체크박스 기반 UI로 변경하고, 선택된 항목들을 배열로 관리하여 Firebase에 저장합니다.",
-      "notes": "UI는 직관적인 체크박스 + 선택된 항목 미리보기 방식으로 구현합니다. 최소 1개 이상 선택해야 지원 가능하도록 유효성 검사를 추가합니다.",
+      "id": "bb1c2f0c-1641-4fe4-b385-1b03c95f938f",
+      "name": "DealerEventsListPage 삭제 및 /events 라우팅 제거",
+      "description": "DealerEventsListPage.tsx 파일을 삭제하고 App.tsx에서 /events 경로 라우팅을 제거합니다. 스태프는 이제 /profile을 홈페이지로 사용합니다.",
+      "notes": "모든 /events 관련 라우팅이 제거되므로 이전 단계에서 라우팅 변경이 완료된 후 실행해야 함. ProfilePage가 스태프의 새로운 홈페이지 역할",
       "status": "completed",
       "dependencies": [
         {
-          "taskId": "5d6b6222-73a1-46f4-9e7a-c3149d356911"
+          "taskId": "167e2281-4b42-4630-823f-07ae179e6afb"
         }
       ],
-      "createdAt": "2025-07-07T17:33:50.665Z",
-      "updatedAt": "2025-07-07T17:54:30.581Z",
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T11:00:04.856Z",
       "relatedFiles": [
         {
-          "path": "app2/src/pages/JobBoardPage.tsx",
+          "path": "app2/src/pages/staff/DealerEventsListPage.tsx",
           "type": "TO_MODIFY",
-          "description": "지원 모달 UI 및 상태 관리 로직",
-          "lineStart": 520,
-          "lineEnd": 642
+          "description": "삭제할 DealerEventsListPage 파일"
         },
         {
-          "path": "app2/src/pages/JobBoardPage.tsx",
+          "path": "app2/src/App.tsx",
           "type": "TO_MODIFY",
-          "description": "handleApply 함수의 데이터 저장 로직",
-          "lineStart": 170,
-          "lineEnd": 210
-        }
-      ],
-      "implementationGuide": "1. 지원 모달의 select를 checkbox 그룹으로 변경\\n2. selectedAssignments 상태를 배열로 변경:\\n   - useState<{timeSlot: string, role: string, date?: string}[]>\\n3. 체크박스 변경 핸들러 구현:\\n   - handleMultipleAssignmentChange\\n4. 선택된 항목들 미리보기 컴포넌트 추가\\n5. Firebase applications 컬렉션에 배열 필드 저장:\\n   - assignedRoles[], assignedTimes[], assignedDates[]\\n6. 기존 단일 필드도 하위 호환성을 위해 첫 번째 선택값으로 설정",
-      "verificationCriteria": "1. 지원 모달에서 여러 시간대/역할을 체크박스로 선택 가능함\\n2. 선택된 항목들이 미리보기로 표시됨\\n3. 최소 1개 이상 선택 시에만 지원 버튼 활성화됨\\n4. 다중 선택 데이터가 Firebase에 배열로 올바르게 저장됨\\n5. 기존 단일 필드도 호환성을 위해 설정됨",
-      "analysisResult": "T-HOLDEM 구인 공고 시스템에서 다중 시간대 지원 기능을 개선하여 지원자가 여러 시간대를 선택할 수 있고, 관리자가 유연하게 인력을 배치할 수 있도록 하는 시스템입니다. React + TypeScript + Firebase 환경에서 기존 아키텍처를 유지하면서 하위 호환성을 보장하는 점진적 개선을 목표로 합니다.",
-      "summary": "JobBoardPage의 다중 시간대 선택 기능이 성공적으로 구현되었습니다. 지원 모달이 체크박스 기반으로 완전히 개선되어 지원자가 여러 시간대/역할을 동시에 선택할 수 있게 되었습니다. Firebase에는 기존 호환성을 위한 단일 필드와 새로운 다중 선택 배열 필드가 모두 저장되며, 직관적인 UI/UX로 사용자 경험이 크게 향상되었습니다.",
-      "completedAt": "2025-07-07T17:54:30.580Z"
-    },
-    {
-      "id": "400f7f13-cb84-4574-ad88-182fe5dfa3e5",
-      "name": "ApplicantListTab 다중 선택 지원자 관리 기능 구현",
-      "description": "지원자가 선택한 모든 시간대를 표시하고, 관리자가 그 중에서 확정할 시간대를 선택할 수 있는 기능을 구현합니다. 다중 선택된 옵션들을 체크박스로 표시하고 최종 확정 시스템을 개선합니다.",
-      "notes": "지원자가 선택한 여러 옵션 중에서 관리자가 최종 1개를 선택하는 방식입니다. UI는 명확하고 직관적이어야 합니다.",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "5d6b6222-73a1-46f4-9e7a-c3149d356911"
-        },
-        {
-          "taskId": "4075279e-47d2-4bc2-b277-93b6956334e8"
-        }
-      ],
-      "createdAt": "2025-07-07T17:33:50.665Z",
-      "updatedAt": "2025-07-07T18:00:09.821Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/components/tabs/ApplicantListTab.tsx",
-          "type": "TO_MODIFY",
-          "description": "지원자 목록 렌더링 및 확정 로직",
-          "lineStart": 1,
-          "lineEnd": 299
-        },
-        {
-          "path": "app2/src/firebase.ts",
-          "type": "REFERENCE",
-          "description": "promoteToStaff 함수 확인",
-          "lineStart": 1,
+          "description": "/events 라우팅 및 import 제거",
+          "lineStart": 45,
           "lineEnd": 50
+        },
+        {
+          "path": "app2/src/App.tsx",
+          "type": "TO_MODIFY",
+          "description": "/events Route 컴포넌트 제거",
+          "lineStart": 85,
+          "lineEnd": 90
         }
       ],
-      "implementationGuide": "1. 지원자 정보 표시 섹션에 선택한 모든 시간대 표시\\n   - assignedRoles[], assignedTimes[], assignedDates[] 배열 렌더링\\n2. 확정 시간대 선택 UI 개선:\\n   - 지원자가 선택한 옵션들만 드롭다운에 표시\\n   - 또는 라디오 버튼 그룹으로 변경\\n3. handleConfirmApplicant 함수 업데이트:\\n   - 최종 선택된 하나의 옵션으로 확정\\n   - confirmedStaff 배열에 추가\\n4. 지원자 카드 UI에 다중 선택 항목들 시각적 표시\\n5. 하위 호환성: 기존 단일 선택 지원자도 정상 표시",
-      "verificationCriteria": "1. 지원자가 선택한 모든 시간대가 명확히 표시됨\\n2. 관리자가 다중 선택된 옵션 중 하나를 선택하여 확정 가능함\\n3. 확정된 지원자 정보가 올바르게 저장됨\\n4. promoteToStaff 함수가 새로운 데이터 구조와 호환됨\\n5. 기존 단일 선택 지원자도 정상적으로 처리됨",
-      "analysisResult": "T-HOLDEM 구인 공고 시스템에서 다중 시간대 지원 기능을 개선하여 지원자가 여러 시간대를 선택할 수 있고, 관리자가 유연하게 인력을 배치할 수 있도록 하는 시스템입니다. React + TypeScript + Firebase 환경에서 기존 아키텍처를 유지하면서 하위 호환성을 보장하는 점진적 개선을 목표로 합니다.",
-      "summary": "ApplicantListTab의 다중 선택 지원자 관리 기능이 성공적으로 구현되었습니다. 지원자가 선택한 모든 시간대가 시각적으로 표시되며, 관리자는 라디오 버튼을 통해 해당 옵션들 중 하나를 선택하여 확정할 수 있습니다. 기존 단일 선택 방식과의 완벽한 하위 호환성을 유지하면서도 새로운 다중 선택 기능을 지원하는 직관적인 UI가 완성되었습니다.",
-      "completedAt": "2025-07-07T18:00:09.819Z"
+      "implementationGuide": "다음 작업 수행: 1) app2/src/pages/staff/DealerEventsListPage.tsx 파일을 git rm으로 삭제, 2) App.tsx에서 DealerEventsListPage import 구문 제거, 3) App.tsx에서 <Route path='events' element={<DealerEventsListPage />} /> 라우팅 제거, 4) git commit으로 변경사항 저장",
+      "verificationCriteria": "DealerEventsListPage 파일이 완전히 삭제되고, /events 경로로 접근 시 404 또는 적절한 fallback이 동작해야 함. 모든 스태프 사용자는 /profile을 통해 정상적으로 작업할 수 있어야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "DealerEventsListPage와 /events 라우팅을 성공적으로 제거했습니다. DealerEventsListPage.tsx 파일을 git rm으로 삭제하고, App.tsx에서 관련 import와 Route 컴포넌트를 제거했습니다. 파일이 staff 디렉토리의 유일한 파일이어서 디렉토리도 함께 정리되었습니다. 이제 /events 경로는 더 이상 존재하지 않으며, 모든 스태프 사용자는 ProfilePage를 홈페이지로 사용하게 되었습니다.",
+      "completedAt": "2025-07-13T11:00:04.855Z"
     },
     {
-      "id": "fdea749b-3f2b-4122-8201-7b2562cdc6ca",
-      "name": "데이터 검증 및 마이그레이션 유틸리티 구현",
-      "description": "기존 단일 선택 데이터와 새로운 다중 선택 데이터 간의 호환성을 보장하고, 데이터 유효성 검사 및 변환 유틸리티를 구현합니다.",
-      "notes": "점진적 마이그레이션을 지원하여 기존 데이터와 새 데이터가 모두 정상 작동하도록 합니다. 자동 변환은 읽기 시점에 수행하여 데이터 무결성을 보장합니다.",
+      "id": "7dececd2-0346-4dd6-9404-3f84c0689202",
+      "name": "TypeScript 컴파일 및 전체 시스템 검증",
+      "description": "모든 변경사항 완료 후 TypeScript 컴파일 오류가 없는지 확인하고 전체 시스템이 정상 작동하는지 테스트합니다. 각 역할별 사용자 시나리오를 검증합니다.",
+      "notes": "시스템 전반의 안정성을 확인하는 최종 검증 단계. 문제 발견 시 이전 커밋으로 롤백 가능한 상태 유지",
       "status": "completed",
       "dependencies": [
         {
-          "taskId": "5d6b6222-73a1-46f4-9e7a-c3149d356911"
+          "taskId": "bb1c2f0c-1641-4fe4-b385-1b03c95f938f"
         }
       ],
-      "createdAt": "2025-07-07T17:33:50.665Z",
-      "updatedAt": "2025-07-07T18:00:57.771Z",
-      "completedAt": "2025-01-16T10:30:00.000Z",
+      "createdAt": "2025-07-13T10:36:37.450Z",
+      "updatedAt": "2025-07-13T11:04:55.707Z",
       "relatedFiles": [
         {
-          "path": "app2/src/types/jobPosting.ts",
-          "type": "TO_MODIFY",
-          "description": "JobPostingUtils에 새로운 헬퍼 함수 추가",
-          "lineStart": 1,
-          "lineEnd": 100
+          "path": "app2/package.json",
+          "type": "REFERENCE",
+          "description": "빌드 스크립트 확인용"
         },
         {
-          "path": "app2/src/utils/",
-          "type": "CREATE",
-          "description": "migrationUtils.ts 새 파일 생성",
-          "lineStart": 1,
-          "lineEnd": 1
+          "path": "app2/src/App.tsx",
+          "type": "REFERENCE",
+          "description": "전체 라우팅 구조 확인용"
+        },
+        {
+          "path": "app2/src/components/Layout.tsx",
+          "type": "REFERENCE",
+          "description": "네비게이션 구조 확인용"
+        },
+        {
+          "path": "app2/src/pages/ProfilePage.tsx",
+          "type": "REFERENCE",
+          "description": "스태프 홈페이지 기능 확인용"
         }
       ],
-      "implementationGuide": "1. 데이터 변환 유틸리티 함수 구현:\\n   - convertSingleToMultiple: 기존 단일 선택을 배열로 변환\\n   - convertMultipleToSingle: 다중 선택에서 첫 번째 값 추출\\n2. 데이터 유효성 검사 함수:\\n   - validateMultipleSelections\\n   - isLegacyApplication (기존 형식 판별)\\n3. 자동 마이그레이션 로직:\\n   - 기존 데이터 읽기 시 자동으로 새 형식으로 변환\\n4. JobPostingUtils에 다중 선택 관련 헬퍼 함수 추가\\n5. 에러 처리 및 로깅 개선",
-      "verificationCriteria": "1. 기존 단일 선택 데이터가 자동으로 다중 선택 형식으로 변환됨\\n2. 새로운 다중 선택 데이터의 유효성 검사가 작동함\\n3. 데이터 변환 시 정보 손실이 없음\\n4. 에러 상황에서 적절한 폴백 처리가 됨\\n5. 로깅 및 디버깅 정보가 충분히 제공됨",
-      "analysisResult": "T-HOLDEM 구인 공고 시스템에서 다중 시간대 지원 기능을 개선하여 지원자가 여러 시간대를 선택할 수 있고, 관리자가 유연하게 인력을 배치할 수 있도록 하는 시스템입니다. React + TypeScript + Firebase 환경에서 기존 아키텍처를 유지하면서 하위 호환성을 보장하는 점진적 개선을 목표로 합니다.",
-      "summary": "데이터 검증 및 마이그레이션 유틸리티가 성공적으로 구현되었습니다. MigrationUtils 클래스를 통해 단일↔다중 선택 데이터 변환, 유효성 검사, 자동 마이그레이션, 배치 처리 기능이 완성되었습니다. 4단계 로깅 시스템과 함께 완전한 백워드 호환성을 보장하며, TypeScript 컴파일 오류 없이 안전하게 동작합니다."
+      "implementationGuide": "다음 검증 작업 수행: 1) npm run build로 TypeScript 컴파일 확인, 2) 관리자 로그인 후 대시보드 및 남은 관리 기능들 테스트, 3) 일반 사용자 로그인 후 /profile 홈페이지 정상 작동 확인, 4) 권한 없는 접근 시 /profile 리다이렉트 확인, 5) 모든 네비게이션 링크 정상 작동 확인",
+      "verificationCriteria": "TypeScript 컴파일이 성공하고, 모든 사용자 역할별 시나리오가 정상 작동하며, 삭제된 페이지들에 접근할 수 없고, 스태프 사용자가 ProfilePage를 홈페이지로 정상 사용할 수 있어야 함.",
+      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
+      "summary": "TypeScript 컴파일 및 전체 시스템 검증을 성공적으로 완료했습니다. 남아있던 Events 관련 import와 라우팅을 모두 제거하고, TypeScript 컴파일이 오류 없이 성공하는 것을 확인했습니다. Events 관리자 페이지 시스템이 완전히 제거되었고, 스태프 사용자는 ProfilePage를 홈페이지로 사용하는 새로운 시스템이 정상 작동합니다. 11개 작업이 모두 완료되어 통합 리팩토링이 성공적으로 마무리되었습니다.",
+      "completedAt": "2025-07-13T11:04:55.706Z"
     }
   ]
 }

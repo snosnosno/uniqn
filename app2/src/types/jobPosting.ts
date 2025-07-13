@@ -1,5 +1,20 @@
 // Job Posting 관련 타입 정의
 
+// 사전 질문 타입 정의
+export interface PreQuestion {
+  id: string;
+  question: string;
+  required: boolean;
+  type: 'text' | 'textarea' | 'select';
+  options?: string[]; // select 타입일 때만 사용
+}
+
+// 사전 질문 답변 타입 정의  
+export interface PreQuestionAnswer {
+  questionId: string;
+  answer: string;
+}
+
 // 지원자 타입 정의
 export interface Applicant {
   id: string;
@@ -61,6 +76,7 @@ export interface JobPosting {
   title: string;
   description: string;
   location: string;
+  detailedAddress?: string; // 상세 주소 (선택사항)
   type: string;
   status: 'open' | 'closed';
   startDate: any; // Firebase Timestamp
@@ -69,6 +85,7 @@ export interface JobPosting {
   managerId?: string;
   timeSlots?: TimeSlot[]; // 기존 전체 기간 공통 타임슬롯
   dateSpecificRequirements?: DateSpecificRequirement[]; // 일자별 특화 요구사항
+  preQuestions?: PreQuestion[]; // 사전 질문 (선택사항)
   confirmedStaff?: ConfirmedStaff[];
   searchIndex?: string[];
   requirements?: any[];

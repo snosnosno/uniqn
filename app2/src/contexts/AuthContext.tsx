@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   onAuthStateChanged, 
-  User, 
+  User as FirebaseUser, 
   signOut as firebaseSignOut, 
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -10,6 +10,11 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+
+// 확장된 User 인터페이스 (Firebase User + 추가 필드)
+export interface User extends FirebaseUser {
+  region?: string; // 지역 필드 (선택사항)
+}
 
 interface AuthContextType {
   currentUser: User | null;

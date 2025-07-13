@@ -17,6 +17,7 @@ interface ProfileData {
   rating?: number;
   ratingCount?: number;
   nationality?: string;
+  region?: string;
   age?: number;
   bankName?: string;
   bankAccount?: string;
@@ -72,11 +73,22 @@ const ProfilePage = () => {
         { code: 'IT', name: 'Italy', flag: '🇮🇹' },
         { code: 'ES', name: 'Spain', flag: '🇪🇸' }
     ];
+
+    const locations = [
+        'seoul', 'gyeonggi', 'incheon', 'gangwon', 'daejeon', 'sejong',
+        'chungnam', 'chungbuk', 'gwangju', 'jeonnam', 'jeonbuk', 
+        'daegu', 'gyeongbuk', 'busan', 'ulsan', 'gyeongnam', 'jeju', 'overseas', 'other'
+    ];
     
     const getNationalityDisplay = (nationality?: string) => {
         if (!nationality) return t('profilePage.notProvided');
         const country = countries.find(c => c.code === nationality);
         return country ? `${country.flag} ${country.name}` : nationality;
+    };
+
+    const getRegionDisplay = (region?: string) => {
+        if (!region) return t('profilePage.notProvided');
+        return t(`locations.${region}`, region);
     };
 
     useEffect(() => {
@@ -213,6 +225,10 @@ const ProfilePage = () => {
                                     <p>{profile.age ? `${profile.age}세` : t('profilePage.notProvided')}</p>
                                 </div>
                                 <div>
+                                    <p className="font-semibold text-gray-600">{t('profile.region')}</p>
+                                    <p>{getRegionDisplay(profile.region)}</p>
+                                </div>
+                                <div>
                                     <p className="font-semibold text-gray-600">{t('profilePage.experience')}</p>
                                     <p>{profile.experience || t('profilePage.notProvided')}</p>
                                 </div>
@@ -271,6 +287,23 @@ const ProfilePage = () => {
                                         {countries.map(country => (
                                             <option key={country.code} value={country.code}>
                                                 {country.flag} {country.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="region" className="block text-sm font-medium text-gray-700">{t('profile.region')}</label>
+                                    <select
+                                        name="region"
+                                        id="region"
+                                        value={formData.region || ''}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    >
+                                        <option value="">{t('profile.selectRegion')}</option>
+                                        {locations.map(location => (
+                                            <option key={location} value={location}>
+                                                {t(`locations.${location}`, location)}
                                             </option>
                                         ))}
                                     </select>
