@@ -39,7 +39,12 @@
     "eject": "react-scripts eject",
     "analyze": "npm run build && npx serve -s build",
     "emulators": "cd .. && firebase emulators:start --only functions,auth,firestore",
-    "dev": "npm run emulators & npm run start"
+    "dev": "npm run emulators & npm run start",
+    "deploy:build": "npm run build",
+    "deploy:hosting": "cd .. && firebase deploy --only hosting",
+    "deploy:functions": "cd .. && firebase deploy --only functions",
+    "deploy:all": "npm run build && cd .. && firebase deploy",
+    "deploy:preview": "npm run build && cd .. && firebase hosting:channel:deploy preview"
   },
   "jest": {
     "transformIgnorePatterns": [
