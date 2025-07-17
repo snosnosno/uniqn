@@ -34,7 +34,6 @@ import ShiftSchedulePage from './pages/ShiftSchedulePage';
 
 // Admin Pages
 import DashboardPage from './pages/admin/DashboardPage';
-
 import JobPostingAdminPage from './pages/JobPostingAdminPage';
 import JobPostingDetailPage from './pages/JobPostingDetailPage';
 import StaffListPage from './pages/StaffListPage';
@@ -46,7 +45,6 @@ import DealerRotationPage from './pages/DealerRotationPage';
 import UserManagementPage from './pages/admin/UserManagementPage'; // Import the new page
 
 // Dealer Pages
-
 
 // A component to handle role-based redirection
 const HomeRedirect: React.FC = () => {
@@ -89,7 +87,6 @@ const App: React.FC = () => {
                   <Route path="payroll/:userId" element={<PayrollPage />} />
                   
                   {/* Dealer facing routes */}
-                  
                   <Route path="jobs" element={<JobBoardPage />} />
                   <Route path="attendance" element={<AttendancePage />} />
                   <Route path="available-times" element={<AvailableTimesPage />} />
@@ -99,7 +96,6 @@ const App: React.FC = () => {
                     <Route path="dashboard" element={<DashboardPage />} />
                     <Route path="staff" element={<StaffListPage />} />
                     <Route path="staff/new" element={<StaffNewPage />} />
-                    
                     
                     <Route path="job-postings" element={<JobPostingAdminPage />} />
                     <Route path="job-posting/:id" element={<JobPostingDetailPage />} />

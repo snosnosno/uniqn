@@ -3,11 +3,7 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../firebase';
 import { useTranslation } from 'react-i18next';
-
-interface Event {
-    id: string;
-    name: string;
-}
+import { JobPosting } from '../../types/jobPosting';
 
 interface Payroll {
     id: string;
@@ -20,29 +16,29 @@ interface Payroll {
 
 const PayrollAdminPage: React.FC = () => {
     const { t, i18n } = useTranslation();
-    const [events, setEvents] = useState<Event[]>([]);
-    const [selectedEvent, setSelectedEvent] = useState<string>('');
+    const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
+    const [selectedJobPosting, setSelectedJobPosting] = useState<string>('');
     const [payrolls, setPayrolls] = useState<Payroll[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchEvents = async () => {
-            const eventsCollection = collection(db, 'events');
-            const eventSnapshot = await getDocs(eventsCollection);
-            const eventList = eventSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Event));
-            setEvents(eventList);
+        const fetchJobPostings = async () => {
+            const jobPostingsCollection = collection(db, 'jobPostings');
+            const jobPostingSnapshot = await getDocs(jobPostingsCollection);
+            const jobPostingList = jobPostingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobPosting));
+            setJobPostings(jobPostingList);
         };
-        fetchEvents();
+        fetchJobPostings();
     }, []);
 
     const handleFetchPayrolls = async () => {
-        if (!selectedEvent) return;
+        if (!selectedJobPosting) return;
         setLoading(true);
         setError(null);
         try {
             const getPayrollsFunc = httpsCallable(functions, 'getPayrolls');
-            const result: any = await getPayrollsFunc({ eventId: selectedEvent });
+            const result: any = await getPayrollsFunc({ jobPostingId: selectedJobPosting });
             
             const payrollsWithNames = await Promise.all(result.data.payrolls.map(async (p: Payroll) => {
                 const userDocRef = doc(db, 'users', p.dealerId);
@@ -60,12 +56,12 @@ const PayrollAdminPage: React.FC = () => {
     };
     
     const handleCalculatePayrolls = async () => {
-        if (!selectedEvent) return;
+        if (!selectedJobPosting) return;
         setLoading(true);
         setError(null);
         try {
-            const calculatePayrollsFunc = httpsCallable(functions, 'calculatePayrollsForEvent');
-            await calculatePayrollsFunc({ eventId: selectedEvent });
+            const calculatePayrollsFunc = httpsCallable(functions, 'calculatePayrollsForJobPosting');
+            await calculatePayrollsFunc({ jobPostingId: selectedJobPosting });
             alert(t('payrollAdmin.alertSuccess'));
             handleFetchPayrolls(); // Refresh the list
         } catch (err) {
@@ -89,19 +85,19 @@ const PayrollAdminPage: React.FC = () => {
                 
                 <div className="flex items-center space-x-4 mb-6">
                     <select
-                        value={selectedEvent}
-                        onChange={(e) => setSelectedEvent(e.target.value)}
+                        value={selectedJobPosting}
+                        onChange={(e) => setSelectedJobPosting(e.target.value)}
                         className="p-2 border rounded-md"
                     >
-                        <option value="">{t('payrollAdmin.selectEvent')}</option>
-                        {events.map(event => (
-                            <option key={event.id} value={event.id}>{event.name}</option>
+                        <option value="">공고 선택</option>
+                        {jobPostings.map(jobPosting => (
+                            <option key={jobPosting.id} value={jobPosting.id}>{jobPosting.title}</option>
                         ))}
                     </select>
-                    <button onClick={handleFetchPayrolls} className="btn btn-primary" disabled={!selectedEvent || loading}>
+                    <button onClick={handleFetchPayrolls} className="btn btn-primary" disabled={!selectedJobPosting || loading}>
                         {loading ? t('payrollAdmin.buttonLoading') : t('payrollAdmin.buttonLoadPayrolls')}
                     </button>
-                    <button onClick={handleCalculatePayrolls} className="btn btn-secondary" disabled={!selectedEvent || loading}>
+                    <button onClick={handleCalculatePayrolls} className="btn btn-secondary" disabled={!selectedJobPosting || loading}>
                         {loading ? t('payrollAdmin.buttonCalculating') : t('payrollAdmin.buttonCalculateAll')}
                     </button>
                 </div>

@@ -66,7 +66,7 @@ export const Layout = () => {
         
         {/* Navigation Menu */}
         <nav className="mt-5 flex-1 px-2 space-y-2">
-            <NavItem to={isAdmin ? "/admin/dashboard" : "/events"} label={t('nav.dashboard')} Icon={FaTachometerAlt} isOpen={isSidebarOpen} />
+            <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard')} Icon={FaTachometerAlt} isOpen={isSidebarOpen} />
             <NavItem to="/jobs" label={t('nav.jobBoard')} Icon={FaClipboardList} isOpen={isSidebarOpen} />
             <NavItem to="/profile" label={t('nav.myProfile')} Icon={FaUserCircle} isOpen={isSidebarOpen} />
             {/* 딜러 가능시간 페이지 숨김 처리 */}

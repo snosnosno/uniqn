@@ -21,7 +21,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ allowedRoles }) => {
   }
 
   // If not authenticated or not authorized, redirect
-  return <Navigate to="/events" replace />;
+  return <Navigate to="/profile" replace />;
 };
 
 export default RoleBasedRoute;

@@ -29,7 +29,7 @@ C:\Users\user\Desktop\T-HOLDEM\
 │   │   ├── components/      # 🧩 재사용 가능한 컴포넌트
 │   │   ├── pages/          # 📄 페이지 컴포넌트
 │   │   │   ├── admin/      # 👑 관리자 전용 페이지
-│   │   │   └── dealer/     # 👨‍💼 딜러 전용 페이지
+│   │   │   └── staff/      # 👨‍💼 스태프 전용 페이지
 │   │   ├── hooks/          # 🎣 커스텀 훅
 │   │   ├── contexts/       # 🏪 React Context
 │   │   ├── utils/          # 🔧 유틸리티 함수
@@ -79,7 +79,7 @@ graph TB
         B --> B6[public/locales/ - 다국어]
         
         B2 --> B2A[admin/ - 관리자 페이지]
-        B2 --> B2B[dealer/ - 스태프 페이지 (기존 dealer 디렉토리)]
+        B2 --> B2B[staff/ - 스태프 전용 페이지]
         B2 --> B2C[일반 페이지들]
         
         C --> C1[src/index.ts - 클라우드 함수]
@@ -122,11 +122,11 @@ graph TB
         D --> D4[급여 처리]
         D --> D5[딜러 로테이션]
         
-        E --> E1[이벤트 목록 조회]
-        E --> E2[구인 게시판]
+        E --> E1[개인 프로필 관리]
+        E --> E2[구인 게시판 조회]
         E --> E3[출석 체크]
-        E --> E4[개인 프로필]
-        E --> E5[급여 확인]
+        E --> E4[급여 확인]
+        E --> E5[개인 대시보드]
         
         subgraph "공통 기능"
             F[프로필 관리]
@@ -152,13 +152,13 @@ graph TB
 
 ### Firestore Collections
 - **users**: 사용자 정보 (인증 + 프로필)
-- **events**: 토너먼트 이벤트
+- **jobPostings**: 구인 게시판 (메인 이벤트 관리)
 - **staff**: 스태프 정보 (딜러 포함)
 - **shiftSchedules**: 교대 스케줄
 - **workLogs**: 근무 기록
-- **jobPostings**: 구인 게시판
 - **participants**: 참가자 정보
 - **tables**: 테이블 정보
+- **applications**: 지원서 관리
 
 ### 데이터 관계도 (Mermaid)
 ```mermaid
@@ -173,7 +173,7 @@ erDiagram
         timestamp updatedAt
     }
     
-    EVENTS {
+    JOB_POSTINGS {
         string id PK
         string title
         string description
@@ -184,6 +184,9 @@ erDiagram
         object blindStructure
         string createdBy FK
         timestamp createdAt
+        timestamp applicationDeadline
+        string position
+        number salary
     }
     
     STAFF {
@@ -200,7 +203,7 @@ erDiagram
     
     SHIFT_SCHEDULES {
         string id PK
-        string eventId FK
+        string jobPostingId FK
         string date
         number timeInterval
         string startTime
@@ -212,7 +215,7 @@ erDiagram
     
     WORK_LOGS {
         string id PK
-        string eventId FK
+        string jobPostingId FK
         string dealerId FK
         string dealerName
         string date
@@ -226,22 +229,19 @@ erDiagram
         timestamp createdAt
     }
     
-    JOB_POSTINGS {
+    APPLICATIONS {
         string id PK
-        string eventId FK
-        string title
-        string description
-        string position
-        number salary
+        string jobPostingId FK
+        string applicantId FK
         string status
-        timestamp applicationDeadline
-        string createdBy FK
-        timestamp createdAt
+        timestamp appliedAt
+        object availableTimes
+        string notes
     }
     
     PARTICIPANTS {
         string id PK
-        string eventId FK
+        string jobPostingId FK
         string name
         string email
         string phone
@@ -252,7 +252,7 @@ erDiagram
     
     TABLES {
         string id PK
-        string eventId FK
+        string jobPostingId FK
         string name
         number seatCount
         string status
@@ -260,15 +260,15 @@ erDiagram
         timestamp createdAt
     }
     
-    USERS ||--o{ EVENTS : creates
     USERS ||--o{ JOB_POSTINGS : creates
-    EVENTS ||--o{ SHIFT_SCHEDULES : has
-    EVENTS ||--o{ WORK_LOGS : contains
-    EVENTS ||--o{ JOB_POSTINGS : has
-    EVENTS ||--o{ PARTICIPANTS : contains
-    EVENTS ||--o{ TABLES : has
+    JOB_POSTINGS ||--o{ SHIFT_SCHEDULES : has
+    JOB_POSTINGS ||--o{ WORK_LOGS : contains
+    JOB_POSTINGS ||--o{ PARTICIPANTS : contains
+    JOB_POSTINGS ||--o{ TABLES : has
+    JOB_POSTINGS ||--o{ APPLICATIONS : receives
     STAFF ||--o{ WORK_LOGS : performs
     STAFF ||--o{ TABLES : assigned_to
+    STAFF ||--o{ APPLICATIONS : submits
 ```
 
 ## 🎯 핵심 컴포넌트 및 페이지
@@ -283,13 +283,12 @@ erDiagram
 
 ### 관리자 페이지 (app2/src/pages/admin/)
 - **DashboardPage.tsx**: 관리자 대시보드
-- **EventsListPage.tsx**: 이벤트 목록 관리
 - **UserManagementPage.tsx**: 사용자 관리
-- **PayrollAdminPage.tsx**: 급여 관리
+- **PayrollAdminPage.tsx**: 급여 관리 (JobPosting 기반)
 - **Approval.tsx**: 승인 시스템
 
-### 딜러 페이지 (app2/src/pages/dealer/)
-- **DealerEventsListPage.tsx**: 딜러용 이벤트 목록
+### 스태프 페이지 (app2/src/pages/staff/)
+- **DealerEventsListPage.tsx**: 스태프용 이벤트 목록
 
 ### 공통 페이지 (app2/src/pages/)
 - **Login.tsx**: 로그인
@@ -302,10 +301,10 @@ erDiagram
 
 ### 데이터 관리 훅
 - **useAuth**: 인증 상태 관리
-- **useEvents**: 이벤트 데이터 관리
 - **useShiftSchedule**: 교대 스케줄 관리
 - **useParticipants**: 참가자 데이터 관리
 - **usePayrollData**: 급여 데이터 관리
+- **useJobPostings**: 구인 공고 데이터 관리
 
 ### UI 관리 훅
 - **useToast**: 알림 메시지 관리
