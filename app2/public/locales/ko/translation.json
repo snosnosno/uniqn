@@ -241,6 +241,7 @@
     "cashier": "캐셔"
   },
   "common": {
+    "close": "닫기",
     "cancel": "취소",
     "save": "저장",
     "saving": "저장 중...",
@@ -530,6 +531,10 @@
     "loading": "공고를 불러오는 중..."
   },
   "jobPostingAdmin": {
+    "edit": {
+      "selectOptions": "옵션 선택",
+      "removeQuestion": "질문 삭제"
+    },
     "alerts": {
       "createSuccess": "구인 공고가 성공적으로 생성되었습니다!",
       "createFailed": "구인 공고 생성에 실패했습니다.",
