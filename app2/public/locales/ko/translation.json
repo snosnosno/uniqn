@@ -553,6 +553,8 @@
       "postingClosed": "모든 역할이 채워졌습니다. 구인 공고가 마감되었습니다."
     },
     "create": {
+      "selectOptions": "옵션 선택",
+      "removeQuestion": "질문 삭제",
       "title": "구인 공고 생성",
       "button": "새 공고 작성",
       "postingTitle": "공고 제목",
