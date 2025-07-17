@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, runTransaction, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, runTransaction, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, promoteToStaff } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement } from '../../types/jobPosting';
@@ -336,8 +336,32 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         }
       });
 
-      console.log(`✅ 지원자 확정 취소 완료: ${applicant.applicantName}`);
-      
+      // --- [여기서부터 후처리: 자동 마감 해제, staff 삭제] ---
+      // 1. jobPostings 자동 마감 해제
+      try {
+        const jobPostingDoc = await getDoc(jobPostingRef);
+        if (jobPostingDoc.exists()) {
+          const updatedPost = jobPostingDoc.data();
+          if (!updatedPost.confirmedStaff || updatedPost.confirmedStaff.length === 0) {
+            await updateDoc(jobPostingRef, { status: 'open' });
+            alert('모든 확정 인원이 사라져 공고가 다시 오픈되었습니다.');
+            console.log('✅ confirmedStaff 비어 status: open 자동 해제');
+          }
+        }
+      } catch (err) {
+        console.error('자동 마감 해제 처리 중 오류:', err);
+        alert('자동 마감 해제 처리 중 오류가 발생했습니다.');
+      }
+
+      // 2. staff 컬렉션 자동 삭제
+      try {
+        await deleteDoc(doc(db, 'staff', applicant.applicantId));
+        console.log('✅ staff 컬렉션에서 해당 지원자 문서 자동 삭제 완료');
+      } catch (err) {
+        console.error('staff 컬렉션 자동 삭제 중 오류:', err);
+        alert('staff 컬렉션 자동 삭제 중 오류가 발생했습니다.');
+      }
+
       // 3. 성공 알림
       alert(`${applicant.applicantName}님의 확정이 취소되었습니다.`);
 
