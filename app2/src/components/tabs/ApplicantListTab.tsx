@@ -19,7 +19,7 @@ interface Applicant {
   experience?: string;
   assignedDate?: string;    // 할당된 날짜 (yyyy-MM-dd 형식)
   email?: string;
-  phoneNumber?: string;
+  phone?: string;  // ProfilePage와 일치하도록 phone으로 변경
   
   // 다중 선택 지원을 위한 새로운 필드들 (하위 호환성을 위해 선택적)
   assignedRoles?: string[];   // 선택한 역할들
@@ -66,7 +66,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                 age: userData.age,
                 experience: userData.experience,
                 email: userData.email,
-                phoneNumber: userData.phoneNumber
+                phone: userData.phone  // phoneNumber에서 phone으로 변경
               };
             }
             return applicant;
@@ -162,7 +162,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           firstAssignment.role,      // assignedRole - 지원자에서 확정된 역할
           firstAssignment.timeSlot,  // assignedTime - 지원자에서 확정된 시간
           applicant.email || '', // email 정보
-          applicant.phoneNumber || ''  // phone 정보
+          applicant.phone || ''  // phone 정보 (phoneNumber에서 phone으로 변경)
         );
         console.log('✅ promoteToStaff 성공!');
       }
@@ -433,7 +433,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                     {applicant.age && <p><span className="font-medium">{t('profile.age')}:</span> {applicant.age}</p>}
                     {applicant.experience && <p><span className="font-medium">{t('profile.experience')}:</span> {applicant.experience}</p>}
                     {applicant.email && <p><span className="font-medium">{t('profile.email')}:</span> {applicant.email}</p>}
-                    {applicant.phoneNumber && <p><span className="font-medium">{t('profile.phone')}:</span> {applicant.phoneNumber}</p>}
+                    {applicant.phone && <p><span className="font-medium">{t('profile.phone')}:</span> {applicant.phone}</p>}
                   </div>
                 </div>
 

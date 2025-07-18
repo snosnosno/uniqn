@@ -538,10 +538,6 @@
     }
   },
   "jobPostingAdmin": {
-    "edit": {
-      "selectOptions": "옵션 선택",
-      "removeQuestion": "질문 삭제"
-    },
     "alerts": {
       "createSuccess": "구인 공고가 성공적으로 생성되었습니다!",
       "createFailed": "구인 공고 생성에 실패했습니다.",
@@ -685,7 +681,9 @@
       "time": "시간",
       "timeAndRoles": "시간대 및 역할",
       "addTimeSlot": "시간대 추가",
-      "removeTimeSlot": "시간대 삭제"
+      "removeTimeSlot": "시간대 삭제",
+      "selectOptions": "옵션 선택",
+      "removeQuestion": "질문 삭제"
     },
     "applicants": {
       "title": "지원자 목록",
@@ -716,6 +714,9 @@
     "residentId": "주민등록번호",
     "gender": "성별",
     "region": "지역",
+    "age": "나이",
+    "experience": "경력",
+    "phone": "연락처",
     "selectRegion": "지역을 선택하세요",
     "email": "이메일"
   },
