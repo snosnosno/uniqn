@@ -14,6 +14,8 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { logAction } from './useLogger';
+import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
+import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 
 export interface Participant {
   id: string;
@@ -36,14 +38,9 @@ export const useParticipants = () => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const participantsCollection = collection(db, 'participants');
-    const unsubscribe = onSnapshot(
-      participantsCollection,
-      (snapshot) => {
-        const participantsData = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Participant));
+    const unsubscribe = safeOnSnapshot<Participant>(
+      'participants',
+      (participantsData) => {
         setParticipants(participantsData);
         setLoading(false);
       },
@@ -56,29 +53,23 @@ export const useParticipants = () => {
   }, []);
 
   const addParticipant = async (participant: Omit<Participant, 'id'>) => {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const docRef = await addDoc(collection(db, 'participants'), participant);
       logAction('participant_added', { participantId: docRef.id, ...participant });
       return docRef;
-    } catch (e) {
-      console.error("Error adding participant: ", e);
-      setError(e as Error);
-    }
+    }, 'addParticipant');
   };
   
   const updateParticipant = async (id: string, data: Partial<Participant>) => {
-    const participantDoc = doc(db, 'participants', id);
-    try {
+    return withFirebaseErrorHandling(async () => {
+      const participantDoc = doc(db, 'participants', id);
       await updateDoc(participantDoc, data);
       logAction('participant_updated', { participantId: id, ...data });
-    } catch (e) {
-      console.error("Error updating participant: ", e);
-      setError(e as Error);
-    }
+    }, 'updateParticipant');
   };
 
   const deleteParticipant = async (id: string) => {
-    try {
+    return withFirebaseErrorHandling(async () => {
       await runTransaction(db, async (transaction) => {
         // 1. Find the table where the participant is seated
         const tablesCollectionRef = collection(db, 'tables');
@@ -108,10 +99,7 @@ export const useParticipants = () => {
       });
 
       logAction('participant_deleted', { participantId: id });
-    } catch (e) {
-      console.error("Error deleting participant: ", e);
-      setError(e as Error);
-    }
+    }, 'deleteParticipant');
   };
   
   const addParticipantAndAssignToSeat = async (participantData: Omit<Participant, 'id'>, tableId: string, seatIndex: number) => {

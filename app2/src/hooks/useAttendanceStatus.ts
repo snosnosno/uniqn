@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { WorkLog } from './useShiftSchedule';
 import { AttendanceStatus } from '../components/AttendanceStatusCard';
+import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 
 export interface AttendanceRecord {
   staffId: string;
@@ -42,14 +43,14 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         where('date', '==', currentDate)
       );
 
-      const unsubscribe = onSnapshot(
-        workLogsQuery,
-        (snapshot) => {
+      // safeOnSnapshot을 사용하여 안전한 리스너 설정
+      const unsubscribe = safeOnSnapshot<WorkLog>(
+        'workLogs',
+        (workLogs) => {
           try {
             const records: AttendanceRecord[] = [];
             
-            snapshot.docs.forEach((doc) => {
-              const workLog = { id: doc.id, ...doc.data() } as WorkLog;
+            workLogs.forEach((workLog) => {
               const attendanceRecord = calculateAttendanceStatus(workLog);
               records.push(attendanceRecord);
             });

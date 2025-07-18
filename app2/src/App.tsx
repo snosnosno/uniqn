@@ -6,6 +6,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { ToastContainer } from './components/Toast';
 import { Layout } from './components/Layout';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import FirebaseErrorBoundary from './components/FirebaseErrorBoundary';
 
 // Page Imports
 import Login from './pages/Login';
@@ -66,64 +67,66 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>
-          <TournamentProvider>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/live/:tournamentId" element={<ParticipantLivePage />} />
-              
-              {/* Authenticated Routes */}
-              <Route element={<PrivateRoute />}>
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<HomeRedirect />} />
-                  <Route path="profile" element={<ProfilePage />} />
-                  <Route path="profile/:userId" element={<ProfilePage />} />
-                  <Route path="payroll" element={<PayrollPage />} />
-                  <Route path="payroll/:userId" element={<PayrollPage />} />
-                  
-                  {/* Dealer facing routes */}
-                  <Route path="jobs" element={<JobBoardPage />} />
-                  <Route path="attendance" element={<AttendancePage />} />
-                  <Route path="available-times" element={<AvailableTimesPage />} />
-
-                  {/* Admin & Manager Routes */}
-                  <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="staff" element={<StaffListPage />} />
-                    <Route path="staff/new" element={<StaffNewPage />} />
+    <FirebaseErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <TournamentProvider>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/live/:tournamentId" element={<ParticipantLivePage />} />
+                
+                {/* Authenticated Routes */}
+                <Route element={<PrivateRoute />}>
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<HomeRedirect />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="profile/:userId" element={<ProfilePage />} />
+                    <Route path="payroll" element={<PayrollPage />} />
+                    <Route path="payroll/:userId" element={<PayrollPage />} />
                     
-                    <Route path="job-postings" element={<JobPostingAdminPage />} />
-                    <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
-                    <Route path="dealer-rotation" element={<DealerRotationPage />} />
-                    <Route path="shift-schedule" element={<ShiftSchedulePage />} />
-                    <Route path="payroll" element={<PayrollAdminPage />} />
-                    <Route path="participants" element={<ParticipantsPage />} />
-                    <Route path="tables" element={<TablesPage />} />
-                    <Route path="blinds" element={<BlindsPage />} />
-                    <Route path="prizes" element={<PrizesPage />} />
-                    <Route path="announcements" element={<AnnouncementsPage />} />
-                    <Route path="history" element={<HistoryPage />} />
-                    <Route path="history/:logId" element={<HistoryDetailPage />} />
-                  </Route>
+                    {/* Dealer facing routes */}
+                    <Route path="jobs" element={<JobBoardPage />} />
+                    <Route path="attendance" element={<AttendancePage />} />
+                    <Route path="available-times" element={<AvailableTimesPage />} />
 
-                  {/* Admin Only Route */}
-                  <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
-                      <Route path="approvals" element={<ApprovalPage />} />
-                      <Route path="user-management" element={<UserManagementPage />} />
+                    {/* Admin & Manager Routes */}
+                    <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
+                      <Route path="dashboard" element={<DashboardPage />} />
+                      <Route path="staff" element={<StaffListPage />} />
+                      <Route path="staff/new" element={<StaffNewPage />} />
+                      
+                      <Route path="job-postings" element={<JobPostingAdminPage />} />
+                      <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
+                      <Route path="dealer-rotation" element={<DealerRotationPage />} />
+                      <Route path="shift-schedule" element={<ShiftSchedulePage />} />
+                      <Route path="payroll" element={<PayrollAdminPage />} />
+                      <Route path="participants" element={<ParticipantsPage />} />
+                      <Route path="tables" element={<TablesPage />} />
+                      <Route path="blinds" element={<BlindsPage />} />
+                      <Route path="prizes" element={<PrizesPage />} />
+                      <Route path="announcements" element={<AnnouncementsPage />} />
+                      <Route path="history" element={<HistoryPage />} />
+                      <Route path="history/:logId" element={<HistoryDetailPage />} />
+                    </Route>
+
+                    {/* Admin Only Route */}
+                    <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                        <Route path="approvals" element={<ApprovalPage />} />
+                        <Route path="user-management" element={<UserManagementPage />} />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
-            </Routes>
-          </TournamentProvider>
-        </AuthProvider>
-        <ToastContainer />
-      </ToastProvider>
-    </QueryClientProvider>
+              </Routes>
+            </TournamentProvider>
+          </AuthProvider>
+          <ToastContainer />
+        </ToastProvider>
+      </QueryClientProvider>
+    </FirebaseErrorBoundary>
   );
 }
 

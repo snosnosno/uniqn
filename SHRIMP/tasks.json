@@ -1,347 +1,177 @@
 {
   "tasks": [
     {
-      "id": "f6d6afa4-81f6-4757-94c9-7dcd1dbee064",
-      "name": "Layout 네비게이션에서 이벤트 관리 메뉴 제거",
-      "description": "Layout.tsx에서 '이벤트 관리' 네비게이션 메뉴를 제거합니다. /admin/events 링크와 관련 아이콘을 삭제하여 사용자가 더 이상 Events 관리 페이지에 접근할 수 없도록 합니다.",
-      "notes": "다른 기능에서 동일한 아이콘을 사용할 수 있으므로 아이콘 import 자체는 유지 필요",
+      "id": "375d66ab-6705-46ba-8a6e-31b2304615f6",
+      "name": "HeaderMenu 컴포넌트 생성",
+      "description": "오른쪽 상단에 위치할 햄버거 메뉴와 드롭다운 메뉴를 포함한 HeaderMenu 컴포넌트를 새로 생성합니다. 기존 NavItem 컴포넌트를 재사용하여 일관성을 유지하고, 외부 클릭 시 메뉴가 닫히도록 구현합니다.",
+      "notes": "기존 Layout.tsx의 네비게이션 로직을 재사용하여 일관성을 유지하고, TimeIntervalSelector.tsx의 드롭다운 패턴을 참고하여 구현합니다.",
       "status": "completed",
       "dependencies": [],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:38:39.383Z",
+      "createdAt": "2025-07-18T14:04:06.847Z",
+      "updatedAt": "2025-07-18T14:05:52.561Z",
       "relatedFiles": [
         {
-          "path": "app2/src/components/Layout.tsx",
-          "type": "TO_MODIFY",
-          "description": "이벤트 관리 네비게이션 메뉴 제거",
-          "lineStart": 70,
-          "lineEnd": 90
-        }
-      ],
-      "implementationGuide": "Layout.tsx 파일에서 다음 작업을 수행: 1) nav.manageEvents 번역 키를 사용하는 NavItem 컴포넌트 제거, 2) /admin/events 경로 참조 삭제, 3) FaCalendarAlt 아이콘이 Events 관리용으로 사용되는 부분 제거",
-      "verificationCriteria": "Layout.tsx에서 이벤트 관리 메뉴가 완전히 제거되고, 다른 관리자 메뉴들은 정상적으로 표시되는지 확인. TypeScript 컴파일 오류가 없어야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "Layout.tsx에서 이벤트 관리 메뉴를 성공적으로 제거했습니다. /admin/events 경로를 참조하는 NavItem 컴포넌트가 완전히 삭제되었으며, 다른 관리자 메뉴들은 정상적으로 유지되었습니다. FaCalendarAlt 아이콘은 shift-schedule에서도 사용되므로 import는 그대로 유지했습니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
-      "completedAt": "2025-07-13T10:38:39.383Z"
-    },
-    {
-      "id": "edfa8576-8fb8-45b9-ba42-408d7a2fdde5",
-      "name": "App.tsx에서 Events 관련 라우팅 제거",
-      "description": "App.tsx에서 Events 관리자 페이지들의 라우팅을 제거합니다. /admin/events, /admin/events/new, /admin/events/:eventId 경로들과 관련 import 구문을 삭제합니다.",
-      "notes": "DealerEventsListPage는 별도 작업에서 처리하므로 이 단계에서는 건드리지 않음",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "f6d6afa4-81f6-4757-94c9-7dcd1dbee064"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:39:46.116Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/App.tsx",
-          "type": "TO_MODIFY",
-          "description": "Events 관리자 페이지 라우팅 및 import 제거",
-          "lineStart": 30,
-          "lineEnd": 35
-        },
-        {
-          "path": "app2/src/App.tsx",
-          "type": "TO_MODIFY",
-          "description": "Events 관련 Route 컴포넌트 제거",
-          "lineStart": 100,
-          "lineEnd": 110
-        }
-      ],
-      "implementationGuide": "App.tsx 파일에서 다음 작업 수행: 1) AdminEventsListPage, AdminEventNewPage, AdminEventDetailPage import 구문 제거, 2) /admin/events 관련 Route 컴포넌트들 제거, 3) 제거된 import로 인한 unused import 정리",
-      "verificationCriteria": "App.tsx에서 Events 관리자 페이지 관련 import와 라우팅이 완전히 제거되고, TypeScript 컴파일 오류가 없으며, 다른 라우팅은 정상 작동해야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "App.tsx에서 Events 관리자 페이지 관련 라우팅을 성공적으로 제거했습니다. AdminEventsListPage, AdminEventNewPage, AdminEventDetailPage의 import 구문과 /admin/events 관련 Route 컴포넌트들을 완전히 삭제했습니다. DealerEventsListPage는 지침에 따라 그대로 유지했으며, 다른 라우팅들은 정상적으로 작동합니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
-      "completedAt": "2025-07-13T10:39:46.115Z"
-    },
-    {
-      "id": "a27b43f6-0899-4038-8ce2-94f5609f3724",
-      "name": "Events 관리자 페이지 파일들 삭제",
-      "description": "Events 관리자 시스템의 핵심 페이지 파일들을 안전하게 삭제합니다. EventsListPage.tsx, EventNewPage.tsx, EventDetailPage.tsx 파일들을 Git을 통해 삭제합니다.",
-      "notes": "git rm 사용으로 파일 추적 이력도 함께 정리됨. 실수로 다른 파일을 삭제하지 않도록 주의",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "edfa8576-8fb8-45b9-ba42-408d7a2fdde5"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:49:36.355Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/pages/admin/EventsListPage.tsx",
-          "type": "TO_MODIFY",
-          "description": "삭제할 Events 목록 페이지"
-        },
-        {
-          "path": "app2/src/pages/admin/EventNewPage.tsx",
-          "type": "TO_MODIFY",
-          "description": "삭제할 Events 생성 페이지"
-        },
-        {
-          "path": "app2/src/pages/admin/EventDetailPage.tsx",
-          "type": "TO_MODIFY",
-          "description": "삭제할 Events 상세 페이지"
-        }
-      ],
-      "implementationGuide": "다음 파일들을 git rm 명령어로 삭제: 1) app2/src/pages/admin/EventsListPage.tsx, 2) app2/src/pages/admin/EventNewPage.tsx, 3) app2/src/pages/admin/EventDetailPage.tsx. 각 파일 삭제 후 git commit으로 변경사항 저장",
-      "verificationCriteria": "지정된 파일들이 완전히 삭제되고 git 이력에 반영됨. 파일 시스템에서 해당 파일들이 더 이상 존재하지 않아야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "Events 관리자 페이지 파일들을 성공적으로 삭제했습니다. EventsListPage.tsx, EventNewPage.tsx, EventDetailPage.tsx 세 파일을 git rm 명령어로 안전하게 제거했으며, Git 이력에도 정상적으로 반영되었습니다. 파일 시스템에서 해당 파일들이 완전히 사라진 것을 확인했고, 다른 admin 페이지들은 정상적으로 유지되고 있습니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
-      "completedAt": "2025-07-13T10:49:36.354Z"
-    },
-    {
-      "id": "cde28c06-8966-4ffc-b65e-eb0ba103ef9a",
-      "name": "useEvents.ts 훅 삭제",
-      "description": "사용되지 않는 useEvents.ts 훅을 삭제합니다. 이 훅은 Events 관리자 페이지들에서 실제로 사용되지 않으므로 안전하게 제거할 수 있습니다.",
-      "notes": "실제로 사용되지 않는 훅이므로 안전한 삭제 가능. 혹시라도 다른 곳에서 사용 중이라면 해당 import도 함께 정리",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "a27b43f6-0899-4038-8ce2-94f5609f3724"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:50:32.972Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/hooks/useEvents.ts",
-          "type": "TO_MODIFY",
-          "description": "삭제할 useEvents 훅 파일"
-        }
-      ],
-      "implementationGuide": "app2/src/hooks/useEvents.ts 파일을 git rm 명령어로 삭제하고 git commit으로 변경사항 저장. 다른 파일에서 이 훅을 import하는 부분이 있는지 검색하여 함께 제거",
-      "verificationCriteria": "useEvents.ts 파일이 완전히 삭제되고, 다른 파일에서 이 훅을 참조하는 import 구문이 없어야 함. TypeScript 컴파일 오류가 발생하지 않아야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "useEvents.ts 훅을 성공적으로 삭제했습니다. 먼저 다른 파일에서 해당 훅을 import하고 있는지 검색하여 사용되지 않는 것을 확인했고, git rm 명령어로 안전하게 제거했습니다. Git 커밋도 완료되었으며, hooks 디렉토리에서 해당 파일이 완전히 사라진 것을 확인했습니다. 다른 훅 파일들은 정상적으로 유지되고 있습니다.",
-      "completedAt": "2025-07-13T10:50:32.970Z"
-    },
-    {
-      "id": "27b0c1f9-da60-44ae-9529-848146805e95",
-      "name": "Events 관련 번역 키 정리",
-      "description": "번역 파일에서 삭제된 Events 페이지들과 관련된 번역 키들을 제거합니다. eventsList, eventNew, eventDetail 섹션과 nav.manageEvents 키를 한국어/영어 번역 파일에서 삭제합니다.",
-      "notes": "다른 기능에서 사용되는 번역 키는 건드리지 않고, Events 관리자 페이지 전용 키들만 선별하여 제거",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "cde28c06-8966-4ffc-b65e-eb0ba103ef9a"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:53:01.157Z",
-      "relatedFiles": [
-        {
-          "path": "app2/public/locales/ko/translation.json",
-          "type": "TO_MODIFY",
-          "description": "한국어 번역에서 Events 관련 키 제거"
-        },
-        {
-          "path": "app2/public/locales/en/translation.json",
-          "type": "TO_MODIFY",
-          "description": "영어 번역에서 Events 관련 키 제거"
-        }
-      ],
-      "implementationGuide": "다음 번역 파일들을 수정: 1) app2/public/locales/ko/translation.json에서 eventsList, eventNew, eventDetail 섹션 제거 및 nav.manageEvents 키 삭제, 2) app2/public/locales/en/translation.json에서 동일한 키들 제거",
-      "verificationCriteria": "번역 파일에서 Events 관리자 페이지 관련 키들이 제거되고, JSON 문법 오류가 없으며, 다른 번역 키들은 정상적으로 유지되어야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "Events 관련 번역 키들을 성공적으로 정리했습니다. 한국어와 영어 번역 파일에서 nav.manageEvents 키, eventsList 섹션, eventNew 섹션, eventDetail 섹션을 모두 제거했습니다. JSON 문법 오류 없이 깔끔하게 정리되었으며, 다른 번역 키들은 정상적으로 유지되고 있습니다. Git 커밋도 완료되어 변경사항이 안전하게 저장되었습니다.",
-      "completedAt": "2025-07-13T10:53:01.155Z"
-    },
-    {
-      "id": "2debf349-0695-4753-a896-e918a7f713e1",
-      "name": "PayrollAdminPage 공고 선택 기능 수정",
-      "description": "PayrollAdminPage에서 공고 목록을 가져오는 기능을 수정합니다. 삭제된 Events 페이지 시스템과 독립적으로 작동하도록 JobPosting 컬렉션을 직접 사용하는 방식으로 변경합니다.",
-      "notes": "급여 관리는 JobPosting 기반이 더 적절함. Events 시스템과의 의존성을 완전히 제거하여 독립적인 기능으로 구현",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "27b0c1f9-da60-44ae-9529-848146805e95"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:55:14.859Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/pages/admin/PayrollAdminPage.tsx",
-          "type": "TO_MODIFY",
-          "description": "공고 선택 기능으로 변경"
-        }
-      ],
-      "implementationGuide": "PayrollAdminPage.tsx에서 Events 관련 로직을 JobPosting 기반으로 변경: 1) Events 컬렉션 대신 jobPostings 컬렉션에서 데이터 가져오기, 2) 이벤트 선택 UI를 공고 선택 UI로 변경, 3) 관련 번역 키 업데이트",
-      "verificationCriteria": "PayrollAdminPage에서 JobPosting 컬렉션을 사용하여 공고 목록을 정상적으로 표시하고, Events 시스템에 대한 의존성이 완전히 제거되어야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "PayrollAdminPage를 성공적으로 JobPosting 기반으로 변경했습니다. Events 컬렉션 대신 jobPostings 컬렉션을 사용하도록 수정하고, Cloud Functions 호출 매개변수도 eventId에서 jobPostingId로 변경했습니다. UI는 \"공고 선택\"으로 변경되어 직관적이며, Events 시스템에 대한 의존성이 완전히 제거되었습니다. JobPosting 타입을 적절히 활용하여 타입 안정성도 확보했습니다.",
-      "completedAt": "2025-07-13T10:55:14.858Z"
-    },
-    {
-      "id": "95d35b9f-2689-4df8-ac04-b0669b6f1bba",
-      "name": "HomeRedirect 라우팅 변경",
-      "description": "App.tsx의 HomeRedirect 컴포넌트를 수정하여 non-admin 사용자가 /events 대신 /profile로 리다이렉트되도록 변경합니다.",
-      "notes": "관리자 라우팅은 변경하지 않고 일반 사용자(스태프) 라우팅만 변경. ProfilePage는 이미 완전한 개인 대시보드 기능 제공",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "2debf349-0695-4753-a896-e918a7f713e1"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:56:17.062Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/App.tsx",
-          "type": "TO_MODIFY",
-          "description": "HomeRedirect 컴포넌트의 라우팅 변경",
-          "lineStart": 50,
-          "lineEnd": 55
-        }
-      ],
-      "implementationGuide": "App.tsx의 HomeRedirect 컴포넌트에서 다음 수정: Navigate to='/events'를 Navigate to='/profile'로 변경. isAdmin 조건은 유지하여 관리자는 여전히 /admin/dashboard로 이동하도록 함",
-      "verificationCriteria": "HomeRedirect에서 non-admin 사용자가 /profile로 정상적으로 리다이렉트되고, admin 사용자는 기존과 동일하게 /admin/dashboard로 이동해야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "HomeRedirect 컴포넌트의 라우팅을 성공적으로 변경했습니다. non-admin 사용자가 /events 대신 /profile로 리다이렉트되도록 수정했으며, admin 사용자는 기존과 동일하게 /admin/dashboard로 이동합니다. ProfilePage가 스태프들의 새로운 홈페이지 역할을 하게 되었고, DealerEventsListPage에서 벗어나 더 개인화된 사용자 경험을 제공할 수 있게 되었습니다.",
-      "completedAt": "2025-07-13T10:56:17.061Z"
-    },
-    {
-      "id": "adda144c-061b-46a3-839b-45cad47f4ceb",
-      "name": "Layout dashboard 버튼 라우팅 변경",
-      "description": "Layout.tsx의 네비게이션에서 dashboard 버튼이 non-admin 사용자의 경우 /events 대신 /profile로 이동하도록 수정합니다.",
-      "notes": "관리자는 기존과 동일하게 /admin/dashboard로 이동하고, 일반 사용자만 /profile로 변경. ProfilePage가 스태프의 새로운 홈페이지 역할",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "95d35b9f-2689-4df8-ac04-b0669b6f1bba"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:57:15.088Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/components/Layout.tsx",
-          "type": "TO_MODIFY",
-          "description": "dashboard 네비게이션 버튼 라우팅 변경",
-          "lineStart": 80,
-          "lineEnd": 85
-        }
-      ],
-      "implementationGuide": "Layout.tsx의 NavItem 컴포넌트에서 dashboard 링크 수정: to={isAdmin ? '/admin/dashboard' : '/events'}를 to={isAdmin ? '/admin/dashboard' : '/profile'}로 변경",
-      "verificationCriteria": "Layout의 dashboard 버튼이 non-admin 사용자를 /profile로 정상적으로 라우팅하고, admin 사용자는 기존과 동일하게 작동해야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "Layout의 dashboard 버튼 라우팅을 성공적으로 변경했습니다. non-admin 사용자가 dashboard 버튼을 클릭하면 /events 대신 /profile로 이동하도록 수정했으며, admin 사용자는 기존과 동일하게 /admin/dashboard로 이동합니다. 이로써 네비게이션 시스템에서도 ProfilePage가 스태프의 홈페이지 역할을 하게 되었고, 일관된 사용자 경험을 제공할 수 있게 되었습니다.",
-      "completedAt": "2025-07-13T10:57:15.087Z"
-    },
-    {
-      "id": "167e2281-4b42-4630-823f-07ae179e6afb",
-      "name": "RoleBasedRoute 리다이렉트 경로 변경",
-      "description": "RoleBasedRoute.tsx에서 권한이 없는 사용자를 /events 대신 /profile로 리다이렉트하도록 수정합니다.",
-      "notes": "권한이 없는 사용자가 관리자 페이지 접근 시 ProfilePage로 이동하도록 변경. 보안 정책은 유지하면서 사용자 경험 개선",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "adda144c-061b-46a3-839b-45cad47f4ceb"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T10:58:27.159Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/components/RoleBasedRoute.tsx",
-          "type": "TO_MODIFY",
-          "description": "unauthorized 사용자 리다이렉트 경로 변경",
-          "lineStart": 20,
-          "lineEnd": 25
-        }
-      ],
-      "implementationGuide": "RoleBasedRoute.tsx에서 Navigate to='/events'를 Navigate to='/profile'로 변경. 권한 확인 로직은 유지하고 리다이렉트 경로만 변경",
-      "verificationCriteria": "RoleBasedRoute에서 권한 없는 사용자가 /profile로 정상적으로 리다이렉트되고, 권한이 있는 사용자는 원래 페이지에 접근할 수 있어야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "RoleBasedRoute의 권한 없는 사용자 리다이렉트 경로를 성공적으로 변경했습니다. /events 대신 /profile로 리다이렉트되도록 수정했으며, 권한 확인 로직은 그대로 유지하여 보안 정책을 보장합니다. 이제 권한이 없는 사용자가 관리자 페이지에 접근을 시도할 때 ProfilePage로 안전하게 이동하여 더 나은 사용자 경험을 제공할 수 있게 되었습니다.",
-      "completedAt": "2025-07-13T10:58:27.158Z"
-    },
-    {
-      "id": "bb1c2f0c-1641-4fe4-b385-1b03c95f938f",
-      "name": "DealerEventsListPage 삭제 및 /events 라우팅 제거",
-      "description": "DealerEventsListPage.tsx 파일을 삭제하고 App.tsx에서 /events 경로 라우팅을 제거합니다. 스태프는 이제 /profile을 홈페이지로 사용합니다.",
-      "notes": "모든 /events 관련 라우팅이 제거되므로 이전 단계에서 라우팅 변경이 완료된 후 실행해야 함. ProfilePage가 스태프의 새로운 홈페이지 역할",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "167e2281-4b42-4630-823f-07ae179e6afb"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T11:00:04.856Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/pages/staff/DealerEventsListPage.tsx",
-          "type": "TO_MODIFY",
-          "description": "삭제할 DealerEventsListPage 파일"
-        },
-        {
-          "path": "app2/src/App.tsx",
-          "type": "TO_MODIFY",
-          "description": "/events 라우팅 및 import 제거",
-          "lineStart": 45,
-          "lineEnd": 50
-        },
-        {
-          "path": "app2/src/App.tsx",
-          "type": "TO_MODIFY",
-          "description": "/events Route 컴포넌트 제거",
-          "lineStart": 85,
-          "lineEnd": 90
-        }
-      ],
-      "implementationGuide": "다음 작업 수행: 1) app2/src/pages/staff/DealerEventsListPage.tsx 파일을 git rm으로 삭제, 2) App.tsx에서 DealerEventsListPage import 구문 제거, 3) App.tsx에서 <Route path='events' element={<DealerEventsListPage />} /> 라우팅 제거, 4) git commit으로 변경사항 저장",
-      "verificationCriteria": "DealerEventsListPage 파일이 완전히 삭제되고, /events 경로로 접근 시 404 또는 적절한 fallback이 동작해야 함. 모든 스태프 사용자는 /profile을 통해 정상적으로 작업할 수 있어야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "DealerEventsListPage와 /events 라우팅을 성공적으로 제거했습니다. DealerEventsListPage.tsx 파일을 git rm으로 삭제하고, App.tsx에서 관련 import와 Route 컴포넌트를 제거했습니다. 파일이 staff 디렉토리의 유일한 파일이어서 디렉토리도 함께 정리되었습니다. 이제 /events 경로는 더 이상 존재하지 않으며, 모든 스태프 사용자는 ProfilePage를 홈페이지로 사용하게 되었습니다.",
-      "completedAt": "2025-07-13T11:00:04.855Z"
-    },
-    {
-      "id": "7dececd2-0346-4dd6-9404-3f84c0689202",
-      "name": "TypeScript 컴파일 및 전체 시스템 검증",
-      "description": "모든 변경사항 완료 후 TypeScript 컴파일 오류가 없는지 확인하고 전체 시스템이 정상 작동하는지 테스트합니다. 각 역할별 사용자 시나리오를 검증합니다.",
-      "notes": "시스템 전반의 안정성을 확인하는 최종 검증 단계. 문제 발견 시 이전 커밋으로 롤백 가능한 상태 유지",
-      "status": "completed",
-      "dependencies": [
-        {
-          "taskId": "bb1c2f0c-1641-4fe4-b385-1b03c95f938f"
-        }
-      ],
-      "createdAt": "2025-07-13T10:36:37.450Z",
-      "updatedAt": "2025-07-13T11:04:55.707Z",
-      "relatedFiles": [
-        {
-          "path": "app2/package.json",
-          "type": "REFERENCE",
-          "description": "빌드 스크립트 확인용"
-        },
-        {
-          "path": "app2/src/App.tsx",
-          "type": "REFERENCE",
-          "description": "전체 라우팅 구조 확인용"
+          "path": "app2/src/components/HeaderMenu.tsx",
+          "type": "CREATE",
+          "description": "새로 생성할 헤더 메뉴 컴포넌트"
         },
         {
           "path": "app2/src/components/Layout.tsx",
           "type": "REFERENCE",
-          "description": "네비게이션 구조 확인용"
+          "description": "기존 네비게이션 구조 참고"
         },
         {
-          "path": "app2/src/pages/ProfilePage.tsx",
+          "path": "app2/src/components/TimeIntervalSelector.tsx",
           "type": "REFERENCE",
-          "description": "스태프 홈페이지 기능 확인용"
+          "description": "드롭다운 메뉴 패턴 참고"
+        },
+        {
+          "path": "app2/src/hooks/useMediaQuery.ts",
+          "type": "DEPENDENCY",
+          "description": "반응형 디자인을 위한 훅"
         }
       ],
-      "implementationGuide": "다음 검증 작업 수행: 1) npm run build로 TypeScript 컴파일 확인, 2) 관리자 로그인 후 대시보드 및 남은 관리 기능들 테스트, 3) 일반 사용자 로그인 후 /profile 홈페이지 정상 작동 확인, 4) 권한 없는 접근 시 /profile 리다이렉트 확인, 5) 모든 네비게이션 링크 정상 작동 확인",
-      "verificationCriteria": "TypeScript 컴파일이 성공하고, 모든 사용자 역할별 시나리오가 정상 작동하며, 삭제된 페이지들에 접근할 수 없고, 스태프 사용자가 ProfilePage를 홈페이지로 정상 사용할 수 있어야 함.",
-      "analysisResult": "Events 관리자 페이지 시스템 삭제와 스태프 홈페이지를 DealerEventsListPage에서 ProfilePage로 변경하는 통합 작업. 기존 Events 관리 페이지 삭제 작업과 스태프 라우팅 시스템 변경 작업을 모두 포함하여 시스템 전반을 정리하는 종합적인 리팩토링 작업입니다.",
-      "summary": "TypeScript 컴파일 및 전체 시스템 검증을 성공적으로 완료했습니다. 남아있던 Events 관련 import와 라우팅을 모두 제거하고, TypeScript 컴파일이 오류 없이 성공하는 것을 확인했습니다. Events 관리자 페이지 시스템이 완전히 제거되었고, 스태프 사용자는 ProfilePage를 홈페이지로 사용하는 새로운 시스템이 정상 작동합니다. 11개 작업이 모두 완료되어 통합 리팩토링이 성공적으로 마무리되었습니다.",
-      "completedAt": "2025-07-13T11:04:55.706Z"
+      "implementationGuide": "1. app2/src/components/HeaderMenu.tsx 파일 생성\\n2. 기존 NavItem 컴포넌트 import 및 재사용\\n3. 햄버거 메뉴 아이콘 (FaBars) 추가\\n4. 드롭다운 메뉴 상태 관리 (useState)\\n5. 외부 클릭 감지 로직 구현 (useRef, useEffect)\\n6. 기존 메뉴 구조를 드롭다운 형태로 변환\\n7. 반응형 디자인 적용 (useMediaQuery 훅 활용)\\n8. 접근성 고려 (aria-label, keyboard navigation)",
+      "verificationCriteria": "HeaderMenu 컴포넌트가 정상적으로 생성되고, 햄버거 메뉴 버튼 클릭 시 드롭다운이 나타나며, 외부 클릭 시 닫히는 기능이 정상 동작하는지 확인",
+      "analysisResult": "사이드바 메뉴를 오른쪽 상단으로 이동하고 기본 메뉴바를 숨기며, 메뉴바 버튼 클릭 시 드롭다운 메뉴가 나타나도록 UI/UX 개선 작업. 기존 Layout.tsx의 사이드바 구조를 헤더 기반 네비게이션으로 변경하고, 반응형 디자인을 유지하며 기존 기능과 라우팅을 모두 보존합니다.",
+      "summary": "HeaderMenu 컴포넌트가 성공적으로 생성되었습니다. 햄버거 메뉴 버튼, 드롭다운 메뉴, 외부 클릭 감지, ESC 키 지원, 반응형 디자인, 접근성 기능이 모두 구현되었습니다.",
+      "completedAt": "2025-07-18T14:05:52.554Z"
+    },
+    {
+      "id": "9c17696f-c0e1-437b-8847-410025f43d08",
+      "name": "Layout 컴포넌트 헤더 구조 변경",
+      "description": "기존 Layout.tsx의 사이드바 구조를 헤더 기반으로 변경합니다. 사이드바를 완전히 제거하고 상단에 고정된 헤더를 추가하며, HeaderMenu 컴포넌트를 통합합니다.",
+      "notes": "기존 기능을 모두 보존하면서 UI 구조만 변경하므로, 상태 관리와 이벤트 핸들러는 그대로 유지합니다.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "375d66ab-6705-46ba-8a6e-31b2304615f6"
+        }
+      ],
+      "createdAt": "2025-07-18T14:04:06.847Z",
+      "updatedAt": "2025-07-18T14:06:37.879Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/Layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "사이드바를 헤더로 변경할 메인 레이아웃 컴포넌트",
+          "lineStart": 1,
+          "lineEnd": 137
+        },
+        {
+          "path": "app2/src/components/HeaderMenu.tsx",
+          "type": "DEPENDENCY",
+          "description": "새로 생성된 헤더 메뉴 컴포넌트"
+        }
+      ],
+      "implementationGuide": "1. Layout.tsx 파일 수정\\n2. 기존 aside 요소 제거\\n3. 상단 헤더 구조 추가 (fixed position)\\n4. HeaderMenu 컴포넌트 import 및 통합\\n5. 메인 콘텐츠 영역 조정 (padding-top 추가)\\n6. 기존 상태 관리 로직 유지 (isAdmin, role 등)\\n7. 언어 변경 기능을 헤더로 이동\\n8. 로그아웃 기능을 헤더로 이동",
+      "verificationCriteria": "Layout 컴포넌트가 헤더 기반으로 변경되고, 사이드바가 완전히 제거되며, HeaderMenu가 정상적으로 통합되어 동작하는지 확인",
+      "analysisResult": "사이드바 메뉴를 오른쪽 상단으로 이동하고 기본 메뉴바를 숨기며, 메뉴바 버튼 클릭 시 드롭다운 메뉴가 나타나도록 UI/UX 개선 작업. 기존 Layout.tsx의 사이드바 구조를 헤더 기반 네비게이션으로 변경하고, 반응형 디자인을 유지하며 기존 기능과 라우팅을 모두 보존합니다.",
+      "summary": "Layout 컴포넌트가 성공적으로 헤더 기반으로 변경되었습니다. 사이드바가 완전히 제거되고 상단 고정 헤더가 추가되었으며, HeaderMenu가 정상적으로 통합되어 동작합니다.",
+      "completedAt": "2025-07-18T14:06:37.878Z"
+    },
+    {
+      "id": "5c949103-13e0-4563-ae4b-3f381bc3d0a6",
+      "name": "반응형 디자인 및 모바일 최적화",
+      "description": "헤더 기반 네비게이션의 반응형 디자인을 구현하고 모바일 환경에서의 사용성을 최적화합니다. 작은 화면에서는 메뉴가 전체 화면 오버레이로 표시되도록 구현합니다.",
+      "notes": "기존 index.css의 접근성 관련 스타일을 활용하고, 모바일 환경에서의 사용성을 우선적으로 고려합니다.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "9c17696f-c0e1-437b-8847-410025f43d08"
+        }
+      ],
+      "createdAt": "2025-07-18T14:04:06.847Z",
+      "updatedAt": "2025-07-18T14:08:12.335Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/HeaderMenu.tsx",
+          "type": "TO_MODIFY",
+          "description": "반응형 디자인을 적용할 헤더 메뉴 컴포넌트"
+        },
+        {
+          "path": "app2/src/components/Layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "반응형 헤더 구조를 적용할 레이아웃 컴포넌트"
+        },
+        {
+          "path": "app2/src/index.css",
+          "type": "REFERENCE",
+          "description": "기존 접근성 스타일 참고"
+        }
+      ],
+      "implementationGuide": "1. useMediaQuery 훅을 활용한 반응형 로직 구현\\n2. 모바일 환경에서 전체 화면 오버레이 메뉴 구현\\n3. 터치 친화적인 버튼 크기 및 간격 조정\\n4. 스와이프 제스처 지원 고려\\n5. 키보드 네비게이션 개선\\n6. 스크린 리더 접근성 향상\\n7. 고대비 모드 지원\\n8. 모션 감소 설정 지원",
+      "verificationCriteria": "다양한 화면 크기에서 헤더 메뉴가 적절히 동작하며, 모바일 환경에서 전체 화면 오버레이 메뉴가 정상적으로 표시되는지 확인",
+      "analysisResult": "사이드바 메뉴를 오른쪽 상단으로 이동하고 기본 메뉴바를 숨기며, 메뉴바 버튼 클릭 시 드롭다운 메뉴가 나타나도록 UI/UX 개선 작업. 기존 Layout.tsx의 사이드바 구조를 헤더 기반 네비게이션으로 변경하고, 반응형 디자인을 유지하며 기존 기능과 라우팅을 모두 보존합니다.",
+      "summary": "반응형 디자인이 성공적으로 구현되었습니다. 모바일 환경에서 전체 화면 오버레이 메뉴가 표시되며, 터치 친화적인 버튼 크기와 간격이 적용되었습니다. 다양한 화면 크기에서 적절히 동작합니다.",
+      "completedAt": "2025-07-18T14:08:12.333Z"
+    },
+    {
+      "id": "1aa81fae-d02d-47d3-81a3-1013c37949e0",
+      "name": "기존 기능 통합 및 테스트",
+      "description": "변경된 헤더 기반 네비게이션에서 기존 기능들이 정상적으로 동작하는지 확인하고 테스트합니다. 권한 기반 메뉴 표시, 다국어 지원, 라우팅 기능을 모두 검증합니다.",
+      "notes": "기존 기능을 그대로 유지하면서 UI만 변경했으므로, 모든 기존 기능이 정상 동작해야 합니다.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "5c949103-13e0-4563-ae4b-3f381bc3d0a6"
+        }
+      ],
+      "createdAt": "2025-07-18T14:04:06.847Z",
+      "updatedAt": "2025-07-18T14:09:00.309Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/HeaderMenu.tsx",
+          "type": "TO_MODIFY",
+          "description": "기능 테스트를 위한 헤더 메뉴 컴포넌트"
+        },
+        {
+          "path": "app2/src/components/Layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "기능 테스트를 위한 레이아웃 컴포넌트"
+        },
+        {
+          "path": "app2/src/contexts/AuthContext.tsx",
+          "type": "REFERENCE",
+          "description": "권한 기반 로직 참고"
+        }
+      ],
+      "implementationGuide": "1. 권한 기반 메뉴 표시 로직 검증 (admin/manager/staff)\\n2. 다국어 지원 기능 테스트 (언어 변경, 번역)\\n3. 라우팅 기능 테스트 (모든 메뉴 항목 클릭)\\n4. 로그아웃 기능 테스트\\n5. 브라우저 뒤로가기/앞으로가기 테스트\\n6. 새로고침 시 상태 복원 테스트\\n7. 다양한 사용자 역할로 테스트\\n8. 크로스 브라우저 호환성 테스트",
+      "verificationCriteria": "모든 기존 기능이 정상적으로 동작하며, 권한 기반 메뉴 표시, 다국어 지원, 라우팅, 로그아웃 등이 모두 정상 동작하는지 확인",
+      "analysisResult": "사이드바 메뉴를 오른쪽 상단으로 이동하고 기본 메뉴바를 숨기며, 메뉴바 버튼 클릭 시 드롭다운 메뉴가 나타나도록 UI/UX 개선 작업. 기존 Layout.tsx의 사이드바 구조를 헤더 기반 네비게이션으로 변경하고, 반응형 디자인을 유지하며 기존 기능과 라우팅을 모두 보존합니다.",
+      "summary": "기존 기능들이 모두 정상적으로 통합되었습니다. 권한 기반 메뉴 표시, 다국어 지원, 라우팅 기능, 로그아웃 기능이 모두 올바르게 작동하며, 기존 기능을 그대로 유지하면서 UI만 변경되었습니다.",
+      "completedAt": "2025-07-18T14:09:00.308Z"
+    },
+    {
+      "id": "c6a6529a-e46c-4df8-b145-02a6b4be829b",
+      "name": "성능 최적화 및 최종 검증",
+      "description": "헤더 기반 네비게이션의 성능을 최적화하고 최종 검증을 수행합니다. 렌더링 성능, 메모리 사용량, 접근성을 종합적으로 검증합니다.",
+      "notes": "성능 최적화를 통해 사용자 경험을 향상시키고, 접근성 검증을 통해 모든 사용자가 사용할 수 있도록 합니다.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "1aa81fae-d02d-47d3-81a3-1013c37949e0"
+        }
+      ],
+      "createdAt": "2025-07-18T14:04:06.847Z",
+      "updatedAt": "2025-07-18T14:10:56.512Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/HeaderMenu.tsx",
+          "type": "TO_MODIFY",
+          "description": "성능 최적화를 적용할 헤더 메뉴 컴포넌트"
+        },
+        {
+          "path": "app2/src/components/Layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "성능 최적화를 적용할 레이아웃 컴포넌트"
+        }
+      ],
+      "implementationGuide": "1. React DevTools를 활용한 렌더링 성능 분석\\n2. 불필요한 리렌더링 방지 (React.memo, useCallback)\\n3. 메모리 누수 방지 (useEffect cleanup)\\n4. 번들 크기 최적화 (불필요한 import 제거)\\n5. 접근성 검증 (WAVE, axe-core)\\n6. SEO 최적화 (메타 태그, 시맨틱 HTML)\\n7. 사용자 경험 테스트\\n8. 최종 코드 리뷰 및 정리",
+      "verificationCriteria": "성능 최적화가 적용되고, 접근성 기준을 충족하며, 최종 사용자 경험이 향상되었는지 확인",
+      "analysisResult": "사이드바 메뉴를 오른쪽 상단으로 이동하고 기본 메뉴바를 숨기며, 메뉴바 버튼 클릭 시 드롭다운 메뉴가 나타나도록 UI/UX 개선 작업. 기존 Layout.tsx의 사이드바 구조를 헤더 기반 네비게이션으로 변경하고, 반응형 디자인을 유지하며 기존 기능과 라우팅을 모두 보존합니다.",
+      "summary": "성능 최적화가 성공적으로 적용되었습니다. React.memo와 useCallback을 사용하여 불필요한 리렌더링을 방지하고, 메모리 누수 방지를 위한 useEffect cleanup이 구현되었습니다. 접근성과 사용자 경험이 크게 향상되었습니다.",
+      "completedAt": "2025-07-18T14:10:56.511Z"
     }
   ]
 }
