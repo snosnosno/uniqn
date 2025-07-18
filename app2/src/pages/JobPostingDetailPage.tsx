@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
@@ -10,7 +10,7 @@ import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
 import EventManagementTab from '../components/tabs/EventManagementTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import { JobPostingProvider } from '../contexts/JobPostingContext';
-
+import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
 
 type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
 
@@ -37,17 +37,46 @@ const JobPostingDetailPageContent: React.FC = () => {
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
   
   // Get active tab from URL or default to 'applicants'
   const activeTab = (searchParams.get('tab') as TabType) || 'applicants';
   
+  // Load toggle state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem(`jobPosting-${id}-infoExpanded`);
+    if (savedState !== null) {
+      setIsInfoExpanded(JSON.parse(savedState));
+    }
+  }, [id]);
+
+  // Save toggle state to localStorage
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`jobPosting-${id}-infoExpanded`, JSON.stringify(isInfoExpanded));
+    }
+  }, [isInfoExpanded, id]);
+  
   // Handle tab change with URL sync
-  const handleTabChange = (tabId: TabType) => {
+  const handleTabChange = useCallback((tabId: TabType) => {
     setSearchParams({ tab: tabId });
-  };
+  }, [setSearchParams]);
+
+  // Handle info toggle
+  const handleToggleInfo = useCallback(() => {
+    setIsInfoExpanded(prev => !prev);
+  }, []);
+
+  // Handle keyboard events for accessibility
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleToggleInfo();
+    }
+  }, [handleToggleInfo]);
 
   // Format date for display
-  const formatDate = (dateInput: any) => {
+  const formatDate = useCallback((dateInput: any) => {
     if (!dateInput) return '';
     
     try {
@@ -79,7 +108,7 @@ const JobPostingDetailPageContent: React.FC = () => {
       console.error('Error formatting date:', error, dateInput);
       return String(dateInput);
     }
-  };
+  }, []);
 
   // Fetch job posting data
   useEffect(() => {
@@ -112,7 +141,10 @@ const JobPostingDetailPageContent: React.FC = () => {
   }, [id]);
 
   // Get active tab component
-  const ActiveTabComponent = tabs.find(tab => tab.id === activeTab)?.component || ApplicantListTab;
+  const ActiveTabComponent = useMemo(() => 
+    tabs.find(tab => tab.id === activeTab)?.component || ApplicantListTab, 
+    [activeTab]
+  );
 
   if (loading) {
     return (
@@ -165,85 +197,117 @@ const JobPostingDetailPageContent: React.FC = () => {
           </span>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold mb-4">{jobPosting.title}</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">위치:</span>
-              <span className="ml-2">{jobPosting.location}</span>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">유형:</span>
-              <span className="ml-2">{jobPosting.type === 'application' ? '지원형' : '고정형'}</span>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">기간:</span>
-              <span className="ml-2">
-                {jobPosting.endDate && jobPosting.endDate !== jobPosting.startDate 
-                  ? `${formattedStartDate} ~ ${formattedEndDate}` 
-                  : formattedStartDate
-                }
-              </span>
-            </div>
-          </div>
-          
-          {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
-          {JobPostingUtils.hasDateSpecificRequirements(jobPosting) ? (
-            /* 일자별 다른 인원 요구사항이 있는 경우 */
-            <div className="mt-4">
-              <span className="font-medium text-gray-700">시간대 및 역할 (일자별 다른 인원 요구사항):</span>
-              <div className="mt-2 space-y-4">
-                {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
-                  <div key={dateIndex} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="text-sm font-medium text-blue-800 mb-3">
-                      📅 {formatDate(dateReq.date)} 일정
-                    </div>
-                    <div className="space-y-2">
-                      {dateReq.timeSlots.map((ts, tsIndex) => (
-                        <div key={`${dateIndex}-${tsIndex}`} className="pl-4 border-l-2 border-blue-300 bg-white rounded-r p-2">
-                          <p className="font-semibold text-gray-700">{ts.time}</p>
-                          <div className="text-sm text-gray-600">
-                            {ts.roles.map((role, roleIndex) => (
-                              <span key={roleIndex} className="mr-4">
-                                {role.name}: {role.count}명
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : jobPosting.timeSlots && jobPosting.timeSlots.length > 0 ? (
-            /* 기존 방식: 전체 기간 공통 timeSlots */
-            <div className="mt-4">
-              <span className="font-medium text-gray-700">시간대 및 역할:</span>
-              <div className="mt-2 space-y-2">
-                {jobPosting.timeSlots.map((ts, index) => (
-                  <div key={index} className="pl-4 border-l-2 border-gray-200">
-                    <p className="font-semibold text-gray-700">{ts.time}</p>
-                    <div className="text-sm text-gray-600">
-                      {ts.roles.map((role, i) => (
-                        <span key={i} className="mr-4">
-                          {role.name}: {role.count}명
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          
-          {jobPosting.description && (
-            <div className="mt-4">
-              <span className="font-medium text-gray-700">설명:</span>
-              <p className="mt-1 text-gray-600">{jobPosting.description}</p>
-            </div>
+        {/* Toggle Button */}
+        <button
+          onClick={handleToggleInfo}
+          onKeyDown={handleKeyDown}
+          disabled={loading}
+          aria-expanded={isInfoExpanded}
+          aria-controls="basic-info-section"
+          aria-label={isInfoExpanded ? t('jobPosting.info.collapse') : t('jobPosting.info.expand')}
+          className="inline-flex justify-center py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4 transition-all duration-300 min-h-[44px] toggle-button"
+          type="button"
+        >
+          {isInfoExpanded ? (
+            <>
+              <FaChevronUp className="w-4 h-4 mr-2" aria-hidden="true" />
+              {t('jobPosting.info.collapse')}
+            </>
+          ) : (
+            <>
+              <FaChevronDown className="w-4 h-4 mr-2" aria-hidden="true" />
+              {t('jobPosting.info.expand')}
+            </>
           )}
-        </div>
+        </button>
+        
+        {/* Basic Info Section */}
+        {isInfoExpanded && (
+          <div 
+            id="basic-info-section"
+            className="bg-white rounded-lg shadow-md p-6"
+            role="region"
+            aria-label={t('jobPosting.info.section')}
+          >
+            <h1 className="text-2xl font-bold mb-4">{jobPosting.title}</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="font-medium text-gray-700">위치:</span>
+                <span className="ml-2">{jobPosting.location}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">유형:</span>
+                <span className="ml-2">{jobPosting.type === 'application' ? '지원형' : '고정형'}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">기간:</span>
+                <span className="ml-2">
+                  {jobPosting.endDate && jobPosting.endDate !== jobPosting.startDate 
+                    ? `${formattedStartDate} ~ ${formattedEndDate}` 
+                    : formattedStartDate
+                  }
+                </span>
+              </div>
+            </div>
+            
+            {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
+            {JobPostingUtils.hasDateSpecificRequirements(jobPosting) ? (
+              /* 일자별 다른 인원 요구사항이 있는 경우 */
+              <div className="mt-4">
+                <span className="font-medium text-gray-700">시간대 및 역할 (일자별 다른 인원 요구사항):</span>
+                <div className="mt-2 space-y-4">
+                  {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
+                    <div key={dateIndex} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-sm font-medium text-blue-800 mb-3">
+                        📅 {formatDate(dateReq.date)} 일정
+                      </div>
+                      <div className="space-y-2">
+                        {dateReq.timeSlots.map((ts, tsIndex) => (
+                          <div key={`${dateIndex}-${tsIndex}`} className="pl-4 border-l-2 border-blue-300 bg-white rounded-r p-2">
+                            <p className="font-semibold text-gray-700">{ts.time}</p>
+                            <div className="text-sm text-gray-600">
+                              {ts.roles.map((role, roleIndex) => (
+                                <span key={roleIndex} className="mr-4">
+                                  {role.name}: {role.count}명
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : jobPosting.timeSlots && jobPosting.timeSlots.length > 0 ? (
+              /* 기존 방식: 전체 기간 공통 timeSlots */
+              <div className="mt-4">
+                <span className="font-medium text-gray-700">시간대 및 역할:</span>
+                <div className="mt-2 space-y-2">
+                  {jobPosting.timeSlots.map((ts, index) => (
+                    <div key={index} className="pl-4 border-l-2 border-gray-200">
+                      <p className="font-semibold text-gray-700">{ts.time}</p>
+                      <div className="text-sm text-gray-600">
+                        {ts.roles.map((role, i) => (
+                          <span key={i} className="mr-4">
+                            {role.name}: {role.count}명
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            
+            {jobPosting.description && (
+              <div className="mt-4">
+                <span className="font-medium text-gray-700">설명:</span>
+                <p className="mt-1 text-gray-600">{jobPosting.description}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}

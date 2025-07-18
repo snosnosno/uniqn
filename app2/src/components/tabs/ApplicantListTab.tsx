@@ -435,35 +435,6 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                     {applicant.email && <p><span className="font-medium">{t('profile.email')}:</span> {applicant.email}</p>}
                     {applicant.phoneNumber && <p><span className="font-medium">{t('profile.phone')}:</span> {applicant.phoneNumber}</p>}
                   </div>
-                  {/* 지원자가 선택한 시간대들 표시 */}
-                  {(() => {
-                    const selections = getApplicantSelections(applicant);
-                    if (selections.length > 0) {
-                      return (
-                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                          <p className="font-medium text-blue-800 mb-2">
-                            {hasMultipleSelections(applicant) 
-                              ? `🎯 지원한 시간대 (${selections.length}개):` 
-                              : '🎯 지원한 시간대:'}
-                          </p>
-                          <div className="space-y-1">
-                            {selections.map((selection, index) => (
-                              <div key={index} className="text-sm text-blue-700 flex items-center">
-                                {selection.date && (
-                                  <span className="inline-flex items-center px-2 py-1 mr-2 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                                    📅 {formatDate(selection.date)}
-                                  </span>
-                                )}
-                                <span className="mr-2">⏰ {selection.time}</span>
-                                                                   <span>👤 {selection.role ? t(`jobPostingAdmin.create.${selection.role}`) : selection.role}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
                 </div>
 
                 {applicant.status === 'applied' && (() => {

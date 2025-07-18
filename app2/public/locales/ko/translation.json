@@ -530,6 +530,13 @@
     "error": "공고를 불러오는 중 오류가 발생했습니다.",
     "loading": "공고를 불러오는 중..."
   },
+  "jobPosting": {
+    "info": {
+      "expand": "정보 열기",
+      "collapse": "정보 닫기",
+      "section": "공고 기본 정보"
+    }
+  },
   "jobPostingAdmin": {
     "edit": {
       "selectOptions": "옵션 선택",

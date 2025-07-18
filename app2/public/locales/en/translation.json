@@ -524,6 +524,13 @@
       }
     }
   },
+  "jobPosting": {
+    "info": {
+      "expand": "Expand Info",
+      "collapse": "Collapse Info",
+      "section": "Job Posting Basic Information"
+    }
+  },
   "jobPostingAdmin": {
     "alerts": {
       "createSuccess": "Job posting created successfully!",
