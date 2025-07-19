@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaClock, FaSave, FaTimes, FaEdit } from 'react-icons/fa';
+
 import { db } from '../firebase';
-import Modal from './Modal';
 import { useToast } from '../hooks/useToast';
-import { WorkLog } from '../hooks/useShiftSchedule';
+
+import Modal from './Modal';
+// import { WorkLog } from '../hooks/useShiftSchedule';
 
 // WorkTimeEditor에서 사용할 WorkLog 타입 (Firebase에서 가져온 실제 데이터)
 interface WorkLogWithTimestamp {
@@ -57,7 +59,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   const parseTimeString = (timeString: string, baseDate: Date) => {
     const [hours, minutes] = timeString.split(':').map(Number);
     const date = new Date(baseDate);
-    date.setHours(hours, minutes, 0, 0);
+    date.setHours(hours || 0, minutes || 0, 0, 0);
     return Timestamp.fromDate(date);
   };
 
@@ -152,7 +154,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   if (!workLog) return null;
 
   const scheduledMinutes = calculateMinutes(workLog.scheduledStartTime, workLog.scheduledEndTime);
-  const actualMinutes = calculateMinutes(workLog.actualStartTime, workLog.actualEndTime);
+  // const actualMinutes = calculateMinutes(workLog.actualStartTime, workLog.actualEndTime);
 
   return (
     <Modal

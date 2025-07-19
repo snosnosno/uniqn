@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../firebase';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { db, functions } from '../../firebase';
 import { JobPosting } from '../../types/jobPosting';
 
 interface Payroll {
@@ -102,7 +103,7 @@ const PayrollAdminPage: React.FC = () => {
                     </button>
                 </div>
 
-                {error && <p className="text-red-500">{error}</p>}
+                {error ? <p className="text-red-500">{error}</p> : null}
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white">

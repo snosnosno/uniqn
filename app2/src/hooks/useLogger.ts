@@ -1,5 +1,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
+import { logger, type LogContext } from '../utils/logger';
+
 type ActionType =
   | 'login'
   | 'logout'
@@ -39,14 +41,56 @@ type ActionType =
 
 
 export const logAction = async (action: ActionType, details: Record<string, any> = {}) => {
-  // Client-side function is now just a wrapper to call the cloud function.
-  // This is a "fire-and-forget" call. We don't need to wait for the result
-  // and will only log errors to the console if the call fails.
+  const context: LogContext = {
+    operation: 'logAction',
+    additionalData: { action, details }
+  };
+
   try {
     const functions = getFunctions();
     const logActionCallable = httpsCallable(functions, 'logAction');
-    logActionCallable({ action, details }); // Intentionally not using await
-  } catch (error) {
-    console.error("Error invoking logAction function:", error);
+    await logActionCallable({ action, details });
+    
+    logger.info(`Action logged successfully: ${action}`, context);
+  } catch (error: any) {
+    logger.error(`Failed to log action: ${action}`, error, context);
   }
 };
+
+// 새로운 구조화된 로깅 훅
+export const useStructuredLogger = () => {
+  return {
+    debug: (message: string, context?: Partial<LogContext>) => {
+      logger.debug(message, context);
+    },
+    info: (message: string, context?: Partial<LogContext>) => {
+      logger.info(message, context);
+    },
+    warn: (message: string, context?: Partial<LogContext>) => {
+      logger.warn(message, context);
+    },
+    error: (message: string, error?: Error, context?: Partial<LogContext>) => {
+      logger.error(message, error, context);
+    },
+    critical: (message: string, error?: Error, context?: Partial<LogContext>) => {
+      logger.critical(message, error, context);
+    },
+    withErrorHandling: <T>(
+      operation: () => Promise<T>,
+      operationName: string,
+      context?: Partial<LogContext>
+    ) => {
+      return logger.withErrorHandling(operation, operationName, context);
+    },
+    withPerformanceTracking: <T>(
+      operation: () => Promise<T>,
+      operationName: string,
+      context?: Partial<LogContext>
+    ) => {
+      return logger.withPerformanceTracking(operation, operationName, context);
+    }
+  };
+};
+
+// 기존 호환성을 위한 별칭
+export const useLogger = useStructuredLogger;

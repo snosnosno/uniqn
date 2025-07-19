@@ -1,9 +1,10 @@
 import React, { useContext, useState } from 'react';
-import { TournamentContext, Participant } from '../contexts/TournamentContext';
-import { setupTestData } from '../firebase';
+import { useTranslation } from 'react-i18next';
 import { IconType } from 'react-icons';
 import { FaUsers, FaClock, FaTrophy } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
+
+import { TournamentContext, Participant } from '../contexts/TournamentContext';
+import { setupTestData } from '../firebase';
 
 const TournamentDashboard = () => {
     const { t } = useTranslation();

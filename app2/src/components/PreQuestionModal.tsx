@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PreQuestion, PreQuestionAnswer } from '../types/jobPosting';
+
 import { useToast } from '../contexts/ToastContext';
+import { PreQuestion, PreQuestionAnswer } from '../types/jobPosting';
 
 interface PreQuestionModalProps {
   isOpen: boolean;
@@ -19,7 +20,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   jobPostingId
 }) => {
   const { t } = useTranslation();
-  const { showSuccess, showError, showWarning } = useToast();
+  const { showSuccess, showError } = useToast();
   
   // 답변 상태 관리
   const [answers, setAnswers] = useState<{ [questionId: string]: string }>({});
@@ -114,7 +115,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     if (questions.length === 0) return 100;
     
     const answeredCount = questions.filter(q => 
-      answers[q.id] && answers[q.id].trim() !== ''
+      answers[q.id] && answers[q.id]?.trim() !== ''
     ).length;
     
     return Math.round((answeredCount / questions.length) * 100);
@@ -175,9 +176,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                   <label className="block text-sm font-medium text-gray-900">
                     <span className="text-blue-600 font-semibold">Q{index + 1}.</span>{' '}
                     {question.question}
-                    {question.required && (
-                      <span className="text-red-500 ml-1">*</span>
-                    )}
+                    {question.required ? <span className="text-red-500 ml-1">*</span> : null}
                   </label>
                   
                   {/* 질문 타입별 입력 컴포넌트 */}
@@ -201,8 +200,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                     />
                   )}
                   
-                  {question.type === 'select' && question.options && (
-                    <select
+                  {question.type === 'select' && question.options ? <select
                       value={answers[question.id] || ''}
                       onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -215,8 +213,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                           {option}
                         </option>
                       ))}
-                    </select>
-                  )}
+                    </select> : null}
                 </div>
               ))}
             </div>

@@ -1,5 +1,6 @@
-import { db } from '../firebase';
 import { collection, getDocs, query, where, DocumentData } from 'firebase/firestore';
+
+import { db } from '../firebase';
 
 // Firebase 연결 상태 관리
 class FirebaseFallbackManager {

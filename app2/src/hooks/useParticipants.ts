@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react';
-import { db } from '../firebase';
 import {
   collection,
-  onSnapshot,
+  // onSnapshot,
   addDoc,
   updateDoc,
-  deleteDoc,
+  // deleteDoc,
   doc,
-  DocumentData,
-  QueryDocumentSnapshot,
-  writeBatch,
+  // DocumentData,
+  // QueryDocumentSnapshot,
   getDocs,
   runTransaction,
 } from 'firebase/firestore';
-import { logAction } from './useLogger';
-import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
+import { useState, useEffect } from 'react';
+
+import { db } from '../firebase';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
+import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
+
+import { logAction } from './useLogger';
+
 
 export interface Participant {
   id: string;
@@ -124,7 +126,7 @@ export const useParticipants = () => {
             seats[seatIndex] = newParticipantRef.id;
             
             transaction.set(newParticipantRef, participantData);
-            transaction.update(tableRef, { seats: seats });
+            transaction.update(tableRef, { seats });
         });
         logAction('participant_added_and_seated', { participantId: newParticipantRef.id, tableId, seatIndex });
     } catch (e) {

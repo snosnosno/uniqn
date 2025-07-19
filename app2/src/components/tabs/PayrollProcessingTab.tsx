@@ -1,13 +1,14 @@
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+
+// import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+// import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useJobPostingContext } from '../../contexts/JobPostingContext';
 import { usePayrollData } from '../../hooks/usePayrollData';
 import { formatCurrency, formatDate } from '../../i18n-helpers';
-import { PayrollCalculationData } from '../../utils/payroll/types';
+// import { PayrollCalculationData } from '../../utils/payroll/types';
 
 interface Payroll {
   id: string;
@@ -26,8 +27,8 @@ interface PayrollProcessingTabProps {
 }
 
 const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
-  const { t, i18n } = useTranslation();
-  const { currentUser, isAdmin } = useAuth();
+  const { i18n } = useTranslation();
+  const { currentUser } = useAuth();
   const { jobPosting, staff, loading: contextLoading } = useJobPostingContext();
   
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
@@ -43,11 +44,10 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
     payrollData: calculatedPayrollData,
     summary: payrollSummary,
     loading: calculationLoading,
-    error: calculationError,
     generatePayrollFromWorkLogs,
     exportToCSV
   } = usePayrollData({
-    eventId: jobPosting?.id
+    eventId: jobPosting?.id || ''
   });
 
   // 급여 통계 계산 - Hook은 early return 전에 호출
@@ -264,11 +264,9 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6">
+      {error ? <div className="bg-red-50 p-4 rounded-lg mb-6">
           <p className="text-red-600">{error}</p>
-        </div>
-      )}
+        </div> : null}
 
       {/* 급여 통계 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -330,8 +328,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
           </button>
         </div>
         
-        {payrollSummary && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+        {payrollSummary ? <div className="mt-4 p-4 bg-gray-50 rounded-lg">
             <h5 className="font-medium mb-2">계산 요약</h5>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
@@ -353,8 +350,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
                 </span>
               </div>
             </div>
-          </div>
-        )}
+          </div> : null}
       </div>
 
       {/* 급여 내역 테이블 */}

@@ -1,10 +1,12 @@
 // 급여 데이터 관리 훅
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, onSnapshot, Timestamp } from 'firebase/firestore';
+
 import { db } from '../firebase';
-import { WorkLog } from './useShiftSchedule';
-import { PayrollDataGenerator, payrollDataGenerator } from '../utils/payroll/PayrollDataGenerator';
+import { payrollDataGenerator } from '../utils/payroll/PayrollDataGenerator';
 import { PayrollCalculationData, PayrollSummary, PayrollSettings } from '../utils/payroll/types';
+
+import { WorkLog } from './useShiftSchedule';
 
 interface UsePayrollDataProps {
   eventId?: string;
@@ -67,7 +69,7 @@ export const usePayrollData = (props: UsePayrollDataProps = {}) => {
 
         // 스태프 정보 가져오기 (첫 번째 로그에서)
         const firstLog = logs[0];
-        const staffName = firstLog.dealerName;
+        const staffName = firstLog?.dealerName || 'Unknown Staff';
         
         // 직무 정보 가져오기 (별도 조회 필요할 수 있음)
         const jobRole = await getStaffJobRole(staffId) || 'Dealer';
@@ -253,7 +255,7 @@ async function getStaffJobRole(staffId: string): Promise<string> {
     );
     const snapshot = await getDocs(staffQuery);
     
-    if (!snapshot.empty) {
+    if (!snapshot.empty && snapshot.docs[0]) {
       const staffData = snapshot.docs[0].data();
       return staffData.jobRole || 'Dealer';
     }
@@ -273,7 +275,7 @@ async function getEventName(eventId: string): Promise<string> {
     );
     const snapshot = await getDocs(eventQuery);
     
-    if (!snapshot.empty) {
+    if (!snapshot.empty && snapshot.docs[0]) {
       const eventData = snapshot.docs[0].data();
       return eventData.title || eventId;
     }
@@ -292,13 +294,13 @@ function generateSummaryFromData(
 ): PayrollSummary {
   // 기간 타입 결정
   const start = startDate || data[0]?.period.start || new Date().toISOString().split('T')[0];
-  const end = endDate || data[data.length - 1]?.period.end || new Date().toISOString().split('T')[0];
+  const end = endDate || data[data.length - 1]?.period.end || new Date().toISOString().split('T')[0] || '';
   
-  const daysDiff = Math.abs(new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24);
+  const daysDiff = Math.abs(new Date(end || '').getTime() - new Date(start || '').getTime()) / (1000 * 60 * 60 * 24);
   const periodType = daysDiff > 20 ? 'monthly' : 'weekly';
 
   return {
-    period: { type: periodType, start, end },
+    period: { type: periodType, start: start || '', end: end || '' },
     totalStaff: data.length,
     totalHours: data.reduce((sum, item) => sum + item.workTime.totalHours, 0),
     regularHours: data.reduce((sum, item) => sum + item.workTime.regularHours, 0),

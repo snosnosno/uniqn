@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaHistory } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContext';
+
+// import { useAuth } from '../../contexts/AuthContext';
 import { useJobPostingContext } from '../../contexts/JobPostingContext';
 
 interface ShiftManagementTabProps {
@@ -10,16 +11,16 @@ interface ShiftManagementTabProps {
 
 const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  // const { currentUser } = useAuth();
   const { staff, loading: contextLoading } = useJobPostingContext();
   
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
   
   // 현재 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    return today.toISOString().split('T')[0] || ''; // YYYY-MM-DD 형식
   });
 
   // Early return if no job posting data
@@ -58,11 +59,9 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-4">
+      {error ? <div className="bg-red-50 p-4 rounded-lg mb-4">
           <p className="text-red-600">{error}</p>
-        </div>
-      )}
+        </div> : null}
 
       {/* 날짜 선택 및 컨트롤 바 */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">

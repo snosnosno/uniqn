@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
+import { useAuth } from '../contexts/AuthContext';
+
 
 const StaffNewPage: React.FC = () => {
   const { t } = useTranslation();
@@ -93,7 +95,7 @@ const StaffNewPage: React.FC = () => {
               <option value="admin">{t('staffNew.roleAdmin')}</option>
             </select>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <div>
             <button
               type="submit"

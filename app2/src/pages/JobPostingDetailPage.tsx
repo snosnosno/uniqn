@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+
+import ApplicantListTab from '../components/tabs/ApplicantListTab';
+import EventManagementTab from '../components/tabs/EventManagementTab';
+import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
+import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
+import StaffManagementTab from '../components/tabs/StaffManagementTab';
+import { JobPostingProvider } from '../contexts/JobPostingContext';
 import { db } from '../firebase';
 import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
-import ApplicantListTab from '../components/tabs/ApplicantListTab';
-import StaffManagementTab from '../components/tabs/StaffManagementTab';
-import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
-import EventManagementTab from '../components/tabs/EventManagementTab';
-import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
-import { JobPostingProvider } from '../contexts/JobPostingContext';
-import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
+
 
 type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
 
@@ -222,8 +224,7 @@ const JobPostingDetailPageContent: React.FC = () => {
         </button>
         
         {/* Basic Info Section */}
-        {isInfoExpanded && (
-          <div 
+        {isInfoExpanded ? <div 
             id="basic-info-section"
             className="bg-white rounded-lg shadow-md p-6"
             role="region"
@@ -300,14 +301,11 @@ const JobPostingDetailPageContent: React.FC = () => {
               </div>
             ) : null}
             
-            {jobPosting.description && (
-              <div className="mt-4">
+            {jobPosting.description ? <div className="mt-4">
                 <span className="font-medium text-gray-700">설명:</span>
                 <p className="mt-1 text-gray-600">{jobPosting.description}</p>
-              </div>
-            )}
-          </div>
-        )}
+              </div> : null}
+          </div> : null}
       </div>
 
       {/* Tab Navigation */}

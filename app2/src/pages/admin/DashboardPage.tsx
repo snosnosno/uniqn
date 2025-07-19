@@ -1,8 +1,9 @@
+import { StarIcon } from '@heroicons/react/24/solid';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { auth } from '../../firebase'; // Import auth
+
 import { DashboardCard } from '../../components/DashboardCard';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { auth } from '../../firebase'; // Import auth
 
 interface DashboardStats {
   ongoingEventsCount: number;

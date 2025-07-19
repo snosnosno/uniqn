@@ -1,16 +1,21 @@
+import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaHistory } from 'react-icons/fa';
-import { collection, query, doc, deleteField, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useTranslation } from 'react-i18next';
+import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaHistory } from 'react-icons/fa';
+
+import ShiftGridComponent from '../components/ShiftGridComponent';
+import TimeIntervalSelector from '../components/TimeIntervalSelector';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 import { useShiftSchedule, ShiftDealer } from '../hooks/useShiftSchedule';
 import useTables from '../hooks/useTables';
-import TimeIntervalSelector from '../components/TimeIntervalSelector';
-import ShiftGridComponent from '../components/ShiftGridComponent';
+import { useToast } from '../hooks/useToast';
 
 const ShiftSchedulePage: React.FC = () => {
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
+  const { showSuccess, showError } = useToast();
   
   // 현재 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -79,6 +84,60 @@ const ShiftSchedulePage: React.FC = () => {
     };
     checkLogs();
   }, [selectedEventId, selectedDate, checkWorkLogsExist]);
+
+  // 설정 상태 추가
+  const [settings, setSettings] = useState({
+    autoSave: true,
+    conflictNotifications: true,
+    defaultWorkTime: 4, // 기본 근무 시간 (시간)
+    defaultBreakTime: 30 // 기본 휴식 시간 (분)
+  });
+
+  // 설정 로드
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const savedSettings = localStorage.getItem('shiftScheduleSettings');
+        if (savedSettings) {
+          setSettings(JSON.parse(savedSettings));
+        }
+      } catch (error) {
+        console.error('설정 로드 실패:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // 설정 저장 함수
+  const handleSaveSettings = async () => {
+    try {
+      // 로컬 스토리지에 저장
+      localStorage.setItem('shiftScheduleSettings', JSON.stringify(settings));
+      
+      // Firebase에 사용자 설정 저장 (선택적)
+      if (currentUser) {
+        const userSettingsRef = doc(db, 'userSettings', currentUser.uid);
+        await setDoc(userSettingsRef, {
+          shiftScheduleSettings: settings,
+          updatedAt: new Date()
+        }, { merge: true });
+      }
+      
+      showSuccess(t('shiftSchedule.settingsSaved'));
+      setIsSettingsModalOpen(false);
+    } catch (error) {
+      console.error('설정 저장 실패:', error);
+      showError(t('shiftSchedule.settingsSaveError'));
+    }
+  };
+
+  // 설정 변경 핸들러
+  const handleSettingChange = (key: string, value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
   
   // 날짜 변경 핸들러
   const handleDateChange = (newDate: string) => {
@@ -308,8 +367,7 @@ const ShiftSchedulePage: React.FC = () => {
           </div>
           
           {/* 시간 간격 선택 */}
-          {schedule && (
-            <div className="flex items-center gap-4">
+          {schedule ? <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <FaClock className="text-purple-600" />
                 <label className="font-semibold text-gray-700">
@@ -320,18 +378,14 @@ const ShiftSchedulePage: React.FC = () => {
                 <TimeIntervalSelector
                   selectedInterval={schedule.timeInterval}
                   onIntervalChange={handleIntervalChange}
-                  startTime={schedule.startTime}
-                  endTime={schedule.endTime}
                   size="sm"
                 />
               </div>
-            </div>
-          )}
+            </div> : null}
           
           {/* 컨트롤 버튼들 */}
           <div className="flex items-center gap-2">
-            {schedule && dealers.length > 0 && (
-              <button 
+            {schedule && dealers.length > 0 ? <button 
                 onClick={handleGenerateWorkLogs}
                 disabled={isGeneratingWorkLogs}
                 className={`btn btn-sm flex items-center gap-2 ${
@@ -341,8 +395,7 @@ const ShiftSchedulePage: React.FC = () => {
                 <FaHistory className="w-4 h-4" />
                 {isGeneratingWorkLogs ? t('shiftSchedule.generating') : 
                  workLogsGenerated ? t('shiftSchedule.regenerateWorkLogs') : t('shiftSchedule.generateWorkLogs')}
-              </button>
-            )}
+              </button> : null}
             <button 
               onClick={() => setIsSettingsModalOpen(true)}
               className="btn btn-outline btn-sm flex items-center gap-2"
@@ -363,8 +416,7 @@ const ShiftSchedulePage: React.FC = () => {
         </div>
         
         {/* 근무기록 상태 표시 */}
-        {schedule && (
-          <div className="mt-3 p-2 rounded-md">
+        {schedule ? <div className="mt-3 p-2 rounded-md">
             {workLogsGenerated ? (
               <div className="flex items-center gap-2 text-green-600">
                 <FaCheckCircle className="w-4 h-4" />
@@ -376,12 +428,11 @@ const ShiftSchedulePage: React.FC = () => {
                 <span className="text-sm font-medium">{t('shiftSchedule.workLogsNotGenerated')}</span>
               </div>
             )}
-          </div>
-        )}
+          </div> : null}
       </div>
 
       {/* 검증 결과 */}
-      {schedule && <ValidationSummary />}
+      {schedule ? <ValidationSummary /> : null}
 
       {/* 메인 콘텐츠 영역 */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -392,11 +443,9 @@ const ShiftSchedulePage: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
               <FaTable className="mr-2"/> 
               {t('shiftSchedule.scheduleGrid')}
-              {schedule && (
-                <span className="ml-2 text-sm font-normal text-gray-500">
+              {schedule ? <span className="ml-2 text-sm font-normal text-gray-500">
                   ({schedule.timeInterval}{t('shiftSchedule.minuteInterval')})
-                </span>
-              )}
+                </span> : null}
             </h2>
             
             {schedule ? (
@@ -447,8 +496,7 @@ const ShiftSchedulePage: React.FC = () => {
         {/* 사이드바 - 딜러 목록 및 정보 (1/4) */}
         <div className="space-y-6">
           {/* 현재 스케줄의 딜러들 */}
-          {schedule && dealers.length > 0 && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
+          {schedule && dealers.length > 0 ? <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
                 <FaUsers className="mr-2"/> 
                 {t('shiftSchedule.assignedDealers')} ({dealers.length})
@@ -475,8 +523,7 @@ const ShiftSchedulePage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            </div> : null}
 
           {/* 사용 가능한 딜러 */}
           <div className="bg-white p-6 rounded-lg shadow-md">
@@ -496,15 +543,13 @@ const ShiftSchedulePage: React.FC = () => {
                     <p className="font-semibold text-gray-800">{dealer.name}</p>
                     <p className="text-sm text-gray-500">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
                   </div>
-                  {schedule && (
-                    <button 
+                  {schedule ? <button 
                       onClick={() => handleAddDealer(dealer.id, dealer.name)}
                       className="btn btn-sm btn-outline btn-success"
                     >
                       <FaPlus className="w-3 h-3 mr-1" />
                       {t('shiftSchedule.addToSchedule')}
-                    </button>
-                  )}
+                    </button> : null}
                 </div>
               ))}
               {dealersNotInSchedule.length === 0 && (
@@ -543,18 +588,15 @@ const ShiftSchedulePage: React.FC = () => {
       </div>
 
       {/* 에러 표시 */}
-      {scheduleError && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+      {scheduleError ? <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700">
             {t('shiftSchedule.error')}: {scheduleError.message}
           </p>
-        </div>
-      )}
+        </div> : null}
     </div>
     
     {/* 설정 모달 */}
-    {isSettingsModalOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    {isSettingsModalOpen ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">{t('shiftSchedule.settings')}</h3>
@@ -582,7 +624,12 @@ const ShiftSchedulePage: React.FC = () => {
               </label>
               <label className="cursor-pointer label">
                 <span className="label-text text-sm">{t('shiftSchedule.autoSaveChanges')}</span>
-                <input type="checkbox" className="checkbox checkbox-sm" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  className="checkbox checkbox-sm" 
+                  checked={settings.autoSave}
+                  onChange={(e) => handleSettingChange('autoSave', e.target.checked)}
+                />
               </label>
               </div>
               
@@ -592,8 +639,41 @@ const ShiftSchedulePage: React.FC = () => {
               </label>
               <label className="cursor-pointer label">
                 <span className="label-text text-sm">{t('shiftSchedule.conflictNotifications')}</span>
-                <input type="checkbox" className="checkbox checkbox-sm" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  className="checkbox checkbox-sm" 
+                  checked={settings.conflictNotifications}
+                  onChange={(e) => handleSettingChange('conflictNotifications', e.target.checked)}
+                />
               </label>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {t('shiftSchedule.defaultWorkTime')} (시간)
+              </label>
+              <input 
+                type="number" 
+                className="input input-bordered w-full" 
+                min="1" 
+                max="12"
+                value={settings.defaultWorkTime}
+                onChange={(e) => handleSettingChange('defaultWorkTime', parseInt(e.target.value) || 4)}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {t('shiftSchedule.defaultBreakTime')} (분)
+              </label>
+              <input 
+                type="number" 
+                className="input input-bordered w-full" 
+                min="0" 
+                max="120"
+                value={settings.defaultBreakTime}
+                onChange={(e) => handleSettingChange('defaultBreakTime', parseInt(e.target.value) || 30)}
+              />
             </div>
           </div>
           
@@ -605,18 +685,14 @@ const ShiftSchedulePage: React.FC = () => {
               {t('shiftSchedule.cancel')}
             </button>
             <button 
-              onClick={() => {
-                // TODO: 설정 저장 로직 추가
-                setIsSettingsModalOpen(false);
-              }}
+              onClick={handleSaveSettings}
               className="btn btn-primary flex-1"
             >
               {t('shiftSchedule.save')}
             </button>
           </div>
         </div>
-      </div>
-    )}
+      </div> : null}
     </>
   );
 };

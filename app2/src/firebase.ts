@@ -2,8 +2,9 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, doc, collection, getDocs, writeBatch, getDoc, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getStorage } from 'firebase/storage';
+
 import type { JobPostingFilters } from './hooks/useJobPostings';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -78,7 +79,7 @@ export const setupTestData = async () => {
   }
 
   // Create 80 participants
-  const participantsCollectionRef = collection(db, 'participants');
+  // const participantsCollectionRef = collection(db, 'participants');
   for (let i = 1; i <= 80; i++) {
     const participantRef = doc(collection(db, 'participants'));
     batch.set(participantRef, {
@@ -127,7 +128,7 @@ export const promoteToStaff = async (
     if (!staffSnap.exists()) {
       console.log('🎆 Creating new staff document');
       await setDoc(staffRef, {
-        userId: userId,
+        userId,
         name: userName,
         email: email || '',
         phone: phone || '',
@@ -138,15 +139,15 @@ export const promoteToStaff = async (
         assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
         assignedTime: assignedTime || '', // 지원자에서 확정된 시간
         createdAt: new Date(),
-        managerId: managerId,
-        postingId: postingId,
+        managerId,
+        postingId,
       });
       console.log(`✅ New staff document created for user: ${userName} (${userId}) with role: ${jobRole}`);
       } else {
       console.log('🔄 Updating existing staff document');
       // Update existing staff document with new job role and event assignment
       await updateDoc(staffRef, {
-        userId: userId,
+        userId,
         name: userName,
         email: email || '',
         phone: phone || '',
@@ -155,8 +156,8 @@ export const promoteToStaff = async (
         assignedEvents: arrayUnion(postingId),
         assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
         assignedTime: assignedTime || '', // 지원자에서 확정된 시간
-        postingId: postingId, // 최신 공고 ID로 업데이트
-        managerId: managerId // 관리자 ID도 업데이트
+        postingId, // 최신 공고 ID로 업데이트
+        managerId // 관리자 ID도 업데이트
       });
       console.log(`Staff document updated for user: ${userName} (${userId}). Added role: ${jobRole} for posting: ${postingId}`);
     }
@@ -176,7 +177,7 @@ export const buildFilteredQuery = (
   pagination?: PaginationOptions
 ): Query => {
   const jobPostingsRef = collection(db, 'jobPostings');
-  let queryConstraints: any[] = [];
+  const queryConstraints: any[] = [];
   
   console.log('?�� Building query with filters:', filters);
   

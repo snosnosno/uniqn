@@ -5,39 +5,43 @@ export const useToast = () => {
 
   // Convenience methods for different toast types
   const showSuccess = (message: string, title?: string, duration?: number) => {
-    addToast({
+    const toastData: Omit<Toast, 'id'> = {
       type: 'success',
       message,
-      title,
-      duration,
-    });
+    };
+    if (title) toastData.title = title;
+    if (duration) toastData.duration = duration;
+    addToast(toastData);
   };
 
   const showError = (message: string, title?: string, duration?: number) => {
-    addToast({
+    const toastData: Omit<Toast, 'id'> = {
       type: 'error',
       message,
-      title,
       duration: duration || 5000, // Error messages stay longer by default
-    });
+    };
+    if (title) toastData.title = title;
+    addToast(toastData);
   };
 
   const showInfo = (message: string, title?: string, duration?: number) => {
-    addToast({
+    const toastData: Omit<Toast, 'id'> = {
       type: 'info',
       message,
-      title,
-      duration,
-    });
+    };
+    if (title) toastData.title = title;
+    if (duration) toastData.duration = duration;
+    addToast(toastData);
   };
 
   const showWarning = (message: string, title?: string, duration?: number) => {
-    addToast({
+    const toastData: Omit<Toast, 'id'> = {
       type: 'warning',
       message,
-      title,
-      duration,
-    });
+    };
+    if (title) toastData.title = title;
+    if (duration) toastData.duration = duration;
+    addToast(toastData);
   };
 
   // Generic method for custom toasts

@@ -1,7 +1,9 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import DashboardPage from './DashboardPage';
 import { httpsCallable } from 'firebase/functions';
+import React from 'react';
+
+import DashboardPage from './DashboardPage';
+
 
 // Mock the firebase/functions module
 jest.mock('firebase/functions');

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { StarIcon } from '@heroicons/react/24/solid';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams, Link } from 'react-router-dom';
+
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { logger } from '../utils/logger';
 
 interface ProfileData {
   name: string;
@@ -150,7 +152,10 @@ const ProfilePage = () => {
             setIsEditing(false);
             alert(t('profilePage.updateSuccess'));
         } catch (err: any) {
-            console.error("Error updating profile:", err);
+            logger.error("Error updating profile", err, { 
+                operation: 'updateProfile',
+                userId: profileId 
+            });
             alert(t('profilePage.updateFailed', { message: err.message }));
         }
     };
@@ -187,19 +192,15 @@ const ProfilePage = () => {
                             </div>
                         </div>
                         <div className="mt-4 md:mt-0 flex gap-2">
-                            {canViewPayroll && (
-                                <Link
+                            {canViewPayroll ? <Link
                                     to={`/payroll${userId ? `/${userId}` : ''}`}
                                     className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                                 >
                                     {t('profilePage.viewPayroll', '급여 내역')}
-                                </Link>
-                            )}
-                            {isOwnProfile && (
-                                <button onClick={handleEditClick} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                </Link> : null}
+                            {isOwnProfile ? <button onClick={handleEditClick} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                     {isEditing ? t('profilePage.cancel') : t('profilePage.editProfile')}
-                                </button>
-                            )}
+                                </button> : null}
                         </div>
                     </div>
 
@@ -242,8 +243,7 @@ const ProfilePage = () => {
                                     <p className="whitespace-pre-wrap">{profile.notes || t('profilePage.notProvided', '없음')}</p>
                                 </div>
                                 
-                                {isOwnProfile && (
-                                    <div className="md:col-span-2 mt-4 border-t pt-4">
+                                {isOwnProfile ? <div className="md:col-span-2 mt-4 border-t pt-4">
                                         <h3 className="text-lg font-semibold text-gray-700 mb-3">
                                             {t('profilePage.privateInfo', '개인 정보')}
                                             <span className="text-sm text-gray-500 ml-2 font-normal">{t('profilePage.privateInfoNote', '(정산시 필요, 허가된 사람에게만 보입니다)')}</span>
@@ -262,8 +262,7 @@ const ProfilePage = () => {
                                                 <p>{profile.bankAccount || t('profilePage.notProvided')}</p>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    </div> : null}
                             </div>
                         </div>
                     ) : (

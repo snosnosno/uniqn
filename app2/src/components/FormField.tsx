@@ -51,18 +51,16 @@ const FormField: React.FC<FormFieldProps> = ({
             error ? 'border-red-500' : 'border-gray-300'
           }`}
         />
-        {isPasswordType && (
-          <button
+        {isPasswordType ? <button
             type="button"
             onClick={togglePasswordVisibility}
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
             aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
           >
             {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
-          </button>
-        )}
+          </button> : null}
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </div>
   );
 };

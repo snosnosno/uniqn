@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../contexts/AuthContext';
+
 import { useJobPostingContext } from '../../contexts/JobPostingContext';
 
 interface EventManagementTabProps {
@@ -9,11 +9,11 @@ interface EventManagementTabProps {
 
 const EventManagementTab: React.FC<EventManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  // const { currentUser } = useAuth();
   const { loading: contextLoading } = useJobPostingContext();
   
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
 
   // Early return if no job posting data
   if (!jobPosting) {
@@ -45,11 +45,9 @@ const EventManagementTab: React.FC<EventManagementTabProps> = ({ jobPosting }) =
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-4">
+      {error ? <div className="bg-red-50 p-4 rounded-lg mb-4">
           <p className="text-red-600">{error}</p>
-        </div>
-      )}
+        </div> : null}
 
       {/* 이벤트 관리 기본 UI 구조 */}
       <div className="space-y-6">

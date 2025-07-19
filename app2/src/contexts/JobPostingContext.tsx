@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { doc, getDoc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
 import { db } from '../firebase';
-import { useAuth } from './AuthContext';
 import { JobPosting } from '../types/jobPosting';
+
+import { useAuth } from './AuthContext';
 
 interface JobPostingContextType {
   jobPosting: JobPosting | null;
@@ -114,7 +116,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   }, [jobPostingId, currentUser]);
 
   // 공고 데이터 새로고침
-  const refreshJobPosting = async () => {
+  const refreshJobPosting = async (): Promise<void> => {
     if (!jobPostingId) return;
 
     try {
@@ -137,13 +139,13 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   };
 
   // 지원자 데이터 새로고침
-  const refreshApplicants = async () => {
+  const refreshApplicants = async (): Promise<void> => {
     // 실시간 업데이트로 인해 별도 새로고침 불필요
     // 필요시 추가 구현
   };
 
   // 스태프 데이터 새로고침
-  const refreshStaff = async () => {
+  const refreshStaff = async (): Promise<void> => {
     // 실시간 업데이트로 인해 별도 새로고침 불필요
     // 필요시 추가 구현
   };

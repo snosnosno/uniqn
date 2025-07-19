@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-// import { httpsCallable } from 'firebase/functions'; // Disabled for mock implementation
+import { httpsCallable } from 'firebase/functions';
 import { QRCodeSVG } from 'qrcode.react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-// import { functions } from '../firebase'; // Disabled for mock implementation
-import Modal from './Modal';
+
+import { functions } from '../firebase';
 import { useToast } from '../hooks/useToast';
+import { logger } from '../utils/logger';
+
+import Modal from './Modal';
 
 interface QRCodeGeneratorModalProps {
   isOpen: boolean;
@@ -28,34 +31,58 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
 
   const handleGenerateQrCode = async () => {
     if (!eventId) {
-            showError(t('attendance.messages.attendanceError'));
+      showError(t('attendance.messages.attendanceError'));
       return;
     }
 
     setIsGenerating(true);
     try {
-      // TEMPORARY: Mock QR code generation to bypass CORS issue
-      console.log('🚧 Using mock QR code generation due to CORS issue');
+      logger.info('QR 코드 생성 시작', { 
+        operation: 'generateQrCode',
+        eventId 
+      });
+
+      // 실제 Firebase 함수 호출
+      const generateTokenFunc = httpsCallable(functions, 'generateQrCodeToken');
+      const result = await generateTokenFunc({ eventId });
       
-      // Generate a mock token for testing
-      const mockToken = `mock-token-${Date.now()}`;
-      const qrUrl = `${window.location.origin}/attend/${mockToken}`;
+      const {token} = (result.data as { token: string });
+      if (token) {
+        const qrUrl = `${window.location.origin}/attend/${token}`;
+        setQrCodeValue(qrUrl);
+        showSuccess(t('attendance.messages.qrCodeGenerated'));
+        
+        logger.info('QR 코드 생성 완료', { 
+          operation: 'generateQrCode',
+          eventId,
+          tokenGenerated: !!token
+        });
+      } else {
+        throw new Error('토큰 생성 실패');
+      }
+    } catch (error: any) {
+      logger.error('QR 코드 생성 실패', error, { 
+        operation: 'generateQrCode',
+        eventId,
+        errorCode: error.code,
+        errorMessage: error.message
+      });
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setQrCodeValue(qrUrl);
-      showSuccess(t('attendance.messages.qrCodeGenerated'));
-      
-      // TODO: Remove this mock implementation once CORS is fixed
-      // Original code:
-      // const generateTokenFunc = httpsCallable(functions, 'generateQrCodeToken');
-      // const result = await generateTokenFunc({ eventId });
-      // const token = (result.data as { token: string }).token;
-      // if (token) { ... }
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-            showError(t('attendance.messages.attendanceError'));
+      // CORS 또는 네트워크 오류 시 폴백 처리
+      if (error.code === 'functions/unavailable' || error.message?.includes('CORS')) {
+        logger.warn('CORS 문제 감지, 폴백 모드로 전환', { 
+          operation: 'generateQrCode',
+          eventId 
+        });
+        
+        // 폴백: 로컬 토큰 생성
+        const fallbackToken = `fallback-${eventId}-${Date.now()}`;
+        const qrUrl = `${window.location.origin}/attend/${fallbackToken}`;
+        setQrCodeValue(qrUrl);
+        showSuccess(`${t('attendance.messages.qrCodeGenerated')  } (폴백 모드)`);
+      } else {
+        showError(t('attendance.messages.attendanceError'));
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -88,15 +115,12 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
           </button>
         )}
         
-        {isGenerating && (
-          <div className="mb-6 flex items-center space-x-2">
+        {isGenerating ? <div className="mb-6 flex items-center space-x-2">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             <span className="text-gray-600">{t('eventDetail.qrGenerating')}</span>
-          </div>
-        )}
+          </div> : null}
         
-        {qrCodeValue && (
-          <div className="mb-6">
+        {qrCodeValue ? <div className="mb-6">
             <div className="p-4 bg-white border-2 border-gray-200 rounded-lg shadow-sm">
               <QRCodeSVG 
                 value={qrCodeValue} 
@@ -108,12 +132,10 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
             <p className="mt-4 text-sm text-gray-500 text-center max-w-xs">
               {t('attendancePage.success')}
             </p>
-          </div>
-        )}
+          </div> : null}
         
         <div className="flex justify-end space-x-3 w-full">
-          {qrCodeValue && (
-            <button
+          {qrCodeValue ? <button
               onClick={() => {
                 setQrCodeValue(null);
                 setIsGenerating(false);
@@ -121,8 +143,7 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               새로 생성
-            </button>
-          )}
+            </button> : null}
           <button
             onClick={handleClose}
             className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"

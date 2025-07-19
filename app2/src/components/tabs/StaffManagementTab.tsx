@@ -1,20 +1,23 @@
+import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { FaTimes } from 'react-icons/fa';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { useJobPostingContext } from '../../contexts/JobPostingContext';
-import AttendanceStatusCard from '../AttendanceStatusCard';
+import { useToast } from '../../contexts/ToastContext';
+import { db } from '../../firebase';
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
+import { usePayrollData } from '../../hooks/usePayrollData';
+import { getExceptionIcon, getExceptionSeverity } from '../../utils/attendanceExceptionUtils';
+import { PayrollCalculationData } from '../../utils/payroll/types';
+import { AttendanceExceptionHandler } from '../AttendanceExceptionHandler';
+import AttendanceStatusCard from '../AttendanceStatusCard';
+import PayrollSummaryModal from '../PayrollSummaryModal';
 import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
 import WorkTimeEditor from '../WorkTimeEditor';
-import { AttendanceExceptionHandler } from '../AttendanceExceptionHandler';
-import { getExceptionIcon, getExceptionSeverity } from '../../utils/attendanceExceptionUtils';
-import { FaTimes } from 'react-icons/fa';
-import { usePayrollData } from '../../hooks/usePayrollData';
-import { PayrollCalculationData } from '../../utils/payroll/types';
-import PayrollSummaryModal from '../PayrollSummaryModal';
-import { useToast } from '../../contexts/ToastContext';
+
+
 
 // 업무 역할 정의
 type JobRole = 
@@ -62,7 +65,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const { t } = useTranslation();
   const { currentUser } = useAuth();
     const { showSuccess, showError, showWarning } = useToast();
-  const { staff, refreshJobPosting } = useJobPostingContext();
+  const { staff } = useJobPostingContext();
   
   const [staffData, setStaffData] = useState<StaffData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -71,12 +74,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   // 출석 상태 관리
   const { 
     attendanceRecords, 
-    loading: attendanceLoading, 
-    error: attendanceError,
+    // loading: attendanceLoading, 
+    // error: attendanceError,
     getStaffAttendanceStatus 
-  } = useAttendanceStatus({ 
+  } = useAttendanceStatus({
     eventId: jobPosting?.id || 'default-event',
-    date: new Date().toISOString().split('T')[0] 
+    date: new Date().toISOString().split('T')[0] || ''
   });
   
   // 급여 데이터 관리
@@ -85,7 +88,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     payrollData: generatedPayrollData,
     summary: payrollSummary,
     loading: payrollLoading,
-    error: payrollError,
+    // error: payrollError,
     exportToCSV
   } = usePayrollData({
     eventId: jobPosting?.id || 'default-event'
@@ -97,8 +100,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
   
   // 편집 기능 관련 states
-  const [editingCell, setEditingCell] = useState<{ rowId: string; field: keyof StaffData } | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
+  // const [editingCell, setEditingCell] = useState<{ rowId: string; field: keyof StaffData } | null>(null);
+  // const [editingValue, setEditingValue] = useState<string>('');
   
   // QR 코드 생성 모달 관련 states
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -108,7 +111,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
   
   // 예외 상황 처리 모달 관련 states
-  const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false);
+  // const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false);
   const [selectedExceptionWorkLog, setSelectedExceptionWorkLog] = useState<any | null>(null);
   
   // 급여 처리 관련 states
@@ -171,86 +174,46 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     fetchJobPostingStaff();
     }, [currentUser, jobPosting?.id, t, staff]); // staff 추가로 실시간 동기화
 
-  // 편집 기능 핸들러
-  const handleCellClick = (rowId: string, field: keyof StaffData, currentValue: any) => {
-    // 편집 불가능한 필드 제외
-    const readOnlyFields: (keyof StaffData)[] = ['id', 'userId', 'postingId', 'postingTitle'];
-    if (readOnlyFields.includes(field)) return;
-    
-    setEditingCell({ rowId, field });
-    setEditingValue(String(currentValue || ''));
-  };
+  // 편집 기능 핸들러 (미사용)
+  // const handleCellClick = (rowId: string, field: keyof StaffData, currentValue: any) => {
+  //   // 편집 불가능한 필드 제외
+  //   const readOnlyFields: (keyof StaffData)[] = ['id', 'userId', 'postingId', 'postingTitle'];
+  //   if (readOnlyFields.includes(field)) return;
+
+  //   // 편집 모드 활성화
+  //   setEditingCell({ rowId, field, value: currentValue });
+  // };
   
-  const handleCellSave = async () => {
-    if (!editingCell) return;
-    
-    const { rowId, field } = editingCell;
-    const currentStaff = staffData.find(staff => staff.id === rowId);
-    
-    if (!currentStaff) {
-      setError(t('staffListPage.staffNotFound'));
-      return;
-    }
-    
-    const newValue = field === 'age' ? Number(editingValue) || 0 : editingValue;
-    
-    try {
-      // 기존 사용자의 경우 users 컬렉션 업데이트
-      if (currentStaff.userId && currentStaff.userId.trim() !== '') {
-        const userRef = doc(db, 'users', currentStaff.userId);
-        await updateDoc(userRef, {
-          [field]: newValue,
-          updatedAt: serverTimestamp()
-        });
-      }
-      
-      // staff 컬렉션에도 업데이트
-      try {
-        const staffRef = doc(db, 'staff', currentStaff.id);
-        await updateDoc(staffRef, {
-          [field]: newValue,
-          // role 필드 업데이트 시 jobRole 배열도 함께 업데이트
-          ...(field === 'role' && { jobRole: [newValue] }),
-          updatedAt: serverTimestamp()
-        });
-      } catch (staffUpdateError) {
-        console.log('스태프 컬렉션 업데이트 스킵:', staffUpdateError);
-      }
-      
-      // 로컬 상태 업데이트
-      setStaffData(prevData => 
-        prevData.map(staff => 
-          staff.id === rowId 
-            ? { ...staff, [field]: newValue }
-            : staff
-        )
-      );
-      
-            showSuccess(t('staffManagement.updateSuccess'));
-      console.log(`스태프 ${field} 필드가 성공적으로 업데이트되었습니다:`, newValue);
-    } catch (error: any) {
-      console.error('스태프 정보 업데이트 오류:', error);
-      setError(error.message || t('staffListPage.updateError'));
-            showError(t('staffManagement.updateError'));
-      return;
-    }
-    
-    setEditingCell(null);
-    setEditingValue('');
-  };
+  // const handleCellSave = async () => {
+  //   if (!editingCell) return;
+
+  //   const { rowId, field } = editingCell;
+  //   const newValue = editingValue;
+
+  //   try {
+  //     // 스태프 데이터 업데이트
+  //     const updatedStaffData = staffData.map(staff => {
+  //       if (staff.id === rowId) {
+  //         return { ...staff, [field]: newValue };
+  //       }
+  //       return staff;
+  //     });
+
+  //     setStaffData(updatedStaffData);
+  //     setEditingCell(null);
+  //     setEditingValue('');
+
+  //     showSuccess(t('staffManagement.cellUpdateSuccess'));
+  //   } catch (error) {
+  //     console.error('셀 저장 오류:', error);
+  //     showError(t('staffManagement.cellUpdateError'));
+  //   }
+  // };
   
-  const handleCellCancel = () => {
-    setEditingCell(null);
-    setEditingValue('');
-  };
-  
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleCellSave();
-    } else if (e.key === 'Escape') {
-      handleCellCancel();
-    }
-  };
+  // const handleCellCancel = () => {
+  //   // setEditingCell(null); // This line is removed
+  //   // setEditingValue(''); // This line is removed
+  // };
   
   // 출퇴근 시간 수정 핸들러
   const handleEditWorkTime = (staffId: string) => {
@@ -283,13 +246,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     if (workLog?.workLog) {
       setSelectedExceptionWorkLog(workLog.workLog);
-      setIsExceptionModalOpen(true);
+      // setIsExceptionModalOpen(true); // This line is removed
     }
   };
   
   const handleExceptionUpdate = (updatedWorkLog: any) => {
     console.log('예외 상황이 업데이트되었습니다:', updatedWorkLog);
-    setIsExceptionModalOpen(false);
+    // setIsExceptionModalOpen(false); // This line is removed
     setSelectedExceptionWorkLog(null);
         showSuccess(t('staffManagement.exceptionUpdateSuccess'));
   };
@@ -434,11 +397,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-50 p-4 rounded-lg mb-4">
+        {error ? <div className="bg-red-50 p-4 rounded-lg mb-4">
             <p className="text-red-600">{error}</p>
-          </div>
-        )}
+          </div> : null}
 
         {/* 검색 및 제어 버튼 */}
         <div className="mb-4 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
@@ -570,10 +531,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               status={attendanceRecord.status}
                               checkInTime={attendanceRecord.checkInTime}
                               checkOutTime={attendanceRecord.checkOutTime}
-                              scheduledStartTime={attendanceRecord.scheduledStartTime}
-                              scheduledEndTime={attendanceRecord.scheduledEndTime}
                               size="sm"
-                              exception={attendanceRecord.workLog?.exception}
                             />
                           ) : (
                             <AttendanceStatusCard
@@ -656,14 +614,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       />
 
       {/* 예외 상황 처리 모달 */}
-      {selectedExceptionWorkLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      {selectedExceptionWorkLog ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">{t('exceptions.title', '예외 상황 처리')}</h3>
               <button
                 onClick={() => {
-                  setIsExceptionModalOpen(false);
+                  // setIsExceptionModalOpen(false); // This line is removed
                   setSelectedExceptionWorkLog(null);
                 }}
                 className="text-gray-500 hover:text-gray-700"
@@ -677,8 +634,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               onExceptionUpdated={handleExceptionUpdate}
             />
           </div>
-        </div>
-      )}
+        </div> : null}
 
       {/* 급여 계산 요약 모달 */}
       <PayrollSummaryModal

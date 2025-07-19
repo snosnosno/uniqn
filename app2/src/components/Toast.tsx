@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { Toast as ToastType, useToastContext } from '../contexts/ToastContext';
 
 interface ToastProps {
@@ -79,9 +80,7 @@ const Toast: React.FC<ToastProps> = ({ toast }) => {
         <div className="flex items-start">
           {getIconForType()}
           <div className="flex-1 min-w-0">
-            {toast.title && (
-              <p className="text-sm font-semibold mb-1">{toast.title}</p>
-            )}
+            {toast.title ? <p className="text-sm font-semibold mb-1">{toast.title}</p> : null}
             <p className="text-sm">{toast.message}</p>
           </div>
           <button

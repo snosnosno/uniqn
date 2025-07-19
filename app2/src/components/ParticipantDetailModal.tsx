@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
-import { Participant } from '../hooks/useParticipants';
 import { useTranslation } from 'react-i18next';
+
+import { Participant } from '../hooks/useParticipants';
+
+import Modal from './Modal';
 
 interface ParticipantDetailModalProps {
   isOpen: boolean;
@@ -29,7 +31,7 @@ const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
       setFormData({
         name: participant.name,
         chips: participant.chips,
-        phone: participant.phone,
+        phone: participant.phone || '',
       });
     }
   }, [participant]);

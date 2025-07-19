@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
+
+import { useTournament } from '../contexts/TournamentContext';
 
 const BlindsPage: React.FC = () => {
     const { t } = useTranslation();
@@ -57,12 +58,10 @@ const BlindsPage: React.FC = () => {
                 <h3 className="text-7xl font-bold font-mono tracking-wider my-2 text-green-400">
                     {formatTime(remainingTime)}
                 </h3>
-                {!currentLevelIsBreak && currentBlind && (
-                     <div className="text-3xl font-semibold">
+                {!currentLevelIsBreak && currentBlind ? <div className="text-3xl font-semibold">
                         {currentBlind.sb} / {currentBlind.bb}
-                        {currentBlind.ante && <span className="text-xl ml-2">({t('blinds.ante', { ante: currentBlind.ante })})</span>}
-                    </div>
-                )}
+                        {currentBlind.ante ? <span className="text-xl ml-2">({t('blinds.ante', { ante: currentBlind.ante })})</span> : null}
+                    </div> : null}
                 <div className="text-gray-500 mt-2 text-sm">
                     {t('blinds.next')} {nextBlind ? (nextBlind.isBreak ? t('blinds.nextBreak') : `${nextBlind.sb}/${nextBlind.bb}`) : t('blinds.end')}
                 </div>

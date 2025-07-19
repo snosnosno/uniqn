@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+
+import { db } from '../firebase';
+
 import { logAction } from './useLogger';
 
 export interface TournamentSettings {

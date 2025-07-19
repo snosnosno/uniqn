@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, documentId, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { FaTimes } from 'react-icons/fa';
+
+import { AttendanceExceptionHandler } from '../components/AttendanceExceptionHandler';
 import AttendanceStatusCard from '../components/AttendanceStatusCard';
-import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
+import PayrollSummaryModal from '../components/PayrollSummaryModal';
 import QRCodeGeneratorModal from '../components/QRCodeGeneratorModal';
 import WorkTimeEditor from '../components/WorkTimeEditor';
-import { AttendanceExceptionHandler } from '../components/AttendanceExceptionHandler';
-import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
-import { FaTimes } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 import { usePayrollData } from '../hooks/usePayrollData';
+import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
 import { PayrollCalculationData } from '../utils/payroll/types';
-import PayrollSummaryModal from '../components/PayrollSummaryModal';
 
 // 업무 역할 정의
 type JobRole = 
@@ -862,8 +863,6 @@ const StaffListPage: React.FC = () => {
                           status={attendanceRecord.status}
                           checkInTime={attendanceRecord.checkInTime}
                           checkOutTime={attendanceRecord.checkOutTime}
-                          scheduledStartTime={attendanceRecord.scheduledStartTime}
-                          scheduledEndTime={attendanceRecord.scheduledEndTime}
                           size="sm"
                           exception={attendanceRecord.workLog?.exception}
                         />
@@ -937,8 +936,7 @@ const StaffListPage: React.FC = () => {
     </div>
     
     {/* 스태프 추가 모달 */}
-    {isAddModalOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    {isAddModalOpen ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">스태프 추가</h2>
@@ -991,8 +989,7 @@ const StaffListPage: React.FC = () => {
                   </div>
                 )}
                 
-                {selectedUser && (
-                  <div className="mt-3">
+                {selectedUser ? <div className="mt-3">
                     <div className="p-3 bg-blue-50 rounded-md">
                       <div className="font-medium">선택된 사용자: {selectedUser.name}</div>
                       <div className="text-sm text-gray-600">{selectedUser.email}</div>
@@ -1003,8 +1000,7 @@ const StaffListPage: React.FC = () => {
                     >
                       이 사용자를 스태프로 추가
                     </button>
-                  </div>
-                )}
+                  </div> : null}
               </div>
             </div>
             
@@ -1090,8 +1086,7 @@ const StaffListPage: React.FC = () => {
             </div>
           </div>
         </div>
-        </div>
-        )}
+        </div> : null}
         
         {/* QR 코드 생성 모달 */}
         <QRCodeGeneratorModal
@@ -1110,8 +1105,7 @@ const StaffListPage: React.FC = () => {
           onUpdate={handleWorkTimeUpdate}
           />
           
-          {selectedExceptionWorkLog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          {selectedExceptionWorkLog ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">{t('exceptions.title', '예외 상황 처리')}</h3>
@@ -1131,8 +1125,7 @@ const StaffListPage: React.FC = () => {
                 onExceptionUpdated={handleExceptionUpdate}
               />
             </div>
-          </div>
-        )}
+          </div> : null}
         
         
         {/* 급여 계산 요약 모달 */}

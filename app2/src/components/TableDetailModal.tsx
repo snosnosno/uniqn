@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Table } from '../hooks/useTables';
-import { Seat } from './Seat';
-import Modal from './Modal';
 import { useTranslation } from 'react-i18next';
+
+import { Table } from '../hooks/useTables';
+
+import Modal from './Modal';
+import { Seat } from './Seat';
 
 interface TableDetailModalProps {
   table: Table | null;
@@ -102,7 +104,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="">
       <DndProvider backend={HTML5Backend}>
         <div className="relative">
-          {isDimmed && <div className="absolute inset-0 bg-black bg-opacity-50 z-10 rounded-md" aria-hidden="true"></div>}
+          {isDimmed ? <div className="absolute inset-0 bg-black bg-opacity-50 z-10 rounded-md" aria-hidden="true"></div> : null}
           
           <div className="flex justify-between items-center mb-4 pb-4 border-b">
             <div className="flex items-center gap-2">
@@ -113,8 +115,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
                     style={{ backgroundColor: table.borderColor || '#cccccc' }}
                     title={t('tableDetailModal.changeBorderColorTitle')}
                 />
-                {showColorPicker && (
-                    <div className="absolute z-30 top-8 left-0 bg-white p-2 rounded-md shadow-lg flex gap-2">
+                {showColorPicker ? <div className="absolute z-30 top-8 left-0 bg-white p-2 rounded-md shadow-lg flex gap-2">
                         {PRESET_COLORS.map(color => (
                             <button
                                 key={color}
@@ -123,8 +124,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
                                 style={{ backgroundColor: color }}
                             />
                         ))}
-                    </div>
-                )}
+                    </div> : null}
               </div>
               {isEditingName ? (
                 <input

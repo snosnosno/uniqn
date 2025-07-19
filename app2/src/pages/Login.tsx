@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from 'react-i18next';
+import { FaGoogle } from 'react-icons/fa';
+import { useNavigate, Link } from "react-router-dom";
+
 import AuthLayout from '../components/AuthLayout';
 import FormField from "../components/FormField";
-import { FaGoogle } from 'react-icons/fa';
+import { useAuth } from "../contexts/AuthContext";
+
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -65,7 +67,7 @@ const Login: React.FC = () => {
           autoComplete="current-password"
         />
         
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error ? <p className="text-red-500 text-sm text-center">{error}</p> : null}
         
         <div className="flex items-center justify-end">
           <div className="text-sm">

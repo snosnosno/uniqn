@@ -1,9 +1,12 @@
-import { db } from '../firebase';
 import { collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
+
+import { db } from '../firebase';
+
+import { logger } from './logger';
 
 // Firebase connection reset utility
 export const resetFirebaseConnection = async (): Promise<void> => {
-  console.log('🔄 Resetting Firebase connection...');
+  logger.info('🔄 Resetting Firebase connection...', { operation: 'resetFirebaseConnection' });
   
   try {
     // Clear any existing listeners by creating a temporary listener on a test collection
@@ -14,15 +17,15 @@ export const resetFirebaseConnection = async (): Promise<void> => {
     // Force a longer delay to allow cleanup
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    console.log('✅ Firebase connection reset completed');
-  } catch (error) {
-    console.error('❌ Error resetting Firebase connection:', error);
+    logger.info('✅ Firebase connection reset completed', { operation: 'resetFirebaseConnection' });
+  } catch (error: any) {
+    logger.error('❌ Error resetting Firebase connection', error, { operation: 'resetFirebaseConnection' });
   }
 };
 
 // Force Firebase reconnection
 export const forceFirebaseReconnection = async (): Promise<void> => {
-  console.log('🔄 Force reconnecting to Firebase...');
+  logger.info('🔄 Force reconnecting to Firebase...', { operation: 'forceFirebaseReconnection' });
   
   try {
     // Clear all existing connections
@@ -30,39 +33,19 @@ export const forceFirebaseReconnection = async (): Promise<void> => {
     
     // Force a page reload to completely reset Firebase state
     window.location.reload();
-  } catch (error) {
-    console.error('❌ Error forcing Firebase reconnection:', error);
+  } catch (error: any) {
+    logger.error('❌ Error forcing Firebase reconnection', error, { operation: 'forceFirebaseReconnection' });
     // Fallback to page reload
     window.location.reload();
   }
 };
 
-// Enhanced error handling for Firebase operations
+// Enhanced error handling for Firebase operations (deprecated - use logger.withErrorHandling instead)
 export const withFirebaseErrorHandling = async <T>(
   operation: () => Promise<T>,
   operationName: string
 ): Promise<T> => {
-  try {
-    return await operation();
-  } catch (error: any) {
-    console.error(`❌ Firebase operation failed: ${operationName}`, error);
-    
-    // If it's an internal assertion error, try to reset connection
-    if (error.message && error.message.includes('INTERNAL ASSERTION FAILED')) {
-      console.log('🔄 Detected internal assertion error, attempting connection reset...');
-      await resetFirebaseConnection();
-      
-      // Retry the operation once
-      try {
-        return await operation();
-      } catch (retryError) {
-        console.error(`❌ Retry failed for ${operationName}:`, retryError);
-        throw retryError;
-      }
-    }
-    
-    throw error;
-  }
+  return logger.withErrorHandling(operation, operationName, { component: 'firebase' });
 };
 
 // Firebase connection health check
@@ -70,10 +53,10 @@ export const checkFirebaseConnection = async (): Promise<boolean> => {
   try {
     // Try to access Firestore to check connection
     const testDoc = db.app.options;
-    console.log('✅ Firebase connection is healthy');
+    logger.info('✅ Firebase connection is healthy', { operation: 'checkFirebaseConnection' });
     return true;
-  } catch (error) {
-    console.error('❌ Firebase connection check failed:', error);
+  } catch (error: any) {
+    logger.error('❌ Firebase connection check failed', error, { operation: 'checkFirebaseConnection' });
     return false;
   }
 };
@@ -83,8 +66,11 @@ export const cleanupFirebaseListeners = (listeners: Unsubscribe[]): void => {
   listeners.forEach(unsubscribe => {
     try {
       unsubscribe();
-    } catch (error) {
-      console.warn('⚠️ Error cleaning up Firebase listener:', error);
+    } catch (error: any) {
+      logger.warn('⚠️ Error cleaning up Firebase listener', { 
+        operation: 'cleanupFirebaseListeners',
+        additionalData: { errorMessage: error.message }
+      });
     }
   });
 }; 

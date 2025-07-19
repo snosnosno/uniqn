@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { IconType } from 'react-icons';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
-    FaTrophy, FaBullhorn, FaHistory, FaUserCircle, FaUserShield, FaFileInvoice, FaClipboardList, FaQrcode,
+    FaTrophy, FaBullhorn, FaUserCircle, FaUserShield, FaFileInvoice, FaClipboardList, FaQrcode,
     FaBars, FaSignOutAlt, FaUserCheck
 } from 'react-icons/fa';
-import { useAuth } from '../contexts/AuthContext'; 
-import { useTranslation } from 'react-i18next';
+import { NavLink, useNavigate } from 'react-router-dom';
+
+import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
 interface NavItemProps {
@@ -40,7 +41,6 @@ export const HeaderMenu: React.FC = () => {
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(max-width: 1024px)');
 
   const handleLogout = useCallback(async () => {
     try {
@@ -103,8 +103,7 @@ export const HeaderMenu: React.FC = () => {
       </button>
 
       {/* 드롭다운 메뉴 */}
-      {isMenuOpen && (
-        <>
+      {isMenuOpen ? <>
           {/* 외부 클릭 감지를 위한 오버레이 */}
           <div 
             className="fixed inset-0 z-40" 
@@ -125,15 +124,13 @@ export const HeaderMenu: React.FC = () => {
                   <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-2xl' : 'text-lg'}`}>{t('layout.title')}</h2>
                   <p className={`text-gray-500 ${isMobile ? 'text-base' : 'text-sm'}`}>{t('layout.subtitle')}</p>
                 </div>
-                {isMobile && (
-                  <button
+                {isMobile ? <button
                     onClick={() => setIsMenuOpen(false)}
                     className="p-2 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
                     aria-label="Close menu"
                   >
                     <span className="text-2xl">×</span>
-                  </button>
-                )}
+                  </button> : null}
               </div>
             </div>
 
@@ -147,8 +144,7 @@ export const HeaderMenu: React.FC = () => {
               <hr className="my-2 border-t border-gray-200" />
               
               {/* Admin and Manager common menus */}
-              {isAdmin && (
-                <>
+              {isAdmin ? <>
                   <NavItem to="/admin/staff" label={t('nav.staffManagement')} Icon={FaUserShield} isOpen={true} />
                   <NavItem to="/admin/job-postings" label={t('nav.managePostings')} Icon={FaFileInvoice} isOpen={true} />
                   <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} />
@@ -157,8 +153,7 @@ export const HeaderMenu: React.FC = () => {
                   <NavItem to="/admin/tables" label={t('nav.tables')} Icon={FaTable} isOpen={true} />
                   <NavItem to="/admin/prizes" label={t('nav.prizes')} Icon={FaTrophy} isOpen={true} />
                   <NavItem to="/admin/announcements" label={t('nav.announcements')} Icon={FaBullhorn} isOpen={true} />
-                </>
-              )}
+                </> : null}
 
               {/* Admin only menu */}
               {role === 'admin' && (
@@ -191,8 +186,7 @@ export const HeaderMenu: React.FC = () => {
               </button>
             </div>
           </div>
-        </>
-      )}
+        </> : null}
     </div>
   );
 };

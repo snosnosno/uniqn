@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
+
+import { useTournament } from '../contexts/TournamentContext';
 
 // 예시: ITM(In The Money) 비율에 따른 상금 분배 (조정 가능)
 const PRIZE_DISTRIBUTION_RULES = {
@@ -91,11 +92,9 @@ const PrizesPage: React.FC = () => {
           <input type="checkbox" checked={isManual} onChange={e => setIsManual(e.target.checked)} className="rounded" />
           {t('prizes.adjustManually')}
         </label>
-        {isManual && (
-          <div className={`text-sm ${totalManualPayout > prizePool ? 'text-red-500' : 'text-gray-400'}`}>
+        {isManual ? <div className={`text-sm ${totalManualPayout > prizePool ? 'text-red-500' : 'text-gray-400'}`}>
             {t('prizes.totalDistributed')} {formatCurrency(totalManualPayout)}
-          </div>
-        )}
+          </div> : null}
       </div>
 
       <div className="space-y-2 mb-4">

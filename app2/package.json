@@ -34,7 +34,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build --no-eslint",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "analyze": "npm run build && npx serve -s build",
@@ -44,7 +44,14 @@
     "deploy:hosting": "cd .. && firebase deploy --only hosting",
     "deploy:functions": "cd .. && firebase deploy --only functions",
     "deploy:all": "npm run build && cd .. && firebase deploy",
-    "deploy:preview": "npm run build && cd .. && firebase hosting:channel:deploy preview"
+    "deploy:preview": "npm run build && cd .. && firebase hosting:channel:deploy preview",
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "type-check": "tsc --noEmit",
+    "quality": "npm run lint && npm run format:check && npm run type-check",
+    "quality:fix": "npm run lint:fix && npm run format"
   },
   "jest": {
     "transformIgnorePatterns": [

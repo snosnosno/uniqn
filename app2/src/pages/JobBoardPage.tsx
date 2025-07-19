@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, doc, getDoc, deleteDoc } from 'firebase/firestore';
-
-import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '../contexts/ToastContext';
-import { useInfiniteJobPostings, JobPosting, TimeSlot, RoleRequirement } from '../hooks/useJobPostings';
-import { JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import LoadingSpinner from '../components/LoadingSpinner';
-import JobPostingSkeleton from '../components/JobPostingSkeleton';
+
 import JobBoardErrorBoundary from '../components/JobBoardErrorBoundary';
+import JobPostingSkeleton from '../components/JobPostingSkeleton';
+import LoadingSpinner from '../components/LoadingSpinner';
 import PreQuestionModal from '../components/PreQuestionModal';
-import { PreQuestionAnswer } from '../types/jobPosting';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { db } from '../firebase';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { useInfiniteJobPostings, JobPosting } from '../hooks/useJobPostings';
+import { TimeSlot, RoleRequirement, JobPostingUtils, DateSpecificRequirement, PreQuestionAnswer } from '../types/jobPosting';
 
 const JobBoardPage = () => {
   const { t } = useTranslation();
@@ -343,8 +342,8 @@ const JobBoardPage = () => {
         assignedTime: firstSelection.timeSlot,
         
         // 새로운 다중 선택 필드
-        assignedRoles: assignedRoles,
-        assignedTimes: assignedTimes,
+        assignedRoles,
+        assignedTimes,
       };
 
       // 사전질문 답변이 있으면 추가
@@ -450,8 +449,7 @@ const JobBoardPage = () => {
         </div>
       
         {/* Error Handling */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {error ? <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <div className="flex">
               <div className="py-1">
                 <svg className="fill-current h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -475,8 +473,7 @@ const JobBoardPage = () => {
                 </details>
               </div>
             </div>
-          </div>
-        )}
+          </div> : null}
       
         
         {/* 구인 목록 탭 */}
@@ -578,11 +575,9 @@ const JobBoardPage = () => {
                   ))}
                 </select>
               </div>
-              {filters.month && filters.day && (
-                <p className="text-xs text-gray-500 mt-1">
+              {filters.month && filters.day ? <p className="text-xs text-gray-500 mt-1">
                   {parseInt(filters.month)}월 {parseInt(filters.day)}일
-                </p>
-              )}
+                </p> : null}
             </div>
           
             {/* Role Filter */}
@@ -754,8 +749,7 @@ const JobBoardPage = () => {
         </div>
 
         {/* Apply Modal */}
-        {isApplyModalOpen && selectedPost && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        {isApplyModalOpen && selectedPost ? <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-4 sm:top-20 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
               <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('jobBoard.applyModal.title', { postTitle: selectedPost.title })}</h3>
               
@@ -896,25 +890,20 @@ const JobBoardPage = () => {
                 </button>
               </div>
               </div>
-              </div>
-              )}
+              </div> : null}
 
         {/* PreQuestion Modal */}
-        {isPreQuestionModalOpen && selectedPost && selectedPost.preQuestions && (
-          <PreQuestionModal
+        {isPreQuestionModalOpen && selectedPost && selectedPost.preQuestions ? <PreQuestionModal
             isOpen={isPreQuestionModalOpen}
             onClose={() => setIsPreQuestionModalOpen(false)}
             onComplete={handlePreQuestionComplete}
             questions={selectedPost.preQuestions}
             jobPostingId={selectedPost.id}
-          />
-        )}
+          /> : null}
         
             {/* Infinite Scroll Loading Indicator */}
             <div ref={loadMoreRef} className="flex justify-center py-4">
-              {isFetchingNextPage && (
-                <LoadingSpinner size="md" text="추가 공고를 불러오는 중..." />
-              )}
+              {isFetchingNextPage ? <LoadingSpinner size="md" text="추가 공고를 불러오는 중..." /> : null}
               {!hasNextPage && jobPostings.length > 0 && (
                 <p className="text-gray-500 text-center py-4">
                   더 이상 공고가 없습니다.
@@ -978,12 +967,10 @@ const JobBoardPage = () => {
                       </div>
                     </div>
 
-                    {application.jobPosting && (
-                      <div className="mb-4 text-sm text-gray-600">
+                    {application.jobPosting ? <div className="mb-4 text-sm text-gray-600">
                         <p>📍 {application.jobPosting.location}</p>
                         <p>📅 {formatDate(application.jobPosting.startDate)} ~ {formatDate(application.jobPosting.endDate)}</p>
-                      </div>
-                    )}
+                      </div> : null}
 
                     <div className="border-t pt-4">
                       <h4 className="font-medium text-gray-900 mb-3">지원한 시간대</h4>
@@ -994,15 +981,11 @@ const JobBoardPage = () => {
                           {application.assignedTimes.map((time: string, index: number) => (
                             <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
                               <div className="flex-1">
-                                {application.assignedDates && application.assignedDates[index] && (
-                                  <span className="text-blue-600 font-medium">📅 {application.assignedDates[index]} | </span>
-                                )}
+                                {application.assignedDates && application.assignedDates[index] ? <span className="text-blue-600 font-medium">📅 {application.assignedDates[index]} | </span> : null}
                                 <span className="text-gray-700">⏰ {time}</span>
-                                {application.assignedRoles[index] && (
-                                                                     <span className="ml-2 text-gray-600">
+                                {application.assignedRoles[index] ? <span className="ml-2 text-gray-600">
                                      - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRoles[index]}`, application.assignedRoles[index]))}
-                                   </span>
-                                )}
+                                   </span> : null}
                               </div>
                               {application.status === 'confirmed' && (
                                 <span className="ml-2 text-green-600 text-sm font-medium">확정됨</span>
@@ -1014,15 +997,11 @@ const JobBoardPage = () => {
                         /* 단일 선택 지원 정보 표시 (하위 호환성) */
                         <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                           <div className="flex-1">
-                            {application.assignedDate && (
-                              <span className="text-blue-600 font-medium">📅 {application.assignedDate} | </span>
-                            )}
+                            {application.assignedDate ? <span className="text-blue-600 font-medium">📅 {application.assignedDate} | </span> : null}
                             <span className="text-gray-700">⏰ {application.assignedTime}</span>
-                                                         {application.assignedRole && (
-                               <span className="ml-2 text-gray-600">
+                                                         {application.assignedRole ? <span className="ml-2 text-gray-600">
                                  - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRole}`, application.assignedRole))}
-                               </span>
-                             )}
+                               </span> : null}
                           </div>
                           {application.status === 'confirmed' && (
                             <span className="ml-2 text-green-600 text-sm font-medium">확정됨</span>
@@ -1030,14 +1009,11 @@ const JobBoardPage = () => {
                         </div>
                       )}
 
-                      {application.status === 'confirmed' && application.confirmedAt && (
-                        <p className="text-sm text-green-600 mt-2">
+                      {application.status === 'confirmed' && application.confirmedAt ? <p className="text-sm text-green-600 mt-2">
                           ✅ 확정일: {formatDate(application.confirmedAt)}
-                        </p>
-                      )}
+                        </p> : null}
                       
-                      {application.status === 'applied' && application.jobPosting && (
-                        <div className="mt-4 flex space-x-2">
+                      {application.status === 'applied' && application.jobPosting ? <div className="mt-4 flex space-x-2">
                           <button
                             onClick={() => handleCancelApplication(application.postId)}
                             disabled={isProcessing === application.postId}
@@ -1045,8 +1021,7 @@ const JobBoardPage = () => {
                           >
                             {isProcessing === application.postId ? '취소 중...' : '지원 취소'}
                           </button>
-                        </div>
-                      )}
+                        </div> : null}
                     </div>
                   </div>
                 ))}

@@ -1,8 +1,9 @@
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { db, functions } from '../../firebase';
-import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
 
 interface PendingUser {
     id: string;

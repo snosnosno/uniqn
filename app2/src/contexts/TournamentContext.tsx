@@ -111,7 +111,7 @@ const tournamentReducer = (state: TournamentState, action: Action): TournamentSt
         return { 
           ...state, 
           blindLevel: action.payload, 
-          remainingTime: newLevel.duration ?? 1200,
+          remainingTime: newLevel?.duration ?? 1200,
         };
       }
       return state;
@@ -140,7 +140,7 @@ const tournamentReducer = (state: TournamentState, action: Action): TournamentSt
       };
 
       // Find available table or create a new one
-      let updatedTables = [...state.tables];
+      const updatedTables = [...state.tables];
       let targetTable = updatedTables.find(t => t.players.length < state.settings.seatsPerTable);
 
       if (!targetTable) {

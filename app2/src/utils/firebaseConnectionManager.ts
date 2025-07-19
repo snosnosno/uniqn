@@ -1,5 +1,6 @@
-import { db } from '../firebase';
 import { collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
+
+import { db } from '../firebase';
 
 // Global listener management
 class FirebaseConnectionManager {

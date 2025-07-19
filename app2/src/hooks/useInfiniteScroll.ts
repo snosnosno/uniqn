@@ -26,7 +26,7 @@ export const useInfiniteScroll = ({
       const [entry] = entries;
       
       // Trigger fetch when element is visible and conditions are met
-      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
         fetchNextPage();
       }
     },

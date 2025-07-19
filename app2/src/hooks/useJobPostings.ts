@@ -1,23 +1,22 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { getDocs, startAfter, limit } from 'firebase/firestore';
+import { getDocs } from 'firebase/firestore';
+
 import { buildFilteredQuery } from '../firebase';
+import {
+  JobPostingFilters,
+  JobPosting
+  // TimeSlot,
+  // RoleRequirement,
+  // ConfirmedStaff,
+  // JobPostingUtils
+} from '../types/jobPosting';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
 
 // Import types from centralized type definitions
-import {
-  JobPostingFilters,
-  JobPosting,
-  TimeSlot,
-  RoleRequirement,
-  ConfirmedStaff,
-  JobPostingUtils
-} from '../types/jobPosting';
 // Re-export types for backward compatibility
 export type {
   JobPostingFilters,
   JobPosting,
-  TimeSlot,
-  RoleRequirement,
   ConfirmedStaff
 } from '../types/jobPosting';
 

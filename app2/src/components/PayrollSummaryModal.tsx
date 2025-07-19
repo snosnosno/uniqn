@@ -2,6 +2,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaTimes, FaFileExport, FaMoneyBillWave, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+
 import { PayrollCalculationData, PayrollSummary } from '../utils/payroll/types';
 
 interface PayrollSummaryModalProps {
@@ -53,8 +54,7 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
         </div>
 
         {/* 전체 요약 정보 */}
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {summary ? <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
                 <FaClock className="mr-2" />
@@ -88,8 +88,7 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
                 {t('payroll.summary.deductions', '공제액')}: {formatCurrency(summary.totalDeductions)}
               </p>
             </div>
-          </div>
-        )}
+          </div> : null}
 
         {/* 스태프별 급여 상세 */}
         <div className="mb-6">

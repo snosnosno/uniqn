@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next';
 
 export interface DateDropdownSelectorProps {
   value: {
@@ -22,8 +22,6 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
   className = '',
   disabled = false
 }) => {
-  const { t } = useTranslation();
-
   // Get current year for default range
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i - 2); // 2 years before to 2 years after
@@ -53,16 +51,13 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700">
+      {label ? <label className="block text-sm font-medium text-gray-700">
           {label}
-        </label>
-      )}
+        </label> : null}
       
       <div className="flex space-x-2">
         {/* Year Dropdown */}
-        {includeYear && (
-          <select
+        {includeYear ? <select
             value={value.year || ''}
             onChange={(e) => handleDateChange('year', e.target.value)}
             disabled={disabled}
@@ -74,8 +69,7 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
                 {year}년
               </option>
             ))}
-          </select>
-        )}
+          </select> : null}
         
         {/* Month Dropdown */}
         <select
@@ -116,12 +110,10 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
       </div>
       
       {/* Display selected date */}
-      {value.month && value.day && (
-        <p className="text-xs text-gray-500">
+      {value.month && value.day ? <p className="text-xs text-gray-500">
           {includeYear && value.year ? `${value.year}년 ` : ''}
           {parseInt(value.month)}월 {parseInt(value.day)}일
-        </p>
-      )}
+        </p> : null}
     </div>
   );
 };

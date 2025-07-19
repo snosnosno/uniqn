@@ -12,7 +12,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ title, children, c
     <div className={`bg-white p-6 rounded-xl shadow-md ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-700">{title}</h2>
-        {icon && <div className="text-2xl">{icon}</div>}
+        {icon ? <div className="text-2xl">{icon}</div> : null}
       </div>
       <div>{children}</div>
     </div>

@@ -1,7 +1,8 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import { useTournament } from '../contexts/TournamentContext';
+
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
+
+import { useTournament } from '../contexts/TournamentContext';
 
 const ParticipantLivePage: React.FC = () => {
     const { t } = useTranslation();
@@ -12,8 +13,8 @@ const ParticipantLivePage: React.FC = () => {
     const { participants, settings, blindLevel, remainingTime } = state;
     const participant = participants.find(p => p.id === id);
 
-    const currentBlind = settings.blindLevels[blindLevel - 1];
-    const nextBlind = settings.blindLevels[blindLevel];
+    const currentBlind = settings.blindLevels[blindLevel - 1] || settings.blindLevels[0] || { sb: 0, bb: 0 };
+    const nextBlind = settings.blindLevels[blindLevel] || settings.blindLevels[settings.blindLevels.length - 1] || { sb: 0, bb: 0 };
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60).toString().padStart(2, '0');

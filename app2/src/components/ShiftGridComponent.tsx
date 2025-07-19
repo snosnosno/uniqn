@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import DataGrid, { Column } from 'react-data-grid';
 import 'react-data-grid/lib/styles.css';
 import { FaTable, FaCoffee, FaClock, FaUser, FaExclamationTriangle, FaCheckCircle, FaInfoCircle } from 'react-icons/fa';
+
 import { ValidationResult, ValidationViolation } from '../utils/shiftValidation';
 
 interface GridRow {
@@ -102,11 +103,9 @@ const ValidationTooltip: React.FC<{
              <FaCheckCircle className="w-3 h-3" />}
             <span className="font-medium">{violation.message}</span>
           </div>
-          {violation.suggestedFix && (
-            <div className="text-gray-600 ml-4 mt-1">
+          {violation.suggestedFix ? <div className="text-gray-600 ml-4 mt-1">
               제안: {violation.suggestedFix}
-            </div>
-          )}
+            </div> : null}
         </div>
       ))}
     </div>
@@ -193,16 +192,12 @@ const CellRenderer: React.FC<{
       <span className="text-sm font-medium">
         {value || '대기'}
       </span>
-      {hasViolations && (
-        <FaExclamationTriangle className="w-3 h-3 text-red-500 ml-1" />
-      )}
-      {showTooltip && hasViolations && validationResult?.violations && (
-        <ValidationTooltip 
+      {hasViolations ? <FaExclamationTriangle className="w-3 h-3 text-red-500 ml-1" /> : null}
+      {showTooltip && hasViolations && validationResult?.violations ? <ValidationTooltip 
           violations={validationResult.violations}
           dealerId={row.id}
           timeSlot={column.key as string}
-        />
-      )}
+        /> : null}
     </div>
   );
 };
@@ -295,7 +290,7 @@ const ShiftGridComponent: React.FC<ShiftGridComponentProps> = ({
       resizable: true,
       sortable: false,
       editable: !readonly,
-      renderCell: (props) => <CellRenderer {...props} validationResult={validationResult} />,
+      renderCell: (props) => <CellRenderer {...props} validationResult={validationResult || null} />,
       renderEditCell: readonly ? undefined : (props) => <CellEditor {...props} tables={tables} />,
     }));
     
@@ -337,9 +332,7 @@ const ShiftGridComponent: React.FC<ShiftGridComponentProps> = ({
   return (
     <div className="space-y-4">
       {/* 검증 결과 요약 */}
-      {validationResult && (
-        <ValidationSummary validationResult={validationResult} />
-      )}
+      {validationResult ? <ValidationSummary validationResult={validationResult} /> : null}
       
       {/* 데이터 그리드 */}
       <div className="border rounded-lg overflow-hidden bg-white shadow-sm">

@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
+
 import { emergencyFirebaseReset } from '../utils/firebaseEmergencyReset';
 
 interface Props {
@@ -126,16 +127,14 @@ class FirebaseErrorBoundary extends Component<Props, State> {
                 </div>
               )}
 
-              {this.state.error && (
-                <details className="mt-4 text-left">
+              {this.state.error ? <details className="mt-4 text-left">
                   <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
                     오류 세부 정보
                   </summary>
                   <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-32">
                     {this.state.error.message}
                   </pre>
-                </details>
-              )}
+                </details> : null}
             </div>
           </div>
         </div>

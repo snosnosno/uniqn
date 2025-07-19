@@ -1,10 +1,10 @@
-import React from 'react';
-import { Table } from '../hooks/useTables';
-import { Participant } from '../hooks/useParticipants';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaUsers, FaEllipsisV } from 'react-icons/fa';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { FaUsers, FaEllipsisV } from 'react-icons/fa';
+
+import { Table } from '../hooks/useTables';
 
 interface TableCardProps {
   table: Table;
@@ -81,11 +81,9 @@ const TableCard: React.FC<TableCardProps> = ({
         </p>
       </div>
 
-      {isStandby && (
-          <div className="absolute inset-0 bg-gray-400 bg-opacity-50 flex items-center justify-center rounded-lg pointer-events-none">
+      {isStandby ? <div className="absolute inset-0 bg-gray-400 bg-opacity-50 flex items-center justify-center rounded-lg pointer-events-none">
               <span className="text-white font-bold text-lg bg-black bg-opacity-50 px-4 py-2 rounded">{t('tableCard.waiting')}</span>
-          </div>
-      )}
+          </div> : null}
     </div>
   );
 };

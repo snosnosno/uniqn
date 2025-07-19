@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import { WorkLog } from './useShiftSchedule';
+
 import { AttendanceStatus } from '../components/AttendanceStatusCard';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
+
+import { WorkLog } from './useShiftSchedule';
 
 export interface AttendanceRecord {
   staffId: string;
   status: AttendanceStatus;
-  checkInTime?: string;
-  checkOutTime?: string;
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
+  checkInTime?: string | undefined;
+  checkOutTime?: string | undefined;
+  scheduledStartTime?: string | undefined;
+  scheduledEndTime?: string | undefined;
   workLog?: WorkLog;
 }
 
@@ -32,16 +32,16 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   useEffect(() => {
     if (!currentEventId || !currentDate) {
       setLoading(false);
-      return;
+      return () => {};
     }
 
     try {
       // workLogs 컬렉션에서 해당 날짜의 기록들을 실시간으로 구독
-      const workLogsQuery = query(
-        collection(db, 'workLogs'),
-        where('eventId', '==', currentEventId),
-        where('date', '==', currentDate)
-      );
+      // const workLogsQuery = query(
+      //   collection(db, 'workLogs'),
+      //   where('eventId', '==', currentEventId),
+      //   where('date', '==', currentDate)
+      // );
 
       // safeOnSnapshot을 사용하여 안전한 리스너 설정
       const unsubscribe = safeOnSnapshot<WorkLog>(
@@ -76,6 +76,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       console.error('출석 상태 훅 초기화 오류:', err);
       setError('출석 상태 시스템을 초기화하는 중 오류가 발생했습니다.');
       setLoading(false);
+      return () => {};
     }
   }, [currentEventId, currentDate]);
 

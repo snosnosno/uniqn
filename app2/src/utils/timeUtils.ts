@@ -28,7 +28,7 @@ export const generateTimeSlots = (
     return [];
   }
   
-  let current = new Date(start);
+  const current = new Date(start);
   while (current <= end) {
     const hours = current.getHours().toString().padStart(2, '0');
     const minutes = current.getMinutes().toString().padStart(2, '0');

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
+
+import { useTournament } from '../contexts/TournamentContext';
 
 const AnnouncementsPage: React.FC = () => {
     const { t } = useTranslation();
-    const { dispatch } = useTournament();
+    const { dispatch: _dispatch } = useTournament();
     const [message, setMessage] = useState('');
 
     const handlePost = (e: React.FormEvent) => {

@@ -1,9 +1,11 @@
+import { collection, query } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { FaUserCircle, FaTable, FaMugHot, FaUserClock } from 'react-icons/fa';
-import { collection, query } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useTranslation } from 'react-i18next';
+import { FaUserCircle, FaTable, FaMugHot, FaUserClock } from 'react-icons/fa';
+
+import { db } from '../firebase';
+
 
 interface Staff {
   id: string;

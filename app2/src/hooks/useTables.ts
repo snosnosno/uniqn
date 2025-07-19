@@ -1,8 +1,10 @@
+import { collection, onSnapshot, doc, runTransaction, DocumentData, QueryDocumentSnapshot, getDocs, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
 import { useState, useEffect, useCallback } from 'react';
+
 import { db } from '../firebase';
-import { collection, onSnapshot, doc, runTransaction, DocumentData, QueryDocumentSnapshot, getDocs, writeBatch, addDoc, updateDoc, setDoc } from 'firebase/firestore';
-import { Participant } from './useParticipants';
+
 import { logAction } from './useLogger';
+import { Participant } from './useParticipants';
 
 export interface Table {
   id: string;
@@ -29,7 +31,9 @@ const shuffleArray = <T>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    const temp = newArray[i]!;
+    newArray[i] = newArray[j]!;
+    newArray[j] = temp;
   }
   return newArray;
 };
@@ -184,18 +188,21 @@ export const useTables = () => {
           const leastPopulatedTables = mutableOpenTables.filter(t => t.playerCount === minPlayerCount);
           
           let targetTable = leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
+          if (!targetTable) continue;
           let emptySeatIndexes = targetTable.seats.map((seat, index) => (seat === null ? index : -1)).filter(index => index !== -1);
 
           if (emptySeatIndexes.length === 0) {
-             const alternativeTables = mutableOpenTables.filter(t => t.id !== targetTable.id && t.seats.some(s => s === null));
+             const alternativeTables = mutableOpenTables.filter(t => t.id !== targetTable?.id && t.seats.some(s => s === null));
              if(alternativeTables.length === 0) throw new Error(`Balancing failed: No seats available.`);
              
              targetTable = alternativeTables[Math.floor(Math.random() * alternativeTables.length)];
+             if (!targetTable) continue;
              emptySeatIndexes = targetTable.seats.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
           }
           
           const targetSeatIndex = emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
-          
+          if (targetSeatIndex === undefined) continue;
+
           targetTable.seats[targetSeatIndex] = participantToMove.pId;
           targetTable.playerCount++;
           
@@ -271,8 +278,13 @@ export const useTables = () => {
 
       shuffledParticipants.forEach((participant, index) => {
         const tableIndex = index % openTables.length;
-        const targetTableId = openTables[tableIndex].id;
-        tablePlayerGroups[targetTableId].push(participant);
+        const targetTable = openTables[tableIndex];
+        if (!targetTable) return;
+        const targetTableId = targetTable.id;
+        const playerGroup = tablePlayerGroups[targetTableId];
+        if (playerGroup) {
+          playerGroup.push(participant);
+        }
       });
 
       const newTableSeatArrays: { [key: string]: (string | null)[] } = {};
@@ -284,9 +296,11 @@ export const useTables = () => {
         const seatIndexes = Array.from({ length: seatCount }, (_, i) => i);
         const shuffledSeatIndexes = shuffleArray(seatIndexes);
 
-        playersForThisTable.forEach((player, index) => {
+        playersForThisTable?.forEach((player, index) => {
           const seatIndex = shuffledSeatIndexes[index];
-          newSeats[seatIndex] = player.id;
+          if (seatIndex !== undefined) {
+            newSeats[seatIndex] = player.id;
+          }
         });
         
         newTableSeatArrays[table.id] = newSeats;
@@ -436,7 +450,7 @@ export const useTables = () => {
         transaction.update(tableRef, { seats: newSeats });
       });
 
-      logAction('max_seats_updated', { tableId: tableId, newMaxSeats: newMaxSeats });
+      logAction('max_seats_updated', { tableId, newMaxSeats });
     } catch (e) {
       console.error("최대 좌석 수 변경 중 오류 발생:", e);
       setError(e as Error);

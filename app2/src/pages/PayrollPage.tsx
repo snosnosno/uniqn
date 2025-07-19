@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from '../firebase';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams, Navigate } from 'react-router-dom';
+
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 import { formatCurrency, formatDate } from '../i18n-helpers';
 
 interface Payroll {
@@ -183,11 +184,9 @@ const PayrollPage = () => {
                             <h1 className="text-3xl font-bold text-gray-800">
                                 {t('payrollPage.title', '급여 내역')}
                             </h1>
-                            {userProfile && (
-                                <p className="text-lg text-gray-600 mt-1">
+                            {userProfile ? <p className="text-lg text-gray-600 mt-1">
                                     {userProfile.name} ({userProfile.email})
-                                </p>
-                            )}
+                                </p> : null}
                             {!isOwnPayroll && (
                                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-2">
                                     {t('payrollPage.adminView', '관리자 조회')}

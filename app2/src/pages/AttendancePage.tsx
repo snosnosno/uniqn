@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { QrReader } from 'react-qr-reader';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { QrReader } from 'react-qr-reader';
+
+import { useAuth } from '../contexts/AuthContext';
+
 
 const AttendancePage: React.FC = () => {
     const { t } = useTranslation();
     const [scanResult, setScanResult] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-    const { currentUser } = useAuth();
+    const { currentUser: _currentUser } = useAuth();
 
     const handleScan = async (result: any, error: any) => {
         if (!!result) {
@@ -53,16 +55,14 @@ const AttendancePage: React.FC = () => {
                     constraints={{ facingMode: 'environment' }}
                     containerStyle={{ width: '100%' }}
                 />
-                {scanResult && <p className="mt-4 text-center text-sm text-gray-600">{t('attendancePage.lastScanned', { scanResult })}</p>}
+                {scanResult ? <p className="mt-4 text-center text-sm text-gray-600">{t('attendancePage.lastScanned', { scanResult })}</p> : null}
             </div>
 
-            {isSubmitting && <p className="mt-4 text-blue-600">{t('attendancePage.submitting')}</p>}
+            {isSubmitting ? <p className="mt-4 text-blue-600">{t('attendancePage.submitting')}</p> : null}
             
-            {feedback && (
-                 <div className={`mt-4 p-4 rounded-md w-full max-w-md text-center ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {feedback ? <div className={`mt-4 p-4 rounded-md w-full max-w-md text-center ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {feedback.message}
-                </div>
-            )}
+                </div> : null}
         </div>
     );
 };

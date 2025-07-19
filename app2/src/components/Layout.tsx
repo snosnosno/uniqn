@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
-import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Outlet } from 'react-router-dom';
+
 import HeaderMenu from './HeaderMenu';
 
 export const Layout = memo(() => {

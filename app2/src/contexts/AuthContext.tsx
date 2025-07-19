@@ -1,15 +1,17 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  onAuthStateChanged, 
-  User as FirebaseUser, 
-  signOut as firebaseSignOut, 
+import {
+  User as FirebaseUser,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
+  // createUserWithEmailAndPassword,
+  // signOut,
+  onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+// import { doc, getDoc } from 'firebase/firestore';
+import { auth } from '../firebase';
 
 // 확장된 User 인터페이스 (Firebase User + 추가 필드)
 export interface User extends FirebaseUser {
@@ -81,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = () => {
-    return firebaseSignOut(auth);
+    return auth.signOut();
   };
   
   const isAdmin = role === 'admin' || role === 'manager';

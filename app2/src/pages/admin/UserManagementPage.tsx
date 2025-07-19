@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db, functions } from '../../firebase';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { httpsCallable } from 'firebase/functions';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+
 import EditUserModal from '../../components/EditUserModal';
+import { useAuth } from '../../contexts/AuthContext';
+import { db, functions } from '../../firebase';
 
 interface User {
   id: string;
@@ -116,13 +117,11 @@ const UserManagementPage: React.FC = () => {
             </div>
         </div>
         
-        {isEditModalOpen && selectedUser && (
-            <EditUserModal 
+        {isEditModalOpen && selectedUser ? <EditUserModal 
                 isOpen={isEditModalOpen}
                 onClose={handleCloseEditModal}
                 user={selectedUser}
-            />
-        )}
+            /> : null}
     </div>
   );
 };

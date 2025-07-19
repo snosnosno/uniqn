@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDocument } from 'react-firebase-hooks/firestore';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import React, { useState, useEffect } from 'react';
+import { useDocument } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
+
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+
 
 const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const timeKeys = ['morning', 'afternoon', 'evening', 'night'];

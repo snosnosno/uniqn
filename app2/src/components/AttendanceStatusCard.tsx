@@ -1,16 +1,15 @@
-import React from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { FaClock, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
+
 import { AttendanceException, EXCEPTION_CONFIGS } from '../types/attendance';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out' | 'absent';
 
 interface AttendanceStatusCardProps {
   status: AttendanceStatus;
-  checkInTime?: string;
-  checkOutTime?: string;
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
+  checkInTime?: string | undefined;
+  checkOutTime?: string | undefined;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   exception?: AttendanceException;
@@ -20,8 +19,6 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
   status,
   checkInTime,
   checkOutTime,
-  scheduledStartTime,
-  scheduledEndTime,
   size = 'md',
   className = '',
   exception
@@ -106,24 +103,16 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
       {config.icon}
       <div className="flex flex-col">
         <span className="font-medium">{config.text}</span>
-        {size !== 'sm' && (checkInTime || checkOutTime) && (
-          <div className="text-xs opacity-75">
-            {checkInTime && (
-              <span>{t('attendance.checkIn', '출근')}: {checkInTime}</span>
-            )}
-            {checkInTime && checkOutTime && <span className="mx-1">|</span>}
-            {checkOutTime && (
-              <span>{t('attendance.checkOut', '퇴근')}: {checkOutTime}</span>
-            )}
-          </div>
-        )}
+        {size !== 'sm' && (checkInTime || checkOutTime) ? <div className="text-xs opacity-75">
+            {checkInTime ? <span>{t('attendance.checkIn', '출근')}: {checkInTime}</span> : null}
+            {checkInTime && checkOutTime ? <span className="mx-1">|</span> : null}
+            {checkOutTime ? <span>{t('attendance.checkOut', '퇴근')}: {checkOutTime}</span> : null}
+          </div> : null}
         {/* 예외 상황이 있으면 추가 정보 표시 */}
-        {exception && exception.managerNote && size !== 'sm' && (
-          <div className="text-xs opacity-75 mt-1">
+        {exception && exception.managerNote && size !== 'sm' ? <div className="text-xs opacity-75 mt-1">
             <span className="font-medium">{t('exceptions.note', '메모')}: </span>
             <span>{exception.managerNote}</span>
-          </div>
-        )}
+          </div> : null}
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
+import { updateDoc, doc } from 'firebase/firestore';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { updateDoc, doc } from 'firebase/firestore';
+import { FaExclamationTriangle, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+
 import { db } from '../firebase';
 import { WorkLog } from '../hooks/useShiftSchedule';
-import { AttendanceException, ExceptionType, DEFAULT_EXCEPTION_SETTINGS, EXCEPTION_CONFIGS } from '../types/attendance';
 import { useToast } from '../hooks/useToast';
-import { FaExclamationTriangle, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { AttendanceException, DEFAULT_EXCEPTION_SETTINGS, EXCEPTION_CONFIGS } from '../types/attendance';
 
 interface AttendanceExceptionHandlerProps {
   workLog: WorkLog;
@@ -107,7 +108,7 @@ export const AttendanceExceptionHandler: React.FC<AttendanceExceptionHandlerProp
   // 시간 문자열을 분으로 변환하는 유틸리티 함수
   const timeToMinutes = (timeString: string): number => {
     const [hours, minutes] = timeString.split(':').map(Number);
-    return hours * 60 + minutes;
+    return (hours ?? 0) * 60 + (minutes ?? 0);
   };
 
   // 예외 상황 업데이트 함수
@@ -175,11 +176,10 @@ export const AttendanceExceptionHandler: React.FC<AttendanceExceptionHandlerProp
 
   return (
     <div className="space-y-2">
-      <ExceptionBadge exception={currentException} />
+      {currentException ? <ExceptionBadge exception={currentException} /> : null}
       
       {/* 예외 상황 수정 모달 */}
-      {isEditing && (
-        <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
+      {isEditing ? <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
             <FaExclamationTriangle className="text-yellow-500" />
             <h4 className="text-sm font-medium text-gray-700">
@@ -197,8 +197,8 @@ export const AttendanceExceptionHandler: React.FC<AttendanceExceptionHandlerProp
           
           <div className="flex gap-2 mt-3">
             <button
-              onClick={() => updateException(currentException)}
-              disabled={loading}
+              onClick={() => currentException && updateException(currentException)}
+              disabled={loading || !isEditing}
               className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 disabled:opacity-50"
             >
               <FaSave />
@@ -216,8 +216,7 @@ export const AttendanceExceptionHandler: React.FC<AttendanceExceptionHandlerProp
               {t('common.cancel', '취소')}
             </button>
           </div>
-        </div>
-      )}
+        </div> : null}
     </div>
   );
 };

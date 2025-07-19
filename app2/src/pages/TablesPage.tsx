@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
-import { useTables, Table } from '../hooks/useTables';
-import { useParticipants, Participant } from '../hooks/useParticipants';
-import { useSettings } from '../hooks/useSettings';
-import { useMediaQuery } from '../hooks/useMediaQuery';
-import TableCard from '../components/TableCard';
-import TableDetailModal from '../components/TableDetailModal';
-import PlayerActionModal from '../components/PlayerActionModal';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FaPlus, FaThList, FaUserPlus } from 'react-icons/fa';
+
 import MoveSeatModal from '../components/MoveSeatModal';
 import ParticipantDetailModal from '../components/ParticipantDetailModal';
-import { FaPlus, FaThList, FaUserPlus } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
+import PlayerActionModal from '../components/PlayerActionModal';
+import TableCard from '../components/TableCard';
+import TableDetailModal from '../components/TableDetailModal';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useParticipants, Participant } from '../hooks/useParticipants';
+import { useSettings } from '../hooks/useSettings';
+import { useTables, Table } from '../hooks/useTables';
 
 const TablesPage: React.FC = () => {
     const { t } = useTranslation();
@@ -211,8 +212,7 @@ const TablesPage: React.FC = () => {
             </DndContext>
 
             {/* Modals */}
-            {currentDetailTable && (
-                <TableDetailModal
+            {currentDetailTable ? <TableDetailModal
                     isOpen={!!currentDetailTable}
                     onClose={() => setDetailModalTable(null)}
                     table={currentDetailTable}
@@ -224,39 +224,32 @@ const TablesPage: React.FC = () => {
                     onPlayerSelect={onPlayerSelectInModal}
                     updateTableDetails={updateTableDetails}
                     updateTableMaxSeats={updateTableMaxSeats}
-                />
-            )}
+                /> : null}
             
-            {actionMenu && selectedPlayer?.participant && (
-                <PlayerActionModal
+            {actionMenu && selectedPlayer?.participant ? <PlayerActionModal
                     isOpen={!!actionMenu}
                     onClose={handleCloseActionMenu}
                     position={{ top: actionMenu.y, left: actionMenu.x }}
                     onBustOut={handleBustOut}
                     onMoveSeat={handleOpenMoveSeatModal}
                     onShowDetails={handleShowDetails}
-                />
-            )}
+                /> : null}
 
-            {isMoveSeatModalOpen && selectedPlayer?.participant && (
-                <MoveSeatModal
+            {isMoveSeatModalOpen && selectedPlayer?.participant ? <MoveSeatModal
                     isOpen={isMoveSeatModalOpen}
                     onClose={handleCloseMoveSeatModal}
                     tables={tables}
                     movingParticipant={selectedPlayer.participant}
                     onConfirmMove={handleConfirmMove}
                     getParticipantName={getParticipantName}
-                />
-            )}
+                /> : null}
             
-            {detailModalParticipant && (
-                <ParticipantDetailModal
+            {detailModalParticipant ? <ParticipantDetailModal
                     isOpen={!!detailModalParticipant}
                     onClose={() => setDetailModalParticipant(null)}
                     participant={detailModalParticipant}
                     onUpdate={updateParticipant}
-                />
-            )}
+                /> : null}
         </div>
     );
 };

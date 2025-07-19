@@ -73,16 +73,14 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
         </button>
       </div>
       
-      {process.env.NODE_ENV === 'development' && error && (
-        <details className="mt-4 text-left">
+      {process.env.NODE_ENV === 'development' && error ? <details className="mt-4 text-left">
           <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
             {t('errors.details')}
           </summary>
           <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
             {error.stack}
           </pre>
-        </details>
-      )}
+        </details> : null}
     </div>
   );
 };

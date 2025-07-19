@@ -1,7 +1,9 @@
 import React from 'react';
-import QrScanner from 'react-qr-scanner';
-import Modal from './Modal';
+// @ts-ignore
 import { useTranslation } from 'react-i18next';
+import QrScanner from 'react-qr-scanner';
+
+import Modal from './Modal';
 
 interface QRScannerModalProps {
   isOpen: boolean;
@@ -31,16 +33,14 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose, onScan
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('qrScannerModal.title')}>
-      {isOpen && (
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+      {isOpen ? <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
           <QrScanner
             delay={300}
             style={previewStyle}
             onError={handleError}
             onScan={handleScan}
           />
-        </div>
-      )}
+        </div> : null}
       <p style={{ textAlign: 'center', marginTop: '1rem' }}>
         {t('qrScannerModal.scanMessage')}
       </p>

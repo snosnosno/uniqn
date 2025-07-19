@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import Modal from '../components/Modal';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FaGoogle } from 'react-icons/fa';
+import { useNavigate, Link } from 'react-router-dom';
+
 import AuthLayout from '../components/AuthLayout';
 import FormField from '../components/FormField';
-import { FaGoogle } from 'react-icons/fa';
+import Modal from '../components/Modal';
 import { useAuth } from '../contexts/AuthContext';
 
 const SignUp: React.FC = () => {
@@ -132,7 +133,7 @@ const SignUp: React.FC = () => {
           <FormField id="email" label={t('signUp.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('signUp.emailPlaceholder')} required />
           <FormField id="password" label={t('signUp.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('signUp.passwordPlaceholder')} required />
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {error ? <p className="text-red-500 text-sm text-center">{error}</p> : null}
           
           <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">
             {isLoading ? t('signUp.signingUpButton') : t('signUp.signUpButton')}

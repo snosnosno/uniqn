@@ -1,8 +1,10 @@
+import { httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
 import { useTranslation } from 'react-i18next';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+
 import { functions } from '../firebase';
+
+import Modal from './Modal';
 
 interface Staff {
   id: string;
@@ -248,7 +250,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <div className="flex justify-end space-x-4 pt-4">
           <button
             type="button"

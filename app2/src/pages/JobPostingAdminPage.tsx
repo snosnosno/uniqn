@@ -1,12 +1,13 @@
-import React, { useState, useMemo, Suspense, lazy } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp, query, doc, updateDoc, deleteDoc, Timestamp, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import React, { useState, useMemo } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+
 import DateDropdownSelector from '../components/DateDropdownSelector';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 
 // Import centralized type definitions
 import { 
@@ -16,6 +17,7 @@ import {
   ConfirmedStaff,
   JobPostingUtils 
 } from '../types/jobPosting';
+import { DataValidator } from '../utils/dataValidator';
 
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
@@ -54,7 +56,7 @@ const JobPostingAdminPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<any>(null);
-  const [isMatching, setIsMatching] = useState<string | null>(null);
+  const [isMatching, _setIsMatching] = useState<string | null>(null);
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
 
   // 모든 JobRole을 포함하도록 확장된 역할 목록
@@ -845,8 +847,7 @@ const JobPostingAdminPage = () => {
             </button>
           )}
         </div>
-        {isCreateFormVisible && (
-          <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
+        {isCreateFormVisible ? <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
             {/* Form fields */}
             <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.postingTitle')}</label>
@@ -1084,8 +1085,7 @@ const JobPostingAdminPage = () => {
                     </div>
                 </div>
                 
-                {formData.usesPreQuestions && (
-                    <div className="space-y-4">
+                {formData.usesPreQuestions ? <div className="space-y-4">
                         {formData.preQuestions.map((question: any, qIndex: number) => (
                             <div key={question.id} className="p-4 border border-gray-200 rounded-md bg-gray-50">
                                 <div className="space-y-3">
@@ -1194,8 +1194,7 @@ const JobPostingAdminPage = () => {
                         >
                             + {t('jobPostingAdmin.create.addQuestion')}
                         </button>
-                    </div>
-                )}
+                    </div> : null}
             </div>
             <div className="flex justify-end space-x-2">
               <button type="button" onClick={() => setIsCreateFormVisible(false)} className="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-700">
@@ -1205,14 +1204,13 @@ const JobPostingAdminPage = () => {
                   {isSubmitting ? t('jobPostingAdmin.create.submitting') : t('jobPostingAdmin.create.button')}
               </button>
             </div>
-          </form>
-        )}
+          </form> : null}
       </div>
       
       <div>
         <h1 className="text-2xl font-bold mb-4">{t('jobPostingAdmin.manage.title')}</h1>
         <div className="space-y-4">
-            {loading && <div className="flex justify-center"><LoadingSpinner /></div>}
+            {loading ? <div className="flex justify-center"><LoadingSpinner /></div> : null}
             {jobPostings?.map((post: any) => {
                 const formattedStartDate = formatDate(post.startDate);
                 const formattedEndDate = formatDate(post.endDate);
@@ -1229,7 +1227,7 @@ const JobPostingAdminPage = () => {
                                 </div>
                                 <p className="text-sm text-gray-500 mb-1">
                                     {t('jobPostingAdmin.manage.location')}: {String(t(`locations.${post.location}`, post.location))}
-                                    {post.detailedAddress && <span className="text-gray-400"> - {post.detailedAddress}</span>}
+                                    {post.detailedAddress ? <span className="text-gray-400"> - {post.detailedAddress}</span> : null}
                                 </p>
                                 <p className="text-sm text-gray-500 mb-1">
                                     {t('jobPostingAdmin.manage.date')}: {post.endDate && post.endDate !== post.startDate ? `${formattedStartDate} ~ ${formattedEndDate}` : formattedStartDate}
@@ -1304,8 +1302,7 @@ const JobPostingAdminPage = () => {
         </div>
       </div>
   
-        {isEditModalOpen && currentPost && (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        {isEditModalOpen && currentPost ? <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                 <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium leading-6 text-gray-900">{t('jobPostingAdmin.edit.title')}</h3>
@@ -1549,8 +1546,7 @@ const JobPostingAdminPage = () => {
                                 </div>
                             </div>
                             
-                            {currentPost.usesPreQuestions && (
-                                <div className="space-y-4">
+                            {currentPost.usesPreQuestions ? <div className="space-y-4">
                                     {(currentPost.preQuestions || []).map((question: any, qIndex: number) => (
                                         <div key={question.id} className="p-4 border border-gray-200 rounded-md bg-gray-50">
                                             <div className="space-y-3">
@@ -1659,8 +1655,7 @@ const JobPostingAdminPage = () => {
                                     >
                                         + {t('jobPostingAdmin.edit.addQuestion')}
                                     </button>
-                                </div>
-                            )}
+                                </div> : null}
                         </div>
                         <div>
                             <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.edit.status')}</label>
@@ -1678,8 +1673,7 @@ const JobPostingAdminPage = () => {
                         </div>
                     </form>
                 </div>
-            </div>
-        )}
+            </div> : null}
     </div>
   );
 };

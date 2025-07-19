@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import Modal from '../components/Modal';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
-import Modal from '../components/Modal';
-import { useTranslation } from 'react-i18next';
 
 const ParticipantsPage: React.FC = () => {
   const { t } = useTranslation();

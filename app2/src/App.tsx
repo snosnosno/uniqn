@@ -1,49 +1,45 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { TournamentProvider } from './contexts/TournamentContext';
-import { ToastProvider } from './contexts/ToastContext';
-import { ToastContainer } from './components/Toast';
-import { Layout } from './components/Layout';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import FirebaseErrorBoundary from './components/FirebaseErrorBoundary';
-
-// Page Imports
-import Login from './pages/Login';
-import ForgotPassword from './pages/ForgotPassword';
-import SignUp from './pages/SignUp';
-import ParticipantLivePage from './pages/ParticipantLivePage';
-
-// Route Guards
+import { Layout } from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import RoleBasedRoute from './components/RoleBasedRoute'; // Import the new RoleBasedRoute
+import { ToastContainer } from './components/Toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { TournamentProvider } from './contexts/TournamentContext';
 
-// Page Components
-import ParticipantsPage from './pages/ParticipantsPage';
-import TablesPage from './pages/TablesPage';
-import BlindsPage from './pages/BlindsPage';
-import PrizesPage from './pages/PrizesPage';
+// Page Imports
+import ApprovalPage from './pages/admin/Approval';
+import DashboardPage from './pages/admin/DashboardPage';
+import PayrollAdminPage from './pages/admin/PayrollAdminPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
-import HistoryPage from './pages/HistoryPage';
-import HistoryDetailPage from './pages/HistoryDetailPage';
-import ProfilePage from './pages/ProfilePage';
-import PayrollPage from './pages/PayrollPage';
-import JobBoardPage from './pages/JobBoardPage';
 import AttendancePage from './pages/AttendancePage';
 import AvailableTimesPage from './pages/AvailableTimesPage';
-import ShiftSchedulePage from './pages/ShiftSchedulePage';
-
-// Admin Pages
-import DashboardPage from './pages/admin/DashboardPage';
+import BlindsPage from './pages/BlindsPage';
+import DealerRotationPage from './pages/DealerRotationPage';
+import ForgotPassword from './pages/ForgotPassword';
+import HistoryDetailPage from './pages/HistoryDetailPage';
+import HistoryPage from './pages/HistoryPage';
+import JobBoardPage from './pages/JobBoardPage';
 import JobPostingAdminPage from './pages/JobPostingAdminPage';
 import JobPostingDetailPage from './pages/JobPostingDetailPage';
+import Login from './pages/Login';
+import ParticipantLivePage from './pages/ParticipantLivePage';
+import ParticipantsPage from './pages/ParticipantsPage';
+import PayrollPage from './pages/PayrollPage';
+import PrizesPage from './pages/PrizesPage';
+import ProfilePage from './pages/ProfilePage';
+import ShiftSchedulePage from './pages/ShiftSchedulePage';
+import SignUp from './pages/SignUp';
 import StaffListPage from './pages/StaffListPage';
 import StaffNewPage from './pages/StaffNewPage';
-import PayrollAdminPage from './pages/admin/PayrollAdminPage';
+import TablesPage from './pages/TablesPage';
 
-import ApprovalPage from './pages/admin/Approval';
-import DealerRotationPage from './pages/DealerRotationPage';
-import UserManagementPage from './pages/admin/UserManagementPage'; // Import the new page
+// Admin Pages
 
 // Dealer Pages
 

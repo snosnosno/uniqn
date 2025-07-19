@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { FaClock, FaInfo, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
-import { TIME_INTERVALS, TimeInterval, getTimeStatistics } from '../utils/timeUtils';
+
+// import { useTranslation } from 'react-i18next';
+import { TIME_INTERVALS, TimeInterval } from '../utils/timeUtils';
 
 interface TimeIntervalSelectorProps {
   // 현재 선택된 시간 간격 (분 단위)
@@ -11,8 +12,8 @@ interface TimeIntervalSelectorProps {
   onIntervalChange: (interval: number) => void;
   
   // 시간 범위 정보 (통계 표시용)
-  startTime?: string;
-  endTime?: string;
+  // startTime?: string;
+  // endTime?: string;
   
   // 컴포넌트 크기
   size?: 'sm' | 'md' | 'lg';
@@ -27,20 +28,20 @@ interface TimeIntervalSelectorProps {
 const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
   selectedInterval,
   onIntervalChange,
-  startTime,
-  endTime,
+  // startTime,
+  // endTime,
   size = 'md',
   disabled = false,
   className = '',
 }) => {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   
   // 현재 선택된 간격 정보
   const selectedIntervalInfo = TIME_INTERVALS.find(interval => interval.value === selectedInterval) || TIME_INTERVALS[2];
   
-  // 시간 통계 계산
-  const timeStats = startTime && endTime ? getTimeStatistics(startTime, endTime, selectedInterval) : null;
+  // 시간 통계 계산 (미사용)
+  // const timeStats = startTime && endTime ? getTimeStatistics(startTime, endTime, selectedInterval) : null;
   
   // 크기별 스타일
   const sizeClasses = {
@@ -88,7 +89,7 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
           <div className="flex items-center gap-2">
             <FaClock className={`text-blue-600 ${iconSizes[size]}`} />
             <span className="font-medium text-gray-700">
-              {selectedIntervalInfo.icon} {selectedIntervalInfo.label}
+              {selectedIntervalInfo?.icon} {selectedIntervalInfo?.label}
             </span>
           </div>
           
@@ -102,12 +103,11 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
       </button>
       
       {/* 드롭다운 옵션들 */}
-      {isExpanded && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+      {isExpanded ? <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
           <div className="py-1">
             {TIME_INTERVALS.map((interval) => {
               const isSelected = interval.value === selectedInterval;
-              const stats = startTime && endTime ? getTimeStatistics(startTime, endTime, interval.value) : null;
+              // const stats = startTime && endTime ? getTimeStatistics(startTime, endTime, interval.value) : null;
               
               return (
                 <button
@@ -123,11 +123,9 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{interval.icon}</span>
                       <span className="font-medium">{interval.label}</span>
-                      {isSelected && (
-                        <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                      {isSelected ? <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
                           선택됨
-                        </span>
-                      )}
+                        </span> : null}
                     </div>
                     
                   </div>
@@ -151,16 +149,13 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div> : null}
       
       {/* 외부 클릭으로 닫기 */}
-      {isExpanded && (
-        <div 
+      {isExpanded ? <div 
           className="fixed inset-0 z-40" 
           onClick={() => setIsExpanded(false)}
-        />
-      )}
+        /> : null}
     </div>
   );
 };

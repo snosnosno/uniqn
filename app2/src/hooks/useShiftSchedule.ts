@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { db } from '../firebase';
 import { collection, doc, onSnapshot, query, where, updateDoc, setDoc, serverTimestamp, Timestamp, addDoc, getDocs } from 'firebase/firestore';
-import { generateTimeSlots as utilGenerateTimeSlots, convertAssignmentData } from '../utils/timeUtils';
-import { validateSchedule, ValidationResult, ValidationSettings, DEFAULT_VALIDATION_SETTINGS, DealerSchedule } from '../utils/shiftValidation';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+
+import { db } from '../firebase';
 import { AttendanceException } from '../types/attendance';
+import { validateSchedule, ValidationResult, ValidationSettings, DEFAULT_VALIDATION_SETTINGS, DealerSchedule } from '../utils/shiftValidation';
+import { generateTimeSlots as utilGenerateTimeSlots, convertAssignmentData } from '../utils/timeUtils';
 
 
 // ShiftSchedule 데이터 구조 정의
