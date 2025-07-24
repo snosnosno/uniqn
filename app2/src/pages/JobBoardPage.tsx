@@ -648,7 +648,19 @@ const JobBoardPage = () => {
                           </div>
                           {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                             <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 border-l-2 border-blue-200 bg-blue-50 rounded-r">
-                              <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
+                              <p className="text-sm font-semibold text-gray-700 flex items-center">
+                                {t('jobPostingAdmin.manage.time')}: 
+                                {ts.isTimeToBeAnnounced ? (
+                                  <span className="ml-1 text-orange-600">
+                                    ⏰ 추후공지
+                                    {ts.tentativeDescription && (
+                                      <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="ml-1">{ts.time}</span>
+                                )}
+                              </p>
                               <div className="text-sm text-gray-600">
                                 {ts.roles.map((r: RoleRequirement, roleIndex: number) => (
                                   <span key={roleIndex} className="mr-4">
@@ -664,7 +676,19 @@ const JobBoardPage = () => {
                       /* 기존 방식: 전체 기간 공통 timeSlots */
                       post.timeSlots?.map((ts: TimeSlot, index: number) => (
                         <div key={index} className="mt-2 pl-4 border-l-2 border-gray-200">
-                          <p className="text-sm font-semibold text-gray-700">{t('jobPostingAdmin.manage.time')}: {ts.time}</p>
+                          <p className="text-sm font-semibold text-gray-700 flex items-center">
+                            {t('jobPostingAdmin.manage.time')}: 
+                            {ts.isTimeToBeAnnounced ? (
+                              <span className="ml-1 text-orange-600">
+                                ⏰ 추후공지
+                                {ts.tentativeDescription && (
+                                  <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="ml-1">{ts.time}</span>
+                            )}
+                          </p>
                           <div className="text-sm text-gray-600">
                             {ts.roles.map((r: RoleRequirement, i: number) => (
                               <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
@@ -780,7 +804,18 @@ const JobBoardPage = () => {
                       </h4>
                       {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                         <div key={tsIndex} className="mb-4 pl-4 border-l-2 border-blue-300">
-                          <div className="text-sm font-medium text-gray-700 mb-2">⏰ {ts.time}</div>
+                          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            ⏰ {ts.isTimeToBeAnnounced ? (
+                              <span className="text-orange-600">
+                                추후공지
+                                {ts.tentativeDescription && (
+                                  <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
+                                )}
+                              </span>
+                            ) : (
+                              ts.time
+                            )}
+                          </div>
                           <div className="space-y-2">
                             {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
                               const assignment = { timeSlot: ts.time, role: r.name, date: dateReq.date };
@@ -829,7 +864,18 @@ const JobBoardPage = () => {
                   /* 기존 방식: 전체 기간 공통 timeSlots */
                   selectedPost.timeSlots?.map((ts: TimeSlot, tsIndex: number) => (
                     <div key={tsIndex} className="mb-4 border border-gray-200 rounded-lg p-4">
-                      <div className="text-sm font-medium text-gray-700 mb-3">⏰ {ts.time}</div>
+                      <div className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        ⏰ {ts.isTimeToBeAnnounced ? (
+                          <span className="text-orange-600">
+                            추후공지
+                            {ts.tentativeDescription && (
+                              <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
+                            )}
+                          </span>
+                        ) : (
+                          ts.time
+                        )}
+                      </div>
                       <div className="space-y-2">
                         {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
                           const assignment = { timeSlot: ts.time, role: r.name };

@@ -16,9 +16,10 @@ interface NavItemProps {
     label: string;
     Icon: IconType;
     isOpen: boolean;
+    onNavigate?: () => void;
 }
 
-const NavItem = memo(({ to, label, Icon, isOpen }: NavItemProps) => {
+const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => {
     const isMobile = useMediaQuery('(max-width: 768px)');
     
     const navLinkClasses = useCallback(({ isActive }: { isActive: boolean }) =>
@@ -27,7 +28,7 @@ const NavItem = memo(({ to, label, Icon, isOpen }: NavItemProps) => {
       }`, [isOpen, isMobile]);
   
     return (
-      <NavLink to={to} className={navLinkClasses}>
+      <NavLink to={to} className={navLinkClasses} onClick={onNavigate}>
         <span className={isMobile ? 'text-2xl' : 'text-lg'}><Icon /></span>
         <span className={`ml-3 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 h-0 w-0'}`}>{label}</span>
       </NavLink>
@@ -87,6 +88,10 @@ export const HeaderMenu: React.FC = () => {
     setIsMenuOpen(!isMenuOpen);
   }, [isMenuOpen]);
 
+  const closeMenu = useCallback(() => {
+    setIsMenuOpen(false);
+  }, []);
+
   return (
     <div className="relative" ref={menuRef}>
       {/* 햄버거 메뉴 버튼 */}
@@ -136,30 +141,30 @@ export const HeaderMenu: React.FC = () => {
 
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
-              <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard')} Icon={FaTachometerAlt} isOpen={true} />
-              <NavItem to="/jobs" label={t('nav.jobBoard')} Icon={FaClipboardList} isOpen={true} />
-              <NavItem to="/profile" label={t('nav.myProfile')} Icon={FaUserCircle} isOpen={true} />
-              <NavItem to="/attendance" label={t('nav.attendance')} Icon={FaQrcode} isOpen={true} />
+              <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/jobs" label={t('nav.jobBoard')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/profile" label={t('nav.myProfile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/attendance" label={t('nav.attendance')} Icon={FaQrcode} isOpen={true} onNavigate={closeMenu} />
               
               <hr className="my-2 border-t border-gray-200" />
               
               {/* Admin and Manager common menus */}
               {isAdmin ? <>
-                  <NavItem to="/admin/staff" label={t('nav.staffManagement')} Icon={FaUserShield} isOpen={true} />
-                  <NavItem to="/admin/job-postings" label={t('nav.managePostings')} Icon={FaFileInvoice} isOpen={true} />
-                  <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} />
-                  <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} />
+                  <NavItem to="/admin/staff" label={t('nav.staffManagement')} Icon={FaUserShield} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/job-postings" label={t('nav.managePostings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                   <hr className="my-2 border-t border-gray-200" />
-                  <NavItem to="/admin/tables" label={t('nav.tables')} Icon={FaTable} isOpen={true} />
-                  <NavItem to="/admin/prizes" label={t('nav.prizes')} Icon={FaTrophy} isOpen={true} />
-                  <NavItem to="/admin/announcements" label={t('nav.announcements')} Icon={FaBullhorn} isOpen={true} />
+                  <NavItem to="/admin/tables" label={t('nav.tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/prizes" label={t('nav.prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/announcements" label={t('nav.announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
                 </> : null}
 
               {/* Admin only menu */}
               {role === 'admin' && (
                 <>
-                  <NavItem to="/admin/user-management" label={t('nav.userManagement')} Icon={FaUsers} isOpen={true} />
-                  <NavItem to="/admin/approvals" label={t('nav.approvals')} Icon={FaUserCheck} isOpen={true} />
+                  <NavItem to="/admin/user-management" label={t('nav.userManagement')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/approvals" label={t('nav.approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
                 </>
               )}
             </nav>

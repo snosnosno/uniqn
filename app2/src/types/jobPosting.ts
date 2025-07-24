@@ -57,11 +57,15 @@ export interface RoleRequirement {
   count: number;
 }
 
-// 확장된 TimeSlot 인터페이스 - 일자별 인원 요구사항 지원
+// 확장된 TimeSlot 인터페이스 - 일자별 인원 요구사항 및 추후공지 지원
 export interface TimeSlot {
   time: string;
   roles: RoleRequirement[];
   date?: string; // 선택적 필드: yyyy-MM-dd 형식, 특정 날짜에만 적용될 때 사용
+  
+  // 추후공지 기능 지원
+  isTimeToBeAnnounced?: boolean;    // 추후공지 여부 플래그
+  tentativeDescription?: string;    // 임시 설명 텍스트 ("오후 예정", "저녁 시간대" 등)
 }
 
 // 일자별 인원 요구사항을 위한 헬퍼 인터페이스
@@ -409,7 +413,10 @@ export const isValidTimeSlot = (obj: any): obj is TimeSlot => {
          obj.roles.every((role: any) => 
            typeof role.name === 'string' && 
            typeof role.count === 'number'
-         );
+         ) &&
+         // 추후공지 필드 검증 (선택적)
+         (!obj.isTimeToBeAnnounced || typeof obj.isTimeToBeAnnounced === 'boolean') &&
+         (!obj.tentativeDescription || typeof obj.tentativeDescription === 'string');
 };
 
 export const isValidJobPosting = (obj: any): obj is JobPosting => {
@@ -478,6 +485,142 @@ export const isValidDateSpecificRequirement = (obj: any): obj is DateSpecificReq
          Array.isArray(obj.timeSlots) &&
          obj.timeSlots.every(isValidTimeSlot);
 };
+
+// ===========================================
+// 템플릿 관련 타입 정의
+// ===========================================
+
+export interface JobPostingTemplate {
+  id: string;
+  name: string;                              // 템플릿 이름
+  description?: string;                      // 템플릿 설명
+  createdAt: any;                           // Firebase Timestamp
+  createdBy: string;                        // 생성자 UID
+  
+  // 템플릿으로 저장할 공고 데이터 (날짜 제외)
+  templateData: {
+    title: string;
+    type: string;
+    description: string;
+    location: string;
+    detailedAddress?: string;
+    timeSlots?: TimeSlot[];
+    dateSpecificRequirements?: DateSpecificRequirement[];
+    usesDifferentDailyRequirements: boolean;
+    preQuestions?: PreQuestion[];
+    usesPreQuestions: boolean;
+  };
+  
+  // 메타 정보
+  usageCount?: number;                      // 사용 횟수
+  lastUsedAt?: any;                        // 마지막 사용 시간
+  isPublic?: boolean;                      // 공개 템플릿 여부 (미래 확장용)
+}
+
+// 템플릿 생성 시 사용할 인터페이스
+export interface CreateTemplateRequest {
+  name: string;
+  description?: string;
+  templateData: JobPostingTemplate['templateData'];
+}
+
+// 템플릿 검색/필터 인터페이스  
+export interface TemplateFilters {
+  createdBy?: string;
+  location?: string;
+  type?: string;
+  searchTerm?: string;
+}
+
+// 템플릿 관련 유틸리티 클래스
+export class TemplateUtils {
+  /**
+   * JobPosting 데이터에서 템플릿 데이터 추출
+   * @param formData 폼 데이터
+   * @returns 템플릿 데이터
+   */
+  static extractTemplateData(formData: any): JobPostingTemplate['templateData'] {
+    return {
+      title: formData.title,
+      type: formData.type,
+      description: formData.description,
+      location: formData.location,
+      detailedAddress: formData.detailedAddress,
+      timeSlots: formData.timeSlots,
+      dateSpecificRequirements: formData.dateSpecificRequirements,
+      usesDifferentDailyRequirements: formData.usesDifferentDailyRequirements,
+      preQuestions: formData.preQuestions,
+      usesPreQuestions: formData.usesPreQuestions
+    };
+  }
+
+  /**
+   * 템플릿 데이터를 폼 데이터로 변환 (날짜는 오늘로 설정)
+   * @param templateData 템플릿 데이터
+   * @returns 폼 데이터
+   */
+  static templateToFormData(templateData: JobPostingTemplate['templateData']): any {
+    const today = new Date().toISOString().split('T')[0];
+    
+    return {
+      ...templateData,
+      startDate: today,
+      endDate: today,
+      status: 'open'
+    };
+  }
+
+  /**
+   * 템플릿 이름 유효성 검증
+   * @param name 템플릿 이름
+   * @returns 유효성 여부
+   */
+  static validateTemplateName(name: string): boolean {
+    return name.trim().length >= 2 && name.trim().length <= 50;
+  }
+
+  /**
+   * 템플릿 데이터에서 검색 키워드 생성
+   * @param template 템플릿
+   * @returns 검색 키워드 배열
+   */
+  static generateSearchKeywords(template: JobPostingTemplate): string[] {
+    const keywords = new Set<string>();
+    
+    // 템플릿 이름
+    keywords.add(template.name.toLowerCase());
+    
+    // 제목
+    if (template.templateData.title) {
+      keywords.add(template.templateData.title.toLowerCase());
+    }
+    
+    // 위치
+    if (template.templateData.location) {
+      keywords.add(template.templateData.location.toLowerCase());
+    }
+    
+    // 타입
+    keywords.add(template.templateData.type.toLowerCase());
+    
+    // 역할들
+    template.templateData.timeSlots?.forEach(ts => {
+      ts.roles.forEach(role => {
+        keywords.add(role.name.toLowerCase());
+      });
+    });
+    
+    template.templateData.dateSpecificRequirements?.forEach(dsr => {
+      dsr.timeSlots.forEach(ts => {
+        ts.roles.forEach(role => {
+          keywords.add(role.name.toLowerCase());
+        });
+      });
+    });
+    
+    return Array.from(keywords);
+  }
+}
 
 // ===========================================
 // 마감 로직 관련 헬퍼 함수들

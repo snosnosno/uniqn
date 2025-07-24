@@ -26,6 +26,14 @@ interface Applicant {
   assignedRoles?: string[];   // 선택한 역할들
   assignedTimes?: string[];   // 선택한 시간들
   assignedDates?: string[];   // 선택한 날짜들
+  
+  // 사전질문 답변
+  preQuestionAnswers?: Array<{
+    questionId: string;
+    question: string;
+    answer: string;
+    required?: boolean;
+  }>;
 }
 
 interface ApplicantListTabProps {
@@ -38,7 +46,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: Array<{ timeSlot: string, role: string, date?: string | undefined }> }>({});
+  const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: Array<{ timeSlot: string, role: string, date?: string }> }>({});
 
   // Load applicants when component mounts or jobPosting changes
   useEffect(() => {
@@ -81,7 +89,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       setApplicants(applicantsWithUserInfo);
       
       // 초기 할당 상태 설정 (다중 선택용 배열)
-      const initialAssignments: { [key: string]: Array<{ timeSlot: string, role: string, date?: string | undefined }> } = {};
+      const initialAssignments: { [key: string]: Array<{ timeSlot: string, role: string, date?: string }> } = {};
       applicantsWithUserInfo.forEach(applicant => {
         initialAssignments[applicant.id] = []; // 빈 배열로 초기화 (date는 항상 string)
       });
@@ -111,13 +119,19 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         // Update job posting with all confirmed staff assignments
         assignments.forEach(assignment => {
           const { timeSlot, role, date } = assignment;
+          const staffEntry: any = {
+            userId: applicant.applicantId,
+            role,
+            timeSlot
+          };
+          
+          // date가 존재하고 유효한 값일 때만 추가
+          if (date && date.trim() !== '') {
+            staffEntry.date = date;
+          }
+          
           transaction.update(jobPostingRef, {
-            confirmedStaff: arrayUnion({
-              userId: applicant.applicantId,
-              role,
-              timeSlot,
-              date: date || undefined  // 날짜 정보 추가
-            })
+            confirmedStaff: arrayUnion(staffEntry)
           });
         });
         
@@ -247,7 +261,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   const handleMultipleAssignmentToggle = (applicantId: string, value: string, isChecked: boolean) => {
     // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
     const parts = value.split('__');
-    let timeSlot = '', role = '', date: string | undefined = '';
+    let timeSlot = '', role = '', date = '';
     
     if (parts.length === 3) {
       // 날짜별 요구사항: date__timeSlot__role
@@ -257,7 +271,11 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       [timeSlot = '', role = ''] = parts;
     }
     
-    const newAssignment = { timeSlot: timeSlot || '', role: role || '', date: date || undefined };
+    const newAssignment = { 
+      timeSlot: timeSlot || '', 
+      role: role || '', 
+      date: date || '' 
+    };
     
     setSelectedAssignment(prev => {
       const currentAssignments = prev[applicantId] || [];
@@ -435,6 +453,26 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                     {applicant.experience ? <p><span className="font-medium">{t('profile.experience')}:</span> {applicant.experience}</p> : null}
                     {applicant.email ? <p><span className="font-medium">{t('profile.email')}:</span> {applicant.email}</p> : null}
                     {applicant.phone ? <p><span className="font-medium">{t('profile.phone')}:</span> {applicant.phone}</p> : null}
+                    
+                    {/* 사전질문 답변 표시 */}
+                    {applicant.preQuestionAnswers && applicant.preQuestionAnswers.length > 0 && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <h5 className="font-medium text-blue-800 mb-2">📝 사전질문 답변</h5>
+                        <div className="space-y-2">
+                          {applicant.preQuestionAnswers.map((answer, index) => (
+                            <div key={index} className="text-sm">
+                              <p className="font-medium text-gray-700">
+                                Q{index + 1}. {answer.question}
+                                {answer.required ? <span className="text-red-500 ml-1">*</span> : null}
+                              </p>
+                              <p className="text-gray-600 ml-4 mt-1">
+                                ▶ {answer.answer || <span className="text-gray-400">(답변 없음)</span>}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -472,7 +510,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                         📅 {formatDate(selection.date)}
                                       </span> : null}
                                     <span className="text-gray-700">⏰ {selection.time}</span>
-                                    <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`, selection.role)}</span>
+                                    <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
                                   </div>
                                 </div>
                               </label>
@@ -509,7 +547,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                             
                             setSelectedAssignment(prev => ({
                               ...prev,
-                              [applicant.id]: [{ timeSlot, role, date: date || undefined }]
+                              [applicant.id]: [{ timeSlot, role, date: date || '' }]
                             }));
                           }
                         }}
@@ -564,7 +602,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                       📅 {formatDate(selection.date)}
                                     </span> : null}
                                   <span>⏰ {selection.time}</span>
-                                  <span>👤 {t(`jobPostingAdmin.create.${selection.role}`, selection.role)}</span>
+                                  <span>👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
                                 </div>
                               ))}
                             </div>

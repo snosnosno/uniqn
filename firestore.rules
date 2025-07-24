@@ -129,6 +129,31 @@ service cloud.firestore {
       allow create, update: if isSignedIn();
       allow delete: if isPrivileged();
     }
+
+    // --- Job Posting Templates Collection ---
+    match /jobPostingTemplates/{templateId} {
+      // Users can read their own templates, privileged users can read all
+      allow read: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
+      
+      // Users can create templates for themselves, privileged users can create for anyone
+      allow create: if isSignedIn() && 
+        request.resource.data.keys().hasAll(['name', 'templateData', 'createdBy', 'createdAt']) &&
+        (isOwner(request.resource.data.createdBy) || isPrivileged()) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 50 &&
+        (!('description' in request.resource.data) || request.resource.data.description is string) &&
+        request.resource.data.templateData is map &&
+        request.resource.data.createdBy is string &&
+        (!('usageCount' in request.resource.data) || request.resource.data.usageCount is number) &&
+        (!('isPublic' in request.resource.data) || request.resource.data.isPublic is bool);
+      
+      // Users can update their own templates, privileged users can update all
+      allow update: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
+      
+      // Users can delete their own templates, privileged users can delete all
+      allow delete: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
+    }
     
     // Fallback rule: deny all other access
     match /{document=**} {

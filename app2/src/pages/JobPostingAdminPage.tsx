@@ -14,10 +14,11 @@ import {
   RoleRequirement, 
   TimeSlot, 
   DateSpecificRequirement,
-  ConfirmedStaff,
-  JobPostingUtils 
+  JobPostingUtils,
+  JobPostingTemplate,
+  CreateTemplateRequest,
+  TemplateUtils
 } from '../types/jobPosting';
-import { DataValidator } from '../utils/dataValidator';
 
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
@@ -29,15 +30,36 @@ const JobPostingAdminPage = () => {
   const jobPostingsQuery = useMemo(() => query(collection(db, 'jobPostings')), []);
   const [jobPostingsSnap, loading] = useCollection(jobPostingsQuery);
   
+  // Template query
+  const templatesQuery = useMemo(() => 
+    currentUser ? query(
+      collection(db, 'jobPostingTemplates'), 
+      where('createdBy', '==', currentUser.uid)
+    ) : null, 
+    [currentUser]
+  );
+  const [templatesSnap, templatesLoading] = useCollection(templatesQuery);
+  
   // Memoized filtered job postings for better performance
   const jobPostings = useMemo(() => 
     jobPostingsSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [],
     [jobPostingsSnap]
   );
   
+  // Memoized templates
+  const templates = useMemo(() => 
+    templatesSnap?.docs.map(d => ({ id: d.id, ...d.data() } as JobPostingTemplate)) || [],
+    [templatesSnap]
+  );
+  
   const getTodayString = () => new Date().toISOString().split('T')[0];
   
-  const initialTimeSlot = { time: '09:00', roles: [{ name: 'dealer', count: 1 }] };
+  const initialTimeSlot = { 
+    time: '09:00', 
+    roles: [{ name: 'dealer', count: 1 }],
+    isTimeToBeAnnounced: false,
+    tentativeDescription: ''
+  };
   const [formData, setFormData] = useState({
     title: '',
     type: 'application', // 모집 유형: 'application'(지원) 또는 'fixed'(고정)
@@ -58,6 +80,13 @@ const JobPostingAdminPage = () => {
   const [currentPost, setCurrentPost] = useState<any>(null);
   const [isMatching, _setIsMatching] = useState<string | null>(null);
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
+
+  // 템플릿 관련 상태
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [isLoadTemplateModalOpen, setIsLoadTemplateModalOpen] = useState(false);
+  const [_selectedTemplate, _setSelectedTemplate] = useState<JobPostingTemplate | null>(null);
 
   // 모든 JobRole을 포함하도록 확장된 역할 목록
   const predefinedRoles = [
@@ -238,10 +267,34 @@ const JobPostingAdminPage = () => {
     setFormData(prev => ({ ...prev, timeSlots: newTimeSlots }));
   };
 
+  // 추후공지 기능 관련 핸들러들
+  const handleTimeToBeAnnouncedToggle = (timeSlotIndex: number, isAnnounced: boolean) => {
+    const newTimeSlots = [...formData.timeSlots];
+    newTimeSlots[timeSlotIndex].isTimeToBeAnnounced = isAnnounced;
+    if (isAnnounced) {
+      newTimeSlots[timeSlotIndex].time = '추후공지';
+    } else {
+      newTimeSlots[timeSlotIndex].time = '';
+      newTimeSlots[timeSlotIndex].tentativeDescription = '';
+    }
+    setFormData(prev => ({ ...prev, timeSlots: newTimeSlots }));
+  };
+
+  const handleTentativeDescriptionChange = (timeSlotIndex: number, description: string) => {
+    const newTimeSlots = [...formData.timeSlots];
+    newTimeSlots[timeSlotIndex].tentativeDescription = description;
+    setFormData(prev => ({ ...prev, timeSlots: newTimeSlots }));
+  };
+
   const addTimeSlot = () => {
     setFormData(prev => ({
       ...prev,
-      timeSlots: [...prev.timeSlots, { time: '', roles: [{ name: 'dealer', count: 1 }] }]
+      timeSlots: [...prev.timeSlots, { 
+        time: '', 
+        roles: [{ name: 'dealer', count: 1 }],
+        isTimeToBeAnnounced: false,
+        tentativeDescription: ''
+      }]
     }));
   };
 
@@ -287,7 +340,12 @@ const JobPostingAdminPage = () => {
     } else {
       // 일자별 요구사항을 기본 timeSlots로 변환
       const timeSlots = formData.dateSpecificRequirements.length > 0
-        ? formData.dateSpecificRequirements[0].timeSlots.map(ts => ({ time: ts.time, roles: ts.roles }))
+        ? formData.dateSpecificRequirements[0].timeSlots.map(ts => ({ 
+            time: ts.time, 
+            roles: ts.roles,
+            isTimeToBeAnnounced: ts.isTimeToBeAnnounced || false,
+            tentativeDescription: ts.tentativeDescription || ''
+          }))
         : formData.timeSlots;
       
       setFormData(prev => ({
@@ -316,6 +374,25 @@ const JobPostingAdminPage = () => {
     newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].time = value;
     setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
   };
+
+  // 일자별 추후공지 기능 관련 핸들러들
+  const handleDateSpecificTimeToBeAnnouncedToggle = (dateIndex: number, timeSlotIndex: number, isAnnounced: boolean) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].isTimeToBeAnnounced = isAnnounced;
+    if (isAnnounced) {
+      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].time = '추후공지';
+    } else {
+      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].time = '';
+      newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].tentativeDescription = '';
+    }
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
+
+  const handleDateSpecificTentativeDescriptionChange = (dateIndex: number, timeSlotIndex: number, description: string) => {
+    const newDateSpecificRequirements = [...formData.dateSpecificRequirements];
+    newDateSpecificRequirements[dateIndex].timeSlots[timeSlotIndex].tentativeDescription = description;
+    setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
+  };
   
   const handleDateSpecificRoleChange = (
     dateIndex: number, 
@@ -338,7 +415,9 @@ const JobPostingAdminPage = () => {
     newDateSpecificRequirements[dateIndex].timeSlots.push({
       time: '',
       roles: [{ name: 'dealer', count: 1 }],
-      date: newDateSpecificRequirements[dateIndex].date
+      date: newDateSpecificRequirements[dateIndex].date,
+      isTimeToBeAnnounced: false,
+      tentativeDescription: ''
     });
     setFormData(prev => ({ ...prev, dateSpecificRequirements: newDateSpecificRequirements }));
   };
@@ -619,21 +698,116 @@ const JobPostingAdminPage = () => {
       setCurrentPost((prev: any) => ({ ...prev, preQuestions: newPreQuestions }));
     };
 
+  // 템플릿 관련 함수들
+  const handleSaveAsTemplate = async () => {
+    if (!currentUser) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!TemplateUtils.validateTemplateName(templateName)) {
+      alert('템플릿 이름은 2-50자 사이여야 합니다.');
+      return;
+    }
+
+    // 현재 폼 데이터가 유효한지 확인
+    if (!formData.title.trim()) {
+      alert('공고 제목을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const templateData = TemplateUtils.extractTemplateData(formData);
+      const newTemplate: CreateTemplateRequest = {
+        name: templateName.trim(),
+        description: templateDescription.trim() || undefined,
+        templateData
+      };
+
+      const _docRef = await addDoc(collection(db, 'jobPostingTemplates'), {
+        ...newTemplate,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid,
+        usageCount: 0,
+        isPublic: false
+      });
+
+      console.log('템플릿 저장 완료:', _docRef.id);
+      alert(`템플릿 "${templateName}"이 저장되었습니다.`);
+      
+      // 모달 닫기 및 상태 초기화
+      setIsTemplateModalOpen(false);
+      setTemplateName('');
+      setTemplateDescription('');
+    } catch (error) {
+      console.error('템플릿 저장 오류:', error);
+      alert('템플릿 저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleLoadTemplate = (template: JobPostingTemplate) => {
+    const templateFormData = TemplateUtils.templateToFormData(template.templateData);
+    
+    // 현재 폼 데이터에 템플릿 데이터 적용
+    setFormData(_prev => ({
+      ..._prev,
+      ...templateFormData
+    }));
+
+    // 템플릿 사용 횟수 업데이트
+    updateTemplateUsage(template.id);
+    
+    setIsLoadTemplateModalOpen(false);
+    alert(`템플릿 "${template.name}"을 불러왔습니다.`);
+  };
+
+  const updateTemplateUsage = async (templateId: string) => {
+    try {
+      const templateRef = doc(db, 'jobPostingTemplates', templateId);
+      await updateDoc(templateRef, {
+        usageCount: (_selectedTemplate?.usageCount || 0) + 1,
+        lastUsedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('템플릿 사용 횟수 업데이트 오류:', error);
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string, templateName: string) => {
+    if (!window.confirm(`템플릿 "${templateName}"을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'jobPostingTemplates', templateId));
+      alert(`템플릿 "${templateName}"이 삭제되었습니다.`);
+    } catch (error) {
+      console.error('템플릿 삭제 오류:', error);
+      alert('템플릿 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // 일자별 요구사항 사용 여부에 따른 유효성 검사
     if (formData.usesDifferentDailyRequirements) {
-      // 일자별 요구사항 검사
+      // 일자별 요구사항 검사 (추후공지 허용)
       if (formData.dateSpecificRequirements.some(dateReq => 
-        dateReq.timeSlots.some(ts => !ts.time || ts.roles.some(r => !r.name || r.count < 1))
+        dateReq.timeSlots.some(ts => 
+          (!ts.time || (ts.time !== '추후공지' && !ts.time)) || 
+          ts.roles.some(r => !r.name || r.count < 1)
+        )
       )) {
         alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
         return;
       }
     } else {
-      // 기존 timeSlots 검사
-      if (formData.timeSlots.some(ts => !ts.time || ts.roles.some(r => !r.name || r.count < 1))) {
+      // 기존 timeSlots 검사 (추후공지 허용)
+      if (formData.timeSlots.some(ts => 
+        (!ts.time || (ts.time !== '추후공지' && !ts.time)) || 
+        ts.roles.some(r => !r.name || r.count < 1)
+      )) {
         alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
         return;
       }
@@ -737,7 +911,7 @@ const JobPostingAdminPage = () => {
   };
   
 
-  const handleAutoMatch = async (jobPostingId: string) => {
+  const handleAutoMatch = async (_jobPostingId: string) => {
     // This function will need significant updates for the new data structure.
     alert("자동 매칭 기능은 새로운 시간대별 인원 구조에 맞게 업데이트가 필요합니다.");
   };
@@ -759,7 +933,12 @@ const JobPostingAdminPage = () => {
   const handleUpdatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPost) return;
-    if (currentPost.timeSlots.some((ts: TimeSlot) => !ts.time || ts.roles.some(r => !r.name || r.count < 1))) {
+    
+    // 추후공지를 고려한 유효성 검사
+    if (currentPost.timeSlots.some((ts: TimeSlot) => 
+      (!ts.time || (ts.time !== '추후공지' && !ts.time)) || 
+      ts.roles.some(r => !r.name || r.count < 1)
+    )) {
       alert(t('jobPostingAdmin.alerts.invalidRoleInfo'));
       return;
     }
@@ -780,7 +959,7 @@ const JobPostingAdminPage = () => {
         ...requiredRoles
       ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
       
-      const { id, ...postData } = currentPost;
+      const { id: _id, ...postData } = currentPost;
       
       // Firebase용 업데이트 데이터 구성 (undefined 필드 제거)
       const updateData: any = {
@@ -848,6 +1027,28 @@ const JobPostingAdminPage = () => {
           )}
         </div>
         {isCreateFormVisible ? <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
+            {/* 템플릿 관련 버튼들 */}
+            <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setIsLoadTemplateModalOpen(true)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                📂 템플릿 불러오기
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsTemplateModalOpen(true)}
+                disabled={!formData.title.trim()}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                💾 템플릿으로 저장
+              </button>
+              <span className="text-sm text-gray-500 self-center">
+                템플릿을 사용하여 공고를 빠르게 생성하세요
+              </span>
+            </div>
+            
             {/* Form fields */}
             <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.postingTitle')}</label>
@@ -923,20 +1124,47 @@ const JobPostingAdminPage = () => {
                     <>
                         {formData.timeSlots.map((timeSlot, tsIndex) => (
                             <div key={tsIndex} className="p-4 border border-gray-200 rounded-md">
-                                <div className="flex items-center space-x-2 mb-4">
-                                    <label htmlFor={`time-slot-${tsIndex}`} className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
-                                    <input
-                                        type="time"
-                                        id={`time-slot-${tsIndex}`}
-                                        value={timeSlot.time}
-                                        onChange={(e) => handleTimeSlotChange(tsIndex, e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        required
-                                    />
-                                    {formData.timeSlots.length > 1 && (
-                                        <button type="button" onClick={() => removeTimeSlot(tsIndex)} className="text-red-600 hover:text-red-800">
-                                            {t('jobPostingAdmin.create.removeTimeSlot')}
-                                        </button>
+                                <div className="mb-4">
+                                    <div className="flex items-center space-x-4 mb-2">
+                                        <label htmlFor={`time-slot-${tsIndex}`} className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
+                                        <label className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={timeSlot.isTimeToBeAnnounced || false}
+                                                onChange={(e) => handleTimeToBeAnnouncedToggle(tsIndex, e.target.checked)}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-sm text-gray-600">추후공지</span>
+                                        </label>
+                                        {formData.timeSlots.length > 1 && (
+                                            <button type="button" onClick={() => removeTimeSlot(tsIndex)} className="text-red-600 hover:text-red-800">
+                                                {t('jobPostingAdmin.create.removeTimeSlot')}
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {!timeSlot.isTimeToBeAnnounced ? (
+                                        <input
+                                            type="time"
+                                            id={`time-slot-${tsIndex}`}
+                                            value={timeSlot.time === '추후공지' ? '' : timeSlot.time}
+                                            onChange={(e) => handleTimeSlotChange(tsIndex, e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            required
+                                        />
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <div className="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 p-2 text-sm text-gray-600">
+                                                ⏰ 추후공지
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="임시 설명 (예: 오후 예정, 저녁 시간대)"
+                                                value={timeSlot.tentativeDescription || ''}
+                                                onChange={(e) => handleTentativeDescriptionChange(tsIndex, e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
+                                            />
+                                        </div>
                                     )}
                                 </div>
                                 {timeSlot.roles.map((role, rIndex) => (
@@ -984,23 +1212,50 @@ const JobPostingAdminPage = () => {
                                 
                                 {dateReq.timeSlots.map((timeSlot, tsIndex) => (
                                     <div key={tsIndex} className="p-3 border border-gray-200 rounded-md bg-white mb-3">
-                                        <div className="flex items-center space-x-2 mb-3">
-                                            <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
-                                            <input
-                                                type="time"
-                                                value={timeSlot.time}
-                                                onChange={(e) => handleDateSpecificTimeSlotChange(dateIndex, tsIndex, e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                required
-                                            />
-                                            {dateReq.timeSlots.length > 1 && (
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => removeDateSpecificTimeSlot(dateIndex, tsIndex)} 
-                                                    className="text-red-600 hover:text-red-800 text-sm"
-                                                >
-                                                    {t('jobPostingAdmin.create.removeTimeSlot')}
-                                                </button>
+                                        <div className="mb-3">
+                                            <div className="flex items-center space-x-4 mb-2">
+                                                <label className="block text-sm font-medium text-gray-700">{t('jobPostingAdmin.create.time')}</label>
+                                                <label className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={timeSlot.isTimeToBeAnnounced || false}
+                                                        onChange={(e) => handleDateSpecificTimeToBeAnnouncedToggle(dateIndex, tsIndex, e.target.checked)}
+                                                        className="mr-2"
+                                                    />
+                                                    <span className="text-sm text-gray-600">추후공지</span>
+                                                </label>
+                                                {dateReq.timeSlots.length > 1 && (
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => removeDateSpecificTimeSlot(dateIndex, tsIndex)} 
+                                                        className="text-red-600 hover:text-red-800 text-sm"
+                                                    >
+                                                        {t('jobPostingAdmin.create.removeTimeSlot')}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            
+                                            {!timeSlot.isTimeToBeAnnounced ? (
+                                                <input
+                                                    type="time"
+                                                    value={timeSlot.time === '추후공지' ? '' : timeSlot.time}
+                                                    onChange={(e) => handleDateSpecificTimeSlotChange(dateIndex, tsIndex, e.target.value)}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                    required
+                                                />
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <div className="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 p-2 text-sm text-gray-600">
+                                                        ⏰ 추후공지
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="임시 설명 (예: 오후 예정, 저녁 시간대)"
+                                                        value={timeSlot.tentativeDescription || ''}
+                                                        onChange={(e) => handleDateSpecificTentativeDescriptionChange(dateIndex, tsIndex, e.target.value)}
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                         
@@ -1674,6 +1929,162 @@ const JobPostingAdminPage = () => {
                     </form>
                 </div>
             </div> : null}
+
+      {/* 템플릿 저장 모달 */}
+      {isTemplateModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">템플릿으로 저장</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    템플릿 이름 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="예: 주말 토너먼트 딜러 모집"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    maxLength={50}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{templateName.length}/50자</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    템플릿 설명 (선택)
+                  </label>
+                  <textarea
+                    value={templateDescription}
+                    onChange={(e) => setTemplateDescription(e.target.value)}
+                    placeholder="이 템플릿에 대한 간단한 설명"
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    maxLength={200}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{templateDescription.length}/200자</p>
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    📌 현재 작성된 제목, 설명, 위치, 시간대, 역할 정보가 템플릿으로 저장됩니다. 
+                    날짜 정보는 저장되지 않습니다.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTemplateModalOpen(false);
+                    setTemplateName('');
+                    setTemplateDescription('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAsTemplate}
+                  disabled={!TemplateUtils.validateTemplateName(templateName)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 템플릿 불러오기 모달 */}
+      {isLoadTemplateModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="relative bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">템플릿 불러오기</h3>
+              
+              {templatesLoading ? (
+                <div className="text-center py-4">
+                  <LoadingSpinner />
+                  <p className="text-gray-500 mt-2">템플릿 목록을 불러오는 중...</p>
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">📂</div>
+                  <p className="text-gray-500">저장된 템플릿이 없습니다.</p>
+                  <p className="text-sm text-gray-400 mt-1">공고를 작성한 후 "템플릿으로 저장" 버튼을 눌러보세요.</p>
+                </div>
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="grid gap-3">
+                    {templates.map((template) => (
+                      <div key={template.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{template.name}</h4>
+                            {template.description && (
+                              <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                            )}
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                📍 {template.templateData.location}
+                              </span>
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                                📋 {template.templateData.type === 'application' ? '지원' : '고정'}
+                              </span>
+                              {template.usageCount && template.usageCount > 0 && (
+                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                  📊 {template.usageCount}회 사용
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2">
+                              생성: {formatDate(template.createdAt)}
+                            </p>
+                          </div>
+                          
+                          <div className="flex space-x-2 ml-4">
+                            <button
+                              type="button"
+                              onClick={() => handleLoadTemplate(template)}
+                              className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                            >
+                              불러오기
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTemplate(template.id, template.name)}
+                              className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsLoadTemplateModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
