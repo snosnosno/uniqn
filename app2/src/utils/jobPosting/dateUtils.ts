@@ -4,27 +4,35 @@ import { Timestamp } from 'firebase/firestore';
  * 다양한 날짜 형식을 yy-MM-dd(요일) 형식으로 포맷팅
  */
 export const formatDate = (dateInput: any): string => {
-  if (!dateInput) return '';
+  if (!dateInput) {
+    console.log('🔍 formatDate(utils): 빈 값 입력', dateInput);
+    return '';
+  }
+  
+  console.log('🔍 formatDate(utils) 입력:', dateInput, 'typeof:', typeof dateInput);
   
   try {
     let date: Date;
     
     // Handle Firebase Timestamp object
     if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
+      console.log('📅 Firebase Timestamp 처리:', dateInput.seconds);
       date = new Date(dateInput.seconds * 1000);
     } else if (dateInput instanceof Date) {
+      console.log('📅 Date 객체 처리:', dateInput);
       date = dateInput;
     } else if (typeof dateInput === 'string') {
+      console.log('📅 문자열 날짜 처리:', dateInput);
       date = new Date(dateInput);
     } else {
-      console.warn('Unknown date format:', dateInput);
-      return String(dateInput);
+      console.warn('❌ 알 수 없는 날짜 형식:', dateInput);
+      return '알 수 없는 날짜 형식';
     }
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date:', dateInput);
-      return String(dateInput);
+      console.warn('❌ 유효하지 않은 날짜:', dateInput);
+      return '날짜 형식 오류';
     }
     
     const year = date.getFullYear().toString().slice(-2);
@@ -35,10 +43,12 @@ export const formatDate = (dateInput: any): string => {
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const dayOfWeek = dayNames[dayOfWeekIndex] || '?';
     
-    return `${year}-${month}-${day}(${dayOfWeek})`;
+    const result = `${year}-${month}-${day}(${dayOfWeek})`;
+    console.log('✅ formatDate(utils) 성공:', result);
+    return result;
   } catch (error) {
-    console.error('Error formatting date:', error, dateInput);
-    return String(dateInput);
+    console.error('❌ formatDate(utils) 오류:', error, dateInput);
+    return '날짜 처리 오류';
   }
 };
 

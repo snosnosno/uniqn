@@ -118,7 +118,7 @@ const TimeSlotManager: React.FC<TimeSlotManagerProps> = ({
                 <Select
                   value={role.name}
                   onChange={(value) => onRoleChange(timeSlotIndex, roleIndex, 'name', value)}
-                  className="flex-1"
+                  className="w-48"
                   options={[
                     { value: '', label: '역할 선택' },
                     ...PREDEFINED_ROLES.map(roleName => ({

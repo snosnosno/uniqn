@@ -12,7 +12,9 @@ export interface PreQuestion {
 // 사전 질문 답변 타입 정의  
 export interface PreQuestionAnswer {
   questionId: string;
+  question?: string; // 질문 텍스트 (호환성을 위해 optional)
   answer: string;
+  required?: boolean; // 필수 여부 (호환성을 위해 optional)
 }
 
 // 지원자 타입 정의

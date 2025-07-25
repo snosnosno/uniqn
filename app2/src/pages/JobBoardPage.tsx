@@ -12,6 +12,7 @@ import { db } from '../firebase';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useInfiniteJobPostings, JobPosting } from '../hooks/useJobPostings';
 import { TimeSlot, RoleRequirement, JobPostingUtils, DateSpecificRequirement, PreQuestionAnswer } from '../types/jobPosting';
+import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
 
 const JobBoardPage = () => {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ const JobBoardPage = () => {
     type: 'all',
     startDate: '',
     role: 'all',
-    month: getCurrentMonth(), // Default to current month
+    month: '', // 모든 월 표시하도록 변경
     day: '' // Default to all days
   });
   
@@ -60,8 +61,12 @@ const JobBoardPage = () => {
   
   // Flatten the infinite query data
   const jobPostings = useMemo(() => {
-    return infiniteData?.pages.flatMap((page: any) => page.jobs) || [];
-  }, [infiniteData]);
+    const result = infiniteData?.pages.flatMap((page: any) => page.jobs) || [];
+    console.log('📋 JobBoardPage - 최종 공고 목록:', result);
+    console.log('📋 JobBoardPage - 공고 개수:', result.length);
+    console.log('📋 JobBoardPage - 현재 필터:', filters);
+    return result;
+  }, [infiniteData, filters]);
   
   // Infinite scroll hook
   const { loadMoreRef } = useInfiniteScroll({
@@ -148,6 +153,28 @@ const JobBoardPage = () => {
       
       // 삭제된 공고의 applications 필터링
       const validApplications = applicationsData.filter(app => app.jobPosting !== null);
+      
+      // 디버깅: 애플리케이션 데이터 구조 확인
+      console.log('🔍 MyApplications 데이터:', validApplications);
+      validApplications.forEach((app: any, index) => {
+        console.log(`📋 Application ${index}:`, app);
+        if (app.preQuestionAnswers) {
+          console.log('📝 사전질문 답변:', app.preQuestionAnswers);
+          app.preQuestionAnswers.forEach((answer: any, answerIndex: number) => {
+            console.log(`  - Answer ${answerIndex} 전체 객체:`, answer);
+            console.log(`  - Answer ${answerIndex} 분석:`, {
+              question: answer.question,
+              questionText: answer.questionText, 
+              text: answer.text,
+              answer: answer.answer,
+              answerType: typeof answer.answer,
+              required: answer.required,
+              allKeys: Object.keys(answer)
+            });
+          });
+        }
+      });
+      
       setMyApplications(validApplications);
     } catch (error) {
       console.error('Error fetching my applications:', error);
@@ -177,7 +204,7 @@ const JobBoardPage = () => {
       type: 'all',
       startDate: '',
       role: 'all',
-      month: getCurrentMonth(), // Reset to current month
+      month: '', // 모든 월 표시하도록 변경
       day: '' // Reset to all days
     });
   };
@@ -204,48 +231,6 @@ const JobBoardPage = () => {
     });
   };
 
-  const formatDate = (dateInput: any) => {
-    if (!dateInput) return '';
-    
-    try {
-      let date: Date;
-      
-      // Handle Firebase Timestamp object
-      if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
-        // Firebase Timestamp object
-        date = new Date(dateInput.seconds * 1000);
-      } else if (dateInput instanceof Date) {
-        // Already a Date object
-        date = dateInput;
-      } else if (typeof dateInput === 'string') {
-        // String date
-        date = new Date(dateInput);
-      } else {
-        console.warn('Unknown date format:', dateInput);
-        return String(dateInput); // Convert to string as fallback
-      }
-      
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid date:', dateInput);
-        return String(dateInput); // Convert to string as fallback
-      }
-      
-      const year = date.getFullYear().toString().slice(-2);
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      
-      // Get day of week with fallback
-      const dayOfWeekIndex = date.getDay();
-      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-      const dayOfWeek = dayNames[dayOfWeekIndex] || '?';
-      
-      return `${year}-${month}-${day}(${dayOfWeek})`;
-    } catch (error) {
-      console.error('Error formatting date:', error, dateInput);
-      return String(dateInput); // Convert to string as fallback
-    }
-  };
 
   // 사전질문 유무 확인 헬퍼 함수
   const hasPreQuestions = (post: JobPosting) => {
@@ -604,8 +589,14 @@ const JobBoardPage = () => {
             </div>
           </div>
         
-          {/* Reset Button */}
-          <div className="mt-4 flex justify-end">
+          {/* Reset and Refresh Buttons */}
+          <div className="mt-4 flex justify-end space-x-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              🔄 새로고침
+            </button>
             <button
               onClick={resetFilters}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -618,8 +609,8 @@ const JobBoardPage = () => {
         {/* Job Postings List */}
         <div className="space-y-4">
           {jobPostings?.map((post) => {
-            const formattedStartDate = formatDate(post.startDate);
-            const formattedEndDate = formatDate(post.endDate);
+            const formattedStartDate = formatDateUtil(post.startDate);
+            const formattedEndDate = formatDateUtil(post.endDate);
             const applicationStatus = appliedJobs.get(post.id);
 
             return (
@@ -644,7 +635,7 @@ const JobBoardPage = () => {
                       post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
                         <div key={dateIndex} className="mt-3">
                           <div className="text-sm font-medium text-blue-600 mb-2">
-                            📅 {formatDate(dateReq.date)} 일정
+                            📅 {formatDateUtil(dateReq.date)} 일정
                           </div>
                           {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                             <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 border-l-2 border-blue-200 bg-blue-50 rounded-r">
@@ -784,7 +775,7 @@ const JobBoardPage = () => {
                   <div className="space-y-1">
                     {selectedAssignments.map((assignment, index) => (
                       <div key={index} className="text-xs text-green-700">
-                        {assignment.date ? `📅 ${formatDate(assignment.date)} - ` : ''}
+                        {assignment.date ? `📅 ${formatDateUtil(assignment.date)} - ` : ''}
                         ⏰ {assignment.timeSlot} - 👤 {t(`jobPostingAdmin.create.${assignment.role}`, assignment.role)}
                       </div>
                     ))}
@@ -800,7 +791,7 @@ const JobBoardPage = () => {
                   selectedPost.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
                     <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
                       <h4 className="text-sm font-semibold text-blue-800 mb-3">
-                        📅 {formatDate(dateReq.date)}
+                        📅 {formatDateUtil(dateReq.date)}
                       </h4>
                       {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                         <div key={tsIndex} className="mb-4 pl-4 border-l-2 border-blue-300">
@@ -998,7 +989,7 @@ const JobBoardPage = () => {
                           {application.jobPosting?.title || '삭제된 공고'}
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
-                          지원일: {formatDate(application.appliedAt)}
+                          지원일: {formatDateUtil(application.appliedAt)}
                         </p>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -1015,7 +1006,7 @@ const JobBoardPage = () => {
 
                     {application.jobPosting ? <div className="mb-4 text-sm text-gray-600">
                         <p>📍 {application.jobPosting.location}</p>
-                        <p>📅 {formatDate(application.jobPosting.startDate)} ~ {formatDate(application.jobPosting.endDate)}</p>
+                        <p>📅 {formatDateUtil(application.jobPosting.startDate)} ~ {formatDateUtil(application.jobPosting.endDate)}</p>
                       </div> : null}
 
                     <div className="border-t pt-4">
@@ -1027,8 +1018,8 @@ const JobBoardPage = () => {
                           {application.assignedTimes.map((time: string, index: number) => (
                             <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
                               <div className="flex-1">
-                                {application.assignedDates && application.assignedDates[index] ? <span className="text-blue-600 font-medium">📅 {application.assignedDates[index]} | </span> : null}
-                                <span className="text-gray-700">⏰ {time}</span>
+                                {application.assignedDates && application.assignedDates[index] ? <span className="text-blue-600 font-medium">📅 {formatDateUtil(application.assignedDates[index])} | </span> : null}
+                                <span className="text-gray-700">⏰ {time ? (typeof time === 'object' && (time as any)?.seconds ? formatDateUtil(time) : time) : ''}</span>
                                 {application.assignedRoles[index] ? <span className="ml-2 text-gray-600">
                                      - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRoles[index]}`, application.assignedRoles[index]))}
                                    </span> : null}
@@ -1043,8 +1034,8 @@ const JobBoardPage = () => {
                         /* 단일 선택 지원 정보 표시 (하위 호환성) */
                         <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                           <div className="flex-1">
-                            {application.assignedDate ? <span className="text-blue-600 font-medium">📅 {application.assignedDate} | </span> : null}
-                            <span className="text-gray-700">⏰ {application.assignedTime}</span>
+                            {application.assignedDate ? <span className="text-blue-600 font-medium">📅 {formatDateUtil(application.assignedDate)} | </span> : null}
+                            <span className="text-gray-700">⏰ {application.assignedTime ? (typeof application.assignedTime === 'object' && (application.assignedTime as any)?.seconds ? formatDateUtil(application.assignedTime) : application.assignedTime) : ''}</span>
                                                          {application.assignedRole ? <span className="ml-2 text-gray-600">
                                  - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRole}`, application.assignedRole))}
                                </span> : null}
@@ -1055,8 +1046,30 @@ const JobBoardPage = () => {
                         </div>
                       )}
 
+                      {/* 사전질문 답변 표시 */}
+                      {(application as any).preQuestionAnswers && (application as any).preQuestionAnswers.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <h5 className="font-medium text-blue-800 mb-2">📝 사전질문 답변</h5>
+                          <div className="space-y-2">
+                            {(application as any).preQuestionAnswers.map((answer: any, index: number) => (
+                              <div key={index} className="text-sm">
+                                <p className="font-medium text-gray-700">
+                                  Q{index + 1}. {answer?.question || '질문 정보 없음'}
+                                  {answer?.required && <span className="text-red-500 ml-1">*</span>}
+                                </p>
+                                <p className="text-gray-600 ml-4 mt-1">
+                                  ▶ {answer?.answer && answer.answer !== 'undefined' && answer.answer !== undefined 
+                                      ? answer.answer 
+                                      : <span className="text-gray-400">(답변 없음)</span>}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {application.status === 'confirmed' && application.confirmedAt ? <p className="text-sm text-green-600 mt-2">
-                          ✅ 확정일: {formatDate(application.confirmedAt)}
+                          ✅ 확정일: {formatDateUtil(application.confirmedAt)}
                         </p> : null}
                       
                       {application.status === 'applied' && application.jobPosting ? <div className="mt-4 flex space-x-2">

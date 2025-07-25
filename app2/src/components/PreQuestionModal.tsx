@@ -87,10 +87,12 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      // PreQuestionAnswer 형식으로 변환
+      // PreQuestionAnswer 형식으로 변환 (질문 텍스트도 함께 저장)
       const formattedAnswers: PreQuestionAnswer[] = questions.map(question => ({
         questionId: question.id,
-        answer: answers[question.id] || ''
+        question: question.question, // 질문 텍스트 추가
+        answer: answers[question.id] || '',
+        required: question.required // 필수 여부도 추가
       }));
 
       // 완료 콜백 호출

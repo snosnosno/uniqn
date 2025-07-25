@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { db, promoteToStaff } from '../../firebase';
 import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement } from '../../types/jobPosting';
+import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
 // Applicant interface (extended for multiple selections)
 interface Applicant {
   id: string;
@@ -211,19 +212,6 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
               applicant.assignedDates?.length);
   };
   
-  const formatDate = (dateStr: string): string => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short'
-      });
-    } catch {
-      return dateStr;
-    }
-  };
   
   const getApplicantSelections = (applicant: Applicant) => {
     // 다중 선택이 있는 경우
@@ -448,6 +436,12 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         {t(`jobPostingAdmin.applicants.status_${applicant.status}`)}
                       </span>
                     </p>
+                    {applicant.appliedAt && (
+                      <p>
+                        <span className="font-medium">지원일:</span>
+                        <span className="ml-2">{formatDateUtil(applicant.appliedAt)}</span>
+                      </p>
+                    )}
                     {applicant.gender ? <p><span className="font-medium">{t('profile.gender')}:</span> {applicant.gender}</p> : null}
                     {applicant.age ? <p><span className="font-medium">{t('profile.age')}:</span> {applicant.age}</p> : null}
                     {applicant.experience ? <p><span className="font-medium">{t('profile.experience')}:</span> {applicant.experience}</p> : null}
@@ -507,7 +501,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                 <div className="ml-3 flex-1">
                                   <div className="flex items-center space-x-2 text-sm">
                                     {selection.date ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                                        📅 {formatDate(selection.date)}
+                                        📅 {formatDateUtil(selection.date)}
                                       </span> : null}
                                     <span className="text-gray-700">⏰ {selection.time}</span>
                                     <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
@@ -599,7 +593,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                               {confirmedSelections.map((selection, index) => (
                                 <div key={index} className="flex items-center space-x-2">
                                   {selection.date ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                                      📅 {formatDate(selection.date)}
+                                      📅 {formatDateUtil(selection.date)}
                                     </span> : null}
                                   <span>⏰ {selection.time}</span>
                                   <span>👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>

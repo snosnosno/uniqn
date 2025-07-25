@@ -12,6 +12,7 @@ import StaffManagementTab from '../components/tabs/StaffManagementTab';
 import { JobPostingProvider } from '../contexts/JobPostingContext';
 import { db } from '../firebase';
 import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
+import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
 
 
 type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
@@ -77,41 +78,6 @@ const JobPostingDetailPageContent: React.FC = () => {
     }
   }, [handleToggleInfo]);
 
-  // Format date for display
-  const formatDate = useCallback((dateInput: any) => {
-    if (!dateInput) return '';
-    
-    try {
-      let date: Date;
-      
-      if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
-        date = new Date(dateInput.seconds * 1000);
-      } else if (dateInput instanceof Date) {
-        date = dateInput;
-      } else if (typeof dateInput === 'string') {
-        date = new Date(dateInput);
-      } else {
-        return String(dateInput);
-      }
-      
-      if (isNaN(date.getTime())) {
-        return String(dateInput);
-      }
-      
-      const year = date.getFullYear().toString().slice(-2);
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      const dayOfWeekIndex = date.getDay();
-      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-      const dayOfWeek = dayNames[dayOfWeekIndex] || '?';
-      
-      return `${year}-${month}-${day}(${dayOfWeek})`;
-    } catch (error) {
-      console.error('Error formatting date:', error, dateInput);
-      return String(dateInput);
-    }
-  }, []);
-
   // Fetch job posting data
   useEffect(() => {
     const fetchJobPosting = async () => {
@@ -175,8 +141,8 @@ const JobPostingDetailPageContent: React.FC = () => {
     );
   }
 
-  const formattedStartDate = formatDate(jobPosting.startDate);
-  const formattedEndDate = formatDate(jobPosting.endDate);
+  const formattedStartDate = formatDateUtil(jobPosting.startDate);
+  const formattedEndDate = formatDateUtil(jobPosting.endDate);
 
   return (
     <div className="container mx-auto p-4">
@@ -260,7 +226,7 @@ const JobPostingDetailPageContent: React.FC = () => {
                   {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
                     <div key={dateIndex} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <div className="text-sm font-medium text-blue-800 mb-3">
-                        📅 {formatDate(dateReq.date)} 일정
+                        📅 {formatDateUtil(dateReq.date)} 일정
                       </div>
                       <div className="space-y-2">
                         {dateReq.timeSlots.map((ts, tsIndex) => (

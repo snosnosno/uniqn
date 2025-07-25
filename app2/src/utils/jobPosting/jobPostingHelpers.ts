@@ -65,6 +65,7 @@ export const templateToFormData = (template: JobPostingTemplate) => {
     ...template.templateData,
     startDate: getTodayString(),
     endDate: getTodayString(),
+    status: 'open' as const, // 템플릿에서 불러온 공고는 항상 open 상태로 설정
   };
 };
 
@@ -72,17 +73,53 @@ export const templateToFormData = (template: JobPostingTemplate) => {
  * 폼 데이터를 Firebase 저장용으로 변환
  */
 export const prepareFormDataForFirebase = (formData: any) => {
-  return {
+  console.log('🔍 prepareFormDataForFirebase 입력 데이터:', formData);
+  
+  // 모든 역할을 수집하여 requiredRoles 배열 생성
+  const requiredRoles = new Set<string>();
+  
+  if (formData.usesDifferentDailyRequirements && formData.dateSpecificRequirements) {
+    console.log('📅 일자별 다른 요구사항 처리 중...');
+    formData.dateSpecificRequirements.forEach((req: DateSpecificRequirement) => {
+      req.timeSlots.forEach((timeSlot: TimeSlot) => {
+        timeSlot.roles.forEach((role: RoleRequirement) => {
+          if (role.name) {
+            requiredRoles.add(role.name);
+            console.log('👤 역할 추가:', role.name);
+          }
+        });
+      });
+    });
+  } else if (formData.timeSlots) {
+    console.log('⏰ 일반 시간대 처리 중...');
+    formData.timeSlots.forEach((timeSlot: TimeSlot) => {
+      timeSlot.roles.forEach((role: RoleRequirement) => {
+        if (role.name) {
+          requiredRoles.add(role.name);
+          console.log('👤 역할 추가:', role.name);
+        }
+      });
+    });
+  }
+
+  const requiredRolesArray = Array.from(requiredRoles);
+  console.log('✅ 최종 requiredRoles:', requiredRolesArray);
+
+  const result = {
     ...formData,
     startDate: convertToTimestamp(formData.startDate),
     endDate: convertToTimestamp(formData.endDate),
     createdAt: convertToTimestamp(new Date()),
     updatedAt: convertToTimestamp(new Date()),
-    dateSpecificRequirements: formData.dateSpecificRequirements.map((req: DateSpecificRequirement) => ({
+    requiredRoles: requiredRolesArray, // 검색을 위한 역할 배열 추가
+    dateSpecificRequirements: formData.dateSpecificRequirements?.map((req: DateSpecificRequirement) => ({
       ...req,
       date: convertToTimestamp(req.date)
-    }))
+    })) || []
   };
+
+  console.log('🚀 Firebase 저장용 최종 데이터:', result);
+  return result;
 };
 
 /**
