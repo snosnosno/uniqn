@@ -101,7 +101,7 @@ export const setupTestData = async () => {
 };
 
 export const promoteToStaff = async (
-  userId: string, 
+  documentId: string, 
   userName: string, 
   jobRole: string, 
   postingId: string, 
@@ -109,18 +109,23 @@ export const promoteToStaff = async (
   assignedRole?: string, 
   assignedTime?: string,
   email?: string,
-  phone?: string
+  phone?: string,
+  assignedDate?: string,
+  actualUserId?: string // 실제 사용자 ID (다중 문서 지원)
 ) => {
+  // 실제 사용자 ID는 documentId에서 추출하거나 별도로 전달받음
+  const userId = actualUserId || documentId.split('_')[0] || documentId;
+  
   console.log('🚀 promoteToStaff function called:', { 
-    userId, userName, jobRole, postingId, managerId, assignedRole, assignedTime, email, phone 
+    documentId, userId, userName, jobRole, postingId, managerId, assignedRole, assignedTime, email, phone, assignedDate 
   });
   
-  if (!userId || !jobRole || !userName || !postingId || !managerId) {
-    console.error("User ID, User Name, Job Role, Posting ID, and Manager ID are required to promote to staff.");
+  if (!documentId || !jobRole || !userName || !postingId || !managerId) {
+    console.error("Document ID, User Name, Job Role, Posting ID, and Manager ID are required to promote to staff.");
     return;
   }
 
-  const staffRef = doc(db, 'staff', userId);
+  const staffRef = doc(db, 'staff', documentId);
   
   try {
     console.log('🔍 Checking existing staff document for:', userId);
@@ -138,6 +143,7 @@ export const promoteToStaff = async (
         assignedEvents: [postingId],
         assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
         assignedTime: assignedTime || '', // 지원자에서 확정된 시간
+        assignedDate: assignedDate || '', // 지원자에서 확정된 날짜
         createdAt: new Date(),
         managerId,
         postingId,
@@ -156,6 +162,7 @@ export const promoteToStaff = async (
         assignedEvents: arrayUnion(postingId),
         assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
         assignedTime: assignedTime || '', // 지원자에서 확정된 시간
+        assignedDate: assignedDate || '', // 지원자에서 확정된 날짜
         postingId, // 최신 공고 ID로 업데이트
         managerId // 관리자 ID도 업데이트
       });
