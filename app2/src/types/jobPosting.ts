@@ -522,6 +522,9 @@ export interface CreateTemplateRequest {
   name: string;
   description?: string;
   templateData: JobPostingTemplate['templateData'];
+  createdBy: string;
+  createdAt: Date;
+  usageCount: number;
 }
 
 // 템플릿 검색/필터 인터페이스  

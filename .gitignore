@@ -80,3 +80,16 @@ __pycache__/
 # Firebase service account key
 # IMPORTANT: This file should not be committed to Git.
 /scripts/t-holdem-firebase-adminsdk-v4p2h-17b0754402.json
+
+# Windows-specific files
+nul
+*/nul
+
+# Claude Code settings (local only)
+.claude/
+
+# Backup files from refactoring
+*.backup
+
+# Windows executables (installers)
+*.exe
