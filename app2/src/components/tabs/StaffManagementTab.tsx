@@ -1,219 +1,81 @@
-import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaTimes } from 'react-icons/fa';
 
-import { useAuth } from '../../contexts/AuthContext';
-import { useJobPostingContext } from '../../contexts/JobPostingContext';
-import { useToast } from '../../contexts/ToastContext';
-import { db } from '../../firebase';
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
-import { usePayrollData } from '../../hooks/usePayrollData';
-import { getExceptionIcon, getExceptionSeverity } from '../../utils/attendanceExceptionUtils';
-import { PayrollCalculationData } from '../../utils/payroll/types';
+import { useResponsive } from '../../hooks/useResponsive';
+import { useStaffManagement } from '../../hooks/useStaffManagement';
+import { useVirtualization } from '../../hooks/useVirtualization';
+import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 import { AttendanceExceptionHandler } from '../AttendanceExceptionHandler';
-import AttendanceStatusCard from '../AttendanceStatusCard';
-import PayrollSummaryModal from '../PayrollSummaryModal';
+import BulkActionsModal from '../BulkActionsModal';
+import PerformanceMonitor from '../PerformanceMonitor';
+import PerformanceDashboard from '../PerformanceDashboard';
 import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
+import StaffCard from '../StaffCard';
+import StaffDateGroup from '../StaffDateGroup';
+import StaffDateGroupMobile from '../StaffDateGroupMobile';
+import StaffFilters from '../StaffFilters';
+import StaffFiltersMobile from '../StaffFiltersMobile';
+import StaffRow from '../StaffRow';
+import VirtualizedStaffList from '../VirtualizedStaffList';
+import VirtualizedStaffTable from '../VirtualizedStaffTable';
 import WorkTimeEditor from '../WorkTimeEditor';
-
-
-
-// 업무 역할 정의
-type JobRole = 
-  | 'Dealer'              // 딜러
-  | 'Floor'               // 플로어
-  | 'Server'              // 서빙
-  | 'Tournament Director' // 토너먼트 디렉터
-  | 'Chip Master'         // 칩 마스터
-  | 'Registration'        // 레지
-  | 'Security'            // 보안요원
-  | 'Cashier';            // 캐셔
-
-// 계정 권한은 기존 유지
-type UserRole = 'staff' | 'manager' | 'admin' | 'pending_manager';
-
-interface StaffData {
-  id: string;
-  userId: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  role?: JobRole;         // 업무 역할 (딜러, 플로어 등)
-  userRole?: UserRole;    // 계정 권한 (dealer, manager, admin 등)
-  gender?: string;
-  age?: number;
-  experience?: string;
-  nationality?: string;
-  history?: string;
-  notes?: string;
-  postingId: string;
-  postingTitle: string;
-  assignedEvents?: string[]; // 스태프가 등록된 모든 공고 ID 배열
-  assignedRole?: string;     // 지원자에서 확정된 역할
-  assignedTime?: string;     // 지원자에서 확정된 시간
-  assignedDate?: string;     // 할당된 날짜 (yyyy-MM-dd 형식)
-}
 
 interface StaffManagementTabProps {
   jobPosting?: any;
 }
 
-type SortKey = keyof StaffData;
-
 const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
-    const { showSuccess, showError, showWarning } = useToast();
-  const { staff } = useJobPostingContext();
+  const { isMobile, isTablet } = useResponsive();
   
-  const [staffData, setStaffData] = useState<StaffData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // 커스텀 훅 사용
+  const {
+    staffData,
+    groupedStaffData,
+    availableDates,
+    availableRoles,
+    loading,
+    error,
+    filters,
+    setFilters,
+    expandedDates,
+    groupByDate,
+    setGroupByDate,
+    deleteStaff,
+    toggleDateExpansion,
+    formatTimeDisplay,
+    getTimeSlotColor
+  } = useStaffManagement({
+    jobPostingId: jobPosting?.id,
+    enableGrouping: true,
+    enableFiltering: true
+  });
 
   // 출석 상태 관리
   const { 
-    attendanceRecords, 
-    // loading: attendanceLoading, 
-    // error: attendanceError,
+    attendanceRecords,
     getStaffAttendanceStatus 
   } = useAttendanceStatus({
     eventId: jobPosting?.id || 'default-event',
     date: new Date().toISOString().split('T')[0] || ''
   });
   
-  // 급여 데이터 관리
-  const {
-    generatePayrollFromWorkLogs,
-    payrollData: generatedPayrollData,
-    summary: payrollSummary,
-    loading: payrollLoading,
-    // error: payrollError,
-    exportToCSV
-  } = usePayrollData({
-    eventId: jobPosting?.id || 'default-event'
-  });
-
-  // States for filtering and sorting
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortOption, setSortOption] = useState<string>(''); 
-  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
-  
-  // 편집 기능 관련 states
-  // const [editingCell, setEditingCell] = useState<{ rowId: string; field: keyof StaffData } | null>(null);
-  // const [editingValue, setEditingValue] = useState<string>('');
-  
-  // QR 코드 생성 모달 관련 states
+  // 모달 상태
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  
-  // 시간 수정 모달 관련 states
   const [isWorkTimeEditorOpen, setIsWorkTimeEditorOpen] = useState(false);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
-  
-  // 예외 상황 처리 모달 관련 states
-  // const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false);
   const [selectedExceptionWorkLog, setSelectedExceptionWorkLog] = useState<any | null>(null);
   
-  // 급여 처리 관련 states
-  const [isPayrollModalOpen, setIsPayrollModalOpen] = useState(false);
-  const [payrollData, setPayrollData] = useState<PayrollCalculationData[]>([]);
-  const [isGeneratingPayroll, setIsGeneratingPayroll] = useState(false);
-
-  // 스태프 데이터 로드 및 실시간 동기화
-  useEffect(() => {
-    if (!currentUser || !jobPosting?.id) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchJobPostingStaff = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('🔍 StaffManagementTab - 현재 사용자 ID:', currentUser.uid);
-        console.log('🔍 StaffManagementTab - 공고 ID:', jobPosting.id);
-        
-        // 해당 공고에 할당된 스태프만 가져오기
-        const staffQuery = query(
-          collection(db, 'staff'), 
-          where('managerId', '==', currentUser.uid),
-          where('postingId', '==', jobPosting.id)
-        );
-        const staffSnapshot = await getDocs(staffQuery);
-        console.log('🔍 공고별 Staff 문서 수:', staffSnapshot.size);
-    
-        if (staffSnapshot.empty) {
-          console.log('⚠️ 해당 공고의 스태프가 없습니다.');
-          setStaffData([]);
-          setLoading(false);
-          return;
-        }
-
-        const staffList: StaffData[] = staffSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            // jobRole 배열을 role 필드로 매핑 (promoteToStaff에서 저장한 데이터 호환성)
-            role: data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] as JobRole : data.role,
-            postingTitle: jobPosting.title // 현재 공고 제목 설정
-          } as StaffData;
-        });
-        
-        console.log('🔍 공고별 스태프 데이터:', staffList);
-        setStaffData(staffList);
-
-      } catch (e) {
-        console.error("Error fetching staff data: ", e);
-        setError(t('staffListPage.fetchError'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobPostingStaff();
-    }, [currentUser, jobPosting?.id, t, staff]); // staff 추가로 실시간 동기화
-
-  // 편집 기능 핸들러 (미사용)
-  // const handleCellClick = (rowId: string, field: keyof StaffData, currentValue: any) => {
-  //   // 편집 불가능한 필드 제외
-  //   const readOnlyFields: (keyof StaffData)[] = ['id', 'userId', 'postingId', 'postingTitle'];
-  //   if (readOnlyFields.includes(field)) return;
-
-  //   // 편집 모드 활성화
-  //   setEditingCell({ rowId, field, value: currentValue });
-  // };
+  // 모바일 전용 상태
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
+  const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
   
-  // const handleCellSave = async () => {
-  //   if (!editingCell) return;
-
-  //   const { rowId, field } = editingCell;
-  //   const newValue = editingValue;
-
-  //   try {
-  //     // 스태프 데이터 업데이트
-  //     const updatedStaffData = staffData.map(staff => {
-  //       if (staff.id === rowId) {
-  //         return { ...staff, [field]: newValue };
-  //       }
-  //       return staff;
-  //     });
-
-  //     setStaffData(updatedStaffData);
-  //     setEditingCell(null);
-  //     setEditingValue('');
-
-  //     showSuccess(t('staffManagement.cellUpdateSuccess'));
-  //   } catch (error) {
-  //     console.error('셀 저장 오류:', error);
-  //     showError(t('staffManagement.cellUpdateError'));
-  //   }
-  // };
-  
-  // const handleCellCancel = () => {
-  //   // setEditingCell(null); // This line is removed
-  //   // setEditingValue(''); // This line is removed
-  // };
+  // 성능 모니터링 상태 (개발 환경에서만)
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const { registerComponentMetrics } = usePerformanceMetrics();
   
   // 출퇴근 시간 수정 핸들러
   const handleEditWorkTime = (staffId: string) => {
@@ -233,7 +95,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   const handleWorkTimeUpdate = (updatedWorkLog: any) => {
     console.log('근무 시간이 업데이트되었습니다:', updatedWorkLog);
-        showSuccess(t('staffManagement.workTimeUpdateSuccess'));
+    // 성공 메시지는 WorkTimeEditor 내부에서 처리
   };
   
   // 예외 상황 처리 함수
@@ -246,125 +108,77 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     if (workLog?.workLog) {
       setSelectedExceptionWorkLog(workLog.workLog);
-      // setIsExceptionModalOpen(true); // This line is removed
     }
   };
   
   const handleExceptionUpdate = (updatedWorkLog: any) => {
     console.log('예외 상황이 업데이트되었습니다:', updatedWorkLog);
-    // setIsExceptionModalOpen(false); // This line is removed
     setSelectedExceptionWorkLog(null);
-        showSuccess(t('staffManagement.exceptionUpdateSuccess'));
+    // 성공 메시지는 AttendanceExceptionHandler 내부에서 처리
+  };
+
+  // 필터링된 데이터 계산
+  const flattenedStaffData = Object.values(groupedStaffData.grouped).flat();
+  const filteredStaffCount = flattenedStaffData.length;
+  const selectedStaffData = staffData.filter(staff => selectedStaff.has(staff.id));
+
+  // 가상화 설정
+  const mobileVirtualization = useVirtualization({
+    itemCount: filteredStaffCount,
+    threshold: 30,
+    mobileThreshold: 20,
+    isMobile: true
+  });
+
+  const desktopVirtualization = useVirtualization({
+    itemCount: filteredStaffCount,
+    threshold: 50,
+    mobileThreshold: 30,
+    isMobile: false
+  });
+  
+  // 모바일 관련 핸들러
+  const handleMultiSelectToggle = () => {
+    setMultiSelectMode(!multiSelectMode);
+    setSelectedStaff(new Set());
   };
   
-  // 급여 처리 관련 함수들
-  const handleGeneratePayroll = async () => {
-    setIsGeneratingPayroll(true);
-    try {
-      const currentDate = new Date().toISOString().split('T')[0];
-      await generatePayrollFromWorkLogs(jobPosting?.id || 'default-event', currentDate, currentDate);
-      setPayrollData(generatedPayrollData);
-      setIsPayrollModalOpen(true);
-    } catch (error) {
-      console.error('급여 데이터 생성 오류:', error);
-            showError(t('staffManagement.payrollGenerationError'));
-    } finally {
-      setIsGeneratingPayroll(false);
+  const handleStaffSelect = (staffId: string) => {
+    const newSelected = new Set(selectedStaff);
+    if (newSelected.has(staffId)) {
+      newSelected.delete(staffId);
+    } else {
+      newSelected.add(staffId);
     }
+    setSelectedStaff(newSelected);
   };
   
-  const handleExportPayrollCSV = () => {
-    if (payrollData.length === 0) {
-            showWarning(t('payroll.noDataToExport', '내보낼 급여 데이터가 없습니다.'));
-      return;
-    }
-    
-    const csvData = exportToCSV();
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `payroll_${jobPosting?.title || 'staff'}_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-        showSuccess(t('payroll.exportSuccess'));
+  const handleBulkActions = () => {
+    setIsBulkActionsOpen(true);
   };
   
-  // 스태프 삭제 기능
-  const deleteStaff = async (staffId: string) => {
-    if (!window.confirm(t('staffManagement.deleteConfirm'))) {
-      return;
+  const handleBulkDelete = async (staffIds: string[]) => {
+    // 순차적으로 삭제 (병렬 처리시 충돌 가능성)
+    for (const staffId of staffIds) {
+      await deleteStaff(staffId);
     }
-    
-    try {
-      // Firebase에서 삭제
-      const staffDocRef = doc(db, 'staff', staffId);
-      await deleteDoc(staffDocRef);
-      
-      // 로컬 상태에서 삭제
-      setStaffData(prevData => prevData.filter(staff => staff.id !== staffId));
-      
-            showSuccess(t('staffManagement.deleteSuccess'));
-      setError('');
-    } catch (error: any) {
-      console.error('스태프 삭제 오류:', error);
-      setError(t('staffManagement.deleteError'));
-            showError(t('staffManagement.deleteError'));
-    }
+    setSelectedStaff(new Set());
+    setMultiSelectMode(false);
   };
-
-  const handleSortChange = (value: string) => {
-    setSortOption(value);
-    if (!value) {
-      setSortConfig(null);
-      return;
-    }
-    
-    const [key, direction] = value.split('-') as [SortKey, 'ascending' | 'descending'];
-    setSortConfig({ key, direction });
+  
+  const handleBulkMessage = async (staffIds: string[], message: string) => {
+    // 실제 구현에서는 메시지 발송 로직 추가
+    console.log('Bulk message:', { staffIds, message });
+    // TODO: 실제 메시지 발송 구현
+    alert(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
   };
-
-  const filteredAndSortedStaff = useMemo(() => {
-    let sortableItems = [...staffData];
-
-    if (searchTerm) {
-      sortableItems = sortableItems.filter(staff =>
-        staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.assignedRole?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.assignedTime?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.assignedDate?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-        
-        const aValExists = aValue !== null && aValue !== undefined;
-        const bValExists = bValue !== null && bValue !== undefined;
-      
-        if (!aValExists) return 1;
-        if (!bValExists) return -1;
-      
-        if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        
-        return 0;
-      });
-    }
-
-    return sortableItems;
-  }, [staffData, searchTerm, sortConfig]);
+  
+  const handleBulkStatusUpdate = async (staffIds: string[], status: string) => {
+    // 실제 구현에서는 출석 상태 업데이트 로직 추가
+    console.log('Bulk status update:', { staffIds, status });
+    // TODO: 실제 상태 업데이트 구현
+    alert(`${staffIds.length}명의 상태를 "${status}"로 변경했습니다.`);
+  };
 
   // Early return if no job posting data
   if (!jobPosting) {
@@ -381,7 +195,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg">{t('common.loading')}</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 ml-4">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -389,65 +204,65 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   return (
     <>
-      <div className="p-6">
+      <PerformanceMonitor
+        componentName="StaffManagementTab"
+        isVirtualized={mobileVirtualization.shouldVirtualize || desktopVirtualization.shouldVirtualize}
+        totalItems={filteredStaffCount}
+        visibleItems={mobileVirtualization.shouldVirtualize ? mobileVirtualization.maxVisibleItems : desktopVirtualization.shouldVirtualize ? desktopVirtualization.maxVisibleItems : filteredStaffCount}
+        onMetricsUpdate={(metrics) => {
+          registerComponentMetrics(
+            'StaffManagementTab',
+            metrics.lastRenderTime,
+            metrics.virtualizationActive,
+            metrics.totalItems,
+            metrics.visibleItems
+          );
+        }}
+      >
+        <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
-          <div className="text-sm text-gray-600">
-            총 {staffData.length}명의 스태프가 등록되어 있습니다.
-          </div>
         </div>
 
-        {error ? <div className="bg-red-50 p-4 rounded-lg mb-4">
+        {error && (
+          <div className="bg-red-50 p-4 rounded-lg mb-4">
             <p className="text-red-600">{error}</p>
-          </div> : null}
+          </div>
+        )}
 
-        {/* 검색 및 제어 버튼 */}
-        <div className="mb-4 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-          <input
-            type="text"
-            placeholder={t('participants.searchPlaceholder')}
-            className="w-full md:w-1/3 p-2 border border-gray-300 rounded-md"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        {/* 필터 컴포넌트 */}
+        {(isMobile || isTablet) ? (
+          <StaffFiltersMobile
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableDates={availableDates}
+            availableRoles={availableRoles}
+            groupByDate={groupByDate}
+            onGroupByDateChange={setGroupByDate}
+            onQRCodeClick={() => setIsQrModalOpen(true)}
+            totalStaffCount={staffData.length}
+            filteredStaffCount={filteredStaffCount}
+            multiSelectMode={multiSelectMode}
+            onMultiSelectToggle={handleMultiSelectToggle}
+            selectedCount={selectedStaff.size}
+            onBulkActions={handleBulkActions}
           />
-          <select
-            className="w-full md:w-1/3 p-2 border border-gray-300 rounded-md"
-            value={sortOption}
-            onChange={(e) => handleSortChange(e.target.value)}
-          >
-            <option value="">{t('common.sort', '정렬')} ({t('common.none', '없음')})</option>
-            <option value="role-ascending">역할 (오름차순)</option>
-            <option value="role-descending">역할 (내림차순)</option>
-            <option value="name-ascending">{t('staffNew.labelName')} (오름차순)</option>
-            <option value="name-descending">{t('staffNew.labelName')} (내림차순)</option>
-            <option value="assignedRole-ascending">할당 역할 (오름차순)</option>
-            <option value="assignedRole-descending">할당 역할 (내림차순)</option>
-            <option value="assignedTime-ascending">할당 시간 (오름차순)</option>
-            <option value="assignedTime-descending">할당 시간 (내림차순)</option>
-          </select>
-          <button
-            onClick={() => setIsQrModalOpen(true)}
-            className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
-          >
-            {t('attendance.actions.generateQR')}
-          </button>
-          <button
-            onClick={handleGeneratePayroll}
-            disabled={isGeneratingPayroll}
-            className="w-full md:w-auto px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGeneratingPayroll ? t('payroll.generating', '급여 계산중...') : t('payroll.calculate', '급여 계산')}
-          </button>
-          <button
-            onClick={handleExportPayrollCSV}
-            disabled={payrollData.length === 0 || payrollLoading}
-            className="w-full md:w-auto px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t('payroll.export', '급여 CSV 내보내기')}
-          </button>
-        </div>
+        ) : (
+          <StaffFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableDates={availableDates}
+            availableRoles={availableRoles}
+            groupByDate={groupByDate}
+            onGroupByDateChange={setGroupByDate}
+            onQRCodeClick={() => setIsQrModalOpen(true)}
+            totalStaffCount={staffData.length}
+            filteredStaffCount={filteredStaffCount}
+          />
+        )}
 
-        {filteredAndSortedStaff.length === 0 ? (
+        {/* 스태프 목록 */}
+        {staffData.length === 0 ? (
           <div className="bg-gray-50 p-6 rounded-lg text-center">
             <p className="text-gray-600 mb-4">이 공고에 할당된 스태프가 없습니다.</p>
             <p className="text-sm text-gray-500">
@@ -455,146 +270,177 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             </p>
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('staffNew.labelName')}
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      역할
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      할당 역할
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      할당 시간
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      할당 날짜
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('signUp.phoneLabel')}
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('staffNew.labelEmail')}
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      출석 상태
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      예외 상황
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      작업
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAndSortedStaff.map((staff) => (
-                    <tr key={staff.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {staff.name || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staff.role || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staff.assignedRole || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staff.assignedTime || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staff.assignedDate ? (
-                          <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                            </svg>
-                            {staff.assignedDate}
-                          </div>
-                        ) : <span className="text-gray-400 text-xs">No Date</span>}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staff.phone || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {staff.email || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {(() => {
-                          const attendanceRecord = getStaffAttendanceStatus(staff.id);
-                          return attendanceRecord ? (
-                            <AttendanceStatusCard
-                              status={attendanceRecord.status}
-                              checkInTime={attendanceRecord.checkInTime}
-                              checkOutTime={attendanceRecord.checkOutTime}
-                              size="sm"
+          <div className="space-y-4">
+            {(isMobile || isTablet) ? (
+              // 모바일/태블릿 카드 레이아웃
+              groupByDate ? (
+                // 모바일 날짜별 그룹화 보기
+                groupedStaffData.sortedDates.map((date) => {
+                  const staffForDate = groupedStaffData.grouped[date];
+                  const isExpanded = expandedDates.has(date);
+                  
+                  return (
+                    <StaffDateGroupMobile
+                      key={date}
+                      date={date}
+                      staffList={staffForDate}
+                      isExpanded={isExpanded}
+                      onToggleExpansion={toggleDateExpansion}
+                      onEditWorkTime={handleEditWorkTime}
+                      onExceptionEdit={handleExceptionEdit}
+                      onDeleteStaff={deleteStaff}
+                      getStaffAttendanceStatus={getStaffAttendanceStatus}
+                      attendanceRecords={attendanceRecords}
+                      formatTimeDisplay={formatTimeDisplay}
+                      getTimeSlotColor={getTimeSlotColor}
+                      selectedStaff={selectedStaff}
+                      onStaffSelect={handleStaffSelect}
+                      multiSelectMode={multiSelectMode}
+                    />
+                  );
+                })
+              ) : (
+                // 모바일 단일 카드 리스트 (가상화 적용)
+                mobileVirtualization.shouldVirtualize ? (
+                  <VirtualizedStaffList
+                    staffList={flattenedStaffData}
+                    onEditWorkTime={handleEditWorkTime}
+                    onExceptionEdit={handleExceptionEdit}
+                    onDeleteStaff={deleteStaff}
+                    getStaffAttendanceStatus={getStaffAttendanceStatus}
+                    attendanceRecords={attendanceRecords}
+                    formatTimeDisplay={formatTimeDisplay}
+                    getTimeSlotColor={getTimeSlotColor}
+                    showDate={true}
+                    multiSelectMode={multiSelectMode}
+                    selectedStaff={selectedStaff}
+                    onStaffSelect={handleStaffSelect}
+                    height={mobileVirtualization.height}
+                    itemHeight={mobileVirtualization.itemHeight}
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {flattenedStaffData.map((staff) => (
+                      <StaffCard
+                        key={staff.id}
+                        staff={staff}
+                        onEditWorkTime={handleEditWorkTime}
+                        onExceptionEdit={handleExceptionEdit}
+                        onDeleteStaff={deleteStaff}
+                        getStaffAttendanceStatus={getStaffAttendanceStatus}
+                        attendanceRecords={attendanceRecords}
+                        formatTimeDisplay={formatTimeDisplay}
+                        getTimeSlotColor={getTimeSlotColor}
+                        showDate={true}
+                        isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
+                        onSelect={multiSelectMode ? handleStaffSelect : undefined}
+                      />
+                    ))}
+                  </div>
+                )
+              )
+            ) : (
+              // 데스크톱 테이블 레이아웃
+              groupByDate ? (
+                // 데스크톱 날짜별 그룹화 보기
+                groupedStaffData.sortedDates.map((date) => {
+                  const staffForDate = groupedStaffData.grouped[date];
+                  const isExpanded = expandedDates.has(date);
+                  
+                  return (
+                    <StaffDateGroup
+                      key={date}
+                      date={date}
+                      staffList={staffForDate}
+                      isExpanded={isExpanded}
+                      onToggleExpansion={toggleDateExpansion}
+                      onEditWorkTime={handleEditWorkTime}
+                      onExceptionEdit={handleExceptionEdit}
+                      onDeleteStaff={deleteStaff}
+                      getStaffAttendanceStatus={getStaffAttendanceStatus}
+                      attendanceRecords={attendanceRecords}
+                      formatTimeDisplay={formatTimeDisplay}
+                      getTimeSlotColor={getTimeSlotColor}
+                    />
+                  );
+                })
+              ) : (
+                // 데스크톱 단일 테이블 보기 (가상화 적용)
+                desktopVirtualization.shouldVirtualize ? (
+                  <VirtualizedStaffTable
+                    staffList={flattenedStaffData}
+                    onEditWorkTime={handleEditWorkTime}
+                    onExceptionEdit={handleExceptionEdit}
+                    onDeleteStaff={deleteStaff}
+                    getStaffAttendanceStatus={getStaffAttendanceStatus}
+                    attendanceRecords={attendanceRecords}
+                    formatTimeDisplay={formatTimeDisplay}
+                    getTimeSlotColor={getTimeSlotColor}
+                    showDate={true}
+                    height={desktopVirtualization.height}
+                    rowHeight={desktopVirtualization.itemHeight}
+                  />
+                ) : (
+                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              시간
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              이름
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              역할
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              연락처
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              출석
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              예외
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              작업
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {flattenedStaffData.map((staff) => (
+                            <StaffRow
+                              key={staff.id}
+                              staff={staff}
+                              onEditWorkTime={handleEditWorkTime}
+                              onExceptionEdit={handleExceptionEdit}
+                              onDeleteStaff={deleteStaff}
+                              getStaffAttendanceStatus={getStaffAttendanceStatus}
+                              attendanceRecords={attendanceRecords}
+                              formatTimeDisplay={formatTimeDisplay}
+                              getTimeSlotColor={getTimeSlotColor}
+                              showDate={true}
                             />
-                          ) : (
-                            <AttendanceStatusCard
-                              status="not_started"
-                              size="sm"
-                            />
-                          );
-                        })()} 
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {(() => {
-                          const record = attendanceRecords.find(r => r.staffId === staff.id);
-                          if (record?.workLog?.exception) {
-                            const exceptionType = record.workLog.exception.type;
-                            const exceptionIcon = getExceptionIcon(exceptionType);
-                            const severity = getExceptionSeverity(exceptionType);
-                            return (
-                              <div className="flex items-center gap-1">
-                                <span className={`text-${severity === 'high' ? 'red' : severity === 'medium' ? 'yellow' : 'orange'}-500`}>
-                                  {exceptionIcon}
-                                </span>
-                                <span className="text-xs text-gray-600">
-                                  {t(`exceptions.types.${exceptionType}`)}
-                                </span>
-                              </div>
-                            );
-                          }
-                          return <span className="text-gray-400 text-xs">정상</span>;
-                        })()} 
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditWorkTime(staff.id)}
-                            className="text-blue-600 hover:text-blue-900 text-xs font-medium"
-                            title="시간 수정"
-                          >
-                            시간
-                          </button>
-                          <button
-                            onClick={() => handleExceptionEdit(staff.id)}
-                            className="text-orange-600 hover:text-orange-900 text-xs font-medium"
-                            title="예외 상황 처리"
-                          >
-                            예외
-                          </button>
-                          <button
-                            onClick={() => deleteStaff(staff.id)}
-                            className="text-red-600 hover:text-red-900 text-xs font-medium"
-                            title="스태프 삭제"
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              )
+            )}
           </div>
         )}
-      </div>
+        </div>
+      </PerformanceMonitor>
+
+      {/* 성능 대시보드 (개발 환경에서만) */}
+      <PerformanceDashboard
+        isVisible={isDashboardOpen}
+        onToggle={() => setIsDashboardOpen(!isDashboardOpen)}
+      />
 
       {/* QR 코드 생성 모달 */}
       <QRCodeGeneratorModal
@@ -614,15 +460,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       />
 
       {/* 예외 상황 처리 모달 */}
-      {selectedExceptionWorkLog ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      {selectedExceptionWorkLog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">{t('exceptions.title', '예외 상황 처리')}</h3>
               <button
-                onClick={() => {
-                  // setIsExceptionModalOpen(false); // This line is removed
-                  setSelectedExceptionWorkLog(null);
-                }}
+                onClick={() => setSelectedExceptionWorkLog(null)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <FaTimes />
@@ -634,15 +478,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               onExceptionUpdated={handleExceptionUpdate}
             />
           </div>
-        </div> : null}
+        </div>
+      )}
 
-      {/* 급여 계산 요약 모달 */}
-      <PayrollSummaryModal
-        isOpen={isPayrollModalOpen}
-        onClose={() => setIsPayrollModalOpen(false)}
-        payrollData={payrollData}
-        summary={payrollSummary}
-        onExport={handleExportPayrollCSV}
+      {/* 일괄 작업 모달 */}
+      <BulkActionsModal
+        isOpen={isBulkActionsOpen}
+        onClose={() => setIsBulkActionsOpen(false)}
+        selectedStaff={selectedStaffData}
+        onBulkDelete={handleBulkDelete}
+        onBulkMessage={handleBulkMessage}
+        onBulkStatusUpdate={handleBulkStatusUpdate}
       />
     </>
   );

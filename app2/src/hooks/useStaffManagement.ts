@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 
@@ -124,8 +124,8 @@ export const useStaffManagement = (
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [groupByDate, setGroupByDate] = useState(enableGrouping);
   
-  // 스태프 데이터 로드
-  const loadStaffData = async (postingId: string) => {
+  // 메모이제이션된 스태프 데이터 로드
+  const loadStaffData = useCallback(async (postingId: string) => {
     if (!currentUser || !postingId) {
       setLoading(false);
       return;
@@ -184,14 +184,14 @@ export const useStaffManagement = (
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, t]);
 
-  // 스태프 데이터 새로고침
-  const refreshStaffData = async () => {
+  // 메모이제이션된 스태프 데이터 새로고침
+  const refreshStaffData = useCallback(async () => {
     if (jobPostingId) {
       await loadStaffData(jobPostingId);
     }
-  };
+  }, [jobPostingId, loadStaffData]);
   
   // 스태프 데이터 로드 및 실시간 동기화
   useEffect(() => {
@@ -215,8 +215,8 @@ export const useStaffManagement = (
     }
   }, [jobPostingId]);
 
-  // 날짜별 그룹화 토글
-  const toggleDateExpansion = (date: string) => {
+  // 메모이제이션된 날짜별 그룹화 토글
+  const toggleDateExpansion = useCallback((date: string) => {
     const newExpandedDates = new Set(expandedDates);
     if (newExpandedDates.has(date)) {
       newExpandedDates.delete(date);
@@ -229,17 +229,17 @@ export const useStaffManagement = (
     if (jobPostingId) {
       localStorage.setItem(`staffManagement-${jobPostingId}-expandedDates`, JSON.stringify(Array.from(newExpandedDates)));
     }
-  };
+  }, [expandedDates, jobPostingId]);
   
-  // 시간 정보 포맷팅
-  const formatTimeDisplay = (time: string | undefined): string => {
+  // 메모이제이션된 시간 정보 포맷팅
+  const formatTimeDisplay = useCallback((time: string | undefined): string => {
     if (!time) return '시간 미정';
     if (time === '추후공지') return '추후공지';
     return time;
-  };
+  }, []);
   
-  // 시간대별 색상 반환
-  const getTimeSlotColor = (time: string | undefined): string => {
+  // 메모이제이션된 시간대별 색상 반환
+  const getTimeSlotColor = useCallback((time: string | undefined): string => {
     if (!time || time === '추후공지') return 'bg-gray-100 text-gray-700';
     
     const hour = parseInt(time.split(':')[0] || '0');
@@ -247,10 +247,10 @@ export const useStaffManagement = (
     if (hour >= 12 && hour < 18) return 'bg-blue-100 text-blue-800'; // 오후
     if (hour >= 18 && hour < 24) return 'bg-purple-100 text-purple-800'; // 저녁
     return 'bg-gray-100 text-gray-700'; // 심야/새벽
-  };
+  }, []);
 
-  // 스태프 삭제
-  const deleteStaff = async (staffId: string): Promise<void> => {
+  // 메모이제이션된 스태프 삭제
+  const deleteStaff = useCallback(async (staffId: string): Promise<void> => {
     if (!window.confirm(t('staffManagement.deleteConfirm'))) {
       return;
     }
@@ -270,46 +270,56 @@ export const useStaffManagement = (
       setError(t('staffManagement.deleteError'));
       showError(t('staffManagement.deleteError'));
     }
-  };
+  }, [t, showSuccess, showError]);
 
-  // 날짜별 그룹화된 스태프 데이터
-  const groupedStaffData = useMemo((): GroupedStaffData => {
-    let filteredStaff = [...staffData];
-
+  // 메모이제이션된 필터링된 스태프 데이터
+  const filteredStaffData = useMemo(() => {
     if (!enableFiltering) {
-      return {
-        grouped: { 'all': filteredStaff },
-        sortedDates: ['all']
-      };
+      return staffData;
     }
+
+    let filtered = [...staffData];
 
     // 검색 필터 적용
     if (filters.searchTerm) {
-      filteredStaff = filteredStaff.filter(staff =>
-        staff.name?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        staff.email?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        staff.phone?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        staff.role?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        staff.assignedRole?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        staff.assignedTime?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        staff.assignedDate?.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      const searchTerm = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter(staff =>
+        staff.name?.toLowerCase().includes(searchTerm) ||
+        staff.email?.toLowerCase().includes(searchTerm) ||
+        staff.phone?.toLowerCase().includes(searchTerm) ||
+        staff.role?.toLowerCase().includes(searchTerm) ||
+        staff.assignedRole?.toLowerCase().includes(searchTerm) ||
+        staff.assignedTime?.toLowerCase().includes(searchTerm) ||
+        staff.assignedDate?.toLowerCase().includes(searchTerm)
       );
     }
 
     // 날짜별 필터 적용
     if (filters.selectedDate !== 'all') {
-      filteredStaff = filteredStaff.filter(staff => staff.assignedDate === filters.selectedDate);
+      filtered = filtered.filter(staff => staff.assignedDate === filters.selectedDate);
     }
 
     // 역할별 필터 적용
     if (filters.selectedRole !== 'all') {
-      filteredStaff = filteredStaff.filter(staff => 
+      filtered = filtered.filter(staff => 
         (staff.assignedRole || staff.role) === filters.selectedRole
       );
     }
 
+    return filtered;
+  }, [staffData, filters, enableFiltering]);
+
+  // 메모이제이션된 날짜별 그룹화된 스태프 데이터
+  const groupedStaffData = useMemo((): GroupedStaffData => {
+    if (!enableFiltering) {
+      return {
+        grouped: { 'all': filteredStaffData },
+        sortedDates: ['all']
+      };
+    }
+
     // 날짜별 그룹화
-    const grouped = filteredStaff.reduce((acc, staff) => {
+    const grouped = filteredStaffData.reduce((acc, staff) => {
       let date: string;
       
       if (!staff.assignedDate) {
@@ -358,7 +368,7 @@ export const useStaffManagement = (
     });
 
     return { grouped, sortedDates };
-  }, [staffData, filters, enableFiltering]);
+  }, [filteredStaffData, enableFiltering]);
 
   // 고유 날짜 목록 생성
   const availableDates = useMemo(() => {
@@ -388,10 +398,10 @@ export const useStaffManagement = (
     return Array.from(roles).sort();
   }, [staffData]);
 
-  // 날짜별 스태프 수 계산
-  const getStaffCountByDate = (date: string): number => {
+  // 메모이제이션된 날짜별 스태프 수 계산
+  const getStaffCountByDate = useCallback((date: string): number => {
     return groupedStaffData.grouped[date]?.length || 0;
-  };
+  }, [groupedStaffData]);
 
   return {
     // 데이터

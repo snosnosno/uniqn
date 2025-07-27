@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-T-HOLDEM is a web-based platform for managing Hold'em poker tournaments. Built with React + TypeScript + Firebase, it provides dealer shift management, QR code attendance, staff management, and tournament operations.
+T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tournaments and operations. Built with React 18 + TypeScript + Firebase, it provides real-time dealer shift management, QR code attendance tracking, staff management, job posting system, tournament operations, payroll processing, and comprehensive administrative features.
 
 ## Common Development Commands
 
@@ -93,26 +93,51 @@ app2/src/
 ├── components/          # Reusable UI components
 │   ├── common/         # Basic UI components (Button, Input, Select, etc.)
 │   ├── tabs/           # Tab-based components for admin panels
-│   └── jobPosting/     # Job posting specific components (모듈화됨)
-│       ├── JobPostingForm.tsx        # 공고 작성 폼
-│       ├── JobPostingList.tsx        # 공고 목록
-│       ├── TimeSlotManager.tsx       # 시간대 관리
-│       ├── DateSpecificRequirements.tsx # 일자별 요구사항
-│       ├── PreQuestionManager.tsx    # 사전질문 관리
-│       └── modals/     # 모달 컴포넌트들
-│           ├── EditJobPostingModal.tsx    # 수정 모달
-│           ├── TemplateModal.tsx          # 템플릿 저장 모달
-│           └── LoadTemplateModal.tsx      # 템플릿 불러오기 모달
+│   │   ├── StaffManagementTab.tsx     # Staff management with filtering/grouping
+│   │   ├── ApplicantListTab.tsx       # Job applicant management
+│   │   ├── EventManagementTab.tsx     # Tournament event management
+│   │   ├── ShiftManagementTab.tsx     # Dealer shift scheduling
+│   │   └── PayrollProcessingTab.tsx   # Payroll calculations
+│   ├── jobPosting/     # Job posting specific components (모듈화됨)
+│   │   ├── JobPostingForm.tsx        # 공고 작성 폼
+│   │   ├── JobPostingList.tsx        # 공고 목록
+│   │   ├── TimeSlotManager.tsx       # 시간대 관리
+│   │   ├── DateSpecificRequirements.tsx # 일자별 요구사항
+│   │   ├── PreQuestionManager.tsx    # 사전질문 관리
+│   │   └── modals/     # 모달 컴포넌트들
+│   │       ├── EditJobPostingModal.tsx    # 수정 모달
+│   │       ├── TemplateModal.tsx          # 템플릿 저장 모달
+│   │       └── LoadTemplateModal.tsx      # 템플릿 불러오기 모달
+│   ├── StaffCard.tsx           # Staff member card component (mobile)
+│   ├── StaffRow.tsx            # Staff member row component (desktop)
+│   ├── StaffFilters.tsx        # Staff filtering controls
+│   ├── StaffFiltersMobile.tsx  # Mobile-optimized staff filters
+│   ├── StaffDateGroup.tsx      # Date-based staff grouping
+│   ├── BulkActionsModal.tsx    # Bulk operations for staff
+│   └── *.tsx                   # Various UI components
 ├── pages/              # Route-based page components
 │   ├── admin/         # Admin-only pages (DashboardPage, UserManagementPage)
-│   ├── JobPostingAdminPage.tsx # 구인공고 관리 (리팩토링 완료: 121줄)
-│   └── *.tsx          # Public/shared pages
+│   ├── JobPostingAdminPage.tsx    # 구인공고 관리 (리팩토링 완료: 121줄)
+│   ├── JobPostingDetailPage.tsx   # 구인공고 상세 관리 (327줄)
+│   ├── StaffListPage.tsx          # Staff list and management
+│   ├── ProfilePage.tsx            # User profile management
+│   ├── PayrollPage.tsx            # Payroll overview
+│   ├── ShiftSchedulePage.tsx      # Shift scheduling interface
+│   └── *.tsx                      # Other public/shared pages
 ├── hooks/              # Custom React hooks for data management
 │   ├── useJobPostingForm.ts        # 공고 폼 상태 관리
 │   ├── useDateUtils.ts             # 날짜 처리 유틸리티
 │   ├── useTemplateManager.ts       # 템플릿 관리
 │   ├── useJobPostingOperations.ts  # 공고 CRUD 작업
-│   └── *.ts           # Other custom hooks
+│   ├── useStaffManagement.ts       # Staff filtering, grouping, CRUD operations
+│   ├── useAttendanceStatus.ts      # Attendance tracking and QR code generation
+│   ├── useResponsive.ts            # Responsive design utilities
+│   ├── useGroupByDate.ts           # Date-based data grouping
+│   ├── useHapticFeedback.ts        # Mobile haptic feedback
+│   ├── useSwipeGesture.ts          # Mobile swipe gestures
+│   ├── useShiftSchedule.ts         # Shift scheduling logic
+│   ├── usePayrollData.ts           # Payroll calculations
+│   └── *.ts                        # Other custom hooks
 ├── contexts/           # React Context providers (Auth, Toast, etc.)
 ├── utils/              # Business logic utilities
 │   ├── payroll/       # Payroll calculation logic
@@ -129,25 +154,34 @@ app2/src/
 ### Key Components
 - **ShiftGridComponent**: Excel-like grid for dealer shift management using react-data-grid
 - **RoleBasedRoute**: Route guard based on user roles (Admin/Manager/Staff)
-- **Layout**: Main application layout with navigation
-- **Toast**: Notification system
+- **Layout**: Main application layout with navigation and responsive design
+- **Toast**: Global notification system with context provider
 - **JobPostingAdminPage**: 구인공고 관리 페이지 (2,091줄 → 121줄로 리팩토링 완료)
+- **JobPostingDetailPage**: 구인공고 상세 관리 페이지 (327줄) - Tab-based interface
 - **JobPosting 모듈**: 완전히 모듈화된 구인공고 관리 시스템
   - JobPostingForm: 공고 작성/수정 폼
   - TimeSlotManager: 시간대 및 역할 관리
   - DateSpecificRequirements: 일자별 요구사항 처리
   - PreQuestionManager: 사전질문 관리
   - Template 시스템: 공고 템플릿 저장/불러오기
+- **Staff Management 모듈**: 직원 관리 시스템
+  - StaffManagementTab: 메인 직원 관리 인터페이스
+  - StaffCard/StaffRow: 반응형 직원 정보 컴포넌트
+  - StaffFilters: 고급 필터링 시스템
+  - BulkActionsModal: 대량 작업 처리
+  - useStaffManagement: 직원 데이터 관리 훅
 
 ### Data Architecture
 Main Firestore collections:
-- `jobPostings`: Events/tournaments (replaces old Events system)
+- `jobPostings`: Events/tournaments with time slots and requirements (replaces old Events system)
 - `jobPostingTemplates`: 공고 템플릿 저장소 (새로 추가)
-- `staff`: Staff information and status
-- `shiftSchedules`: Dealer shift schedules with validation
-- `workLogs`: Work records generated from schedules
-- `users`: User authentication and profile data
-- `applications`: Job applications linked to jobPostings
+- `staff`: Staff information, status, and attendance records
+- `shiftSchedules`: Dealer shift schedules with validation and conflict detection
+- `workLogs`: Work records generated from schedules for payroll
+- `users`: User authentication, profiles, and role-based access control
+- `applications`: Job applications linked to jobPostings with status tracking
+- `attendanceRecords`: QR code-based attendance tracking with exception handling
+- `payrollData`: Calculated payroll information with time tracking
 
 ## Key Development Patterns
 
@@ -164,14 +198,17 @@ Three user roles with different access levels:
 - Use batched writes for multiple document operations
 
 ### State Management
-- React Context for global state (Auth, Toast)
-- Custom hooks for data fetching and mutations
-- @tanstack/react-query for server state management
+- React Context for global state (Auth, Toast, JobPosting)
+- Custom hooks for data fetching and mutations with proper cleanup
+- @tanstack/react-query for server state management and caching
 - **모듈화된 커스텀 훅 패턴**: 각 기능별로 독립적인 훅 사용
   - useJobPostingForm: 폼 상태 및 핸들러 관리
   - useJobPostingOperations: CRUD 작업 관리
   - useTemplateManager: 템플릿 관리
   - useDateUtils: 날짜 처리 유틸리티
+  - useStaffManagement: 직원 관리, 필터링, 그룹화
+  - useAttendanceStatus: 출석 관리 및 QR 코드 생성
+  - useResponsive: 반응형 디자인 지원
 
 ### Validation System
 Shift schedule validation with three levels:
@@ -186,22 +223,32 @@ Shift schedule validation with three levels:
 - **DealerEventsListPage**: Removed - Staff users now go to ProfilePage
 
 ### Critical Files
-- `app2/src/firebase.ts`: Firebase configuration
-- `app2/src/App.tsx`: Main routing setup
+- `app2/src/firebase.ts`: Firebase configuration and initialization
+- `app2/src/App.tsx`: Main routing setup with role-based routes
 - `app2/src/utils/shiftValidation.ts`: Core business logic for shift validation
-- `functions/src/index.ts`: Cloud Functions (attendance, logging)
+- `functions/src/index.ts`: Cloud Functions (attendance, logging, notifications)
 - **JobPosting 모듈 핵심 파일들**:
   - `app2/src/pages/JobPostingAdminPage.tsx`: 메인 관리 페이지 (121줄)
+  - `app2/src/pages/JobPostingDetailPage.tsx`: 상세 관리 페이지 (327줄)
   - `app2/src/hooks/useJobPostingForm.ts`: 폼 로직 관리
   - `app2/src/hooks/useJobPostingOperations.ts`: CRUD 작업
   - `app2/src/components/jobPosting/`: 모든 UI 컴포넌트들
   - `app2/src/utils/jobPosting/`: 유틸리티 함수들
   - `app2/src/types/jobPosting.ts`: 타입 정의
+- **Staff Management 모듈 핵심 파일들**:
+  - `app2/src/components/tabs/StaffManagementTab.tsx`: 메인 스태프 관리
+  - `app2/src/hooks/useStaffManagement.ts`: 스태프 관리 로직
+  - `app2/src/components/StaffCard.tsx`: 모바일 스태프 카드
+  - `app2/src/components/StaffFilters.tsx`: 필터링 컴포넌트
+  - `app2/src/hooks/useAttendanceStatus.ts`: 출석 관리
 
 ### Testing Setup
-- Jest + React Testing Library configured
-- Firebase emulators for integration testing
+- Jest + React Testing Library configured with proper transformIgnorePatterns
+- Firebase emulators for integration testing (auth, firestore, functions)
+- Custom hooks testing with @testing-library/react-hooks
+- Tests located in `__tests__` directories and `.test.tsx` files
 - Tests should run with: `npm test` (frontend) or `npm run test` (functions)
+- Mock implementations for Firebase and external dependencies
 
 ### Code Quality Standards
 - TypeScript strict mode enabled
@@ -210,81 +257,116 @@ Shift schedule validation with three levels:
 - Always run quality checks before commits: `npm run quality`
 
 ### Common Patterns to Follow
-1. Use custom hooks for Firebase operations
-2. Implement loading states and error handling
-3. Use TypeScript interfaces for all data structures
-4. Follow existing component patterns for consistency
-5. Use Tailwind CSS classes, avoid custom CSS
-6. Implement proper cleanup in useEffect hooks
-7. **모듈화 패턴 (JobPosting 리팩토링 기반)**:
+1. Use custom hooks for Firebase operations with proper error handling
+2. Implement loading states, error boundaries, and graceful fallbacks
+3. Use TypeScript interfaces for all data structures with strict typing
+4. Follow existing component patterns for consistency (especially modular design)
+5. Use Tailwind CSS classes, avoid custom CSS files
+6. Implement proper cleanup in useEffect hooks to prevent memory leaks
+7. **반응형 디자인 패턴**: useResponsive 훅 활용
+   - 모바일/태블릿/데스크톱 별도 컴포넌트 제공
+   - 터치 친화적 인터페이스 (스와이프, 햅틱 피드백)
+   - 적응형 레이아웃과 네비게이션
+8. **모듈화 패턴 (JobPosting 리팩토링 기반)**:
    - 큰 컴포넌트는 기능별로 분리하여 작은 모듈로 나누기
    - 각 모듈은 단일 책임 원칙 적용
    - 커스텀 훅으로 로직과 UI 분리
    - Props drilling 최소화 - 필요한 데이터만 전달
    - 공통 로직은 유틸리티 함수로 분리
    - 컴포넌트 재사용성을 고려한 인터페이스 설계
+9. **실시간 데이터 패턴**: Firebase onSnapshot 활용
+   - 실시간 업데이트가 필요한 데이터에 대해 onSnapshot 사용
+   - 적절한 구독 해제로 메모리 누수 방지
+   - 오프라인 지원 및 재연결 처리
 
 ### SHRIMP Task Manager Integration
-- WebGUI available at: http://localhost:53387?lang=en
+- WebGUI available at: http://localhost:53162?lang=en
 - Used for project task management and development workflow
 - Check SHRIMP/tasks.json for current development tasks
+- Access through SHRIMP/WebGUI.md for latest URL
 
 ## Troubleshooting
 
 ### Common Issues
-- **Firebase connection**: Ensure emulators are running on correct ports
+- **Firebase connection**: Ensure emulators are running on correct ports (9099, 8080, 5001)
 - **Build failures**: Run `npm run quality:fix` to resolve lint/format issues
 - **TypeScript errors**: Run `npm run type-check` to identify issues
 - **Test failures**: Ensure Firebase emulators are running for integration tests
+- **Mobile responsiveness**: Test on actual devices, not just browser DevTools
+- **Real-time updates**: Check Firebase rules and ensure proper onSnapshot cleanup
+- **Performance issues**: Use React DevTools Profiler, check for unnecessary re-renders
 - **대형 컴포넌트 리팩토링**: JobPostingAdminPage 리팩토링 사례 참고
   - 2,091줄 → 121줄로 성공적 축소
   - 15개 모듈로 분리하여 유지보수성 대폭 향상
   - 모든 기능 보존하면서 구조 개선
+- **Staff Management 구현**: StaffManagementTab 참고
+  - 반응형 디자인 구현 (모바일/데스크톱)
+  - 고급 필터링 및 그룹화 기능
+  - 대량 작업 처리 (BulkActionsModal)
+  - QR 코드 기반 출석 관리
 
 ### Debug Logs
-- Frontend: Browser developer console
+- Frontend: Browser developer console, React DevTools
 - Backend: Firebase Functions logs or emulator console
 - Firestore: Check firestore-debug.log files
+- Network: Chrome DevTools Network tab for Firebase calls
+- Performance: React DevTools Profiler for component performance
+- Mobile: Chrome DevTools Device Mode, actual device testing
 
-## 리팩토링 가이드라인 (JobPosting 사례 기반)
+## 리팩토링 가이드라인 (JobPosting 및 Staff Management 사례 기반)
 
 ### 대형 컴포넌트 식별 기준
 - 파일 크기: 500줄 이상
 - 함수 수: 10개 이상의 핸들러 함수
 - useState 훅: 5개 이상
 - 복잡도: 중첩된 조건문 및 반복문 다수
+- 책임: 여러 가지 다른 기능을 하나의 컴포넌트에서 처리
 
 ### 리팩토링 단계별 접근법
 1. **Phase 1**: 유틸리티 함수 분리
    - 순수 함수들을 utils/ 폴더로 이동
    - 날짜 처리, 유효성 검증, 변환 로직 등
+   - 타입 정의를 types/ 폴더로 분리
 
 2. **Phase 2**: 커스텀 훅 생성
    - 상태 관리 로직을 hooks/로 분리
    - 비즈니스 로직과 UI 로직 분리
+   - 데이터 fetching, filtering, CRUD 작업 등
 
 3. **Phase 3**: 하위 컴포넌트 분리
    - 재사용 가능한 UI 컴포넌트 추출
    - 단일 책임 원칙 적용
+   - 반응형 디자인 고려 (모바일/데스크톱 분리)
 
-4. **Phase 4**: 모달 컴포넌트 분리
+4. **Phase 4**: 모달 및 복잡한 UI 분리
    - 큰 인라인 모달들을 별도 파일로 분리
    - Props 인터페이스 명확히 정의
+   - 복잡한 폼이나 테이블 컴포넌트 분리
 
 5. **Phase 5**: 메인 컴포넌트 최적화
    - 분리된 모듈들 조합하여 간결한 메인 컴포넌트 완성
    - 컴포넌트 합성 패턴 적용
+   - Context Provider 활용으로 props drilling 최소화
 
 6. **Phase 6**: 테스트 및 검증
    - TypeScript 컴파일 검증
-   - 기능 동작 확인
+   - 기능 동작 확인 (모든 기존 기능 보존)
+   - 반응형 테스트 (모바일/태블릿/데스크톱)
    - 빌드 테스트 수행
+   - 성능 최적화 확인
 
 ### 성공 지표
 - 코드 길이 80% 이상 감소
 - TypeScript 컴파일 오류 0개
 - 모든 기존 기능 보존
 - 컴포넌트 재사용성 확보
+- 반응형 디자인 완전 지원
+- 성능 개선 (불필요한 re-render 제거)
+
+### 구체적 성공 사례
+- **JobPostingAdminPage**: 2,091줄 → 121줄 (94% 감소)
+- **StaffManagementTab**: 완전한 반응형 디자인과 모듈화 구현
+- **JobPostingDetailPage**: 탭 기반 인터페이스로 327줄의 깔끔한 구조
 
 ## 클로드 코드에서의 mcp-installer를 사용한 MCP (Model Context Protocol) 설치 및 설정 가이드 
 공통 주의사항

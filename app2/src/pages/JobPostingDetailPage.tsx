@@ -173,7 +173,7 @@ const JobPostingDetailPageContent: React.FC = () => {
           aria-expanded={isInfoExpanded}
           aria-controls="basic-info-section"
           aria-label={isInfoExpanded ? t('jobPosting.info.collapse') : t('jobPosting.info.expand')}
-          className="inline-flex justify-center py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4 transition-all duration-300 min-h-[44px] toggle-button"
+          className="inline-flex justify-center py-2 px-3 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4 transition-all duration-300 min-h-[40px] toggle-button"
           type="button"
         >
           {isInfoExpanded ? (

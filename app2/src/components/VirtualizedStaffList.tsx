@@ -1,0 +1,157 @@
+import React, { useMemo } from 'react';
+import { FixedSizeList as List } from 'react-window';
+
+import { StaffData } from '../hooks/useStaffManagement';
+import StaffCard from './StaffCard';
+
+interface VirtualizedStaffListProps {
+  staffList: StaffData[];
+  onEditWorkTime: (staffId: string) => void;
+  onExceptionEdit: (staffId: string) => void;
+  onDeleteStaff: (staffId: string) => Promise<void>;
+  getStaffAttendanceStatus: (staffId: string) => any;
+  attendanceRecords: any[];
+  formatTimeDisplay: (time: string | undefined) => string;
+  getTimeSlotColor: (time: string | undefined) => string;
+  showDate?: boolean;
+  multiSelectMode?: boolean;
+  selectedStaff?: Set<string>;
+  onStaffSelect?: (staffId: string) => void;
+  height?: number; // 리스트 높이
+  itemHeight?: number; // 각 아이템 높이
+}
+
+interface ItemData {
+  staffList: StaffData[];
+  onEditWorkTime: (staffId: string) => void;
+  onExceptionEdit: (staffId: string) => void;
+  onDeleteStaff: (staffId: string) => Promise<void>;
+  getStaffAttendanceStatus: (staffId: string) => any;
+  attendanceRecords: any[];
+  formatTimeDisplay: (time: string | undefined) => string;
+  getTimeSlotColor: (time: string | undefined) => string;
+  showDate: boolean;
+  multiSelectMode: boolean;
+  selectedStaff: Set<string>;
+  onStaffSelect?: (staffId: string) => void;
+}
+
+// 메모이제이션된 리스트 아이템 컴포넌트
+const VirtualizedStaffItem: React.FC<{
+  index: number;
+  style: React.CSSProperties;
+  data: ItemData;
+}> = React.memo(({ index, style, data }) => {
+  const {
+    staffList,
+    onEditWorkTime,
+    onExceptionEdit,
+    onDeleteStaff,
+    getStaffAttendanceStatus,
+    attendanceRecords,
+    formatTimeDisplay,
+    getTimeSlotColor,
+    showDate,
+    multiSelectMode,
+    selectedStaff,
+    onStaffSelect
+  } = data;
+
+  const staff = staffList[index];
+  
+  if (!staff) {
+    return <div style={style} />;
+  }
+
+  return (
+    <div style={{ ...style, padding: '4px 0' }}>
+      <StaffCard
+        staff={staff}
+        onEditWorkTime={onEditWorkTime}
+        onExceptionEdit={onExceptionEdit}
+        onDeleteStaff={onDeleteStaff}
+        getStaffAttendanceStatus={getStaffAttendanceStatus}
+        attendanceRecords={attendanceRecords}
+        formatTimeDisplay={formatTimeDisplay}
+        getTimeSlotColor={getTimeSlotColor}
+        showDate={showDate}
+        isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
+        onSelect={multiSelectMode ? onStaffSelect : undefined}
+      />
+    </div>
+  );
+});
+
+VirtualizedStaffItem.displayName = 'VirtualizedStaffItem';
+
+const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
+  staffList,
+  onEditWorkTime,
+  onExceptionEdit,
+  onDeleteStaff,
+  getStaffAttendanceStatus,
+  attendanceRecords,
+  formatTimeDisplay,
+  getTimeSlotColor,
+  showDate = true,
+  multiSelectMode = false,
+  selectedStaff = new Set(),
+  onStaffSelect,
+  height = 600,
+  itemHeight = 200
+}) => {
+  // 메모이제이션된 아이템 데이터
+  const itemData = useMemo((): ItemData => ({
+    staffList,
+    onEditWorkTime,
+    onExceptionEdit,
+    onDeleteStaff,
+    getStaffAttendanceStatus,
+    attendanceRecords,
+    formatTimeDisplay,
+    getTimeSlotColor,
+    showDate,
+    multiSelectMode,
+    selectedStaff,
+    onStaffSelect
+  }), [
+    staffList,
+    onEditWorkTime,
+    onExceptionEdit,
+    onDeleteStaff,
+    getStaffAttendanceStatus,
+    attendanceRecords,
+    formatTimeDisplay,
+    getTimeSlotColor,
+    showDate,
+    multiSelectMode,
+    selectedStaff,
+    onStaffSelect
+  ]);
+
+  // 스태프 리스트가 비어있는 경우
+  if (staffList.length === 0) {
+    return (
+      <div className="bg-gray-50 p-6 rounded-lg text-center">
+        <p className="text-gray-600">표시할 스태프가 없습니다.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <List
+        height={Math.min(height, staffList.length * itemHeight)}
+        width="100%"
+        itemCount={staffList.length}
+        itemSize={itemHeight}
+        itemData={itemData}
+        overscanCount={5} // 성능 최적화를 위한 오버스캔
+      >
+        {VirtualizedStaffItem}
+      </List>
+    </div>
+  );
+};
+
+export default VirtualizedStaffList;
