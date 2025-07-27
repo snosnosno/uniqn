@@ -94,9 +94,6 @@ const App: React.FC = () => {
                       <Route path="dashboard" element={<DashboardPage />} />
                       <Route path="staff" element={<StaffListPage />} />
                       <Route path="staff/new" element={<StaffNewPage />} />
-                      
-                      <Route path="job-postings" element={<JobPostingAdminPage />} />
-                      <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
                       <Route path="dealer-rotation" element={<DealerRotationPage />} />
                       <Route path="shift-schedule" element={<ShiftSchedulePage />} />
                       <Route path="payroll" element={<PayrollAdminPage />} />
@@ -107,6 +104,12 @@ const App: React.FC = () => {
                       <Route path="announcements" element={<AnnouncementsPage />} />
                       <Route path="history" element={<HistoryPage />} />
                       <Route path="history/:logId" element={<HistoryDetailPage />} />
+                    </Route>
+
+                    {/* Job Posting Management - Admin, Manager, Staff with permission */}
+                    <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
+                      <Route path="job-postings" element={<JobPostingAdminPage />} />
+                      <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
                     </Route>
 
                     {/* Admin Only Route */}

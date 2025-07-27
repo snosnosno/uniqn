@@ -10,6 +10,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface NavItemProps {
     to: string;
@@ -39,6 +40,7 @@ export const HeaderMenu: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAdmin, role, signOut } = useAuth();
+  const { canManageApplicants } = usePermissions();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -148,10 +150,14 @@ export const HeaderMenu: React.FC = () => {
               
               <hr className="my-2 border-t border-gray-200" />
               
+              {/* Job Posting Management - Available to Staff with permission */}
+              {canManageApplicants && (
+                <NavItem to="/admin/job-postings" label={t('nav.managePostings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+              )}
+
               {/* Admin and Manager common menus */}
               {isAdmin ? <>
                   <NavItem to="/admin/staff" label={t('nav.staffManagement')} Icon={FaUserShield} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/job-postings" label={t('nav.managePostings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                   <hr className="my-2 border-t border-gray-200" />

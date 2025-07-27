@@ -11,6 +11,7 @@ import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
 import { JobPostingProvider } from '../contexts/JobPostingContext';
 import { db } from '../firebase';
+import { usePermissions } from '../hooks/usePermissions';
 import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
 import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
 
@@ -21,14 +22,44 @@ interface TabConfig {
   id: TabType;
   label: string;
   component: React.FC<{ jobPosting?: JobPosting | null }>;
+  requiredPermission?: {
+    resource: 'jobPostings' | 'staff' | 'schedules' | 'payroll';
+    action: string;
+  };
+  allowedRoles?: string[];
 }
 
-const tabs: TabConfig[] = [
-  { id: 'applicants', label: '지원자 목록', component: ApplicantListTab },
-  { id: 'staff', label: '스태프 관리', component: StaffManagementTab },
-  { id: 'events', label: '이벤트 관리', component: EventManagementTab },
-  { id: 'shifts', label: '시프트 관리', component: ShiftManagementTab },
-  { id: 'payroll', label: '급여 처리', component: PayrollProcessingTab },
+const allTabs: TabConfig[] = [
+  { 
+    id: 'applicants', 
+    label: '지원자 목록', 
+    component: ApplicantListTab,
+    requiredPermission: { resource: 'jobPostings', action: 'manageApplicants' }
+  },
+  { 
+    id: 'staff', 
+    label: '스태프 관리', 
+    component: StaffManagementTab,
+    requiredPermission: { resource: 'jobPostings', action: 'manageApplicants' }
+  },
+  { 
+    id: 'events', 
+    label: '이벤트 관리', 
+    component: EventManagementTab,
+    allowedRoles: ['admin', 'manager']
+  },
+  { 
+    id: 'shifts', 
+    label: '시프트 관리', 
+    component: ShiftManagementTab,
+    allowedRoles: ['admin', 'manager']
+  },
+  { 
+    id: 'payroll', 
+    label: '급여 처리', 
+    component: PayrollProcessingTab,
+    allowedRoles: ['admin', 'manager']
+  },
 ];
 
 const JobPostingDetailPageContent: React.FC = () => {
@@ -36,14 +67,54 @@ const JobPostingDetailPageContent: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { checkPermission, checkJobPostingPermission, permissions } = usePermissions();
   
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInfoExpanded, setIsInfoExpanded] = useState(true);
   
-  // Get active tab from URL or default to 'applicants'
-  const activeTab = (searchParams.get('tab') as TabType) || 'applicants';
+  // 권한에 따라 접근 가능한 탭 필터링
+  const availableTabs = useMemo(() => {
+    if (!permissions || !jobPosting) return [];
+    
+    return allTabs.filter(tab => {
+      // 역할 기반 권한 확인
+      if (tab.allowedRoles && !tab.allowedRoles.includes(permissions.role)) {
+        return false;
+      }
+      
+      // 세분화된 권한 확인
+      if (tab.requiredPermission) {
+        // Manager와 Staff의 경우 자신이 작성한 공고인지 확인
+        if (permissions.role === 'manager' || permissions.role === 'staff') {
+          return checkJobPostingPermission(
+            tab.requiredPermission.action,
+            jobPosting.createdBy
+          );
+        }
+        
+        return checkPermission(
+          tab.requiredPermission.resource as any,
+          tab.requiredPermission.action
+        );
+      }
+      
+      return true;
+    });
+  }, [permissions, checkPermission, checkJobPostingPermission, jobPosting]);
+  
+  // Get active tab from URL or default to first available tab
+  const activeTab = useMemo(() => {
+    const tabFromUrl = searchParams.get('tab') as TabType;
+    const isValidTab = availableTabs.some(tab => tab.id === tabFromUrl);
+    
+    if (tabFromUrl && isValidTab) {
+      return tabFromUrl;
+    }
+    
+    return availableTabs.length > 0 ? availableTabs[0].id : 'applicants';
+  }, [searchParams, availableTabs]);
   
   // Load toggle state from localStorage
   useEffect(() => {
@@ -110,9 +181,66 @@ const JobPostingDetailPageContent: React.FC = () => {
 
   // Get active tab component
   const ActiveTabComponent = useMemo(() => 
-    tabs.find(tab => tab.id === activeTab)?.component || ApplicantListTab, 
-    [activeTab]
+    availableTabs.find(tab => tab.id === activeTab)?.component || ApplicantListTab, 
+    [activeTab, availableTabs]
   );
+  
+  // 공고 자체에 대한 접근 권한 확인
+  const hasJobPostingAccess = useMemo(() => {
+    if (!permissions || !jobPosting) return false;
+    
+    // Admin은 모든 공고에 접근 가능
+    if (permissions.role === 'admin') {
+      return true;
+    }
+    
+    // Manager와 Staff는 자신이 작성한 공고만 접근 가능
+    if (permissions.role === 'manager' || permissions.role === 'staff') {
+      return checkJobPostingPermission('view', jobPosting.createdBy);
+    }
+    
+    return false;
+  }, [permissions, jobPosting, checkJobPostingPermission]);
+
+  // 공고 접근 권한이 없는 경우 처리
+  if (!loading && jobPosting && !hasJobPostingAccess) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-red-800 mb-2">접근 권한 없음</h2>
+          <p className="text-red-600 mb-4">
+            이 공고에 접근할 권한이 없습니다. 본인이 작성한 공고만 관리할 수 있습니다.
+          </p>
+          <button 
+            onClick={() => navigate('/admin/job-postings')}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            공고 목록으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 탭 접근 권한이 없는 경우 처리
+  if (!loading && hasJobPostingAccess && availableTabs.length === 0) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-yellow-800 mb-2">관리 기능 제한</h2>
+          <p className="text-yellow-600 mb-4">
+            이 공고에 대한 관리 권한이 제한되어 있습니다.
+          </p>
+          <button 
+            onClick={() => navigate('/admin/job-postings')}
+            className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+          >
+            공고 목록으로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -285,7 +413,7 @@ const JobPostingDetailPageContent: React.FC = () => {
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {tabs.map((tab) => (
+            {availableTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}

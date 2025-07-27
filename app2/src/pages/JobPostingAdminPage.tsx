@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useJobPostingOperations } from '../hooks/useJobPostingOperations';
+import { usePermissions } from '../hooks/usePermissions';
 import Button from '../components/common/Button';
 import JobPostingForm from '../components/jobPosting/JobPostingForm';
 import JobPostingList from '../components/jobPosting/JobPostingList';
@@ -8,6 +9,7 @@ import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingM
 
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
+  const { canCreateJobPostings } = usePermissions();
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
@@ -78,12 +80,14 @@ const JobPostingAdminPage = () => {
               <p className="mt-2 text-gray-600">Hold'em 토너먼트 구인공고를 등록하고 관리하세요.</p>
             </div>
             
-            <Button
-              variant="primary"
-              onClick={() => setIsCreateFormVisible(!isCreateFormVisible)}
-            >
-              {isCreateFormVisible ? '목록 보기' : '새 공고 작성'}
-            </Button>
+            {canCreateJobPostings && (
+              <Button
+                variant="primary"
+                onClick={() => setIsCreateFormVisible(!isCreateFormVisible)}
+              >
+                {isCreateFormVisible ? '목록 보기' : '새 공고 작성'}
+              </Button>
+            )}
           </div>
         </div>
 

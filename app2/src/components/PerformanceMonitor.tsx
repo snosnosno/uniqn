@@ -64,8 +64,9 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     }
   }, []);
 
-  // 렌더링 성능 측정
-  const measureRenderPerformance = useCallback(() => {
+
+  // 컴포넌트 마운트 시와 주요 props 변경 시에만 성능 측정
+  useEffect(() => {
     const currentTime = performance.now();
     const renderTime = currentTime - lastRenderTimeRef.current;
     
@@ -79,7 +80,22 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     
     const totalTime = renderTimesRef.current.reduce((sum, time) => sum + time, 0);
     const averageTime = totalTime / renderTimesRef.current.length;
-    const cacheHitRate = calculateCacheHitRate();
+    
+    let cacheHitRate = 0;
+    try {
+      // useCachedFormatDate에서 캐시 통계 가져오기
+      const { getCacheStats } = require('../hooks/useCachedFormatDate');
+      const stats = getCacheStats();
+      
+      // 총 캐시 시도 대비 히트율 추정
+      const totalCacheSize = stats.formatDateCacheSize + stats.timeDisplayCacheSize + stats.timeSlotColorCacheSize;
+      const maxCacheSize = 1000 + 500 + 200;
+      
+      cacheHitRate = totalCacheSize > 0 ? Math.min((totalCacheSize / maxCacheSize) * 100, 95) : 0;
+    } catch (error) {
+      // 캐시 통계 계산 실패 시 0으로 설정
+      cacheHitRate = 0;
+    }
     
     const newMetrics: PerformanceMetrics = {
       renderCount: renderCountRef.current,
@@ -93,14 +109,13 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     };
     
     setMetrics(newMetrics);
-    onMetricsUpdate?.(newMetrics);
     lastRenderTimeRef.current = currentTime;
-  }, [isVirtualized, visibleItems, totalItems, calculateCacheHitRate, onMetricsUpdate]);
-
-  // 컴포넌트 마운트/업데이트 시 성능 측정
-  useEffect(() => {
-    measureRenderPerformance();
-  });
+    
+    // onMetricsUpdate는 stable reference인 경우에만 호출
+    if (onMetricsUpdate) {
+      onMetricsUpdate(newMetrics);
+    }
+  }, [isVirtualized, visibleItems, totalItems]);
 
   // 개발 모드에서만 성능 정보 표시
   const showPerformanceInfo = process.env.NODE_ENV === 'development';

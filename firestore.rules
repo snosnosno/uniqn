@@ -8,10 +8,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Updated: Check for both 'admin' and 'manager' roles
+    // Updated: Check for 'admin', 'manager', and 'staff' roles
     function isPrivileged() {
       return request.auth.token.role == 'admin' || request.auth.token.role == 'manager';
     }
+    
+    // Check for any authenticated user with a valid role
+    function hasValidRole() {
+      return request.auth.token.role == 'admin' || 
+             request.auth.token.role == 'manager' || 
+             request.auth.token.role == 'staff';
+    }
+    
 
     function isOwner(userId) {
       return request.auth.uid == userId;
@@ -69,40 +77,83 @@ service cloud.firestore {
 
     // --- Job Postings Collection ---
     match /jobPostings/{postId} {
+      // Everyone can read job postings
       allow read: if isSignedIn();
-      allow write: if isPrivileged();
       
-      // Validate required fields and new fields
-      allow create: if isPrivileged() && 
-        request.resource.data.keys().hasAll(['title', 'description', 'location', 'status']) &&
+      // Admin can create/update any job posting
+      // Manager and Staff can create job postings and update their own
+      allow create: if hasValidRole() && 
+        request.resource.data.keys().hasAll(['title', 'description', 'location', 'status', 'createdBy']) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.title is string &&
+        request.resource.data.description is string &&
+        request.resource.data.location is string &&
+        request.resource.data.status in ['open', 'closed'] &&
         (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
-        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list);
+        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
+        (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
       
-      allow update: if isPrivileged() && 
+      // Admin can update any job posting, Manager/Staff can update their own
+      allow update: if (request.auth.token.role == 'admin') || 
+        (hasValidRole() && request.auth.uid == resource.data.createdBy) &&
         (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
-        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list);
+        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
+        (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+      
+      // Admin can delete any job posting, Manager/Staff can delete their own
+      allow delete: if (request.auth.token.role == 'admin') || 
+        (hasValidRole() && request.auth.uid == resource.data.createdBy);
     }
 
     // --- Applications Collection ---
     match /applications/{applicationId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.applicantId);
+      // Users can read their own applications, job posting owners can read applications to their posts
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.applicantId ||
+        isPrivileged() ||
+        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid)
+      );
+      
+      // Users can create applications for themselves
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
         request.resource.data.keys().hasAll(['applicantId', 'postId', 'status']) &&
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
-      allow update: if isPrivileged();
-      allow delete: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.applicantId);
+      
+      // Admin can update any application, job posting owners can update applications to their posts
+      allow update: if isPrivileged() || 
+        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid);
+      
+      // Users can delete their own applications, admin and job posting owners can delete applications
+      allow delete: if isSignedIn() && (
+        request.auth.uid == resource.data.applicantId ||
+        isPrivileged() ||
+        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid)
+      );
     }
 
     // --- Staff Collection ---
     match /staff/{staffId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == staffId);
-      allow create, update, delete: if isPrivileged();
+      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == staffId);
+      allow create, update: if hasValidRole() && 
+        request.resource.data.keys().hasAll(['userId', 'name', 'userRole', 'jobRole', 'assignedEvents']) &&
+        request.resource.data.userRole in ['staff'] &&
+        request.resource.data.userId is string &&
+        request.resource.data.name is string &&
+        request.resource.data.jobRole is list &&
+        request.resource.data.assignedEvents is list;
+      allow delete: if isPrivileged();
     }
 
     // --- Work Logs Collection ---
     match /workLogs/{workLogId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
-      allow create, update, delete: if isPrivileged();
+      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.dealerId);
+      allow create, update: if isSignedIn() && hasValidRole();
+      allow delete: if isPrivileged();
     }
 
     // --- Participants Collection ---
@@ -125,8 +176,8 @@ service cloud.firestore {
 
     // --- Attendance Collection ---
     match /attendance/{attendanceId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.userId);
-      allow create, update: if isSignedIn();
+      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.userId);
+      allow create, update: if isSignedIn() && hasValidRole();
       allow delete: if isPrivileged();
     }
 

@@ -28,13 +28,14 @@ export function useMediaQuery(query: string): boolean {
       timeoutId = setTimeout(() => setMatches(media.matches), 150);
     };
     
-    // Set the initial state
-    listener();
+    // Set the initial state directly without triggering listener
+    setMatches(media.matches);
 
-    window.addEventListener('resize', listener);
+    // Add listener for media query changes
+    media.addEventListener('change', listener);
 
     return () => {
-      window.removeEventListener('resize', listener);
+      media.removeEventListener('change', listener);
       clearTimeout(timeoutId);
     };
   }, [query]);

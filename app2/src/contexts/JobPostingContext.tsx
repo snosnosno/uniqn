@@ -67,7 +67,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
 
     const applicantsQuery = query(
       collection(db, 'applications'),
-      where('jobPostingId', '==', jobPostingId),
+      where('postId', '==', jobPostingId),
       orderBy('createdAt', 'desc')
     );
 

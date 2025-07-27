@@ -4,11 +4,14 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from './usePermissions';
+import { JobPosting } from '../types/jobPosting';
 import { prepareFormDataForFirebase, prepareFirebaseDataForForm } from '../utils/jobPosting/jobPostingHelpers';
 import { validateJobPostingForm } from '../utils/jobPosting/formValidation';
 
 export const useJobPostingOperations = () => {
   const { currentUser } = useAuth();
+  const { checkJobPostingPermission, permissions } = usePermissions();
   const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<any>(null);
@@ -18,11 +21,26 @@ export const useJobPostingOperations = () => {
   const jobPostingsQuery = useMemo(() => query(collection(db, 'jobPostings')), []);
   const [jobPostingsSnap, loading, error] = useCollection(jobPostingsQuery);
 
-  // Memoized filtered job postings for better performance
-  const jobPostings = useMemo(() => 
-    jobPostingsSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [],
-    [jobPostingsSnap]
-  );
+  // Memoized filtered job postings with permission-based filtering
+  const jobPostings = useMemo(() => {
+    if (!jobPostingsSnap || !currentUser || !permissions) return [];
+    
+    const allJobPostings = jobPostingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as JobPosting));
+    
+    // Admin은 모든 공고를 볼 수 있음
+    if (permissions.role === 'admin') {
+      return allJobPostings;
+    }
+    
+    // Manager와 Staff는 자신이 작성한 공고만 볼 수 있음
+    if (permissions.role === 'manager' || permissions.role === 'staff') {
+      return allJobPostings.filter(posting => 
+        checkJobPostingPermission('view', posting.createdBy)
+      );
+    }
+    
+    return allJobPostings;
+  }, [jobPostingsSnap, currentUser, permissions, checkJobPostingPermission]);
 
   // 공고 생성
   const handleCreateJobPosting = useCallback(async (formData: any) => {

@@ -88,6 +88,9 @@ export interface JobPosting {
   startDate: any; // Firebase Timestamp
   endDate: any;   // Firebase Timestamp
   createdAt: any; // Firebase Timestamp
+  createdBy: string; // 공고 작성자 UID
+  updatedAt?: any; // Firebase Timestamp (수정 시)
+  updatedBy?: string; // 수정자 UID
   managerId?: string;
   timeSlots?: TimeSlot[]; // 기존 전체 기간 공통 타임슬롯
   dateSpecificRequirements?: DateSpecificRequirement[]; // 일자별 특화 요구사항

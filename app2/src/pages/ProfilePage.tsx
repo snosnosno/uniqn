@@ -1,6 +1,6 @@
 import { StarIcon } from '@heroicons/react/24/solid';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 
@@ -33,7 +33,9 @@ const ProfilePage = () => {
     const { userId } = useParams<{ userId: string }>();
     const profileId = userId || currentUser?.uid;
 
-    const profileRef = profileId ? doc(db, 'users', profileId) : null;
+    const profileRef = useMemo(() => {
+        return profileId ? doc(db, 'users', profileId) : null;
+    }, [profileId]);
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [errorProfile, setErrorProfile] = useState<Error | null>(null);
@@ -117,7 +119,7 @@ const ProfilePage = () => {
         };
 
         fetchProfile();
-    }, [profileRef, t]);
+    }, [profileRef]);
 
     const handleEditClick = () => {
         if (!isEditing) {
