@@ -147,56 +147,63 @@ const JobPostingDetailPageContent: React.FC = () => {
   return (
     <div className="container mx-auto p-4">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <button 
-            onClick={() => navigate('/admin/job-postings')}
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <button 
+              onClick={() => navigate('/admin/job-postings')}
+              className="flex items-center text-gray-600 hover:text-gray-800 flex-shrink-0"
+            >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            공고 목록으로 돌아가기
-          </button>
-          <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-            jobPosting.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
-            {jobPosting.status === 'open' ? '모집 중' : '모집 마감'}
-          </span>
+              </svg>
+              공고 목록으로 돌아가기
+            </button>
+            
+            {/* 공고 제목 - 중앙에 배치 */}
+            <div className="flex-1 text-center px-4">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">{jobPosting.title}</h1>
+            </div>
+            
+            <div className="flex items-center space-x-3 flex-shrink-0">
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                jobPosting.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {jobPosting.status === 'open' ? '모집 중' : '모집 마감'}
+              </span>
+              
+              {/* Toggle Button - 오른쪽에 배치 */}
+              <button
+                onClick={handleToggleInfo}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                aria-expanded={isInfoExpanded}
+                aria-controls="basic-info-section"
+                aria-label={isInfoExpanded ? t('jobPosting.info.collapse') : t('jobPosting.info.expand')}
+                className="inline-flex justify-center py-2 px-3 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 min-h-[40px] toggle-button"
+                type="button"
+              >
+              {isInfoExpanded ? (
+                <>
+                  <FaChevronUp className="w-4 h-4 mr-2" aria-hidden="true" />
+                  {t('jobPosting.info.collapse')}
+                </>
+              ) : (
+                <>
+                  <FaChevronDown className="w-4 h-4 mr-2" aria-hidden="true" />
+                  {t('jobPosting.info.expand')}
+                </>
+              )}
+            </button>
+            </div>
         </div>
         
-        {/* Toggle Button */}
-        <button
-          onClick={handleToggleInfo}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
-          aria-expanded={isInfoExpanded}
-          aria-controls="basic-info-section"
-          aria-label={isInfoExpanded ? t('jobPosting.info.collapse') : t('jobPosting.info.expand')}
-          className="inline-flex justify-center py-2 px-3 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4 transition-all duration-300 min-h-[40px] toggle-button"
-          type="button"
-        >
-          {isInfoExpanded ? (
-            <>
-              <FaChevronUp className="w-4 h-4 mr-2" aria-hidden="true" />
-              {t('jobPosting.info.collapse')}
-            </>
-          ) : (
-            <>
-              <FaChevronDown className="w-4 h-4 mr-2" aria-hidden="true" />
-              {t('jobPosting.info.expand')}
-            </>
-          )}
-        </button>
-        
         {/* Basic Info Section */}
-        {isInfoExpanded ? <div 
-            id="basic-info-section"
-            className="bg-white rounded-lg shadow-md p-6"
-            role="region"
-            aria-label={t('jobPosting.info.section')}
-          >
-            <h1 className="text-2xl font-bold mb-4">{jobPosting.title}</h1>
+        {isInfoExpanded ? <div
+          id="basic-info-section"
+          className="bg-white rounded-lg shadow-md p-6"
+          role="region"
+          aria-label={t('jobPosting.info.section')}
+        >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="font-medium text-gray-700">위치:</span>
