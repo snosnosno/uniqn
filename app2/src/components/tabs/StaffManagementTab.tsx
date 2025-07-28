@@ -17,8 +17,6 @@ import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
 import StaffCard from '../StaffCard';
 import StaffDateGroup from '../StaffDateGroup';
 import StaffDateGroupMobile from '../StaffDateGroupMobile';
-import StaffFilters from '../StaffFilters';
-import StaffFiltersMobile from '../StaffFiltersMobile';
 import StaffRow from '../StaffRow';
 import VirtualizedStaffList from '../VirtualizedStaffList';
 import VirtualizedStaffTable from '../VirtualizedStaffTable';
@@ -293,6 +291,36 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
+          
+          {/* 검색 기능과 날짜별 그룹화 토글을 오른쪽 상단으로 이동 */}
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={groupByDate}
+                  onChange={(e) => setGroupByDate(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">날짜별 그룹화</span>
+              </label>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="스태프 검색..."
+                value={filters.searchTerm}
+                onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <button
+              onClick={() => setIsQrModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              QR 생성
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -301,35 +329,67 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           </div>
         )}
 
-        {/* 필터 컴포넌트 */}
-        {(isMobile || isTablet) ? (
-          <StaffFiltersMobile
-            filters={filters}
-            onFiltersChange={setFilters}
-            availableDates={availableDates}
-            availableRoles={availableRoles}
-            groupByDate={groupByDate}
-            onGroupByDateChange={setGroupByDate}
-            onQRCodeClick={() => setIsQrModalOpen(true)}
-            totalStaffCount={staffData.length}
-            filteredStaffCount={filteredStaffCount}
-            multiSelectMode={multiSelectMode}
-            onMultiSelectToggle={handleMultiSelectToggle}
-            selectedCount={selectedStaff.size}
-            onBulkActions={handleBulkActions}
-          />
-        ) : (
-          <StaffFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            availableDates={availableDates}
-            availableRoles={availableRoles}
-            groupByDate={groupByDate}
-            onGroupByDateChange={setGroupByDate}
-            onQRCodeClick={() => setIsQrModalOpen(true)}
-            totalStaffCount={staffData.length}
-            filteredStaffCount={filteredStaffCount}
-          />
+        {/* 모바일에서 추가 컨트롤 */}
+        {(isMobile || isTablet) && (
+          <div className="mb-4 space-y-3">
+            {/* 검색 및 날짜별 그룹화 */}
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={groupByDate}
+                    onChange={(e) => setGroupByDate(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">날짜별 그룹화</span>
+                </label>
+                <button
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                >
+                  QR 생성
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="스태프 검색..."
+                value={filters.searchTerm}
+                onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            {/* 다중 선택 모드 및 일괄 작업 */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  총 {staffData.length}명
+                  {filteredStaffCount !== staffData.length && ` (${filteredStaffCount}명 필터됨)`}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleMultiSelectToggle}
+                  className={`px-3 py-1 rounded text-sm ${
+                    multiSelectMode
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {multiSelectMode ? '선택 취소' : '다중 선택'}
+                </button>
+                {multiSelectMode && selectedStaff.size > 0 && (
+                  <button
+                    onClick={handleBulkActions}
+                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                  >
+                    일괄 작업 ({selectedStaff.size})
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* 스태프 목록 */}
