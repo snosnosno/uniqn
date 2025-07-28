@@ -18,6 +18,7 @@ interface VirtualizedStaffListProps {
   onStaffSelect?: (staffId: string) => void;
   height?: number; // 리스트 높이
   itemHeight?: number; // 각 아이템 높이
+  onShowProfile?: (staffId: string) => void;
 }
 
 interface ItemData {
@@ -32,6 +33,7 @@ interface ItemData {
   multiSelectMode: boolean;
   selectedStaff: Set<string>;
   onStaffSelect?: (staffId: string) => void;
+  onShowProfile?: (staffId: string) => void;
 }
 
 // 메모이제이션된 리스트 아이템 컴포넌트
@@ -51,7 +53,8 @@ const VirtualizedStaffItem: React.FC<{
     showDate,
     multiSelectMode,
     selectedStaff,
-    onStaffSelect
+    onStaffSelect,
+    onShowProfile
   } = data;
 
   const staff = staffList[index];
@@ -73,6 +76,7 @@ const VirtualizedStaffItem: React.FC<{
         showDate={showDate}
         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
         onSelect={multiSelectMode ? onStaffSelect : undefined}
+        onShowProfile={onShowProfile}
       />
     </div>
   );
@@ -93,7 +97,8 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   selectedStaff = new Set(),
   onStaffSelect,
   height = 600,
-  itemHeight = 200
+  itemHeight = 200,
+  onShowProfile
 }) => {
   // 메모이제이션된 아이템 데이터
   const itemData = useMemo((): ItemData => ({
@@ -107,7 +112,8 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
     showDate,
     multiSelectMode,
     selectedStaff,
-    onStaffSelect
+    onStaffSelect,
+    onShowProfile
   }), [
     staffList,
     onEditWorkTime,

@@ -6,7 +6,7 @@ import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { StaffData } from '../hooks/useStaffManagement';
 import AttendanceStatusCard from './AttendanceStatusCard';
-import AttendanceStatusDropdown from './AttendanceStatusDropdown';
+import AttendanceStatusPopover from './AttendanceStatusPopover';
 
 interface StaffCardProps {
   staff: StaffData;
@@ -19,6 +19,7 @@ interface StaffCardProps {
   showDate?: boolean;
   isSelected?: boolean;
   onSelect?: (staffId: string) => void;
+  onShowProfile?: (staffId: string) => void;
 }
 
 const StaffCard: React.FC<StaffCardProps> = React.memo(({
@@ -31,7 +32,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   getTimeSlotColor,
   showDate = false,
   isSelected = false,
-  onSelect
+  onSelect,
+  onShowProfile
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -119,12 +121,20 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
       startTimeColor: getTimeSlotColor(startTime),
       endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 text-gray-500',
-      hasEndTime: !!endTime
+      hasEndTime: !!endTime,
+      hasActualStartTime: !!actualStartTime,
+      isScheduledTimeTBD: scheduledStartTime === '미정'
     };
   }, [staff.id, staff.assignedTime, memoizedAttendanceData, formatTimeDisplay, getTimeSlotColor]);
   
   // 메모이제이션된 이벤트 핸들러들
-  const handleCardClick = useCallback(() => {
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    // 카드 클릭은 이제 사용하지 않음
+    e.stopPropagation();
+  }, []);
+
+  const toggleExpanded = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsExpanded(prev => !prev);
   }, []);
 
@@ -175,8 +185,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     <div 
       className={`bg-white rounded-lg shadow-md border-2 transition-all duration-200 ${
         isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-      } ${isExpanded ? 'shadow-lg' : 'shadow-md'} hover:shadow-lg active:scale-[0.98] touch-none select-none`}
-      onClick={handleCardClick}
+      } ${isExpanded ? 'shadow-lg' : 'shadow-md'} hover:shadow-lg touch-none select-none`}
       {...swipeGesture}
     >
       {/* 카드 헤더 */}
@@ -185,7 +194,10 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             {/* 선택 체크박스 (다중 선택 모드일 때) */}
             {onSelect && (
-              <div onClick={handleSelectClick} className="flex-shrink-0">
+              <button 
+                onClick={handleSelectClick} 
+                className="flex-shrink-0 p-1"
+              >
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                   isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
                 }`}>
@@ -195,46 +207,72 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                     </svg>
                   )}
                 </div>
-              </div>
+              </button>
             )}
-            
-            {/* 아바타 */}
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-md">
-                <span className="text-white font-semibold text-lg">
-                  {memoizedStaffData.avatarInitial}
-                </span>
-              </div>
-            </div>
             
             {/* 기본 정보 */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-semibold text-gray-900 truncate">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('🔍 StaffCard 이름 클릭:', staff.id, staff.name);
+                    console.log('🔍 onShowProfile 함수 존재:', !!onShowProfile);
+                    if (onShowProfile) {
+                      onShowProfile(staff.id);
+                    }
+                  }}
+                  className="text-lg font-semibold text-gray-900 truncate bg-white hover:bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left inline-block"
+                >
                   {memoizedStaffData.displayName}
-                </h3>
-                <div className="flex items-center space-x-1">
-                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor}`}>
-                    🕘 {memoizedTimeData.displayStartTime}
-                  </div>
-                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.endTimeColor}`}>
-                    {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 mt-1">
-                <span className="text-sm text-gray-600">
+                </button>
+                <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
                   {memoizedStaffData.roleDisplay}
                 </span>
-                {showDate && staff.assignedDate && (
-                  <>
-                    <span className="text-gray-300">•</span>
-                    <span className="text-sm text-gray-500">
-                      📅 {formattedDate}
-                    </span>
-                  </>
-                )}
+              </div>
+              
+              {showDate && staff.assignedDate && (
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="text-sm text-gray-500">
+                    📅 {formattedDate}
+                  </span>
+                </div>
+              )}
+              
+              {/* 출근/퇴근 시간 */}
+              <div className="flex flex-col space-y-1 mt-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditWorkTime(staff.id, 'start');
+                  }}
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor} hover:opacity-80 transition-opacity`}
+                >
+                  {memoizedTimeData.hasActualStartTime ? '✅' : memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} 출근: {memoizedTimeData.displayStartTime}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
+                    const status = memoizedAttendanceData.attendanceRecord?.status || 'not_started';
+                    if (status === 'checked_in' || status === 'checked_out') {
+                      onEditWorkTime(staff.id, 'end');
+                    }
+                  }}
+                  disabled={memoizedAttendanceData.attendanceRecord?.status !== 'checked_in' && memoizedAttendanceData.attendanceRecord?.status !== 'checked_out'}
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-opacity ${
+                    memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+                      ? `hover:opacity-80 ${memoizedTimeData.endTimeColor}`
+                      : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+                  }`}
+                  title={
+                    memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+                      ? "퇴근 시간 수정"
+                      : "출근 후에 수정 가능합니다"
+                  }
+                >
+                  {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} 퇴근: {memoizedTimeData.displayEndTime}
+                </button>
               </div>
             </div>
           </div>
@@ -242,21 +280,15 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
           {/* 빠른 상태 및 액션 */}
           <div className="flex items-center space-x-2 flex-shrink-0">
             {/* 출석 상태 */}
-            <div className="transform scale-90">
-              {memoizedAttendanceData.attendanceRecord && memoizedAttendanceData.attendanceRecord.workLogId ? (
-                <AttendanceStatusDropdown
-                  workLogId={memoizedAttendanceData.attendanceRecord.workLogId}
-                  currentStatus={memoizedAttendanceData.attendanceRecord.status}
-                  staffId={staff.id}
-                  staffName={staff.name}
-                  size="sm"
-                />
-              ) : (
-                <AttendanceStatusCard
-                  status="not_started"
-                  size="sm"
-                />
-              )}
+            <div className="relative">
+              <AttendanceStatusPopover
+                workLogId={memoizedAttendanceData.attendanceRecord?.workLogId || `virtual_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`}
+                currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
+                staffId={staff.id}
+                staffName={staff.name}
+                size="sm"
+                className="scale-90"
+              />
             </div>
             
             
@@ -270,12 +302,15 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               </svg>
             </button>
             
-            {/* 확장/축소 아이콘 */}
-            <div className="text-gray-400">
+            {/* 확장/축소 버튼 */}
+            <button
+              onClick={toggleExpanded}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
               <svg className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-            </div>
+            </button>
           </div>
         </div>
         
@@ -308,34 +343,178 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 ✕
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id, 'start'))}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                출근
-              </button>
-              <button
-                onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id, 'end'))}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                퇴근
-              </button>
-              <button
-                onClick={(e) => handleActionClick(e, () => onDeleteStaff(staff.id))}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                삭제
-              </button>
+            <div className="space-y-3">
+              {/* 출석 상태 변경 버튼들 */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-2">출석 상태 변경</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={(e) => handleActionClick(e, async () => {
+                      const { updateDoc, doc, setDoc, Timestamp } = await import('firebase/firestore');
+                      const { db } = await import('../firebase');
+                      const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
+                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`;
+                      
+                      if (memoizedAttendanceData.attendanceRecord?.workLogId) {
+                        // 기존 workLog 업데이트
+                        await updateDoc(doc(db, 'workLogs', workLogId), {
+                          status: 'checked_in',
+                          actualStartTime: Timestamp.now(),
+                          updatedAt: Timestamp.now()
+                        });
+                      } else {
+                        // 새 workLog 생성
+                        await setDoc(doc(db, 'workLogs', workLogId), {
+                          eventId: staff.postingId || 'unknown',
+                          dealerId: staff.id,
+                          dealerName: staff.name || 'Unknown',
+                          date: staff.assignedDate || new Date().toISOString().split('T')[0],
+                          status: 'checked_in',
+                          actualStartTime: Timestamp.now(),
+                          scheduledStartTime: null,
+                          scheduledEndTime: null,
+                          actualEndTime: null,
+                          createdAt: Timestamp.now(),
+                          updatedAt: Timestamp.now()
+                        });
+                      }
+                    })}
+                    className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    출근
+                  </button>
+                  <button
+                    onClick={(e) => handleActionClick(e, async () => {
+                      const { updateDoc, doc, setDoc, Timestamp } = await import('firebase/firestore');
+                      const { db } = await import('../firebase');
+                      const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
+                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`;
+                      
+                      if (memoizedAttendanceData.attendanceRecord?.workLogId) {
+                        // 기존 workLog 업데이트
+                        await updateDoc(doc(db, 'workLogs', workLogId), {
+                          status: 'checked_out',
+                          actualEndTime: Timestamp.now(),
+                          updatedAt: Timestamp.now()
+                        });
+                      } else {
+                        // 새 workLog 생성
+                        await setDoc(doc(db, 'workLogs', workLogId), {
+                          eventId: staff.postingId || 'unknown',
+                          dealerId: staff.id,
+                          dealerName: staff.name || 'Unknown',
+                          date: staff.assignedDate || new Date().toISOString().split('T')[0],
+                          status: 'checked_out',
+                          actualStartTime: Timestamp.now(),
+                          actualEndTime: Timestamp.now(),
+                          scheduledStartTime: null,
+                          scheduledEndTime: null,
+                          createdAt: Timestamp.now(),
+                          updatedAt: Timestamp.now()
+                        });
+                      }
+                    })}
+                    className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    퇴근
+                  </button>
+                  <button
+                    onClick={(e) => handleActionClick(e, async () => {
+                      const { updateDoc, doc, setDoc, Timestamp, deleteField } = await import('firebase/firestore');
+                      const { db } = await import('../firebase');
+                      const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
+                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`;
+                      
+                      if (memoizedAttendanceData.attendanceRecord?.workLogId) {
+                        // 기존 workLog 업데이트
+                        await updateDoc(doc(db, 'workLogs', workLogId), {
+                          status: 'not_started',
+                          actualStartTime: deleteField(),
+                          actualEndTime: deleteField(),
+                          updatedAt: Timestamp.now()
+                        });
+                      } else {
+                        // 새 workLog 생성
+                        await setDoc(doc(db, 'workLogs', workLogId), {
+                          eventId: staff.postingId || 'unknown',
+                          dealerId: staff.id,
+                          dealerName: staff.name || 'Unknown',
+                          date: staff.assignedDate || new Date().toISOString().split('T')[0],
+                          status: 'not_started',
+                          actualStartTime: null,
+                          actualEndTime: null,
+                          scheduledStartTime: null,
+                          scheduledEndTime: null,
+                          createdAt: Timestamp.now(),
+                          updatedAt: Timestamp.now()
+                        });
+                      }
+                    })}
+                    className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    출근 전
+                  </button>
+                </div>
+              </div>
+              
+              {/* 시간 편집 및 삭제 */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-2">기타 작업</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id, 'start'))}
+                    className="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    출근 시간
+                  </button>
+                  <button
+                    onClick={(e) => handleActionClick(e, () => {
+                      // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
+                      const status = memoizedAttendanceData.attendanceRecord?.status || 'not_started';
+                      if (status === 'checked_in' || status === 'checked_out') {
+                        onEditWorkTime(staff.id, 'end');
+                      }
+                    })}
+                    disabled={memoizedAttendanceData.attendanceRecord?.status !== 'checked_in' && memoizedAttendanceData.attendanceRecord?.status !== 'checked_out'}
+                    className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                      memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+                        ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                        : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
+                    }`}
+                    title={
+                      memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+                        ? "퇴근 시간 수정"
+                        : "출근 후에 수정 가능합니다"
+                    }
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    퇴근 시간
+                  </button>
+                  <button
+                    onClick={(e) => handleActionClick(e, () => onDeleteStaff(staff.id))}
+                    className="inline-flex items-center px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    삭제
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

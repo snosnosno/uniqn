@@ -17,6 +17,7 @@ interface StaffDateGroupMobileProps {
   selectedStaff?: Set<string>;
   onStaffSelect?: (staffId: string) => void;
   multiSelectMode?: boolean;
+  onShowProfile?: (staffId: string) => void;
 }
 
 const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
@@ -32,7 +33,8 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   getTimeSlotColor,
   selectedStaff = new Set(),
   onStaffSelect,
-  multiSelectMode = false
+  multiSelectMode = false,
+  onShowProfile
 }) => {
   const staffCount = staffList.length;
   const selectedCount = multiSelectMode ? Array.from(selectedStaff).filter(id => 
@@ -182,6 +184,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               showDate={false} // 그룹 헤더에 날짜가 있으므로 카드에서는 숨김
               isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
               onSelect={multiSelectMode ? onStaffSelect : undefined}
+              onShowProfile={onShowProfile}
             />
           ))}
           

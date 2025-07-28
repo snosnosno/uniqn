@@ -32,30 +32,34 @@ const AttendanceStatusDropdown: React.FC<AttendanceStatusDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const statusOptions: { value: AttendanceStatus; label: string; icon: React.ReactNode; color: string }[] = [
+  const statusOptions: { value: AttendanceStatus; label: string; icon: React.ReactNode; color: string; bgColor: string }[] = [
     {
       value: 'not_started',
       label: t('attendance.status.notStarted', '출근 전'),
       icon: <FaClock className="text-gray-500" />,
-      color: 'text-gray-700'
+      color: 'text-gray-700',
+      bgColor: 'bg-gray-50 hover:bg-gray-100'
     },
     {
       value: 'checked_in',
       label: t('attendance.status.checkedIn', '출근'),
       icon: <FaCheckCircle className="text-green-500" />,
-      color: 'text-green-700'
+      color: 'text-green-700',
+      bgColor: 'bg-green-50 hover:bg-green-100'
     },
     {
       value: 'checked_out',
       label: t('attendance.status.checkedOut', '퇴근'),
       icon: <FaCheckCircle className="text-blue-500" />,
-      color: 'text-blue-700'
+      color: 'text-blue-700',
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     },
     {
       value: 'absent',
       label: t('attendance.status.absent', '결근'),
       icon: <FaTimesCircle className="text-red-500" />,
-      color: 'text-red-700'
+      color: 'text-red-700',
+      bgColor: 'bg-red-50 hover:bg-red-100'
     }
   ];
 
@@ -64,7 +68,7 @@ const AttendanceStatusDropdown: React.FC<AttendanceStatusDropdownProps> = ({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'px-2 py-1 text-xs';
+        return 'px-3 py-1.5 text-xs';
       case 'lg':
         return 'px-4 py-3 text-base';
       default:
@@ -131,11 +135,17 @@ const AttendanceStatusDropdown: React.FC<AttendanceStatusDropdownProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         disabled={isUpdating}
         className={`
-          flex items-center gap-2 w-full rounded-lg border border-gray-300 
-          bg-white hover:bg-gray-50 transition-colors
+          flex items-center gap-2 w-full rounded-lg border transition-all duration-200
+          ${currentOption.bgColor}
           ${getSizeClasses()}
           ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           ${currentOption.color}
+          ${
+            currentStatus === 'checked_in' ? 'border-green-300' :
+            currentStatus === 'checked_out' ? 'border-blue-300' :
+            currentStatus === 'absent' ? 'border-red-300' :
+            'border-gray-300'
+          }
         `}
       >
         {currentOption.icon}
@@ -151,23 +161,48 @@ const AttendanceStatusDropdown: React.FC<AttendanceStatusDropdownProps> = ({
             onClick={() => setIsOpen(false)}
           />
           
-          {/* 드롭다운 메뉴 */}
-          <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-20">
+          {/* 드롭다운 메뉴 - 항상 위로 열림 */}
+          <div 
+            className="absolute bottom-full left-0 mb-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden"
+            style={{
+              maxHeight: '240px',
+              overflowY: 'auto'
+            }}
+          >
             {statusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleStatusChange(option.value)}
                 className={`
-                  w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors
-                  ${option.value === currentStatus ? 'bg-blue-50 border-l-4 border-blue-500' : ''}
+                  w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150
+                  ${option.value === currentStatus 
+                    ? `${option.bgColor} border-l-4 ${
+                        option.value === 'checked_in' ? 'border-green-500' :
+                        option.value === 'checked_out' ? 'border-blue-500' :
+                        option.value === 'absent' ? 'border-red-500' :
+                        'border-gray-500'
+                      }` 
+                    : 'hover:bg-gray-50'
+                  }
                   ${option.color}
-                  first:rounded-t-lg last:rounded-b-lg
                 `}
               >
-                {option.icon}
-                <span className="font-medium">{option.label}</span>
+                <div className="flex-shrink-0">{option.icon}</div>
+                <div className="flex-grow">
+                  <span className="font-medium block">{option.label}</span>
+                  {option.value === currentStatus && (
+                    <span className="text-xs opacity-75">현재 상태</span>
+                  )}
+                </div>
                 {option.value === currentStatus && (
-                  <span className="ml-auto text-blue-500 text-xs font-medium">현재</span>
+                  <div className="flex-shrink-0">
+                    <div className="w-2 h-2 rounded-full ${
+                      option.value === 'checked_in' ? 'bg-green-500' :
+                      option.value === 'checked_out' ? 'bg-blue-500' :
+                      option.value === 'absent' ? 'bg-red-500' :
+                      'bg-gray-500'
+                    } animate-pulse"></div>
+                  </div>
                 )}
               </button>
             ))}

@@ -4,7 +4,7 @@ import { FixedSizeList as List } from 'react-window';
 import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusCard from './AttendanceStatusCard';
-import AttendanceStatusDropdown from './AttendanceStatusDropdown';
+import AttendanceStatusPopover from './AttendanceStatusPopover';
 
 interface VirtualizedStaffTableProps {
   staffList: StaffData[];
@@ -17,6 +17,7 @@ interface VirtualizedStaffTableProps {
   showDate?: boolean;
   height?: number;
   rowHeight?: number;
+  onShowProfile?: (staffId: string) => void;
 }
 
 interface ItemData {
@@ -28,6 +29,7 @@ interface ItemData {
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate: boolean;
+  onShowProfile?: (staffId: string) => void;
 }
 
 // 가상화된 테이블 행 컴포넌트 (StaffRow 로직을 인라인으로 구현)
@@ -44,7 +46,8 @@ const VirtualizedTableRow: React.FC<{
     attendanceRecords,
     formatTimeDisplay,
     getTimeSlotColor,
-    showDate
+    showDate,
+    onShowProfile
   } = data;
 
   const staff = staffList[index];
@@ -125,9 +128,24 @@ const VirtualizedTableRow: React.FC<{
       {/* 퇴근 시간 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
         <button
-          onClick={() => onEditWorkTime(staff.id, 'end')}
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`}
-          title="퇴근 시간 수정"
+          onClick={() => {
+            // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
+            const status = attendanceRecord?.status || 'not_started';
+            if (status === 'checked_in' || status === 'checked_out') {
+              onEditWorkTime(staff.id, 'end');
+            }
+          }}
+          disabled={attendanceRecord?.status !== 'checked_in' && attendanceRecord?.status !== 'checked_out'}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            attendanceRecord?.status === 'checked_in' || attendanceRecord?.status === 'checked_out'
+              ? `hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`
+              : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+          }`}
+          title={
+            attendanceRecord?.status === 'checked_in' || attendanceRecord?.status === 'checked_out'
+              ? "퇴근 시간 수정"
+              : "출근 후에 수정 가능합니다"
+          }
         >
           {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
         </button>
@@ -141,9 +159,18 @@ const VirtualizedTableRow: React.FC<{
           </div>
         </div>
         <div className="ml-3 min-w-0 flex-1">
-          <div className="text-sm font-medium text-gray-900 truncate">
+          <button
+            onClick={() => {
+              console.log('🔍 VirtualizedStaffTable 이름 클릭:', staff.id, staff.name);
+              console.log('🔍 onShowProfile 함수 존재:', !!onShowProfile);
+              if (onShowProfile) {
+                onShowProfile(staff.id);
+              }
+            }}
+            className="text-sm font-medium text-gray-900 truncate bg-white hover:bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left inline-block"
+          >
             {displayName}
-          </div>
+          </button>
           {showDate && staff.assignedDate && (
             <div className="text-sm text-gray-500 truncate">
               📅 {formattedDate}
@@ -189,17 +216,13 @@ const VirtualizedTableRow: React.FC<{
       
       {/* 출석 상태 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
-        {attendanceRecord && attendanceRecord.workLogId ? (
-          <AttendanceStatusDropdown
-            workLogId={attendanceRecord.workLogId}
-            currentStatus={attendanceRecord.status}
-            staffId={staff.id}
-            staffName={staff.name}
-            size="sm"
-          />
-        ) : (
-          <AttendanceStatusCard status="not_started" size="sm" />
-        )}
+        <AttendanceStatusPopover
+          workLogId={attendanceRecord?.workLogId || `virtual_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`}
+          currentStatus={attendanceRecord?.status || 'not_started'}
+          staffId={staff.id}
+          staffName={staff.name}
+          size="sm"
+        />
       </div>
       
       
@@ -231,7 +254,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   getTimeSlotColor,
   showDate = true,
   height = 600,
-  rowHeight = 80
+  rowHeight = 80,
+  onShowProfile
 }) => {
   const itemData = useMemo((): ItemData => ({
     staffList,
@@ -241,7 +265,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     attendanceRecords,
     formatTimeDisplay,
     getTimeSlotColor,
-    showDate
+    showDate,
+    onShowProfile
   }), [
     staffList,
     onEditWorkTime,
@@ -250,7 +275,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     attendanceRecords,
     formatTimeDisplay,
     getTimeSlotColor,
-    showDate
+    showDate,
+    onShowProfile
   ]);
 
   if (staffList.length === 0) {

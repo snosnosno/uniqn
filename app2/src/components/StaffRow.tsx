@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusCard from './AttendanceStatusCard';
-import AttendanceStatusDropdown from './AttendanceStatusDropdown';
+import AttendanceStatusPopover from './AttendanceStatusPopover';
 
 interface StaffRowProps {
   staff: StaffData;
@@ -15,6 +15,7 @@ interface StaffRowProps {
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean; // 날짜 표시 여부 (단일 테이블 모드에서 사용)
+  onShowProfile?: (staffId: string) => void;
 }
 
 const StaffRow: React.FC<StaffRowProps> = React.memo(({
@@ -25,7 +26,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   attendanceRecords,
   formatTimeDisplay,
   getTimeSlotColor,
-  showDate = false
+  showDate = false,
+  onShowProfile
 }) => {
   const { t } = useTranslation();
 
@@ -121,8 +123,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   }, [onEditWorkTime, staff.id]);
 
   const handleEditEndTime = useCallback(() => {
-    onEditWorkTime(staff.id, 'end');
-  }, [onEditWorkTime, staff.id]);
+    // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
+    const status = memoizedAttendanceData.attendanceRecord?.status || 'not_started';
+    if (status === 'checked_in' || status === 'checked_out') {
+      onEditWorkTime(staff.id, 'end');
+    }
+  }, [onEditWorkTime, staff.id, memoizedAttendanceData.attendanceRecord]);
 
 
   const handleDeleteStaff = useCallback(async () => {
@@ -152,8 +158,17 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       <td className="px-4 py-4 whitespace-nowrap">
         <button
           onClick={handleEditEndTime}
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`}
-          title="퇴근 시간 수정"
+          disabled={memoizedAttendanceData.attendanceRecord?.status !== 'checked_in' && memoizedAttendanceData.attendanceRecord?.status !== 'checked_out'}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+              ? `hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`
+              : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+          }`}
+          title={
+            memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+              ? "퇴근 시간 수정"
+              : "출근 후에 수정 가능합니다"
+          }
         >
           {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
         </button>
@@ -161,22 +176,24 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       
       {/* 이름 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-8 w-8">
-            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-700">
-              {memoizedStaffData.avatarInitial}
+        <div>
+          <button
+            onClick={() => {
+              console.log('🔍 StaffRow 이름 클릭:', staff.id, staff.name);
+              console.log('🔍 onShowProfile 함수 존재:', !!onShowProfile);
+              if (onShowProfile) {
+                onShowProfile(staff.id);
+              }
+            }}
+            className="text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left inline-block"
+          >
+            {memoizedStaffData.displayName}
+          </button>
+          {showDate && staff.assignedDate && (
+            <div className="text-sm text-gray-500">
+              📅 {formattedDate}
             </div>
-          </div>
-          <div className="ml-3">
-            <div className="text-sm font-medium text-gray-900">
-              {memoizedStaffData.displayName}
-            </div>
-            {showDate && staff.assignedDate && (
-              <div className="text-sm text-gray-500">
-                📅 {formattedDate}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </td>
       
@@ -219,20 +236,13 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       
       {/* 출석 상태 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
-        {memoizedAttendanceData.attendanceRecord && memoizedAttendanceData.attendanceRecord.workLogId ? (
-          <AttendanceStatusDropdown
-            workLogId={memoizedAttendanceData.attendanceRecord.workLogId}
-            currentStatus={memoizedAttendanceData.attendanceRecord.status}
-            staffId={staff.id}
-            staffName={staff.name}
-            size="sm"
-          />
-        ) : (
-          <AttendanceStatusCard
-            status="not_started"
-            size="sm"
-          />
-        )}
+        <AttendanceStatusPopover
+          workLogId={memoizedAttendanceData.attendanceRecord?.workLogId || `virtual_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`}
+          currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
+          staffId={staff.id}
+          staffName={staff.name}
+          size="sm"
+        />
       </td>
       
       

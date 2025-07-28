@@ -4,7 +4,7 @@ import { Timestamp } from 'firebase/firestore';
 
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
 import { useResponsive } from '../../hooks/useResponsive';
-import { useStaffManagement } from '../../hooks/useStaffManagement';
+import { useStaffManagement, StaffData } from '../../hooks/useStaffManagement';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 import { parseToDate } from '../../utils/jobPosting/dateUtils';
@@ -19,6 +19,7 @@ import StaffRow from '../StaffRow';
 import VirtualizedStaffList from '../VirtualizedStaffList';
 import VirtualizedStaffTable from '../VirtualizedStaffTable';
 import WorkTimeEditor from '../WorkTimeEditor';
+import StaffProfileModal from '../StaffProfileModal';
 
 interface StaffManagementTabProps {
   jobPosting?: any;
@@ -63,6 +64,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [isWorkTimeEditorOpen, setIsWorkTimeEditorOpen] = useState(false);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
   const [currentTimeType, setCurrentTimeType] = useState<'start' | 'end' | undefined>(undefined);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffData | null>(null);
   
   // 모바일 전용 상태
   const [multiSelectMode, setMultiSelectMode] = useState(false);
@@ -224,6 +227,20 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     // TODO: 실제 상태 업데이트 구현
     alert(`${staffIds.length}명의 상태를 "${status}"로 변경했습니다.`);
   };
+  
+  // 프로필 모달 핸들러
+  const handleShowProfile = (staffId: string) => {
+    console.log('🔍 프로필 클릭:', staffId);
+    const staff = staffData.find(s => s.id === staffId);
+    console.log('🔍 스태프 데이터:', staff);
+    if (staff) {
+      setSelectedStaffForProfile(staff);
+      setIsProfileModalOpen(true);
+      console.log('🔍 프로필 모달 열기 설정 완료');
+    } else {
+      console.log('⚠️ 스태프를 찾을 수 없음:', staffId);
+    }
+  };
 
   // Early return if no job posting data
   if (!jobPosting) {
@@ -268,35 +285,37 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
           
-          {/* 검색 기능과 날짜별 그룹화 토글을 오른쪽 상단으로 이동 */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <label className="flex items-center space-x-2">
+          {/* 데스크톱에서만 검색 기능과 날짜별 그룹화 토글을 오른쪽 상단에 표시 */}
+          {!isMobile && !isTablet && (
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={groupByDate}
+                    onChange={(e) => setGroupByDate(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">날짜별 그룹화</span>
+                </label>
+              </div>
+              <div className="relative">
                 <input
-                  type="checkbox"
-                  checked={groupByDate}
-                  onChange={(e) => setGroupByDate(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  type="text"
+                  placeholder="스태프 검색..."
+                  value={filters.searchTerm}
+                  onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                  className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <span className="text-sm text-gray-700">날짜별 그룹화</span>
-              </label>
+              </div>
+              <button
+                onClick={() => setIsQrModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                QR 생성
+              </button>
             </div>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="스태프 검색..."
-                value={filters.searchTerm}
-                onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              onClick={() => setIsQrModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              QR 생성
-            </button>
-          </div>
+          )}
         </div>
 
         {error && (
@@ -402,6 +421,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       selectedStaff={selectedStaff}
                       onStaffSelect={handleStaffSelect}
                       multiSelectMode={multiSelectMode}
+                      onShowProfile={handleShowProfile}
                     />
                   );
                 })
@@ -422,6 +442,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     onStaffSelect={handleStaffSelect}
                     height={mobileVirtualization.height}
                     itemHeight={mobileVirtualization.itemHeight}
+                    onShowProfile={handleShowProfile}
                   />
                 ) : (
                   <div className="space-y-3">
@@ -438,6 +459,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         showDate={true}
                         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
                         onSelect={multiSelectMode ? handleStaffSelect : undefined}
+                        onShowProfile={handleShowProfile}
                       />
                     ))}
                   </div>
@@ -464,6 +486,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
                       getTimeSlotColor={getTimeSlotColor}
+                      onShowProfile={handleShowProfile}
                     />
                   );
                 })
@@ -523,6 +546,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               formatTimeDisplay={formatTimeDisplay}
                               getTimeSlotColor={getTimeSlotColor}
                               showDate={true}
+                              onShowProfile={handleShowProfile}
                             />
                           ))}
                         </tbody>
@@ -573,6 +597,18 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         onBulkDelete={handleBulkDelete}
         onBulkMessage={handleBulkMessage}
         onBulkStatusUpdate={handleBulkStatusUpdate}
+      />
+      
+      {/* 스태프 프로필 모달 */}
+      <StaffProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setSelectedStaffForProfile(null);
+        }}
+        staff={selectedStaffForProfile}
+        attendanceRecord={selectedStaffForProfile ? getStaffAttendanceStatus(selectedStaffForProfile.id) : undefined}
+        workLogRecord={selectedStaffForProfile ? attendanceRecords.find(r => r.staffId === selectedStaffForProfile.id) : undefined}
       />
     </>
   );

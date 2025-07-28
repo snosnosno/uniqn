@@ -4,7 +4,7 @@ import { IconType } from 'react-icons';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
     FaTrophy, FaBullhorn, FaUserCircle, FaUserShield, FaFileInvoice, FaClipboardList, FaQrcode,
-    FaBars, FaSignOutAlt, FaUserCheck, FaHistory
+    FaBars, FaSignOutAlt, FaUserCheck, FaHistory, FaCalendarAlt
 } from 'react-icons/fa';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -144,8 +144,9 @@ export const HeaderMenu: React.FC = () => {
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
               <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/jobs" label={t('nav.jobBoard')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/profile" label={t('nav.myProfile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/jobs" label={t('nav.jobBoard')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/attendance" label={t('nav.attendance')} Icon={FaQrcode} isOpen={true} onNavigate={closeMenu} />
               
               <hr className="my-2 border-t border-gray-200" />

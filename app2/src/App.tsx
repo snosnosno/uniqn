@@ -28,6 +28,7 @@ import JobBoardPage from './pages/JobBoardPage';
 import JobPostingAdminPage from './pages/JobPostingAdminPage';
 import JobPostingDetailPage from './pages/JobPostingDetailPage';
 import Login from './pages/Login';
+import MySchedulePage from './pages/MySchedulePage';
 import ParticipantLivePage from './pages/ParticipantLivePage';
 import ParticipantsPage from './pages/ParticipantsPage';
 import PayrollPage from './pages/PayrollPage';
@@ -86,6 +87,7 @@ const App: React.FC = () => {
                     
                     {/* Dealer facing routes */}
                     <Route path="jobs" element={<JobBoardPage />} />
+                    <Route path="my-schedule" element={<MySchedulePage />} />
                     <Route path="attendance" element={<AttendancePage />} />
                     <Route path="available-times" element={<AvailableTimesPage />} />
 
