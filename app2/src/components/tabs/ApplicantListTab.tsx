@@ -437,6 +437,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     );
   };
 
+
   // 확정 취소 핸들러 함수
   const handleCancelConfirmation = async (applicant: Applicant) => {
     if (!jobPosting) return;
@@ -595,14 +596,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                     {applicant.appliedAt && (
                       <p>
                         <span className="font-medium">지원일:</span>
-                        <span className="ml-2">{(() => {
-                          try {
-                            return formatDateUtil(applicant.appliedAt);
-                          } catch (error) {
-                            console.error('❌ appliedAt 날짜 포맷 오류:', error, applicant.appliedAt);
-                            return '날짜 오류';
-                          }
-                        })()}</span>
+                        <span className="ml-2">{formatDateUtil(applicant.appliedAt)}</span>
                       </p>
                     )}
                     {applicant.gender ? <p><span className="font-medium">{t('profile.gender')}:</span> {applicant.gender}</p> : null}
@@ -663,32 +657,81 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                             const isSelected = isAssignmentSelected(applicant.id, selection.time, selection.role, safeDateString);
                               
                             return (
-                              <label key={index} className={`flex items-center p-2 border rounded cursor-pointer ${
-                                isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:bg-gray-50'
+                              <div key={index} className={`flex items-center justify-between p-2 border rounded ${
+                                isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'
                               }`}>
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => handleMultipleAssignmentToggle(applicant.id, optionValue, e.target.checked)}
-                                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                                />
-                                <div className="ml-3 flex-1">
-                                  <div className="flex items-center space-x-2 text-sm">
-                                    {safeDateString ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                                        📅 {(() => {
-                                          try {
-                                            return formatDateUtil(safeDateString);
-                                          } catch (error) {
-                                            console.error('❌ selection.date 날짜 포맷 오류:', error, safeDateString);
-                                            return '날짜 오류';
-                                          }
-                                        })()}
-                                      </span> : null}
-                                    <span className="text-gray-700">⏰ {selection.time}</span>
-                                    <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
+                                <label className="flex items-center cursor-pointer flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => handleMultipleAssignmentToggle(applicant.id, optionValue, e.target.checked)}
+                                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                  />
+                                  <div className="ml-3 flex-1">
+                                    <div className="flex items-center space-x-2 text-sm">
+                                      {safeDateString ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                                          📅 {formatDateUtil(safeDateString)}
+                                        </span> : null}
+                                      <span className="text-gray-700">⏰ {selection.time}</span>
+                                      <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
+                                    </div>
                                   </div>
-                                </div>
-                              </label>
+                                </label>
+                                
+                                {/* 시간 수정 드롭다운 */}
+                                <select
+                                  value={selection.time}
+                                  onChange={async (e) => {
+                                    const newTime = e.target.value;
+                                    if (!jobPosting || !newTime) return;
+
+                                    try {
+                                      const applicationRef = doc(db, "applications", applicant.id);
+                                      
+                                      // assignedTimes 배열에서 해당 인덱스의 시간 업데이트
+                                      const updatedTimes = applicant.assignedTimes ? [...applicant.assignedTimes] : [];
+                                      if (updatedTimes.length > index) {
+                                        updatedTimes[index] = newTime;
+                                      } else {
+                                        // 배열 크기가 부족하면 빈 값으로 채우고 해당 인덱스에 설정
+                                        while (updatedTimes.length <= index) {
+                                          updatedTimes.push('');
+                                        }
+                                        updatedTimes[index] = newTime;
+                                      }
+                                      
+                                      await updateDoc(applicationRef, {
+                                        assignedTimes: updatedTimes,
+                                        assignedTime: index === 0 ? newTime : applicant.assignedTime // 첫 번째 시간만 단일 필드 업데이트
+                                      });
+                                      
+                                      // 지원자 목록 새로고침
+                                      loadApplicants(jobPosting.id);
+                                      
+                                      alert('지원 시간이 성공적으로 수정되었습니다.');
+                                    } catch (error) {
+                                      console.error('Error updating application time:', error);
+                                      alert('지원 시간 수정 중 오류가 발생했습니다.');
+                                    }
+                                  }}
+                                  className="text-xs border border-gray-300 rounded px-2 py-1 ml-2"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {/* 사용 가능한 시간대 옵션들 */}
+                                  {jobPosting?.timeSlots?.map((ts: TimeSlot) => (
+                                    <option key={ts.time} value={ts.time}>
+                                      {ts.time}
+                                    </option>
+                                  ))}
+                                  {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
+                                    dateReq.timeSlots.map((ts: TimeSlot) => (
+                                      <option key={`${dateReq.date}-${ts.time}`} value={ts.time}>
+                                        {ts.time}
+                                      </option>
+                                    ))
+                                  )}
+                                </select>
+                              </div>
                             );
                           })}
                         </div>
@@ -777,14 +820,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                 return (
                                 <div key={index} className="flex items-center space-x-2">
                                   {confirmedSafeDateString ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                                      📅 {(() => {
-                                        try {
-                                          return formatDateUtil(confirmedSafeDateString);
-                                        } catch (error) {
-                                          console.error('❌ confirmed selection.date 날짜 포맷 오류:', error, confirmedSafeDateString);
-                                          return '날짜 오류';
-                                        }
-                                      })()}
+                                      📅 {formatDateUtil(confirmedSafeDateString)}
                                     </span> : null}
                                   <span>⏰ {selection.time}</span>
                                   <span>👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
@@ -798,25 +834,20 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         // 기존 단일 선택 지원자 표시 (하위 호환성)
                         return (
                           <p>
-                            {applicant.assignedDate ? <span className="text-blue-600 font-medium">📅 {(() => {
-                              try {
-                                return formatDateUtil(applicant.assignedDate);
-                              } catch (error) {
-                                console.error('❌ ApplicantListTab assignedDate 포맷 오류:', error, applicant.assignedDate);
-                                return '날짜 오류';
-                              }
-                            })()} | </span> : null}
+                            {applicant.assignedDate ? <span className="text-blue-600 font-medium">📅 {formatDateUtil(applicant.assignedDate)} | </span> : null}
                             {applicant.assignedTime} - {applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`) : applicant.assignedRole}
                           </p>
                         );
                       })()}
                     </div>
-                    <button 
-                      onClick={() => handleCancelConfirmation(applicant)}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium"
-                    >
-                      ❌ 확정 취소
-                    </button>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleCancelConfirmation(applicant)}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium"
+                      >
+                        ❌ 확정 취소
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -824,6 +855,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           ))}
         </div>
       )}
+
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { StaffData } from '../hooks/useStaffManagement';
 import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
+import { parseToDate } from '../utils/jobPosting/dateUtils';
 import AttendanceStatusCard from './AttendanceStatusCard';
 
 interface StaffCardProps {

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaTimes } from 'react-icons/fa';
+import { Timestamp } from 'firebase/firestore';
 
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useStaffManagement } from '../../hooks/useStaffManagement';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
+import { parseToDate } from '../../utils/jobPosting/dateUtils';
 import { AttendanceExceptionHandler } from '../AttendanceExceptionHandler';
 import BulkActionsModal from '../BulkActionsModal';
 import PerformanceMonitor from '../PerformanceMonitor';
@@ -44,6 +46,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     groupByDate,
     setGroupByDate,
     deleteStaff,
+    refreshStaffData,
     toggleDateExpansion,
     formatTimeDisplay,
     getTimeSlotColor
@@ -77,24 +80,92 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const { registerComponentMetrics } = usePerformanceMetrics();
   
-  // 출퇴근 시간 수정 핸들러
-  const handleEditWorkTime = (staffId: string) => {
+  // 출퇴근 시간 수정 핸들러 (다중 날짜 지원)
+  const handleEditWorkTime = (staffId: string, targetDate?: string) => {
+    const staff = staffData.find(s => s.id === staffId);
+    if (!staff) {
+      console.log('스태프 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 대상 날짜 결정: 파라미터로 받은 날짜 또는 스태프의 assignedDate 또는 오늘 날짜
+    const workDate = targetDate || staff.assignedDate || new Date().toISOString().split('T')[0];
+    
+    // 해당 날짜의 workLog 찾기
     const workLog = attendanceRecords.find(record => 
       record.workLog?.eventId === (jobPosting?.id || 'default-event') && 
       record.staffId === staffId &&
-      record.workLog?.date === new Date().toISOString().split('T')[0]
+      record.workLog?.date === workDate
     );
     
-    if (workLog) {
-      setSelectedWorkLog(workLog);
+    if (workLog && workLog.workLog) {
+      setSelectedWorkLog(workLog.workLog);
       setIsWorkTimeEditorOpen(true);
     } else {
-      console.log('오늘 날짜에 대한 근무 기록을 찾을 수 없습니다.');
+      // 해당 날짜의 가상 WorkLog 생성
+      const virtualWorkLog = {
+        id: `virtual_${staffId}_${workDate}`,
+        eventId: jobPosting?.id || 'default-event',
+        staffId: staffId,
+        date: workDate,
+        scheduledStartTime: staff.assignedTime ? (() => {
+          try {
+            const timeParts = staff.assignedTime.split(':');
+            if (timeParts.length !== 2) {
+              console.error('Invalid assignedTime format:', staff.assignedTime);
+              return null;
+            }
+            
+            const [hours, minutes] = timeParts.map(Number);
+            
+            // 유효하지 않은 시간 값 검사
+            if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+              console.error('Invalid assignedTime values:', { hours, minutes, original: staff.assignedTime });
+              return null;
+            }
+            
+            // parseToDate를 사용하여 workDate를 Date로 변환
+            let date = parseToDate(workDate);
+            if (!date) {
+              console.error('Invalid workDate, using current date:', workDate);
+              date = new Date();
+            }
+            
+            date.setHours(hours, minutes, 0, 0);
+            
+            // 최종 날짜가 유효한지 확인
+            if (isNaN(date.getTime())) {
+              console.error('Invalid final date created:', date);
+              return null;
+            }
+            
+            return Timestamp.fromDate(date);
+          } catch (error) {
+            console.error('Error creating scheduledStartTime:', error);
+            return null;
+          }
+        })() : null,
+        scheduledEndTime: null,
+        actualStartTime: null,
+        actualEndTime: null
+      };
+      
+      setSelectedWorkLog(virtualWorkLog);
+      setIsWorkTimeEditorOpen(true);
     }
   };
   
-  const handleWorkTimeUpdate = (updatedWorkLog: any) => {
+  const handleWorkTimeUpdate = async (updatedWorkLog: any) => {
     console.log('근무 시간이 업데이트되었습니다:', updatedWorkLog);
+    
+    // 스태프 데이터 새로고침하여 시간 열 업데이트
+    try {
+      await refreshStaffData();
+      console.log('스태프 데이터 새로고침 완료');
+    } catch (error) {
+      console.error('스태프 데이터 새로고침 오류:', error);
+    }
+    
     // 성공 메시지는 WorkTimeEditor 내부에서 처리
   };
   

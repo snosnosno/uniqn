@@ -16,6 +16,120 @@ const addToCache = (key: string, value: string) => {
 };
 
 /**
+ * 통합된 Timestamp/Date 변환 함수
+ * 모든 유형의 날짜 입력을 Date 객체로 변환
+ */
+export const parseToDate = (dateInput: any): Date | null => {
+  if (!dateInput) {
+    return null;
+  }
+
+  try {
+    // 1. Date 객체인 경우
+    if (dateInput instanceof Date) {
+      return isNaN(dateInput.getTime()) ? null : dateInput;
+    }
+
+    // 2. Firebase Timestamp 객체인 경우
+    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
+      const seconds = dateInput.seconds;
+      const nanoseconds = dateInput.nanoseconds || 0;
+      
+      // 유효성 검증 (1970~2038년 범위)
+      if (typeof seconds !== 'number' || seconds < 0 || seconds > 2147483647) {
+        console.warn('Invalid Timestamp seconds:', seconds);
+        return null;
+      }
+      
+      if (typeof nanoseconds !== 'number' || nanoseconds < 0 || nanoseconds >= 1000000000) {
+        console.warn('Invalid Timestamp nanoseconds:', nanoseconds);
+        return null;
+      }
+      
+      // Timestamp 변환
+      if (typeof dateInput.toDate === 'function') {
+        const date = dateInput.toDate();
+        return isNaN(date.getTime()) ? null : date;
+      } else {
+        const date = new Date(seconds * 1000 + nanoseconds / 1000000);
+        return isNaN(date.getTime()) ? null : date;
+      }
+    }
+
+    // 3. Legacy Timestamp 객체인 경우 (nanoseconds 없음)
+    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
+      const seconds = dateInput.seconds;
+      
+      if (typeof seconds !== 'number' || seconds < 0 || seconds > 2147483647) {
+        console.warn('Invalid legacy Timestamp seconds:', seconds);
+        return null;
+      }
+      
+      const date = new Date(seconds * 1000);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    // 4. 문자열인 경우
+    if (typeof dateInput === 'string') {
+      const trimmed = dateInput.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      // 4-1. 이미 포맷된 문자열인지 확인 (yy-MM-dd(요일) 형식)
+      const alreadyFormattedPattern = /^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/;
+      if (alreadyFormattedPattern.test(trimmed)) {
+        // 포맷된 문자열에서 날짜 추출
+        const parts = trimmed.split('(')[0].split('-');
+        if (parts.length === 3) {
+          const year = 2000 + parseInt(parts[0]); // yy -> yyyy
+          const month = parseInt(parts[1]) - 1; // 0-based month
+          const day = parseInt(parts[2]);
+          const date = new Date(year, month, day);
+          return isNaN(date.getTime()) ? null : date;
+        }
+      }
+
+      // 4-2. Timestamp 문자열 형태 체크
+      const timestampPatterns = [
+        /Timestamp\(seconds=(\d+),?\s*nanoseconds=(\d+)\)/i,
+        /seconds=(\d+),?\s*nanoseconds=(\d+)/i
+      ];
+      
+      for (const pattern of timestampPatterns) {
+        const match = trimmed.match(pattern);
+        if (match) {
+          const seconds = parseInt(match[1]);
+          const nanoseconds = parseInt(match[2]);
+          
+          if (!isNaN(seconds) && seconds >= 0 && seconds <= 2147483647) {
+            const date = new Date(seconds * 1000 + nanoseconds / 1000000);
+            if (!isNaN(date.getTime())) {
+              return date;
+            }
+          }
+        }
+      }
+
+      // 4-3. 일반 문자열을 Date로 변환
+      const date = new Date(trimmed);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    // 5. 숫자인 경우 (밀리초 timestamp)
+    if (typeof dateInput === 'number') {
+      const date = new Date(dateInput);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error parsing date:', error, dateInput);
+    return null;
+  }
+};
+
+/**
  * 다양한 날짜 형식을 yy-MM-dd(요일) 형식으로 포맷팅
  * 캐싱 시스템을 통한 성능 최적화 적용
  */
@@ -31,142 +145,21 @@ export const formatDate = (dateInput: any): string => {
   }
 
   if (!dateInput) {
+    addToCache(cacheKey, '');
     return '';
   }
-  
-  // 결과를 저장할 변수
-  let formattedResult: string;
 
-  // 이미 포맷된 문자열인지 확인 (yy-MM-dd(요일) 형식)
-  if (typeof dateInput === 'string') {
-    const alreadyFormattedPattern = /^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/;
-    if (alreadyFormattedPattern.test(dateInput)) {
-      formattedResult = dateInput;
-      // 캐시에 저장하고 반환
-      addToCache(cacheKey, formattedResult);
-      return formattedResult;
-    }
-  }
-  
   try {
-    let date: Date;
+    // 통합된 변환 함수 사용
+    const date = parseToDate(dateInput);
     
-    // Handle Firebase Timestamp object
-    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
-      // Timestamp 객체를 Date로 변환
-      if (typeof dateInput.toDate === 'function') {
-        date = dateInput.toDate();
-      } else {
-        date = new Date(dateInput.seconds * 1000 + dateInput.nanoseconds / 1000000);
-      }
-    } else if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
-      date = new Date(dateInput.seconds * 1000);
-    } else if (dateInput instanceof Date) {
-      date = dateInput;
-    } else if (typeof dateInput === 'string') {
-      // 빈 문자열 체크
-      if (dateInput.trim() === '') {
-        return '';
-      }
-      
-      // Timestamp 문자열 형태 체크 - 더 관대한 정규식
-      // "Timestamp(seconds=1753488000, nanoseconds=0)" 또는 유사한 형태들
-      
-      // 여러 정규식 시도 - 더 정확한 패턴들
-      const patterns = [
-        /Timestamp\(seconds=(\d+), nanoseconds=(\d+)\)/i,                  // 정확한 형태
-        /Timestamp\(seconds=(\d+),\s*nanoseconds=(\d+)\)/i,               // 공백 처리
-        /Timestamp\s*\(\s*seconds\s*=\s*(\d+)\s*,\s*nanoseconds\s*=\s*(\d+)\s*\)/i, // 관대한 공백
-        /^Timestamp\(seconds=(\d+),\s*nanoseconds=(\d+)\)$/i              // 전체 매칭
-      ];
-      
-      let timestampMatch = null;
-      for (let i = 0; i < patterns.length; i++) {
-        timestampMatch = dateInput.match(patterns[i]);
-        if (timestampMatch) break;
-      }
-      
-      if (timestampMatch) {
-        const seconds = parseInt(timestampMatch[1]);
-        const nanoseconds = parseInt(timestampMatch[2]);
-        
-        // seconds 값 검증
-        if (isNaN(seconds) || seconds < 0) {
-          formattedResult = '잘못된 타임스탬프';
-          addToCache(cacheKey, formattedResult);
-          return formattedResult;
-        }
-        
-        const milliseconds = seconds * 1000 + (nanoseconds || 0) / 1000000;
-        date = new Date(milliseconds);
-        
-        // Date 유효성 재확인
-        if (isNaN(date.getTime())) {
-          date = new Date(seconds * 1000);
-        }
-      } else {
-        
-        // 마지막 수단: indexOf와 substring으로 직접 추출
-        if (dateInput.includes('seconds=') && dateInput.includes('nanoseconds=')) {
-          const secondsStart = dateInput.indexOf('seconds=') + 'seconds='.length;
-          const secondsEnd = dateInput.indexOf(',', secondsStart);
-          const nanosecondsStart = dateInput.indexOf('nanoseconds=') + 'nanoseconds='.length;
-          const nanosecondsEnd = dateInput.indexOf(')', nanosecondsStart);
-          
-          if (secondsEnd > secondsStart && nanosecondsEnd > nanosecondsStart) {
-            const secondsStr = dateInput.substring(secondsStart, secondsEnd).trim();
-            const nanosecondsStr = dateInput.substring(nanosecondsStart, nanosecondsEnd).trim();
-            
-            const seconds = parseInt(secondsStr);
-            const nanoseconds = parseInt(nanosecondsStr);
-            
-            if (!isNaN(seconds) && !isNaN(nanoseconds)) {
-              date = new Date(seconds * 1000 + nanoseconds / 1000000);
-            } else {
-              date = new Date(dateInput);
-            }
-          } else {
-            date = new Date(dateInput);
-          }
-        } else {
-          date = new Date(dateInput);
-        }
-      }
-    } else if (typeof dateInput === 'number') {
-      date = new Date(dateInput);
-    } else {
-      formattedResult = '알 수 없는 날짜 형식';
-      addToCache(cacheKey, formattedResult);
-      return formattedResult;
+    if (!date) {
+      const errorResult = '날짜 처리 오류';
+      addToCache(cacheKey, errorResult);
+      return errorResult;
     }
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      // 마지막 시도: seconds 값을 직접 추출해보기
-      if (typeof dateInput === 'string' && dateInput.includes('seconds=')) {
-        const secondsMatch = dateInput.match(/seconds=(\d+)/);
-        if (secondsMatch) {
-          const seconds = parseInt(secondsMatch[1]);
-          const fallbackDate = new Date(seconds * 1000);
-          if (!isNaN(fallbackDate.getTime())) {
-            date = fallbackDate;
-          } else {
-            formattedResult = '날짜 처리 불가';
-            addToCache(cacheKey, formattedResult);
-            return formattedResult;
-          }
-        } else {
-          formattedResult = '날짜 형식 오류';
-          addToCache(cacheKey, formattedResult);
-          return formattedResult;
-        }
-      } else {
-        formattedResult = '날짜 형식 오류';
-        addToCache(cacheKey, formattedResult);
-        return formattedResult;
-      }
-    }
-    
+
+    // yy-MM-dd(요일) 형식으로 포맷팅
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -175,13 +168,14 @@ export const formatDate = (dateInput: any): string => {
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const dayOfWeek = dayNames[dayOfWeekIndex] || '?';
     
-    formattedResult = `${year}-${month}-${day}(${dayOfWeek})`;
+    const formattedResult = `${year}-${month}-${day}(${dayOfWeek})`;
     addToCache(cacheKey, formattedResult);
     return formattedResult;
   } catch (error) {
-    formattedResult = '날짜 처리 오류';
-    addToCache(cacheKey, formattedResult);
-    return formattedResult;
+    console.error('Error formatting date:', error, dateInput);
+    const errorResult = '날짜 처리 오류';
+    addToCache(cacheKey, errorResult);
+    return errorResult;
   }
 };
 
@@ -189,52 +183,21 @@ export const formatDate = (dateInput: any): string => {
  * 다양한 날짜 형식을 yyyy-MM-dd 문자열로 변환
  */
 export const convertToDateString = (dateInput: any): string => {
-  if (!dateInput) return '';
+  if (!dateInput) {
+    return '';
+  }
   
   try {
-    let date: Date;
-    
-    // Handle Firebase Timestamp object
-    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
-      // Timestamp 객체를 Date로 변환
-      if (typeof dateInput.toDate === 'function') {
-        date = dateInput.toDate();
-      } else {
-        date = new Date(dateInput.seconds * 1000 + dateInput.nanoseconds / 1000000);
-      }
-    } else if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
-      date = new Date(dateInput.seconds * 1000);
-    } else if (dateInput instanceof Date) {
-      date = dateInput;
-    } else if (typeof dateInput === 'string') {
-      // 빈 문자열 체크
-      if (dateInput.trim() === '') {
-        return '';
-      }
-      // 이미 yyyy-MM-dd 형식인지 확인
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-        return dateInput;
-      }
-      
-      // Timestamp 문자열 형태 체크
-      const timestampMatch = dateInput.match(/Timestamp\s*\(\s*seconds\s*=\s*(\d+)\s*,\s*nanoseconds\s*=\s*(\d+)\s*\)/i);
-      if (timestampMatch) {
-        const seconds = parseInt(timestampMatch[1]);
-        const nanoseconds = parseInt(timestampMatch[2]);
-        date = new Date(seconds * 1000 + nanoseconds / 1000000);
-      } else {
-        date = new Date(dateInput);
-      }
-    } else if (typeof dateInput === 'number') {
-      date = new Date(dateInput);
-    } else {
-      console.warn('Unknown date format:', dateInput);
-      return '';
+    // 이미 yyyy-MM-dd 형식인지 확인
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+      return dateInput.trim();
     }
     
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid date:', dateInput);
+    // 통합된 변환 함수 사용
+    const date = parseToDate(dateInput);
+    
+    if (!date) {
+      console.warn('Invalid date for convertToDateString:', dateInput);
       return '';
     }
     
@@ -289,42 +252,25 @@ export const dropdownValueToDateString = (value: { year?: string; month?: string
 /**
  * 다양한 날짜 형식을 Firebase Timestamp로 변환
  */
-export const convertToTimestamp = (dateInput: any): any => {
-  if (!dateInput) return null;
+export const convertToTimestamp = (dateInput: any): Timestamp | null => {
+  if (!dateInput) {
+    return null;
+  }
   
   try {
-    let date: Date;
-    
-    // Handle Firebase Timestamp object (이미 Timestamp라면 그대로 반환)
+    // 이미 Timestamp 객체인 경우 그대로 반환
     if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
       return dateInput; // 이미 Timestamp 객체
-    } else if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
-      return dateInput; // 이미 Timestamp 객체 (legacy)
-    } else if (dateInput instanceof Date) {
-      date = dateInput;
-    } else if (typeof dateInput === 'string') {
-      if (dateInput.trim() === '') {
-        return null;
-      }
-      
-      // Timestamp 문자열 형태 체크
-      const timestampMatch = dateInput.match(/Timestamp\s*\(\s*seconds\s*=\s*(\d+)\s*,\s*nanoseconds\s*=\s*(\d+)\s*\)/i);
-      if (timestampMatch) {
-        const seconds = parseInt(timestampMatch[1]);
-        const nanoseconds = parseInt(timestampMatch[2]);
-        date = new Date(seconds * 1000 + nanoseconds / 1000000);
-      } else {
-        date = new Date(dateInput);
-      }
-    } else if (typeof dateInput === 'number') {
-      date = new Date(dateInput);
-    } else {
-      console.warn('Unknown date format for Timestamp conversion:', dateInput);
-      return null;
     }
     
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
+    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
+      return dateInput; // 이미 Timestamp 객체 (legacy)
+    }
+    
+    // 통합된 변환 함수 사용
+    const date = parseToDate(dateInput);
+    
+    if (!date) {
       console.warn('Invalid date for Timestamp conversion:', dateInput);
       return null;
     }
@@ -359,3 +305,4 @@ export const getFormatDateCacheStats = () => ({
   maxSize: maxCacheSize,
   usage: `${((formatDateCache.size / maxCacheSize) * 100).toFixed(1)}%`
 });
+
