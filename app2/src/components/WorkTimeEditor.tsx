@@ -15,6 +15,7 @@ interface WorkLogWithTimestamp {
   id: string;
   eventId: string;
   staffId: string;
+  dealerId?: string; // dealerId 추가 (선택적 속성)
   date: string;
   scheduledStartTime: Timestamp | Date | null;
   scheduledEndTime: Timestamp | Date | null;
@@ -29,19 +30,21 @@ interface WorkTimeEditorProps {
   onClose: () => void;
   workLog: WorkLogWithTimestamp | null;
   onUpdate?: (updatedWorkLog: WorkLogWithTimestamp) => void;
+  timeType?: 'start' | 'end'; // 편집할 시간 타입
 }
 
 const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   isOpen,
   onClose,
   workLog,
-  onUpdate
+  onUpdate,
+  timeType
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   
-  const [actualStartTime, setActualStartTime] = useState('');
-  const [actualEndTime, setActualEndTime] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -157,17 +160,15 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   const validateTimes = () => {
     const errors: string[] = [];
     
-    if (!actualStartTime) {
-      errors.push(t('attendance.validation.startTimeRequired'));
-    } else if (!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(actualStartTime)) {
-      errors.push(t('attendance.validation.invalidTimeFormat'));
+    // 시작시간 유효성 검사
+    if (startTime && startTime.trim() !== '' && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(startTime)) {
+      errors.push('시작 시간 형식이 올바르지 않습니다.');
     }
     
-    if (actualEndTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(actualEndTime)) {
-      errors.push(t('attendance.validation.invalidTimeFormat'));
+    // 종료시간 유효성 검사 (선택사항)
+    if (endTime && endTime.trim() !== '' && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(endTime)) {
+      errors.push('종료 시간 형식이 올바르지 않습니다.');
     }
-    
-    // 다음날 계산을 지원하므로 종료 시간이 시작 시간보다 이른 것을 허용
     
     setValidationErrors(errors);
     return errors.length === 0;
@@ -175,29 +176,41 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
   // 시간 수정 함수
   const handleUpdateTime = async () => {
-    if (!workLog || !validateTimes()) return;
+    console.log('🔘 저장 버튼 클릭됨');
+    console.log('🔍 현재 시간 상태:', { startTime, endTime, startHour, startMinute, endHour, endMinute });
     
+    if (!workLog) {
+      console.error('❌ workLog가 없습니다');
+      return;
+    }
+    
+    const isValid = validateTimes();
+    console.log('🔍 유효성 검사 결과:', isValid, 'errors:', validationErrors);
+    
+    if (!isValid) {
+      console.error('❌ 유효성 검사 실패');
+      return;
+    }
+    
+    console.log('✅ 시간 업데이트 진행');
     setIsUpdating(true);
     try {
-      const baseDate = toDate(workLog.scheduledStartTime);
+      const baseDate = toDate(workLog.scheduledStartTime || new Date());
       console.log('handleUpdateTime - baseDate:', baseDate);
       
-      const newStartTime = parseTimeString(actualStartTime, baseDate, false);
-      const newEndTime = actualEndTime ? parseTimeString(actualEndTime, baseDate, true, actualStartTime) : null;
+      const newStartTime = startTime && startTime.trim() !== '' ? 
+        parseTimeString(startTime, baseDate, false) : null;
+      const newEndTime = endTime && endTime.trim() !== '' ? 
+        parseTimeString(endTime, baseDate, true, startTime) : null;
       
       console.log('handleUpdateTime - parsed times:', {
-        actualStartTime,
-        actualEndTime,
+        startTime,
+        endTime,
         newStartTime,
         newEndTime
       });
       
-      // 시작 시간이 null인 경우 오류 처리
-      if (!newStartTime) {
-        showError('유효하지 않은 시작 시간입니다.');
-        setIsUpdating(false);
-        return;
-      }
+      // 시작 시간과 종료 시간이 모두 없는 경우 스태프의 assignedTime을 '미정'로 설정
       
       // 가상 WorkLog인지 확인 (ID가 'virtual_'로 시작하는 경우)
       const isVirtual = workLog.id.startsWith('virtual_');
@@ -207,18 +220,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         const realWorkLogId = `${workLog.eventId}_${workLog.staffId}_${workLog.date}`;
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         
-        // Timestamp 변환 시 오류 처리
-        let scheduledStartTimestamp = null;
+        // 통합된 시간 처리: 입력된 시간을 scheduledStartTime으로 사용
+        let scheduledStartTimestamp = newStartTime;
         let scheduledEndTimestamp = null;
-        
-        if (workLog.scheduledStartTime) {
-          try {
-            const scheduledStartDate = toDate(workLog.scheduledStartTime);
-            scheduledStartTimestamp = Timestamp.fromDate(scheduledStartDate);
-          } catch (error) {
-            console.error('Error converting scheduledStartTime:', error);
-          }
-        }
         
         if (workLog.scheduledEndTime) {
           try {
@@ -231,63 +235,46 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         
         await setDoc(workLogRef, {
           eventId: workLog.eventId,
-          staffId: workLog.staffId,
+          dealerId: workLog.staffId,
+          dealerName: 'Unknown',
+          type: 'schedule',
           date: workLog.date,
           scheduledStartTime: scheduledStartTimestamp,
           scheduledEndTime: scheduledEndTimestamp,
-          actualStartTime: newStartTime,
-          actualEndTime: newEndTime,
+          // actualStartTime과 actualEndTime은 설정하지 않음 (출석 상태 변경 방지)
+          actualStartTime: null,
+          actualEndTime: null,
+          totalWorkMinutes: 0,
+          totalBreakMinutes: 0,
+          tableAssignments: [],
+          status: 'scheduled', // 출근시간 변경해도 상태는 변경하지 않음 (직접 수정 또는 QR 인증으로만 변경)
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         });
       } else {
         // 기존 WorkLog 업데이트
         const workLogRef = doc(db, 'workLogs', workLog.id);
-        await updateDoc(workLogRef, {
-          actualStartTime: newStartTime,
-          actualEndTime: newEndTime,
+        const updateData: any = {
+          scheduledStartTime: newStartTime, // 통합된 시간을 예정시간으로 저장
+          scheduledEndTime: newEndTime, // 종료시간도 예정시간으로 저장
+          // actualStartTime과 actualEndTime은 업데이트하지 않음 (출석 상태 변경 방지)
           updatedAt: Timestamp.now()
-        });
+        };
+        
+        await updateDoc(workLogRef, updateData);
       }
       
-      // 스태프의 assignedTime도 업데이트 (시간 열 동기화를 위해)
-      if (workLog.staffId && newStartTime) {
-        try {
-          const newTimeString = newStartTime.toDate().toLocaleTimeString('en-US', { 
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          // staff 컬렉션에서 해당 스태프 찾아서 assignedTime 업데이트
-          const staffQuery = query(
-            collection(db, 'staff'), 
-            where('userId', '==', workLog.staffId),
-            where('postingId', '==', workLog.eventId)
-          );
-          
-          const staffSnapshot = await getDocs(staffQuery);
-          const updatePromises = staffSnapshot.docs.map(staffDoc => 
-            updateDoc(doc(db, 'staff', staffDoc.id), {
-              assignedTime: newTimeString,
-              updatedAt: Timestamp.now()
-            })
-          );
-          
-          await Promise.all(updatePromises);
-          console.log('스태프 assignedTime 업데이트 완료:', newTimeString);
-        } catch (error) {
-          console.error('스태프 assignedTime 업데이트 오류:', error);
-          // 이 오류는 전체 프로세스를 중단시키지 않음
-        }
-      }
+      // 날짜별 시간 관리를 위해 staff 컬렉션 업데이트 제거
+      // workLogs 컬렉션만 업데이트하고, 화면 표시는 workLogs 데이터 우선 사용
+      console.log('✅ workLogs 컬렉션만 업데이트 (날짜별 개별 시간 관리)');
       
       // 업데이트된 데이터로 콜백 호출
       if (onUpdate) {
         const updatedWorkLog = {
           ...workLog,
-          actualStartTime: newStartTime,
-          actualEndTime: newEndTime,
+          scheduledStartTime: newStartTime,
+          scheduledEndTime: newEndTime,
+          // actualStartTime과 actualEndTime은 설정하지 않음 (출석 상태 변경 방지)
           updatedAt: Timestamp.now()
         };
         onUpdate(updatedWorkLog);
@@ -306,11 +293,101 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   // 모달이 열릴 때 기존 시간 값 설정
   useEffect(() => {
     if (isOpen && workLog) {
-      setActualStartTime(formatTimeForInput(workLog.actualStartTime));
-      setActualEndTime(formatTimeForInput(workLog.actualEndTime));
+      // 실제시간이 있으면 실제시간 우선, 없으면 예정시간 사용
+      const actualStartTimeString = formatTimeForInput(workLog.actualStartTime);
+      const scheduledTimeString = formatTimeForInput(workLog.scheduledStartTime);
+      const startTimeString = actualStartTimeString || scheduledTimeString;
+      const endTimeString = formatTimeForInput(workLog.actualEndTime);
+      
+      setStartTime(startTimeString);
+      setEndTime(endTimeString);
+      
+      // 분리된 시간 상태 초기화
+      const startParts = parseTime(startTimeString);
+      setStartHour(startParts.hour);
+      setStartMinute(startParts.minute);
+      
+      const endParts = parseTime(endTimeString);
+      setEndHour(endParts.hour);
+      setEndMinute(endParts.minute);
+      
       setValidationErrors([]);
     }
   }, [isOpen, workLog]);
+
+  // timeType에 따른 모달 제목 생성
+  const getModalTitle = () => {
+    if (timeType === 'start') {
+      return '출근 시간 수정';
+    } else if (timeType === 'end') {
+      return '퇴근 시간 수정';
+    }
+    return t('attendance.editWorkTime');
+  };
+
+  // 시간과 분 옵션 생성
+  const generateHourOptions = () => {
+    const options = [];
+    for (let hour = 0; hour < 24; hour++) {
+      options.push({
+        value: hour.toString().padStart(2, '0'),
+        label: `${hour.toString().padStart(2, '0')}시`
+      });
+    }
+    return options;
+  };
+
+  const generateMinuteOptions = () => {
+    const options = [];
+    for (let minute = 0; minute < 60; minute += 5) {
+      options.push({
+        value: minute.toString().padStart(2, '0'),
+        label: `${minute.toString().padStart(2, '0')}분`
+      });
+    }
+    return options;
+  };
+
+  const hourOptions = generateHourOptions();
+  const minuteOptions = generateMinuteOptions();
+
+  // 시간 분리 함수
+  const parseTime = (timeString: string) => {
+    if (!timeString) return { hour: '', minute: '' };
+    const [hour, minute] = timeString.split(':');
+    return { hour: hour || '', minute: minute || '' };
+  };
+
+  const combineTime = (hour: string, minute: string) => {
+    // 시간과 분이 모두 있을 때만 결합
+    if (hour && minute) {
+      return `${hour}:${minute}`;
+    }
+    // 둘 중 하나라도 없으면 빈 문자열 반환 (이는 '미정' 상태를 의미)
+    return '';
+  };
+
+  // 시작 시간 분리
+  const [startHour, setStartHour] = useState('');
+  const [startMinute, setStartMinute] = useState('');
+
+  // 종료 시간 분리
+  const [endHour, setEndHour] = useState('');
+  const [endMinute, setEndMinute] = useState('');
+
+  // 시간 업데이트 핸들러
+  const handleStartTimeChange = (hour: string, minute: string) => {
+    setStartHour(hour);
+    setStartMinute(minute);
+    setStartTime(combineTime(hour, minute));
+  };
+
+  const handleEndTimeChange = (hour: string, minute: string) => {
+    setEndHour(hour);
+    setEndMinute(minute);
+    setEndTime(combineTime(hour, minute));
+  };
+
 
   if (!workLog) return null;
 
@@ -318,7 +395,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('attendance.editWorkTime')}
+      title={getModalTitle()}
     >
       <div className="space-y-6">
         {/* 기본 정보 */}
@@ -371,72 +448,149 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           </p>
         </div>
 
-        {/* 예정 시간 */}
+        {/* 시간 편집 */}
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="font-semibold text-lg mb-3 flex items-center">
-            <FaClock className="mr-2 text-blue-600" />
-            {t('attendance.scheduledTimes')}
+            <FaEdit className="mr-2 text-blue-600" />
+            시간 설정
           </h3>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('attendance.scheduledStartTime')}
-            </label>
-            <div className="text-lg font-mono">
-              {formatTimeForInput(workLog.scheduledStartTime) || 'N/A'}
-            </div>
-          </div>
-        </div>
-
-        {/* 실제 시간 편집 */}
-        <div className="bg-green-50 p-4 rounded-lg">
-          <h3 className="font-semibold text-lg mb-3 flex items-center">
-            <FaEdit className="mr-2 text-green-600" />
-            {t('attendance.actualTimes')}
-          </h3>
+          <p className="text-sm text-gray-600 mb-3">
+            시간을 입력하지 않으면 '미정'로 표시됩니다.
+          </p>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('attendance.actualStartTime')}
+            <div className={timeType === 'start' ? 'ring-2 ring-blue-500 rounded-lg p-2 -m-2' : ''}>
+              <label className={`block text-sm font-medium mb-1 ${timeType === 'start' ? 'text-blue-700 font-semibold' : 'text-gray-700'}`}>
+                시작 시간
+                {timeType === 'start' && <span className="ml-1 text-blue-600">← 편집 중</span>}
               </label>
-              <input
-                type="time"
-                value={actualStartTime}
-                onChange={(e) => setActualStartTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-lg"
-              />
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <select
+                    value={startHour}
+                    onChange={(e) => handleStartTimeChange(e.target.value, startMinute)}
+                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
+                      timeType === 'start' 
+                        ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' 
+                        : 'border-gray-300'
+                    }`}
+                    autoFocus={timeType === 'start'}
+                  >
+                    <option value="">시</option>
+                    {hourOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={startMinute}
+                    onChange={(e) => handleStartTimeChange(startHour, e.target.value)}
+                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
+                      timeType === 'start' 
+                        ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' 
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">분</option>
+                    {minuteOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* 시작시간이 이미 설정되어 있고, end 타입이 아닌 경우에만 지우기 버튼 표시 */}
+                {startTime && timeType !== 'end' && (
+                  <button
+                    onClick={() => {
+                      setStartHour('');
+                      setStartMinute('');
+                      setStartTime('');
+                    }}
+                    className="w-full px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                    title="시작시간 지우기 (미정로 되돌리기)"
+                  >
+                    🗑️ 시작시간 지우기 (미정로 되돌리기)
+                  </button>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('attendance.actualEndTime')} <span className="text-gray-500 text-xs">(선택사항)</span>
+            <div className={timeType === 'end' ? 'ring-2 ring-green-500 rounded-lg p-2 -m-2' : ''}>
+              <label className={`block text-sm font-medium mb-1 ${timeType === 'end' ? 'text-green-700 font-semibold' : 'text-gray-700'}`}>
+                종료 시간
+                <span className="text-gray-500 text-xs">(선택사항)</span>
+                {timeType === 'end' && <span className="ml-1 text-green-600">← 편집 중</span>}
               </label>
-              <input
-                type="time"
-                value={actualEndTime}
-                onChange={(e) => setActualEndTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-lg"
-              />
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <select
+                    value={endHour}
+                    onChange={(e) => handleEndTimeChange(e.target.value, endMinute)}
+                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
+                      timeType === 'end' 
+                        ? 'border-green-500 focus:ring-green-500 focus:border-green-500' 
+                        : 'border-gray-300'
+                    }`}
+                    autoFocus={timeType === 'end'}
+                  >
+                    <option value="">시</option>
+                    {hourOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={endMinute}
+                    onChange={(e) => handleEndTimeChange(endHour, e.target.value)}
+                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
+                      timeType === 'end' 
+                        ? 'border-green-500 focus:ring-green-500 focus:border-green-500' 
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">분</option>
+                    {minuteOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={() => {
+                    setEndHour('');
+                    setEndMinute('');
+                    setEndTime('');
+                  }}
+                  className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  title="종료시간을 미정으로 설정"
+                >
+                  🗑️ 종료시간 지우기 (미정으로 설정)
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* 근무 시간 요약 */}
         <div className="bg-yellow-50 p-4 rounded-lg">
-          <h3 className="font-semibold text-lg mb-3">{t('attendance.workTimeSummary')}</h3>
+          <h3 className="font-semibold text-lg mb-3">근무 시간 요약</h3>
           <div className="text-center">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              실제 근무시간
+              근무시간
             </label>
             <div className="text-2xl font-mono font-bold text-blue-600">
-              {actualStartTime ? (() => {
-                if (actualEndTime) {
-                  // 출근/퇴근 시간 모두 있는 경우
-                  const baseDate = toDate(workLog.scheduledStartTime);
-                  const startTime = parseTimeString(actualStartTime, baseDate, false);
-                  const endTime = parseTimeString(actualEndTime, baseDate, true, actualStartTime);
-                  const minutes = calculateMinutes(startTime, endTime);
+              {startTime ? (() => {
+                if (endTime) {
+                  // 시작/종료 시간 모두 있는 경우
+                  const baseDate = toDate(workLog.scheduledStartTime || new Date());
+                  const parsedStartTime = parseTimeString(startTime, baseDate, false);
+                  const parsedEndTime = parseTimeString(endTime, baseDate, true, startTime);
+                  const minutes = calculateMinutes(parsedStartTime, parsedEndTime);
                   
-                  const startHour = parseInt(actualStartTime.split(':')[0]);
-                  const endHour = parseInt(actualEndTime.split(':')[0]);
+                  const startHour = parseInt(startTime.split(':')[0]);
+                  const endHour = parseInt(endTime.split(':')[0]);
                   const isNextDay = endHour < startHour; // 다음날 여부 판단
                   
                   return (
@@ -444,23 +598,30 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                       <div>{formatMinutesToTime(minutes)}</div>
                       {isNextDay && (
                         <div className="text-sm text-orange-600 mt-1">
-                          (다음날 {actualEndTime}까지)
+                          (다음날 {endTime}까지)
                         </div>
                       )}
                     </div>
                   );
                 } else {
-                  // 출근시간만 있는 경우
+                  // 시작시간만 있는 경우
                   return (
                     <div>
-                      <div className="text-lg">출근시간: {actualStartTime}</div>
+                      <div className="text-lg">시작시간: {startTime}</div>
                       <div className="text-sm text-gray-600 mt-1">
-                        (퇴근시간 미입력)
+                        (종료시간 미정)
                       </div>
                     </div>
                   );
                 }
-              })() : 'N/A'}
+              })() : (
+                <div>
+                  <div className="text-lg text-gray-500">시간 미정</div>
+                  <div className="text-sm text-gray-400 mt-1">
+                    시작시간을 설정해주세요
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

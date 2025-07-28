@@ -5,10 +5,11 @@ import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
 import AttendanceStatusCard from './AttendanceStatusCard';
+import AttendanceStatusDropdown from './AttendanceStatusDropdown';
 
 interface VirtualizedStaffTableProps {
   staffList: StaffData[];
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
@@ -22,7 +23,7 @@ interface VirtualizedStaffTableProps {
 
 interface ItemData {
   staffList: StaffData[];
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
@@ -57,6 +58,45 @@ const VirtualizedTableRow: React.FC<{
   const formattedTime = useCachedTimeDisplay(staff?.assignedTime, formatTimeDisplay);
   const timeSlotColor = useCachedTimeSlotColor(staff?.assignedTime, getTimeSlotColor);
   
+  // 출석 데이터 (항상 호출)
+  const attendanceRecord = staff ? getStaffAttendanceStatus(staff.id) : null;
+  const exceptionRecord = staff ? attendanceRecords.find(r => r.staffId === staff.id) : null;
+
+  // 메모이제이션된 출근/퇴근 시간 데이터 (항상 호출)
+  const memoizedTimeData = useMemo(() => {
+    if (!staff) {
+      return {
+        displayStartTime: '',
+        displayEndTime: '미정',
+        startTimeColor: 'bg-gray-100 text-gray-500',
+        endTimeColor: 'bg-gray-100 text-gray-500',
+        hasEndTime: false
+      };
+    }
+
+    // 실제 출근시간 우선, 없으면 예정시간
+    const actualStartTime = attendanceRecord?.checkInTime || 
+                           exceptionRecord?.workLog?.actualStartTime;
+    const scheduledStartTime = staff.assignedTime;
+    
+    // 출근시간 결정: 실제 시간이 있으면 실제 시간, 없으면 예정 시간
+    const startTime = actualStartTime || scheduledStartTime;
+    
+    // 퇴근시간
+    const endTime = attendanceRecord?.checkOutTime || 
+                   exceptionRecord?.workLog?.actualEndTime;
+    
+    return {
+      displayStartTime: formatTimeDisplay(startTime),
+      displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
+      startTimeColor: getTimeSlotColor(startTime),
+      endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 text-gray-500',
+      hasEndTime: !!endTime,
+      hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
+      isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
+    };
+  }, [staff?.id, staff?.assignedTime, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
+  
   if (!staff) {
     return <div style={style} />;
   }
@@ -66,10 +106,6 @@ const VirtualizedTableRow: React.FC<{
   const avatarInitial = (staff.name || 'U').charAt(0).toUpperCase();
   const roleDisplay = staff.assignedRole || staff.role || '역할 미정';
   const hasContact = !!(staff.phone || staff.email);
-
-  // 출석 데이터
-  const attendanceRecord = getStaffAttendanceStatus(staff.id);
-  const exceptionRecord = attendanceRecords.find(r => r.staffId === staff.id);
   const hasException = !!(exceptionRecord?.workLog?.exception);
   const exceptionType = exceptionRecord?.workLog?.exception?.type;
   const exceptionSeverity = exceptionRecord?.workLog?.exception ? 
@@ -77,11 +113,32 @@ const VirtualizedTableRow: React.FC<{
 
   return (
     <div style={style} className="flex w-full border-b border-gray-200 hover:bg-gray-50 transition-colors">
-      {/* 시간 열 */}
+      {/* 출근 시간 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
-        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${timeSlotColor}`}>
-          ⏰ {formattedTime}
-        </div>
+        <button
+          onClick={() => onEditWorkTime(staff.id, 'start')}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.startTimeColor}`}
+          title={
+            memoizedTimeData.hasActualStartTime 
+              ? "실제 출근시간 수정" 
+              : memoizedTimeData.isScheduledTimeTBD 
+                ? "미정 - 출근시간 설정" 
+                : "예정 출근시간 수정"
+          }
+        >
+          {memoizedTimeData.hasActualStartTime ? '✅' : memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} {memoizedTimeData.displayStartTime}
+        </button>
+      </div>
+      
+      {/* 퇴근 시간 열 */}
+      <div className="px-4 py-4 flex-shrink-0 w-32">
+        <button
+          onClick={() => onEditWorkTime(staff.id, 'end')}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`}
+          title="퇴근 시간 수정"
+        >
+          {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
+        </button>
       </div>
       
       {/* 이름 열 */}
@@ -140,11 +197,12 @@ const VirtualizedTableRow: React.FC<{
       
       {/* 출석 상태 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
-        {attendanceRecord ? (
-          <AttendanceStatusCard
-            status={attendanceRecord.status}
-            checkInTime={attendanceRecord.checkInTime}
-            checkOutTime={attendanceRecord.checkOutTime}
+        {attendanceRecord && attendanceRecord.workLogId ? (
+          <AttendanceStatusDropdown
+            workLogId={attendanceRecord.workLogId}
+            currentStatus={attendanceRecord.status}
+            staffId={staff.id}
+            staffName={staff.name}
             size="sm"
           />
         ) : (
@@ -169,15 +227,8 @@ const VirtualizedTableRow: React.FC<{
       </div>
       
       {/* 작업 열 */}
-      <div className="px-4 py-4 flex-shrink-0 w-40">
+      <div className="px-4 py-4 flex-shrink-0 w-32">
         <div className="flex space-x-1">
-          <button
-            onClick={() => onEditWorkTime(staff.id)}
-            className="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-            title="시간 수정"
-          >
-            시간
-          </button>
           <button
             onClick={() => onExceptionEdit(staff.id)}
             className="px-2 py-1 text-xs font-medium text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded transition-colors"
@@ -248,7 +299,10 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
       {/* 테이블 헤더 */}
       <div className="flex w-full bg-gray-50 border-b border-gray-200">
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          시간
+          출근
+        </div>
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          퇴근
         </div>
         <div className="px-4 py-3 flex-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           이름
@@ -265,7 +319,7 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
         <div className="px-4 py-3 flex-shrink-0 w-24 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           예외
         </div>
-        <div className="px-4 py-3 flex-shrink-0 w-40 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           작업
         </div>
       </div>

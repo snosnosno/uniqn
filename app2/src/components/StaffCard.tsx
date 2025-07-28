@@ -8,10 +8,11 @@ import { StaffData } from '../hooks/useStaffManagement';
 import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
 import AttendanceStatusCard from './AttendanceStatusCard';
+import AttendanceStatusDropdown from './AttendanceStatusDropdown';
 
 interface StaffCardProps {
   staff: StaffData;
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
@@ -70,6 +71,65 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
         getExceptionSeverity(exceptionRecord.workLog.exception.type) : null
     };
   }, [staff.id, getStaffAttendanceStatus, attendanceRecords]);
+
+  // 메모이제이션된 출근/퇴근 시간 데이터
+  const memoizedTimeData = useMemo(() => {
+    // 실제 출근시간 우선, 없으면 예정시간
+    const actualStartTime = memoizedAttendanceData.attendanceRecord?.checkInTime || 
+                           memoizedAttendanceData.exceptionRecord?.workLog?.actualStartTime;
+    
+    // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
+    const workLogScheduledTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledStartTime;
+    const staffAssignedTime = staff.assignedTime;
+    
+    // 시간 우선순위: workLogs의 scheduledStartTime > staff의 assignedTime
+    let scheduledStartTime = staffAssignedTime;
+    if (workLogScheduledTime) {
+      try {
+        // Timestamp를 시간 문자열로 변환
+        const timeDate = workLogScheduledTime.toDate ? workLogScheduledTime.toDate() : new Date(workLogScheduledTime);
+        scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        console.warn('StaffCard workLog scheduledStartTime 변환 오류:', error);
+        // 변환 실패시 staff의 assignedTime 사용
+      }
+    }
+    
+    const startTime = actualStartTime || scheduledStartTime;
+    
+    // 퇴근시간 - workLogs의 scheduledEndTime도 고려
+    const actualEndTime = memoizedAttendanceData.attendanceRecord?.checkOutTime || 
+                         memoizedAttendanceData.exceptionRecord?.workLog?.actualEndTime;
+    
+    const workLogScheduledEndTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledEndTime;
+    let scheduledEndTime = null;
+    if (workLogScheduledEndTime) {
+      try {
+        const timeDate = workLogScheduledEndTime.toDate ? workLogScheduledEndTime.toDate() : new Date(workLogScheduledEndTime);
+        scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        console.warn('StaffCard workLog scheduledEndTime 변환 오류:', error);
+      }
+    }
+    
+    const endTime = actualEndTime || scheduledEndTime;
+    
+    return {
+      displayStartTime: formatTimeDisplay(startTime),
+      displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
+      startTimeColor: getTimeSlotColor(startTime),
+      endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 text-gray-500',
+      hasEndTime: !!endTime
+    };
+  }, [staff.id, staff.assignedTime, memoizedAttendanceData, formatTimeDisplay, getTimeSlotColor]);
   
   // 메모이제이션된 이벤트 핸들러들
   const handleCardClick = useCallback(() => {
@@ -161,8 +221,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 <h3 className="text-lg font-semibold text-gray-900 truncate">
                   {memoizedStaffData.displayName}
                 </h3>
-                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${timeSlotColor}`}>
-                  ⏰ {formattedTime}
+                <div className="flex items-center space-x-1">
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor}`}>
+                    🕘 {memoizedTimeData.displayStartTime}
+                  </div>
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.endTimeColor}`}>
+                    {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
+                  </div>
                 </div>
               </div>
               
@@ -186,11 +251,12 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
           <div className="flex items-center space-x-2 flex-shrink-0">
             {/* 출석 상태 */}
             <div className="transform scale-90">
-              {memoizedAttendanceData.attendanceRecord ? (
-                <AttendanceStatusCard
-                  status={memoizedAttendanceData.attendanceRecord.status}
-                  checkInTime={memoizedAttendanceData.attendanceRecord.checkInTime}
-                  checkOutTime={memoizedAttendanceData.attendanceRecord.checkOutTime}
+              {memoizedAttendanceData.attendanceRecord && memoizedAttendanceData.attendanceRecord.workLogId ? (
+                <AttendanceStatusDropdown
+                  workLogId={memoizedAttendanceData.attendanceRecord.workLogId}
+                  currentStatus={memoizedAttendanceData.attendanceRecord.status}
+                  staffId={staff.id}
+                  staffName={staff.name}
                   size="sm"
                 />
               ) : (
@@ -263,13 +329,22 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id))}
+                onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id, 'start'))}
                 className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                시간 수정
+                출근
+              </button>
+              <button
+                onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id, 'end'))}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                퇴근
               </button>
               <button
                 onClick={(e) => handleActionClick(e, () => onExceptionEdit(staff.id))}

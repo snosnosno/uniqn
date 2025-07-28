@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -124,81 +124,74 @@ export const useStaffManagement = (
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [groupByDate, setGroupByDate] = useState(enableGrouping);
   
-  // 메모이제이션된 스태프 데이터 로드
-  const loadStaffData = useCallback(async (postingId: string) => {
-    if (!currentUser || !postingId) {
+  // 수동 새로고침 함수 (필요시에만 사용)
+  const refreshStaffData = useCallback(async () => {
+    console.log('🔄 수동 스태프 데이터 새로고침 요청 (실시간 구독으로 인해 필요 없음)');
+    // 실시간 구독이 활성화되어 있으므로 별도 액션 불필요
+    // 만약 필요하다면 여기서 강제 새로고침 로직 추가 가능
+  }, []);
+  
+  // 스태프 데이터 실시간 구독
+  useEffect(() => {
+    if (!currentUser || !jobPostingId) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
     setError(null);
-    
-    try {
-      console.log('🔍 useStaffManagement - 현재 사용자 ID:', currentUser.uid);
-      console.log('🔍 useStaffManagement - 공고 ID:', postingId);
-      
-      // 해당 공고에 할당된 스태프만 가져오기
-      const staffQuery = query(
-        collection(db, 'staff'), 
-        where('managerId', '==', currentUser.uid),
-        where('postingId', '==', postingId)
-      );
-      const staffSnapshot = await getDocs(staffQuery);
-      console.log('🔍 공고별 Staff 문서 수:', staffSnapshot.size);
-  
-      if (staffSnapshot.empty) {
-        console.log('⚠️ 해당 공고의 스태프가 없습니다.');
-        setStaffData([]);
-        setLoading(false);
-        return;
-      }
 
-      const staffList: StaffData[] = staffSnapshot.docs.map(doc => {
-        const data = doc.data();
-        const staffData = {
-          id: doc.id,
-          ...data,
-          // jobRole 배열을 role 필드로 매핑 (promoteToStaff에서 저장한 데이터 호환성)
-          role: data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] as JobRole : data.role,
-          postingTitle: data.postingTitle || '제목 없음' // 기본값 설정
-        } as StaffData;
+    console.log('🔍 useStaffManagement - 실시간 구독 시작');
+
+    // 실시간 구독 설정
+    const staffQuery = query(
+      collection(db, 'staff'), 
+      where('managerId', '==', currentUser.uid),
+      where('postingId', '==', jobPostingId)
+    );
+
+    const unsubscribe = onSnapshot(
+      staffQuery,
+      (snapshot) => {
+        console.log('🔍 스태프 데이터 실시간 업데이트, 문서 수:', snapshot.size);
         
-        console.log('🔍 스태프 데이터 로드:', {
-          docId: doc.id,
-          assignedDate: data.assignedDate,
-          assignedTime: data.assignedTime,
-          assignedRole: data.assignedRole,
-          rawData: data
+        const staffList: StaffData[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const staffData = {
+            id: doc.id,
+            ...data,
+            // jobRole 배열을 role 필드로 매핑 (promoteToStaff에서 저장한 데이터 호환성)
+            role: data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] as JobRole : data.role,
+            postingTitle: data.postingTitle || '제목 없음' // 기본값 설정
+          } as StaffData;
+          
+          console.log('🔍 스태프 데이터 실시간 업데이트:', {
+            docId: doc.id,
+            assignedDate: data.assignedDate,
+            assignedTime: data.assignedTime,
+            assignedRole: data.assignedRole
+          });
+          
+          return staffData;
         });
         
-        return staffData;
-      });
-      
-      console.log('🔍 공고별 스태프 데이터:', staffList);
-      setStaffData(staffList);
+        setStaffData(staffList);
+        setLoading(false);
+        console.log('✅ 스태프 데이터 실시간 업데이트 완료');
+      },
+      (error) => {
+        console.error('❌ 스태프 데이터 실시간 구독 오류:', error);
+        setError(t('staffListPage.fetchError'));
+        setLoading(false);
+      }
+    );
 
-    } catch (e) {
-      console.error("Error fetching staff data: ", e);
-      setError(t('staffListPage.fetchError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser, t]);
-
-  // 메모이제이션된 스태프 데이터 새로고침
-  const refreshStaffData = useCallback(async () => {
-    if (jobPostingId) {
-      await loadStaffData(jobPostingId);
-    }
-  }, [jobPostingId, loadStaffData]);
-  
-  // 스태프 데이터 로드 및 실시간 동기화
-  useEffect(() => {
-    if (jobPostingId) {
-      loadStaffData(jobPostingId);
-    }
-  }, [currentUser, jobPostingId, staff]); // staff 추가로 실시간 동기화
+    // 클린업 함수
+    return () => {
+      console.log('🧹 스태프 데이터 실시간 구독 해제');
+      unsubscribe();
+    };
+  }, [currentUser, jobPostingId, t]);
 
   // localStorage에서 확장 상태 복원
   useEffect(() => {
@@ -234,13 +227,14 @@ export const useStaffManagement = (
   // 메모이제이션된 시간 정보 포맷팅
   const formatTimeDisplay = useCallback((time: string | undefined): string => {
     if (!time) return '시간 미정';
-    if (time === '추후공지') return '추후공지';
+    if (time === '미정') return '미정';
     return time;
   }, []);
   
   // 메모이제이션된 시간대별 색상 반환
   const getTimeSlotColor = useCallback((time: string | undefined): string => {
-    if (!time || time === '추후공지') return 'bg-gray-100 text-gray-700';
+    if (!time) return 'bg-gray-100 text-gray-500';
+    if (time === '미정') return 'bg-orange-100 text-orange-800';
     
     const hour = parseInt(time.split(':')[0] || '0');
     if (hour >= 6 && hour < 12) return 'bg-yellow-100 text-yellow-800'; // 오전
@@ -348,8 +342,8 @@ export const useStaffManagement = (
         const timeA = a.assignedTime || 'zzz';
         const timeB = b.assignedTime || 'zzz';
         if (timeA !== timeB) {
-          if (timeA === '추후공지') return 1;
-          if (timeB === '추후공지') return -1;
+          if (timeA === '미정') return 1;
+          if (timeB === '미정') return -1;
           return timeA.localeCompare(timeB);
         }
         

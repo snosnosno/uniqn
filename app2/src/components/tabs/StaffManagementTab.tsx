@@ -70,6 +70,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [isWorkTimeEditorOpen, setIsWorkTimeEditorOpen] = useState(false);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
   const [selectedExceptionWorkLog, setSelectedExceptionWorkLog] = useState<any | null>(null);
+  const [currentTimeType, setCurrentTimeType] = useState<'start' | 'end' | undefined>(undefined);
   
   // 모바일 전용 상태
   const [multiSelectMode, setMultiSelectMode] = useState(false);
@@ -81,7 +82,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const { registerComponentMetrics } = usePerformanceMetrics();
   
   // 출퇴근 시간 수정 핸들러 (다중 날짜 지원)
-  const handleEditWorkTime = (staffId: string, targetDate?: string) => {
+  const handleEditWorkTime = (staffId: string, timeType?: 'start' | 'end', targetDate?: string) => {
     const staff = staffData.find(s => s.id === staffId);
     if (!staff) {
       console.log('스태프 정보를 찾을 수 없습니다.');
@@ -100,15 +101,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     if (workLog && workLog.workLog) {
       setSelectedWorkLog(workLog.workLog);
+      setCurrentTimeType(timeType);
       setIsWorkTimeEditorOpen(true);
     } else {
       // 해당 날짜의 가상 WorkLog 생성
       const virtualWorkLog = {
         id: `virtual_${staffId}_${workDate}`,
         eventId: jobPosting?.id || 'default-event',
-        staffId: staffId,
+        staffId: staffId,  // 호환성을 위해 유지
+        dealerId: staffId, // dealerId도 추가
         date: workDate,
-        scheduledStartTime: staff.assignedTime ? (() => {
+        scheduledStartTime: staff.assignedTime && staff.assignedTime !== '미정' ? (() => {
           try {
             const timeParts = staff.assignedTime.split(':');
             if (timeParts.length !== 2) {
@@ -151,20 +154,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       };
       
       setSelectedWorkLog(virtualWorkLog);
+      setCurrentTimeType(timeType);
       setIsWorkTimeEditorOpen(true);
     }
   };
   
   const handleWorkTimeUpdate = async (updatedWorkLog: any) => {
-    console.log('근무 시간이 업데이트되었습니다:', updatedWorkLog);
+    console.log('✅ 근무 시간이 업데이트되었습니다:', updatedWorkLog);
     
-    // 스태프 데이터 새로고침하여 시간 열 업데이트
-    try {
-      await refreshStaffData();
-      console.log('스태프 데이터 새로고침 완료');
-    } catch (error) {
-      console.error('스태프 데이터 새로고침 오류:', error);
-    }
+    // 실시간 구독으로 자동 업데이트되므로 별도 새로고침 불필요
+    // useStaffManagement와 useAttendanceStatus 모두 실시간 구독 중
+    console.log('🔄 실시간 구독으로 자동 업데이트됩니다');
     
     // 성공 메시지는 WorkTimeEditor 내부에서 처리
   };
@@ -458,7 +458,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         <thead className="bg-gray-50">
                           <tr>
                             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              시간
+                              출근
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              퇴근
                             </th>
                             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               이름
@@ -525,9 +528,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       {/* 시간 수정 모달 */}
       <WorkTimeEditor
         isOpen={isWorkTimeEditorOpen}
-        onClose={() => setIsWorkTimeEditorOpen(false)}
+        onClose={() => {
+          setIsWorkTimeEditorOpen(false);
+          setCurrentTimeType(undefined);
+        }}
         workLog={selectedWorkLog}
         onUpdate={handleWorkTimeUpdate}
+        timeType={currentTimeType}
       />
 
       {/* 예외 상황 처리 모달 */}

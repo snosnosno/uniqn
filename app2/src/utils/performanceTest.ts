@@ -7,7 +7,7 @@ import { StaffData } from '../hooks/useStaffManagement';
 // 가짜 스태프 데이터 생성기
 export const generateMockStaffData = (count: number): StaffData[] => {
   const roles = ['Dealer', 'Floor', 'Server', 'Tournament Director', 'Chip Master', 'Registration', 'Security', 'Cashier'];
-  const times = ['09:00', '12:00', '15:00', '18:00', '21:00', '추후공지'];
+  const times = ['09:00', '12:00', '15:00', '18:00', '21:00', '미정'];
   const names = ['김철수', '이영희', '박민수', '최수연', '정대호', '강미영', '임진우', '한소영', '조현식', '윤지혜'];
   
   return Array.from({ length: count }, (_, index) => ({

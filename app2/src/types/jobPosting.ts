@@ -59,14 +59,14 @@ export interface RoleRequirement {
   count: number;
 }
 
-// 확장된 TimeSlot 인터페이스 - 일자별 인원 요구사항 및 추후공지 지원
+// 확장된 TimeSlot 인터페이스 - 일자별 인원 요구사항 및 미정 지원
 export interface TimeSlot {
   time: string;
   roles: RoleRequirement[];
   date?: string; // 선택적 필드: yyyy-MM-dd 형식, 특정 날짜에만 적용될 때 사용
   
-  // 추후공지 기능 지원
-  isTimeToBeAnnounced?: boolean;    // 추후공지 여부 플래그
+  // 미정 기능 지원
+  isTimeToBeAnnounced?: boolean;    // 미정 여부 플래그
   tentativeDescription?: string;    // 임시 설명 텍스트 ("오후 예정", "저녁 시간대" 등)
 }
 
@@ -419,7 +419,7 @@ export const isValidTimeSlot = (obj: any): obj is TimeSlot => {
            typeof role.name === 'string' && 
            typeof role.count === 'number'
          ) &&
-         // 추후공지 필드 검증 (선택적)
+         // 미정 필드 검증 (선택적)
          (!obj.isTimeToBeAnnounced || typeof obj.isTimeToBeAnnounced === 'boolean') &&
          (!obj.tentativeDescription || typeof obj.tentativeDescription === 'string');
 };

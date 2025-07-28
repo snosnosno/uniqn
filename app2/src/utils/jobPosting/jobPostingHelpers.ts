@@ -207,7 +207,7 @@ export const getTypeDisplayName = (type: string): string => {
  */
 export const generateTimeSlotSummary = (timeSlot: TimeSlot): string => {
   if (timeSlot.isTimeToBeAnnounced) {
-    return '추후공지';
+    return '미정';
   }
   
   const rolesSummary = timeSlot.roles

@@ -9,7 +9,7 @@ interface StaffDateGroupMobileProps {
   staffList: StaffData[];
   isExpanded: boolean;
   onToggleExpansion: (date: string) => void;
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;

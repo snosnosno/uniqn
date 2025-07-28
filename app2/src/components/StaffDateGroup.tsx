@@ -8,7 +8,7 @@ interface StaffDateGroupProps {
   staffList: StaffData[];
   isExpanded: boolean;
   onToggleExpansion: (date: string) => void;
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
@@ -78,7 +78,10 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  시간
+                  출근
+                </th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  퇴근
                 </th>
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   이름

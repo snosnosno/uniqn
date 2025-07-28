@@ -6,7 +6,7 @@ import StaffCard from './StaffCard';
 
 interface VirtualizedStaffListProps {
   staffList: StaffData[];
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
@@ -23,7 +23,7 @@ interface VirtualizedStaffListProps {
 
 interface ItemData {
   staffList: StaffData[];
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;

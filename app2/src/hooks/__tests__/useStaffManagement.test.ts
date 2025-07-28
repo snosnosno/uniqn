@@ -83,7 +83,7 @@ describe('useStaffManagement', () => {
     const { result } = renderHook(() => useStaffManagement(mockOptions));
 
     expect(result.current.formatTimeDisplay('09:00-18:00')).toBe('09:00-18:00');
-    expect(result.current.formatTimeDisplay('추후공지')).toBe('추후공지');
+    expect(result.current.formatTimeDisplay('미정')).toBe('미정');
     expect(result.current.formatTimeDisplay(undefined)).toBe('시간 미정');
     expect(result.current.formatTimeDisplay('')).toBe('시간 미정');
   });
@@ -92,7 +92,7 @@ describe('useStaffManagement', () => {
     const { result } = renderHook(() => useStaffManagement(mockOptions));
 
     expect(result.current.getTimeSlotColor('09:00-18:00')).toContain('bg-blue-100');
-    expect(result.current.getTimeSlotColor('추후공지')).toContain('bg-gray-100');
+    expect(result.current.getTimeSlotColor('미정')).toContain('bg-gray-100');
     expect(result.current.getTimeSlotColor(undefined)).toContain('bg-gray-100');
   });
 

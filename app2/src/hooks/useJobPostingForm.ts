@@ -35,7 +35,7 @@ export const useJobPostingForm = (initialData?: any) => {
       const newTimeSlots = [...prev.timeSlots];
       newTimeSlots[timeSlotIndex].isTimeToBeAnnounced = isAnnounced;
       if (isAnnounced) {
-        newTimeSlots[timeSlotIndex].time = '추후공지';
+        newTimeSlots[timeSlotIndex].time = '미정';
       } else {
         newTimeSlots[timeSlotIndex].time = '';
         newTimeSlots[timeSlotIndex].tentativeDescription = '';
@@ -140,7 +140,7 @@ export const useJobPostingForm = (initialData?: any) => {
       const newRequirements = [...prev.dateSpecificRequirements];
       newRequirements[dateIndex].timeSlots[timeSlotIndex].isTimeToBeAnnounced = isAnnounced;
       if (isAnnounced) {
-        newRequirements[dateIndex].timeSlots[timeSlotIndex].time = '추후공지';
+        newRequirements[dateIndex].timeSlots[timeSlotIndex].time = '미정';
       } else {
         newRequirements[dateIndex].timeSlots[timeSlotIndex].time = '';
         newRequirements[dateIndex].timeSlots[timeSlotIndex].tentativeDescription = '';

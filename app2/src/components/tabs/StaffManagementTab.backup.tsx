@@ -272,13 +272,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   // 시간 정보 포맷팅 함수
   const formatTimeDisplay = (time: string | undefined) => {
     if (!time) return '시간 미정';
-    if (time === '추후공지') return '추후공지';
+    if (time === '미정') return '미정';
     return time;
   };
   
   // 시간대별 색상 반환 함수
   const getTimeSlotColor = (time: string | undefined) => {
-    if (!time || time === '추후공지') return 'bg-gray-100 text-gray-700';
+    if (!time || time === '미정') return 'bg-gray-100 text-gray-700';
     
     const hour = parseInt(time.split(':')[0] || '0');
     if (hour >= 6 && hour < 12) return 'bg-yellow-100 text-yellow-800'; // 오전
@@ -350,8 +350,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         const timeA = a.assignedTime || 'zzz';
         const timeB = b.assignedTime || 'zzz';
         if (timeA !== timeB) {
-          if (timeA === '추후공지') return 1;
-          if (timeB === '추후공지') return -1;
+          if (timeA === '미정') return 1;
+          if (timeB === '미정') return -1;
           return timeA.localeCompare(timeB);
         }
         

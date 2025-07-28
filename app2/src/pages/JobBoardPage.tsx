@@ -643,7 +643,7 @@ const JobBoardPage = () => {
                                 {t('jobPostingAdmin.manage.time')}: 
                                 {ts.isTimeToBeAnnounced ? (
                                   <span className="ml-1 text-orange-600">
-                                    ⏰ 추후공지
+                                    ⏰ 미정
                                     {ts.tentativeDescription && (
                                       <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
                                     )}
@@ -671,7 +671,7 @@ const JobBoardPage = () => {
                             {t('jobPostingAdmin.manage.time')}: 
                             {ts.isTimeToBeAnnounced ? (
                               <span className="ml-1 text-orange-600">
-                                ⏰ 추후공지
+                                ⏰ 미정
                                 {ts.tentativeDescription && (
                                   <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
                                 )}
@@ -798,7 +798,7 @@ const JobBoardPage = () => {
                           <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
                             ⏰ {ts.isTimeToBeAnnounced ? (
                               <span className="text-orange-600">
-                                추후공지
+                                미정
                                 {ts.tentativeDescription && (
                                   <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
                                 )}
@@ -858,7 +858,7 @@ const JobBoardPage = () => {
                       <div className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                         ⏰ {ts.isTimeToBeAnnounced ? (
                           <span className="text-orange-600">
-                            추후공지
+                            미정
                             {ts.tentativeDescription && (
                               <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
                             )}

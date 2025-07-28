@@ -73,18 +73,18 @@ const TimeSlotManager: React.FC<TimeSlotManagerProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
               <label htmlFor={`timeToBeAnnounced-${timeSlotIndex}`} className="text-sm text-gray-700">
-                추후공지
+                미정
               </label>
             </div>
 
             {timeSlot.isTimeToBeAnnounced ? (
               <div className="space-y-2">
                 <div className="text-sm text-gray-500 bg-yellow-50 p-2 rounded">
-                  시간이 "추후공지"로 설정됩니다.
+                  시간이 "미정"으로 설정됩니다.
                 </div>
                 <Input
                   type="text"
-                  placeholder="추후공지 관련 설명 (선택사항)"
+                  placeholder="미정 관련 설명 (선택사항)"
                   value={timeSlot.tentativeDescription || ''}
                   onChange={(e) => onTentativeDescriptionChange(timeSlotIndex, e.target.value)}
                 />
@@ -92,7 +92,7 @@ const TimeSlotManager: React.FC<TimeSlotManagerProps> = ({
             ) : (
               <Input
                 type="time"
-                value={timeSlot.time === '추후공지' ? '' : timeSlot.time}
+                value={timeSlot.time === '미정' ? '' : timeSlot.time}
                 onChange={(e) => onTimeSlotChange(timeSlotIndex, e.target.value)}
                 required
               />

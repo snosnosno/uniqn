@@ -7,6 +7,7 @@ import { WorkLog } from './useShiftSchedule';
 
 export interface AttendanceRecord {
   staffId: string;
+  workLogId?: string; // WorkLog ID 추가 (출석상태 드롭다운에서 사용)
   status: AttendanceStatus;
   checkInTime?: string | undefined;
   checkOutTime?: string | undefined;
@@ -36,13 +37,9 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     }
 
     try {
-      // workLogs 컬렉션에서 해당 날짜의 기록들을 실시간으로 구독
-      // const workLogsQuery = query(
-      //   collection(db, 'workLogs'),
-      //   where('eventId', '==', currentEventId),
-      //   where('date', '==', currentDate)
-      // );
-
+      // workLogs 컬렉션에서 해당 이벤트의 기록들을 실시간으로 구독
+      // 날짜 필터를 제거하고 eventId만으로 필터링하여 모든 workLogs를 가져옴
+      
       // safeOnSnapshot을 사용하여 안전한 리스너 설정
       const unsubscribe = safeOnSnapshot<WorkLog>(
         'workLogs',
@@ -50,10 +47,16 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           try {
             const records: AttendanceRecord[] = [];
             
-            workLogs.forEach((workLog) => {
+            // eventId로 필터링
+            const filteredWorkLogs = workLogs.filter(workLog => 
+              workLog.eventId === currentEventId
+            );
+            
+            filteredWorkLogs.forEach((workLog) => {
               const attendanceRecord = calculateAttendanceStatus(workLog);
               records.push(attendanceRecord);
             });
+
 
             setAttendanceRecords(records);
             setError(null);
@@ -87,15 +90,16 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
     let status: AttendanceStatus = 'not_started';
     
-    // QR 실제 기록이 있는 경우
-    if (workLog.type === 'qr') {
-      if (workLog.actualStartTime && workLog.actualEndTime) {
-        status = 'checked_out';
-      } else if (workLog.actualStartTime) {
-        status = 'checked_in';
-      }
+    // 실제 출퇴근 시간이 있는지 확인
+    const hasActualStartTime = !!(workLog.actualStartTime);
+    const hasActualEndTime = !!(workLog.actualEndTime);
+    
+    if (hasActualStartTime && hasActualEndTime) {
+      status = 'checked_out';
+    } else if (hasActualStartTime) {
+      status = 'checked_in';
     } else {
-      // 스케줄 기반인 경우 - 현재 시간과 비교하여 상태 판단
+      // 실제 기록이 없는 경우 - 스케줄 기반으로 상태 판단
       const scheduledStart = workLog.scheduledStartTime;
       const scheduledEnd = workLog.scheduledEndTime;
       
@@ -103,28 +107,73 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         if (currentTime < scheduledStart) {
           status = 'not_started';
         } else if (currentTime >= scheduledStart && currentTime < scheduledEnd) {
-          // 예정 시간은 지났지만 실제 출근 기록이 없으면 결근 처리
-          status = 'absent';
+          status = 'absent'; // 예정 시간은 지났지만 실제 출근 기록이 없으면 결근
         } else {
-          // 예정 종료 시간도 지난 경우
-          status = 'absent';
+          status = 'absent'; // 예정 종료 시간도 지난 경우
         }
       }
     }
 
-    const formatTime = (timeString?: string) => {
-      if (!timeString) return undefined;
-      // HH:MM 형식으로 변환
-      return timeString.length > 5 ? timeString.substring(0, 5) : timeString;
+    // Timestamp를 시간 문자열로 변환하는 함수
+    const formatTimeFromTimestamp = (timestamp: any): string | undefined => {
+      if (!timestamp) return undefined;
+      
+      try {
+        let date: Date;
+        
+        // Timestamp 객체인 경우
+        if (timestamp && typeof timestamp.toDate === 'function') {
+          date = timestamp.toDate();
+        }
+        // Date 객체인 경우
+        else if (timestamp instanceof Date) {
+          date = timestamp;
+        }
+        // 문자열인 경우 (이미 HH:MM 형식이거나 ISO 문자열)
+        else if (typeof timestamp === 'string') {
+          if (timestamp.includes(':') && timestamp.length <= 8) {
+            // 이미 HH:MM 또는 HH:MM:SS 형식
+            return timestamp.substring(0, 5);
+          } else {
+            // ISO 문자열 등
+            date = new Date(timestamp);
+          }
+        }
+        // 숫자인 경우 (milliseconds)
+        else if (typeof timestamp === 'number') {
+          date = new Date(timestamp);
+        }
+        else {
+          return undefined;
+        }
+        
+        // Date 객체에서 HH:MM 형식으로 변환
+        if (date && !isNaN(date.getTime())) {
+          return date.toLocaleTimeString('ko-KR', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+        
+        return undefined;
+      } catch (error) {
+        console.error('시간 포맷 변환 오류:', error, timestamp);
+        return undefined;
+      }
     };
 
+    // staffId는 workLog.dealerId 사용
+    const staffId = workLog.dealerId;
+
     return {
-      staffId: workLog.dealerId,
+      staffId: staffId,
+      workLogId: workLog.id, // WorkLog ID 추가 (출석상태 드롭다운에서 사용)
       status,
-      checkInTime: formatTime(workLog.actualStartTime),
-      checkOutTime: formatTime(workLog.actualEndTime),
-      scheduledStartTime: formatTime(workLog.scheduledStartTime),
-      scheduledEndTime: formatTime(workLog.scheduledEndTime),
+      checkInTime: formatTimeFromTimestamp(workLog.actualStartTime),
+      checkOutTime: formatTimeFromTimestamp(workLog.actualEndTime),
+      scheduledStartTime: formatTimeFromTimestamp(workLog.scheduledStartTime),
+      scheduledEndTime: formatTimeFromTimestamp(workLog.scheduledEndTime),
       workLog
     };
   };

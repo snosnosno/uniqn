@@ -5,10 +5,11 @@ import { StaffData } from '../hooks/useStaffManagement';
 import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusCard from './AttendanceStatusCard';
+import AttendanceStatusDropdown from './AttendanceStatusDropdown';
 
 interface StaffRowProps {
   staff: StaffData;
-  onEditWorkTime: (staffId: string) => void;
+  onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
@@ -49,6 +50,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     const attendanceRecord = getStaffAttendanceStatus(staff.id);
     const exceptionRecord = attendanceRecords.find(r => r.staffId === staff.id);
     
+    
     return {
       attendanceRecord,
       exceptionRecord,
@@ -59,9 +61,75 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     };
   }, [staff.id, getStaffAttendanceStatus, attendanceRecords]);
 
+  // 메모이제이션된 출근/퇴근 시간 데이터
+  const memoizedTimeData = useMemo(() => {
+    // 실제 출근시간 우선, 없으면 예정시간
+    const actualStartTime = memoizedAttendanceData.attendanceRecord?.checkInTime || 
+                           memoizedAttendanceData.exceptionRecord?.workLog?.actualStartTime;
+    
+    // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
+    const workLogScheduledTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledStartTime;
+    const staffAssignedTime = staff.assignedTime;
+    
+    // 시간 우선순위: workLogs의 scheduledStartTime > staff의 assignedTime
+    let scheduledStartTime = staffAssignedTime;
+    if (workLogScheduledTime) {
+      try {
+        // Timestamp를 시간 문자열로 변환
+        const timeDate = workLogScheduledTime.toDate ? workLogScheduledTime.toDate() : new Date(workLogScheduledTime);
+        scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        console.warn('workLog scheduledStartTime 변환 오류:', error);
+        // 변환 실패시 staff의 assignedTime 사용
+      }
+    }
+    
+    // 출근시간 결정: 실제 시간이 있으면 실제 시간, 없으면 예정 시간
+    const startTime = actualStartTime || scheduledStartTime;
+    
+    // 퇴근시간 - workLogs의 scheduledEndTime도 고려
+    const actualEndTime = memoizedAttendanceData.attendanceRecord?.checkOutTime || 
+                         memoizedAttendanceData.exceptionRecord?.workLog?.actualEndTime;
+    
+    const workLogScheduledEndTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledEndTime;
+    let scheduledEndTime = null;
+    if (workLogScheduledEndTime) {
+      try {
+        const timeDate = workLogScheduledEndTime.toDate ? workLogScheduledEndTime.toDate() : new Date(workLogScheduledEndTime);
+        scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        console.warn('workLog scheduledEndTime 변환 오류:', error);
+      }
+    }
+    
+    const endTime = actualEndTime || scheduledEndTime;
+    
+    return {
+      displayStartTime: formatTimeDisplay(startTime),
+      displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
+      startTimeColor: getTimeSlotColor(startTime),
+      endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 text-gray-500',
+      hasEndTime: !!endTime,
+      hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
+      isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
+    };
+  }, [staff.id, staff.assignedTime, memoizedAttendanceData, formatTimeDisplay, getTimeSlotColor]);
+
   // 메모이제이션된 이벤트 핸들러들
-  const handleEditWorkTime = useCallback(() => {
-    onEditWorkTime(staff.id);
+  const handleEditStartTime = useCallback(() => {
+    onEditWorkTime(staff.id, 'start');
+  }, [onEditWorkTime, staff.id]);
+
+  const handleEditEndTime = useCallback(() => {
+    onEditWorkTime(staff.id, 'end');
   }, [onEditWorkTime, staff.id]);
 
   const handleExceptionEdit = useCallback(() => {
@@ -74,11 +142,32 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      {/* 시간 열 */}
+      {/* 출근 시간 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
-        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${timeSlotColor}`}>
-          ⏰ {formattedTime}
-        </div>
+        <button
+          onClick={handleEditStartTime}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.startTimeColor}`}
+          title={
+            memoizedTimeData.hasActualStartTime 
+              ? "실제 출근시간 수정" 
+              : memoizedTimeData.isScheduledTimeTBD 
+                ? "미정 - 출근시간 설정" 
+                : "예정 출근시간 수정"
+          }
+        >
+          {memoizedTimeData.hasActualStartTime ? '✅' : memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} {memoizedTimeData.displayStartTime}
+        </button>
+      </td>
+      
+      {/* 퇴근 시간 열 */}
+      <td className="px-4 py-4 whitespace-nowrap">
+        <button
+          onClick={handleEditEndTime}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`}
+          title="퇴근 시간 수정"
+        >
+          {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
+        </button>
       </td>
       
       {/* 이름 열 */}
@@ -141,11 +230,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       
       {/* 출석 상태 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
-        {memoizedAttendanceData.attendanceRecord ? (
-          <AttendanceStatusCard
-            status={memoizedAttendanceData.attendanceRecord.status}
-            checkInTime={memoizedAttendanceData.attendanceRecord.checkInTime}
-            checkOutTime={memoizedAttendanceData.attendanceRecord.checkOutTime}
+        {memoizedAttendanceData.attendanceRecord && memoizedAttendanceData.attendanceRecord.workLogId ? (
+          <AttendanceStatusDropdown
+            workLogId={memoizedAttendanceData.attendanceRecord.workLogId}
+            currentStatus={memoizedAttendanceData.attendanceRecord.status}
+            staffId={staff.id}
+            staffName={staff.name}
             size="sm"
           />
         ) : (
@@ -175,13 +265,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       {/* 작업 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
         <div className="flex space-x-1">
-          <button
-            onClick={handleEditWorkTime}
-            className="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-            title="시간 수정"
-          >
-            시간
-          </button>
           <button
             onClick={handleExceptionEdit}
             className="px-2 py-1 text-xs font-medium text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded transition-colors"
