@@ -28,11 +28,7 @@ jest.mock('react-i18next', () => ({
   })
 }));
 
-// Mock utility functions
-jest.mock('../../utils/attendanceExceptionUtils', () => ({
-  getExceptionIcon: jest.fn(() => '⚠️'),
-  getExceptionSeverity: jest.fn(() => 'medium')
-}));
+// 예외 관련 유틸리티 함수 제거로 인한 mock 제거
 
 describe('StaffCard', () => {
   const mockStaff: StaffData = {

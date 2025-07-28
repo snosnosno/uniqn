@@ -1,7 +1,6 @@
 import React from 'react';
 
 import { StaffData } from '../hooks/useStaffManagement';
-import { formatDate } from '../utils/jobPosting/dateUtils';
 import StaffCard from './StaffCard';
 
 interface StaffDateGroupMobileProps {
@@ -10,7 +9,6 @@ interface StaffDateGroupMobileProps {
   isExpanded: boolean;
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -27,7 +25,6 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   isExpanded,
   onToggleExpansion,
   onEditWorkTime,
-  onExceptionEdit,
   onDeleteStaff,
   getStaffAttendanceStatus,
   attendanceRecords,
@@ -177,7 +174,6 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               key={staff.id}
               staff={staff}
               onEditWorkTime={onEditWorkTime}
-              onExceptionEdit={onExceptionEdit}
               onDeleteStaff={onDeleteStaff}
               getStaffAttendanceStatus={getStaffAttendanceStatus}
               attendanceRecords={attendanceRecords}

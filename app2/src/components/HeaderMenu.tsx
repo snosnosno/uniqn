@@ -4,7 +4,7 @@ import { IconType } from 'react-icons';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
     FaTrophy, FaBullhorn, FaUserCircle, FaUserShield, FaFileInvoice, FaClipboardList, FaQrcode,
-    FaBars, FaSignOutAlt, FaUserCheck
+    FaBars, FaSignOutAlt, FaUserCheck, FaHistory
 } from 'react-icons/fa';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -159,11 +159,14 @@ export const HeaderMenu: React.FC = () => {
               {isAdmin ? <>
                   <NavItem to="/admin/staff" label={t('nav.staffManagement')} Icon={FaUserShield} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/dealer-rotation" label="딜러 로테이션" Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                   <hr className="my-2 border-t border-gray-200" />
+                  <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/tables" label={t('nav.tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/prizes" label={t('nav.prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/announcements" label={t('nav.announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/history" label="기록/히스토리" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
                 </> : null}
 
               {/* Admin only menu */}

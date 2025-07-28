@@ -1,5 +1,4 @@
 // 급여 계산 관련 타입 정의
-import { AttendanceException } from '../../types/attendance';
 
 export interface PayrollCalculationData {
   // 기본 정보
@@ -73,7 +72,7 @@ export interface DailyWorkRecord {
   workMinutes: number;
   breakMinutes: number;
   tableAssignments: string[];
-  exceptions: AttendanceException[];
+  exceptions: any[]; // 예외 기능 제거 - 빈 배열로 처리
   status: 'scheduled' | 'completed' | 'absent';
 }
 

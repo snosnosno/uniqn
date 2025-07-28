@@ -18,7 +18,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ### 🌟 사용자 선호 방식
 - **언어**: 항상 한국어로 응답 (`항상 한글로답변해줘`)
-- **도구 선택**: Basic tools 우선 사용 (Magic, Sequential 등 고급 MCP 도구 지양)
+- **도구 선택**: 사용가능한 MCP, sub agents 도구 적극 사용
 - **개발 철학**: 실시간 반영, 직관적 UI, 단순명확한 로직
 - **Firebase 패턴**: 실시간 구독(onSnapshot) 우선, 수동 새로고침 최소화
 
@@ -71,8 +71,8 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ## Memories
 
-- `항상 한글로답변해줘`: 클로드와의 대화에서 한국어로 응답하도록 요청하는 메모
-- `기본도구만사용`: Magic, Sequential 등 고급 MCP 서버 사용 지양, 기본 도구 우선 사용
+- `항상 한글로 답변해줘`: 클로드와의 대화에서 한국어로 응답하도록 요청하는 메모
+- `도구사용`: 사용가능한 MCP, SUB AGENTS 모두 적극 사용
 - `실시간반영중시`: Firebase onSnapshot 구독으로 즉시 UI 업데이트, 수동 새로고침 제거
 - `날짜별시간관리`: workLogs 컬렉션 기반으로 각 날짜별 독립적인 시간 설정 시스템 구현 완료
 - `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendanceStatusDropdown으로 관리

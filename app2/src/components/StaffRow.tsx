@@ -2,7 +2,6 @@ import React, { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { StaffData } from '../hooks/useStaffManagement';
-import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusDropdown from './AttendanceStatusDropdown';
@@ -10,7 +9,6 @@ import AttendanceStatusDropdown from './AttendanceStatusDropdown';
 interface StaffRowProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -22,7 +20,6 @@ interface StaffRowProps {
 const StaffRow: React.FC<StaffRowProps> = React.memo(({
   staff,
   onEditWorkTime,
-  onExceptionEdit,
   onDeleteStaff,
   getStaffAttendanceStatus,
   attendanceRecords,
@@ -48,16 +45,11 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
     const attendanceRecord = getStaffAttendanceStatus(staff.id);
-    const exceptionRecord = attendanceRecords.find(r => r.staffId === staff.id);
-    
+    const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
     
     return {
       attendanceRecord,
-      exceptionRecord,
-      hasException: !!(exceptionRecord?.workLog?.exception),
-      exceptionType: exceptionRecord?.workLog?.exception?.type,
-      exceptionSeverity: exceptionRecord?.workLog?.exception ? 
-        getExceptionSeverity(exceptionRecord.workLog.exception.type) : null
+      workLogRecord
     };
   }, [staff.id, getStaffAttendanceStatus, attendanceRecords]);
 
@@ -65,7 +57,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   const memoizedTimeData = useMemo(() => {
     // 실제 출근시간 우선, 없으면 예정시간
     const actualStartTime = memoizedAttendanceData.attendanceRecord?.checkInTime || 
-                           memoizedAttendanceData.exceptionRecord?.workLog?.actualStartTime;
+                           memoizedAttendanceData.workLogRecord?.workLog?.actualStartTime;
     
     // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
     const workLogScheduledTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledStartTime;
@@ -93,7 +85,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     
     // 퇴근시간 - workLogs의 scheduledEndTime도 고려
     const actualEndTime = memoizedAttendanceData.attendanceRecord?.checkOutTime || 
-                         memoizedAttendanceData.exceptionRecord?.workLog?.actualEndTime;
+                         memoizedAttendanceData.workLogRecord?.workLog?.actualEndTime;
     
     const workLogScheduledEndTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledEndTime;
     let scheduledEndTime = null;
@@ -132,9 +124,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     onEditWorkTime(staff.id, 'end');
   }, [onEditWorkTime, staff.id]);
 
-  const handleExceptionEdit = useCallback(() => {
-    onExceptionEdit(staff.id);
-  }, [onExceptionEdit, staff.id]);
 
   const handleDeleteStaff = useCallback(async () => {
     await onDeleteStaff(staff.id);
@@ -246,32 +235,10 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
         )}
       </td>
       
-      {/* 예외 상황 열 */}
-      <td className="px-4 py-4 whitespace-nowrap">
-        {memoizedAttendanceData.hasException ? (
-          <div className="flex items-center gap-1">
-            <span className={`text-${memoizedAttendanceData.exceptionSeverity === 'high' ? 'red' : memoizedAttendanceData.exceptionSeverity === 'medium' ? 'yellow' : 'orange'}-500`}>
-              {getExceptionIcon(memoizedAttendanceData.exceptionType!)}
-            </span>
-            <span className="text-xs text-gray-600">
-              {t(`exceptions.types.${memoizedAttendanceData.exceptionType}`)}
-            </span>
-          </div>
-        ) : (
-          <span className="text-gray-400 text-xs">정상</span>
-        )}
-      </td>
       
       {/* 작업 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
         <div className="flex space-x-1">
-          <button
-            onClick={handleExceptionEdit}
-            className="px-2 py-1 text-xs font-medium text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded transition-colors"
-            title="예외 상황 처리"
-          >
-            예외
-          </button>
           <button
             onClick={handleDeleteStaff}
             className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"

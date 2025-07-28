@@ -7,7 +7,6 @@ import StaffCard from './StaffCard';
 interface VirtualizedStaffListProps {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -24,7 +23,6 @@ interface VirtualizedStaffListProps {
 interface ItemData {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -45,7 +43,6 @@ const VirtualizedStaffItem: React.FC<{
   const {
     staffList,
     onEditWorkTime,
-    onExceptionEdit,
     onDeleteStaff,
     getStaffAttendanceStatus,
     attendanceRecords,
@@ -68,7 +65,6 @@ const VirtualizedStaffItem: React.FC<{
       <StaffCard
         staff={staff}
         onEditWorkTime={onEditWorkTime}
-        onExceptionEdit={onExceptionEdit}
         onDeleteStaff={onDeleteStaff}
         getStaffAttendanceStatus={getStaffAttendanceStatus}
         attendanceRecords={attendanceRecords}
@@ -87,7 +83,6 @@ VirtualizedStaffItem.displayName = 'VirtualizedStaffItem';
 const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   staffList,
   onEditWorkTime,
-  onExceptionEdit,
   onDeleteStaff,
   getStaffAttendanceStatus,
   attendanceRecords,
@@ -104,7 +99,6 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   const itemData = useMemo((): ItemData => ({
     staffList,
     onEditWorkTime,
-    onExceptionEdit,
     onDeleteStaff,
     getStaffAttendanceStatus,
     attendanceRecords,
@@ -117,7 +111,6 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   }), [
     staffList,
     onEditWorkTime,
-    onExceptionEdit,
     onDeleteStaff,
     getStaffAttendanceStatus,
     attendanceRecords,

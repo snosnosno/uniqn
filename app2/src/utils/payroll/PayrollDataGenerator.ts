@@ -1,6 +1,5 @@
 // 급여 데이터 집계 및 계산 유틸리티
 import { WorkLog } from '../../hooks/useShiftSchedule';
-import { AttendanceException } from '../../types/attendance';
 
 import { 
   PayrollCalculationData, 
@@ -50,7 +49,7 @@ export class PayrollDataGenerator {
       workMinutes: log.totalWorkMinutes,
       breakMinutes: log.totalBreakMinutes,
       tableAssignments: log.tableAssignments || [],
-      exceptions: log.exception ? [log.exception] : [],
+      exceptions: [], // 예외 기능 제거
       status: this.determineWorkStatus(log)
     }));
 
@@ -153,7 +152,7 @@ export class PayrollDataGenerator {
 
   // Private 헬퍼 메소드들
   private determineWorkStatus(log: WorkLog): 'scheduled' | 'completed' | 'absent' {
-    if (log.exception?.type === 'absence') return 'absent';
+    // 실제 시간이 있으면 completed, 없으면 scheduled (absent 판단은 실제 시간 기준)
     if (log.actualStartTime || log.actualEndTime) return 'completed';
     return 'scheduled';
   }
@@ -190,6 +189,7 @@ export class PayrollDataGenerator {
   }
 
   private calculateExceptions(dailyRecords: DailyWorkRecord[]) {
+    // 예외 기능 제거 - 기본 구조만 유지하여 급여 계산이 정상 작동하도록 함
     const exceptionCounts = {
       late: { count: 0, totalMinutes: 0, deductionHours: 0 },
       earlyLeave: { count: 0, totalMinutes: 0, deductionHours: 0 },
@@ -197,38 +197,7 @@ export class PayrollDataGenerator {
       overtime: { count: 0, totalMinutes: 0, bonusHours: 0 }
     };
 
-    dailyRecords.forEach(record => {
-      record.exceptions.forEach(exception => {
-        switch (exception.type) {
-          case 'late':
-            exceptionCounts.late.count++;
-            const lateMinutes = this.extractMinutesFromDescription(exception.description);
-            exceptionCounts.late.totalMinutes += lateMinutes;
-            exceptionCounts.late.deductionHours += (lateMinutes * this.settings.deductionRates.latePerMinute) / 60000; // 원 -> 시간 환산
-            break;
-          
-          case 'early_leave':
-            exceptionCounts.earlyLeave.count++;
-            const earlyMinutes = this.extractMinutesFromDescription(exception.description);
-            exceptionCounts.earlyLeave.totalMinutes += earlyMinutes;
-            exceptionCounts.earlyLeave.deductionHours += (earlyMinutes * this.settings.deductionRates.earlyLeavePerMinute) / 60000;
-            break;
-          
-          case 'absence':
-            exceptionCounts.absence.count++;
-            exceptionCounts.absence.deductionHours += this.settings.deductionRates.absencePerDay / 60000; // 원 -> 시간 환산
-            break;
-          
-          case 'overtime':
-            exceptionCounts.overtime.count++;
-            const overtimeMinutes = this.extractMinutesFromDescription(exception.description);
-            exceptionCounts.overtime.totalMinutes += overtimeMinutes;
-            exceptionCounts.overtime.bonusHours += (overtimeMinutes * this.settings.bonusRates.overtimePerMinute) / 60000;
-            break;
-        }
-      });
-    });
-
+    // 예외 처리 로직 제거 - 모든 값은 0으로 유지
     return exceptionCounts;
   }
 

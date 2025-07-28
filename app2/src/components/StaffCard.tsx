@@ -5,15 +5,12 @@ import { useHapticFeedback } from '../hooks/useHapticFeedback';
 import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { StaffData } from '../hooks/useStaffManagement';
-import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
-import { parseToDate } from '../utils/jobPosting/dateUtils';
 import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusDropdown from './AttendanceStatusDropdown';
 
 interface StaffCardProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -27,7 +24,6 @@ interface StaffCardProps {
 const StaffCard: React.FC<StaffCardProps> = React.memo(({
   staff,
   onEditWorkTime,
-  onExceptionEdit,
   onDeleteStaff,
   getStaffAttendanceStatus,
   attendanceRecords,
@@ -60,15 +56,11 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
     const attendanceRecord = getStaffAttendanceStatus(staff.id);
-    const exceptionRecord = attendanceRecords.find(r => r.staffId === staff.id);
+    const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
     
     return {
       attendanceRecord,
-      exceptionRecord,
-      hasException: !!(exceptionRecord?.workLog?.exception),
-      exceptionType: exceptionRecord?.workLog?.exception?.type,
-      exceptionSeverity: exceptionRecord?.workLog?.exception ? 
-        getExceptionSeverity(exceptionRecord.workLog.exception.type) : null
+      workLogRecord
     };
   }, [staff.id, getStaffAttendanceStatus, attendanceRecords]);
 
@@ -76,7 +68,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   const memoizedTimeData = useMemo(() => {
     // 실제 출근시간 우선, 없으면 예정시간
     const actualStartTime = memoizedAttendanceData.attendanceRecord?.checkInTime || 
-                           memoizedAttendanceData.exceptionRecord?.workLog?.actualStartTime;
+                           memoizedAttendanceData.workLogRecord?.workLog?.actualStartTime;
     
     // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
     const workLogScheduledTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledStartTime;
@@ -103,7 +95,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     
     // 퇴근시간 - workLogs의 scheduledEndTime도 고려
     const actualEndTime = memoizedAttendanceData.attendanceRecord?.checkOutTime || 
-                         memoizedAttendanceData.exceptionRecord?.workLog?.actualEndTime;
+                         memoizedAttendanceData.workLogRecord?.workLog?.actualEndTime;
     
     const workLogScheduledEndTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledEndTime;
     let scheduledEndTime = null;
@@ -267,17 +259,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               )}
             </div>
             
-            {/* 예외 상태 표시 */}
-            {memoizedAttendanceData.hasException && (
-              <div className="flex items-center">
-                <span className={`text-lg ${
-                  memoizedAttendanceData.exceptionSeverity === 'high' ? 'text-red-500' : 
-                  memoizedAttendanceData.exceptionSeverity === 'medium' ? 'text-yellow-500' : 'text-orange-500'
-                }`}>
-                  {getExceptionIcon(memoizedAttendanceData.exceptionType!)}
-                </span>
-              </div>
-            )}
             
             {/* 액션 메뉴 버튼 */}
             <button
@@ -345,15 +326,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 퇴근
-              </button>
-              <button
-                onClick={(e) => handleActionClick(e, () => onExceptionEdit(staff.id))}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                예외 처리
               </button>
               <button
                 onClick={(e) => handleActionClick(e, () => onDeleteStaff(staff.id))}
@@ -443,28 +415,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               </div>
             )}
             
-            {/* 예외 상황 세부 정보 */}
-            {memoizedAttendanceData.hasException && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">예외 상황</h4>
-                <div className="flex items-center space-x-2 text-sm">
-                  <span className={`text-lg ${
-                    memoizedAttendanceData.exceptionSeverity === 'high' ? 'text-red-500' : 
-                    memoizedAttendanceData.exceptionSeverity === 'medium' ? 'text-yellow-500' : 'text-orange-500'
-                  }`}>
-                    {getExceptionIcon(memoizedAttendanceData.exceptionType!)}
-                  </span>
-                  <span className="text-gray-700">
-                    {t(`exceptions.types.${memoizedAttendanceData.exceptionType}`)}
-                  </span>
-                </div>
-                {memoizedAttendanceData.exceptionRecord?.workLog?.exception?.description && (
-                  <div className="mt-1 text-sm text-gray-600">
-                    {memoizedAttendanceData.exceptionRecord.workLog.exception.description}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}

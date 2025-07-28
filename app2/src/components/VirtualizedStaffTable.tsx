@@ -3,14 +3,12 @@ import { FixedSizeList as List } from 'react-window';
 
 import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
-import { getExceptionIcon, getExceptionSeverity } from '../utils/attendanceExceptionUtils';
 import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusDropdown from './AttendanceStatusDropdown';
 
 interface VirtualizedStaffTableProps {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -24,7 +22,6 @@ interface VirtualizedStaffTableProps {
 interface ItemData {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -42,7 +39,6 @@ const VirtualizedTableRow: React.FC<{
   const {
     staffList,
     onEditWorkTime,
-    onExceptionEdit,
     onDeleteStaff,
     getStaffAttendanceStatus,
     attendanceRecords,
@@ -106,10 +102,6 @@ const VirtualizedTableRow: React.FC<{
   const avatarInitial = (staff.name || 'U').charAt(0).toUpperCase();
   const roleDisplay = staff.assignedRole || staff.role || '역할 미정';
   const hasContact = !!(staff.phone || staff.email);
-  const hasException = !!(exceptionRecord?.workLog?.exception);
-  const exceptionType = exceptionRecord?.workLog?.exception?.type;
-  const exceptionSeverity = exceptionRecord?.workLog?.exception ? 
-    getExceptionSeverity(exceptionRecord.workLog.exception.type) : null;
 
   return (
     <div style={style} className="flex w-full border-b border-gray-200 hover:bg-gray-50 transition-colors">
@@ -210,32 +202,10 @@ const VirtualizedTableRow: React.FC<{
         )}
       </div>
       
-      {/* 예외 상황 열 */}
-      <div className="px-4 py-4 flex-shrink-0 w-24">
-        {hasException ? (
-          <div className="flex items-center gap-1">
-            <span className={`text-${exceptionSeverity === 'high' ? 'red' : exceptionSeverity === 'medium' ? 'yellow' : 'orange'}-500`}>
-              {getExceptionIcon(exceptionType!)}
-            </span>
-            <span className="text-xs text-gray-600 truncate">
-              {exceptionType}
-            </span>
-          </div>
-        ) : (
-          <span className="text-gray-400 text-xs">정상</span>
-        )}
-      </div>
       
       {/* 작업 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
         <div className="flex space-x-1">
-          <button
-            onClick={() => onExceptionEdit(staff.id)}
-            className="px-2 py-1 text-xs font-medium text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded transition-colors"
-            title="예외 상황 처리"
-          >
-            예외
-          </button>
           <button
             onClick={() => onDeleteStaff(staff.id)}
             className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
@@ -254,7 +224,6 @@ VirtualizedTableRow.displayName = 'VirtualizedTableRow';
 const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   staffList,
   onEditWorkTime,
-  onExceptionEdit,
   onDeleteStaff,
   getStaffAttendanceStatus,
   attendanceRecords,
@@ -267,7 +236,6 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   const itemData = useMemo((): ItemData => ({
     staffList,
     onEditWorkTime,
-    onExceptionEdit,
     onDeleteStaff,
     getStaffAttendanceStatus,
     attendanceRecords,
@@ -277,7 +245,6 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   }), [
     staffList,
     onEditWorkTime,
-    onExceptionEdit,
     onDeleteStaff,
     getStaffAttendanceStatus,
     attendanceRecords,
@@ -315,9 +282,6 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           출석
-        </div>
-        <div className="px-4 py-3 flex-shrink-0 w-24 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          예외
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           작업

@@ -2,8 +2,6 @@
 import { useTranslation } from 'react-i18next';
 import { FaClock, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
 
-import { AttendanceException, EXCEPTION_CONFIGS } from '../types/attendance';
-
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out' | 'absent';
 
 interface AttendanceStatusCardProps {
@@ -12,7 +10,6 @@ interface AttendanceStatusCardProps {
   checkOutTime?: string | undefined;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  exception?: AttendanceException;
 }
 
 const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
@@ -20,25 +17,12 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
   checkInTime,
   checkOutTime,
   size = 'md',
-  className = '',
-  exception
+  className = ''
 }) => {
   const { t } = useTranslation();
 
   const getStatusConfig = () => {
-    // 예외 상황이 있으면 예외 상황 우선 표시
-    if (exception) {
-      const exceptionConfig = EXCEPTION_CONFIGS[exception.type];
-      return {
-        icon: <span className="text-base">{exceptionConfig.icon}</span>,
-        text: exception.description,
-        bgColor: exceptionConfig.bgColor,
-        textColor: exceptionConfig.textColor,
-        borderColor: exceptionConfig.borderColor
-      };
-    }
-
-    // 기본 출석 상태별 설정
+    // 출석 상태별 설정
     switch (status) {
       case 'not_started':
         return {
@@ -107,11 +91,6 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
             {checkInTime ? <span>{t('attendance.checkIn', '출근')}: {checkInTime}</span> : null}
             {checkInTime && checkOutTime ? <span className="mx-1">|</span> : null}
             {checkOutTime ? <span>{t('attendance.checkOut', '퇴근')}: {checkOutTime}</span> : null}
-          </div> : null}
-        {/* 예외 상황이 있으면 추가 정보 표시 */}
-        {exception && exception.managerNote && size !== 'sm' ? <div className="text-xs opacity-75 mt-1">
-            <span className="font-medium">{t('exceptions.note', '메모')}: </span>
-            <span>{exception.managerNote}</span>
           </div> : null}
       </div>
     </div>

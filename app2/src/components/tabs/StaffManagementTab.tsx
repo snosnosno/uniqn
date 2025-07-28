@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTimes } from 'react-icons/fa';
 import { Timestamp } from 'firebase/firestore';
 
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
@@ -9,7 +8,6 @@ import { useStaffManagement } from '../../hooks/useStaffManagement';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 import { parseToDate } from '../../utils/jobPosting/dateUtils';
-import { AttendanceExceptionHandler } from '../AttendanceExceptionHandler';
 import BulkActionsModal from '../BulkActionsModal';
 import PerformanceMonitor from '../PerformanceMonitor';
 import PerformanceDashboard from '../PerformanceDashboard';
@@ -34,8 +32,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const {
     staffData,
     groupedStaffData,
-    availableDates,
-    availableRoles,
     loading,
     error,
     filters,
@@ -44,7 +40,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     groupByDate,
     setGroupByDate,
     deleteStaff,
-    refreshStaffData,
     toggleDateExpansion,
     formatTimeDisplay,
     getTimeSlotColor
@@ -67,7 +62,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isWorkTimeEditorOpen, setIsWorkTimeEditorOpen] = useState(false);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
-  const [selectedExceptionWorkLog, setSelectedExceptionWorkLog] = useState<any | null>(null);
   const [currentTimeType, setCurrentTimeType] = useState<'start' | 'end' | undefined>(undefined);
   
   // 모바일 전용 상태
@@ -167,24 +161,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     // 성공 메시지는 WorkTimeEditor 내부에서 처리
   };
   
-  // 예외 상황 처리 함수
-  const handleExceptionEdit = (staffId: string) => {
-    const workLog = attendanceRecords.find(record => 
-      record.workLog?.eventId === (jobPosting?.id || 'default-event') && 
-      record.staffId === staffId &&
-      record.workLog?.date === new Date().toISOString().split('T')[0]
-    );
-    
-    if (workLog?.workLog) {
-      setSelectedExceptionWorkLog(workLog.workLog);
-    }
-  };
-  
-  const handleExceptionUpdate = (updatedWorkLog: any) => {
-    console.log('예외 상황이 업데이트되었습니다:', updatedWorkLog);
-    setSelectedExceptionWorkLog(null);
-    // 성공 메시지는 AttendanceExceptionHandler 내부에서 처리
-  };
 
   // 필터링된 데이터 계산
   const flattenedStaffData = Object.values(groupedStaffData.grouped).flat();
@@ -418,8 +394,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
-                      onExceptionEdit={handleExceptionEdit}
-                      onDeleteStaff={deleteStaff}
+                                            onDeleteStaff={deleteStaff}
                       getStaffAttendanceStatus={getStaffAttendanceStatus}
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
@@ -436,8 +411,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   <VirtualizedStaffList
                     staffList={flattenedStaffData}
                     onEditWorkTime={handleEditWorkTime}
-                    onExceptionEdit={handleExceptionEdit}
-                    onDeleteStaff={deleteStaff}
+                                        onDeleteStaff={deleteStaff}
                     getStaffAttendanceStatus={getStaffAttendanceStatus}
                     attendanceRecords={attendanceRecords}
                     formatTimeDisplay={formatTimeDisplay}
@@ -456,8 +430,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         key={staff.id}
                         staff={staff}
                         onEditWorkTime={handleEditWorkTime}
-                        onExceptionEdit={handleExceptionEdit}
-                        onDeleteStaff={deleteStaff}
+                                                onDeleteStaff={deleteStaff}
                         getStaffAttendanceStatus={getStaffAttendanceStatus}
                         attendanceRecords={attendanceRecords}
                         formatTimeDisplay={formatTimeDisplay}
@@ -486,8 +459,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
-                      onExceptionEdit={handleExceptionEdit}
-                      onDeleteStaff={deleteStaff}
+                                            onDeleteStaff={deleteStaff}
                       getStaffAttendanceStatus={getStaffAttendanceStatus}
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
@@ -501,8 +473,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   <VirtualizedStaffTable
                     staffList={flattenedStaffData}
                     onEditWorkTime={handleEditWorkTime}
-                    onExceptionEdit={handleExceptionEdit}
-                    onDeleteStaff={deleteStaff}
+                                        onDeleteStaff={deleteStaff}
                     getStaffAttendanceStatus={getStaffAttendanceStatus}
                     attendanceRecords={attendanceRecords}
                     formatTimeDisplay={formatTimeDisplay}
@@ -536,9 +507,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               출석
                             </th>
                             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              예외
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               작업
                             </th>
                           </tr>
@@ -549,8 +517,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               key={staff.id}
                               staff={staff}
                               onEditWorkTime={handleEditWorkTime}
-                              onExceptionEdit={handleExceptionEdit}
-                              onDeleteStaff={deleteStaff}
+                                                            onDeleteStaff={deleteStaff}
                               getStaffAttendanceStatus={getStaffAttendanceStatus}
                               attendanceRecords={attendanceRecords}
                               formatTimeDisplay={formatTimeDisplay}
@@ -597,27 +564,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         timeType={currentTimeType}
       />
 
-      {/* 예외 상황 처리 모달 */}
-      {selectedExceptionWorkLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{t('exceptions.title', '예외 상황 처리')}</h3>
-              <button
-                onClick={() => setSelectedExceptionWorkLog(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <FaTimes />
-              </button>
-            </div>
-            
-            <AttendanceExceptionHandler
-              workLog={selectedExceptionWorkLog}
-              onExceptionUpdated={handleExceptionUpdate}
-            />
-          </div>
-        </div>
-      )}
 
       {/* 일괄 작업 모달 */}
       <BulkActionsModal

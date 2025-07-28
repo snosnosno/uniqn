@@ -9,7 +9,6 @@ interface StaffDateGroupProps {
   isExpanded: boolean;
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
-  onExceptionEdit: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
   getStaffAttendanceStatus: (staffId: string) => any;
   attendanceRecords: any[];
@@ -23,7 +22,6 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
   isExpanded,
   onToggleExpansion,
   onEditWorkTime,
-  onExceptionEdit,
   onDeleteStaff,
   getStaffAttendanceStatus,
   attendanceRecords,
@@ -96,9 +94,6 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                   출석
                 </th>
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  예외
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   작업
                 </th>
               </tr>
@@ -109,7 +104,6 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                   key={staff.id}
                   staff={staff}
                   onEditWorkTime={onEditWorkTime}
-                  onExceptionEdit={onExceptionEdit}
                   onDeleteStaff={onDeleteStaff}
                   getStaffAttendanceStatus={getStaffAttendanceStatus}
                   attendanceRecords={attendanceRecords}
