@@ -15,6 +15,7 @@ interface StaffDateGroupProps {
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
 }
 
 const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
@@ -28,7 +29,8 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
   attendanceRecords,
   formatTimeDisplay,
   getTimeSlotColor,
-  onShowProfile
+  onShowProfile,
+  eventId
 }) => {
   // const { t } = useTranslation(); // 현재 미사용
   const staffCount = staffList.length;
@@ -112,6 +114,7 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                   formatTimeDisplay={formatTimeDisplay}
                   getTimeSlotColor={getTimeSlotColor}
                   onShowProfile={onShowProfile}
+                  eventId={eventId}
                 />
               ))}
             </tbody>

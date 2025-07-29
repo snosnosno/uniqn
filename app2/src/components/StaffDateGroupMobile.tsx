@@ -18,6 +18,7 @@ interface StaffDateGroupMobileProps {
   onStaffSelect?: (staffId: string) => void;
   multiSelectMode?: boolean;
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
 }
 
 const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
@@ -34,7 +35,8 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   selectedStaff = new Set(),
   onStaffSelect,
   multiSelectMode = false,
-  onShowProfile
+  onShowProfile,
+  eventId
 }) => {
   const staffCount = staffList.length;
   const selectedCount = multiSelectMode ? Array.from(selectedStaff).filter(id => 
@@ -185,6 +187,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
               onSelect={multiSelectMode ? onStaffSelect : undefined}
               onShowProfile={onShowProfile}
+              eventId={eventId}
             />
           ))}
           

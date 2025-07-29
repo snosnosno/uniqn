@@ -5,6 +5,7 @@ import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
+import { getTodayString, convertToDateString } from '../utils/jobPosting/dateUtils';
 
 interface VirtualizedStaffTableProps {
   staffList: StaffData[];
@@ -18,6 +19,7 @@ interface VirtualizedStaffTableProps {
   height?: number;
   rowHeight?: number;
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
 }
 
 interface ItemData {
@@ -30,6 +32,7 @@ interface ItemData {
   getTimeSlotColor: (time: string | undefined) => string;
   showDate: boolean;
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
 }
 
 // 가상화된 테이블 행 컴포넌트 (StaffRow 로직을 인라인으로 구현)
@@ -57,8 +60,27 @@ const VirtualizedTableRow: React.FC<{
   const formattedTime = useCachedTimeDisplay(staff?.assignedTime, formatTimeDisplay);
   const timeSlotColor = useCachedTimeSlotColor(staff?.assignedTime, getTimeSlotColor);
   
-  // 출석 데이터 (항상 호출)
-  const attendanceRecord = staff ? getStaffAttendanceStatus(staff.id) : null;
+  // 출석 데이터 (항상 호출) - workLogId 생성하여 날짜별 구분
+  const workLogId = useMemo(() => {
+    if (!staff) return null;
+    
+    const dateString = convertToDateString(staff.assignedDate) || getTodayString();
+    
+    // 날짜가 제대로 파싱되었는지 확인
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      console.warn('⚠️ VirtualizedStaffTable - assignedDate 파싱 실패:', {
+        staffId: staff.id,
+        staffName: staff.name,
+        assignedDate: staff.assignedDate,
+        parsedDate: dateString
+      });
+    }
+    
+    const actualStaffId = staff.id.replace(/_\d+$/, '');
+    return `virtual_${actualStaffId}_${dateString}`;
+  }, [staff?.id, staff?.assignedDate]);
+  
+  const attendanceRecord = staff && workLogId ? getStaffAttendanceStatus(workLogId) : null;
   const exceptionRecord = staff ? attendanceRecords.find(r => r.staffId === staff.id) : null;
 
   // 메모이제이션된 출근/퇴근 시간 데이터 (항상 호출)
@@ -217,10 +239,11 @@ const VirtualizedTableRow: React.FC<{
       {/* 출석 상태 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
         <AttendanceStatusPopover
-          workLogId={attendanceRecord?.workLogId || `virtual_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`}
+          workLogId={attendanceRecord?.workLogId || workLogId || ''}
           currentStatus={attendanceRecord?.status || 'not_started'}
           staffId={staff.id}
           staffName={staff.name}
+          eventId={data.eventId}
           size="sm"
         />
       </div>
@@ -255,7 +278,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   showDate = true,
   height = 600,
   rowHeight = 80,
-  onShowProfile
+  onShowProfile,
+  eventId
 }) => {
   const itemData = useMemo((): ItemData => ({
     staffList,
@@ -266,7 +290,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     formatTimeDisplay,
     getTimeSlotColor,
     showDate,
-    onShowProfile
+    onShowProfile,
+    eventId
   }), [
     staffList,
     onEditWorkTime,
@@ -276,7 +301,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     formatTimeDisplay,
     getTimeSlotColor,
     showDate,
-    onShowProfile
+    onShowProfile,
+    eventId
   ]);
 
   if (staffList.length === 0) {

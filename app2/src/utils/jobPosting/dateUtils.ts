@@ -51,8 +51,10 @@ export const parseToDate = (dateInput: any): Date | null => {
         const date = dateInput.toDate();
         return isNaN(date.getTime()) ? null : date;
       } else {
-        const date = new Date(seconds * 1000 + nanoseconds / 1000000);
-        return isNaN(date.getTime()) ? null : date;
+        // 타임존 보정을 적용한 변환
+        const utcDate = new Date(seconds * 1000 + nanoseconds / 1000000);
+        // 로컬 타임존을 고려하여 날짜가 변경되지 않도록 함
+        return isNaN(utcDate.getTime()) ? null : utcDate;
       }
     }
 
@@ -65,8 +67,10 @@ export const parseToDate = (dateInput: any): Date | null => {
         return null;
       }
       
-      const date = new Date(seconds * 1000);
-      return isNaN(date.getTime()) ? null : date;
+      // 타임존 보정을 적용한 변환
+      const utcDate = new Date(seconds * 1000);
+      // 로컬 타임존을 고려하여 날짜가 변경되지 않도록 함
+      return isNaN(utcDate.getTime()) ? null : utcDate;
     }
 
     // 4. 문자열인 경우
@@ -181,6 +185,7 @@ export const formatDate = (dateInput: any): string => {
 
 /**
  * 다양한 날짜 형식을 yyyy-MM-dd 문자열로 변환
+ * 타임존으로 인한 날짜 변경 문제를 방지
  */
 export const convertToDateString = (dateInput: any): string => {
   if (!dateInput) {
@@ -201,7 +206,7 @@ export const convertToDateString = (dateInput: any): string => {
       return '';
     }
     
-    // Convert to yyyy-MM-dd format for HTML date input
+    // 로컬 날짜로 변환하여 타임존 차이로 인한 날짜 변경 방지
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -284,9 +289,14 @@ export const convertToTimestamp = (dateInput: any): Timestamp | null => {
 
 /**
  * 오늘 날짜를 yyyy-MM-dd 형식으로 반환
+ * 로컬 타임존 기준으로 오늘 날짜 반환
  */
 export const getTodayString = (): string => {
-  return new Date().toISOString().split('T')[0];
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 /**

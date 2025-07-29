@@ -7,6 +7,8 @@ import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } fro
 import { StaffData } from '../hooks/useStaffManagement';
 import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
+import { timestampToLocalDateString } from '../utils/dateUtils';
+import { getTodayString } from '../utils/jobPosting/dateUtils';
 
 interface StaffCardProps {
   staff: StaffData;
@@ -20,6 +22,7 @@ interface StaffCardProps {
   isSelected?: boolean;
   onSelect?: (staffId: string) => void;
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
 }
 
 const StaffCard: React.FC<StaffCardProps> = React.memo(({
@@ -33,7 +36,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   showDate = false,
   isSelected = false,
   onSelect,
-  onShowProfile
+  onShowProfile,
+  eventId
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -57,14 +61,42 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
 
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
-    const attendanceRecord = getStaffAttendanceStatus(staff.id);
+    // workLogId 생성 (날짜별 출석 상태 구분을 위해)
+    const dateString = timestampToLocalDateString(staff.assignedDate);
+    
+    // 날짜가 제대로 파싱되었는지 확인
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      console.warn('⚠️ StaffCard - assignedDate 파싱 실패:', {
+        staffId: staff.id,
+        staffName: staff.name,
+        assignedDate: staff.assignedDate,
+        parsedDate: dateString
+      });
+    }
+    
+    // staffId에서 _숫자 패턴 제거
+    const actualStaffId = staff.id.replace(/_\d+$/, '');
+    const workLogId = `virtual_${actualStaffId}_${dateString}`;
+    
+    // workLogId로 출석 상태 가져오기
+    const attendanceRecord = getStaffAttendanceStatus(workLogId);
     const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
+    
+    console.log('🔍 StaffCard - 출석 데이터 조회:', {
+      staffId: staff.id,
+      actualStaffId,
+      dateString,
+      workLogId,
+      hasAttendanceRecord: !!attendanceRecord,
+      hasWorkLogRecord: !!workLogRecord
+    });
     
     return {
       attendanceRecord,
-      workLogRecord
+      workLogRecord,
+      workLogId
     };
-  }, [staff.id, getStaffAttendanceStatus, attendanceRecords]);
+  }, [staff.id, staff.assignedDate, getStaffAttendanceStatus, attendanceRecords]);
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
@@ -282,10 +314,11 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
             {/* 출석 상태 */}
             <div className="relative">
               <AttendanceStatusPopover
-                workLogId={memoizedAttendanceData.attendanceRecord?.workLogId || `virtual_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`}
+                workLogId={memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
                 currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
                 staffId={staff.id}
                 staffName={staff.name}
+                eventId={eventId}
                 size="sm"
                 className="scale-90"
               />
@@ -353,7 +386,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                       const { updateDoc, doc, setDoc, Timestamp } = await import('firebase/firestore');
                       const { db } = await import('../firebase');
                       const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
-                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`;
+                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
                       
                       if (memoizedAttendanceData.attendanceRecord?.workLogId) {
                         // 기존 workLog 업데이트
@@ -368,7 +401,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                           eventId: staff.postingId || 'unknown',
                           dealerId: staff.id,
                           dealerName: staff.name || 'Unknown',
-                          date: staff.assignedDate || new Date().toISOString().split('T')[0],
+                          date: staff.assignedDate || getTodayString(),
                           status: 'checked_in',
                           actualStartTime: Timestamp.now(),
                           scheduledStartTime: null,
@@ -391,7 +424,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                       const { updateDoc, doc, setDoc, Timestamp } = await import('firebase/firestore');
                       const { db } = await import('../firebase');
                       const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
-                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`;
+                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
                       
                       if (memoizedAttendanceData.attendanceRecord?.workLogId) {
                         // 기존 workLog 업데이트
@@ -406,7 +439,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                           eventId: staff.postingId || 'unknown',
                           dealerId: staff.id,
                           dealerName: staff.name || 'Unknown',
-                          date: staff.assignedDate || new Date().toISOString().split('T')[0],
+                          date: staff.assignedDate || getTodayString(),
                           status: 'checked_out',
                           actualStartTime: Timestamp.now(),
                           actualEndTime: Timestamp.now(),
@@ -429,7 +462,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                       const { updateDoc, doc, setDoc, Timestamp, deleteField } = await import('firebase/firestore');
                       const { db } = await import('../firebase');
                       const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
-                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`;
+                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
                       
                       if (memoizedAttendanceData.attendanceRecord?.workLogId) {
                         // 기존 workLog 업데이트
@@ -445,7 +478,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                           eventId: staff.postingId || 'unknown',
                           dealerId: staff.id,
                           dealerName: staff.name || 'Unknown',
-                          date: staff.assignedDate || new Date().toISOString().split('T')[0],
+                          date: staff.assignedDate || getTodayString(),
                           status: 'not_started',
                           actualStartTime: null,
                           actualEndTime: null,

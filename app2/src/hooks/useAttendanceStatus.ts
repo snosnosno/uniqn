@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { AttendanceStatus } from '../components/AttendanceStatusCard';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
+import { getTodayString } from '../utils/jobPosting/dateUtils';
 
 import { WorkLog } from './useShiftSchedule';
 
@@ -26,8 +27,8 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 현재 날짜를 기본값으로 사용
-  const currentDate = date || new Date().toISOString().split('T')[0];
+  // 현재 날짜를 기본값으로 사용 (로컬 타임존 기준)
+  const currentDate = date || getTodayString();
   const currentEventId = eventId || 'default-event';
 
   useEffect(() => {
@@ -47,14 +48,32 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           try {
             const records: AttendanceRecord[] = [];
             
-            // eventId로 필터링
+            // eventId로 필터링 - 현재 eventId와 일치하는 것만
             const filteredWorkLogs = workLogs.filter(workLog => 
               workLog.eventId === currentEventId
             );
             
+            console.log('🔍 useAttendanceStatus - 필터링된 workLogs:', {
+              currentEventId,
+              totalWorkLogs: workLogs.length,
+              filteredCount: filteredWorkLogs.length,
+              eventIds: Array.from(new Set(workLogs.map(w => w.eventId)))
+            });
+            
             filteredWorkLogs.forEach((workLog) => {
               const attendanceRecord = calculateAttendanceStatus(workLog);
               records.push(attendanceRecord);
+              
+              // 디버그: workLog 정보 출력
+              if (workLog.dealerId?.includes('tURgdOBmtYfO5Bgzm8NyGKGtbL12')) {
+                console.log('🎯 타겟 스태프의 workLog 발견:', {
+                  workLogId: workLog.id,
+                  dealerId: workLog.dealerId,
+                  eventId: workLog.eventId,
+                  date: workLog.date,
+                  status: attendanceRecord.status
+                });
+              }
             });
 
 
@@ -178,9 +197,109 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     };
   };
 
-  // 특정 스태프의 출석 상태를 가져오는 함수
-  const getStaffAttendanceStatus = (staffId: string): AttendanceRecord | null => {
-    return attendanceRecords.find(record => record.staffId === staffId) || null;
+  // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
+  const getStaffAttendanceStatus = (staffIdOrWorkLogId: string): AttendanceRecord | null => {
+    console.log('🔍 getStaffAttendanceStatus 호출:', {
+      input: staffIdOrWorkLogId,
+      totalRecords: attendanceRecords.length,
+      recordIds: attendanceRecords.map(r => ({
+        workLogId: r.workLogId,
+        staffId: r.staffId,
+        date: r.workLog?.date
+      }))
+    });
+
+    // workLogId로 먼저 검색 시도 (virtual_ 접두사 포함)
+    if (staffIdOrWorkLogId.includes('virtual_') || staffIdOrWorkLogId.includes('_')) {
+      // workLogId로 검색
+      const record = attendanceRecords.find(record => record.workLogId === staffIdOrWorkLogId);
+      
+      if (record) {
+        console.log('✅ getStaffAttendanceStatus - workLogId로 직접 찾음:', {
+          workLogId: staffIdOrWorkLogId,
+          status: record.status,
+          date: record.workLog?.date
+        });
+        return record;
+      }
+      
+      // virtual_ 형식인 경우 실제 workLogId 매칭 시도
+      if (staffIdOrWorkLogId.startsWith('virtual_')) {
+        // virtual_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2025-07-29 형식 파싱
+        const virtualPattern = /^virtual_(.+?)_(\d{4}-\d{2}-\d{2})$/;
+        const match = staffIdOrWorkLogId.match(virtualPattern);
+        
+        if (match) {
+          const staffId = match[1];
+          const date = match[2];
+          
+          console.log('🔎 virtual ID 파싱 결과:', {
+            virtualId: staffIdOrWorkLogId,
+            parsedStaffId: staffId,
+            parsedDate: date
+          });
+          
+          const matchedRecord = attendanceRecords.find(record => {
+            const isMatch = record.staffId === staffId && record.workLog?.date === date;
+            if (record.staffId === staffId) {
+              console.log('📋 스태프 매칭 확인:', {
+                recordDate: record.workLog?.date,
+                targetDate: date,
+                isDateMatch: record.workLog?.date === date,
+                workLogId: record.workLogId
+              });
+            }
+            return isMatch;
+          });
+          
+          if (matchedRecord) {
+            console.log('✅ getStaffAttendanceStatus - virtual ID 매칭 성공:', {
+              virtualId: staffIdOrWorkLogId,
+              staffId,
+              date,
+              status: matchedRecord.status,
+              workLogId: matchedRecord.workLogId
+            });
+            return matchedRecord;
+          } else {
+            console.log('❌ virtual ID 매칭 실패:', {
+              virtualId: staffIdOrWorkLogId,
+              staffId,
+              date,
+              availableDates: attendanceRecords
+                .filter(r => r.staffId === staffId)
+                .map(r => r.workLog?.date)
+            });
+          }
+        } else {
+          console.log('⚠️ virtual ID 파싱 실패:', staffIdOrWorkLogId);
+        }
+      }
+    }
+    
+    // staffId로 fallback 검색 (이전 호환성 유지)
+    const baseStaffId = staffIdOrWorkLogId.match(/^(.+?)(_\d+)?$/)?.[1] || staffIdOrWorkLogId;
+    
+    const fallbackRecord = attendanceRecords.find(record => 
+      record.staffId === staffIdOrWorkLogId || record.staffId === baseStaffId
+    );
+
+    if (fallbackRecord) {
+      console.log('⚠️ getStaffAttendanceStatus - staffId로 fallback 검색 성공:', {
+        input: staffIdOrWorkLogId,
+        baseStaffId,
+        foundStaffId: fallbackRecord.staffId,
+        status: fallbackRecord.status,
+        date: fallbackRecord.workLog?.date
+      });
+    } else {
+      console.log('❌ getStaffAttendanceStatus - 매칭 실패:', {
+        input: staffIdOrWorkLogId,
+        baseStaffId
+      });
+    }
+    
+    return fallbackRecord || null;
   };
 
   // 출석 상태별 통계를 계산하는 함수

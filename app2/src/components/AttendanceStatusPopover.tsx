@@ -5,6 +5,7 @@ import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
+import { getTodayString } from '../utils/jobPosting/dateUtils';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
@@ -15,6 +16,7 @@ interface AttendanceStatusPopoverProps {
   staffName?: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  eventId?: string;
   onStatusChange?: (newStatus: AttendanceStatus) => void;
 }
 
@@ -25,6 +27,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   staffName = '',
   size = 'md',
   className = '',
+  eventId,
   onStatusChange
 }) => {
   const { t } = useTranslation();
@@ -119,6 +122,18 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   };
 
   const handleStatusChange = async (newStatus: AttendanceStatus) => {
+    console.log('🔄 출석 상태 변경 시도:', {
+      workLogId,
+      currentStatus,
+      newStatus,
+      staffId,
+      staffName,
+      eventId,
+      eventIdType: typeof eventId,
+      eventIdValue: eventId || '없음',
+      isVirtual: workLogId.startsWith('virtual_')
+    });
+    
     if (newStatus === currentStatus || isUpdating) return;
 
     setIsUpdating(true);
@@ -129,14 +144,53 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       
       // virtual_ 프리픽스가 있으면 새로운 workLog 생성
       if (workLogId.startsWith('virtual_')) {
+        // 날짜 형식 파싱을 더 안전하게 처리
         const parts = workLogId.split('_');
-        const staffId = parts[1];
-        const date = parts[2] || new Date().toISOString().split('T')[0];
-        const realWorkLogId = `unknown_${staffId}_${date}`;
+        let actualStaffId = '';
+        let date = '';
+        
+        // virtual_스태프ID_날짜 형식 파싱
+        if (parts.length >= 3) {
+          actualStaffId = parts[1];
+          // 날짜가 언더스코어로 분리된 경우 (예: virtual_staffId_2025_01_28)
+          if (parts.length > 3 && parts[2].length === 4 && /^\d{4}$/.test(parts[2])) {
+            date = `${parts[2]}-${parts[3]}-${parts[4]}`;
+          } else {
+            date = parts[2];
+          }
+        } else if (parts.length === 2) {
+          // virtual_스태프ID 형식인 경우 (날짜가 없는 경우)
+          actualStaffId = parts[1];
+          date = getTodayString();
+        }
+        
+        // 날짜 형식 검증 및 복구
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          console.warn('⚠️ AttendanceStatusPopover - 잘못된 날짜 형식, 오늘 날짜로 대체:', {
+            originalDate: date,
+            workLogId
+          });
+          date = getTodayString();
+        }
+        
+        console.log('🔍 AttendanceStatusPopover - virtual workLogId 파싱 결과:', {
+          originalWorkLogId: workLogId,
+          parts,
+          actualStaffId,
+          date,
+          dateValid: /^\d{4}-\d{2}-\d{2}$/.test(date)
+        });
+        
+        // eventId가 없으면 에러 로그 출력
+        if (!eventId) {
+          console.warn('⚠️ AttendanceStatusPopover - eventId가 없습니다. 기본값 사용');
+        }
+        
+        const realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_${date}`;
         
         const newWorkLogData: any = {
-          eventId: 'unknown',
-          dealerId: staffId,
+          eventId: eventId || 'default-event',
+          dealerId: actualStaffId,
           dealerName: staffName || 'Unknown',
           date: date,
           status: newStatus,
@@ -160,6 +214,13 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         await setDoc(workLogRef, newWorkLogData);
+        
+        console.log('✅ 새 workLog 생성 완료:', {
+          realWorkLogId,
+          parsedDate: date,
+          originalWorkLogId: workLogId,
+          data: newWorkLogData
+        });
       } else {
         // 기존 workLog 업데이트
         const updateData: any = {
@@ -188,11 +249,19 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         onStatusChange(newStatus);
       }
 
-      const newOption = statusOptions.find(opt => opt.value === newStatus);
-      showSuccess(`${staffName}의 출석 상태가 "${newOption?.label}"로 변경되었습니다.`);
+      // 성공 메시지 표시
+      const statusLabel = statusOptions.find(opt => opt.value === newStatus)?.label || newStatus;
+      showSuccess(`${staffName}의 출석 상태가 "${statusLabel}"로 변경되었습니다.`);
       
     } catch (error) {
-      console.error('출석 상태 업데이트 오류:', error);
+      console.error('❌ 출석 상태 업데이트 오류:', {
+        workLogId,
+        currentStatus,
+        newStatus,
+        staffId,
+        staffName,
+        error
+      });
       showError('출석 상태 변경 중 오류가 발생했습니다.');
     } finally {
       setIsUpdating(false);

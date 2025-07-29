@@ -5,6 +5,7 @@ import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
+import { getTodayString, convertToDateString } from '../utils/jobPosting/dateUtils';
 
 interface StaffRowProps {
   staff: StaffData;
@@ -16,6 +17,7 @@ interface StaffRowProps {
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean; // 날짜 표시 여부 (단일 테이블 모드에서 사용)
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
 }
 
 const StaffRow: React.FC<StaffRowProps> = React.memo(({
@@ -27,7 +29,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   formatTimeDisplay,
   getTimeSlotColor,
   showDate = false,
-  onShowProfile
+  onShowProfile,
+  eventId
 }) => {
   const { t } = useTranslation();
 
@@ -46,14 +49,42 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
 
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
-    const attendanceRecord = getStaffAttendanceStatus(staff.id);
+    // workLogId 생성 (날짜별 출석 상태 구분을 위해)
+    const dateString = convertToDateString(staff.assignedDate) || getTodayString();
+    
+    // 날짜가 제대로 파싱되었는지 확인
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      console.warn('⚠️ StaffRow - assignedDate 파싱 실패:', {
+        staffId: staff.id,
+        staffName: staff.name,
+        assignedDate: staff.assignedDate,
+        parsedDate: dateString
+      });
+    }
+    
+    // staffId에서 _숫자 패턴 제거
+    const actualStaffId = staff.id.replace(/_\d+$/, '');
+    const workLogId = `virtual_${actualStaffId}_${dateString}`;
+    
+    // workLogId로 출석 상태 가져오기
+    const attendanceRecord = getStaffAttendanceStatus(workLogId);
     const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
+    
+    console.log('🔍 StaffRow - 출석 데이터 조회:', {
+      staffId: staff.id,
+      actualStaffId,
+      dateString,
+      workLogId,
+      hasAttendanceRecord: !!attendanceRecord,
+      hasWorkLogRecord: !!workLogRecord
+    });
     
     return {
       attendanceRecord,
-      workLogRecord
+      workLogRecord,
+      workLogId
     };
-  }, [staff.id, getStaffAttendanceStatus, attendanceRecords]);
+  }, [staff.id, staff.assignedDate, getStaffAttendanceStatus, attendanceRecords]);
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
@@ -237,11 +268,19 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       {/* 출석 상태 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
         <AttendanceStatusPopover
-          workLogId={memoizedAttendanceData.attendanceRecord?.workLogId || `virtual_${staff.id}_${staff.assignedDate || new Date().toISOString().split('T')[0]}`}
+          workLogId={memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
           currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
           staffId={staff.id}
           staffName={staff.name}
+          eventId={eventId}
           size="sm"
+          onStatusChange={(newStatus) => {
+            console.log('✅ StaffRow - 출석 상태 변경 콜백:', {
+              staffId: staff.id,
+              newStatus,
+              workLogId: memoizedAttendanceData.attendanceRecord?.workLogId
+            });
+          }}
         />
       </td>
       

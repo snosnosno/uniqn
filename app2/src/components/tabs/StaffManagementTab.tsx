@@ -7,7 +7,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useStaffManagement, StaffData } from '../../hooks/useStaffManagement';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
-import { parseToDate } from '../../utils/jobPosting/dateUtils';
+import { parseToDate, getTodayString } from '../../utils/jobPosting/dateUtils';
 import BulkActionsModal from '../BulkActionsModal';
 import PerformanceMonitor from '../PerformanceMonitor';
 import PerformanceDashboard from '../PerformanceDashboard';
@@ -55,8 +55,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     attendanceRecords,
     getStaffAttendanceStatus 
   } = useAttendanceStatus({
-    eventId: jobPosting?.id || 'default-event',
-    date: new Date().toISOString().split('T')[0] || ''
+    eventId: jobPosting?.id || 'default-event'
+    // date 파라미터 제거 - 모든 날짜의 workLog를 가져옴
   });
   
   // 모달 상태
@@ -85,7 +85,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     }
 
     // 대상 날짜 결정: 파라미터로 받은 날짜 또는 스태프의 assignedDate 또는 오늘 날짜
-    const workDate = targetDate || staff.assignedDate || new Date().toISOString().split('T')[0];
+    const workDate = targetDate || staff.assignedDate || getTodayString();
     
     // 해당 날짜의 workLog 찾기
     const workLog = attendanceRecords.find(record => 
@@ -422,6 +422,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       onStaffSelect={handleStaffSelect}
                       multiSelectMode={multiSelectMode}
                       onShowProfile={handleShowProfile}
+                      eventId={jobPosting?.id}
                     />
                   );
                 })
@@ -460,6 +461,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
                         onSelect={multiSelectMode ? handleStaffSelect : undefined}
                         onShowProfile={handleShowProfile}
+                      eventId={jobPosting?.id}
                       />
                     ))}
                   </div>
@@ -487,6 +489,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       formatTimeDisplay={formatTimeDisplay}
                       getTimeSlotColor={getTimeSlotColor}
                       onShowProfile={handleShowProfile}
+                      eventId={jobPosting?.id}
                     />
                   );
                 })
@@ -504,6 +507,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     showDate={true}
                     height={desktopVirtualization.height}
                     rowHeight={desktopVirtualization.itemHeight}
+                    eventId={jobPosting?.id}
                   />
                 ) : (
                   <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -547,6 +551,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               getTimeSlotColor={getTimeSlotColor}
                               showDate={true}
                               onShowProfile={handleShowProfile}
+                              eventId={jobPosting?.id}
                             />
                           ))}
                         </tbody>
