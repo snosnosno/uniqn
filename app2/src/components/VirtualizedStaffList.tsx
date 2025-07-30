@@ -84,11 +84,11 @@ const VirtualizedStaffItem: React.FC<{
         getTimeSlotColor={getTimeSlotColor}
         showDate={showDate}
         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
-        onSelect={multiSelectMode ? onStaffSelect : undefined}
-        onShowProfile={onShowProfile}
-        eventId={eventId}
-        canEdit={canEdit}
-        getStaffWorkLog={getStaffWorkLog}
+        {...(multiSelectMode && onStaffSelect && { onSelect: onStaffSelect })}
+        {...(onShowProfile && { onShowProfile })}
+        {...(eventId && { eventId })}
+        canEdit={!!canEdit}
+        {...(getStaffWorkLog && { getStaffWorkLog })}
       />
     </div>
   );
@@ -124,14 +124,14 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
     attendanceRecords,
     formatTimeDisplay,
     getTimeSlotColor,
-    showDate,
-    multiSelectMode,
-    selectedStaff,
-    onStaffSelect,
-    onShowProfile,
-    eventId,
-    canEdit,
-    getStaffWorkLog
+    showDate: showDate || false,
+    multiSelectMode: multiSelectMode || false,
+    selectedStaff: selectedStaff || new Set(),
+    ...(onStaffSelect && { onStaffSelect }),
+    ...(onShowProfile && { onShowProfile }),
+    ...(eventId && { eventId }),
+    canEdit: canEdit || false,
+    ...(getStaffWorkLog && { getStaffWorkLog })
   }), [
     staffList,
     onEditWorkTime,

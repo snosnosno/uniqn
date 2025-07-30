@@ -84,14 +84,20 @@ export const useGroupByDate = <T>(
       if (!acc[key]) {
         acc[key] = [];
       }
-      acc[key].push(item);
+      const items = acc[key];
+      if (items) {
+        items.push(item);
+      }
       return acc;
     }, {} as Record<string, T[]>);
 
     // 각 그룹 내에서 정렬 (제공된 정렬 함수 사용)
     if (sortItems) {
       Object.keys(grouped).forEach(key => {
-        grouped[key].sort(sortItems);
+        const items = grouped[key];
+        if (items) {
+          items.sort(sortItems);
+        }
       });
     }
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaClock, FaCheckCircle } from 'react-icons/fa';
 import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 import { db } from '../firebase';
@@ -72,7 +72,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     }
   ];
 
-  const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0];
+  const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0]!;
   
   // 시간 포맷팅 함수
   const formatTime = (timestamp: any): string => {
@@ -162,6 +162,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    
+    return undefined;
   }, [isOpen]);
 
   const getSizeClasses = () => {
@@ -225,16 +227,16 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         
         // virtual_스태프ID_날짜 형식 파싱
         if (parts.length >= 3) {
-          actualStaffId = parts[1];
+          actualStaffId = parts[1] || '';
           // 날짜가 언더스코어로 분리된 경우 (예: virtual_staffId_2025_01_28)
-          if (parts.length > 3 && parts[2].length === 4 && /^\d{4}$/.test(parts[2])) {
-            date = `${parts[2]}-${parts[3]}-${parts[4]}`;
+          if (parts.length > 3 && parts[2] && parts[2].length === 4 && /^\d{4}$/.test(parts[2])) {
+            date = `${parts[2]}-${parts[3] || ''}-${parts[4] || ''}`;
           } else {
-            date = parts[2];
+            date = parts[2] || '';
           }
         } else if (parts.length === 2) {
           // virtual_스태프ID 형식인 경우 (날짜가 없는 경우)
-          actualStaffId = parts[1];
+          actualStaffId = parts[1] || '';
           date = getTodayString();
         }
         
@@ -326,8 +328,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
             
             if (parts.length >= 3) {
               // 첫 번째 부분은 eventId, 마지막 부분은 날짜, 중간은 staffId
-              extractedEventId = parts[0];
-              extractedDate = parts[parts.length - 1];
+              extractedEventId = parts[0] || 'default-event';
+              extractedDate = parts[parts.length - 1] || getTodayString();
               // 중간 부분들을 모두 합쳐서 staffId로 처리 (언더스코어가 포함된 staffId 처리)
               extractedStaffId = parts.slice(1, -1).join('_');
             }
@@ -438,7 +440,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           
           {/* 상태 옵션들 */}
           <div className="relative">
-            {statusOptions.map((option, index) => (
+            {statusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleStatusChange(option.value)}

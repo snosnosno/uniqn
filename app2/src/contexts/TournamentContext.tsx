@@ -1,4 +1,5 @@
 import React, { createContext, useReducer, useContext, ReactNode } from 'react';
+import type { User } from '../types/common';
 
 // --- Type Definitions ---
 export interface Participant {
@@ -46,7 +47,7 @@ export interface TournamentState {
   blindLevel: number; // 현재 블라인드 레벨
   remainingTime: number; // 현재 레벨 남은 시간 (초)
   isTimerRunning: boolean; // 타이머 실행 상태
-  currentUser: any | null; // 로그인한 사용자 정보
+  currentUser: User | null; // 로그인한 사용자 정보
 }
 
 type Action =
@@ -58,7 +59,7 @@ type Action =
   | { type: 'SET_BLIND_LEVEL'; payload: number }
   | { type: 'TICK_TIMER' }
   | { type: 'SET_TIMER_RUNNING'; payload: boolean }
-  | { type: 'SET_USER'; payload: any | null }
+  | { type: 'SET_USER'; payload: User | null }
   | { type: 'ADD_PARTICIPANT'; payload: { name: string } };
 
 interface TournamentContextProps {

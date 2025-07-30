@@ -320,14 +320,14 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
           currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
           staffId={staff.id}
-          staffName={staff.name}
-          eventId={eventId}
+          staffName={staff.name || ''}
+          eventId={eventId || ''}
           size="sm"
           actualStartTime={memoizedAttendanceData.attendanceRecord?.workLog?.actualStartTime}
           actualEndTime={memoizedAttendanceData.attendanceRecord?.workLog?.actualEndTime}
           scheduledStartTime={memoizedTimeData.displayStartTime}
-          canEdit={canEdit}
-          applyOptimisticUpdate={applyOptimisticUpdate}
+          canEdit={!!canEdit}
+          {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
           onStatusChange={(newStatus) => {
             // 상태 변경 시 강제 리렌더링
             console.log('🔄 StaffRow - onStatusChange 호출:', {

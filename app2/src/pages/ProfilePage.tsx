@@ -156,7 +156,7 @@ const ProfilePage = () => {
         } catch (err: any) {
             logger.error("Error updating profile", err, { 
                 operation: 'updateProfile',
-                userId: profileId 
+                ...(profileId && { userId: profileId })
             });
             alert(t('profilePage.updateFailed', { message: err.message }));
         }

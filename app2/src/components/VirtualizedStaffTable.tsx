@@ -237,10 +237,10 @@ const VirtualizedTableRow: React.FC<{
           workLogId={attendanceRecord?.workLogId || workLogId || ''}
           currentStatus={attendanceRecord?.status || 'not_started'}
           staffId={staff.id}
-          staffName={staff.name}
-          eventId={data.eventId}
+          staffName={staff.name || ''}
+          eventId={data.eventId || ''}
           size="sm"
-          canEdit={data.canEdit}
+          canEdit={!!data.canEdit}
         />
       </div>
       
@@ -291,9 +291,9 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     attendanceRecords,
     formatTimeDisplay,
     getTimeSlotColor,
-    showDate,
-    onShowProfile,
-    eventId,
+    showDate: showDate || false,
+    ...(onShowProfile && { onShowProfile }),
+    ...(eventId && { eventId }),
     canEdit
   }), [
     staffList,

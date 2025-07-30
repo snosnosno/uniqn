@@ -223,7 +223,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     } catch (error) {
       return (
         <div className="text-red-500">
-          캐시 통계를 불러올 수 없습니다: {error.message}
+          캐시 통계를 불러올 수 없습니다: {error instanceof Error ? error.message : '알 수 없는 오류'}
         </div>
       );
     }

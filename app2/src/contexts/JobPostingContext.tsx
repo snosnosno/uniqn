@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 import { db } from '../firebase';
 import { JobPosting } from '../types/jobPosting';
+import { Applicant } from '../types/applicant';
+import { Staff } from '../types/common';
 
 import { useAuth } from './AuthContext';
 
@@ -11,8 +13,8 @@ interface JobPostingContextType {
   loading: boolean;
   error: string | null;
   refreshJobPosting: () => Promise<void>;
-  applicants: any[];
-  staff: any[];
+  applicants: Applicant[];
+  staff: Staff[];
   refreshApplicants: () => Promise<void>;
   refreshStaff: () => Promise<void>;
 }
@@ -29,8 +31,8 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [applicants, setApplicants] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
 
   // 공고 데이터 실시간 업데이트
   useEffect(() => {
@@ -77,7 +79,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
         const applicantList = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })) as Applicant[];
         setApplicants(applicantList);
       },
       (error) => {
@@ -104,7 +106,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
         const staffList = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })) as Staff[];
         setStaff(staffList);
       },
       (error) => {

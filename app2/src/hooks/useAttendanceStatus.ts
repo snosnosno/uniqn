@@ -232,12 +232,12 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
     return {
       staffId: staffId,
-      workLogId: workLog.id, // WorkLog ID 추가 (출석상태 드롭다운에서 사용)
+      ...(workLog.id && { workLogId: workLog.id }), // WorkLog ID 추가 (출석상태 드롭다운에서 사용)
       status,
-      checkInTime: formatTimeFromTimestamp(workLog.actualStartTime),
-      checkOutTime: formatTimeFromTimestamp(workLog.actualEndTime),
-      scheduledStartTime: formatTimeFromTimestamp(workLog.scheduledStartTime),
-      scheduledEndTime: formatTimeFromTimestamp(workLog.scheduledEndTime),
+      ...(formatTimeFromTimestamp(workLog.actualStartTime) && { checkInTime: formatTimeFromTimestamp(workLog.actualStartTime) }),
+      ...(formatTimeFromTimestamp(workLog.actualEndTime) && { checkOutTime: formatTimeFromTimestamp(workLog.actualEndTime) }),
+      ...(formatTimeFromTimestamp(workLog.scheduledStartTime) && { scheduledStartTime: formatTimeFromTimestamp(workLog.scheduledStartTime) }),
+      ...(formatTimeFromTimestamp(workLog.scheduledEndTime) && { scheduledEndTime: formatTimeFromTimestamp(workLog.scheduledEndTime) }),
       workLog
     };
   };
@@ -373,10 +373,10 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     const baseStaffId = staffIdOrWorkLogId.match(/^(.+?)(_\d+)?$/)?.[1] || staffIdOrWorkLogId;
     
     // virtual ID가 포함된 경우 날짜 정보 추출 시도
-    let targetDate = null;
+    let targetDate: string | null = null;
     if (staffIdOrWorkLogId.includes('virtual_')) {
       const dateMatch = staffIdOrWorkLogId.match(/(\d{4}-\d{2}-\d{2})$/);
-      if (dateMatch) {
+      if (dateMatch && dateMatch[1]) {
         targetDate = dateMatch[1];
       }
     }

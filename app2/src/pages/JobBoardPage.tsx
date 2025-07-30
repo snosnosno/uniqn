@@ -323,8 +323,10 @@ const JobBoardPage = () => {
         appliedAt: serverTimestamp(),
         
         // 기존 단일 선택 필드 (하위 호환성)
-        assignedRole: firstSelection.role,
-        assignedTime: firstSelection.timeSlot,
+        ...(firstSelection && {
+          assignedRole: firstSelection.role,
+          assignedTime: firstSelection.timeSlot,
+        }),
         
         // 새로운 다중 선택 필드
         assignedRoles,
@@ -337,7 +339,7 @@ const JobBoardPage = () => {
       }
 
       // 조건부로 필드 추가 (undefined 방지)
-      if (firstSelection.date) {
+      if (firstSelection && firstSelection.date) {
         applicationData.assignedDate = firstSelection.date;
       }
       

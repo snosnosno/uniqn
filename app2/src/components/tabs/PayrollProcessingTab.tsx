@@ -98,7 +98,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
       setError(null);
 
       // 해당 공고의 스태프 ID들 추출
-      const staffUserIds = staff.map(s => s.userId).filter(Boolean);
+      const staffUserIds = staff.map(s => s.id).filter(Boolean);
       
       if (staffUserIds.length === 0) {
         setPayrolls([]);
@@ -132,7 +132,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
 
       // 스태프 정보와 매칭하여 이름 추가
       const payrollsWithStaffNames = flatPayrolls.map((p: Payroll) => {
-        const staffMember = staff.find(s => s.userId === p.userId);
+        const staffMember = staff.find(s => s.id === p.userId);
         return {
           ...p,
           staffName: staffMember?.name || `User ${p.userId}`,

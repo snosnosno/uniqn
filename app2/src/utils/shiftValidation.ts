@@ -50,7 +50,9 @@ export const DEFAULT_VALIDATION_SETTINGS: ValidationSettings = {
  * @returns 분 단위 숫자
  */
 export const timeToMinutes = (timeStr: string): number => {
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  const parts = timeStr.split(':').map(Number);
+  const hours = parts[0] || 0;
+  const minutes = parts[1] || 0;
   return hours * 60 + minutes;
 };
 
@@ -97,7 +99,10 @@ export const validateTableConflicts = (
         if (!tableAssignments[assignment]) {
           tableAssignments[assignment] = [];
         }
-        tableAssignments[assignment].push(dealer.id);
+        const dealerList = tableAssignments[assignment];
+        if (dealerList) {
+          dealerList.push(dealer.id);
+        }
       }
     });
 
@@ -154,8 +159,10 @@ export const validateContinuousWork = (
       // 다음 시간 슬롯과의 간격 계산
       if (index < sortedSlots.length - 1) {
         const nextTimeSlot = sortedSlots[index + 1];
-        const interval = getTimeSlotDifference(timeSlot, nextTimeSlot);
-        continuousMinutes += interval;
+        if (nextTimeSlot) {
+          const interval = getTimeSlotDifference(timeSlot, nextTimeSlot);
+          continuousMinutes += interval;
+        }
       }
     } else {
       // 근무가 끝났을 때 연속 근무 시간 확인

@@ -178,14 +178,14 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                   attendanceRecords={attendanceRecords}
                   formatTimeDisplay={formatTimeDisplay}
                   getTimeSlotColor={getTimeSlotColor}
-                  onShowProfile={onShowProfile}
-                  eventId={eventId}
+                  {...(onShowProfile && { onShowProfile })}
+                  {...(eventId && { eventId })}
                   canEdit={canEdit}
-                  getStaffWorkLog={getStaffWorkLog}
-                  applyOptimisticUpdate={applyOptimisticUpdate}
+                  {...(getStaffWorkLog && { getStaffWorkLog })}
+                  {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
                   multiSelectMode={multiSelectMode}
                   isSelected={selectedStaff.has(staff.id)}
-                  onSelect={onStaffSelect}
+                  {...(onStaffSelect && { onSelect: onStaffSelect })}
                 />
               ))}
             </tbody>

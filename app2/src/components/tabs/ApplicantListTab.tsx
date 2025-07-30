@@ -206,7 +206,9 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             if (jobPosting.eventDate) {
               finalAssignedDate = jobPosting.eventDate;
             } else {
-              finalAssignedDate = new Date().toISOString().split('T')[0]; // yyyy-MM-dd 형식
+              const isoString = new Date().toISOString();
+              const datePart = isoString.split('T')[0];
+              finalAssignedDate = datePart || ''; // yyyy-MM-dd 형식
             }
           }
           

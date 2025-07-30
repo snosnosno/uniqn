@@ -135,7 +135,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             const [hours, minutes] = timeParts.map(Number);
             
             // 유효하지 않은 시간 값 검사
-            if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
               return null;
             }
             
@@ -219,6 +219,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
+    return undefined;
   }, [multiSelectMode, handleKeyDown]);
 
   // 모바일 관련 핸들러
@@ -237,7 +238,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       const end = Math.max(lastSelectedIndex, currentIndex);
       
       for (let i = start; i <= end; i++) {
-        newSelected.add(flattenedStaffData[i].id);
+        const staffItem = flattenedStaffData[i];
+        if (staffItem) {
+          newSelected.add(staffItem.id);
+        }
       }
       
       setSelectedStaff(newSelected);
@@ -521,6 +525,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   const staffForDate = groupedStaffData.grouped[date];
                   const isExpanded = expandedDates.has(date);
                   
+                  if (!staffForDate) return null;
+                  
                   return (
                     <StaffDateGroupMobile
                       key={date}
@@ -562,7 +568,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     itemHeight={mobileVirtualization.itemHeight}
                     onShowProfile={handleShowProfile}
                     eventId={jobPosting?.id}
-                    canEdit={canEdit}
+                    canEdit={!!canEdit}
                     getStaffWorkLog={getStaffWorkLog}
                   />
                 ) : (
@@ -579,10 +585,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         getTimeSlotColor={getTimeSlotColor}
                         showDate={true}
                         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
-                        onSelect={multiSelectMode ? handleStaffSelect : undefined}
+                        {...(multiSelectMode && { onSelect: handleStaffSelect })}
                         onShowProfile={handleShowProfile}
                         eventId={jobPosting?.id}
-                        canEdit={canEdit}
+                        canEdit={!!canEdit}
                         getStaffWorkLog={getStaffWorkLog}
                       />
                     ))}
@@ -596,6 +602,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 groupedStaffData.sortedDates.map((date) => {
                   const staffForDate = groupedStaffData.grouped[date];
                   const isExpanded = expandedDates.has(date);
+                  
+                  if (!staffForDate) return null;
                   
                   return (
                     <StaffDateGroup
@@ -612,7 +620,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       getTimeSlotColor={getTimeSlotColor}
                       onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
-                      canEdit={canEdit}
+                      canEdit={!!canEdit}
                       getStaffWorkLog={getStaffWorkLog}
                       applyOptimisticUpdate={applyOptimisticUpdate}
                       multiSelectMode={multiSelectMode}
@@ -636,7 +644,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     height={desktopVirtualization.height}
                     rowHeight={desktopVirtualization.itemHeight}
                     eventId={jobPosting?.id}
-                    canEdit={canEdit}
+                    canEdit={!!canEdit}
                   />
                 ) : (
                   <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -698,7 +706,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               showDate={true}
                               onShowProfile={handleShowProfile}
                               eventId={jobPosting?.id}
-                              canEdit={canEdit}
+                              canEdit={!!canEdit}
                               getStaffWorkLog={getStaffWorkLog}
                               applyOptimisticUpdate={applyOptimisticUpdate}
                               multiSelectMode={multiSelectMode}
@@ -742,7 +750,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         }}
         workLog={selectedWorkLog}
         onUpdate={handleWorkTimeUpdate}
-        timeType={currentTimeType}
+        {...(currentTimeType && { timeType: currentTimeType })}
       />
 
 
@@ -780,7 +788,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           .filter(staff => selectedStaff.has(staff.id))
           .map(staff => {
             // 스태프의 날짜를 추출
-            const dateString = staff.assignedDate || getTodayString();
+            const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
             // 해당 날짜의 workLog 찾기
             const workLogRecord = attendanceRecords.find(r => {
               // staffId가 일치하고
@@ -795,9 +803,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             return {
               id: staff.id,
               name: staff.name || '이름 미정',
-              assignedDate: staff.assignedDate,
-              assignedTime: staff.assignedTime,
-              workLogId: workLogRecord?.workLogId
+              ...(staff.assignedDate && { assignedDate: staff.assignedDate }),
+              ...(staff.assignedTime && { assignedTime: staff.assignedTime }),
+              ...(workLogRecord?.workLogId && { workLogId: workLogRecord.workLogId })
             };
           })}
         eventId={jobPosting?.id || 'default-event'}

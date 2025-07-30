@@ -23,6 +23,12 @@ import { subDays, addDays, format } from 'date-fns';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
 
+// 안전한 ISO 날짜 문자열 추출 함수
+const safeExtractDateFromISO = (isoString: string): string => {
+  const parts = isoString.split('T');
+  return parts[0] || '';
+};
+
 interface UseScheduleDataReturn {
   schedules: ScheduleEvent[];
   loading: boolean;
@@ -88,13 +94,16 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           if (typeof dateStr === 'object') {
             if (dateStr.toDate && typeof dateStr.toDate === 'function') {
               // Firestore Timestamp
-              dateStr = dateStr.toDate().toISOString().split('T')[0];
+              const isoString = dateStr.toDate().toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else if (dateStr.seconds) {
               // Timestamp 객체 (seconds/nanoseconds)
-              dateStr = new Date(dateStr.seconds * 1000).toISOString().split('T')[0];
+              const isoString = new Date(dateStr.seconds * 1000).toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else if (dateStr instanceof Date) {
               // JavaScript Date
-              dateStr = dateStr.toISOString().split('T')[0];
+              const isoString = dateStr.toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else {
               console.log('⚠️ WorkLog - 알 수 없는 날짜 객체 타입:', dateStr);
               dateStr = '';
@@ -128,7 +137,9 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         
         // 날짜가 여전히 Timestamp 객체인 경우 처리
         if (scheduleEvent.date && typeof scheduleEvent.date === 'object' && (scheduleEvent.date as any).seconds) {
-          scheduleEvent.date = new Date((scheduleEvent.date as any).seconds * 1000).toISOString().split('T')[0];
+          const isoString = new Date((scheduleEvent.date as any).seconds * 1000).toISOString();
+          const datePart = isoString.split('T')[0];
+          scheduleEvent.date = datePart || '';
           console.log(`WorkLog 날짜 변환: ${scheduleEvent.date}`);
         }
       } else if (source === 'applications') {
@@ -172,9 +183,10 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             if (typeof data[field] === 'string' && data[field].includes('Timestamp(')) {
               // "Timestamp(seconds=1753747200, nanoseconds=0)" 형태 파싱
               const match = data[field].match(/seconds=(\d+)/);
-              if (match) {
+              if (match && match[1]) {
                 const seconds = parseInt(match[1]);
-                dateStr = new Date(seconds * 1000).toISOString().split('T')[0];
+                const isoString = new Date(seconds * 1000).toISOString();
+                dateStr = safeExtractDateFromISO(isoString);
                 console.log(`    → 문자열 Timestamp 변환: ${dateStr}`);
                 break;
               }
@@ -196,12 +208,15 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         if (dateStr) {
           if (typeof dateStr === 'object') {
             if (dateStr.toDate && typeof dateStr.toDate === 'function') {
-              dateStr = dateStr.toDate().toISOString().split('T')[0];
+              const isoString = dateStr.toDate().toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else if (dateStr.seconds) {
               // Timestamp 객체 (seconds/nanoseconds)
-              dateStr = new Date(dateStr.seconds * 1000).toISOString().split('T')[0];
+              const isoString = new Date(dateStr.seconds * 1000).toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else if (dateStr instanceof Date) {
-              dateStr = dateStr.toISOString().split('T')[0];
+              const isoString = dateStr.toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else {
               console.log('⚠️ 알 수 없는 날짜 객체 타입:', dateStr);
               dateStr = '';
@@ -283,7 +298,9 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         
         // 날짜가 여전히 Timestamp 객체인 경우 처리
         if (scheduleEvent.date && typeof scheduleEvent.date === 'object' && (scheduleEvent.date as any).seconds) {
-          scheduleEvent.date = new Date((scheduleEvent.date as any).seconds * 1000).toISOString().split('T')[0];
+          const isoString = new Date((scheduleEvent.date as any).seconds * 1000).toISOString();
+          const datePart = isoString.split('T')[0];
+          scheduleEvent.date = datePart || '';
           console.log(`Application 날짜 변환 (Timestamp): ${scheduleEvent.date}`);
         }
         
@@ -325,25 +342,31 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             
             // 모든 날짜 변환 시도
             const convertedDates: string[] = [];
-            data.assignedDates.forEach((dateItem, index) => {
+            data.assignedDates.forEach((dateItem: any, index: number) => {
               let convertedDate = '';
               
               if (typeof dateItem === 'string') {
                 // 문자열로 저장된 Timestamp 처리
                 if (dateItem.includes('Timestamp(')) {
                   const match = dateItem.match(/seconds=(\d+)/);
-                  if (match) {
+                  if (match && match[1]) {
                     const seconds = parseInt(match[1]);
-                    convertedDate = new Date(seconds * 1000).toISOString().split('T')[0];
+                    const isoString = new Date(seconds * 1000).toISOString();
+                    const datePart = isoString.split('T')[0];
+                    convertedDate = datePart || '';
                   }
                 } else {
                   convertedDate = dateItem;
                 }
               } else if (typeof dateItem === 'object') {
                 if (dateItem.toDate && typeof dateItem.toDate === 'function') {
-                  convertedDate = dateItem.toDate().toISOString().split('T')[0];
+                  const isoString = dateItem.toDate().toISOString();
+                  const datePart = isoString.split('T')[0];
+                  convertedDate = datePart || '';
                 } else if (dateItem.seconds) {
-                  convertedDate = new Date(dateItem.seconds * 1000).toISOString().split('T')[0];
+                  const isoString = new Date(dateItem.seconds * 1000).toISOString();
+                  const datePart = isoString.split('T')[0];
+                  convertedDate = datePart || '';
                 }
               }
               
@@ -420,8 +443,11 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                 return multipleEvents;
               } else {
                 // 단일 날짜
-                scheduleEvent.date = convertedDates[0];
-                console.log(`✅ assignedDates에서 날짜 설정 완료: ${scheduleEvent.date}`);
+                const firstDate = convertedDates[0];
+                if (firstDate) {
+                  scheduleEvent.date = firstDate;
+                  console.log(`✅ assignedDates에서 날짜 설정 완료: ${scheduleEvent.date}`);
+                }
               }
             }
           }
@@ -433,9 +459,11 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             // Timestamp 객체 변환
             if (typeof assignedDate === 'object') {
               if (assignedDate.toDate && typeof assignedDate.toDate === 'function') {
-                assignedDate = assignedDate.toDate().toISOString().split('T')[0];
+                const isoString = assignedDate.toDate().toISOString();
+                assignedDate = safeExtractDateFromISO(isoString);
               } else if (assignedDate.seconds) {
-                assignedDate = new Date(assignedDate.seconds * 1000).toISOString().split('T')[0];
+                const isoString = new Date(assignedDate.seconds * 1000).toISOString();
+                assignedDate = safeExtractDateFromISO(isoString);
               }
             }
             
@@ -449,7 +477,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             
             // 배열인 경우 각 요소 확인
             if (Array.isArray(data.assignedSchedules)) {
-              data.assignedSchedules.forEach((schedule, index) => {
+              data.assignedSchedules.forEach((schedule: any, index: number) => {
                 console.log(`  스케줄 ${index}:`, schedule);
                 
                 // 날짜 찾기
@@ -457,9 +485,11 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                   let assignedDate = schedule.date;
                   if (typeof assignedDate === 'object') {
                     if (assignedDate.toDate && typeof assignedDate.toDate === 'function') {
-                      assignedDate = assignedDate.toDate().toISOString().split('T')[0];
+                      const isoString = assignedDate.toDate().toISOString();
+                      assignedDate = safeExtractDateFromISO(isoString);
                     } else if (assignedDate.seconds) {
-                      assignedDate = new Date(assignedDate.seconds * 1000).toISOString().split('T')[0];
+                      const isoString = new Date(assignedDate.seconds * 1000).toISOString();
+                      assignedDate = safeExtractDateFromISO(isoString);
                     }
                   }
                   
@@ -532,19 +562,24 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           if (typeof dateStr === 'string' && dateStr.includes('Timestamp(')) {
             // 문자열로 저장된 Timestamp 처리
             const match = dateStr.match(/seconds=(\d+)/);
-            if (match) {
+            if (match && match[1]) {
               const seconds = parseInt(match[1]);
-              dateStr = new Date(seconds * 1000).toISOString().split('T')[0];
+              const isoString = new Date(seconds * 1000).toISOString();
+              const datePart = isoString.split('T')[0];
+              dateStr = datePart || '';
               console.log(`Staff Timestamp 문자열 변환: ${dateStr}`);
             }
           } else if (typeof dateStr === 'object') {
             if (dateStr.toDate && typeof dateStr.toDate === 'function') {
-              dateStr = dateStr.toDate().toISOString().split('T')[0];
+              const isoString = dateStr.toDate().toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else if (dateStr.seconds) {
               // Timestamp 객체 (seconds/nanoseconds)
-              dateStr = new Date(dateStr.seconds * 1000).toISOString().split('T')[0];
+              const isoString = new Date(dateStr.seconds * 1000).toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else if (dateStr instanceof Date) {
-              dateStr = dateStr.toISOString().split('T')[0];
+              const isoString = dateStr.toISOString();
+              dateStr = safeExtractDateFromISO(isoString);
             } else {
               console.log('⚠️ Staff - 알 수 없는 날짜 객체 타입:', dateStr);
               dateStr = '';
@@ -580,7 +615,9 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         
         // 날짜가 여전히 Timestamp 객체인 경우 처리
         if (scheduleEvent.date && typeof scheduleEvent.date === 'object' && (scheduleEvent.date as any).seconds) {
-          scheduleEvent.date = new Date((scheduleEvent.date as any).seconds * 1000).toISOString().split('T')[0];
+          const isoString = new Date((scheduleEvent.date as any).seconds * 1000).toISOString();
+          const datePart = isoString.split('T')[0];
+          scheduleEvent.date = datePart || '';
           console.log(`Staff 날짜 변환: ${scheduleEvent.date}`);
         }
         
@@ -610,10 +647,12 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       if (scheduleEvent.date && typeof scheduleEvent.date === 'object') {
         const dateObj = scheduleEvent.date as any;
         if (dateObj.seconds) {
-          scheduleEvent.date = new Date(dateObj.seconds * 1000).toISOString().split('T')[0];
+          const isoString = new Date(dateObj.seconds * 1000).toISOString();
+          scheduleEvent.date = safeExtractDateFromISO(isoString);
           console.log(`최종 날짜 변환 (${source}): ${scheduleEvent.date} - ${scheduleEvent.eventName}`);
         } else if (dateObj.toDate) {
-          scheduleEvent.date = dateObj.toDate().toISOString().split('T')[0];
+          const isoString = dateObj.toDate().toISOString();
+          scheduleEvent.date = safeExtractDateFromISO(isoString);
           console.log(`최종 날짜 변환 toDate (${source}): ${scheduleEvent.date} - ${scheduleEvent.eventName}`);
         }
       }
@@ -669,15 +708,15 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       
       // 모든 소스의 스케줄 통합
       const merged = [
-        ...schedulesBySource.workLogs,
-        ...schedulesBySource.applications,
-        ...schedulesBySource.staff
+        ...(schedulesBySource.workLogs || []),
+        ...(schedulesBySource.applications || []),
+        ...(schedulesBySource.staff || [])
       ];
       
       console.log('📊 통합 전 스케줄 수:', {
-        workLogs: schedulesBySource.workLogs.length,
-        applications: schedulesBySource.applications.length,
-        staff: schedulesBySource.staff.length,
+        workLogs: schedulesBySource.workLogs?.length || 0,
+        applications: schedulesBySource.applications?.length || 0,
+        staff: schedulesBySource.staff?.length || 0,
         total: merged.length
       });
       
@@ -931,10 +970,12 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         });
         
         if (timestampObj && timestampObj.seconds) {
-          dateStr = new Date(timestampObj.seconds * 1000).toISOString().split('T')[0];
+          const isoString = new Date(timestampObj.seconds * 1000).toISOString();
+          dateStr = safeExtractDateFromISO(isoString);
           console.log(`  → Timestamp 변환 완료: ${dateStr}`);
         } else if (timestampObj && timestampObj.toDate) {
-          dateStr = timestampObj.toDate().toISOString().split('T')[0];
+          const isoString = timestampObj.toDate().toISOString();
+          dateStr = safeExtractDateFromISO(isoString);
           console.log(`  → toDate 변환 완료: ${dateStr}`);
         } else {
           console.log(`  → 변환 실패, 제외`);
@@ -986,8 +1027,9 @@ export const useScheduleData = (): UseScheduleDataReturn => {
     const thisMonth = now.toISOString().slice(0, 7); // YYYY-MM
 
     const completed = schedules.filter(s => s.type === 'completed');
+    const todayDateStr = safeExtractDateFromISO(now.toISOString());
     const upcoming = schedules.filter(s => 
-      s.type === 'confirmed' && s.date >= now.toISOString().split('T')[0]
+      s.type === 'confirmed' && s.date >= todayDateStr
     );
 
     const thisMonthSchedules = completed.filter(s => s.date.startsWith(thisMonth));

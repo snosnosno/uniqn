@@ -82,7 +82,7 @@ const StaffListPage: React.FC = () => {
     getStaffAttendanceStatus 
   } = useAttendanceStatus({ 
     eventId: 'default-event',
-    date: new Date().toISOString().split('T')[0] 
+    date: new Date().toISOString().split('T')[0] || ''
   });
   
   // 급여 데이터 관리
@@ -433,8 +433,11 @@ const StaffListPage: React.FC = () => {
     if (!selectedUser || jobPostings.length === 0) return;
     
     try {
-      const defaultPostingId = jobPostings[0].id;
-      const defaultPostingTitle = jobPostings[0].title;
+      const firstPosting = jobPostings[0];
+      if (!firstPosting) return;
+      
+      const defaultPostingId = firstPosting.id;
+      const defaultPostingTitle = firstPosting.title;
       
       const newStaff: StaffData = {
         id: `user-${selectedUser.id}-${Date.now()}`,
@@ -443,7 +446,7 @@ const StaffListPage: React.FC = () => {
         email: selectedUser.email || '',
         phone: selectedUser.phone || '',
         role: 'Dealer' as JobRole,      // 기본 업무 역할
-        userRole: selectedUser.userRole, // 계정 권한
+        ...(selectedUser.userRole && { userRole: selectedUser.userRole }), // 계정 권한
         gender: selectedUser.gender || '',
         age: selectedUser.age || 0,
         experience: selectedUser.experience || '',
@@ -490,8 +493,11 @@ const StaffListPage: React.FC = () => {
     }
     
     try {
-      const defaultPostingId = jobPostings[0].id;
-      const defaultPostingTitle = jobPostings[0].title;
+      const firstPosting = jobPostings[0];
+      if (!firstPosting) return;
+      
+      const defaultPostingId = firstPosting.id;
+      const defaultPostingTitle = firstPosting.title;
       
       const newStaff: StaffData = {
         id: `temp-${Date.now()}`,

@@ -158,7 +158,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800">{staffMember.name}</p>
                     <p className="text-sm text-gray-500">
-                      {staffMember.assignedRole} | {staffMember.assignedTime}
+                      {(staffMember as any).assignedRole || staffMember.role} | {(staffMember as any).assignedTime || staffMember.assignedTime || '시간 미정'}
                     </p>
                   </div>
                 </div>

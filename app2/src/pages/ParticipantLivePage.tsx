@@ -43,7 +43,9 @@ const ParticipantLivePage: React.FC = () => {
                 <div className="bg-yellow-500 text-black p-4 rounded-lg shadow-lg">
                     <h3 className="font-bold text-lg mb-2">{t('participantLivePage.announcements')}</h3>
                     {/* 마지막 공지사항만 표시하는 예시 */}
-                    <p>{dummyAnnouncements[dummyAnnouncements.length - 1].message}</p>
+                    {dummyAnnouncements.length > 0 && (
+                        <p>{dummyAnnouncements[dummyAnnouncements.length - 1]?.message}</p>
+                    )}
                 </div>
             )}
             

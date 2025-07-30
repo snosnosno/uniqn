@@ -84,13 +84,22 @@ export const parseToDate = (dateInput: any): Date | null => {
       const alreadyFormattedPattern = /^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/;
       if (alreadyFormattedPattern.test(trimmed)) {
         // 포맷된 문자열에서 날짜 추출
-        const parts = trimmed.split('(')[0].split('-');
-        if (parts.length === 3) {
-          const year = 2000 + parseInt(parts[0]); // yy -> yyyy
-          const month = parseInt(parts[1]) - 1; // 0-based month
-          const day = parseInt(parts[2]);
-          const date = new Date(year, month, day);
-          return isNaN(date.getTime()) ? null : date;
+        const datePart = trimmed.split('(')[0];
+        if (datePart) {
+          const parts = datePart.split('-');
+          if (parts.length === 3) {
+            const yearPart = parts[0];
+            const monthPart = parts[1];
+            const dayPart = parts[2];
+            
+            if (yearPart && monthPart && dayPart) {
+              const year = 2000 + parseInt(yearPart); // yy -> yyyy
+              const month = parseInt(monthPart) - 1; // 0-based month
+              const day = parseInt(dayPart);
+              const date = new Date(year, month, day);
+              return isNaN(date.getTime()) ? null : date;
+            }
+          }
         }
       }
 
@@ -102,7 +111,7 @@ export const parseToDate = (dateInput: any): Date | null => {
       
       for (const pattern of timestampPatterns) {
         const match = trimmed.match(pattern);
-        if (match) {
+        if (match && match[1] && match[2]) {
           const seconds = parseInt(match[1]);
           const nanoseconds = parseInt(match[2]);
           

@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { getDocs } from 'firebase/firestore';
+import { getDocs, DocumentSnapshot } from 'firebase/firestore';
 
 import { buildFilteredQuery } from '../firebase';
 import {
@@ -75,10 +75,18 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
       return withFirebaseErrorHandling(async () => {
         console.log('🔍 useInfiniteJobPostings queryFn called with:', { filters, pageParam });
         
-        const query = buildFilteredQuery(filters, {
-          limit: 20,
-          startAfterDoc: pageParam
-        });
+        const paginationOptions: {
+          limit: number;
+          startAfterDoc?: DocumentSnapshot;
+        } = {
+          limit: 20
+        };
+        
+        if (pageParam) {
+          paginationOptions.startAfterDoc = pageParam as DocumentSnapshot;
+        }
+        
+        const query = buildFilteredQuery(filters, paginationOptions);
         
         console.log('📋 Executing Firebase query...');
         const snapshot = await getDocs(query);

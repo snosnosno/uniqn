@@ -51,7 +51,10 @@ const ScheduleList: React.FC<ScheduleListProps> = ({
       if (!acc[date]) {
         acc[date] = [];
       }
-      acc[date].push(schedule);
+      const scheduleArray = acc[date];
+      if (scheduleArray) {
+        scheduleArray.push(schedule);
+      }
       return acc;
     }, {} as Record<string, ScheduleEvent[]>);
 
@@ -311,7 +314,8 @@ const ScheduleList: React.FC<ScheduleListProps> = ({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore) {
+        const firstEntry = entries[0];
+        if (firstEntry && firstEntry.isIntersecting && !isLoadingMore) {
           onLoadMore();
         }
       },

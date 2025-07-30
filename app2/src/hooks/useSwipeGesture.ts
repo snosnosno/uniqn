@@ -33,17 +33,23 @@ export const useSwipeGesture = (options: SwipeGestureOptions) => {
 
   const onTouchStart = useCallback((e: TouchEvent) => {
     touchEnd.current = null;
-    touchStart.current = {
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    };
+    const firstTouch = e.targetTouches[0];
+    if (firstTouch) {
+      touchStart.current = {
+        x: firstTouch.clientX,
+        y: firstTouch.clientY
+      };
+    }
   }, []);
 
   const onTouchMove = useCallback((e: TouchEvent) => {
-    touchEnd.current = {
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    };
+    const firstTouch = e.targetTouches[0];
+    if (firstTouch) {
+      touchEnd.current = {
+        x: firstTouch.clientX,
+        y: firstTouch.clientY
+      };
+    }
   }, []);
 
   const onTouchEnd = useCallback(() => {
@@ -101,17 +107,23 @@ export const useSwipeGestureReact = (options: SwipeGestureOptions) => {
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     touchEnd.current = null;
-    touchStart.current = {
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    };
+    const firstTouch = e.targetTouches[0];
+    if (firstTouch) {
+      touchStart.current = {
+        x: firstTouch.clientX,
+        y: firstTouch.clientY
+      };
+    }
   }, []);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    touchEnd.current = {
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    };
+    const firstTouch = e.targetTouches[0];
+    if (firstTouch) {
+      touchEnd.current = {
+        x: firstTouch.clientX,
+        y: firstTouch.clientY
+      };
+    }
   }, []);
 
   const onTouchEnd = useCallback(() => {

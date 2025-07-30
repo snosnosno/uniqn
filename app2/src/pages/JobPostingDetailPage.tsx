@@ -113,7 +113,8 @@ const JobPostingDetailPageContent: React.FC = () => {
       return tabFromUrl;
     }
     
-    return availableTabs.length > 0 ? availableTabs[0].id : 'applicants';
+    const firstTab = availableTabs[0];
+    return availableTabs.length > 0 && firstTab ? firstTab.id : 'applicants';
   }, [searchParams, availableTabs]);
   
   // Load toggle state from localStorage

@@ -6,15 +6,16 @@ import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
+import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDiwCKWr83N1NRy5NwA1WLc5bRD73VaqRo",
-  authDomain: "tholdem-ebc18.firebaseapp.com",
-  projectId: "tholdem-ebc18",
-  storageBucket: "tholdem-ebc18.appspot.com",
-  messagingSenderId: "296074758861",
-  appId: "1:296074758861:web:52498228694af470bcf784",
-  measurementId: "G-S5BD0PBT3W"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || '',
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || '',
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || '',
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || ''
 };
 
 const app = initializeApp(firebaseConfig);
@@ -175,7 +176,7 @@ export const promoteToStaff = async (
 
 interface PaginationOptions {
   limit?: number;
-  startAfterDoc?: any;
+  startAfterDoc?: DocumentSnapshot;
 }
 
 // Build filtered query for job postings - COMPREHENSIVE INDEX VERSION
@@ -184,7 +185,7 @@ export const buildFilteredQuery = (
   pagination?: PaginationOptions
 ): Query => {
   const jobPostingsRef = collection(db, 'jobPostings');
-  const queryConstraints: any[] = [];
+  const queryConstraints: FirestoreQueryConstraint[] = [];
   
   console.log('?�� Building query with filters:', filters);
   
@@ -347,9 +348,9 @@ export const migrateJobPostingsRequiredRoles = async (): Promise<void> => {
       // Extract roles from timeSlots
       const timeSlots = data.timeSlots || [];
       const requiredRoles = Array.from(new Set(
-        timeSlots.flatMap((ts: any) => {
+        timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) => {
           if (ts.roles && Array.isArray(ts.roles)) {
-            return ts.roles.map((r: any) => r.name);
+            return ts.roles.map((r: { name: string }) => r.name);
           }
           return [];
         })

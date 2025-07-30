@@ -51,46 +51,63 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
   const handleDateChange = (requirementIndex: number, value: { year?: string; month?: string; day?: string }) => {
     const newDate = fromDropdownValue(value);
     const newRequirements = [...requirements];
-    newRequirements[requirementIndex].date = newDate;
+    const requirement = newRequirements[requirementIndex];
+    if (requirement) {
+      requirement.date = newDate;
+    }
     onRequirementsChange(newRequirements);
   };
 
   // 시간대 추가
   const addTimeSlotToDate = (requirementIndex: number) => {
     const newRequirements = [...requirements];
-    newRequirements[requirementIndex].timeSlots.push({
-      time: '09:00',
-      roles: [{ name: 'dealer', count: 1 }],
-      isTimeToBeAnnounced: false,
-      tentativeDescription: ''
-    });
+    const requirement = newRequirements[requirementIndex];
+    if (requirement) {
+      requirement.timeSlots.push({
+        time: '09:00',
+        roles: [{ name: 'dealer', count: 1 }],
+        isTimeToBeAnnounced: false,
+        tentativeDescription: ''
+      });
+    }
     onRequirementsChange(newRequirements);
   };
 
   // 시간대 제거
   const removeTimeSlotFromDate = (requirementIndex: number, timeSlotIndex: number) => {
     const newRequirements = [...requirements];
-    newRequirements[requirementIndex].timeSlots = newRequirements[requirementIndex].timeSlots.filter(
-      (_, i) => i !== timeSlotIndex
-    );
+    const requirement = newRequirements[requirementIndex];
+    if (requirement) {
+      requirement.timeSlots = requirement.timeSlots.filter(
+        (_, i) => i !== timeSlotIndex
+      );
+    }
     onRequirementsChange(newRequirements);
   };
 
   // 역할 추가
   const addRoleToTimeSlot = (requirementIndex: number, timeSlotIndex: number) => {
     const newRequirements = [...requirements];
-    newRequirements[requirementIndex].timeSlots[timeSlotIndex].roles.push({
-      name: 'dealer',
-      count: 1
-    });
+    const requirement = newRequirements[requirementIndex];
+    const timeSlot = requirement?.timeSlots[timeSlotIndex];
+    if (requirement && timeSlot) {
+      timeSlot.roles.push({
+        name: 'dealer',
+        count: 1
+      });
+    }
     onRequirementsChange(newRequirements);
   };
 
   // 역할 제거
   const removeRoleFromTimeSlot = (requirementIndex: number, timeSlotIndex: number, roleIndex: number) => {
     const newRequirements = [...requirements];
-    newRequirements[requirementIndex].timeSlots[timeSlotIndex].roles = 
-      newRequirements[requirementIndex].timeSlots[timeSlotIndex].roles.filter((_, i) => i !== roleIndex);
+    const requirement = newRequirements[requirementIndex];
+    const timeSlot = requirement?.timeSlots[timeSlotIndex];
+    if (requirement && timeSlot) {
+      timeSlot.roles = 
+        timeSlot.roles.filter((_, i) => i !== roleIndex);
+    }
     onRequirementsChange(newRequirements);
   };
 

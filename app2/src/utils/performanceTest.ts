@@ -10,25 +10,31 @@ export const generateMockStaffData = (count: number): StaffData[] => {
   const times = ['09:00', '12:00', '15:00', '18:00', '21:00', '미정'];
   const names = ['김철수', '이영희', '박민수', '최수연', '정대호', '강미영', '임진우', '한소영', '조현식', '윤지혜'];
   
-  return Array.from({ length: count }, (_, index) => ({
-    id: `staff-${index}`,
-    userId: `user-${index}`,
-    name: `${names[index % names.length]} ${Math.floor(index / names.length) + 1}`,
-    email: `staff${index}@test.com`,
-    phone: `010-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
-    role: roles[index % roles.length] as any,
-    assignedRole: roles[index % roles.length],
-    assignedTime: times[index % times.length],
-    assignedDate: new Date(2024, 0, (index % 30) + 1).toISOString(),
-    postingId: 'test-posting-1',
-    postingTitle: '테스트 토너먼트',
-    gender: index % 2 === 0 ? '남성' : '여성',
-    age: 20 + (index % 40),
-    experience: `${1 + (index % 10)}년`,
-    nationality: '한국',
-    history: '정상 근무',
-    notes: index % 5 === 0 ? '주의사항 있음' : ''
-  }));
+  return Array.from({ length: count }, (_, index) => {
+    const selectedRole = roles[index % roles.length] || 'Dealer';
+    const selectedTime = times[index % times.length] || '09:00';
+    const selectedName = names[index % names.length] || '김철수';
+    
+    return {
+      id: `staff-${index}`,
+      userId: `user-${index}`,
+      name: `${selectedName} ${Math.floor(index / names.length) + 1}`,
+      email: `staff${index}@test.com`,
+      phone: `010-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+      role: selectedRole as any,
+      assignedRole: selectedRole,
+      assignedTime: selectedTime,
+      assignedDate: new Date(2024, 0, (index % 30) + 1).toISOString(),
+      postingId: 'test-posting-1',
+      postingTitle: '테스트 토너먼트',
+      gender: index % 2 === 0 ? '남성' : '여성',
+      age: 20 + (index % 40),
+      experience: `${1 + (index % 10)}년`,
+      nationality: '한국',
+      history: '정상 근무',
+      notes: index % 5 === 0 ? '주의사항 있음' : ''
+    };
+  });
 };
 
 // 성능 측정 결과 인터페이스

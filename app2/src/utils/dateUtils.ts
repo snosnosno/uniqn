@@ -6,7 +6,9 @@ import { Timestamp } from 'firebase/firestore';
  */
 export function timestampToLocalDateString(timestamp: any): string {
   if (!timestamp) {
-    return new Date().toISOString().split('T')[0];
+    const isoString = new Date().toISOString();
+    const datePart = isoString.split('T')[0];
+    return datePart || '';
   }
 
   try {
@@ -121,7 +123,7 @@ export function timestampToLocalDateString(timestamp: any): string {
       // Firebase Timestamp 문자열 형식 처리 (예: 'Timestamp(seconds=1753920000, nanoseconds=0)')
       if (timestamp.startsWith('Timestamp(')) {
         const match = timestamp.match(/seconds=(\d+)/);
-        if (match) {
+        if (match && match[1]) {
           const seconds = parseInt(match[1], 10);
           date = new Date(seconds * 1000);
         } else {
@@ -151,7 +153,9 @@ export function timestampToLocalDateString(timestamp: any): string {
         timestampType: typeof timestamp,
         timestampKeys: timestamp && typeof timestamp === 'object' ? Object.keys(timestamp) : null 
       });
-      return new Date().toISOString().split('T')[0];
+      const isoString = new Date().toISOString();
+    const datePart = isoString.split('T')[0];
+    return datePart || '';
     }
 
     // 한국 시간대로 변환하여 정확한 날짜 얻기
@@ -167,18 +171,23 @@ export function timestampToLocalDateString(timestamp: any): string {
       const parts = koreanDateString.split('. ');
       if (parts.length === 3) {
         const year = parts[0];
-        const month = parts[1].padStart(2, '0');
-        const day = parts[2].replace('.', '').padStart(2, '0');
-        const result = `${year}-${month}-${day}`;
+        const monthPart = parts[1];
+        const dayPart = parts[2];
         
-        console.log('✅ timestampToLocalDateString 결과:', { 
-          input: timestamp,
-          dateTime: date.toISOString(),
-          koreanDateString,
-          result
-        });
-        
-        return result;
+        if (year && monthPart && dayPart) {
+          const month = monthPart.padStart(2, '0');
+          const day = dayPart.replace('.', '').padStart(2, '0');
+          const result = `${year}-${month}-${day}`;
+          
+          console.log('✅ timestampToLocalDateString 결과:', { 
+            input: timestamp,
+            dateTime: date.toISOString(),
+            koreanDateString,
+            result
+          });
+          
+          return result;
+        }
       }
     } catch (localeError) {
       console.warn('⚠️ 로케일 변환 실패, 기본 방식 사용:', localeError);
@@ -214,11 +223,29 @@ export function timestampToLocalDateString(timestamp: any): string {
  */
 export function formatDateDisplay(dateString: string): string {
   try {
-    const [year, month, day] = dateString.split('-').map(Number);
+    const parts = dateString.split('-');
+    if (parts.length !== 3) {
+      return dateString;
+    }
+    
+    const [yearStr, monthStr, dayStr] = parts;
+    if (!yearStr || !monthStr || !dayStr) {
+      return dateString;
+    }
+    
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      return dateString;
+    }
+    
     const date = new Date(year, month - 1, day);
     
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-    const weekday = weekdays[date.getDay()];
+    const weekdayIndex = date.getDay();
+    const weekday = weekdays[weekdayIndex] || '';
     
     return `${month}월 ${day}일 (${weekday})`;
   } catch (error) {
@@ -232,11 +259,20 @@ export function formatDateDisplay(dateString: string): string {
  */
 export function parseShortDateFormat(dateStr: string): string {
   if (/^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/.test(dateStr)) {
-    const parts = dateStr.split('(')[0].split('-');
-    const year = 2000 + parseInt(parts[0]);
-    const month = parts[1].padStart(2, '0');
-    const day = parts[2].padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const datePart = dateStr.split('(')[0];
+    if (datePart) {
+      const parts = datePart.split('-');
+      const yearPart = parts[0];
+      const monthPart = parts[1];
+      const dayPart = parts[2];
+      
+      if (yearPart && monthPart && dayPart) {
+        const year = 2000 + parseInt(yearPart);
+        const month = monthPart.padStart(2, '0');
+        const day = dayPart.padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
   }
   return dateStr;
 }

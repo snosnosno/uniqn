@@ -244,7 +244,7 @@ export class MigrationUtils {
         ...applicant,
         role: firstRole,
         timeSlot: firstTime,
-        assignedDate: firstDate || undefined
+        ...(firstDate && { assignedDate: firstDate })
       };
 
       this.log(LogLevel.INFO, 'Successfully converted multiple to single selection', {
@@ -438,11 +438,17 @@ export class MigrationUtils {
     const maxLength = Math.max(selection.roles.length, selection.times.length);
 
     for (let i = 0; i < maxLength; i++) {
-      items.push({
+      const item: SelectionItem = {
         role: selection.roles[i] || '',
-        timeSlot: selection.times[i] || '',
-        date: selection.dates[i] || undefined
-      });
+        timeSlot: selection.times[i] || ''
+      };
+      
+      const date = selection.dates[i];
+      if (date) {
+        item.date = date;
+      }
+      
+      items.push(item);
     }
 
     this.log(LogLevel.DEBUG, 'Conversion completed', { itemsCount: items.length });

@@ -157,7 +157,10 @@ export class JobPostingUtils {
     }
     
     // 첫 번째 날짜의 timeSlots를 반환 (date 필드 제거)
-    return dateSpecificRequirements[0].timeSlots.map(ts => ({
+    const firstRequirement = dateSpecificRequirements[0];
+    if (!firstRequirement) return [];
+    
+    return firstRequirement.timeSlots.map(ts => ({
       time: ts.time,
       roles: ts.roles
     }));
@@ -347,12 +350,19 @@ export class JobPostingUtils {
    * @returns 단일 선택 필드가 업데이트된 Applicant
    */
   static convertMultipleToSingle(applicant: Applicant): Applicant {
-    return {
+    const result: Applicant = {
       ...applicant,
       role: applicant.assignedRoles?.[0] || applicant.role,
-      timeSlot: applicant.assignedTimes?.[0] || applicant.timeSlot,
-      assignedDate: applicant.assignedDates?.[0] || applicant.assignedDate
+      timeSlot: applicant.assignedTimes?.[0] || applicant.timeSlot
     };
+    
+    // assignedDate는 optional이므로 조건부로 추가
+    const newAssignedDate = applicant.assignedDates?.[0] || applicant.assignedDate;
+    if (newAssignedDate !== undefined) {
+      result.assignedDate = newAssignedDate;
+    }
+    
+    return result;
   }
   
   /**
@@ -475,7 +485,8 @@ export const isValidDateString = (dateString: string): boolean => {
   
   // 실제 날짜 유효성 검증
   const date = new Date(dateString);
-  return date.toISOString().split('T')[0] === dateString;
+  const isoDatePart = date.toISOString().split('T')[0];
+  return isoDatePart === dateString;
 };
 
 /**
@@ -696,7 +707,9 @@ export const checkTraditionalRequirementsFulfilled = (jobPosting: any): boolean 
   
   // 모든 요구사항이 충족되었는지 확인
   return Object.keys(requiredCounts).every(key => {
-    return (confirmedCounts[key] || 0) >= requiredCounts[key];
+    const requiredCount = requiredCounts[key];
+    if (requiredCount === undefined) return true;
+    return (confirmedCounts[key] || 0) >= requiredCount;
   });
 };
 

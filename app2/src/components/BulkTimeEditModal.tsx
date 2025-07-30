@@ -88,9 +88,15 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     if (!timeString) return null;
     
     try {
-      const [hours, minutes] = timeString.split(':').map(Number);
+      const timeParts = timeString.split(':').map(Number);
+      if (timeParts.length !== 2) {
+        console.error('Invalid time string format:', timeString);
+        return null;
+      }
       
-      if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      const [hours, minutes] = timeParts;
+      
+      if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
         console.error('Invalid time string:', timeString);
         return null;
       }
@@ -104,7 +110,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       // 종료 시간이 시작 시간보다 이른 경우 다음날로 설정
       if (isEndTime && startTimeString) {
         const startTimeParts = startTimeString.split(':');
-        if (startTimeParts.length === 2) {
+        if (startTimeParts.length === 2 && startTimeParts[0]) {
           const startHour = parseInt(startTimeParts[0]);
           const endHour = hours;
           

@@ -96,7 +96,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                           if (date.includes('(') && date.includes(')')) {
                             // 이미 요일이 포함된 경우 (예: "25-07-25(금)")
                             const dayMatch = date.match(/\((.+)\)/);
-                            if (dayMatch) {
+                            if (dayMatch && dayMatch[1]) {
                               const dayChar = dayMatch[1];
                               const dayMap: { [key: string]: string } = {
                                 '일': '일요일',
@@ -115,6 +115,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                           const dateMatch = date.match(/(\d{2})-(\d{2})-(\d{2})/);
                           if (dateMatch) {
                             const [, year, month, day] = dateMatch;
+                            if (!year || !month || !day) return '';
                             const fullYear = 2000 + parseInt(year);
                             const dateObj = new Date(fullYear, parseInt(month) - 1, parseInt(day));
                             return dateObj.toLocaleDateString('ko-KR', { 
@@ -186,10 +187,10 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               getTimeSlotColor={getTimeSlotColor}
               showDate={false} // 그룹 헤더에 날짜가 있으므로 카드에서는 숨김
               isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
-              onSelect={multiSelectMode ? onStaffSelect : undefined}
-              onShowProfile={onShowProfile}
-              eventId={eventId}
-              getStaffWorkLog={getStaffWorkLog}
+              {...(multiSelectMode && onStaffSelect && { onSelect: onStaffSelect })}
+              {...(onShowProfile && { onShowProfile })}
+              {...(eventId && { eventId })}
+              {...(getStaffWorkLog && { getStaffWorkLog })}
             />
           ))}
           

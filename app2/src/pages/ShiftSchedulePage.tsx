@@ -20,7 +20,8 @@ const ShiftSchedulePage: React.FC = () => {
   // 현재 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    const datePart = today.toISOString().split('T')[0];
+    return datePart || ''; // YYYY-MM-DD 형식
   });
   
   // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)

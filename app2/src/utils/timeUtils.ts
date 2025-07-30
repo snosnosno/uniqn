@@ -47,8 +47,13 @@ export const isValidTimeString = (timeStr: string): boolean => {
 
 // 시간 비교 (HH:MM 형식)
 export const compareTime = (time1: string, time2: string): number => {
-  const [h1, m1] = time1.split(':').map(Number);
-  const [h2, m2] = time2.split(':').map(Number);
+  const parts1 = time1.split(':').map(Number);
+  const parts2 = time2.split(':').map(Number);
+  
+  const h1 = parts1[0] || 0;
+  const m1 = parts1[1] || 0;
+  const h2 = parts2[0] || 0;
+  const m2 = parts2[1] || 0;
   
   const minutes1 = h1 * 60 + m1;
   const minutes2 = h2 * 60 + m2;
@@ -58,8 +63,13 @@ export const compareTime = (time1: string, time2: string): number => {
 
 // 시간 차이 계산 (분 단위)
 export const getTimeDifferenceInMinutes = (startTime: string, endTime: string): number => {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
+  const startParts = startTime.split(':').map(Number);
+  const endParts = endTime.split(':').map(Number);
+  
+  const startHour = startParts[0] || 0;
+  const startMin = startParts[1] || 0;
+  const endHour = endParts[0] || 0;
+  const endMin = endParts[1] || 0;
   
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
@@ -71,7 +81,9 @@ export const getTimeDifferenceInMinutes = (startTime: string, endTime: string): 
 export const formatTimeDisplay = (timeStr: string): string => {
   if (!isValidTimeString(timeStr)) return timeStr;
   
-  const [hours, minutes] = timeStr.split(':');
+  const parts = timeStr.split(':');
+  const hours = parts[0] || '0';
+  const minutes = parts[1] || '00';
   const h = parseInt(hours);
   const ampm = h >= 12 ? '오후' : '오전';
   const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
@@ -106,7 +118,10 @@ export const convertAssignmentData = (
 export const findClosestTimeSlot = (targetTime: string, timeSlots: string[]): string | null => {
   if (timeSlots.length === 0) return null;
   
-  let closestSlot = timeSlots[0];
+  const firstSlot = timeSlots[0];
+  if (!firstSlot) return null;
+  
+  let closestSlot = firstSlot;
   let minDiff = Math.abs(getTimeDifferenceInMinutes(targetTime, closestSlot));
   
   for (const slot of timeSlots) {

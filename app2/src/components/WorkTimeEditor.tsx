@@ -6,6 +6,7 @@ import { FaClock, FaSave, FaTimes, FaEdit } from 'react-icons/fa';
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
+import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 
 import Modal from './Modal';
 // import { WorkLog } from '../hooks/useShiftSchedule';
@@ -42,6 +43,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
+  const { getStaffAttendanceStatus } = useAttendanceStatus({
+    ...(workLog?.eventId && { eventId: workLog.eventId }),
+    ...(workLog?.date && { date: workLog.date })
+  });
   
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -67,10 +72,16 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     if (!timeString) return null;
     
     try {
-      const [hours, minutes] = timeString.split(':').map(Number);
+      const timeParts = timeString.split(':').map(Number);
+      if (timeParts.length !== 2) {
+        console.error('Invalid time string format:', timeString);
+        return null;
+      }
+      
+      const [hours, minutes] = timeParts;
       
       // 유효하지 않은 시간 값 검사
-      if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
         console.error('Invalid time string:', timeString);
         return null;
       }
@@ -92,7 +103,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       // 종료 시간이고 시작 시간이 있는 경우, 다음날 여부 판단
       if (isEndTime && startTimeString) {
         const startTimeParts = startTimeString.split(':');
-        if (startTimeParts.length === 2) {
+        if (startTimeParts.length === 2 && startTimeParts[0]) {
           const startHour = parseInt(startTimeParts[0]);
           const endHour = hours;
           
@@ -262,6 +273,40 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         await updateDoc(workLogRef, updateData);
       }
       
+      // 출석 상태 확인 및 업데이트
+      const attendanceStatus = getStaffAttendanceStatus(workLog.id);
+      console.log('🔍 현재 출석 상태:', attendanceStatus);
+      
+      // 출근 상태이고 퇴근시간이 설정되면 퇴근 상태로 변경
+      if (attendanceStatus && attendanceStatus.status === 'checked_in' && newEndTime) {
+        console.log('🚀 출근 상태에서 퇴근시간 설정 - 퇴근 상태로 변경');
+        
+        // attendanceRecords 컬렉션 업데이트
+        const attendanceQuery = query(
+          collection(db, 'attendanceRecords'),
+          where('workLogId', '==', workLog.id)
+        );
+        
+        const attendanceSnapshot = await getDocs(attendanceQuery);
+        
+        for (const doc of attendanceSnapshot.docs) {
+          await updateDoc(doc.ref, {
+            status: 'checked_out',
+            checkOutTime: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          });
+          console.log('✅ 출석 상태를 checked_out으로 업데이트:', doc.id);
+        }
+        
+        // workLogs의 actualEndTime도 함께 업데이트
+        const workLogRef = doc(db, 'workLogs', workLog.id);
+        await updateDoc(workLogRef, {
+          actualEndTime: newEndTime,
+          status: 'completed'
+        });
+        console.log('✅ WorkLog의 actualEndTime 업데이트 완료');
+      }
+      
       // 날짜별 시간 관리를 위해 staff 컬렉션 업데이트 제거
       // workLogs 컬렉션만 업데이트하고, 화면 표시는 workLogs 데이터 우선 사용
       console.log('✅ workLogs 컬렉션만 업데이트 (날짜별 개별 시간 관리)');
@@ -272,7 +317,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           ...workLog,
           scheduledStartTime: newStartTime,
           scheduledEndTime: newEndTime,
-          // actualStartTime과 actualEndTime은 변경하지 않음 (출석 상태와 독립적으로 유지)
+          // 출근 상태에서 퇴근시간 설정시 actualEndTime도 업데이트
+          ...(attendanceStatus?.status === 'checked_in' && newEndTime && {
+            actualEndTime: newEndTime
+          }),
           updatedAt: Timestamp.now()
         };
         onUpdate(updatedWorkLog);
@@ -587,8 +635,8 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   const parsedEndTime = parseTimeString(endTime, baseDate, true, startTime);
                   const minutes = calculateMinutes(parsedStartTime, parsedEndTime);
                   
-                  const startHour = parseInt(startTime.split(':')[0]);
-                  const endHour = parseInt(endTime.split(':')[0]);
+                  const startHour = parseInt(startTime.split(':')[0] || '0');
+                  const endHour = parseInt(endTime.split(':')[0] || '0');
                   const isNextDay = endHour < startHour; // 다음날 여부 판단
                   
                   return (

@@ -1,48 +1,50 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+
+// Auth pages - load immediately for better UX
+import ForgotPassword from './pages/ForgotPassword';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
 
 import FirebaseErrorBoundary from './components/FirebaseErrorBoundary';
 import { Layout } from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
-import RoleBasedRoute from './components/RoleBasedRoute'; // Import the new RoleBasedRoute
+import RoleBasedRoute from './components/RoleBasedRoute';
 import { ToastContainer } from './components/Toast';
+import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { TournamentProvider } from './contexts/TournamentContext';
 
-// Page Imports
-import ApprovalPage from './pages/admin/Approval';
-import DashboardPage from './pages/admin/DashboardPage';
-import PayrollAdminPage from './pages/admin/PayrollAdminPage';
-import UserManagementPage from './pages/admin/UserManagementPage';
-import AnnouncementsPage from './pages/AnnouncementsPage';
-import AttendancePage from './pages/AttendancePage';
-import AvailableTimesPage from './pages/AvailableTimesPage';
-import BlindsPage from './pages/BlindsPage';
-import DealerRotationPage from './pages/DealerRotationPage';
-import ForgotPassword from './pages/ForgotPassword';
-import HistoryDetailPage from './pages/HistoryDetailPage';
-import HistoryPage from './pages/HistoryPage';
-import JobBoardPage from './pages/JobBoardPage';
-import JobPostingAdminPage from './pages/JobPostingAdminPage';
-import JobPostingDetailPage from './pages/JobPostingDetailPage';
-import Login from './pages/Login';
-import MySchedulePage from './pages/MySchedulePage';
-import ParticipantLivePage from './pages/ParticipantLivePage';
-import ParticipantsPage from './pages/ParticipantsPage';
-import PayrollPage from './pages/PayrollPage';
-import PrizesPage from './pages/PrizesPage';
-import ProfilePage from './pages/ProfilePage';
-import ShiftSchedulePage from './pages/ShiftSchedulePage';
-import SignUp from './pages/SignUp';
-import StaffListPage from './pages/StaffListPage';
-import StaffNewPage from './pages/StaffNewPage';
-import TablesPage from './pages/TablesPage';
+// Lazy load admin pages
+const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
+const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
+const PayrollAdminPage = lazy(() => import('./pages/admin/PayrollAdminPage'));
+const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 
-// Admin Pages
+// Lazy load main pages
+const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
+const AttendancePage = lazy(() => import('./pages/AttendancePage'));
+const AvailableTimesPage = lazy(() => import('./pages/AvailableTimesPage'));
+const BlindsPage = lazy(() => import('./pages/BlindsPage'));
+const DealerRotationPage = lazy(() => import('./pages/DealerRotationPage'));
+const HistoryDetailPage = lazy(() => import('./pages/HistoryDetailPage'));
+const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
+const JobPostingAdminPage = lazy(() => import('./pages/JobPostingAdminPage'));
+const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
+const MySchedulePage = lazy(() => import('./pages/MySchedulePage'));
+const ParticipantLivePage = lazy(() => import('./pages/ParticipantLivePage'));
+const ParticipantsPage = lazy(() => import('./pages/ParticipantsPage'));
+const PayrollPage = lazy(() => import('./pages/PayrollPage'));
+const PrizesPage = lazy(() => import('./pages/PrizesPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
+const StaffListPage = lazy(() => import('./pages/StaffListPage'));
+const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
+const TablesPage = lazy(() => import('./pages/TablesPage'));
 
-// Dealer Pages
 
 // A component to handle role-based redirection
 const HomeRedirect: React.FC = () => {
@@ -74,50 +76,50 @@ const App: React.FC = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/live/:tournamentId" element={<ParticipantLivePage />} />
+                <Route path="/live/:tournamentId" element={<Suspense fallback={<LoadingSpinner />}><ParticipantLivePage /></Suspense>} />
                 
                 {/* Authenticated Routes */}
                 <Route element={<PrivateRoute />}>
                   <Route path="/" element={<Layout />}>
                     <Route index element={<HomeRedirect />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="profile/:userId" element={<ProfilePage />} />
-                    <Route path="payroll" element={<PayrollPage />} />
-                    <Route path="payroll/:userId" element={<PayrollPage />} />
+                    <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
+                    <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
+                    <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
+                    <Route path="payroll/:userId" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
                     
                     {/* Dealer facing routes */}
-                    <Route path="jobs" element={<JobBoardPage />} />
-                    <Route path="my-schedule" element={<MySchedulePage />} />
-                    <Route path="attendance" element={<AttendancePage />} />
-                    <Route path="available-times" element={<AvailableTimesPage />} />
+                    <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
+                    <Route path="my-schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
+                    <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><AttendancePage /></Suspense>} />
+                    <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
 
                     {/* Admin & Manager Routes */}
                     <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
-                      <Route path="dashboard" element={<DashboardPage />} />
-                      <Route path="staff" element={<StaffListPage />} />
-                      <Route path="staff/new" element={<StaffNewPage />} />
-                      <Route path="dealer-rotation" element={<DealerRotationPage />} />
-                      <Route path="shift-schedule" element={<ShiftSchedulePage />} />
-                      <Route path="payroll" element={<PayrollAdminPage />} />
-                      <Route path="participants" element={<ParticipantsPage />} />
-                      <Route path="tables" element={<TablesPage />} />
-                      <Route path="blinds" element={<BlindsPage />} />
-                      <Route path="prizes" element={<PrizesPage />} />
-                      <Route path="announcements" element={<AnnouncementsPage />} />
-                      <Route path="history" element={<HistoryPage />} />
-                      <Route path="history/:logId" element={<HistoryDetailPage />} />
+                      <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>} />
+                      <Route path="staff" element={<Suspense fallback={<LoadingSpinner />}><StaffListPage /></Suspense>} />
+                      <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
+                      <Route path="dealer-rotation" element={<Suspense fallback={<LoadingSpinner />}><DealerRotationPage /></Suspense>} />
+                      <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
+                      <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollAdminPage /></Suspense>} />
+                      <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
+                      <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
+                      <Route path="blinds" element={<Suspense fallback={<LoadingSpinner />}><BlindsPage /></Suspense>} />
+                      <Route path="prizes" element={<Suspense fallback={<LoadingSpinner />}><PrizesPage /></Suspense>} />
+                      <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
+                      <Route path="history" element={<Suspense fallback={<LoadingSpinner />}><HistoryPage /></Suspense>} />
+                      <Route path="history/:logId" element={<Suspense fallback={<LoadingSpinner />}><HistoryDetailPage /></Suspense>} />
                     </Route>
 
                     {/* Job Posting Management - Admin, Manager, Staff with permission */}
                     <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
-                      <Route path="job-postings" element={<JobPostingAdminPage />} />
-                      <Route path="job-posting/:id" element={<JobPostingDetailPage />} />
+                      <Route path="job-postings" element={<Suspense fallback={<LoadingSpinner />}><JobPostingAdminPage /></Suspense>} />
+                      <Route path="job-posting/:id" element={<Suspense fallback={<LoadingSpinner />}><JobPostingDetailPage /></Suspense>} />
                     </Route>
 
                     {/* Admin Only Route */}
                     <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
-                        <Route path="approvals" element={<ApprovalPage />} />
-                        <Route path="user-management" element={<UserManagementPage />} />
+                        <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
+                        <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
                     </Route>
                   </Route>
                 </Route>

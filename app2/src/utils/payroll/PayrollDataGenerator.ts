@@ -35,23 +35,33 @@ export class PayrollDataGenerator {
     const dates = workLogs.map(log => log.date).sort();
     const period = {
       type: 'daily' as const,
-      start: dates[0],
-      end: dates[dates.length - 1]
+      start: dates[0] || '',
+      end: dates[dates.length - 1] || ''
     };
 
     // 일별 기록 생성
-    const dailyRecords: DailyWorkRecord[] = workLogs.map(log => ({
-      date: log.date,
-      scheduledStartTime: log.scheduledStartTime,
-      scheduledEndTime: log.scheduledEndTime,
-      actualStartTime: log.actualStartTime,
-      actualEndTime: log.actualEndTime,
-      workMinutes: log.totalWorkMinutes,
-      breakMinutes: log.totalBreakMinutes,
-      tableAssignments: log.tableAssignments || [],
-      exceptions: [], // 예외 기능 제거
-      status: this.determineWorkStatus(log)
-    }));
+    const dailyRecords: DailyWorkRecord[] = workLogs.map(log => {
+      const record: DailyWorkRecord = {
+        date: log.date,
+        scheduledStartTime: log.scheduledStartTime,
+        scheduledEndTime: log.scheduledEndTime,
+        workMinutes: log.totalWorkMinutes,
+        breakMinutes: log.totalBreakMinutes,
+        tableAssignments: log.tableAssignments || [],
+        exceptions: [], // 예외 기능 제거
+        status: this.determineWorkStatus(log)
+      };
+      
+      // optional 필드는 조건부로 추가
+      if (log.actualStartTime) {
+        record.actualStartTime = log.actualStartTime;
+      }
+      if (log.actualEndTime) {
+        record.actualEndTime = log.actualEndTime;
+      }
+      
+      return record;
+    });
 
     // 근무시간 집계
     const workTime = this.calculateWorkTime(dailyRecords);
@@ -60,14 +70,14 @@ export class PayrollDataGenerator {
     const exceptions = this.calculateExceptions(dailyRecords);
     
     // 급여 계산
-    const baseRate = this.settings.baseRates[jobRole] || this.settings.baseRates['Dealer'];
+    const baseRate = this.settings.baseRates[jobRole] || this.settings.baseRates['Dealer'] || 0;
     const payment = this.calculatePay(workTime, exceptions, baseRate);
 
     return {
       staffId,
       staffName,
       eventId,
-      eventName,
+      eventName: eventName || '',
       period,
       workTime,
       exceptions,
@@ -87,7 +97,8 @@ export class PayrollDataGenerator {
     payrollData: PayrollCalculationData[]
   ): PayrollSummary {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    const endDateParts = new Date(year, month, 0).toISOString().split('T');
+    const endDate = endDateParts[0] || '';
 
     return this.generateSummary('monthly', startDate, endDate, payrollData);
   }
@@ -269,7 +280,10 @@ export class PayrollDataGenerator {
 
   private extractMinutesFromDescription(description: string): number {
     const match = description.match(/(\d+)분/);
-    return match ? parseInt(match[1]) : 0;
+    if (match && match[1]) {
+      return parseInt(match[1]);
+    }
+    return 0;
   }
 
   private translateStatus(status: string): string {

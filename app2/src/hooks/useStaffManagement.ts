@@ -7,6 +7,7 @@ import { useJobPostingContext } from '../contexts/JobPostingContext';
 import { useToast } from '../contexts/ToastContext';
 import { db } from '../firebase';
 import { formatDate } from '../utils/jobPosting/dateUtils';
+import type { WorkLog } from '../types/common';
 
 // 업무 역할 정의
 type JobRole = 
@@ -68,7 +69,7 @@ interface UseStaffManagementReturn {
   groupedStaffData: GroupedStaffData;
   availableDates: string[];
   availableRoles: string[];
-  workLogsData: any[];
+  workLogsData: WorkLog[];
   
   // 상태
   loading: boolean;
@@ -92,7 +93,7 @@ interface UseStaffManagementReturn {
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   getStaffCountByDate: (date: string) => number;
-  getStaffWorkLog: (staffId: string, date: string) => any | null;
+  getStaffWorkLog: (staffId: string, date: string) => WorkLog | null;
 }
 
 export const useStaffManagement = (
@@ -115,8 +116,8 @@ export const useStaffManagement = (
   const [error, setError] = useState<string | null>(null);
   
   // workLogs 상태 추가
-  const [workLogsData, setWorkLogsData] = useState<any[]>([]);
-  const [workLogsMap, setWorkLogsMap] = useState<Record<string, any>>({});
+  const [workLogsData, setWorkLogsData] = useState<WorkLog[]>([]);
+  const [workLogsMap, setWorkLogsMap] = useState<Record<string, WorkLog>>({});
   
   // 필터 상태
   const [filters, setFilters] = useState<StaffFilters>({
@@ -167,15 +168,19 @@ export const useStaffManagement = (
             // Firebase Timestamp 객체인 경우
             if (typeof data.assignedDate === 'object' && 'seconds' in data.assignedDate) {
               const date = new Date(data.assignedDate.seconds * 1000);
-              assignedDateString = date.toISOString().split('T')[0];
+              const isoString = date.toISOString();
+              const datePart = isoString.split('T')[0];
+              assignedDateString = datePart || '';
             }
             // Timestamp 문자열인 경우 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
             else if (typeof data.assignedDate === 'string' && data.assignedDate.startsWith('Timestamp(')) {
               const match = data.assignedDate.match(/seconds=(\d+)/);
-              if (match) {
+              if (match && match[1]) {
                 const seconds = parseInt(match[1], 10);
                 const date = new Date(seconds * 1000);
-                assignedDateString = date.toISOString().split('T')[0];
+                const isoString = date.toISOString();
+                const datePart = isoString.split('T')[0];
+                assignedDateString = datePart || '';
               }
             }
             // 이미 날짜 문자열인 경우 그대로 사용
@@ -230,18 +235,23 @@ export const useStaffManagement = (
       workLogsQuery,
       (snapshot) => {
         
-        const workLogsList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const workLogsList = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            staffId: data.staffId || data.dealerId || '',
+            date: data.date || '',
+            ...data
+          } as WorkLog;
+        });
         
         setWorkLogsData(workLogsList);
         
         // workLogs를 맵 형태로도 저장 (빠른 조회를 위해)
-        const workLogsMapData: Record<string, any> = {};
+        const workLogsMapData: Record<string, WorkLog> = {};
         workLogsList.forEach(workLog => {
-          const dealerId = (workLog as any).dealerId || (workLog as any).staffId;
-          const date = (workLog as any).date;
+          const dealerId = workLog.staffId;
+          const date = workLog.date;
           if (dealerId && date) {
             const key = `${dealerId}_${date}`;
             workLogsMapData[key] = workLog;
@@ -330,7 +340,7 @@ export const useStaffManagement = (
       
       showSuccess(t('staffManagement.deleteSuccess'));
       setError('');
-    } catch (error: any) {
+    } catch (error) {
       console.error('스태프 삭제 오류:', error);
       setError(t('staffManagement.deleteError'));
       showError(t('staffManagement.deleteError'));
@@ -402,13 +412,18 @@ export const useStaffManagement = (
       if (!acc[date]) {
         acc[date] = [];
       }
-      acc[date].push(staff);
+      const staffArray = acc[date];
+      if (staffArray) {
+        staffArray.push(staff);
+      }
       return acc;
     }, {} as Record<string, StaffData[]>);
 
     // 각 그룹 내에서 정렬 (날짜 → 시간 → 이름 순)
     Object.keys(grouped).forEach(date => {
-      grouped[date].sort((a, b) => {
+      const staffGroup = grouped[date];
+      if (staffGroup) {
+        staffGroup.sort((a, b) => {
         // 시간순 정렬
         const timeA = a.assignedTime || 'zzz';
         const timeB = b.assignedTime || 'zzz';
@@ -423,6 +438,7 @@ export const useStaffManagement = (
         const nameB = b.name || 'zzz';
         return nameA.localeCompare(nameB);
       });
+      }
     });
 
     // 날짜순으로 정렬된 키 반환
@@ -459,7 +475,11 @@ export const useStaffManagement = (
 
   // 고유 역할 목록 생성
   const availableRoles = useMemo(() => {
-    const roles = new Set(staffData.map(staff => staff.assignedRole || staff.role).filter(Boolean));
+    const roles = new Set(
+      staffData
+        .map(staff => staff.assignedRole || staff.role)
+        .filter((role): role is string => Boolean(role))
+    );
     return Array.from(roles).sort();
   }, [staffData]);
 
