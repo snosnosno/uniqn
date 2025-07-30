@@ -109,7 +109,6 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
             <option value="not_started">예정</option>
             <option value="checked_in">출근</option>
             <option value="checked_out">퇴근</option>
-            <option value="absent">결근</option>
           </select>
         </div>
 
@@ -187,7 +186,6 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
           <option value="not_started">예정</option>
           <option value="checked_in">출근</option>
           <option value="checked_out">퇴근</option>
-          <option value="absent">결근</option>
         </select>
 
         {/* 날짜 범위 */}

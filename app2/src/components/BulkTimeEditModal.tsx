@@ -220,9 +220,6 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               updatedAt: now
             };
             
-            // 출석 상태 변경은 실제 시간에 영향을 주지 않음
-            // actualStartTime과 actualEndTime은 시간 수정 기능에서만 변경
-            
             // workLog가 없는 경우 새로 생성
             if (staff.workLogId?.startsWith('virtual_') || !staff.workLogId) {
               const newWorkLogData = {
@@ -232,8 +229,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                 date: dateString,
                 scheduledStartTime: null,
                 scheduledEndTime: null,
-                ...updateData,
-                createdAt: now
+                actualStartTime: null,
+                actualEndTime: null,
+                status: attendanceStatus,
+                createdAt: now,
+                updatedAt: now
               };
               
               batch.set(workLogRef, newWorkLogData);
@@ -253,9 +253,21 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       await batch.commit();
       
       if (errorCount === 0) {
-        showSuccess(`${successCount}명의 ${editMode === 'time' ? '근무 시간' : '출석 상태'}이 일괄 수정되었습니다.`);
+        // 성공 메시지를 더 구체적으로 표시
+        if (editMode === 'time') {
+          const startTime = combineTime(startHour, startMinute);
+          const endTime = combineTime(endHour, endMinute);
+          showSuccess(
+            `✅ ${successCount}명의 근무 시간이 성공적으로 수정되었습니다.\n` +
+            `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`
+          );
+        } else {
+          const statusText = attendanceStatus === 'not_started' ? '출근 전' : 
+                            attendanceStatus === 'checked_in' ? '출근' : '퇴근';
+          showSuccess(`✅ ${successCount}명의 출석 상태가 "${statusText}"(으)로 변경되었습니다.`);
+        }
       } else {
-        showError(`일부 스태프 업데이트 실패: 성공 ${successCount}명, 실패 ${errorCount}명`);
+        showError(`⚠️ 일부 업데이트 실패\n성공: ${successCount}명 / 실패: ${errorCount}명`);
       }
       
       if (onComplete) {
@@ -469,7 +481,6 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                     <span className="font-medium">출근</span>
-                    <span className="text-sm text-gray-500 ml-2">(현재 시간으로 출근 처리)</span>
                   </div>
                 </label>
                 
@@ -484,7 +495,6 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                     <span className="font-medium">퇴근</span>
-                    <span className="text-sm text-gray-500 ml-2">(현재 시간으로 퇴근 처리)</span>
                   </div>
                 </label>
               </div>
@@ -509,7 +519,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           <button
             onClick={onClose}
             disabled={isUpdating}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <FaTimes className="mr-2" />
             취소
@@ -517,10 +527,19 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           <button
             onClick={handleBulkUpdate}
             disabled={isUpdating || selectedStaff.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all"
           >
-            <FaSave className="mr-2" />
-            {isUpdating ? '처리 중...' : `${selectedStaff.length}명 일괄 수정`}
+            {isUpdating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                <span>처리 중...</span>
+              </>
+            ) : (
+              <>
+                <FaSave className="mr-2" />
+                <span>{selectedStaff.length}명 일괄 수정</span>
+              </>
+            )}
           </button>
         </div>
       </div>

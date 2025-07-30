@@ -1,8 +1,8 @@
 
 import { useTranslation } from 'react-i18next';
-import { FaClock, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out' | 'absent';
+export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 interface AttendanceStatusCardProps {
   status: AttendanceStatus;
@@ -47,14 +47,6 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
           bgColor: 'bg-blue-100',
           textColor: 'text-blue-700',
           borderColor: 'border-blue-300'
-        };
-      case 'absent':
-        return {
-          icon: <FaTimesCircle className="text-red-500" />,
-          text: t('attendance.status.absent', '결근'),
-          bgColor: 'bg-red-100',
-          textColor: 'text-red-700',
-          borderColor: 'border-red-300'
         };
       default:
         return {

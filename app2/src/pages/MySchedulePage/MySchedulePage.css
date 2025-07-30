@@ -178,11 +178,6 @@
   font-weight: bold;
 }
 
-.status-absent .fc-event-title {
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
 /* 리스트 뷰 가상화 스크롤바 */
 .scrollbar-thin {
   scrollbar-width: thin;

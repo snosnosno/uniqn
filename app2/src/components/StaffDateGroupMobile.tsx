@@ -62,7 +62,6 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     switch (status) {
       case 'checked_in': return '✅';
       case 'checked_out': return '🏁';
-      case 'absent': return '❌';
       default: return '⏰';
     }
   };
@@ -124,7 +123,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                           }
                           return '';
                         } catch (error) {
-                          console.error('❌ StaffDateGroupMobile 요일 계산 오류:', error, date);
+                          console.error('요일 계산 오류:', error);
                           return '';
                         }
                       })()}

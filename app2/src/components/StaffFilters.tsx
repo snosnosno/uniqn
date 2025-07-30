@@ -134,7 +134,6 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
           >
             <option value="all">모든 상태</option>
             <option value="present">출석</option>
-            <option value="absent">결석</option>
             <option value="late">지각</option>
             <option value="early_leave">조퇴</option>
           </select>

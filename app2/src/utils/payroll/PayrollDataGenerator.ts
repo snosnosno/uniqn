@@ -151,8 +151,8 @@ export class PayrollDataGenerator {
   }
 
   // Private 헬퍼 메소드들
-  private determineWorkStatus(log: WorkLog): 'scheduled' | 'completed' | 'absent' {
-    // 실제 시간이 있으면 completed, 없으면 scheduled (absent 판단은 실제 시간 기준)
+  private determineWorkStatus(log: WorkLog): 'scheduled' | 'completed' {
+    // 실제 시간이 있으면 completed, 없으면 scheduled
     if (log.actualStartTime || log.actualEndTime) return 'completed';
     return 'scheduled';
   }
@@ -163,15 +163,14 @@ export class PayrollDataGenerator {
     let overtimeMinutes = 0;
 
     dailyRecords.forEach(record => {
-      if (record.status !== 'absent') {
-        totalWorkMinutes += record.workMinutes;
-        totalBreakMinutes += record.breakMinutes;
+      // 모든 근무 기록 포함 (absent 상태 제거됨)
+      totalWorkMinutes += record.workMinutes;
+      totalBreakMinutes += record.breakMinutes;
 
-        // 정규 근무시간을 8시간으로 가정하고 초과근무 계산
-        const dailyRegularMinutes = 8 * 60; // 8시간
-        if (record.workMinutes > dailyRegularMinutes) {
-          overtimeMinutes += record.workMinutes - dailyRegularMinutes;
-        }
+      // 정규 근무시간을 8시간으로 가정하고 초과근무 계산
+      const dailyRegularMinutes = 8 * 60; // 8시간
+      if (record.workMinutes > dailyRegularMinutes) {
+        overtimeMinutes += record.workMinutes - dailyRegularMinutes;
       }
     });
 

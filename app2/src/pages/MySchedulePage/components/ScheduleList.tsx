@@ -168,7 +168,6 @@ const ScheduleList: React.FC<ScheduleListProps> = ({
             {event.status === 'not_started' && '예정'}
             {event.status === 'checked_in' && '출근'}
             {event.status === 'checked_out' && '퇴근'}
-            {event.status === 'absent' && '결근'}
           </span>
         </div>
 

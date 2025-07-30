@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
 // 출석 상태 타입 (기존 시스템과 호환)
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out' | 'absent';
+export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 // 일정 타입 (지원/확정/완료/취소)
 export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
@@ -135,8 +135,7 @@ export const SCHEDULE_COLORS: Record<ScheduleType, EventColorConfig> = {
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
   not_started: 'bg-gray-100 text-gray-600',
   checked_in: 'bg-green-100 text-green-600',
-  checked_out: 'bg-blue-100 text-blue-600',
-  absent: 'bg-red-100 text-red-600'
+  checked_out: 'bg-blue-100 text-blue-600'
 };
 
 /**

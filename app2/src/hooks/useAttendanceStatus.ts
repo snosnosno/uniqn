@@ -26,6 +26,8 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Optimistic update를 위한 로컬 업데이트 상태
+  const [localUpdates, setLocalUpdates] = useState<Map<string, AttendanceStatus>>(new Map());
 
   // 현재 날짜를 기본값으로 사용 (로컬 타임존 기준)
   const currentDate = date || getTodayString();
@@ -60,24 +62,47 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
               eventIds: Array.from(new Set(workLogs.map(w => w.eventId)))
             });
             
+            // 변경 감지를 위한 상세 로깅
             filteredWorkLogs.forEach((workLog) => {
               const attendanceRecord = calculateAttendanceStatus(workLog);
               records.push(attendanceRecord);
               
-              // 디버그: workLog 정보 출력
-              if (workLog.dealerId?.includes('tURgdOBmtYfO5Bgzm8NyGKGtbL12')) {
-                console.log('🎯 타겟 스태프의 workLog 발견:', {
-                  workLogId: workLog.id,
-                  dealerId: workLog.dealerId,
-                  eventId: workLog.eventId,
-                  date: workLog.date,
-                  status: attendanceRecord.status
-                });
-              }
+              // 모든 workLog의 상태 변경 추적
+              console.log('📊 useAttendanceStatus - workLog 처리:', {
+                workLogId: workLog.id,
+                dealerId: workLog.dealerId,
+                eventId: workLog.eventId,
+                date: workLog.date,
+                workLogStatus: workLog.status,
+                calculatedStatus: attendanceRecord.status,
+                hasActualStartTime: !!workLog.actualStartTime,
+                hasActualEndTime: !!workLog.actualEndTime,
+                updatedAt: workLog.updatedAt,
+                timestamp: new Date().toISOString()
+              });
             });
 
+            // 이전 상태와 비교하여 변경사항 감지
+            const prevRecordsMap = new Map(attendanceRecords.map(r => [r.workLogId, r.status]));
+            const changedRecords = records.filter(r => {
+              const prevStatus = prevRecordsMap.get(r.workLogId);
+              return prevStatus && prevStatus !== r.status;
+            });
 
-            setAttendanceRecords(records);
+            if (changedRecords.length > 0) {
+              console.log('🔄 useAttendanceStatus - 상태 변경 감지:', {
+                changedCount: changedRecords.length,
+                changes: changedRecords.map(r => ({
+                  workLogId: r.workLogId,
+                  staffId: r.staffId,
+                  oldStatus: prevRecordsMap.get(r.workLogId),
+                  newStatus: r.status
+                }))
+              });
+            }
+
+            // 항상 새로운 배열로 설정하여 React가 변경을 감지하도록 함
+            setAttendanceRecords([...records]);
             setError(null);
           } catch (err) {
             console.error('출석 상태 계산 오류:', err);
@@ -109,28 +134,48 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
     let status: AttendanceStatus = 'not_started';
     
-    // 실제 출퇴근 시간이 있는지 확인
-    const hasActualStartTime = !!(workLog.actualStartTime);
-    const hasActualEndTime = !!(workLog.actualEndTime);
-    
-    if (hasActualStartTime && hasActualEndTime) {
-      status = 'checked_out';
-    } else if (hasActualStartTime) {
-      status = 'checked_in';
+    // workLog의 status 필드가 있으면 우선 사용 (수동 출석 상태 변경을 반영)
+    if (workLog.status && ['not_started', 'checked_in', 'checked_out'].includes(workLog.status)) {
+      status = workLog.status as AttendanceStatus;
+      console.log('📊 workLog.status 사용:', {
+        workLogId: workLog.id,
+        dealerId: workLog.dealerId,
+        status: workLog.status,
+        date: workLog.date
+      });
     } else {
-      // 실제 기록이 없는 경우 - 스케줄 기반으로 상태 판단
-      const scheduledStart = workLog.scheduledStartTime;
-      const scheduledEnd = workLog.scheduledEndTime;
+      // status 필드가 없거나 유효하지 않은 경우 실제 출퇴근 시간으로 계산
+      const hasActualStartTime = !!(workLog.actualStartTime);
+      const hasActualEndTime = !!(workLog.actualEndTime);
       
-      if (scheduledStart && scheduledEnd) {
-        if (currentTime < scheduledStart) {
-          status = 'not_started';
-        } else if (currentTime >= scheduledStart && currentTime < scheduledEnd) {
-          status = 'absent'; // 예정 시간은 지났지만 실제 출근 기록이 없으면 결근
-        } else {
-          status = 'absent'; // 예정 종료 시간도 지난 경우
+      if (hasActualStartTime && hasActualEndTime) {
+        status = 'checked_out';
+      } else if (hasActualStartTime) {
+        status = 'checked_in';
+      } else {
+        // 실제 기록이 없는 경우 - 스케줄 기반으로 상태 판단
+        const scheduledStart = workLog.scheduledStartTime;
+        const scheduledEnd = workLog.scheduledEndTime;
+        
+        if (scheduledStart && scheduledEnd) {
+          if (currentTime < scheduledStart) {
+            status = 'not_started';
+          } else if (currentTime >= scheduledStart && currentTime < scheduledEnd) {
+            status = 'not_started'; // 예정 시간은 지났지만 실제 출근 기록이 없으면 출근 전
+          } else {
+            status = 'not_started'; // 예정 종료 시간도 지난 경우
+          }
         }
       }
+      
+      console.log('🕐 실제 시간 기반 상태 계산:', {
+        workLogId: workLog.id,
+        dealerId: workLog.dealerId,
+        hasActualStartTime,
+        hasActualEndTime,
+        calculatedStatus: status,
+        date: workLog.date
+      });
     }
 
     // Timestamp를 시간 문자열로 변환하는 함수
@@ -197,6 +242,45 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     };
   };
 
+  // Optimistic update를 위한 함수
+  const applyOptimisticUpdate = (workLogId: string, newStatus: AttendanceStatus) => {
+    console.log('🚀 Optimistic update 적용:', { workLogId, newStatus });
+    
+    // 로컬 업데이트 맵에 추가
+    setLocalUpdates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(workLogId, newStatus);
+      return newMap;
+    });
+    
+    // 즉시 attendanceRecords 업데이트
+    setAttendanceRecords(prev => {
+      return prev.map(record => {
+        if (record.workLogId === workLogId) {
+          console.log('✨ Optimistic update - 레코드 업데이트:', {
+            workLogId: record.workLogId,
+            oldStatus: record.status,
+            newStatus
+          });
+          return {
+            ...record,
+            status: newStatus
+          };
+        }
+        return record;
+      });
+    });
+    
+    // 3초 후 로컬 업데이트 제거 (Firebase 업데이트가 반영될 시간)
+    setTimeout(() => {
+      setLocalUpdates(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(workLogId);
+        return newMap;
+      });
+    }, 3000);
+  };
+
   // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
   const getStaffAttendanceStatus = (staffIdOrWorkLogId: string): AttendanceRecord | null => {
     console.log('🔍 getStaffAttendanceStatus 호출:', {
@@ -240,13 +324,21 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           });
           
           const matchedRecord = attendanceRecords.find(record => {
-            const isMatch = record.staffId === staffId && record.workLog?.date === date;
-            if (record.staffId === staffId) {
+            // dealerId 필드도 확인 (호환성을 위해)
+            const recordStaffId = record.staffId || record.workLog?.dealerId;
+            const isStaffMatch = recordStaffId === staffId;
+            const isDateMatch = record.workLog?.date === date;
+            const isMatch = isStaffMatch && isDateMatch;
+            
+            if (isStaffMatch) {
               console.log('📋 스태프 매칭 확인:', {
+                recordStaffId,
+                targetStaffId: staffId,
                 recordDate: record.workLog?.date,
                 targetDate: date,
-                isDateMatch: record.workLog?.date === date,
-                workLogId: record.workLogId
+                isDateMatch,
+                workLogId: record.workLogId,
+                isMatch
               });
             }
             return isMatch;
@@ -280,22 +372,46 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     // staffId로 fallback 검색 (이전 호환성 유지)
     const baseStaffId = staffIdOrWorkLogId.match(/^(.+?)(_\d+)?$/)?.[1] || staffIdOrWorkLogId;
     
-    const fallbackRecord = attendanceRecords.find(record => 
-      record.staffId === staffIdOrWorkLogId || record.staffId === baseStaffId
-    );
+    // virtual ID가 포함된 경우 날짜 정보 추출 시도
+    let targetDate = null;
+    if (staffIdOrWorkLogId.includes('virtual_')) {
+      const dateMatch = staffIdOrWorkLogId.match(/(\d{4}-\d{2}-\d{2})$/);
+      if (dateMatch) {
+        targetDate = dateMatch[1];
+      }
+    }
+    
+    const fallbackRecord = attendanceRecords.find(record => {
+      const isStaffMatch = record.staffId === staffIdOrWorkLogId || record.staffId === baseStaffId;
+      
+      // 날짜 정보가 있으면 날짜도 매칭
+      if (targetDate && record.workLog?.date) {
+        return isStaffMatch && record.workLog.date === targetDate;
+      }
+      
+      return isStaffMatch;
+    });
 
     if (fallbackRecord) {
       console.log('⚠️ getStaffAttendanceStatus - staffId로 fallback 검색 성공:', {
         input: staffIdOrWorkLogId,
         baseStaffId,
+        targetDate,
         foundStaffId: fallbackRecord.staffId,
+        foundDate: fallbackRecord.workLog?.date,
         status: fallbackRecord.status,
-        date: fallbackRecord.workLog?.date
+        workLogId: fallbackRecord.workLogId
       });
     } else {
       console.log('❌ getStaffAttendanceStatus - 매칭 실패:', {
         input: staffIdOrWorkLogId,
-        baseStaffId
+        baseStaffId,
+        targetDate,
+        availableRecords: attendanceRecords.map(r => ({
+          staffId: r.staffId,
+          date: r.workLog?.date,
+          workLogId: r.workLogId
+        }))
       });
     }
     
@@ -308,8 +424,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       total: attendanceRecords.length,
       notStarted: 0,
       checkedIn: 0,
-      checkedOut: 0,
-      absent: 0
+      checkedOut: 0
     };
 
     attendanceRecords.forEach(record => {
@@ -322,9 +437,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           break;
         case 'checked_out':
           stats.checkedOut++;
-          break;
-        case 'absent':
-          stats.absent++;
           break;
       }
     });
@@ -339,6 +451,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     getStaffAttendanceStatus,
     getAttendanceStats,
     currentDate,
-    currentEventId
+    currentEventId,
+    applyOptimisticUpdate
   };
 };

@@ -22,6 +22,7 @@ interface AttendanceStatusPopoverProps {
   actualEndTime?: any; // 실제 퇴근 시간
   canEdit?: boolean; // 수정 권한
   scheduledStartTime?: any; // 예정 출근 시간
+  applyOptimisticUpdate?: (workLogId: string, newStatus: AttendanceStatus) => void;
 }
 
 const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
@@ -36,7 +37,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   actualStartTime,
   actualEndTime,
   canEdit = true,
-  scheduledStartTime
+  scheduledStartTime,
+  applyOptimisticUpdate
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -198,6 +200,19 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     setIsUpdating(true);
     setIsOpen(false);
 
+    // Optimistic update 즉시 적용
+    const targetWorkLogId = workLogId.startsWith('virtual_') ? 
+      `${eventId || 'default-event'}_${workLogId.split('_')[1]}_${workLogId.split('_')[2]}` : 
+      workLogId;
+    
+    if (applyOptimisticUpdate) {
+      console.log('🚀 AttendanceStatusPopover - Optimistic update 호출:', {
+        workLogId: targetWorkLogId,
+        newStatus
+      });
+      applyOptimisticUpdate(targetWorkLogId, newStatus);
+    }
+
     try {
       const now = Timestamp.now();
       
@@ -247,14 +262,26 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         
         const realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_${date}`;
         
+        console.log('🔄 AttendanceStatusPopover - 새 workLog 생성:', {
+          virtualWorkLogId: workLogId,
+          realWorkLogId,
+          actualStaffId,
+          date,
+          eventId,
+          newStatus
+        });
+        
         const newWorkLogData: any = {
           eventId: eventId || 'default-event',
           dealerId: actualStaffId,
+          staffId: actualStaffId, // staffId 필드도 추가
           dealerName: staffName || 'Unknown',
           date: date,
           status: newStatus,
           scheduledStartTime: null,
           scheduledEndTime: null,
+          actualStartTime: null,
+          actualEndTime: null,
           createdAt: now,
           updatedAt: now
         };
@@ -272,7 +299,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           data: newWorkLogData
         });
       } else {
-        // 기존 workLog 업데이트
+        // 기존 workLog 업데이트 또는 생성
         const updateData: any = {
           status: newStatus,
           updatedAt: now
@@ -282,12 +309,59 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         // actualStartTime과 actualEndTime은 시간 수정 기능에서만 변경
 
         const workLogRef = doc(db, 'workLogs', workLogId);
-        await updateDoc(workLogRef, updateData);
+        
+        try {
+          // 먼저 문서 업데이트 시도
+          await updateDoc(workLogRef, updateData);
+        } catch (updateError: any) {
+          // 문서가 존재하지 않는 경우 생성
+          if (updateError.code === 'not-found' || updateError.message?.includes('No document to update')) {
+            console.log('📝 AttendanceStatusPopover - workLog 문서가 없어서 새로 생성:', workLogId);
+            
+            // workLogId에서 정보 추출 (eventId_staffId_date 형식)
+            const parts = workLogId.split('_');
+            let extractedEventId = eventId || 'default-event';
+            let extractedStaffId = staffId;
+            let extractedDate = getTodayString();
+            
+            if (parts.length >= 3) {
+              // 첫 번째 부분은 eventId, 마지막 부분은 날짜, 중간은 staffId
+              extractedEventId = parts[0];
+              extractedDate = parts[parts.length - 1];
+              // 중간 부분들을 모두 합쳐서 staffId로 처리 (언더스코어가 포함된 staffId 처리)
+              extractedStaffId = parts.slice(1, -1).join('_');
+            }
+            
+            const newWorkLogData: any = {
+              eventId: extractedEventId,
+              dealerId: extractedStaffId,
+              staffId: extractedStaffId,
+              dealerName: staffName || 'Unknown',
+              date: extractedDate,
+              status: newStatus,
+              scheduledStartTime: null,
+              scheduledEndTime: null,
+              actualStartTime: null,
+              actualEndTime: null,
+              createdAt: now,
+              updatedAt: now
+            };
+            
+            await setDoc(workLogRef, newWorkLogData);
+            console.log('✅ workLog 생성 완료:', { workLogId, data: newWorkLogData });
+          } else {
+            // 다른 종류의 오류는 다시 throw
+            throw updateError;
+          }
+        }
       }
 
-      if (onStatusChange) {
-        onStatusChange(newStatus);
-      }
+      // Firebase 데이터 전파를 위한 짧은 지연
+      setTimeout(() => {
+        if (onStatusChange) {
+          onStatusChange(newStatus);
+        }
+      }, 100);
 
       // 성공 메시지 표시
       const statusLabel = statusOptions.find(opt => opt.value === newStatus)?.label || newStatus;

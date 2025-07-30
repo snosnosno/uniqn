@@ -135,7 +135,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - `도구사용`: 사용가능한 MCP, SUB AGENTS 모두 적극 사용
 - `실시간반영중시`: Firebase onSnapshot 구독으로 즉시 UI 업데이트, 수동 새로고침 제거
 - `날짜별시간관리`: workLogs 컬렉션 기반으로 각 날짜별 독립적인 시간 설정 시스템 구현 완료
-- `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendanceStatusDropdown으로 관리
+- `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendancePopover으로 관리
 - `workLogs우선`: workLogs 데이터를 staff 데이터보다 우선하여 날짜별 독립성 보장
 - `타입안전성강화필요`: any 타입 제거 및 strict TypeScript 설정 필요
 - `환경변수설정필요`: Firebase API 키 등 민감 정보 보호 필요

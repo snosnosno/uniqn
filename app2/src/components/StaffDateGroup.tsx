@@ -18,6 +18,10 @@ interface StaffDateGroupProps {
   eventId?: string;
   canEdit?: boolean;
   getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
+  multiSelectMode?: boolean;
+  selectedStaff?: Set<string>;
+  onStaffSelect?: (staffId: string, event?: React.MouseEvent) => void;
 }
 
 const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
@@ -34,10 +38,14 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
   onShowProfile,
   eventId,
   canEdit = true,
-  getStaffWorkLog
+  getStaffWorkLog,
+  applyOptimisticUpdate,
+  multiSelectMode = false,
+  selectedStaff = new Set(),
+  onStaffSelect
 }) => {
-  // const { t } = useTranslation(); // 현재 미사용
   const staffCount = staffList.length;
+  const selectedInGroup = staffList.filter(staff => selectedStaff.has(staff.id)).length;
 
   const handleHeaderClick = () => {
     onToggleExpansion(date);
@@ -62,17 +70,49 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
             <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
               {staffCount}명
             </div>
-          </div>
-          <div className="text-gray-400">
-            {isExpanded ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+            {multiSelectMode && selectedInGroup > 0 && (
+              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                {selectedInGroup}명 선택
+              </div>
             )}
+          </div>
+          <div className="flex items-center space-x-2">
+            {multiSelectMode && isExpanded && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onStaffSelect) {
+                    staffList.forEach(staff => {
+                      if (selectedInGroup === staffList.length) {
+                        // 모두 선택된 경우 해제
+                        if (selectedStaff.has(staff.id)) {
+                          onStaffSelect(staff.id);
+                        }
+                      } else {
+                        // 일부만 선택된 경우 모두 선택
+                        if (!selectedStaff.has(staff.id)) {
+                          onStaffSelect(staff.id);
+                        }
+                      }
+                    });
+                  }
+                }}
+                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                {selectedInGroup === staffList.length ? '선택 해제' : '전체 선택'}
+              </button>
+            )}
+            <div>
+              {isExpanded ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -83,6 +123,27 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                {multiSelectMode && (
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={staffList.every(staff => selectedStaff.has(staff.id)) && staffList.length > 0}
+                      onChange={(e) => {
+                        if (onStaffSelect) {
+                          staffList.forEach(staff => {
+                            if (e.target.checked && !selectedStaff.has(staff.id)) {
+                              onStaffSelect(staff.id);
+                            } else if (!e.target.checked && selectedStaff.has(staff.id)) {
+                              onStaffSelect(staff.id);
+                            }
+                          });
+                        }
+                      }}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      aria-label="이 그룹 전체 선택"
+                    />
+                  </th>
+                )}
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   출근
                 </th>
@@ -121,6 +182,10 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                   eventId={eventId}
                   canEdit={canEdit}
                   getStaffWorkLog={getStaffWorkLog}
+                  applyOptimisticUpdate={applyOptimisticUpdate}
+                  multiSelectMode={multiSelectMode}
+                  isSelected={selectedStaff.has(staff.id)}
+                  onSelect={onStaffSelect}
                 />
               ))}
             </tbody>

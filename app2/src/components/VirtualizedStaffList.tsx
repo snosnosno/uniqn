@@ -19,6 +19,9 @@ interface VirtualizedStaffListProps {
   height?: number; // 리스트 높이
   itemHeight?: number; // 각 아이템 높이
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
+  canEdit?: boolean;
+  getStaffWorkLog?: (staffId: string, date: string) => any | null;
 }
 
 interface ItemData {
@@ -34,6 +37,9 @@ interface ItemData {
   selectedStaff: Set<string>;
   onStaffSelect?: (staffId: string) => void;
   onShowProfile?: (staffId: string) => void;
+  eventId?: string;
+  canEdit?: boolean;
+  getStaffWorkLog?: (staffId: string, date: string) => any | null;
 }
 
 // 메모이제이션된 리스트 아이템 컴포넌트
@@ -54,7 +60,10 @@ const VirtualizedStaffItem: React.FC<{
     multiSelectMode,
     selectedStaff,
     onStaffSelect,
-    onShowProfile
+    onShowProfile,
+    eventId,
+    canEdit,
+    getStaffWorkLog
   } = data;
 
   const staff = staffList[index];
@@ -77,6 +86,9 @@ const VirtualizedStaffItem: React.FC<{
         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
         onSelect={multiSelectMode ? onStaffSelect : undefined}
         onShowProfile={onShowProfile}
+        eventId={eventId}
+        canEdit={canEdit}
+        getStaffWorkLog={getStaffWorkLog}
       />
     </div>
   );
@@ -98,7 +110,10 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   onStaffSelect,
   height = 600,
   itemHeight = 200,
-  onShowProfile
+  onShowProfile,
+  eventId,
+  canEdit,
+  getStaffWorkLog
 }) => {
   // 메모이제이션된 아이템 데이터
   const itemData = useMemo((): ItemData => ({
@@ -113,7 +128,10 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
     multiSelectMode,
     selectedStaff,
     onStaffSelect,
-    onShowProfile
+    onShowProfile,
+    eventId,
+    canEdit,
+    getStaffWorkLog
   }), [
     staffList,
     onEditWorkTime,
@@ -125,7 +143,11 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
     showDate,
     multiSelectMode,
     selectedStaff,
-    onStaffSelect
+    onStaffSelect,
+    onShowProfile,
+    eventId,
+    canEdit,
+    getStaffWorkLog
   ]);
 
   // 스태프 리스트가 비어있는 경우

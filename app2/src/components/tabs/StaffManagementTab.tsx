@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 
@@ -59,7 +59,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   // 출석 상태 관리
   const { 
     attendanceRecords,
-    getStaffAttendanceStatus 
+    getStaffAttendanceStatus,
+    loading: attendanceLoading,
+    applyOptimisticUpdate
   } = useAttendanceStatus({
     eventId: jobPosting?.id || 'default-event'
     // date 파라미터 제거 - 모든 날짜의 workLog를 가져옴
@@ -73,11 +75,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffData | null>(null);
   
-  // 모바일 전용 상태
+  // 선택 모드 상태
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
   const [isBulkTimeEditOpen, setIsBulkTimeEditOpen] = useState(false);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   
   // 성능 모니터링 상태 (개발 환경에서만)
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -96,7 +99,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     const staff = staffData.find(s => s.id === staffId);
     if (!staff) {
-      console.log('스태프 정보를 찾을 수 없습니다.');
+      showError('스태프 정보를 찾을 수 없습니다.');
       return;
     }
 
@@ -126,7 +129,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           try {
             const timeParts = staff.assignedTime.split(':');
             if (timeParts.length !== 2) {
-              console.error('Invalid assignedTime format:', staff.assignedTime);
               return null;
             }
             
@@ -134,14 +136,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             
             // 유효하지 않은 시간 값 검사
             if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-              console.error('Invalid assignedTime values:', { hours, minutes, original: staff.assignedTime });
               return null;
             }
             
             // parseToDate를 사용하여 workDate를 Date로 변환
             let date = parseToDate(workDate);
             if (!date) {
-              console.error('Invalid workDate, using current date:', workDate);
               date = new Date();
             }
             
@@ -149,13 +149,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             
             // 최종 날짜가 유효한지 확인
             if (isNaN(date.getTime())) {
-              console.error('Invalid final date created:', date);
               return null;
             }
             
             return Timestamp.fromDate(date);
           } catch (error) {
-            console.error('Error creating scheduledStartTime:', error);
             return null;
           }
         })() : null,
@@ -171,12 +169,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   };
   
   const handleWorkTimeUpdate = async (updatedWorkLog: any) => {
-    console.log('✅ 근무 시간이 업데이트되었습니다:', updatedWorkLog);
-    
     // 실시간 구독으로 자동 업데이트되므로 별도 새로고침 불필요
     // useStaffManagement와 useAttendanceStatus 모두 실시간 구독 중
-    console.log('🔄 실시간 구독으로 자동 업데이트됩니다');
-    
     // 성공 메시지는 WorkTimeEditor 내부에서 처리
   };
   
@@ -201,20 +195,63 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     isMobile: false
   });
   
+  // 키보드 단축키 처리
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Ctrl+A: 전체 선택 (선택 모드일 때만)
+    if (event.ctrlKey && event.key === 'a' && multiSelectMode) {
+      event.preventDefault();
+      const allStaffIds = new Set(filteredStaffCount > 0 ? flattenedStaffData.map(s => s.id) : []);
+      setSelectedStaff(allStaffIds);
+    }
+    
+    // Esc: 선택 모드 종료
+    if (event.key === 'Escape' && multiSelectMode) {
+      setMultiSelectMode(false);
+      setSelectedStaff(new Set());
+    }
+  }, [multiSelectMode, filteredStaffCount, flattenedStaffData]);
+
+  // 키보드 이벤트 리스너 등록
+  useEffect(() => {
+    if (multiSelectMode) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [multiSelectMode, handleKeyDown]);
+
   // 모바일 관련 핸들러
   const handleMultiSelectToggle = () => {
     setMultiSelectMode(!multiSelectMode);
     setSelectedStaff(new Set());
   };
   
-  const handleStaffSelect = (staffId: string) => {
-    const newSelected = new Set(selectedStaff);
-    if (newSelected.has(staffId)) {
-      newSelected.delete(staffId);
+  const handleStaffSelect = (staffId: string, event?: React.MouseEvent) => {
+    const currentIndex = flattenedStaffData.findIndex(s => s.id === staffId);
+    
+    if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
+      // Shift 키를 누른 상태로 클릭 - 범위 선택
+      const newSelected = new Set(selectedStaff);
+      const start = Math.min(lastSelectedIndex, currentIndex);
+      const end = Math.max(lastSelectedIndex, currentIndex);
+      
+      for (let i = start; i <= end; i++) {
+        newSelected.add(flattenedStaffData[i].id);
+      }
+      
+      setSelectedStaff(newSelected);
     } else {
-      newSelected.add(staffId);
+      // 일반 클릭 - 개별 선택/해제
+      const newSelected = new Set(selectedStaff);
+      if (newSelected.has(staffId)) {
+        newSelected.delete(staffId);
+      } else {
+        newSelected.add(staffId);
+      }
+      setSelectedStaff(newSelected);
+      setLastSelectedIndex(currentIndex);
     }
-    setSelectedStaff(newSelected);
   };
   
   const handleBulkActions = () => {
@@ -231,30 +268,21 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   };
   
   const handleBulkMessage = async (staffIds: string[], message: string) => {
-    // 실제 구현에서는 메시지 발송 로직 추가
-    console.log('Bulk message:', { staffIds, message });
     // TODO: 실제 메시지 발송 구현
     alert(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
   };
   
   const handleBulkStatusUpdate = async (staffIds: string[], status: string) => {
-    // 실제 구현에서는 출석 상태 업데이트 로직 추가
-    console.log('Bulk status update:', { staffIds, status });
     // TODO: 실제 상태 업데이트 구현
     alert(`${staffIds.length}명의 상태를 "${status}"로 변경했습니다.`);
   };
   
   // 프로필 모달 핸들러
   const handleShowProfile = (staffId: string) => {
-    console.log('🔍 프로필 클릭:', staffId);
     const staff = staffData.find(s => s.id === staffId);
-    console.log('🔍 스태프 데이터:', staff);
     if (staff) {
       setSelectedStaffForProfile(staff);
       setIsProfileModalOpen(true);
-      console.log('🔍 프로필 모달 열기 설정 완료');
-    } else {
-      console.log('⚠️ 스태프를 찾을 수 없음:', staffId);
     }
   };
 
@@ -325,18 +353,50 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 />
               </div>
               {canEdit && (
-                <button
-                  onClick={() => {
-                    // 전체 스태프를 선택하고 일괄 수정 모달 열기
-                    const allStaffIds = new Set(staffData.map(staff => staff.id));
-                    setSelectedStaff(allStaffIds);
-                    setIsBulkTimeEditOpen(true);
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  title={`전체 ${staffData.length}명 일괄 수정`}
-                >
-                  일괄 수정
-                </button>
+                <>
+                  <button
+                    onClick={handleMultiSelectToggle}
+                    className={`px-3 py-2 rounded-md transition-colors flex items-center space-x-2 ${
+                      multiSelectMode
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                    title={multiSelectMode ? 'Esc 키로 선택 모드 종료' : '스태프를 선택하여 일괄 수정'}
+                  >
+                    <span>{multiSelectMode ? '선택 완료' : '선택 모드'}</span>
+                    {multiSelectMode && (
+                      <span className="bg-white bg-opacity-20 px-2 py-0.5 rounded text-sm">
+                        {selectedStaff.size}/{filteredStaffCount}
+                      </span>
+                    )}
+                  </button>
+                  {multiSelectMode && selectedStaff.size > 0 && (
+                    <button
+                      onClick={() => setIsBulkTimeEditOpen(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2"
+                      title={`선택된 ${selectedStaff.size}명 일괄 수정`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>선택 항목 수정 ({selectedStaff.size}명)</span>
+                    </button>
+                  )}
+                  {!multiSelectMode && (
+                    <button
+                      onClick={() => {
+                        // 전체 스태프를 선택하고 일괄 수정 모달 열기
+                        const allStaffIds = new Set(staffData.map(staff => staff.id));
+                        setSelectedStaff(allStaffIds);
+                        setIsBulkTimeEditOpen(true);
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      title={`전체 ${staffData.length}명 일괄 수정`}
+                    >
+                      전체 일괄 수정
+                    </button>
+                  )}
+                </>
               )}
               <button
                 onClick={() => setIsQrModalOpen(true)}
@@ -394,35 +454,51 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 </span>
               </div>
               <div className="flex space-x-2">
-                <button
-                  onClick={handleMultiSelectToggle}
-                  className={`px-3 py-1 rounded text-sm ${
-                    multiSelectMode
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {multiSelectMode ? '선택 취소' : '다중 선택'}
-                </button>
-                {multiSelectMode && selectedStaff.size > 0 && (
+                {canEdit && (
                   <>
                     <button
-                      onClick={handleBulkActions}
-                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                      onClick={handleMultiSelectToggle}
+                      className={`px-3 py-1 rounded text-sm ${
+                        multiSelectMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
                     >
-                      일괄 작업 ({selectedStaff.size})
+                      {multiSelectMode ? '선택 취소' : '다중 선택'}
                     </button>
-                    {canEdit && (
-                      <button
-                        onClick={() => setIsBulkTimeEditOpen(true)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        시간 수정
-                      </button>
+                    {multiSelectMode && selectedStaff.size > 0 && (
+                      <>
+                        <button
+                          onClick={handleBulkActions}
+                          className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        >
+                          일괄 작업 ({selectedStaff.size})
+                        </button>
+                        <button
+                          onClick={() => setIsBulkTimeEditOpen(true)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          시간 수정
+                        </button>
+                      </>
                     )}
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 선택 모드 활성화 시 키보드 단축키 안내 */}
+        {multiSelectMode && !isMobile && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-blue-800">
+                <strong>단축키:</strong> Ctrl+A (전체 선택), Shift+클릭 (범위 선택), Esc (선택 모드 종료)
+              </span>
             </div>
           </div>
         )}
@@ -453,7 +529,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
-                                            onDeleteStaff={deleteStaff}
+                      onDeleteStaff={deleteStaff}
                       getStaffAttendanceStatus={getStaffAttendanceStatus}
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
@@ -473,7 +549,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   <VirtualizedStaffList
                     staffList={flattenedStaffData}
                     onEditWorkTime={handleEditWorkTime}
-                                        onDeleteStaff={deleteStaff}
+                    onDeleteStaff={deleteStaff}
                     getStaffAttendanceStatus={getStaffAttendanceStatus}
                     attendanceRecords={attendanceRecords}
                     formatTimeDisplay={formatTimeDisplay}
@@ -485,6 +561,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     height={mobileVirtualization.height}
                     itemHeight={mobileVirtualization.itemHeight}
                     onShowProfile={handleShowProfile}
+                    eventId={jobPosting?.id}
+                    canEdit={canEdit}
+                    getStaffWorkLog={getStaffWorkLog}
                   />
                 ) : (
                   <div className="space-y-3">
@@ -493,7 +572,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         key={staff.id}
                         staff={staff}
                         onEditWorkTime={handleEditWorkTime}
-                                                onDeleteStaff={deleteStaff}
+                        onDeleteStaff={deleteStaff}
                         getStaffAttendanceStatus={getStaffAttendanceStatus}
                         attendanceRecords={attendanceRecords}
                         formatTimeDisplay={formatTimeDisplay}
@@ -502,9 +581,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
                         onSelect={multiSelectMode ? handleStaffSelect : undefined}
                         onShowProfile={handleShowProfile}
-                      eventId={jobPosting?.id}
-                      canEdit={canEdit}
-                      getStaffWorkLog={getStaffWorkLog}
+                        eventId={jobPosting?.id}
+                        canEdit={canEdit}
+                        getStaffWorkLog={getStaffWorkLog}
                       />
                     ))}
                   </div>
@@ -526,7 +605,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
-                                            onDeleteStaff={deleteStaff}
+                      onDeleteStaff={deleteStaff}
                       getStaffAttendanceStatus={getStaffAttendanceStatus}
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
@@ -535,6 +614,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       eventId={jobPosting?.id}
                       canEdit={canEdit}
                       getStaffWorkLog={getStaffWorkLog}
+                      applyOptimisticUpdate={applyOptimisticUpdate}
+                      multiSelectMode={multiSelectMode}
+                      selectedStaff={selectedStaff}
+                      onStaffSelect={handleStaffSelect}
                     />
                   );
                 })
@@ -544,7 +627,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   <VirtualizedStaffTable
                     staffList={flattenedStaffData}
                     onEditWorkTime={handleEditWorkTime}
-                                        onDeleteStaff={deleteStaff}
+                    onDeleteStaff={deleteStaff}
                     getStaffAttendanceStatus={getStaffAttendanceStatus}
                     attendanceRecords={attendanceRecords}
                     formatTimeDisplay={formatTimeDisplay}
@@ -561,6 +644,23 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
+                            {multiSelectMode && (
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedStaff.size === flattenedStaffData.length && flattenedStaffData.length > 0}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedStaff(new Set(flattenedStaffData.map(s => s.id)));
+                                    } else {
+                                      setSelectedStaff(new Set());
+                                    }
+                                  }}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  aria-label="전체 선택"
+                                />
+                              </th>
+                            )}
                             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               출근
                             </th>
@@ -590,7 +690,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               key={staff.id}
                               staff={staff}
                               onEditWorkTime={handleEditWorkTime}
-                                                            onDeleteStaff={deleteStaff}
+                              onDeleteStaff={deleteStaff}
                               getStaffAttendanceStatus={getStaffAttendanceStatus}
                               attendanceRecords={attendanceRecords}
                               formatTimeDisplay={formatTimeDisplay}
@@ -600,6 +700,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               eventId={jobPosting?.id}
                               canEdit={canEdit}
                               getStaffWorkLog={getStaffWorkLog}
+                              applyOptimisticUpdate={applyOptimisticUpdate}
+                              multiSelectMode={multiSelectMode}
+                              isSelected={selectedStaff.has(staff.id)}
+                              onSelect={handleStaffSelect}
                             />
                           ))}
                         </tbody>
@@ -674,19 +778,58 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         }}
         selectedStaff={staffData
           .filter(staff => selectedStaff.has(staff.id))
-          .map(staff => ({
-            id: staff.id,
-            name: staff.name || '이름 미정',
-            assignedDate: staff.assignedDate,
-            assignedTime: staff.assignedTime,
-            workLogId: attendanceRecords.find(r => r.staffId === staff.id)?.workLogId
-          }))}
+          .map(staff => {
+            // 스태프의 날짜를 추출
+            const dateString = staff.assignedDate || getTodayString();
+            // 해당 날짜의 workLog 찾기
+            const workLogRecord = attendanceRecords.find(r => {
+              // staffId가 일치하고
+              const staffIdMatch = r.staffId === staff.id || 
+                                  r.workLog?.dealerId === staff.id ||
+                                  r.workLog?.dealerId === staff.id.replace(/_\d+$/, '');
+              // 날짜가 일치하는 경우
+              const dateMatch = r.workLog?.date === dateString;
+              return staffIdMatch && dateMatch;
+            });
+            
+            return {
+              id: staff.id,
+              name: staff.name || '이름 미정',
+              assignedDate: staff.assignedDate,
+              assignedTime: staff.assignedTime,
+              workLogId: workLogRecord?.workLogId
+            };
+          })}
         eventId={jobPosting?.id || 'default-event'}
         onComplete={() => {
-          console.log('일괄 수정 완료');
           // 실시간 구독으로 자동 업데이트됨
         }}
       />
+
+      {/* 플로팅 선택 정보 */}
+      {multiSelectMode && selectedStaff.size > 0 && canEdit && (
+        <div className={`fixed ${isMobile ? 'bottom-20 right-4' : 'bottom-6 right-6'} bg-blue-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full shadow-lg flex items-center space-x-3 md:space-x-4 z-50`}>
+          <span className="font-medium text-sm md:text-base">{selectedStaff.size}명 선택됨</span>
+          <button
+            onClick={() => setIsBulkTimeEditOpen(true)}
+            className="bg-white text-blue-600 px-3 py-0.5 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-medium hover:bg-blue-50 transition-colors"
+          >
+            일괄 수정
+          </button>
+          <button
+            onClick={() => {
+              setSelectedStaff(new Set());
+              setMultiSelectMode(false);
+            }}
+            className="text-white hover:text-blue-200 transition-colors"
+            aria-label="선택 취소"
+          >
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
     </>
   );
 };

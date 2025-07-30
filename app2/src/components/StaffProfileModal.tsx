@@ -141,8 +141,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     const statusMap: { [key: string]: { label: string; color: string } } = {
       'not_started': { label: '출근 전', color: 'text-gray-600 bg-gray-100' },
       'checked_in': { label: '출근', color: 'text-green-600 bg-green-100' },
-      'checked_out': { label: '퇴근', color: 'text-blue-600 bg-blue-100' },
-      'absent': { label: '결근', color: 'text-red-600 bg-red-100' }
+      'checked_out': { label: '퇴근', color: 'text-blue-600 bg-blue-100' }
     };
     
     return statusMap[status] || statusMap['not_started'];

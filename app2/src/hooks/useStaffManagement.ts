@@ -132,7 +132,6 @@ export const useStaffManagement = (
   
   // 수동 새로고침 함수 (필요시에만 사용)
   const refreshStaffData = useCallback(async () => {
-    console.log('🔄 수동 스태프 데이터 새로고침 요청 (실시간 구독으로 인해 필요 없음)');
     // 실시간 구독이 활성화되어 있으므로 별도 액션 불필요
     // 만약 필요하다면 여기서 강제 새로고침 로직 추가 가능
   }, []);
@@ -147,7 +146,6 @@ export const useStaffManagement = (
     setLoading(true);
     setError(null);
 
-    console.log('🔍 useStaffManagement - 실시간 구독 시작');
 
     // 실시간 구독 설정
     const staffQuery = query(
@@ -159,7 +157,6 @@ export const useStaffManagement = (
     const unsubscribe = onSnapshot(
       staffQuery,
       (snapshot) => {
-        console.log('🔍 스태프 데이터 실시간 업데이트, 문서 수:', snapshot.size);
         
         const staffList: StaffData[] = snapshot.docs.map(doc => {
           const data = doc.data();
@@ -196,20 +193,12 @@ export const useStaffManagement = (
             postingTitle: data.postingTitle || '제목 없음' // 기본값 설정
           } as StaffData;
           
-          console.log('🔍 스태프 데이터 실시간 업데이트:', {
-            docId: doc.id,
-            originalAssignedDate: data.assignedDate,
-            convertedAssignedDate: staffData.assignedDate,
-            assignedTime: data.assignedTime,
-            assignedRole: data.assignedRole
-          });
           
           return staffData;
         });
         
         setStaffData(staffList);
         setLoading(false);
-        console.log('✅ 스태프 데이터 실시간 업데이트 완료');
       },
       (error) => {
         console.error('❌ 스태프 데이터 실시간 구독 오류:', error);
@@ -220,7 +209,6 @@ export const useStaffManagement = (
 
     // 클린업 함수
     return () => {
-      console.log('🧹 스태프 데이터 실시간 구독 해제');
       unsubscribe();
     };
   }, [currentUser, jobPostingId, t]);
@@ -231,7 +219,6 @@ export const useStaffManagement = (
       return;
     }
 
-    console.log('🔍 useStaffManagement - workLogs 실시간 구독 시작');
 
     // workLogs 실시간 구독 설정
     const workLogsQuery = query(
@@ -242,7 +229,6 @@ export const useStaffManagement = (
     const unsubscribe = onSnapshot(
       workLogsQuery,
       (snapshot) => {
-        console.log('📋 workLogs 데이터 실시간 업데이트, 문서 수:', snapshot.size);
         
         const workLogsList = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -266,10 +252,6 @@ export const useStaffManagement = (
         // workLogs 변경 시 staffData 강제 리렌더링
         setStaffData(prev => [...prev]);
         
-        console.log('✅ workLogs 데이터 실시간 업데이트 완료:', {
-          count: workLogsList.length,
-          mapKeys: Object.keys(workLogsMapData).length
-        });
       },
       (error) => {
         console.error('❌ workLogs 데이터 실시간 구독 오류:', error);
@@ -278,7 +260,6 @@ export const useStaffManagement = (
 
     // 클린업 함수
     return () => {
-      console.log('🧹 workLogs 데이터 실시간 구독 해제');
       unsubscribe();
     };
   }, [currentUser, jobPostingId]);

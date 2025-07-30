@@ -157,7 +157,6 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                 >
                   <option value="">상태를 선택하세요</option>
                   <option value="present">출석</option>
-                  <option value="absent">결석</option>
                   <option value="late">지각</option>
                   <option value="early_leave">조퇴</option>
                   <option value="on_break">휴식 중</option>

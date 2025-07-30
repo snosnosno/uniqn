@@ -73,7 +73,7 @@ export interface DailyWorkRecord {
   breakMinutes: number;
   tableAssignments: string[];
   exceptions: any[]; // 예외 기능 제거 - 빈 배열로 처리
-  status: 'scheduled' | 'completed' | 'absent';
+  status: 'scheduled' | 'completed';
 }
 
 export interface PayrollSummary {
