@@ -68,6 +68,7 @@ interface UseStaffManagementReturn {
   groupedStaffData: GroupedStaffData;
   availableDates: string[];
   availableRoles: string[];
+  workLogsData: any[];
   
   // 상태
   loading: boolean;
@@ -91,6 +92,7 @@ interface UseStaffManagementReturn {
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   getStaffCountByDate: (date: string) => number;
+  getStaffWorkLog: (staffId: string, date: string) => any | null;
 }
 
 export const useStaffManagement = (
@@ -111,6 +113,10 @@ export const useStaffManagement = (
   const [staffData, setStaffData] = useState<StaffData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // workLogs 상태 추가
+  const [workLogsData, setWorkLogsData] = useState<any[]>([]);
+  const [workLogsMap, setWorkLogsMap] = useState<Record<string, any>>({});
   
   // 필터 상태
   const [filters, setFilters] = useState<StaffFilters>({
@@ -157,9 +163,34 @@ export const useStaffManagement = (
         
         const staffList: StaffData[] = snapshot.docs.map(doc => {
           const data = doc.data();
+          
+          // assignedDate를 문자열로 변환
+          let assignedDateString = data.assignedDate;
+          if (data.assignedDate) {
+            // Firebase Timestamp 객체인 경우
+            if (typeof data.assignedDate === 'object' && 'seconds' in data.assignedDate) {
+              const date = new Date(data.assignedDate.seconds * 1000);
+              assignedDateString = date.toISOString().split('T')[0];
+            }
+            // Timestamp 문자열인 경우 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
+            else if (typeof data.assignedDate === 'string' && data.assignedDate.startsWith('Timestamp(')) {
+              const match = data.assignedDate.match(/seconds=(\d+)/);
+              if (match) {
+                const seconds = parseInt(match[1], 10);
+                const date = new Date(seconds * 1000);
+                assignedDateString = date.toISOString().split('T')[0];
+              }
+            }
+            // 이미 날짜 문자열인 경우 그대로 사용
+            else if (typeof data.assignedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.assignedDate)) {
+              assignedDateString = data.assignedDate;
+            }
+          }
+          
           const staffData = {
             id: doc.id,
             ...data,
+            assignedDate: assignedDateString, // 변환된 날짜 문자열 사용
             // jobRole 배열을 role 필드로 매핑 (promoteToStaff에서 저장한 데이터 호환성)
             role: data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] as JobRole : data.role,
             postingTitle: data.postingTitle || '제목 없음' // 기본값 설정
@@ -167,7 +198,8 @@ export const useStaffManagement = (
           
           console.log('🔍 스태프 데이터 실시간 업데이트:', {
             docId: doc.id,
-            assignedDate: data.assignedDate,
+            originalAssignedDate: data.assignedDate,
+            convertedAssignedDate: staffData.assignedDate,
             assignedTime: data.assignedTime,
             assignedRole: data.assignedRole
           });
@@ -192,6 +224,64 @@ export const useStaffManagement = (
       unsubscribe();
     };
   }, [currentUser, jobPostingId, t]);
+
+  // workLogs 데이터 실시간 구독 추가
+  useEffect(() => {
+    if (!currentUser || !jobPostingId) {
+      return;
+    }
+
+    console.log('🔍 useStaffManagement - workLogs 실시간 구독 시작');
+
+    // workLogs 실시간 구독 설정
+    const workLogsQuery = query(
+      collection(db, 'workLogs'), 
+      where('eventId', '==', jobPostingId)
+    );
+
+    const unsubscribe = onSnapshot(
+      workLogsQuery,
+      (snapshot) => {
+        console.log('📋 workLogs 데이터 실시간 업데이트, 문서 수:', snapshot.size);
+        
+        const workLogsList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setWorkLogsData(workLogsList);
+        
+        // workLogs를 맵 형태로도 저장 (빠른 조회를 위해)
+        const workLogsMapData: Record<string, any> = {};
+        workLogsList.forEach(workLog => {
+          const dealerId = (workLog as any).dealerId || (workLog as any).staffId;
+          const date = (workLog as any).date;
+          if (dealerId && date) {
+            const key = `${dealerId}_${date}`;
+            workLogsMapData[key] = workLog;
+          }
+        });
+        setWorkLogsMap(workLogsMapData);
+        
+        // workLogs 변경 시 staffData 강제 리렌더링
+        setStaffData(prev => [...prev]);
+        
+        console.log('✅ workLogs 데이터 실시간 업데이트 완료:', {
+          count: workLogsList.length,
+          mapKeys: Object.keys(workLogsMapData).length
+        });
+      },
+      (error) => {
+        console.error('❌ workLogs 데이터 실시간 구독 오류:', error);
+      }
+    );
+
+    // 클린업 함수
+    return () => {
+      console.log('🧹 workLogs 데이터 실시간 구독 해제');
+      unsubscribe();
+    };
+  }, [currentUser, jobPostingId]);
 
   // localStorage에서 확장 상태 복원
   useEffect(() => {
@@ -396,6 +486,12 @@ export const useStaffManagement = (
   const getStaffCountByDate = useCallback((date: string): number => {
     return groupedStaffData.grouped[date]?.length || 0;
   }, [groupedStaffData]);
+  
+  // 특정 스태프의 workLog 가져오기
+  const getStaffWorkLog = useCallback((staffId: string, date: string) => {
+    const key = `${staffId}_${date}`;
+    return workLogsMap[key] || null;
+  }, [workLogsMap]);
 
   return {
     // 데이터
@@ -403,6 +499,7 @@ export const useStaffManagement = (
     groupedStaffData,
     availableDates,
     availableRoles,
+    workLogsData,
     
     // 상태
     loading,
@@ -425,7 +522,8 @@ export const useStaffManagement = (
     // 유틸리티
     formatTimeDisplay,
     getTimeSlotColor,
-    getStaffCountByDate
+    getStaffCountByDate,
+    getStaffWorkLog
   };
 };
 

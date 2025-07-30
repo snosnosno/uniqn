@@ -48,6 +48,9 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<{ [key: string]: Array<{ timeSlot: string, role: string, date: string }> }>({});
+  
+  // 권한 체크 - 공고 작성자만 수정 가능
+  const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
 
   // Load applicants when component mounts or jobPosting changes
   useEffect(() => {
@@ -106,6 +109,12 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   };
 
   const handleConfirmApplicant = async (applicant: Applicant) => {
+    // 권한 체크
+    if (!canEdit) {
+      alert('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+      return;
+    }
+    
     const assignments = selectedAssignment[applicant.id];
     
     console.log('🔍 handleConfirmApplicant 시작:', {
@@ -441,6 +450,12 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   // 확정 취소 핸들러 함수
   const handleCancelConfirmation = async (applicant: Applicant) => {
     if (!jobPosting) return;
+    
+    // 권한 체크
+    if (!canEdit) {
+      alert('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+      return;
+    }
 
     // 확정 취소 확인 대화상자
     const confirmed = window.confirm(
@@ -738,7 +753,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         <button 
                           onClick={() => handleConfirmApplicant(applicant)}
                           className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                          disabled={selectedCount === 0}
+                          disabled={selectedCount === 0 || !canEdit}
                         >
                           ✓ 선택한 시간대로 확정 ({selectedCount}개)
                         </button>
@@ -843,7 +858,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                     <div className="flex space-x-2">
                       <button 
                         onClick={() => handleCancelConfirmation(applicant)}
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium"
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        disabled={!canEdit}
                       >
                         ❌ 확정 취소
                       </button>

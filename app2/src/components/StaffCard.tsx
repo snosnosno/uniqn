@@ -23,6 +23,8 @@ interface StaffCardProps {
   onSelect?: (staffId: string) => void;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
+  canEdit?: boolean;
+  getStaffWorkLog?: (staffId: string, date: string) => any | null;
 }
 
 const StaffCard: React.FC<StaffCardProps> = React.memo(({
@@ -37,7 +39,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   isSelected = false,
   onSelect,
   onShowProfile,
-  eventId
+  eventId,
+  canEdit = true,
+  getStaffWorkLog
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -100,24 +104,28 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
-    // 실제 출근시간 우선, 없으면 예정시간
-    const actualStartTime = memoizedAttendanceData.attendanceRecord?.checkInTime || 
-                           memoizedAttendanceData.workLogRecord?.workLog?.actualStartTime;
+    // 날짜 추출
+    const dateString = timestampToLocalDateString(staff.assignedDate);
+    
+    // getStaffWorkLog을 사용하여 workLog 데이터 가져오기
+    const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
     // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
-    const workLogScheduledTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledStartTime;
-    const staffAssignedTime = staff.assignedTime;
-    
-    // 시간 우선순위: workLogs의 scheduledStartTime > staff의 assignedTime
-    let scheduledStartTime = staffAssignedTime;
-    if (workLogScheduledTime) {
+    let scheduledStartTime = staff.assignedTime;
+    if (workLog?.scheduledStartTime) {
       try {
         // Timestamp를 시간 문자열로 변환
-        const timeDate = workLogScheduledTime.toDate ? workLogScheduledTime.toDate() : new Date(workLogScheduledTime);
+        const timeDate = workLog.scheduledStartTime.toDate ? workLog.scheduledStartTime.toDate() : new Date(workLog.scheduledStartTime);
         scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
           hour12: false,
           hour: '2-digit',
           minute: '2-digit'
+        });
+        console.log('🕰️ StaffCard - workLog 시간 변환 성공:', {
+          staffId: staff.id,
+          date: dateString,
+          workLogTime: scheduledStartTime,
+          originalStaffTime: staff.assignedTime
         });
       } catch (error) {
         console.warn('StaffCard workLog scheduledStartTime 변환 오류:', error);
@@ -125,17 +133,11 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       }
     }
     
-    const startTime = actualStartTime || scheduledStartTime;
-    
     // 퇴근시간 - workLogs의 scheduledEndTime도 고려
-    const actualEndTime = memoizedAttendanceData.attendanceRecord?.checkOutTime || 
-                         memoizedAttendanceData.workLogRecord?.workLog?.actualEndTime;
-    
-    const workLogScheduledEndTime = memoizedAttendanceData.attendanceRecord?.workLog?.scheduledEndTime;
     let scheduledEndTime = null;
-    if (workLogScheduledEndTime) {
+    if (workLog?.scheduledEndTime) {
       try {
-        const timeDate = workLogScheduledEndTime.toDate ? workLogScheduledEndTime.toDate() : new Date(workLogScheduledEndTime);
+        const timeDate = workLog.scheduledEndTime.toDate ? workLog.scheduledEndTime.toDate() : new Date(workLog.scheduledEndTime);
         scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
           hour12: false,
           hour: '2-digit',
@@ -146,18 +148,15 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       }
     }
     
-    const endTime = actualEndTime || scheduledEndTime;
-    
     return {
-      displayStartTime: formatTimeDisplay(startTime),
-      displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
-      startTimeColor: getTimeSlotColor(startTime),
-      endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 text-gray-500',
-      hasEndTime: !!endTime,
-      hasActualStartTime: !!actualStartTime,
+      displayStartTime: formatTimeDisplay(scheduledStartTime),
+      displayEndTime: scheduledEndTime ? formatTimeDisplay(scheduledEndTime) : '미정',
+      startTimeColor: getTimeSlotColor(scheduledStartTime),
+      endTimeColor: scheduledEndTime ? getTimeSlotColor(scheduledEndTime) : 'bg-gray-100 text-gray-500',
+      hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정'
     };
-  }, [staff.id, staff.assignedTime, memoizedAttendanceData, formatTimeDisplay, getTimeSlotColor]);
+  }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
   
   // 메모이제이션된 이벤트 핸들러들
   const handleCardClick = useCallback((e: React.MouseEvent) => {
@@ -276,32 +275,31 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEditWorkTime(staff.id, 'start');
+                    if (canEdit) {
+                      onEditWorkTime(staff.id, 'start');
+                    }
                   }}
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor} hover:opacity-80 transition-opacity`}
+                  disabled={!canEdit}
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor} ${
+                    canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
+                  } transition-opacity`}
                 >
-                  {memoizedTimeData.hasActualStartTime ? '✅' : memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} 출근: {memoizedTimeData.displayStartTime}
+                  {memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} 출근: {memoizedTimeData.displayStartTime}
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
-                    const status = memoizedAttendanceData.attendanceRecord?.status || 'not_started';
-                    if (status === 'checked_in' || status === 'checked_out') {
+                    if (canEdit) {
                       onEditWorkTime(staff.id, 'end');
                     }
                   }}
-                  disabled={memoizedAttendanceData.attendanceRecord?.status !== 'checked_in' && memoizedAttendanceData.attendanceRecord?.status !== 'checked_out'}
+                  disabled={!canEdit}
                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-opacity ${
-                    memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+                    canEdit
                       ? `hover:opacity-80 ${memoizedTimeData.endTimeColor}`
                       : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
                   }`}
-                  title={
-                    memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
-                      ? "퇴근 시간 수정"
-                      : "출근 후에 수정 가능합니다"
-                  }
+                  title={!canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
                 >
                   {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} 퇴근: {memoizedTimeData.displayEndTime}
                 </button>
@@ -321,6 +319,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 eventId={eventId}
                 size="sm"
                 className="scale-90"
+                scheduledStartTime={memoizedTimeData.displayStartTime}
+                canEdit={canEdit}
               />
             </div>
             
@@ -389,10 +389,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                                       `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
                       
                       if (memoizedAttendanceData.attendanceRecord?.workLogId) {
-                        // 기존 workLog 업데이트
+                        // 기존 workLog 업데이트 - 상태만 변경
                         await updateDoc(doc(db, 'workLogs', workLogId), {
                           status: 'checked_in',
-                          actualStartTime: Timestamp.now(),
                           updatedAt: Timestamp.now()
                         });
                       } else {
@@ -403,9 +402,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                           dealerName: staff.name || 'Unknown',
                           date: staff.assignedDate || getTodayString(),
                           status: 'checked_in',
-                          actualStartTime: Timestamp.now(),
                           scheduledStartTime: null,
                           scheduledEndTime: null,
+                          actualStartTime: null,
                           actualEndTime: null,
                           createdAt: Timestamp.now(),
                           updatedAt: Timestamp.now()
@@ -427,10 +426,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                                       `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
                       
                       if (memoizedAttendanceData.attendanceRecord?.workLogId) {
-                        // 기존 workLog 업데이트
+                        // 기존 workLog 업데이트 - 상태만 변경
                         await updateDoc(doc(db, 'workLogs', workLogId), {
                           status: 'checked_out',
-                          actualEndTime: Timestamp.now(),
                           updatedAt: Timestamp.now()
                         });
                       } else {
@@ -441,10 +439,10 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                           dealerName: staff.name || 'Unknown',
                           date: staff.assignedDate || getTodayString(),
                           status: 'checked_out',
-                          actualStartTime: Timestamp.now(),
-                          actualEndTime: Timestamp.now(),
                           scheduledStartTime: null,
                           scheduledEndTime: null,
+                          actualStartTime: null,
+                          actualEndTime: null,
                           createdAt: Timestamp.now(),
                           updatedAt: Timestamp.now()
                         });
@@ -465,11 +463,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                                       `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
                       
                       if (memoizedAttendanceData.attendanceRecord?.workLogId) {
-                        // 기존 workLog 업데이트
+                        // 기존 workLog 업데이트 - 상태만 변경
                         await updateDoc(doc(db, 'workLogs', workLogId), {
                           status: 'not_started',
-                          actualStartTime: deleteField(),
-                          actualEndTime: deleteField(),
                           updatedAt: Timestamp.now()
                         });
                       } else {
@@ -480,10 +476,10 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                           dealerName: staff.name || 'Unknown',
                           date: staff.assignedDate || getTodayString(),
                           status: 'not_started',
-                          actualStartTime: null,
-                          actualEndTime: null,
                           scheduledStartTime: null,
                           scheduledEndTime: null,
+                          actualStartTime: null,
+                          actualEndTime: null,
                           createdAt: Timestamp.now(),
                           updatedAt: Timestamp.now()
                         });
@@ -504,8 +500,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 <p className="text-xs font-medium text-gray-500 mb-2">기타 작업</p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={(e) => handleActionClick(e, () => onEditWorkTime(staff.id, 'start'))}
-                    className="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staff.id, 'start'))}
+                    disabled={!canEdit}
+                    className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                      canEdit 
+                        ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' 
+                        : 'text-gray-400 bg-gray-50 cursor-not-allowed'
+                    }`}
                   >
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -513,24 +514,14 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                     출근 시간
                   </button>
                   <button
-                    onClick={(e) => handleActionClick(e, () => {
-                      // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
-                      const status = memoizedAttendanceData.attendanceRecord?.status || 'not_started';
-                      if (status === 'checked_in' || status === 'checked_out') {
-                        onEditWorkTime(staff.id, 'end');
-                      }
-                    })}
-                    disabled={memoizedAttendanceData.attendanceRecord?.status !== 'checked_in' && memoizedAttendanceData.attendanceRecord?.status !== 'checked_out'}
+                    onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staff.id, 'end'))}
+                    disabled={!canEdit}
                     className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                      memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
+                      canEdit
                         ? 'text-green-600 bg-green-50 hover:bg-green-100'
                         : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
                     }`}
-                    title={
-                      memoizedAttendanceData.attendanceRecord?.status === 'checked_in' || memoizedAttendanceData.attendanceRecord?.status === 'checked_out'
-                        ? "퇴근 시간 수정"
-                        : "출근 후에 수정 가능합니다"
-                    }
+                    title={!canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
                   >
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -538,8 +529,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                     퇴근 시간
                   </button>
                   <button
-                    onClick={(e) => handleActionClick(e, () => onDeleteStaff(staff.id))}
-                    className="inline-flex items-center px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                    onClick={(e) => handleActionClick(e, () => canEdit && onDeleteStaff(staff.id))}
+                    disabled={!canEdit}
+                    className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                      canEdit 
+                        ? 'text-red-600 bg-red-50 hover:bg-red-100' 
+                        : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
+                    }`}
                   >
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

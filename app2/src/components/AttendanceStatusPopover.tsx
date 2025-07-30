@@ -18,6 +18,10 @@ interface AttendanceStatusPopoverProps {
   className?: string;
   eventId?: string;
   onStatusChange?: (newStatus: AttendanceStatus) => void;
+  actualStartTime?: any; // 실제 출근 시간
+  actualEndTime?: any; // 실제 퇴근 시간
+  canEdit?: boolean; // 수정 권한
+  scheduledStartTime?: any; // 예정 출근 시간
 }
 
 const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
@@ -28,7 +32,11 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   size = 'md',
   className = '',
   eventId,
-  onStatusChange
+  onStatusChange,
+  actualStartTime,
+  actualEndTime,
+  canEdit = true,
+  scheduledStartTime
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -63,6 +71,50 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   ];
 
   const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0];
+  
+  // 시간 포맷팅 함수
+  const formatTime = (timestamp: any): string => {
+    if (!timestamp) return '';
+    
+    try {
+      let date: Date;
+      
+      // Timestamp 객체인 경우
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        date = timestamp.toDate();
+      }
+      // Date 객체인 경우
+      else if (timestamp instanceof Date) {
+        date = timestamp;
+      }
+      // 숫자인 경우 (milliseconds)
+      else if (typeof timestamp === 'number') {
+        date = new Date(timestamp);
+      }
+      // 문자열인 경우
+      else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      }
+      else {
+        return '';
+      }
+      
+      // 유효한 날짜인지 확인
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+      
+      // HH:MM 형식으로 반환
+      return date.toLocaleTimeString('ko-KR', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('시간 포맷팅 오류:', error);
+      return '';
+    }
+  };
 
   // 팝오버 위치 계산
   useEffect(() => {
@@ -117,7 +169,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       case 'lg':
         return 'px-4 py-2.5 text-base';
       default:
-        return 'px-3 py-1.5 text-sm';
+        return 'px-3 py-2 text-sm';
     }
   };
 
@@ -131,10 +183,17 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       eventId,
       eventIdType: typeof eventId,
       eventIdValue: eventId || '없음',
-      isVirtual: workLogId.startsWith('virtual_')
+      isVirtual: workLogId.startsWith('virtual_'),
+      scheduledStartTime
     });
     
     if (newStatus === currentStatus || isUpdating) return;
+    
+    // 출근 상태로 변경 시 출근 시간이 미정인지 확인
+    if (newStatus === 'checked_in' && (!scheduledStartTime || scheduledStartTime === '미정')) {
+      showError('출근 시간이 설정되지 않았습니다. 먼저 출근 시간을 설정해주세요.');
+      return;
+    }
 
     setIsUpdating(true);
     setIsOpen(false);
@@ -200,17 +259,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           updatedAt: now
         };
         
-        // 상태에 따른 실제 출퇴근 시간 설정
-        if (newStatus === 'checked_in') {
-          newWorkLogData.actualStartTime = now;
-          newWorkLogData.actualEndTime = null;
-        } else if (newStatus === 'checked_out') {
-          newWorkLogData.actualStartTime = now;
-          newWorkLogData.actualEndTime = now;
-        } else {
-          newWorkLogData.actualStartTime = null;
-          newWorkLogData.actualEndTime = null;
-        }
+        // 출석 상태 변경은 실제 시간에 영향을 주지 않음
+        // actualStartTime과 actualEndTime은 시간 수정 기능에서만 변경
         
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         await setDoc(workLogRef, newWorkLogData);
@@ -228,18 +278,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           updatedAt: now
         };
 
-        // 상태에 따른 실제 출퇴근 시간 설정
-        if (newStatus === 'checked_in') {
-          updateData.actualStartTime = now;
-        } else if (newStatus === 'checked_out') {
-          updateData.actualEndTime = now;
-          if (currentStatus === 'not_started') {
-            updateData.actualStartTime = now;
-          }
-        } else if (newStatus === 'not_started') {
-          updateData.actualStartTime = null;
-          updateData.actualEndTime = null;
-        }
+        // 출석 상태 변경은 실제 시간에 영향을 주지 않음
+        // actualStartTime과 actualEndTime은 시간 수정 기능에서만 변경
 
         const workLogRef = doc(db, 'workLogs', workLogId);
         await updateDoc(workLogRef, updateData);
@@ -274,19 +314,30 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         ref={buttonRef}
         onClick={(e) => {
           e.stopPropagation();
-          setIsOpen(!isOpen);
+          if (canEdit) {
+            setIsOpen(!isOpen);
+          }
         }}
-        disabled={isUpdating}
+        disabled={isUpdating || !canEdit}
         className={`
           inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200
           ${currentOption.bgColor} ${currentOption.color}
           ${getSizeClasses()}
-          ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-gray-300 cursor-pointer'}
+          ${isUpdating || !canEdit ? 'opacity-50 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-gray-300 cursor-pointer'}
           ${className}
         `}
+        title={!canEdit ? '수정 권한이 없습니다' : ''}
       >
         {currentOption.icon}
-        <span>{currentOption.label}</span>
+        <div className="flex flex-col items-start">
+          <span>{currentOption.label}</span>
+          {currentStatus === 'checked_in' && actualStartTime && (
+            <span className="text-xs opacity-75">출근: {formatTime(actualStartTime)}</span>
+          )}
+          {currentStatus === 'checked_out' && actualEndTime && (
+            <span className="text-xs opacity-75">퇴근: {formatTime(actualEndTime)}</span>
+          )}
+        </div>
       </button>
 
       {/* 팝오버 */}

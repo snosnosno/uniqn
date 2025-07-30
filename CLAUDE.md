@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tournaments and operations. Built with React 18 + TypeScript + Firebase, it provides real-time dealer shift management, QR code attendance tracking, staff management, job posting system, tournament operations, payroll processing, and comprehensive administrative features.
 
+### 🛠️ 기술 스택
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend**: Firebase (Auth, Firestore, Functions, Storage)
+- **State Management**: Context API (Auth, Tournament, Toast, JobPosting)
+- **Performance**: React Window (가상화), useMemo/useCallback 최적화
+- **Testing**: Jest, React Testing Library (확장 필요)
+- **Build**: Create React App, PostCSS
+
 ## 🔥 최근 주요 업데이트 (2025-01-28)
 
 ### 스태프 관리 시스템 고도화 완료
@@ -62,12 +70,64 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - **시간 수정 시 출석 상태 자동 변경 금지**: actualStartTime/actualEndTime 설정 금지
 - **수동 새로고침 사용 금지**: onSnapshot 구독으로 실시간 동기화 필수
 - **staff 컬렉션 시간 업데이트 금지**: 날짜별 독립성을 위해 workLogs만 사용
+- **API 키 하드코딩 금지**: Firebase 설정은 환경 변수로 관리
+- **any 타입 남발 금지**: 구체적인 타입 정의 필수
 
 ### 필수 구현 패턴
 - **실시간 구독**: `onSnapshot(query, callback)` 패턴 사용
 - **한국어 로깅**: 모든 console.log는 한국어로 명확하게 작성
-- **타입 안전성**: dealerId/staffId 호환성 유지
+- **타입 안전성**: dealerId/staffId 호환성 유지, any 타입 제거
 - **UI 직관성**: 클릭 편집, 드롭다운 선택, '미정' 상태 표시
+- **성능 최적화**: useMemo/useCallback 활용, 가상화 적용
+- **코드 분할**: React.lazy()로 주요 라우트 동적 임포트
+
+## 🚨 보안 및 성능 개선 사항 (Critical)
+
+### 즉시 적용 필요 (1-2주)
+1. **환경 변수 설정**
+   - Firebase API 키를 .env 파일로 이동
+   - `REACT_APP_FIREBASE_API_KEY` 등 환경 변수 사용
+   
+2. **타입 안전성 강화**
+   - any 타입을 구체적 인터페이스로 교체
+   - tsconfig.json에 strict 모드 활성화
+
+### 중기 개선 사항 (2-4주)
+1. **코드 분할 구현**
+   ```typescript
+   const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
+   const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'));
+   ```
+
+2. **Firebase 쿼리 최적화**
+   - 복합 인덱스 추가로 쿼리 성능 개선
+   - 불필요한 실시간 구독 정리
+
+3. **상태 관리 개선**
+   - Context API 과다 사용 검토
+   - 필요시 Zustand/Jotai 도입 고려
+
+### 장기 개선 사항 (1-2개월)
+1. **테스트 커버리지**
+   - 주요 컴포넌트 단위 테스트 추가
+   - 통합 테스트 구현
+
+2. **성능 모니터링**
+   - Web Vitals 통합
+   - 실시간 성능 대시보드 구축
+
+## 📊 현재 프로젝트 상태
+
+### 강점
+- 체계적인 Firebase 보안 규칙 (역할 기반 접근 제어)
+- 성능 최적화 도구 활용 (가상화, 메모이제이션)
+- 한국어 중심 개발 문서화
+
+### 개선 필요
+- any 타입 과다 사용 (50+ 인스턴스)
+- React.lazy 미사용 (1개 파일만 사용)
+- 환경 변수 미설정 (API 키 노출)
+- 테스트 파일 부족
 
 ## Memories
 
@@ -77,3 +137,6 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - `날짜별시간관리`: workLogs 컬렉션 기반으로 각 날짜별 독립적인 시간 설정 시스템 구현 완료
 - `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendanceStatusDropdown으로 관리
 - `workLogs우선`: workLogs 데이터를 staff 데이터보다 우선하여 날짜별 독립성 보장
+- `타입안전성강화필요`: any 타입 제거 및 strict TypeScript 설정 필요
+- `환경변수설정필요`: Firebase API 키 등 민감 정보 보호 필요
+- `코드분할필요`: 주요 라우트 동적 임포트로 초기 로딩 개선 필요

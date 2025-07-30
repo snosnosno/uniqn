@@ -118,8 +118,20 @@ export function timestampToLocalDateString(timestamp: any): string {
       if (/^\d{4}-\d{2}-\d{2}$/.test(timestamp)) {
         return timestamp;
       }
-      // 다른 형식의 문자열인 경우 Date로 파싱
-      date = new Date(timestamp);
+      // Firebase Timestamp 문자열 형식 처리 (예: 'Timestamp(seconds=1753920000, nanoseconds=0)')
+      if (timestamp.startsWith('Timestamp(')) {
+        const match = timestamp.match(/seconds=(\d+)/);
+        if (match) {
+          const seconds = parseInt(match[1], 10);
+          date = new Date(seconds * 1000);
+        } else {
+          console.warn('⚠️ Firebase Timestamp 문자열 파싱 실패:', timestamp);
+          date = new Date();
+        }
+      } else {
+        // 다른 형식의 문자열인 경우 Date로 파싱
+        date = new Date(timestamp);
+      }
     }
     // 숫자인 경우 (milliseconds)
     else if (typeof timestamp === 'number') {

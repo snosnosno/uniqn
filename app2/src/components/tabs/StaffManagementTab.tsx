@@ -8,7 +8,10 @@ import { useStaffManagement, StaffData } from '../../hooks/useStaffManagement';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 import { parseToDate, getTodayString } from '../../utils/jobPosting/dateUtils';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../hooks/useToast';
 import BulkActionsModal from '../BulkActionsModal';
+import BulkTimeEditModal from '../BulkTimeEditModal';
 import PerformanceMonitor from '../PerformanceMonitor';
 import PerformanceDashboard from '../PerformanceDashboard';
 import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
@@ -28,6 +31,8 @@ interface StaffManagementTabProps {
 const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
   const { isMobile, isTablet } = useResponsive();
+  const { currentUser } = useAuth();
+  const { showError } = useToast();
   
   // 커스텀 훅 사용
   const {
@@ -43,7 +48,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     deleteStaff,
     toggleDateExpansion,
     formatTimeDisplay,
-    getTimeSlotColor
+    getTimeSlotColor,
+    getStaffWorkLog
   } = useStaffManagement({
     jobPostingId: jobPosting?.id,
     enableGrouping: true,
@@ -71,13 +77,23 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
+  const [isBulkTimeEditOpen, setIsBulkTimeEditOpen] = useState(false);
   
   // 성능 모니터링 상태 (개발 환경에서만)
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const { registerComponentMetrics } = usePerformanceMetrics();
   
+  // 권한 체크 - 공고 작성자만 수정 가능
+  const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
+
   // 출퇴근 시간 수정 핸들러 (다중 날짜 지원)
   const handleEditWorkTime = (staffId: string, timeType?: 'start' | 'end', targetDate?: string) => {
+    // 권한 체크
+    if (!canEdit) {
+      showError('이 공고를 수정할 권한이 없습니다.');
+      return;
+    }
+    
     const staff = staffData.find(s => s.id === staffId);
     if (!staff) {
       console.log('스태프 정보를 찾을 수 없습니다.');
@@ -308,6 +324,20 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+              {canEdit && (
+                <button
+                  onClick={() => {
+                    // 전체 스태프를 선택하고 일괄 수정 모달 열기
+                    const allStaffIds = new Set(staffData.map(staff => staff.id));
+                    setSelectedStaff(allStaffIds);
+                    setIsBulkTimeEditOpen(true);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  title={`전체 ${staffData.length}명 일괄 수정`}
+                >
+                  일괄 수정
+                </button>
+              )}
               <button
                 onClick={() => setIsQrModalOpen(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -375,12 +405,22 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   {multiSelectMode ? '선택 취소' : '다중 선택'}
                 </button>
                 {multiSelectMode && selectedStaff.size > 0 && (
-                  <button
-                    onClick={handleBulkActions}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    일괄 작업 ({selectedStaff.size})
-                  </button>
+                  <>
+                    <button
+                      onClick={handleBulkActions}
+                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    >
+                      일괄 작업 ({selectedStaff.size})
+                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => setIsBulkTimeEditOpen(true)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        시간 수정
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -423,6 +463,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       multiSelectMode={multiSelectMode}
                       onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
+                      getStaffWorkLog={getStaffWorkLog}
                     />
                   );
                 })
@@ -462,6 +503,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         onSelect={multiSelectMode ? handleStaffSelect : undefined}
                         onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
+                      canEdit={canEdit}
+                      getStaffWorkLog={getStaffWorkLog}
                       />
                     ))}
                   </div>
@@ -490,6 +533,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       getTimeSlotColor={getTimeSlotColor}
                       onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
+                      canEdit={canEdit}
+                      getStaffWorkLog={getStaffWorkLog}
                     />
                   );
                 })
@@ -508,6 +553,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     height={desktopVirtualization.height}
                     rowHeight={desktopVirtualization.itemHeight}
                     eventId={jobPosting?.id}
+                    canEdit={canEdit}
                   />
                 ) : (
                   <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -552,6 +598,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                               showDate={true}
                               onShowProfile={handleShowProfile}
                               eventId={jobPosting?.id}
+                              canEdit={canEdit}
+                              getStaffWorkLog={getStaffWorkLog}
                             />
                           ))}
                         </tbody>
@@ -614,6 +662,30 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         staff={selectedStaffForProfile}
         attendanceRecord={selectedStaffForProfile ? getStaffAttendanceStatus(selectedStaffForProfile.id) : undefined}
         workLogRecord={selectedStaffForProfile ? attendanceRecords.find(r => r.staffId === selectedStaffForProfile.id) : undefined}
+      />
+      
+      {/* 일괄 시간 수정 모달 */}
+      <BulkTimeEditModal
+        isOpen={isBulkTimeEditOpen}
+        onClose={() => {
+          setIsBulkTimeEditOpen(false);
+          setSelectedStaff(new Set());
+          setMultiSelectMode(false);
+        }}
+        selectedStaff={staffData
+          .filter(staff => selectedStaff.has(staff.id))
+          .map(staff => ({
+            id: staff.id,
+            name: staff.name || '이름 미정',
+            assignedDate: staff.assignedDate,
+            assignedTime: staff.assignedTime,
+            workLogId: attendanceRecords.find(r => r.staffId === staff.id)?.workLogId
+          }))}
+        eventId={jobPosting?.id || 'default-event'}
+        onComplete={() => {
+          console.log('일괄 수정 완료');
+          // 실시간 구독으로 자동 업데이트됨
+        }}
       />
     </>
   );

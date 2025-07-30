@@ -72,7 +72,7 @@ const JobPostingDetailPageContent: React.FC = () => {
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   
   // 권한에 따라 접근 가능한 탭 필터링
   const availableTabs = useMemo(() => {

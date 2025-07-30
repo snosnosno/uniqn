@@ -241,13 +241,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           date: workLog.date,
           scheduledStartTime: scheduledStartTimestamp,
           scheduledEndTime: scheduledEndTimestamp,
-          // actualStartTime과 actualEndTime은 설정하지 않음 (출석 상태 변경 방지)
-          actualStartTime: null,
-          actualEndTime: null,
+          // actualStartTime과 actualEndTime은 설정하지 않음 (출석 상태와 독립적으로 관리)
           totalWorkMinutes: 0,
           totalBreakMinutes: 0,
           tableAssignments: [],
-          status: 'scheduled', // 출근시간 변경해도 상태는 변경하지 않음 (직접 수정 또는 QR 인증으로만 변경)
+          status: 'scheduled', // 시간 수정은 상태에 영향 없음
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         });
@@ -255,9 +253,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         // 기존 WorkLog 업데이트
         const workLogRef = doc(db, 'workLogs', workLog.id);
         const updateData: any = {
-          scheduledStartTime: newStartTime, // 통합된 시간을 예정시간으로 저장
-          scheduledEndTime: newEndTime, // 종료시간도 예정시간으로 저장
-          // actualStartTime과 actualEndTime은 업데이트하지 않음 (출석 상태 변경 방지)
+          scheduledStartTime: newStartTime, // 예정 시작 시간만 수정
+          scheduledEndTime: newEndTime, // 예정 종료 시간만 수정
+          // actualStartTime과 actualEndTime은 수정하지 않음 (출석 상태와 독립적으로 관리)
           updatedAt: Timestamp.now()
         };
         
@@ -274,7 +272,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           ...workLog,
           scheduledStartTime: newStartTime,
           scheduledEndTime: newEndTime,
-          // actualStartTime과 actualEndTime은 설정하지 않음 (출석 상태 변경 방지)
+          // actualStartTime과 actualEndTime은 변경하지 않음 (출석 상태와 독립적으로 유지)
           updatedAt: Timestamp.now()
         };
         onUpdate(updatedWorkLog);

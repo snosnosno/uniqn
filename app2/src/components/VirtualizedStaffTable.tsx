@@ -20,6 +20,7 @@ interface VirtualizedStaffTableProps {
   rowHeight?: number;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
+  canEdit?: boolean;
 }
 
 interface ItemData {
@@ -33,6 +34,7 @@ interface ItemData {
   showDate: boolean;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
+  canEdit?: boolean;
 }
 
 // 가상화된 테이블 행 컴포넌트 (StaffRow 로직을 인라인으로 구현)
@@ -134,13 +136,18 @@ const VirtualizedTableRow: React.FC<{
       <div className="px-4 py-4 flex-shrink-0 w-32">
         <button
           onClick={() => onEditWorkTime(staff.id, 'start')}
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80 ${memoizedTimeData.startTimeColor}`}
+          disabled={!data.canEdit}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            data.canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
+          } ${memoizedTimeData.startTimeColor}`}
           title={
-            memoizedTimeData.hasActualStartTime 
-              ? "실제 출근시간 수정" 
-              : memoizedTimeData.isScheduledTimeTBD 
-                ? "미정 - 출근시간 설정" 
-                : "예정 출근시간 수정"
+            !data.canEdit
+              ? "수정 권한이 없습니다"
+              : memoizedTimeData.hasActualStartTime 
+                ? "실제 출근시간 수정" 
+                : memoizedTimeData.isScheduledTimeTBD 
+                  ? "미정 - 출근시간 설정" 
+                  : "예정 출근시간 수정"
           }
         >
           {memoizedTimeData.hasActualStartTime ? '✅' : memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} {memoizedTimeData.displayStartTime}
@@ -150,24 +157,12 @@ const VirtualizedTableRow: React.FC<{
       {/* 퇴근 시간 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
         <button
-          onClick={() => {
-            // 출석 상태 확인 - 출근 또는 퇴근 상태에서만 수정 가능
-            const status = attendanceRecord?.status || 'not_started';
-            if (status === 'checked_in' || status === 'checked_out') {
-              onEditWorkTime(staff.id, 'end');
-            }
-          }}
-          disabled={attendanceRecord?.status !== 'checked_in' && attendanceRecord?.status !== 'checked_out'}
+          onClick={() => onEditWorkTime(staff.id, 'end')}
+          disabled={!data.canEdit}
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-            attendanceRecord?.status === 'checked_in' || attendanceRecord?.status === 'checked_out'
-              ? `hover:opacity-80 ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime ? 'hover:bg-gray-200' : ''}`
-              : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
-          }`}
-          title={
-            attendanceRecord?.status === 'checked_in' || attendanceRecord?.status === 'checked_out'
-              ? "퇴근 시간 수정"
-              : "출근 후에 수정 가능합니다"
-          }
+            data.canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
+          } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && data.canEdit ? 'hover:bg-gray-200' : ''}`}
+          title={!data.canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
         >
           {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
         </button>
@@ -245,6 +240,7 @@ const VirtualizedTableRow: React.FC<{
           staffName={staff.name}
           eventId={data.eventId}
           size="sm"
+          canEdit={data.canEdit}
         />
       </div>
       
@@ -254,8 +250,13 @@ const VirtualizedTableRow: React.FC<{
         <div className="flex space-x-1">
           <button
             onClick={() => onDeleteStaff(staff.id)}
-            className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
-            title="스태프 삭제"
+            disabled={!data.canEdit}
+            className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+              data.canEdit 
+                ? 'text-red-600 hover:text-red-800 hover:bg-red-50' 
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
+            title={data.canEdit ? "스태프 삭제" : "수정 권한이 없습니다"}
           >
             삭제
           </button>
@@ -279,7 +280,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   height = 600,
   rowHeight = 80,
   onShowProfile,
-  eventId
+  eventId,
+  canEdit = true
 }) => {
   const itemData = useMemo((): ItemData => ({
     staffList,
@@ -291,7 +293,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     getTimeSlotColor,
     showDate,
     onShowProfile,
-    eventId
+    eventId,
+    canEdit
   }), [
     staffList,
     onEditWorkTime,
@@ -302,7 +305,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
     getTimeSlotColor,
     showDate,
     onShowProfile,
-    eventId
+    eventId,
+    canEdit
   ]);
 
   if (staffList.length === 0) {

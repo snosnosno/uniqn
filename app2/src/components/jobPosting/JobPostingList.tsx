@@ -7,6 +7,7 @@ import {
   calculateTotalPositions,
   calculateTotalPositionsFromDateRequirements 
 } from '../../utils/jobPosting/jobPostingHelpers';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import LoadingSpinner from '../LoadingSpinner';
 
@@ -28,6 +29,7 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
   isDeleting = null
 }) => {
   const { formatDateDisplay } = useDateUtils();
+  const { currentUser } = useAuth();
 
   const handleDelete = async (postId: string, title: string) => {
     try {
@@ -167,22 +169,26 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
                   >
                     상세관리
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onEdit(post)}
-                  >
-                    수정
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(post.id, post.title)}
-                    loading={isDeleting === post.id}
-                    disabled={isDeleting === post.id}
-                  >
-                    {isDeleting === post.id ? '삭제 중...' : '삭제'}
-                  </Button>
+                  {currentUser?.uid === post.createdBy && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onEdit(post)}
+                      >
+                        수정
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(post.id, post.title)}
+                        loading={isDeleting === post.id}
+                        disabled={isDeleting === post.id}
+                      >
+                        {isDeleting === post.id ? '삭제 중...' : '삭제'}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 

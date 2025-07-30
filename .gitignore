@@ -88,8 +88,22 @@ nul
 # Claude Code settings (local only)
 .claude/
 
+# Claude Set folder (local development tools)
+claude_set/
+
 # Backup files from refactoring
 *.backup
 
 # Windows executables (installers)
 *.exe
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Additional log files
+pglite-debug.log
+app2/pglite-debug.log
