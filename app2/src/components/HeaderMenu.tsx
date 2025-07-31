@@ -159,7 +159,6 @@ export const HeaderMenu: React.FC = () => {
               {/* Admin and Manager common menus */}
               {isAdmin ? <>
                   <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/dealer-rotation" label="딜러 로테이션" Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                   <hr className="my-2 border-t border-gray-200" />
                   <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />

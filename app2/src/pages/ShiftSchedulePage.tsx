@@ -27,7 +27,7 @@ const ShiftSchedulePage: React.FC = () => {
   // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)
   const [selectedEventId] = useState<string>('default-event');
   
-  // 기존 스태프 데이터 가져오기 (DealerRotationPage 패턴)
+  // 기존 스태프 데이터 가져오기
   const staffQuery = useMemo(() => query(collection(db, 'staff')), []);
   
   const [staffSnap, staffLoading] = useCollection(staffQuery);
