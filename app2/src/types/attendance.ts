@@ -7,7 +7,7 @@ import { Timestamp } from 'firebase/firestore';
 /**
  * 출석 상태 열거형
  */
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out' | 'absent';
+export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 /**
  * 출석 기록 인터페이스
@@ -56,7 +56,6 @@ export interface WorkLog {
 export interface AttendanceSummary {
   totalDays: number;
   presentDays: number;
-  absentDays: number;
   lateDays: number;
   earlyLeaveDays: number;
   attendanceRate: number; // 출석률 (%)
@@ -122,7 +121,6 @@ export interface AttendanceStats {
   totalStaff: number;
   checkedIn: number;
   checkedOut: number;
-  absent: number;
   notStarted: number;
 }
 

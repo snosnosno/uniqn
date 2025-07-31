@@ -39,7 +39,7 @@ export interface AttendanceRecord extends FirebaseDocument {
   staffId: string;
   dealerId?: string; // 호환성을 위해 유지
   date: string;
-  status: 'not_started' | 'checked_in' | 'checked_out' | 'absent';
+  status: 'not_started' | 'checked_in' | 'checked_out';
   checkInTime?: Timestamp | Date;
   checkOutTime?: Timestamp | Date;
   qrCodeId?: string;
@@ -54,7 +54,7 @@ export interface Participant extends FirebaseDocument {
   seatNumber: number;
   buyIn: number;
   stack: number;
-  status: 'active' | 'eliminated' | 'absent';
+  status: 'active' | 'eliminated';
   notes?: string;
 }
 

@@ -49,6 +49,25 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     onToggleExpansion(date);
   };
 
+  const handleGroupSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onStaffSelect) {
+      staffList.forEach(staff => {
+        if (selectedCount === staffList.length) {
+          // 모두 선택된 경우 해제
+          if (selectedStaff.has(staff.id)) {
+            onStaffSelect(staff.id);
+          }
+        } else {
+          // 일부만 선택된 경우 모두 선택
+          if (!selectedStaff.has(staff.id)) {
+            onStaffSelect(staff.id);
+          }
+        }
+      });
+    }
+  };
+
   // 출석 상태별 통계
   const attendanceStats = staffList.reduce((acc, staff) => {
     const record = getStaffAttendanceStatus(staff.id);
@@ -141,12 +160,24 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                 </span>
               </div>
               
-              {multiSelectMode && selectedCount > 0 && (
-                <div className="bg-yellow-400 bg-opacity-90 rounded-full px-3 py-1">
-                  <span className="text-yellow-900 text-sm font-medium">
-                    {selectedCount}개 선택
-                  </span>
-                </div>
+              {multiSelectMode && (
+                <>
+                  {selectedCount > 0 && (
+                    <div className="bg-yellow-400 bg-opacity-90 rounded-full px-3 py-1">
+                      <span className="text-yellow-900 text-sm font-medium">
+                        {selectedCount}개 선택
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleGroupSelect}
+                    className="bg-blue-500 bg-opacity-90 rounded-full px-3 py-1 hover:bg-opacity-100 transition-opacity"
+                  >
+                    <span className="text-white text-sm font-medium">
+                      {selectedCount === staffList.length ? '그룹 해제' : '그룹 선택'}
+                    </span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -187,6 +218,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               getTimeSlotColor={getTimeSlotColor}
               showDate={false} // 그룹 헤더에 날짜가 있으므로 카드에서는 숨김
               isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
+              multiSelectMode={multiSelectMode}
               {...(multiSelectMode && onStaffSelect && { onSelect: onStaffSelect })}
               {...(onShowProfile && { onShowProfile })}
               {...(eventId && { eventId })}

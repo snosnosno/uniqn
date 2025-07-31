@@ -25,6 +25,7 @@ interface StaffCardProps {
   eventId?: string;
   canEdit?: boolean;
   getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  multiSelectMode?: boolean;
 }
 
 const StaffCard: React.FC<StaffCardProps> = React.memo(({
@@ -41,7 +42,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   onShowProfile,
   eventId,
   canEdit = true,
-  getStaffWorkLog
+  getStaffWorkLog,
+  multiSelectMode = false
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -201,13 +203,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     setIsExpanded(prev => !prev);
   }, []);
 
-  const handleSelectClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onSelect) {
-      selectionFeedback();
-      onSelect(staff.id);
-    }
-  }, [onSelect, staff.id, selectionFeedback]);
 
   const handleActionClick = useCallback((e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -246,44 +241,47 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
 
   return (
     <div 
-      className={`bg-white rounded-lg shadow-md border-2 transition-all duration-200 ${
-        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+      className={`relative bg-white rounded-lg shadow-md border-2 transition-all duration-200 ${
+        onSelect 
+          ? isSelected 
+            ? 'border-blue-500 bg-blue-50 cursor-pointer' 
+            : 'border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 cursor-pointer'
+          : 'border-gray-200'
       } ${isExpanded ? 'shadow-lg' : 'shadow-md'} hover:shadow-lg touch-none select-none`}
       {...swipeGesture}
+      onClick={onSelect ? (e) => {
+        // 버튼이나 다른 클릭 가능한 요소를 클릭한 경우 무시
+        const target = e.target as HTMLElement;
+        const isButton = target.tagName === 'BUTTON' || target.closest('button');
+        const isLink = target.tagName === 'A' || target.closest('a');
+        
+        if (isButton || isLink) {
+          return;
+        }
+        
+        onSelect(staff.id);
+      } : undefined}
     >
       {/* 카드 헤더 */}
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
-            {/* 선택 체크박스 (다중 선택 모드일 때) */}
-            {onSelect && (
-              <button 
-                onClick={handleSelectClick} 
-                className="flex-shrink-0 p-1"
-              >
-                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                  isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-                }`}>
-                  {isSelected && (
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-              </button>
-            )}
-            
             {/* 기본 정보 */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (onShowProfile) {
+                    if (onShowProfile && !multiSelectMode) {
                       onShowProfile(staff.id);
                     }
                   }}
-                  className="text-lg font-semibold text-gray-900 truncate bg-white hover:bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left inline-block"
+                  disabled={multiSelectMode}
+                  className={`text-lg font-semibold text-gray-900 truncate px-3 py-1 rounded-md border transition-all duration-200 text-left inline-block ${
+                    multiSelectMode 
+                      ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-50' 
+                      : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
                 >
                   {memoizedStaffData.displayName}
                 </button>
@@ -305,13 +303,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (canEdit) {
+                    if (canEdit && !multiSelectMode) {
                       onEditWorkTime(staff.id, 'start');
                     }
                   }}
-                  disabled={!canEdit}
+                  disabled={!canEdit || multiSelectMode}
                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor} ${
-                    canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
+                    canEdit && !multiSelectMode ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
                   } transition-opacity`}
                 >
                   {memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} 출근: {memoizedTimeData.displayStartTime}
@@ -319,23 +317,41 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (canEdit) {
+                    if (canEdit && !multiSelectMode) {
                       onEditWorkTime(staff.id, 'end');
                     }
                   }}
-                  disabled={!canEdit}
+                  disabled={!canEdit || multiSelectMode}
                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-opacity ${
-                    canEdit
+                    canEdit && !multiSelectMode
                       ? `hover:opacity-80 ${memoizedTimeData.endTimeColor}`
                       : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
                   }`}
-                  title={!canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
+                  title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "예정 퇴근시간 수정"}
                 >
                   {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} 퇴근: {memoizedTimeData.displayEndTime}
                 </button>
               </div>
             </div>
           </div>
+          
+          {/* 선택 상태 표시 (우측 상단) */}
+          {onSelect && (
+            <div className="absolute top-2 right-2">
+              {isSelected ? (
+                <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>선택됨</span>
+                </div>
+              ) : (
+                <div className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                  선택
+                </div>
+              )}
+            </div>
+          )}
           
           {/* 빠른 상태 및 액션 */}
           <div className="flex items-center space-x-2 flex-shrink-0">
@@ -351,7 +367,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 className="scale-90"
                 scheduledStartTime={memoizedTimeData.displayStartTime}
                 scheduledEndTime={memoizedTimeData.displayEndTime}
-                canEdit={!!canEdit}
+                canEdit={!!canEdit && !multiSelectMode}
                 onStatusChange={(newStatus) => {
                   // 상태 변경 시 강제 리렌더링
                   console.log('🔄 StaffCard - onStatusChange 호출:', {

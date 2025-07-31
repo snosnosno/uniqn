@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 
+import { db } from '../../firebase';
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useStaffManagement, StaffData } from '../../hooks/useStaffManagement';
@@ -32,7 +33,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const { t } = useTranslation();
   const { isMobile, isTablet } = useResponsive();
   const { currentUser } = useAuth();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   
   // 커스텀 훅 사용
   const {
@@ -80,7 +81,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
   const [isBulkTimeEditOpen, setIsBulkTimeEditOpen] = useState(false);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   
   // 성능 모니터링 상태 (개발 환경에서만)
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -195,32 +195,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     isMobile: false
   });
   
-  // 키보드 단축키 처리
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Ctrl+A: 전체 선택 (선택 모드일 때만)
-    if (event.ctrlKey && event.key === 'a' && multiSelectMode) {
-      event.preventDefault();
-      const allStaffIds = new Set(filteredStaffCount > 0 ? flattenedStaffData.map(s => s.id) : []);
-      setSelectedStaff(allStaffIds);
-    }
-    
-    // Esc: 선택 모드 종료
-    if (event.key === 'Escape' && multiSelectMode) {
-      setMultiSelectMode(false);
-      setSelectedStaff(new Set());
-    }
-  }, [multiSelectMode, filteredStaffCount, flattenedStaffData]);
-
-  // 키보드 이벤트 리스너 등록
-  useEffect(() => {
-    if (multiSelectMode) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-    return undefined;
-  }, [multiSelectMode, handleKeyDown]);
 
   // 모바일 관련 핸들러
   const handleMultiSelectToggle = () => {
@@ -228,34 +202,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     setSelectedStaff(new Set());
   };
   
-  const handleStaffSelect = (staffId: string, event?: React.MouseEvent) => {
-    const currentIndex = flattenedStaffData.findIndex(s => s.id === staffId);
-    
-    if (event?.shiftKey && lastSelectedIndex !== null && currentIndex !== -1) {
-      // Shift 키를 누른 상태로 클릭 - 범위 선택
-      const newSelected = new Set(selectedStaff);
-      const start = Math.min(lastSelectedIndex, currentIndex);
-      const end = Math.max(lastSelectedIndex, currentIndex);
-      
-      for (let i = start; i <= end; i++) {
-        const staffItem = flattenedStaffData[i];
-        if (staffItem) {
-          newSelected.add(staffItem.id);
-        }
-      }
-      
-      setSelectedStaff(newSelected);
+  const handleStaffSelect = (staffId: string) => {
+    // 일반 클릭 - 개별 선택/해제
+    const newSelected = new Set(selectedStaff);
+    if (newSelected.has(staffId)) {
+      newSelected.delete(staffId);
     } else {
-      // 일반 클릭 - 개별 선택/해제
-      const newSelected = new Set(selectedStaff);
-      if (newSelected.has(staffId)) {
-        newSelected.delete(staffId);
-      } else {
-        newSelected.add(staffId);
-      }
-      setSelectedStaff(newSelected);
-      setLastSelectedIndex(currentIndex);
+      newSelected.add(staffId);
     }
+    setSelectedStaff(newSelected);
   };
   
   const handleBulkActions = () => {
@@ -277,8 +232,68 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   };
   
   const handleBulkStatusUpdate = async (staffIds: string[], status: string) => {
-    // TODO: 실제 상태 업데이트 구현
-    alert(`${staffIds.length}명의 상태를 "${status}"로 변경했습니다.`);
+    try {
+      const { writeBatch, doc, Timestamp } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      const now = Timestamp.now();
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const staffId of staffIds) {
+        try {
+          // 스태프 데이터에서 날짜 추출
+          const staff = staffData.find(s => s.id === staffId);
+          const dateString = staff?.assignedDate || new Date().toISOString().split('T')[0];
+          
+          // workLogId 생성 (eventId_staffId_date 형식)
+          const workLogId = `${jobPosting?.id || 'default-event'}_${staffId}_${dateString}`;
+          const workLogRef = doc(db, 'workLogs', workLogId);
+          
+          // 출석 상태 업데이트 데이터
+          const updateData: any = {
+            status: status,
+            updatedAt: now
+          };
+          
+          // workLog가 없는 경우 새로 생성
+          const newWorkLogData = {
+            eventId: jobPosting?.id || 'default-event',
+            dealerId: staffId,
+            dealerName: staff?.name || '이름 미정',
+            date: dateString,
+            scheduledStartTime: null,
+            scheduledEndTime: null,
+            actualStartTime: null,
+            actualEndTime: null,
+            status: status,
+            createdAt: now,
+            updatedAt: now
+          };
+          
+          batch.set(workLogRef, newWorkLogData);
+          successCount++;
+        } catch (error) {
+          console.error(`Staff ${staffId} 상태 업데이트 오류:`, error);
+          errorCount++;
+        }
+      }
+      
+      // 배치 커밋
+      await batch.commit();
+      
+      if (errorCount === 0) {
+        const statusText = status === 'not_started' ? '출근 전' : 
+                          status === 'checked_in' ? '출근' : 
+                          status === 'checked_out' ? '퇴근' : status;
+        showSuccess(`✅ ${successCount}명의 출석 상태가 "${statusText}"로 변경되었습니다.`);
+      } else {
+        showError(`⚠️ 일부 업데이트 실패\n성공: ${successCount}명 / 실패: ${errorCount}명`);
+      }
+      
+    } catch (error) {
+      console.error('출석 상태 일괄 변경 오류:', error);
+      showError('출석 상태 변경 중 오류가 발생했습니다.');
+    }
   };
   
   // 프로필 모달 핸들러
@@ -365,7 +380,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title={multiSelectMode ? 'Esc 키로 선택 모드 종료' : '스태프를 선택하여 일괄 수정'}
+                    title={multiSelectMode ? '선택 모드 종료' : '스태프를 선택하여 일괄 수정'}
                   >
                     <span>{multiSelectMode ? '선택 완료' : '선택 모드'}</span>
                     {multiSelectMode && (
@@ -493,15 +508,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           </div>
         )}
 
-        {/* 선택 모드 활성화 시 키보드 단축키 안내 */}
-        {multiSelectMode && !isMobile && (
+        {/* 선택 모드 활성화 시 안내 메시지 */}
+        {multiSelectMode && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
             <div className="flex items-center">
               <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm text-blue-800">
-                <strong>단축키:</strong> Ctrl+A (전체 선택), Shift+클릭 (범위 선택), Esc (선택 모드 종료)
+                <strong>선택 모드:</strong> {isMobile ? '카드를 터치' : '스태프 행을 클릭'}하여 선택하세요
               </span>
             </div>
           </div>
@@ -585,6 +600,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         getTimeSlotColor={getTimeSlotColor}
                         showDate={true}
                         isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
+                        multiSelectMode={multiSelectMode}
                         {...(multiSelectMode && { onSelect: handleStaffSelect })}
                         onShowProfile={handleShowProfile}
                         eventId={jobPosting?.id}
@@ -654,19 +670,19 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                           <tr>
                             {multiSelectMode && (
                               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedStaff.size === flattenedStaffData.length && flattenedStaffData.length > 0}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedStaff(new Set(flattenedStaffData.map(s => s.id)));
-                                    } else {
+                                <button
+                                  onClick={() => {
+                                    if (selectedStaff.size === flattenedStaffData.length && flattenedStaffData.length > 0) {
                                       setSelectedStaff(new Set());
+                                    } else {
+                                      setSelectedStaff(new Set(flattenedStaffData.map(s => s.id)));
                                     }
                                   }}
-                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                  aria-label="전체 선택"
-                                />
+                                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                  aria-label="전체 선택/해제"
+                                >
+                                  {selectedStaff.size === flattenedStaffData.length && flattenedStaffData.length > 0 ? '전체 해제' : '전체 선택'}
+                                </button>
                               </th>
                             )}
                             <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -816,7 +832,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
       {/* 플로팅 선택 정보 */}
       {multiSelectMode && selectedStaff.size > 0 && canEdit && (
-        <div className={`fixed ${isMobile ? 'bottom-20 right-4' : 'bottom-6 right-6'} bg-blue-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full shadow-lg flex items-center space-x-3 md:space-x-4 z-50`}>
+        <div className={`fixed ${isMobile ? 'bottom-24 right-4' : 'bottom-6 right-6'} bg-blue-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full shadow-lg flex items-center space-x-3 md:space-x-4 z-50`}>
           <span className="font-medium text-sm md:text-base">{selectedStaff.size}명 선택됨</span>
           <button
             onClick={() => setIsBulkTimeEditOpen(true)}

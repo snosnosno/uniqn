@@ -156,10 +156,9 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">상태를 선택하세요</option>
-                  <option value="present">출석</option>
-                  <option value="late">지각</option>
-                  <option value="early_leave">조퇴</option>
-                  <option value="on_break">휴식 중</option>
+                  <option value="not_started">출근 전</option>
+                  <option value="checked_in">출근</option>
+                  <option value="checked_out">퇴근</option>
                 </select>
               </div>
               <div className="text-sm text-gray-500">

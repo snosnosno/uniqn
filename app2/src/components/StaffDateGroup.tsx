@@ -21,7 +21,7 @@ interface StaffDateGroupProps {
   applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
   multiSelectMode?: boolean;
   selectedStaff?: Set<string>;
-  onStaffSelect?: (staffId: string, event?: React.MouseEvent) => void;
+  onStaffSelect?: (staffId: string) => void;
 }
 
 const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
@@ -77,7 +77,7 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            {multiSelectMode && isExpanded && (
+            {multiSelectMode && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -99,7 +99,7 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                 }}
                 className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
-                {selectedInGroup === staffList.length ? '선택 해제' : '전체 선택'}
+                {selectedInGroup === staffList.length ? '그룹 해제' : '그룹 선택'}
               </button>
             )}
             <div>
@@ -123,27 +123,6 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {multiSelectMode && (
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={staffList.every(staff => selectedStaff.has(staff.id)) && staffList.length > 0}
-                      onChange={(e) => {
-                        if (onStaffSelect) {
-                          staffList.forEach(staff => {
-                            if (e.target.checked && !selectedStaff.has(staff.id)) {
-                              onStaffSelect(staff.id);
-                            } else if (!e.target.checked && selectedStaff.has(staff.id)) {
-                              onStaffSelect(staff.id);
-                            }
-                          });
-                        }
-                      }}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      aria-label="이 그룹 전체 선택"
-                    />
-                  </th>
-                )}
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   출근
                 </th>

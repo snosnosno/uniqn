@@ -23,7 +23,7 @@ interface StaffRowProps {
   applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
   multiSelectMode?: boolean; // 선택 모드 활성화 여부
   isSelected?: boolean; // 현재 행이 선택되었는지
-  onSelect?: (staffId: string, event?: React.MouseEvent) => void; // 선택 핸들러
+  onSelect?: (staffId: string) => void; // 선택 핸들러
 }
 
 const StaffRow: React.FC<StaffRowProps> = React.memo(({
@@ -171,40 +171,69 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
 
   // 메모이제이션된 이벤트 핸들러들
-  const handleEditStartTime = useCallback(() => {
+  const handleEditStartTime = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // 이벤트 버블링 방지
+    
+    // 다중 선택 모드에서는 무시
+    if (multiSelectMode) {
+      console.log('다중 선택 모드에서 시작 시간 클릭 무시됨');
+      return;
+    }
+    
     onEditWorkTime(staff.id, 'start');
-  }, [onEditWorkTime, staff.id]);
+  }, [onEditWorkTime, staff.id, multiSelectMode]);
 
-  const handleEditEndTime = useCallback(() => {
+  const handleEditEndTime = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // 이벤트 버블링 방지
+    
+    // 다중 선택 모드에서는 무시
+    if (multiSelectMode) {
+      return;
+    }
+    
     // 모든 상태에서 퇴근 시간 수정 가능
     onEditWorkTime(staff.id, 'end');
-  }, [onEditWorkTime, staff.id]);
+  }, [onEditWorkTime, staff.id, multiSelectMode]);
 
 
-  const handleDeleteStaff = useCallback(async () => {
-    await onDeleteStaff(staff.id);
-  }, [onDeleteStaff, staff.id]);
-
-  const handleCheckboxChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    if (onSelect) {
-      onSelect(staff.id, event as any);
+  const handleDeleteStaff = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation(); // 이벤트 버블링 방지
+    
+    // 다중 선택 모드에서는 무시
+    if (multiSelectMode) {
+      return;
     }
-  }, [onSelect, staff.id]);
+    
+    await onDeleteStaff(staff.id);
+  }, [onDeleteStaff, staff.id, multiSelectMode]);
+
+  const handleRowClick = useCallback((event: React.MouseEvent) => {
+    // 버튼들이나 다른 클릭 가능한 요소를 클릭한 경우 무시
+    const target = event.target as HTMLElement;
+    const isButton = target.tagName === 'BUTTON' || target.closest('button');
+    const isLink = target.tagName === 'A' || target.closest('a');
+    
+    if (isButton || isLink) {
+      return;
+    }
+    
+    // 선택 모드일 때만 선택 처리
+    if (multiSelectMode && onSelect) {
+      onSelect(staff.id);
+    }
+  }, [multiSelectMode, onSelect, staff.id]);
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      {/* 선택 체크박스 열 (선택 모드일 때만) */}
-      {multiSelectMode && (
-        <td className="px-4 py-4 whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={handleCheckboxChange}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            aria-label={`${staff.name} 선택`}
-          />
-        </td>
-      )}
+    <tr 
+      className={`transition-all cursor-pointer ${
+        multiSelectMode 
+          ? isSelected 
+            ? 'bg-blue-50 border-2 border-blue-500 hover:bg-blue-100'
+            : 'border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+          : 'hover:bg-gray-50'
+      }`}
+      onClick={handleRowClick}
+    >
       {/* 출근 시간 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
         <button
@@ -243,7 +272,14 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       <td className="px-4 py-4 whitespace-nowrap">
         <div>
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation(); // 이벤트 버블링 방지
+              
+              // 다중 선택 모드에서는 무시
+              if (multiSelectMode) {
+                return;
+              }
+              
               if (onShowProfile) {
                 onShowProfile(staff.id);
               }
@@ -275,7 +311,16 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
               <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-              <a href={`tel:${staff.phone}`} className="text-blue-600 hover:text-blue-800 transition-colors">
+              <a 
+                href={`tel:${staff.phone}`} 
+                onClick={(e) => {
+                  if (multiSelectMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                className="text-blue-600 hover:text-blue-800 transition-colors"
+              >
                 {staff.phone}
               </a>
             </div>
@@ -286,7 +331,16 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
-              <a href={`mailto:${staff.email}`} className="text-blue-600 hover:text-blue-800 transition-colors">
+              <a 
+                href={`mailto:${staff.email}`} 
+                onClick={(e) => {
+                  if (multiSelectMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                className="text-blue-600 hover:text-blue-800 transition-colors"
+              >
                 {staff.email.length > 20 ? `${staff.email.substring(0, 20)}...` : staff.email}
               </a>
             </div>
@@ -298,7 +352,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       </td>
       
       {/* 출석 상태 열 */}
-      <td className="px-4 py-4 whitespace-nowrap">
+      <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => {
+        // 다중 선택 모드에서는 AttendanceStatusPopover 클릭 무시
+        if (multiSelectMode) {
+          e.stopPropagation();
+        }
+      }}>
         <AttendanceStatusPopover
           workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
           currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
@@ -320,7 +379,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           })()}
           scheduledStartTime={memoizedTimeData.displayStartTime}
           scheduledEndTime={memoizedTimeData.displayEndTime}
-          canEdit={!!canEdit}
+          canEdit={!!canEdit && !multiSelectMode}
           {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
           onStatusChange={(newStatus) => {
             // 상태 변경 시 강제 리렌더링
