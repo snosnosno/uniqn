@@ -1,9 +1,9 @@
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { db, functions } from '../../firebase';
+import { db } from '../../firebase';
+import { callFunctionLazy } from '../../utils/firebase-dynamic';
 import { JobPosting } from '../../types/jobPosting';
 
 interface Payroll {
@@ -38,10 +38,9 @@ const PayrollAdminPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const getPayrollsFunc = httpsCallable(functions, 'getPayrolls');
-            const result: any = await getPayrollsFunc({ jobPostingId: selectedJobPosting });
+            const result: any = await callFunctionLazy('getPayrolls', { jobPostingId: selectedJobPosting });
             
-            const payrollsWithNames = await Promise.all(result.data.payrolls.map(async (p: Payroll) => {
+            const payrollsWithNames = await Promise.all(result.payrolls.map(async (p: Payroll) => {
                 const userDocRef = doc(db, 'users', p.dealerId);
                 const userDoc = await getDoc(userDocRef);
                 return { ...p, dealerName: userDoc.exists() ? userDoc.data().name : t('payrollAdmin.unknownDealer') };
@@ -61,8 +60,7 @@ const PayrollAdminPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const calculatePayrollsFunc = httpsCallable(functions, 'calculatePayrollsForJobPosting');
-            await calculatePayrollsFunc({ jobPostingId: selectedJobPosting });
+            await callFunctionLazy('calculatePayrollsForJobPosting', { jobPostingId: selectedJobPosting });
             alert(t('payrollAdmin.alertSuccess'));
             handleFetchPayrolls(); // Refresh the list
         } catch (err) {

@@ -323,8 +323,18 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           staffName={staff.name || ''}
           eventId={eventId || ''}
           size="sm"
-          actualStartTime={memoizedAttendanceData.attendanceRecord?.workLog?.actualStartTime}
-          actualEndTime={memoizedAttendanceData.attendanceRecord?.workLog?.actualEndTime}
+          actualStartTime={(() => {
+            // workLog에서 actualStartTime 가져오기
+            const dateString = convertToDateString(staff.assignedDate) || getTodayString();
+            const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
+            return workLog?.actualStartTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualStartTime;
+          })()}
+          actualEndTime={(() => {
+            // workLog에서 actualEndTime 가져오기
+            const dateString = convertToDateString(staff.assignedDate) || getTodayString();
+            const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
+            return workLog?.actualEndTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualEndTime;
+          })()}
           scheduledStartTime={memoizedTimeData.displayStartTime}
           canEdit={!!canEdit}
           {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
@@ -372,7 +382,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     prevProps.staff.email === nextProps.staff.email &&
     prevProps.showDate === nextProps.showDate &&
     prevProps.canEdit === nextProps.canEdit &&
-    prevProps.attendanceRecords.length === nextProps.attendanceRecords.length &&
     prevProps.multiSelectMode === nextProps.multiSelectMode &&
     prevProps.isSelected === nextProps.isSelected
   );
@@ -381,43 +390,63 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     return false; // 리렌더링 필요
   }
   
-  // 출석 기록의 상세한 변경 감지
-  const prevAttendanceRecords = prevProps.attendanceRecords.filter(r => 
-    r.staffId === prevProps.staff.id || 
-    r.workLog?.dealerId === prevProps.staff.id
-  );
-  const nextAttendanceRecords = nextProps.attendanceRecords.filter(r => 
-    r.staffId === nextProps.staff.id || 
-    r.workLog?.dealerId === nextProps.staff.id
-  );
+  // 날짜 추출
+  const { convertToDateString, getTodayString } = require('../utils/jobPosting/dateUtils');
+  const dateString = convertToDateString(prevProps.staff.assignedDate) || getTodayString();
+  const actualStaffId = prevProps.staff.id.replace(/_\d+$/, '');
   
-  // 출석 기록 개수가 다르면 리렌더링
-  if (prevAttendanceRecords.length !== nextAttendanceRecords.length) {
-    console.log('🔄 StaffRow 리렌더링 - 출석 기록 개수 변경:', {
-      staffId: prevProps.staff.id,
-      prevCount: prevAttendanceRecords.length,
-      nextCount: nextAttendanceRecords.length
+  // 해당 스태프의 출석 기록 찾기 (더 정확한 매칭)
+  const findAttendanceRecord = (records: any[], staffId: string, date: string) => {
+    return records.find(r => {
+      // staffId 매칭
+      const isStaffMatch = r.staffId === staffId || 
+                          r.staffId === actualStaffId ||
+                          r.workLog?.dealerId === staffId ||
+                          r.workLog?.dealerId === actualStaffId;
+      
+      // 날짜 매칭
+      const isDateMatch = r.workLog?.date === date;
+      
+      // workLogId 매칭 (virtual ID 포함)
+      const workLogIdMatch = r.workLogId?.includes(actualStaffId) && r.workLogId?.includes(date);
+      
+      return isStaffMatch && (isDateMatch || workLogIdMatch);
     });
-    return false;
+  };
+  
+  const prevRecord = findAttendanceRecord(prevProps.attendanceRecords, prevProps.staff.id, dateString);
+  const nextRecord = findAttendanceRecord(nextProps.attendanceRecords, nextProps.staff.id, dateString);
+  
+  // 출석 기록이 변경되었는지 확인
+  if (prevRecord?.status !== nextRecord?.status) {
+    console.log('🔄 StaffRow 리렌더링 - 출석 상태 변경 감지:', {
+      staffId: prevProps.staff.id,
+      actualStaffId,
+      dateString,
+      prevStatus: prevRecord?.status,
+      nextStatus: nextRecord?.status,
+      prevWorkLogId: prevRecord?.workLogId,
+      nextWorkLogId: nextRecord?.workLogId
+    });
+    return false; // 리렌더링 필요
   }
   
-  // 각 기록의 상태나 workLogId 변경 감지
-  for (let i = 0; i < prevAttendanceRecords.length; i++) {
-    const prev = prevAttendanceRecords[i];
-    const next = nextAttendanceRecords[i];
-    
-    if (prev.status !== next.status || 
-        prev.workLogId !== next.workLogId ||
-        JSON.stringify(prev.workLog?.updatedAt) !== JSON.stringify(next.workLog?.updatedAt)) {
-      console.log('🔄 StaffRow 리렌더링 - 출석 상태 변경 감지:', {
-        staffId: prevProps.staff.id,
-        prevStatus: prev.status,
-        nextStatus: next.status,
-        prevWorkLogId: prev.workLogId,
-        nextWorkLogId: next.workLogId
-      });
-      return false; // 리렌더링 필요
-    }
+  // workLog의 actualStartTime 또는 actualEndTime 변경 감지
+  if (JSON.stringify(prevRecord?.workLog?.actualStartTime) !== JSON.stringify(nextRecord?.workLog?.actualStartTime) ||
+      JSON.stringify(prevRecord?.workLog?.actualEndTime) !== JSON.stringify(nextRecord?.workLog?.actualEndTime)) {
+    console.log('🔄 StaffRow 리렌더링 - 실제 시간 변경 감지:', {
+      staffId: prevProps.staff.id,
+      prevActualStart: prevRecord?.workLog?.actualStartTime,
+      nextActualStart: nextRecord?.workLog?.actualStartTime,
+      prevActualEnd: prevRecord?.workLog?.actualEndTime,
+      nextActualEnd: nextRecord?.workLog?.actualEndTime
+    });
+    return false; // 리렌더링 필요
+  }
+  
+  // getStaffWorkLog 함수가 다른 경우 리렌더링 (workLog 데이터 변경 가능성)
+  if (prevProps.getStaffWorkLog !== nextProps.getStaffWorkLog) {
+    return false;
   }
   
   return true; // 메모이제이션 유지

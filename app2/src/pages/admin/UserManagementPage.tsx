@@ -1,12 +1,12 @@
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import EditUserModal from '../../components/EditUserModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { db, functions } from '../../firebase';
+import { db } from '../../firebase';
+import { callFunctionLazy } from '../../utils/firebase-dynamic';
 
 interface User {
   id: string;
@@ -56,8 +56,7 @@ const UserManagementPage: React.FC = () => {
     
     setError(null);
     try {
-        const deleteUser = httpsCallable(functions, 'deleteUser');
-        await deleteUser({ uid: userId });
+        await callFunctionLazy('deleteUser', { uid: userId });
         alert(t('userManagement.deleteSuccess'));
     } catch (err: any) {
         console.error("Error deleting user:", err);

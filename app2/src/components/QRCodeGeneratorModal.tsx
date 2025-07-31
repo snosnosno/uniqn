@@ -1,9 +1,8 @@
-import { httpsCallable } from 'firebase/functions';
 import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { functions } from '../firebase';
+import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../utils/logger';
 
@@ -42,11 +41,10 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
         eventId 
       });
 
-      // 실제 Firebase 함수 호출
-      const generateTokenFunc = httpsCallable(functions, 'generateQrCodeToken');
-      const result = await generateTokenFunc({ eventId });
+      // 동적 로딩으로 Firebase 함수 호출
+      const result = await callFunctionLazy('generateQrCodeToken', { eventId });
       
-      const {token} = (result.data as { token: string });
+      const {token} = (result as { token: string });
       if (token) {
         const qrUrl = `${window.location.origin}/attend/${token}`;
         setQrCodeValue(qrUrl);

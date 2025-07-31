@@ -1,9 +1,9 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QrReader } from 'react-qr-reader';
 
 import { useAuth } from '../contexts/AuthContext';
+import { callFunctionLazy } from '../utils/firebase-dynamic';
 
 
 const AttendancePage: React.FC = () => {
@@ -26,9 +26,7 @@ const AttendancePage: React.FC = () => {
                 setIsSubmitting(true);
                 setFeedback(null);
                 try {
-                    const functions = getFunctions();
-                    const recordAttendance = httpsCallable(functions, 'recordAttendance');
-                    await recordAttendance({ qrCodeToken: token });
+                    await callFunctionLazy('recordAttendance', { qrCodeToken: token });
                     setFeedback({ type: 'success', message: t('attendancePage.success') });
                 } catch (err: any) {
                     console.error(err);

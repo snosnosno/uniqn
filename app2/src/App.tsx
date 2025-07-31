@@ -15,7 +15,8 @@ import { ToastContainer } from './components/Toast';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { TournamentProvider } from './contexts/TournamentContext';
+// Zustand 마이그레이션: Context 대신 Adapter 사용
+import { TournamentProvider } from './contexts/TournamentContextAdapter';
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));

@@ -1,8 +1,6 @@
-import { httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { functions } from '../firebase';
+import { callFunctionLazy } from '../utils/firebase-dynamic';
 
 import Modal from './Modal';
 
@@ -104,8 +102,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
     setError(null);
 
     try {
-      const updateUser = httpsCallable(functions, 'updateUser');
-      await updateUser({ uid: user.id, ...formData });
+      await callFunctionLazy('updateUser', { uid: user.id, ...formData });
       alert(t('editUserModal.updateSuccess'));
       onClose();
     } catch (err: any) {

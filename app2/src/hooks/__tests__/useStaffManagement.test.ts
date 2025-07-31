@@ -1,25 +1,16 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useStaffManagement } from '../useStaffManagement';
+import { customRender } from '../../__tests__/setup/test-utils';
+import { setupFirestoreMock, setupAuthMock, mockFirestore, mockAuth } from '../../__tests__/setup/firebase-mock';
+import React from 'react';
+import { JobPostingProvider } from '../../contexts/JobPostingContext';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { ToastProvider } from '../../contexts/ToastContext';
 
-// Mock Firebase functions
+// Firebase 모킹
 jest.mock('../../firebase', () => ({
-  db: {},
-  auth: {
-    currentUser: { uid: 'test-user' }
-  }
-}));
-
-jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(),
-  query: jest.fn(),
-  where: jest.fn(),
-  orderBy: jest.fn(),
-  onSnapshot: jest.fn(),
-  doc: jest.fn(),
-  deleteDoc: jest.fn(),
-  getDocs: jest.fn(() => Promise.resolve({
-    docs: []
-  }))
+  db: mockFirestore,
+  auth: mockAuth
 }));
 
 // Mock useGroupByDate hook
@@ -33,6 +24,17 @@ jest.mock('../useGroupByDate', () => ({
     setGroupBy: jest.fn()
   }))
 }));
+
+// Wrapper 컴포넌트
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <AuthProvider>
+    <ToastProvider>
+      <JobPostingProvider>
+        {children}
+      </JobPostingProvider>
+    </ToastProvider>
+  </AuthProvider>
+);
 
 describe('useStaffManagement', () => {
   const mockOptions = {

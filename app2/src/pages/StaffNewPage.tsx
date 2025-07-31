@@ -1,9 +1,9 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
+import { callFunctionLazy } from '../utils/firebase-dynamic';
 
 
 const StaffNewPage: React.FC = () => {
@@ -36,9 +36,7 @@ const StaffNewPage: React.FC = () => {
     setError(null);
 
     try {
-      const functions = getFunctions();
-      const createUser = httpsCallable(functions, 'createUserAccount');
-      await createUser(formData);
+      await callFunctionLazy('createUserAccount', formData);
       alert(t('staffNew.alertSuccess'));
       navigate('/admin/staff'); // Redirect to staff list after creation
     } catch (err: any) {

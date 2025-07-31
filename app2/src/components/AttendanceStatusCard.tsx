@@ -1,6 +1,6 @@
 
 import { useTranslation } from 'react-i18next';
-import { FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { ClockIcon, CheckCircleIcon, ExclamationTriangleIcon } from './Icons';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
@@ -26,7 +26,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
     switch (status) {
       case 'not_started':
         return {
-          icon: <FaClock className="text-gray-500" />,
+          icon: <ClockIcon className="text-gray-500" />,
           text: t('attendance.status.notStarted', '출근 전'),
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-700',
@@ -34,7 +34,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
         };
       case 'checked_in':
         return {
-          icon: <FaCheckCircle className="text-green-500" />,
+          icon: <CheckCircleIcon className="text-green-500" />,
           text: t('attendance.status.checkedIn', '출근'),
           bgColor: 'bg-green-100',
           textColor: 'text-green-700',
@@ -42,7 +42,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
         };
       case 'checked_out':
         return {
-          icon: <FaCheckCircle className="text-blue-500" />,
+          icon: <CheckCircleIcon className="text-blue-500" />,
           text: t('attendance.status.checkedOut', '퇴근'),
           bgColor: 'bg-blue-100',
           textColor: 'text-blue-700',
@@ -50,7 +50,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
         };
       default:
         return {
-          icon: <FaExclamationTriangle className="text-yellow-500" />,
+          icon: <ExclamationTriangleIcon className="text-yellow-500" />,
           text: t('attendance.status.unknown', '알 수 없음'),
           bgColor: 'bg-yellow-100',
           textColor: 'text-yellow-700',

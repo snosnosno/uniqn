@@ -1,9 +1,9 @@
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { db, functions } from '../../firebase';
+import { db } from '../../firebase';
+import { callFunctionLazy } from '../../utils/firebase-dynamic';
 
 interface PendingUser {
     id: string;
@@ -17,7 +17,6 @@ const ApprovalPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const processRegistration = httpsCallable(functions, 'processRegistration');
 
     useEffect(() => {
         const q = query(collection(db, "users"), where("role", "==", "pending_manager"));
@@ -40,7 +39,7 @@ const ApprovalPage: React.FC = () => {
 
     const handleApproval = async (targetUid: string, action: 'approve' | 'reject') => {
         try {
-            await processRegistration({ targetUid, action });
+            await callFunctionLazy('processRegistration', { targetUid, action });
             // The onSnapshot listener will automatically update the list
         } catch (err: any) {
             console.error(`Error processing ${action} for ${targetUid}:`, err);

@@ -1,4 +1,3 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from 'react-icons/fa';
@@ -8,6 +7,7 @@ import AuthLayout from '../components/AuthLayout';
 import FormField from '../components/FormField';
 import Modal from '../components/Modal';
 import { useAuth } from '../contexts/AuthContext';
+import { callFunctionLazy } from '../utils/firebase-dynamic';
 
 const SignUp: React.FC = () => {
   const [name, setName] = useState('');
@@ -20,7 +20,6 @@ const SignUp: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const functions = getFunctions();
   const { signInWithGoogle } = useAuth();
 
   const [modalInfo, setModalInfo] = useState<{ title: string; message: string; isOpen: boolean }>({
@@ -41,8 +40,7 @@ const SignUp: React.FC = () => {
     }
 
     try {
-      const requestRegistration = httpsCallable(functions, 'requestRegistration');
-      await requestRegistration({
+      await callFunctionLazy('requestRegistration', {
         email,
         password,
         name,

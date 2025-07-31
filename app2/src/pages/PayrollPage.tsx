@@ -1,11 +1,11 @@
 import { doc, getDoc } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Navigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
+import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { formatCurrency, formatDate } from '../i18n-helpers';
 
 interface Payroll {
@@ -75,19 +75,16 @@ const PayrollPage = () => {
             }
 
             // 급여 데이터 가져오기
-            const functions = getFunctions();
             let payrollData: Payroll[] = [];
 
             if (isAdmin && targetUserId !== currentUser?.uid) {
                 // 관리자가 다른 사용자의 급여를 조회하는 경우
-                const getPayrollsForUser = httpsCallable(functions, 'getPayrollsForUser');
-                const result: any = await getPayrollsForUser({ userId: targetUserId });
-                payrollData = result.data?.payrolls || [];
+                const result: any = await callFunctionLazy('getPayrollsForUser', { userId: targetUserId });
+                payrollData = result?.payrolls || [];
             } else {
                 // 본인 급여 조회
-                const getPayrolls = httpsCallable(functions, 'getPayrolls');
-                const result: any = await getPayrolls();
-                payrollData = result.data?.payrolls || [];
+                const result: any = await callFunctionLazy('getPayrolls');
+                payrollData = result?.payrolls || [];
             }
 
             // 이벤트 이름 추가

@@ -250,7 +250,7 @@ export const useStaffManagement = (
         // workLogs를 맵 형태로도 저장 (빠른 조회를 위해)
         const workLogsMapData: Record<string, WorkLog> = {};
         workLogsList.forEach(workLog => {
-          const dealerId = workLog.staffId;
+          const dealerId = workLog.dealerId; // staffId가 아니라 dealerId 사용
           const date = workLog.date;
           if (dealerId && date) {
             const key = `${dealerId}_${date}`;

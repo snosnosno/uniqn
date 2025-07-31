@@ -2,8 +2,9 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, doc, collection, getDocs, writeBatch, getDoc, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
-import { getStorage } from 'firebase/storage';
+// Storage와 Functions는 동적 import를 위해 직접 import하지 않음
+// import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+// import { getStorage } from 'firebase/storage';
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
 import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
@@ -21,8 +22,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app); // Export db as a named export
-export const storage = getStorage(app);
-export const functions = getFunctions(app);
+
+// Storage와 Functions는 동적 로딩을 위해 별도 유틸리티 사용
+// firebase-dynamic.ts의 getStorageLazy(), getFunctionsLazy() 사용
+// export const storage = getStorage(app);
+// export const functions = getFunctions(app);
 
 // Connect to Firebase Emulators for local development
 const isEmulator = process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true';
@@ -46,13 +50,9 @@ if (isEmulator) {
     console.log('?�� Firestore emulator already connected or not available');
   }
   
-  try {
-    // Connect Functions Emulator
-    connectFunctionsEmulator(functions, 'localhost', 5001);
-    console.log('??Connected to Firebase Functions emulator');
-  } catch (error) {
-    console.log('?�� Functions emulator already connected or not available');
-  }
+  // Functions 에뮬레이터는 동적 로딩 시 연결
+  // firebase-dynamic.ts에서 처리
+  console.log('ℹ️ Functions emulator will be connected on first use');
   
   console.log('?�� All Firebase services connected to emulators!');
 } else {

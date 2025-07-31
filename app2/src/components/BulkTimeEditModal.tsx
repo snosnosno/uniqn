@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaClock, FaSave, FaTimes, FaUsers, FaCalendarCheck } from 'react-icons/fa';
+import { ClockIcon, SaveIcon, TimesIcon, UsersIcon, CalendarIcon } from './Icons';
 import { doc, updateDoc, setDoc, Timestamp, writeBatch } from 'firebase/firestore';
 
 import { db } from '../firebase';
@@ -312,7 +312,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         {/* 선택된 스태프 정보 */}
         <div className="bg-blue-50 p-4 rounded-lg">
           <div className="flex items-center mb-2">
-            <FaUsers className="text-blue-600 mr-2" />
+            <UsersIcon className="w-5 h-5 text-blue-600 mr-2" />
             <h3 className="font-semibold text-lg">선택된 스태프</h3>
           </div>
           <p className="text-gray-700">
@@ -343,7 +343,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <FaClock className="inline-block mr-2" />
+              <ClockIcon className="w-4 h-4 inline-block mr-2" />
               근무 시간 수정
             </button>
             <button
@@ -354,7 +354,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <FaCalendarCheck className="inline-block mr-2" />
+              <CalendarIcon className="w-4 h-4 inline-block mr-2" />
               출석 상태 수정
             </button>
           </nav>
@@ -527,7 +527,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             disabled={isUpdating}
             className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <FaTimes className="mr-2" />
+            <TimesIcon className="w-4 h-4 mr-2" />
             취소
           </button>
           <button
@@ -542,7 +542,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               </>
             ) : (
               <>
-                <FaSave className="mr-2" />
+                <SaveIcon className="w-4 h-4 mr-2" />
                 <span>{selectedStaff.length}명 일괄 수정</span>
               </>
             )}

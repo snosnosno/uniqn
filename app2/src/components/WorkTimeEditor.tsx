@@ -1,7 +1,7 @@
 import { doc, updateDoc, setDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaClock, FaSave, FaTimes, FaEdit } from 'react-icons/fa';
+import { ClockIcon, SaveIcon, TimesIcon, EditIcon } from './Icons';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -273,40 +273,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         await updateDoc(workLogRef, updateData);
       }
       
-      // 출석 상태 확인 및 업데이트
-      const attendanceStatus = getStaffAttendanceStatus(workLog.id);
-      console.log('🔍 현재 출석 상태:', attendanceStatus);
-      
-      // 출근 상태이고 퇴근시간이 설정되면 퇴근 상태로 변경
-      if (attendanceStatus && attendanceStatus.status === 'checked_in' && newEndTime) {
-        console.log('🚀 출근 상태에서 퇴근시간 설정 - 퇴근 상태로 변경');
-        
-        // attendanceRecords 컬렉션 업데이트
-        const attendanceQuery = query(
-          collection(db, 'attendanceRecords'),
-          where('workLogId', '==', workLog.id)
-        );
-        
-        const attendanceSnapshot = await getDocs(attendanceQuery);
-        
-        for (const doc of attendanceSnapshot.docs) {
-          await updateDoc(doc.ref, {
-            status: 'checked_out',
-            checkOutTime: Timestamp.now(),
-            updatedAt: Timestamp.now()
-          });
-          console.log('✅ 출석 상태를 checked_out으로 업데이트:', doc.id);
-        }
-        
-        // workLogs의 actualEndTime도 함께 업데이트
-        const workLogRef = doc(db, 'workLogs', workLog.id);
-        await updateDoc(workLogRef, {
-          actualEndTime: newEndTime,
-          status: 'completed'
-        });
-        console.log('✅ WorkLog의 actualEndTime 업데이트 완료');
-      }
-      
       // 날짜별 시간 관리를 위해 staff 컬렉션 업데이트 제거
       // workLogs 컬렉션만 업데이트하고, 화면 표시는 workLogs 데이터 우선 사용
       console.log('✅ workLogs 컬렉션만 업데이트 (날짜별 개별 시간 관리)');
@@ -317,10 +283,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           ...workLog,
           scheduledStartTime: newStartTime,
           scheduledEndTime: newEndTime,
-          // 출근 상태에서 퇴근시간 설정시 actualEndTime도 업데이트
-          ...(attendanceStatus?.status === 'checked_in' && newEndTime && {
-            actualEndTime: newEndTime
-          }),
           updatedAt: Timestamp.now()
         };
         onUpdate(updatedWorkLog);
@@ -497,7 +459,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         {/* 시간 편집 */}
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="font-semibold text-lg mb-3 flex items-center">
-            <FaEdit className="mr-2 text-blue-600" />
+            <EditIcon className="w-5 h-5 mr-2 text-blue-600" />
             시간 설정
           </h3>
           <p className="text-sm text-gray-600 mb-3">
@@ -690,7 +652,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
           >
-            <FaTimes className="mr-2" />
+            <TimesIcon className="w-4 h-4 mr-2" />
             {t('common.cancel')}
           </button>
           <button
@@ -698,7 +660,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
             disabled={isUpdating}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
           >
-            <FaSave className="mr-2" />
+            <SaveIcon className="w-4 h-4 mr-2" />
             {isUpdating ? t('common.updating') : t('common.save')}
           </button>
         </div>

@@ -1,6 +1,6 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { callFunctionLazy } from '../../utils/firebase-dynamic';
 
 // import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 // import { db } from '../../firebase';
@@ -107,13 +107,10 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
       }
 
       // Firebase Functions를 통해 스태프별 급여 데이터 가져오기
-      const functions = getFunctions();
-      const getPayrollsForUsers = httpsCallable(functions, 'getPayrollsForUsers');
-      
       const payrollPromises = staffUserIds.map(async (userId) => {
         try {
-          const result: any = await getPayrollsForUsers({ userId });
-          const userPayrolls = result.data?.payrolls || [];
+          const result: any = await callFunctionLazy('getPayrollsForUsers', { userId });
+          const userPayrolls = result?.payrolls || [];
           
           // 해당 공고의 이벤트 ID와 관련된 급여만 필터링
           return userPayrolls.filter((p: Payroll) => 

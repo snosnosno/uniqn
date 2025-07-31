@@ -74,6 +74,16 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
 
   const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0]!;
   
+  // 디버깅 로그 추가
+  console.log('🕐 AttendanceStatusPopover 렌더링:', {
+    workLogId,
+    currentStatus,
+    actualStartTime,
+    actualEndTime,
+    scheduledStartTime,
+    staffName
+  });
+  
   // 시간 포맷팅 함수
   const formatTime = (timestamp: any): string => {
     if (!timestamp) return '';
@@ -288,8 +298,18 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           updatedAt: now
         };
         
-        // 출석 상태 변경은 실제 시간에 영향을 주지 않음
-        // actualStartTime과 actualEndTime은 시간 수정 기능에서만 변경
+        // 출근 상태로 변경 시 actualStartTime 설정
+        if (newStatus === 'checked_in') {
+          newWorkLogData.actualStartTime = now;
+        }
+        // 퇴근 상태로 변경 시 actualEndTime 설정
+        if (newStatus === 'checked_out') {
+          newWorkLogData.actualEndTime = now;
+          // actualStartTime이 없으면 현재 시간으로 설정
+          if (!newWorkLogData.actualStartTime) {
+            newWorkLogData.actualStartTime = now;
+          }
+        }
         
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         await setDoc(workLogRef, newWorkLogData);
@@ -307,8 +327,18 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           updatedAt: now
         };
 
-        // 출석 상태 변경은 실제 시간에 영향을 주지 않음
-        // actualStartTime과 actualEndTime은 시간 수정 기능에서만 변경
+        // 출근 상태로 변경 시 actualStartTime 설정
+        if (newStatus === 'checked_in') {
+          updateData.actualStartTime = now;
+        }
+        // 퇴근 상태로 변경 시 actualEndTime 설정
+        if (newStatus === 'checked_out') {
+          updateData.actualEndTime = now;
+          // actualStartTime이 없으면 현재 시간으로 설정
+          if (!actualStartTime) {
+            updateData.actualStartTime = now;
+          }
+        }
 
         const workLogRef = doc(db, 'workLogs', workLogId);
         
