@@ -90,7 +90,6 @@ const DashboardPage: React.FC = () => {
         <DashboardCard title={t('dashboard.quickLinks')}>
             <div className="flex flex-col space-y-2">
                 <a href="/admin/events" className="text-blue-500 hover:underline">{t('dashboard.manageEventsLink')}</a>
-                <a href="/admin/staff" className="text-blue-500 hover:underline">{t('dashboard.manageStaffLink')}</a>
                 <a href="/admin/payroll" className="text-blue-500 hover:underline">{t('dashboard.processPayrollLink')}</a>
             </div>
         </DashboardCard>

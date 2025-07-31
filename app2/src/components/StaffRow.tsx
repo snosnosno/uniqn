@@ -66,12 +66,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     
     // 날짜가 제대로 파싱되었는지 확인
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      console.warn('⚠️ StaffRow - assignedDate 파싱 실패:', {
-        staffId: staff.id,
-        staffName: staff.name,
-        assignedDate: staff.assignedDate,
-        parsedDate: dateString
-      });
+      // StaffRow - assignedDate 파싱 실패
     }
     
     // staffId에서 _숫자 패턴 제거
@@ -89,18 +84,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       finalAttendanceRecord = getStaffAttendanceStatus(realWorkLogId);
     }
     
-    console.log('🔄 StaffRow memoizedAttendanceData 재계산:', {
-      staffId: staff.id,
-      staffName: staff.name,
-      workLogId,
-      eventId,
-      attendanceRecord: finalAttendanceRecord ? {
-        status: finalAttendanceRecord.status,
-        workLogId: finalAttendanceRecord.workLogId,
-        staffId: finalAttendanceRecord.staffId
-      } : null,
-      timestamp: new Date().toISOString()
-    });
     
     // 실제 workLogId 추출 (Firebase에 저장된 형식)
     let realWorkLogId = workLogId; // 기본값은 virtual workLogId
@@ -336,15 +319,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
             return workLog?.actualEndTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualEndTime;
           })()}
           scheduledStartTime={memoizedTimeData.displayStartTime}
+          scheduledEndTime={memoizedTimeData.displayEndTime}
           canEdit={!!canEdit}
           {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
           onStatusChange={(newStatus) => {
             // 상태 변경 시 강제 리렌더링
-            console.log('🔄 StaffRow - onStatusChange 호출:', {
-              staffId: staff.id,
-              newStatus,
-              realWorkLogId: memoizedAttendanceData.realWorkLogId
-            });
+            // StaffRow - onStatusChange 호출
           }}
         />
       </td>
@@ -419,28 +399,14 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   
   // 출석 기록이 변경되었는지 확인
   if (prevRecord?.status !== nextRecord?.status) {
-    console.log('🔄 StaffRow 리렌더링 - 출석 상태 변경 감지:', {
-      staffId: prevProps.staff.id,
-      actualStaffId,
-      dateString,
-      prevStatus: prevRecord?.status,
-      nextStatus: nextRecord?.status,
-      prevWorkLogId: prevRecord?.workLogId,
-      nextWorkLogId: nextRecord?.workLogId
-    });
+    // StaffRow 리렌더링 - 출석 상태 변경 감지
     return false; // 리렌더링 필요
   }
   
   // workLog의 actualStartTime 또는 actualEndTime 변경 감지
   if (JSON.stringify(prevRecord?.workLog?.actualStartTime) !== JSON.stringify(nextRecord?.workLog?.actualStartTime) ||
       JSON.stringify(prevRecord?.workLog?.actualEndTime) !== JSON.stringify(nextRecord?.workLog?.actualEndTime)) {
-    console.log('🔄 StaffRow 리렌더링 - 실제 시간 변경 감지:', {
-      staffId: prevProps.staff.id,
-      prevActualStart: prevRecord?.workLog?.actualStartTime,
-      nextActualStart: nextRecord?.workLog?.actualStartTime,
-      prevActualEnd: prevRecord?.workLog?.actualEndTime,
-      nextActualEnd: nextRecord?.workLog?.actualEndTime
-    });
+    // StaffRow 리렌더링 - 실제 시간 변경 감지
     return false; // 리렌더링 필요
   }
   

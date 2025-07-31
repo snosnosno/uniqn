@@ -6,6 +6,7 @@ import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
+import { calculateMinutes } from '../utils/timeUtils';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
@@ -18,10 +19,11 @@ interface AttendanceStatusPopoverProps {
   className?: string;
   eventId?: string;
   onStatusChange?: (newStatus: AttendanceStatus) => void;
-  actualStartTime?: any; // 실제 출근 시간
-  actualEndTime?: any; // 실제 퇴근 시간
+  actualStartTime?: Timestamp | Date | string | null; // 실제 출근 시간
+  actualEndTime?: Timestamp | Date | string | null; // 실제 퇴근 시간
   canEdit?: boolean; // 수정 권한
-  scheduledStartTime?: any; // 예정 출근 시간
+  scheduledStartTime?: Timestamp | Date | string | null; // 예정 출근 시간
+  scheduledEndTime?: Timestamp | Date | string | null; // 예정 퇴근 시간
   applyOptimisticUpdate?: (workLogId: string, newStatus: AttendanceStatus) => void;
 }
 
@@ -35,9 +37,10 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   eventId,
   onStatusChange,
   actualStartTime,
-  actualEndTime,
+  // actualEndTime,
   canEdit = true,
   scheduledStartTime,
+  scheduledEndTime,
   applyOptimisticUpdate
 }) => {
   const { t } = useTranslation();
@@ -74,26 +77,16 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
 
   const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0]!;
   
-  // 디버깅 로그 추가
-  console.log('🕐 AttendanceStatusPopover 렌더링:', {
-    workLogId,
-    currentStatus,
-    actualStartTime,
-    actualEndTime,
-    scheduledStartTime,
-    staffName
-  });
-  
   // 시간 포맷팅 함수
-  const formatTime = (timestamp: any): string => {
+  const formatTime = (timestamp: Timestamp | Date | string | number | null | undefined): string => {
     if (!timestamp) return '';
     
     try {
       let date: Date;
       
       // Timestamp 객체인 경우
-      if (timestamp && typeof timestamp.toDate === 'function') {
-        date = timestamp.toDate();
+      if (timestamp && typeof (timestamp as any).toDate === 'function') {
+        date = (timestamp as any).toDate();
       }
       // Date 객체인 경우
       else if (timestamp instanceof Date) {
@@ -123,7 +116,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         minute: '2-digit'
       });
     } catch (error) {
-      console.error('시간 포맷팅 오류:', error);
+      // 시간 포맷팅 오류
       return '';
     }
   };
@@ -188,18 +181,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   };
 
   const handleStatusChange = async (newStatus: AttendanceStatus) => {
-    console.log('🔄 출석 상태 변경 시도:', {
-      workLogId,
-      currentStatus,
-      newStatus,
-      staffId,
-      staffName,
-      eventId,
-      eventIdType: typeof eventId,
-      eventIdValue: eventId || '없음',
-      isVirtual: workLogId.startsWith('virtual_'),
-      scheduledStartTime
-    });
     
     if (newStatus === currentStatus || isUpdating) return;
     
@@ -218,10 +199,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       workLogId;
     
     if (applyOptimisticUpdate) {
-      console.log('🚀 AttendanceStatusPopover - Optimistic update 호출:', {
-        workLogId: targetWorkLogId,
-        newStatus
-      });
       applyOptimisticUpdate(targetWorkLogId, newStatus);
     }
 
@@ -252,48 +229,27 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         
         // 날짜 형식 검증 및 복구
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          console.warn('⚠️ AttendanceStatusPopover - 잘못된 날짜 형식, 오늘 날짜로 대체:', {
-            originalDate: date,
-            workLogId
-          });
+          // 잘못된 날짜 형식, 오늘 날짜로 대체
           date = getTodayString();
         }
         
-        console.log('🔍 AttendanceStatusPopover - virtual workLogId 파싱 결과:', {
-          originalWorkLogId: workLogId,
-          parts,
-          actualStaffId,
-          date,
-          dateValid: /^\d{4}-\d{2}-\d{2}$/.test(date)
-        });
         
-        // eventId가 없으면 에러 로그 출력
-        if (!eventId) {
-          console.warn('⚠️ AttendanceStatusPopover - eventId가 없습니다. 기본값 사용');
-        }
+        // eventId가 없으면 기본값 사용
         
         const realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_${date}`;
         
-        console.log('🔄 AttendanceStatusPopover - 새 workLog 생성:', {
-          virtualWorkLogId: workLogId,
-          realWorkLogId,
-          actualStaffId,
-          date,
-          eventId,
-          newStatus
-        });
         
-        const newWorkLogData: any = {
+        const newWorkLogData = {
           eventId: eventId || 'default-event',
           dealerId: actualStaffId,
           staffId: actualStaffId, // staffId 필드도 추가
           dealerName: staffName || 'Unknown',
           date: date,
           status: newStatus,
-          scheduledStartTime: null,
-          scheduledEndTime: null,
-          actualStartTime: null,
-          actualEndTime: null,
+          scheduledStartTime: null as Timestamp | null,
+          scheduledEndTime: null as Timestamp | null,
+          actualStartTime: null as Timestamp | null,
+          actualEndTime: null as Timestamp | null,
           createdAt: now,
           updatedAt: now
         };
@@ -314,15 +270,9 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         await setDoc(workLogRef, newWorkLogData);
         
-        console.log('✅ 새 workLog 생성 완료:', {
-          realWorkLogId,
-          parsedDate: date,
-          originalWorkLogId: workLogId,
-          data: newWorkLogData
-        });
       } else {
         // 기존 workLog 업데이트 또는 생성
-        const updateData: any = {
+        const updateData: Record<string, any> = {
           status: newStatus,
           updatedAt: now
         };
@@ -348,7 +298,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         } catch (updateError: any) {
           // 문서가 존재하지 않는 경우 생성
           if (updateError.code === 'not-found' || updateError.message?.includes('No document to update')) {
-            console.log('📝 AttendanceStatusPopover - workLog 문서가 없어서 새로 생성:', workLogId);
+            // workLog 문서가 없어서 새로 생성
             
             // workLogId에서 정보 추출 (eventId_staffId_date 형식)
             const parts = workLogId.split('_');
@@ -364,23 +314,22 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
               extractedStaffId = parts.slice(1, -1).join('_');
             }
             
-            const newWorkLogData: any = {
+            const newWorkLogData = {
               eventId: extractedEventId,
               dealerId: extractedStaffId,
               staffId: extractedStaffId,
               dealerName: staffName || 'Unknown',
               date: extractedDate,
               status: newStatus,
-              scheduledStartTime: null,
-              scheduledEndTime: null,
-              actualStartTime: null,
-              actualEndTime: null,
+              scheduledStartTime: null as Timestamp | null,
+              scheduledEndTime: null as Timestamp | null,
+              actualStartTime: null as Timestamp | null,
+              actualEndTime: null as Timestamp | null,
               createdAt: now,
               updatedAt: now
             };
             
             await setDoc(workLogRef, newWorkLogData);
-            console.log('✅ workLog 생성 완료:', { workLogId, data: newWorkLogData });
           } else {
             // 다른 종류의 오류는 다시 throw
             throw updateError;
@@ -400,14 +349,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       showSuccess(`${staffName}의 출석 상태가 "${statusLabel}"로 변경되었습니다.`);
       
     } catch (error) {
-      console.error('❌ 출석 상태 업데이트 오류:', {
-        workLogId,
-        currentStatus,
-        newStatus,
-        staffId,
-        staffName,
-        error
-      });
+      // 출석 상태 업데이트 오류
       showError('출석 상태 변경 중 오류가 발생했습니다.');
     } finally {
       setIsUpdating(false);
@@ -440,9 +382,16 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           {currentStatus === 'checked_in' && actualStartTime && (
             <span className="text-xs opacity-75">출근: {formatTime(actualStartTime)}</span>
           )}
-          {currentStatus === 'checked_out' && actualEndTime && (
-            <span className="text-xs opacity-75">퇴근: {formatTime(actualEndTime)}</span>
-          )}
+          {currentStatus === 'checked_out' && (() => {
+            const totalMinutes = calculateMinutes(scheduledStartTime, scheduledEndTime);
+            if (totalMinutes > 0) {
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+              const timeString = `${hours}:${minutes.toString().padStart(2, '0')}`;
+              return <span className="text-xs opacity-75">근무: {timeString}</span>;
+            }
+            return null;
+          })()}
         </div>
       </button>
 

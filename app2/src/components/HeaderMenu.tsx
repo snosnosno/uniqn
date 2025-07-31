@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { IconType } from 'react-icons';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
-    FaTrophy, FaBullhorn, FaUserCircle, FaUserShield, FaFileInvoice, FaClipboardList, FaQrcode,
+    FaTrophy, FaBullhorn, FaUserCircle, FaFileInvoice, FaClipboardList, FaQrcode,
     FaBars, FaSignOutAlt, FaUserCheck, FaHistory, FaCalendarAlt
 } from 'react-icons/fa';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -158,7 +158,6 @@ export const HeaderMenu: React.FC = () => {
 
               {/* Admin and Manager common menus */}
               {isAdmin ? <>
-                  <NavItem to="/admin/staff" label={t('nav.staffManagement')} Icon={FaUserShield} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/dealer-rotation" label="딜러 로테이션" Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />

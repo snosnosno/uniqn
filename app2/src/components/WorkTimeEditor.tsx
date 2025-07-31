@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
 import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
+import { calculateMinutes, formatMinutesToTime, toDate as utilToDate } from '../utils/timeUtils';
 
 import Modal from './Modal';
 // import { WorkLog } from '../hooks/useShiftSchedule';
@@ -74,7 +75,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     try {
       const timeParts = timeString.split(':').map(Number);
       if (timeParts.length !== 2) {
-        console.error('Invalid time string format:', timeString);
+        // Invalid time string format
         return null;
       }
       
@@ -82,14 +83,14 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
       // 유효하지 않은 시간 값 검사
       if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        console.error('Invalid time string:', timeString);
+        // Invalid time string
         return null;
       }
       
       // baseDate가 유효한지 확인
       let validBaseDate = baseDate;
       if (!baseDate || isNaN(baseDate.getTime())) {
-        console.warn('Invalid baseDate, using current date');
+        // Invalid baseDate, using current date
         validBaseDate = new Date();
       }
       
@@ -116,20 +117,20 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
       // 날짜가 유효한지 확인
       if (isNaN(date.getTime())) {
-        console.error('Invalid date created:', date);
+        // Invalid date created
         return null;
       }
       
       // 날짜가 유효한 범위 내에 있는지 확인 (1970~2038)
       const year = date.getFullYear();
       if (year < 1970 || year > 2038) {
-        console.error('Date out of valid range:', date);
+        // Date out of valid range
         return null;
       }
       
       return Timestamp.fromDate(date);
     } catch (error) {
-      console.error('Error parsing time string:', error, timeString);
+      // Error parsing time string
       return null;
     }
   };
@@ -140,31 +141,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     
     const parsedDate = parseToDate(timestamp);
     return parsedDate || new Date(); // parseToDate가 null을 반환하면 현재 날짜 사용
-  };
-
-  // 근무 시간 계산 (분 단위) - 다음날 계산 지원
-  const calculateMinutes = (startTime: Timestamp | Date | null, endTime: Timestamp | Date | null) => {
-    if (!startTime || !endTime) return 0;
-    
-    // Date로 통일
-    const startDate = startTime instanceof Timestamp ? startTime.toDate() : startTime;
-    let endDate = endTime instanceof Timestamp ? endTime.toDate() : endTime;
-    
-    // 종료 시간이 시작 시간보다 이전인 경우 (다음날로 계산)
-    if (endDate.getTime() <= startDate.getTime()) {
-      // 다음날로 설정
-      endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
-    }
-    
-    // 실제 시간 차이 계산
-    return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60));
-  };
-
-  // 분을 시간:분 형식으로 변환
-  const formatMinutesToTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}:${remainingMinutes.toString().padStart(2, '0')}`;
   };
 
   // 유효성 검사
@@ -187,23 +163,19 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
   // 시간 수정 함수
   const handleUpdateTime = async () => {
-    console.log('🔘 저장 버튼 클릭됨');
-    console.log('🔍 현재 시간 상태:', { startTime, endTime, startHour, startMinute, endHour, endMinute });
     
     if (!workLog) {
-      console.error('❌ workLog가 없습니다');
+      // workLog가 없습니다
       return;
     }
     
     const isValid = validateTimes();
-    console.log('🔍 유효성 검사 결과:', isValid, 'errors:', validationErrors);
     
     if (!isValid) {
-      console.error('❌ 유효성 검사 실패');
+      // 유효성 검사 실패
       return;
     }
     
-    console.log('✅ 시간 업데이트 진행');
     setIsUpdating(true);
     try {
       const baseDate = toDate(workLog.scheduledStartTime || new Date());
@@ -275,7 +247,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
       // 날짜별 시간 관리를 위해 staff 컬렉션 업데이트 제거
       // workLogs 컬렉션만 업데이트하고, 화면 표시는 workLogs 데이터 우선 사용
-      console.log('✅ workLogs 컬렉션만 업데이트 (날짜별 개별 시간 관리)');
+      // workLogs 컬렉션만 업데이트 (날짜별 개별 시간 관리)
       
       // 업데이트된 데이터로 콜백 호출
       if (onUpdate) {
@@ -303,9 +275,12 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     if (isOpen && workLog) {
       // 실제시간이 있으면 실제시간 우선, 없으면 예정시간 사용
       const actualStartTimeString = formatTimeForInput(workLog.actualStartTime);
-      const scheduledTimeString = formatTimeForInput(workLog.scheduledStartTime);
-      const startTimeString = actualStartTimeString || scheduledTimeString;
-      const endTimeString = formatTimeForInput(workLog.actualEndTime);
+      const scheduledStartTimeString = formatTimeForInput(workLog.scheduledStartTime);
+      const startTimeString = actualStartTimeString || scheduledStartTimeString;
+      
+      // 퇴근시간은 예정시간(scheduledEndTime)만 사용
+      const scheduledEndTimeString = formatTimeForInput(workLog.scheduledEndTime);
+      const endTimeString = scheduledEndTimeString; // 실제시간 제외
       
       setStartTime(startTimeString);
       setEndTime(endTimeString);
@@ -442,11 +417,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                 
                 return '날짜 정보 없음';
               } catch (error) {
-                console.error('Error displaying date:', error, { 
-                  workLog: workLog,
-                  scheduledStartTime: workLog.scheduledStartTime,
-                  date: workLog.date 
-                });
+                // Error displaying date
                 return workLog.date ? String(workLog.date) : '날짜 오류';
               }
             })()}

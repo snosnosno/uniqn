@@ -1,7 +1,6 @@
 import React from 'react';
 import { getTodayString } from '../../../utils/jobPosting/dateUtils';
 import { 
-  FaTimes, 
   FaCalendarAlt, 
   FaClock, 
   FaMapMarkerAlt, 
@@ -9,7 +8,8 @@ import {
   FaMoneyBillWave,
   FaCheckCircle,
   FaHourglassHalf,
-  FaTimesCircle
+  FaTimesCircle,
+  FaTrash
 } from 'react-icons/fa';
 import Modal from '../../../components/Modal';
 import { ScheduleEvent } from '../../../types/schedule';
@@ -21,6 +21,7 @@ interface ScheduleDetailModalProps {
   onCheckIn?: (scheduleId: string) => void;
   onCheckOut?: (scheduleId: string) => void;
   onCancel?: (scheduleId: string) => void;
+  onDelete?: (scheduleId: string) => void;
 }
 
 const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
@@ -29,7 +30,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   schedule,
   onCheckIn,
   onCheckOut,
-  onCancel
+  onCancel,
+  onDelete
 }) => {
   if (!schedule) return null;
 
@@ -114,6 +116,12 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   const isToday = schedule.date === getTodayString();
   const canCheckIn = isToday && schedule.type === 'confirmed' && schedule.status === 'not_started';
   const canCheckOut = isToday && schedule.type === 'confirmed' && schedule.status === 'checked_in';
+  
+  // 삭제 가능한 일정인지 확인 (완료되지 않은 일정만)
+  const canDelete = onDelete && 
+    schedule.type !== 'completed' && 
+    schedule.status !== 'checked_in' && // 이미 출근한 일정은 삭제 제한
+    (schedule.sourceCollection === 'applications' || schedule.sourceCollection === 'workLogs');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="일정 상세">
@@ -268,6 +276,21 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
             >
               지원 취소
+            </button>
+          )}
+          
+          {/* 삭제 버튼 */}
+          {canDelete && (
+            <button
+              onClick={() => {
+                onDelete(schedule.id);
+                onClose();
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center gap-2"
+              title="일정 삭제"
+            >
+              <FaTrash className="w-4 h-4" />
+              삭제
             </button>
           )}
           

@@ -171,6 +171,90 @@ export const getTimeStatistics = (
   };
 };
 
+// Timestamp/Date 변환 헬퍼
+export const toDate = (timestamp: any): Date => {
+  if (!timestamp) return new Date();
+  
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  if (typeof timestamp === 'number') {
+    return new Date(timestamp);
+  }
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
+  }
+  
+  return new Date();
+};
+
+// 근무 시간 계산 (분 단위) - 다음날 계산 지원
+export const calculateMinutes = (startTime: any, endTime: any): number => {
+  if (!startTime || !endTime) return 0;
+  
+  // "미정" 체크
+  if (startTime === '미정' || endTime === '미정') return 0;
+  
+  try {
+    let startDate: Date;
+    let endDate: Date;
+    
+    // startTime 변환
+    if (startTime && typeof startTime.toDate === 'function') {
+      startDate = startTime.toDate();
+    } else if (startTime instanceof Date) {
+      startDate = startTime;
+    } else if (typeof startTime === 'string' && startTime.includes(':')) {
+      // "HH:MM" 형식의 문자열 처리
+      const [hours, minutes] = startTime.split(':').map(Number);
+      startDate = new Date();
+      startDate.setHours(hours || 0, minutes || 0, 0, 0);
+    } else {
+      return 0;
+    }
+    
+    // endTime 변환
+    if (endTime && typeof endTime.toDate === 'function') {
+      endDate = endTime.toDate();
+    } else if (endTime instanceof Date) {
+      endDate = endTime;
+    } else if (typeof endTime === 'string' && endTime.includes(':')) {
+      // "HH:MM" 형식의 문자열 처리
+      const [hours, minutes] = endTime.split(':').map(Number);
+      endDate = new Date();
+      endDate.setHours(hours || 0, minutes || 0, 0, 0);
+    } else {
+      return 0;
+    }
+    
+    // 종료 시간이 시작 시간보다 이전인 경우 (다음날로 계산)
+    if (endDate.getTime() <= startDate.getTime()) {
+      endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+    }
+    
+    return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+  } catch (error) {
+    return 0;
+  }
+};
+
+// 분을 시간:분 형식으로 변환
+export const formatMinutesToTime = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}:${remainingMinutes.toString().padStart(2, '0')}`;
+};
+
+// 분을 한국어 형식으로 변환
+export const formatMinutesToKorean = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}시간 ${remainingMinutes}분`;
+};
+
 export default {
   TIME_INTERVALS,
   generateTimeSlots,
@@ -182,4 +266,8 @@ export default {
   findClosestTimeSlot,
   calculateTotalSlots,
   getTimeStatistics,
+  toDate,
+  calculateMinutes,
+  formatMinutesToTime,
+  formatMinutesToKorean,
 };

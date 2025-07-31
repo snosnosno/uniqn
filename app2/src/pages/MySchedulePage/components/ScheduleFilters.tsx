@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaFilter, FaSearch, FaTimes } from 'react-icons/fa';
 import { ScheduleFilters as FiltersType } from '../../../types/schedule';
-import { subDays, addDays, format } from 'date-fns';
+// import { subDays, addDays, format } from 'date-fns'; // not used
 
 interface ScheduleFiltersProps {
   filters: FiltersType;
@@ -22,21 +22,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
     });
   };
 
-  // 타입 필터 변경
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFiltersChange({
-      ...filters,
-      type: e.target.value as any
-    });
-  };
-
-  // 상태 필터 변경
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFiltersChange({
-      ...filters,
-      status: e.target.value as any
-    });
-  };
+  // 상태 필터 핸들러 제거됨
 
   // 날짜 범위 변경
   const handleDateRangeChange = (field: 'start' | 'end', value: string) => {
@@ -52,21 +38,24 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
 
   // 필터 초기화
   const handleReset = () => {
+    // 기본 날짜 범위: 지난 1개월부터 앞으로 3개월까지
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setMonth(today.getMonth() - 1);
+    const endDate = new Date(today);
+    endDate.setMonth(today.getMonth() + 3);
+    
     onFiltersChange({
-      type: 'all',
-      status: 'all',
       dateRange: {
-        start: '2025-01-01',
-        end: '2025-12-31'
+        start: startDate.toISOString().substring(0, 10),
+        end: endDate.toISOString().substring(0, 10)
       },
       searchTerm: ''
     });
   };
 
-  // 활성 필터 개수
+  // 활성 필터 개수 (검색어만 체크)
   const activeFilterCount = [
-    filters.type !== 'all',
-    filters.status !== 'all',
     !!filters.searchTerm
   ].filter(Boolean).length;
 
@@ -86,31 +75,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
           />
         </div>
 
-        {/* 필터 버튼 그룹 */}
-        <div className="grid grid-cols-2 gap-2">
-          <select
-            value={filters.type}
-            onChange={handleTypeChange}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          >
-            <option value="all">모든 상태</option>
-            <option value="applied">지원중</option>
-            <option value="confirmed">확정</option>
-            <option value="completed">완료</option>
-            <option value="cancelled">취소</option>
-          </select>
-
-          <select
-            value={filters.status}
-            onChange={handleStatusChange}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          >
-            <option value="all">출석 상태</option>
-            <option value="not_started">예정</option>
-            <option value="checked_in">출근</option>
-            <option value="checked_out">퇴근</option>
-          </select>
-        </div>
+        {/* 필터 제거됨 - 날짜 범위만 유지 */}
 
         {/* 날짜 범위 */}
         <div className="grid grid-cols-2 gap-2">
@@ -163,30 +128,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
           />
         </div>
 
-        {/* 타입 필터 */}
-        <select
-          value={filters.type}
-          onChange={handleTypeChange}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="all">모든 상태</option>
-          <option value="applied">지원중</option>
-          <option value="confirmed">확정</option>
-          <option value="completed">완료</option>
-          <option value="cancelled">취소</option>
-        </select>
-
-        {/* 출석 상태 필터 */}
-        <select
-          value={filters.status}
-          onChange={handleStatusChange}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="all">모든 출석 상태</option>
-          <option value="not_started">예정</option>
-          <option value="checked_in">출근</option>
-          <option value="checked_out">퇴근</option>
-        </select>
+        {/* 상태 필터 제거됨 - 검색과 날짜 범위만 유지 */}
 
         {/* 날짜 범위 */}
         <div className="flex items-center gap-2">

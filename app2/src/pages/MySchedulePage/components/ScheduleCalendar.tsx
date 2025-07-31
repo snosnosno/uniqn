@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next'; // not used
 import { 
   ScheduleEvent, 
   CalendarView, 
@@ -26,7 +26,7 @@ const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   onEventClick,
   onDateClick
 }) => {
-  const { t } = useTranslation();
+  // const { t } = useTranslation(); // not used
   const calendarRef = useRef<FullCalendar>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -177,7 +177,7 @@ const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
           interactionPlugin
         ]}
         initialView={currentView}
-        initialDate="2025-07-28" // 28일로 이동하여 양쪽 날짜 모두 확인
+        initialDate={new Date().toISOString().substring(0, 10)} // 오늘 날짜로 동적 설정
         headerToolbar={headerToolbar}
         firstDay={0} // 일요일부터 시작
         weekends={true} // 주말 표시

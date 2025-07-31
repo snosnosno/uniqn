@@ -42,7 +42,6 @@ const PayrollPage = lazy(() => import('./pages/PayrollPage'));
 const PrizesPage = lazy(() => import('./pages/PrizesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
-const StaffListPage = lazy(() => import('./pages/StaffListPage'));
 const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 
@@ -97,7 +96,6 @@ const App: React.FC = () => {
                     {/* Admin & Manager Routes */}
                     <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
                       <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>} />
-                      <Route path="staff" element={<Suspense fallback={<LoadingSpinner />}><StaffListPage /></Suspense>} />
                       <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
                       <Route path="dealer-rotation" element={<Suspense fallback={<LoadingSpinner />}><DealerRotationPage /></Suspense>} />
                       <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />

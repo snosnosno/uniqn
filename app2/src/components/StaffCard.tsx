@@ -350,6 +350,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 size="sm"
                 className="scale-90"
                 scheduledStartTime={memoizedTimeData.displayStartTime}
+                scheduledEndTime={memoizedTimeData.displayEndTime}
                 canEdit={!!canEdit}
                 onStatusChange={(newStatus) => {
                   // 상태 변경 시 강제 리렌더링

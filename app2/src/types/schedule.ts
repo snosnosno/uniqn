@@ -50,11 +50,9 @@ export interface EventColorConfig {
 }
 
 /**
- * 스케줄 필터 옵션
+ * 스케줄 필터 옵션 (상태 필터 제거, 날짜 범위와 검색어만 유지)
  */
 export interface ScheduleFilters {
-  type: ScheduleType | 'all';
-  status: AttendanceStatus | 'all';
   dateRange: {
     start: string;
     end: string;
