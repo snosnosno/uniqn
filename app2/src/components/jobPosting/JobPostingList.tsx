@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import LoadingSpinner from '../LoadingSpinner';
+import { JobPostingUtils } from '../../types/jobPosting';
 
 interface JobPostingListProps {
   jobPostings: any[];
@@ -74,6 +75,16 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
             ? calculateTotalPositionsFromDateRequirements(post.dateSpecificRequirements || [])
             : calculateTotalPositions(post.timeSlots || []);
 
+          // 전체 진행률 계산
+          const progressMap = JobPostingUtils.getRequirementProgress(post);
+          let totalConfirmed = 0;
+          let totalRequired = 0;
+          
+          progressMap.forEach(progress => {
+            totalConfirmed += progress.confirmed;
+            totalRequired += progress.required;
+          });
+
           return (
             <div key={post.id} className="p-6 hover:bg-gray-50">
               <div className="flex justify-between items-start">
@@ -104,7 +115,7 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
                       📋 {getTypeDisplayName(post.type)}
                     </span>
                     <span className="flex items-center">
-                      👥 총 {totalPositions}명 모집
+                      👥 총 {totalPositions}명 모집 {totalConfirmed > 0 && `(${totalConfirmed}명 확정)`}
                     </span>
                   </div>
 
@@ -123,7 +134,34 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
                         <div className="mt-1 space-y-1">
                           {(post.dateSpecificRequirements || []).slice(0, 2).map((req: any, index: number) => (
                             <div key={index} className="ml-2">
-                              • {formatDateDisplay(req.date)}: {req.timeSlots.length}개 시간대
+                              <div className="font-medium">• {formatDateDisplay(req.date)}:</div>
+                              {req.timeSlots.map((ts: any, tsIndex: number) => (
+                                <div key={tsIndex} className="ml-4 text-xs">
+                                  {ts.time} - {ts.roles.map((role: any, roleIndex: number) => {
+                                    // Firebase Timestamp를 문자열로 변환
+                                    const dateString = typeof req.date === 'string' 
+                                      ? req.date 
+                                      : req.date?.toDate 
+                                        ? req.date.toDate().toISOString().split('T')[0] || ''
+                                        : req.date?.seconds
+                                          ? new Date(req.date.seconds * 1000).toISOString().split('T')[0] || ''
+                                          : String(req.date || '');
+                                    
+                                    const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                      post,
+                                      dateString,
+                                      ts.time,
+                                      role.name
+                                    );
+                                    return (
+                                      <span key={roleIndex}>
+                                        {roleIndex > 0 && ", "}
+                                        {role.name}: {role.count}명 ({confirmedCount}/{role.count})
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              ))}
                             </div>
                           ))}
                           {(post.dateSpecificRequirements || []).length > 2 && (

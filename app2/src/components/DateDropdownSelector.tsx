@@ -12,6 +12,8 @@ export interface DateDropdownSelectorProps {
   label?: string;
   className?: string;
   disabled?: boolean;
+  minDate?: string; // yyyy-MM-dd format
+  maxDate?: string; // yyyy-MM-dd format
 }
 
 const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
@@ -20,11 +22,50 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
   includeYear = true,
   label,
   className = '',
-  disabled = false
+  disabled = false,
+  minDate,
+  maxDate
 }) => {
   // Get current year for default range
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear + i - 2); // 2 years before to 2 years after
+
+  // Parse min and max dates
+  const minDateObj = minDate ? new Date(minDate) : null;
+  const maxDateObj = maxDate ? new Date(maxDate) : null;
+  
+  // Filter years based on min/max dates
+  const availableYears = years.filter(year => {
+    if (minDateObj && year < minDateObj.getFullYear()) return false;
+    if (maxDateObj && year > maxDateObj.getFullYear()) return false;
+    return true;
+  });
+
+  // Check if a specific date is within the allowed range
+  const isDateInRange = (year: string, month: string, day: string) => {
+    if (!year || !month || !day) return true;
+    
+    const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const date = new Date(dateStr);
+    
+    if (minDateObj && date < minDateObj) return false;
+    if (maxDateObj && date > maxDateObj) return false;
+    
+    return true;
+  };
+
+  // Check if a month is partially or fully available
+  const isMonthAvailable = (year: string, month: string) => {
+    if (!year || !month) return true;
+    
+    const firstDay = new Date(`${year}-${month.padStart(2, '0')}-01`);
+    const lastDay = new Date(parseInt(year), parseInt(month), 0);
+    
+    if (minDateObj && lastDay < minDateObj) return false;
+    if (maxDateObj && firstDay > maxDateObj) return false;
+    
+    return true;
+  };
 
   const handleDateChange = (type: 'year' | 'month' | 'day', selectedValue: string) => {
     const newValue = { ...value, [type]: selectedValue };
@@ -64,7 +105,7 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
             className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
           >
             <option value="">년도</option>
-            {years.map(year => (
+            {availableYears.map(year => (
               <option key={year} value={year.toString()}>
                 {year}년
               </option>
@@ -79,18 +120,15 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
           className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
         >
           <option value="">전체</option>
-          <option value="01">1월</option>
-          <option value="02">2월</option>
-          <option value="03">3월</option>
-          <option value="04">4월</option>
-          <option value="05">5월</option>
-          <option value="06">6월</option>
-          <option value="07">7월</option>
-          <option value="08">8월</option>
-          <option value="09">9월</option>
-          <option value="10">10월</option>
-          <option value="11">11월</option>
-          <option value="12">12월</option>
+          {Array.from({ length: 12 }, (_, i) => {
+            const month = (i + 1).toString().padStart(2, '0');
+            const isAvailable = !value.year || isMonthAvailable(value.year, month);
+            return isAvailable ? (
+              <option key={month} value={month}>
+                {i + 1}월
+              </option>
+            ) : null;
+          })}
         </select>
         
         {/* Day Dropdown */}
@@ -101,11 +139,15 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
           className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
         >
           <option value="">전체</option>
-          {Array.from({ length: maxDays }, (_, i) => i + 1).map(day => (
-            <option key={day} value={day.toString().padStart(2, '0')}>
-              {day}일
-            </option>
-          ))}
+          {Array.from({ length: maxDays }, (_, i) => {
+            const day = (i + 1).toString().padStart(2, '0');
+            const isAvailable = !value.year || !value.month || isDateInRange(value.year, value.month, day);
+            return isAvailable ? (
+              <option key={day} value={day}>
+                {i + 1}일
+              </option>
+            ) : null;
+          })}
         </select>
       </div>
       

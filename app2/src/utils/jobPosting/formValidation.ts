@@ -98,7 +98,17 @@ export const validateJobPostingForm = (formData: any): string[] => {
       errors.push('일자별 요구사항을 추가해주세요.');
     }
     
+    // 일자별 요구사항의 날짜가 시작날짜와 종료날짜 범위 내에 있는지 검증
     formData.dateSpecificRequirements.forEach((requirement: DateSpecificRequirement, index: number) => {
+      if (requirement.date && formData.startDate && formData.endDate) {
+        if (requirement.date < formData.startDate) {
+          errors.push(`일자 ${index + 1}: 날짜가 시작 날짜(${formData.startDate})보다 이전입니다.`);
+        }
+        if (requirement.date > formData.endDate) {
+          errors.push(`일자 ${index + 1}: 날짜가 종료 날짜(${formData.endDate})보다 이후입니다.`);
+        }
+      }
+      
       const requirementErrors = validateDateSpecificRequirement(requirement);
       errors.push(...requirementErrors.map(error => `일자 ${index + 1}: ${error}`));
     });

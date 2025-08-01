@@ -238,11 +238,27 @@ export class JobPostingUtils {
   ): number {
     if (!jobPosting.confirmedStaff) return 0;
     
-    return jobPosting.confirmedStaff.filter(staff => 
-      staff.timeSlot === timeSlot && 
-      staff.role === role &&
-      (staff.date === date || !staff.date) // date가 없으면 모든 날짜에 적용
-    ).length;
+    // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
+    const convertToDateString = (dateValue: any): string => {
+      if (typeof dateValue === 'string') return dateValue;
+      if (dateValue && dateValue.toDate) {
+        return dateValue.toDate().toISOString().split('T')[0] || '';
+      }
+      if (dateValue && dateValue.seconds) {
+        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
+      }
+      return String(dateValue || '');
+    };
+    
+    // 입력 날짜도 변환 (안전성을 위해)
+    const targetDate = convertToDateString(date);
+    
+    return jobPosting.confirmedStaff.filter(staff => {
+      const staffDate = convertToDateString(staff.date);
+      return staff.timeSlot === timeSlot && 
+             staff.role === role &&
+             staffDate === targetDate; // 정확한 날짜 매칭만
+    }).length;
   }
   
   /**
@@ -326,6 +342,154 @@ export class JobPostingUtils {
     return jobPosting.dateSpecificRequirements?.every(dateReq => 
       this.getDateFulfillmentRate(jobPosting, dateReq.date) >= 1.0
     ) || false;
+  }
+  
+  /**
+   * 특정 역할이 마감되었는지 확인 (날짜별 요구사항 지원)
+   * @param jobPosting 공고
+   * @param timeSlot 시간대
+   * @param role 역할
+   * @param date 날짜 (선택사항)
+   * @returns 마감 여부
+   */
+  static isRoleFull(
+    jobPosting: JobPosting,
+    timeSlot: string,
+    role: string,
+    date?: string
+  ): boolean {
+    if (!jobPosting.confirmedStaff) return false;
+    
+    // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
+    const convertToDateString = (dateValue: any): string => {
+      if (typeof dateValue === 'string') return dateValue;
+      if (dateValue && dateValue.toDate) {
+        return dateValue.toDate().toISOString().split('T')[0] || '';
+      }
+      if (dateValue && dateValue.seconds) {
+        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
+      }
+      return String(dateValue || '');
+    };
+    
+    // 해당 시간대와 역할의 요구 인원 수 찾기
+    let requiredCount = 0;
+    
+    if (date && this.hasDateSpecificRequirements(jobPosting)) {
+      // 날짜별 요구사항에서 찾기
+      const targetDate = convertToDateString(date);
+      const dateReq = jobPosting.dateSpecificRequirements?.find(dr => {
+        const drDate = convertToDateString(dr.date);
+        return drDate === targetDate;
+      });
+      const ts = dateReq?.timeSlots.find(t => t.time === timeSlot);
+      const roleReq = ts?.roles.find(r => r.name === role);
+      requiredCount = roleReq?.count || 0;
+    } else {
+      // 기존 timeSlots에서 찾기
+      const ts = jobPosting.timeSlots?.find(t => t.time === timeSlot);
+      const roleReq = ts?.roles.find(r => r.name === role);
+      requiredCount = roleReq?.count || 0;
+    }
+    
+    // 확정된 스태프 수 계산
+    const confirmedCount = date 
+      ? this.getConfirmedStaffCount(jobPosting, date, timeSlot, role)
+      : jobPosting.confirmedStaff.filter(staff => 
+          staff.timeSlot === timeSlot && 
+          staff.role === role
+        ).length;
+    
+    return confirmedCount >= requiredCount;
+  }
+  
+  /**
+   * 날짜별, 역할별 확정 인원 수 계산
+   * @param jobPosting 공고
+   * @param date 날짜 (선택사항)
+   * @param role 역할 (선택사항)
+   * @returns 확정 인원 수 맵
+   */
+  static getConfirmedStaffCountByDateAndRole(
+    jobPosting: JobPosting,
+    date?: string,
+    role?: string
+  ): Map<string, number> {
+    const countMap = new Map<string, number>();
+    
+    if (!jobPosting.confirmedStaff) return countMap;
+    
+    jobPosting.confirmedStaff.forEach(staff => {
+      // 필터링 조건 적용
+      if (date && staff.date !== date) return;
+      if (role && staff.role !== role) return;
+      
+      // 키 생성 (날짜_시간_역할)
+      const key = `${staff.date || 'all'}_${staff.timeSlot}_${staff.role}`;
+      countMap.set(key, (countMap.get(key) || 0) + 1);
+    });
+    
+    return countMap;
+  }
+  
+  /**
+   * 날짜별 요구사항 진행률 계산
+   * @param jobPosting 공고
+   * @returns 날짜별 진행률 맵 { date: { confirmed: number, required: number, percentage: number } }
+   */
+  static getRequirementProgress(jobPosting: JobPosting): Map<string, {
+    confirmed: number;
+    required: number;
+    percentage: number;
+  }> {
+    const progressMap = new Map();
+    
+    if (this.hasDateSpecificRequirements(jobPosting)) {
+      // 날짜별 요구사항이 있는 경우
+      jobPosting.dateSpecificRequirements?.forEach(dateReq => {
+        let totalRequired = 0;
+        let totalConfirmed = 0;
+        
+        dateReq.timeSlots.forEach(ts => {
+          ts.roles.forEach(role => {
+            totalRequired += role.count;
+            totalConfirmed += this.getConfirmedStaffCount(
+              jobPosting, 
+              dateReq.date, 
+              ts.time, 
+              role.name
+            );
+          });
+        });
+        
+        progressMap.set(dateReq.date, {
+          confirmed: totalConfirmed,
+          required: totalRequired,
+          percentage: totalRequired > 0 ? Math.round((totalConfirmed / totalRequired) * 100) : 0
+        });
+      });
+    } else {
+      // 기존 방식 (전체 기간 동일)
+      let totalRequired = 0;
+      let totalConfirmed = 0;
+      
+      jobPosting.timeSlots?.forEach(ts => {
+        ts.roles.forEach(role => {
+          totalRequired += role.count;
+          totalConfirmed += jobPosting.confirmedStaff?.filter(staff => 
+            staff.timeSlot === ts.time && staff.role === role.name
+          ).length || 0;
+        });
+      });
+      
+      progressMap.set('all', {
+        confirmed: totalConfirmed,
+        required: totalRequired,
+        percentage: totalRequired > 0 ? Math.round((totalConfirmed / totalRequired) * 100) : 0
+      });
+    }
+    
+    return progressMap;
   }
   
   // ===== 다중 선택 지원을 위한 헬퍼 함수들 =====
@@ -746,8 +910,23 @@ export const getConfirmedStaffCountByDate = (
     return 0;
   }
   
+  // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
+  const convertToDateString = (dateValue: any): string => {
+    if (typeof dateValue === 'string') return dateValue;
+    if (dateValue && dateValue.toDate) {
+      return dateValue.toDate().toISOString().split('T')[0] || '';
+    }
+    if (dateValue && dateValue.seconds) {
+      return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
+    }
+    return String(dateValue || '');
+  };
+  
+  const targetDate = convertToDateString(date);
+  
   return jobPosting.confirmedStaff.filter((staff: any) => {
-    return staff.date === date && 
+    const staffDate = convertToDateString(staff.date);
+    return staffDate === targetDate && 
            staff.timeSlot === timeSlot && 
            staff.role === roleName;
   }).length;

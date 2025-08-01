@@ -38,6 +38,8 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
     if (unusedDate) {
       const newRequirement = createNewDateSpecificRequirement(unusedDate);
       onRequirementsChange([...requirements, newRequirement]);
+    } else {
+      alert('시작 날짜와 종료 날짜 범위 내에 추가할 수 있는 날짜가 없습니다.');
     }
   };
 
@@ -133,6 +135,8 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
               <DateDropdownSelector
                 value={toDropdownValue(requirement.date)}
                 onChange={(value) => handleDateChange(requirementIndex, value)}
+                minDate={startDate}
+                maxDate={endDate}
               />
             </div>
             {requirements.length > 1 && (

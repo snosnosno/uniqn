@@ -11,7 +11,7 @@ import { useToast } from '../contexts/ToastContext';
 import { db } from '../firebase';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useInfiniteJobPostings, JobPosting } from '../hooks/useJobPostings';
-import { TimeSlot, RoleRequirement, JobPostingUtils, DateSpecificRequirement, PreQuestionAnswer } from '../types/jobPosting';
+import { TimeSlot, RoleRequirement, JobPostingUtils, DateSpecificRequirement, PreQuestionAnswer, ConfirmedStaff } from '../types/jobPosting';
 import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
 
 const JobBoardPage = () => {
@@ -640,27 +640,47 @@ const JobBoardPage = () => {
                             📅 {formatDateUtil(dateReq.date)} 일정
                           </div>
                           {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
-                            <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 border-l-2 border-blue-200 bg-blue-50 rounded-r">
-                              <p className="text-sm font-semibold text-gray-700 flex items-center">
-                                {t('jobPostingAdmin.manage.time')}: 
+                            <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 text-sm">
+                              <span className="font-semibold text-gray-700">
                                 {ts.isTimeToBeAnnounced ? (
-                                  <span className="ml-1 text-orange-600">
+                                  <span className="text-orange-600">
                                     ⏰ 미정
                                     {ts.tentativeDescription && (
-                                      <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
+                                      <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
                                     )}
                                   </span>
                                 ) : (
-                                  <span className="ml-1">{ts.time}</span>
+                                  ts.time
                                 )}
-                              </p>
-                              <div className="text-sm text-gray-600">
-                                {ts.roles.map((r: RoleRequirement, roleIndex: number) => (
-                                  <span key={roleIndex} className="mr-4">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}
+                              </span>
+                              <span className="text-gray-600"> - </span>
+                              {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                                // Firebase Timestamp를 문자열로 변환
+                                const dateString = typeof dateReq.date === 'string' 
+                                  ? dateReq.date 
+                                  : (dateReq.date as any)?.toDate 
+                                    ? (dateReq.date as any).toDate().toISOString().split('T')[0] || ''
+                                    : (dateReq.date as any)?.seconds
+                                      ? new Date((dateReq.date as any).seconds * 1000).toISOString().split('T')[0] || ''
+                                      : String(dateReq.date || '');
+                                
+                                const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                  post,
+                                  dateString,
+                                  ts.time,
+                                  r.name
+                                );
+                                const isFull = confirmedCount >= r.count;
+                                return (
+                                  <span key={roleIndex}>
+                                    {roleIndex > 0 && <span className="text-gray-400">, </span>}
+                                    <span className={isFull ? 'text-red-600 font-medium' : 'text-gray-700'}>
+                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명 
+                                      {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
+                                    </span>
                                   </span>
-                                ))}
-                              </div>
+                                );
+                              })}
                             </div>
                           ))}
                         </div>
@@ -668,25 +688,35 @@ const JobBoardPage = () => {
                     ) : (
                       /* 기존 방식: 전체 기간 공통 timeSlots */
                       post.timeSlots?.map((ts: TimeSlot, index: number) => (
-                        <div key={index} className="mt-2 pl-4 border-l-2 border-gray-200">
-                          <p className="text-sm font-semibold text-gray-700 flex items-center">
-                            {t('jobPostingAdmin.manage.time')}: 
+                        <div key={index} className="mt-2 pl-4 text-sm">
+                          <span className="font-semibold text-gray-700">
                             {ts.isTimeToBeAnnounced ? (
-                              <span className="ml-1 text-orange-600">
+                              <span className="text-orange-600">
                                 ⏰ 미정
                                 {ts.tentativeDescription && (
-                                  <span className="text-gray-600 font-normal ml-2">({ts.tentativeDescription})</span>
+                                  <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
                                 )}
                               </span>
                             ) : (
-                              <span className="ml-1">{ts.time}</span>
+                              ts.time
                             )}
-                          </p>
-                          <div className="text-sm text-gray-600">
-                            {ts.roles.map((r: RoleRequirement, i: number) => (
-                              <span key={i} className="mr-4">{t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}{t('jobPostingAdmin.manage.people')}</span>
-                            ))}
-                          </div>
+                          </span>
+                          <span className="text-gray-600"> - </span>
+                          {ts.roles.map((r: RoleRequirement, i: number) => {
+                            const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
+                              staff.timeSlot === ts.time && staff.role === r.name
+                            ).length || 0;
+                            const isFull = confirmedCount >= r.count;
+                            return (
+                              <span key={i}>
+                                {i > 0 && <span className="text-gray-400">, </span>}
+                                <span className={isFull ? 'text-red-600 font-medium' : 'text-gray-700'}>
+                                  {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                  {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
+                                </span>
+                              </span>
+                            );
+                          })}
                         </div>
                       ))
                     )}

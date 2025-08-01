@@ -369,11 +369,22 @@ const JobPostingDetailPageContent: React.FC = () => {
                           <div key={`${dateIndex}-${tsIndex}`} className="pl-4 border-l-2 border-blue-300 bg-white rounded-r p-2">
                             <p className="font-semibold text-gray-700">{ts.time}</p>
                             <div className="text-sm text-gray-600">
-                              {ts.roles.map((role, roleIndex) => (
-                                <span key={roleIndex} className="mr-4">
-                                  {role.name}: {role.count}명
-                                </span>
-                              ))}
+                              {ts.roles.map((role, roleIndex) => {
+                                const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                  jobPosting,
+                                  dateReq.date,
+                                  ts.time,
+                                  role.name
+                                );
+                                const isFull = confirmedCount >= role.count;
+                                const remaining = role.count - confirmedCount;
+                                return (
+                                  <span key={roleIndex} className={`mr-4 ${isFull ? 'text-red-600 font-medium' : ''}`}>
+                                    {role.name}: {role.count}명 모집
+                                    {isFull ? ' (마감)' : confirmedCount > 0 ? ` (${confirmedCount}명 확정, ${remaining}명 남음)` : ''}
+                                  </span>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
@@ -391,11 +402,19 @@ const JobPostingDetailPageContent: React.FC = () => {
                     <div key={index} className="pl-4 border-l-2 border-gray-200">
                       <p className="font-semibold text-gray-700">{ts.time}</p>
                       <div className="text-sm text-gray-600">
-                        {ts.roles.map((role, i) => (
-                          <span key={i} className="mr-4">
-                            {role.name}: {role.count}명
-                          </span>
-                        ))}
+                        {ts.roles.map((role, i) => {
+                          const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
+                            staff.timeSlot === ts.time && staff.role === role.name
+                          ).length || 0;
+                          const isFull = confirmedCount >= role.count;
+                          const remaining = role.count - confirmedCount;
+                          return (
+                            <span key={i} className={`mr-4 ${isFull ? 'text-red-600 font-medium' : ''}`}>
+                              {role.name}: {role.count}명 모집
+                              {isFull ? ' (마감)' : confirmedCount > 0 ? ` (${confirmedCount}명 확정, ${remaining}명 남음)` : ''}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { db, promoteToStaff } from '../../firebase';
-import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement } from '../../types/jobPosting';
+import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement, JobPostingUtils, JobPosting } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
 // Applicant interface (extended for multiple selections)
 interface Applicant {
@@ -64,7 +64,48 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     try {
       const q = query(collection(db, 'applications'), where('postId', '==', postId));
       const querySnapshot = await getDocs(q);
-      const fetchedApplicants = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Applicant));
+      const fetchedApplicants = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('🔍 Firebase 지원자 원본 데이터:', {
+          id: doc.id,
+          data: data,
+          role: data.role,
+          timeSlot: data.timeSlot,
+          date: data.date,
+          assignedRole: data.assignedRole,
+          assignedTime: data.assignedTime,
+          assignedDate: data.assignedDate
+        });
+        // Firebase 필드명을 Applicant 인터페이스에 맞게 매핑
+        // assignedDate를 Timestamp에서 문자열로 변환
+        let dateString = '';
+        if (data.assignedDate) {
+          try {
+            if (data.assignedDate.toDate) {
+              // Firestore Timestamp 객체인 경우
+              const date = data.assignedDate.toDate();
+              dateString = date.toISOString().split('T')[0]; // yyyy-MM-dd 형식
+            } else if (typeof data.assignedDate === 'string') {
+              dateString = data.assignedDate;
+            }
+          } catch (error) {
+            console.error('날짜 변환 오류:', error);
+          }
+        }
+        
+        return { 
+          id: doc.id, 
+          ...data,
+          // 필드명 매핑 (role -> assignedRole 등)
+          assignedRole: data.assignedRole || data.role,
+          assignedTime: data.assignedTime || data.timeSlot,
+          assignedDate: dateString || data.date,
+          // 다중 선택 필드도 매핑
+          assignedRoles: data.assignedRoles || (data.assignedRole ? [data.assignedRole] : data.role ? [data.role] : []),
+          assignedTimes: data.assignedTimes || (data.assignedTime ? [data.assignedTime] : data.timeSlot ? [data.timeSlot] : []),
+          assignedDates: data.assignedDates || (dateString ? [dateString] : data.date ? [data.date] : [])
+        } as Applicant;
+      });
       
       // 사용자 정보를 추가로 가져오기
       const applicantsWithUserInfo = await Promise.all(
@@ -130,6 +171,24 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       return;
     }
     if (!jobPosting) return;
+    
+    // 선택된 역할들이 마감되었는지 확인
+    const fullRoles = assignments.filter(assignment => {
+      return JobPostingUtils.isRoleFull(
+        jobPosting,
+        assignment.timeSlot,
+        assignment.role,
+        assignment.date || undefined
+      );
+    });
+    
+    if (fullRoles.length > 0) {
+      const fullRoleMessages = fullRoles.map(assignment => 
+        `${assignment.date ? `${assignment.date} ` : ''}${assignment.timeSlot} - ${assignment.role}`
+      ).join(', ');
+      alert(`다음 역할은 이미 마감되어 확정할 수 없습니다:\n${fullRoleMessages}`);
+      return;
+    }
 
     const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
     const applicationRef = doc(db, "applications", applicant.id);
@@ -260,13 +319,42 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       
       alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${assignments.length}개 시간대 확정)`);
       
-      // 새로운 통합 마감 로직 사용
+      // 개선된 자동 마감 로직
       const jobPostingDoc = await getDoc(jobPostingRef);
       if (jobPostingDoc.exists()) {
-        const updatedPost = jobPostingDoc.data();
-        if (shouldCloseJobPosting(updatedPost)) {
+        const updatedPost = { ...jobPostingDoc.data(), id: jobPostingDoc.id } as JobPosting;
+        
+        // 모든 요구사항이 충족되었는지 확인
+        let shouldClose = false;
+        let closeMessage = '';
+        
+        if (JobPostingUtils.hasDateSpecificRequirements(updatedPost)) {
+          // 날짜별 요구사항이 있는 경우
+          const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
+          let allFulfilled = true;
+          Array.from(progressMap.entries()).forEach(([date, progress]) => {
+            if (progress.percentage < 100) {
+              allFulfilled = false;
+            }
+          });
+          if (allFulfilled) {
+            shouldClose = true;
+            closeMessage = '모든 날짜의 인원이 충족되어 공고가 마감되었습니다.';
+          }
+        } else {
+          // 기존 방식의 경우
+          const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
+          const allProgress = progressMap.get('all');
+          if (allProgress && allProgress.percentage >= 100) {
+            shouldClose = true;
+            closeMessage = '필요 인원이 모두 충족되어 공고가 마감되었습니다.';
+          }
+        }
+        
+        // 공고 상태 업데이트
+        if (shouldClose && updatedPost.status === 'open') {
           await updateDoc(jobPostingRef, { status: 'closed' });
-          alert(t('jobPostingAdmin.alerts.postingClosed'));
+          alert(closeMessage);
         }
       }
       
@@ -316,8 +404,24 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         if (rawDate) {
           if (typeof rawDate === 'string') {
             dateValue = rawDate;
+          } else if ((rawDate as any).toDate) {
+            // Firestore Timestamp 객체인 경우
+            try {
+              dateValue = (rawDate as any).toDate().toISOString().split('T')[0] || '';
+            } catch (error) {
+              console.error('❌ assignedDates Timestamp 변환 오류:', error, rawDate);
+              dateValue = '';
+            }
+          } else if ((rawDate as any).seconds) {
+            // seconds 속성이 있는 경우
+            try {
+              dateValue = new Date((rawDate as any).seconds * 1000).toISOString().split('T')[0] || '';
+            } catch (error) {
+              console.error('❌ assignedDates seconds 변환 오류:', error, rawDate);
+              dateValue = '';
+            }
           } else {
-            // Timestamp 객체이거나 다른 타입인 경우 문자열로 변환
+            // 다른 타입인 경우 문자열로 변환
             try {
               dateValue = String(rawDate);
             } catch (error) {
@@ -345,6 +449,22 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       if (applicant.assignedDate) {
         if (typeof applicant.assignedDate === 'string') {
           singleDateValue = applicant.assignedDate;
+        } else if ((applicant.assignedDate as any).toDate) {
+          // Firestore Timestamp 객체인 경우
+          try {
+            singleDateValue = (applicant.assignedDate as any).toDate().toISOString().split('T')[0] || '';
+          } catch (error) {
+            console.error('❌ assignedDate Timestamp 변환 오류:', error, applicant.assignedDate);
+            singleDateValue = '';
+          }
+        } else if ((applicant.assignedDate as any).seconds) {
+          // seconds 속성이 있는 경우
+          try {
+            singleDateValue = new Date((applicant.assignedDate as any).seconds * 1000).toISOString().split('T')[0] || '';
+          } catch (error) {
+            console.error('❌ assignedDate seconds 변환 오류:', error, applicant.assignedDate);
+            singleDateValue = '';
+          }
         } else {
           try {
             singleDateValue = String(applicant.assignedDate);
@@ -501,14 +621,41 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       });
 
       // --- [여기서부터 후처리: 자동 마감 해제, staff 삭제] ---
-      // 1. jobPostings 자동 마감 해제
+      // 1. jobPostings 자동 마감 해제 (개선된 로직)
       try {
         const jobPostingDoc = await getDoc(jobPostingRef);
         if (jobPostingDoc.exists()) {
-          const updatedPost = jobPostingDoc.data();
-          if (!updatedPost.confirmedStaff || updatedPost.confirmedStaff.length === 0) {
+          const updatedPost = { ...jobPostingDoc.data(), id: jobPostingDoc.id } as JobPosting;
+          
+          // JobPostingUtils를 사용하여 모든 요구사항이 충족되었는지 확인
+          let shouldReopen = false;
+          let reopenMessage = '';
+          
+          if (JobPostingUtils.hasDateSpecificRequirements(updatedPost)) {
+            // 날짜별 요구사항이 있는 경우
+            const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
+            Array.from(progressMap.entries()).some(([date, progress]) => {
+              if (progress.percentage < 100) {
+                shouldReopen = true;
+                reopenMessage = `${date} 날짜의 인원이 부족하여 공고가 다시 열렸습니다.`;
+                return true; // break the loop
+              }
+              return false;
+            });
+          } else {
+            // 기존 방식의 경우
+            const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
+            const allProgress = progressMap.get('all');
+            if (allProgress && allProgress.percentage < 100) {
+              shouldReopen = true;
+              reopenMessage = '필요 인원이 부족하여 공고가 다시 열렸습니다.';
+            }
+          }
+          
+          // 공고 상태 업데이트
+          if (shouldReopen && updatedPost.status === 'closed') {
             await updateDoc(jobPostingRef, { status: 'open' });
-            alert('모든 확정 인원이 사라져 공고가 다시 오픈되었습니다.');
+            alert(reopenMessage);
           }
         }
       } catch (err) {
@@ -658,7 +805,20 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         <div className="space-y-2">
                           {selections.map((selection, index) => {
                             // selection.date를 안전하게 문자열로 처리
-                            const safeDateString = typeof selection.date === 'string' ? selection.date : String(selection.date || '');
+                            let safeDateString = '';
+                            if (selection.date) {
+                              if (typeof selection.date === 'string') {
+                                safeDateString = selection.date;
+                              } else if ((selection.date as any).toDate) {
+                                // Firestore Timestamp 객체인 경우
+                                safeDateString = (selection.date as any).toDate().toISOString().split('T')[0] || '';
+                              } else if ((selection.date as any).seconds) {
+                                // seconds 속성이 있는 경우
+                                safeDateString = new Date((selection.date as any).seconds * 1000).toISOString().split('T')[0] || '';
+                              } else {
+                                safeDateString = String(selection.date);
+                              }
+                            }
                             const optionValue = (safeDateString && safeDateString.trim() !== '') 
                               ? `${safeDateString}__${selection.time}__${selection.role}`
                               : `${selection.time}__${selection.role}`;
@@ -672,25 +832,114 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                               optionValue
                             });
                             const isSelected = isAssignmentSelected(applicant.id, selection.time, selection.role, safeDateString);
+                            
+                            // 역할이 마감되었는지 확인
+                            const isFull = JobPostingUtils.isRoleFull(
+                              jobPosting,
+                              selection.time,
+                              selection.role,
+                              safeDateString || undefined
+                            );
+                            
+                            // 해당 역할의 확정 인원 수 계산
+                            const confirmedCount = safeDateString 
+                              ? JobPostingUtils.getConfirmedStaffCount(jobPosting, safeDateString, selection.time, selection.role)
+                              : (jobPosting.confirmedStaff?.filter((staff: any) => 
+                                  staff.timeSlot === selection.time && staff.role === selection.role
+                                ).length || 0);
+                            
+                            // 필요 인원 수 계산 (디버깅 추가)
+                            let requiredCount = 0;
+                            console.log('지원자 목록 디버깅:', {
+                              safeDateString,
+                              selectionTime: selection.time,
+                              selectionRole: selection.role,
+                              hasDailyRequirements: !!jobPosting.dateSpecificRequirements,
+                              hasTimeSlots: !!jobPosting.timeSlots
+                            });
+                            
+                            if (safeDateString && jobPosting.dateSpecificRequirements) {
+                              console.log('dateSpecificRequirements 날짜들:', jobPosting.dateSpecificRequirements.map((dr: DateSpecificRequirement) => ({
+                                date: dr.date,
+                                type: typeof dr.date,
+                                timeSlots: dr.timeSlots.length
+                              })));
+                              console.log('찾으려는 날짜:', safeDateString, 'type:', typeof safeDateString);
+                              
+                              // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
+                              const convertToDateString = (dateValue: any): string => {
+                                if (typeof dateValue === 'string') return dateValue;
+                                if (dateValue && dateValue.toDate) {
+                                  return dateValue.toDate().toISOString().split('T')[0] || '';
+                                }
+                                if (dateValue && dateValue.seconds) {
+                                  return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
+                                }
+                                return String(dateValue || '');
+                              };
+                              
+                              const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => {
+                                const drDateString = convertToDateString(dr.date);
+                                console.log(`비교: ${drDateString} === ${safeDateString} => ${drDateString === safeDateString}`);
+                                return drDateString === safeDateString;
+                              });
+                              console.log('날짜별 요구사항 찾기:', dateReq);
+                              const ts = dateReq?.timeSlots.find((t: TimeSlot) => t.time === selection.time);
+                              console.log('시간대 찾기:', ts);
+                              const roleReq = ts?.roles.find((r: RoleRequirement) => r.name === selection.role);
+                              console.log('역할 찾기:', roleReq);
+                              requiredCount = roleReq?.count || 0;
+                            } else if (jobPosting.timeSlots) {
+                              const ts = jobPosting.timeSlots.find((t: TimeSlot) => t.time === selection.time);
+                              const roleReq = ts?.roles.find((r: RoleRequirement) => r.name === selection.role);
+                              requiredCount = roleReq?.count || 0;
+                            }
+                            
+                            // "미정" 시간대의 경우 특별 처리
+                            if (selection.time === '미정' && requiredCount === 0) {
+                              // 날짜별 요구사항에서 미정 시간대 찾기
+                              if (safeDateString && jobPosting.dateSpecificRequirements) {
+                                const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => dr.date === safeDateString);
+                                const undefinedTimeSlot = dateReq?.timeSlots.find((t: TimeSlot) => t.isTimeToBeAnnounced || t.time === '미정');
+                                const roleReq = undefinedTimeSlot?.roles.find((r: RoleRequirement) => r.name === selection.role);
+                                requiredCount = roleReq?.count || 0;
+                              } else if (jobPosting.timeSlots) {
+                                const undefinedTimeSlot = jobPosting.timeSlots.find((t: TimeSlot) => t.isTimeToBeAnnounced || t.time === '미정');
+                                const roleReq = undefinedTimeSlot?.roles.find((r: RoleRequirement) => r.name === selection.role);
+                                requiredCount = roleReq?.count || 0;
+                              }
+                            }
                               
                             return (
                               <div key={index} className={`flex items-center justify-between p-2 border rounded ${
-                                isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'
+                                isFull ? 'bg-gray-100 border-gray-300' :
+                                isSelected ? 'bg-green-50 border-green-300' : 
+                                'bg-white border-gray-200'
                               }`}>
-                                <label className="flex items-center cursor-pointer flex-1">
+                                <label className={`flex items-center ${isFull ? 'cursor-not-allowed' : 'cursor-pointer'} flex-1`}>
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
+                                    disabled={isFull}
                                     onChange={(e) => handleMultipleAssignmentToggle(applicant.id, optionValue, e.target.checked)}
-                                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                    className={`h-4 w-4 ${isFull ? 'text-gray-400' : 'text-green-600'} focus:ring-green-500 border-gray-300 rounded ${isFull ? 'cursor-not-allowed' : ''}`}
                                   />
                                   <div className="ml-3 flex-1">
                                     <div className="flex items-center space-x-2 text-sm">
                                       {safeDateString ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                                          📅 {formatDateUtil(safeDateString)}
+                                          📅 {(() => {
+                                            const date = new Date(safeDateString);
+                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                                            return `${month}-${day}(${dayOfWeek})`;
+                                          })()}
                                         </span> : null}
-                                      <span className="text-gray-700">⏰ {selection.time}</span>
-                                      <span className="text-gray-700">👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
+                                      <span className={isFull ? "text-gray-500" : "text-gray-700"}>⏰ {selection.time}</span>
+                                      <span className={isFull ? "text-gray-500" : "text-gray-700"}>👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
+                                      <span className={`ml-2 text-xs ${isFull ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                                        ({confirmedCount}/{requiredCount} {isFull ? '- 마감' : ''})
+                                      </span>
                                     </div>
                                   </div>
                                 </label>
@@ -698,6 +947,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                 {/* 시간 수정 드롭다운 */}
                                 <select
                                   value={selection.time}
+                                  disabled={isFull}
                                   onChange={async (e) => {
                                     const newTime = e.target.value;
                                     if (!jobPosting || !newTime) return;
@@ -731,7 +981,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                       alert('지원 시간 수정 중 오류가 발생했습니다.');
                                     }
                                   }}
-                                  className="text-xs border border-gray-300 rounded px-2 py-1 ml-2"
+                                  className={`text-xs border border-gray-300 rounded px-2 py-1 ml-2 ${isFull ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {/* 사용 가능한 시간대 옵션들 */}
@@ -740,13 +990,26 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                       {ts.time}
                                     </option>
                                   ))}
-                                  {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
-                                    dateReq.timeSlots.map((ts: TimeSlot) => (
-                                      <option key={`${dateReq.date}-${ts.time}`} value={ts.time}>
+                                  {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) => {
+                                    // Firebase Timestamp를 문자열로 변환
+                                    const convertToDateString = (dateValue: any): string => {
+                                      if (typeof dateValue === 'string') return dateValue;
+                                      if (dateValue && dateValue.toDate) {
+                                        return dateValue.toDate().toISOString().split('T')[0] || '';
+                                      }
+                                      if (dateValue && dateValue.seconds) {
+                                        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
+                                      }
+                                      return String(dateValue || '');
+                                    };
+                                    
+                                    const dateString = convertToDateString(dateReq.date);
+                                    return dateReq.timeSlots.map((ts: TimeSlot) => (
+                                      <option key={`${dateString}-${ts.time}`} value={ts.time}>
                                         {ts.time}
                                       </option>
-                                    ))
-                                  )}
+                                    ));
+                                  })}
                                 </select>
                               </div>
                             );
@@ -793,21 +1056,64 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         {/* 날짜별 요구사항 */}
                         {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
                           dateReq.timeSlots.flatMap((ts: TimeSlot) =>
-                            ts.roles.map((r: RoleRequirement) => (
-                              <option key={`${dateReq.date}-${ts.time}-${r.name}`} value={`${dateReq.date}__${ts.time}__${r.name}`}>
-                                📅 {dateReq.date} | {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
-                              </option>
-                            ))
+                            ts.roles.map((r: RoleRequirement) => {
+                              // Firebase Timestamp를 문자열로 변환
+                              const convertToDateString = (dateValue: any): string => {
+                                if (typeof dateValue === 'string') return dateValue;
+                                if (dateValue && dateValue.toDate) {
+                                  return dateValue.toDate().toISOString().split('T')[0] || '';
+                                }
+                                if (dateValue && dateValue.seconds) {
+                                  return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
+                                }
+                                return String(dateValue || '');
+                              };
+                              
+                              const dateString = convertToDateString(dateReq.date);
+                              const isFull = JobPostingUtils.isRoleFull(jobPosting, ts.time, r.name, dateString);
+                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(jobPosting, dateString, ts.time, r.name);
+                              
+                              // 날짜 포맷팅
+                              const formatDateDisplay = (dateStr: string) => {
+                                const date = new Date(dateStr);
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                                return `${month}-${day}(${dayOfWeek})`;
+                              };
+                              
+                              return (
+                                <option 
+                                  key={`${dateString}-${ts.time}-${r.name}`} 
+                                  value={`${dateString}__${ts.time}__${r.name}`}
+                                  disabled={isFull}
+                                >
+                                  📅 {formatDateDisplay(dateString)} | {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
+                                  ({confirmedCount}/{r.count}{isFull ? ' - 마감' : ''})
+                                </option>
+                              );
+                            })
                           )
                         )}
                         
                         {/* 기존 방식 timeSlots */}
                         {jobPosting?.timeSlots?.flatMap((ts: TimeSlot) => 
-                          ts.roles.map((r: RoleRequirement) => (
-                            <option key={`${ts.time}-${r.name}`} value={`${ts.time}__${r.name}`}>
-                              {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
-                            </option>
-                          ))
+                          ts.roles.map((r: RoleRequirement) => {
+                            const isFull = JobPostingUtils.isRoleFull(jobPosting, ts.time, r.name);
+                            const confirmedCount = jobPosting.confirmedStaff?.filter((staff: any) => 
+                              staff.timeSlot === ts.time && staff.role === r.name
+                            ).length || 0;
+                            return (
+                              <option 
+                                key={`${ts.time}-${r.name}`} 
+                                value={`${ts.time}__${r.name}`}
+                                disabled={isFull}
+                              >
+                                {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
+                                ({confirmedCount}/{r.count}{isFull ? ' - 마감' : ''})
+                              </option>
+                            );
+                          })
                         )}
                       </select>
                                               <button 
@@ -833,11 +1139,30 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                             <div className="space-y-1">
                               {confirmedSelections.map((selection, index) => {
                                 // selection.date를 안전하게 문자열로 처리
-                                const confirmedSafeDateString = typeof selection.date === 'string' ? selection.date : String(selection.date || '');
+                                let confirmedSafeDateString = '';
+                                if (selection.date) {
+                                  if (typeof selection.date === 'string') {
+                                    confirmedSafeDateString = selection.date;
+                                  } else if ((selection.date as any).toDate) {
+                                    // Firestore Timestamp 객체인 경우
+                                    confirmedSafeDateString = (selection.date as any).toDate().toISOString().split('T')[0] || '';
+                                  } else if ((selection.date as any).seconds) {
+                                    // seconds 속성이 있는 경우
+                                    confirmedSafeDateString = new Date((selection.date as any).seconds * 1000).toISOString().split('T')[0] || '';
+                                  } else {
+                                    confirmedSafeDateString = String(selection.date);
+                                  }
+                                }
                                 return (
                                 <div key={index} className="flex items-center space-x-2">
                                   {confirmedSafeDateString ? <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                                      📅 {formatDateUtil(confirmedSafeDateString)}
+                                      📅 {(() => {
+                                        const date = new Date(confirmedSafeDateString);
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                                        return `${month}-${day}(${dayOfWeek})`;
+                                      })()}
                                     </span> : null}
                                   <span>⏰ {selection.time}</span>
                                   <span>👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
@@ -851,7 +1176,13 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         // 기존 단일 선택 지원자 표시 (하위 호환성)
                         return (
                           <p>
-                            {applicant.assignedDate ? <span className="text-blue-600 font-medium">📅 {formatDateUtil(applicant.assignedDate)} | </span> : null}
+                            {applicant.assignedDate ? <span className="text-blue-600 font-medium">📅 {(() => {
+                              const date = new Date(applicant.assignedDate);
+                              const month = String(date.getMonth() + 1).padStart(2, '0');
+                              const day = String(date.getDate()).padStart(2, '0');
+                              const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                              return `${month}-${day}(${dayOfWeek})`;
+                            })()} | </span> : null}
                             {applicant.assignedTime} - {applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`) : applicant.assignedRole}
                           </p>
                         );
