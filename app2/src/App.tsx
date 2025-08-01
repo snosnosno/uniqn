@@ -17,6 +17,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 // Zustand 마이그레이션: Context 대신 Adapter 사용
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
+import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
@@ -64,6 +65,11 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
+  // Firebase 자동 복구 활성화
+  React.useEffect(() => {
+    firebaseConnectionManager.enableAutoRecovery();
+  }, []);
+
   return (
     <FirebaseErrorBoundary>
       <QueryClientProvider client={queryClient}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 
 // 예시: ITM(In The Money) 비율에 따른 상금 분배 (조정 가능)
 const PRIZE_DISTRIBUTION_RULES = {
@@ -21,7 +21,7 @@ const getDistribution = (itmPercentage: number) => {
 
 const PrizesPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { state, dispatch } = useTournament();
+  const { state } = useTournament();
   const { participants, settings } = state;
 
   const [manualPayouts, setManualPayouts] = useState<number[]>([]);
@@ -55,7 +55,7 @@ const PrizesPage: React.FC = () => {
   
   const handleSave = () => {
     const payoutsToSave = isManual ? manualPayouts : calculatedPayouts;
-    // dispatch({ type: 'SAVE_PAYOUTS', payload: payoutsToSave });
+    // TODO: SAVE_PAYOUTS 구현 필요
     console.log("Dispatching SAVE_PAYOUTS action (not implemented yet)", payoutsToSave);
     alert(t('prizes.alertSaved'));
   }

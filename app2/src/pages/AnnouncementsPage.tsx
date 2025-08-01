@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useTournament } from '../contexts/TournamentContext';
-
 const AnnouncementsPage: React.FC = () => {
     const { t } = useTranslation();
-    const { dispatch: _dispatch } = useTournament();
     const [message, setMessage] = useState('');
 
     const handlePost = (e: React.FormEvent) => {
         e.preventDefault();
         if (!message.trim()) return;
 
-        // dispatch({ type: 'POST_ANNOUNCEMENT', payload: { message } });
+        // TODO: POST_ANNOUNCEMENT 구현 필요
         console.log(`Dispatching POST_ANNOUNCEMENT with message: "${message}" (not implemented yet)`);
         
         setMessage('');

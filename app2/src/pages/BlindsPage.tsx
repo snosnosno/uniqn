@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 
 const BlindsPage: React.FC = () => {
     const { t } = useTranslation();

@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 
 const ParticipantLivePage: React.FC = () => {
     const { t } = useTranslation();
