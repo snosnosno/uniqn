@@ -1,0 +1,16 @@
+{
+  "name": "security-dependencies",
+  "description": "보안 강화를 위해 추가로 설치해야 할 패키지 목록",
+  "dependencies": {
+    "dompurify": "^3.0.6",
+    "@types/dompurify": "^3.0.5"
+  },
+  "devDependencies": {
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-mongo-sanitize": "^2.2.0",
+    "xss-clean": "^0.1.4",
+    "hpp": "^0.2.3"
+  },
+  "installCommand": "npm install dompurify @types/dompurify --save && npm install helmet express-rate-limit express-mongo-sanitize xss-clean hpp --save-dev"
+}

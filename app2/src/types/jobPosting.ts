@@ -29,7 +29,7 @@ export interface Applicant {
   timeSlot: string;
   date?: string; // 지원 날짜 (기존 호환성)
   assignedDate?: string; // yyyy-MM-dd format - 확정된 스태프 할당 날짜
-  createdAt: any; // Firebase Timestamp
+  createdAt: import('firebase/firestore').Timestamp; // Firebase Timestamp
   status: 'pending' | 'confirmed' | 'rejected';
   jobPostingId: string;
   additionalInfo?: string;
@@ -46,6 +46,23 @@ export interface MultipleSelection {
   roles: string[];
   times: string[];
   dates: string[];
+}
+
+// 공고 작성/수정 폼 데이터 타입
+export interface JobPostingFormData {
+  title: string;
+  type: string;
+  description: string;
+  location: string;
+  detailedAddress?: string;
+  startDate: string;
+  endDate: string;
+  status: 'open' | 'closed';
+  usesDifferentDailyRequirements?: boolean;
+  timeSlots?: TimeSlot[];
+  dateSpecificRequirements?: DateSpecificRequirement[];
+  preQuestions?: PreQuestion[];
+  requiredRoles?: string[];
 }
 
 export interface SelectionItem {
@@ -86,11 +103,11 @@ export interface JobPosting {
   detailedAddress?: string; // 상세 주소 (선택사항)
   type: string;
   status: 'open' | 'closed';
-  startDate: any; // Firebase Timestamp
-  endDate: any;   // Firebase Timestamp
-  createdAt: any; // Firebase Timestamp
+  startDate: import('firebase/firestore').Timestamp; // Firebase Timestamp
+  endDate: import('firebase/firestore').Timestamp;   // Firebase Timestamp
+  createdAt: import('firebase/firestore').Timestamp; // Firebase Timestamp
   createdBy: string; // 공고 작성자 UID
-  updatedAt?: any; // Firebase Timestamp (수정 시)
+  updatedAt?: import('firebase/firestore').Timestamp; // Firebase Timestamp (수정 시)
   updatedBy?: string; // 수정자 UID
   managerId?: string;
   timeSlots?: TimeSlot[]; // 기존 전체 기간 공통 타임슬롯
@@ -653,7 +670,7 @@ export interface JobPostingTemplate {
   id: string;
   name: string;                              // 템플릿 이름
   description?: string;                      // 템플릿 설명
-  createdAt: any;                           // Firebase Timestamp
+  createdAt: import('firebase/firestore').Timestamp;                           // Firebase Timestamp
   createdBy: string;                        // 생성자 UID
   
   // 템플릿으로 저장할 공고 데이터 (날짜 제외)

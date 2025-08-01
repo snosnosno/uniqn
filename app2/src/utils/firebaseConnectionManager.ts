@@ -1,5 +1,6 @@
 import { collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
 
+import { logger } from '../utils/logger';
 import { db } from '../firebase';
 
 // Global listener management
@@ -35,7 +36,7 @@ class FirebaseConnectionManager {
     
     // 중복 구독 방지를 위한 경고
     if (this.activeCollections.has(collectionPath)) {
-      console.warn(`⚠️ Multiple listeners detected for collection: ${collectionPath}`);
+      logger.warn('⚠️ Multiple listeners detected for collection: ${collectionPath}', { component: 'firebaseConnectionManager' });
     }
     
     try {
@@ -49,16 +50,16 @@ class FirebaseConnectionManager {
             })) as T[];
             callback(data);
           } catch (error) {
-            console.error('Error processing snapshot data:', error);
+            logger.error('Error processing snapshot data:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseConnectionManager' });
             if (errorCallback) errorCallback(error as Error);
           }
         },
         (error) => {
-          console.error(`Firebase listener error for ${collectionPath}:`, error);
+          logger.error('Firebase listener error for ${collectionPath}:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseConnectionManager' });
           
           // Handle internal assertion errors - 재시도하지 않고 정리만 수행
           if (error.message && error.message.includes('INTERNAL ASSERTION FAILED')) {
-            console.log('🚨 Firebase INTERNAL ASSERTION FAILED detected - cleaning up listeners');
+            logger.debug('🚨 Firebase INTERNAL ASSERTION FAILED detected - cleaning up listeners', { component: 'firebaseConnectionManager' });
             this.handleInternalAssertionError(collectionPath, callback, errorCallback);
           } else {
             if (errorCallback) errorCallback(error);
@@ -74,7 +75,7 @@ class FirebaseConnectionManager {
         this.removeListener(listenerId, collectionPath);
       };
     } catch (error) {
-      console.error('Error setting up Firebase listener:', error);
+      logger.error('Error setting up Firebase listener:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseConnectionManager' });
       if (errorCallback) errorCallback(error as Error);
       
       // Return a no-op function
@@ -88,7 +89,7 @@ class FirebaseConnectionManager {
     errorCallback?: (error: Error) => void
   ) {
     if (this.retryCount >= this.maxRetries) {
-      console.error('Max retry attempts reached for Firebase connection');
+      logger.error('Max retry attempts reached for Firebase connection', new Error('Max retry attempts reached for Firebase connection'), { component: 'firebaseConnectionManager' });
       if (errorCallback) {
         errorCallback(new Error('Firebase connection failed after multiple retry attempts'));
       }
@@ -96,14 +97,14 @@ class FirebaseConnectionManager {
     }
 
     this.retryCount++;
-    console.log(`🔄 Firebase internal assertion error detected (attempt ${this.retryCount}/${this.maxRetries})`);
+    logger.debug('🔄 Firebase internal assertion error detected (attempt ${this.retryCount}/${this.maxRetries})', { component: 'firebaseConnectionManager' });
 
     // Clean up existing listeners to prevent state corruption
     this.cleanupAllListeners();
 
     // Firebase 내부 상태 정리를 위한 대기 시간
     setTimeout(() => {
-      console.log('⚠️ Firebase internal assertion error - not retrying to prevent recursion');
+      logger.debug('⚠️ Firebase internal assertion error - not retrying to prevent recursion', { component: 'firebaseConnectionManager' });
       if (errorCallback) {
         errorCallback(new Error('Firebase internal assertion error occurred. Please refresh the page.'));
       }
@@ -133,7 +134,7 @@ class FirebaseConnectionManager {
   }
 
   public cleanupAllListeners() {
-    console.log('🧹 Cleaning up all Firebase listeners...');
+    logger.debug('🧹 Cleaning up all Firebase listeners...', { component: 'firebaseConnectionManager' });
     this.listeners.forEach((unsubscribe, listenerId) => {
       try {
         unsubscribe();
@@ -162,21 +163,21 @@ class FirebaseConnectionManager {
     // 전역 오류 핸들러 설정
     window.addEventListener('error', (event) => {
       if (event.message && event.message.includes('INTERNAL ASSERTION FAILED')) {
-        console.log('🚨 Global Firebase INTERNAL ASSERTION FAILED detected');
+        logger.debug('🚨 Global Firebase INTERNAL ASSERTION FAILED detected', { component: 'firebaseConnectionManager' });
         this.handleGlobalInternalAssertionError();
       }
     });
 
     window.addEventListener('unhandledrejection', (event) => {
       if (event.reason && event.reason.message && event.reason.message.includes('INTERNAL ASSERTION FAILED')) {
-        console.log('🚨 Unhandled Firebase INTERNAL ASSERTION FAILED detected');
+        logger.debug('🚨 Unhandled Firebase INTERNAL ASSERTION FAILED detected', { component: 'firebaseConnectionManager' });
         this.handleGlobalInternalAssertionError();
       }
     });
   }
 
   private handleGlobalInternalAssertionError() {
-    console.log('🔧 Attempting automatic recovery from Firebase internal error...');
+    logger.debug('🔧 Attempting automatic recovery from Firebase internal error...', { component: 'firebaseConnectionManager' });
     
     // 모든 리스너 정리
     this.cleanupAllListeners();

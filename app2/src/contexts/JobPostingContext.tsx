@@ -1,4 +1,5 @@
 import { doc, getDoc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 import { db } from '../firebase';
@@ -54,7 +55,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
         setLoading(false);
       },
       (error) => {
-        console.error('공고 데이터 로딩 오류:', error);
+        logger.error('공고 데이터 로딩 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'JobPostingContext' });
         setError('공고 데이터를 불러오는데 실패했습니다.');
         setLoading(false);
       }
@@ -83,7 +84,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
         setApplicants(applicantList);
       },
       (error) => {
-        console.error('지원자 데이터 로딩 오류:', error);
+        logger.error('지원자 데이터 로딩 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'JobPostingContext' });
       }
     );
 
@@ -110,7 +111,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
         setStaff(staffList);
       },
       (error) => {
-        console.error('스태프 데이터 로딩 오류:', error);
+        logger.error('스태프 데이터 로딩 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'JobPostingContext' });
       }
     );
 
@@ -133,7 +134,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
         setError('공고를 찾을 수 없습니다.');
       }
     } catch (error) {
-      console.error('공고 새로고침 오류:', error);
+      logger.error('공고 새로고침 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'JobPostingContext' });
       setError('공고 데이터를 새로고침하는데 실패했습니다.');
     } finally {
       setLoading(false);

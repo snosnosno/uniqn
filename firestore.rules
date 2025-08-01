@@ -7,6 +7,35 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+    
+    // ================= Security Functions =================
+    // 입력 데이터 검증
+    function isValidString(field, maxLength) {
+      return field is string && field.size() <= maxLength;
+    }
+    
+    // XSS 패턴 검사
+    function hasNoXSS(text) {
+      return !text.matches('.*<script.*>.*</script>.*') &&
+             !text.matches('.*javascript:.*') &&
+             !text.matches('.*on\\w+\\s*=.*');
+    }
+    
+    // SQL Injection 패턴 검사
+    function hasNoSQLInjection(text) {
+      return !text.matches('.*union.*select.*') &&
+             !text.matches('.*select.*from.*') &&
+             !text.matches('.*insert.*into.*') &&
+             !text.matches('.*delete.*from.*') &&
+             !text.matches('.*drop.*table.*');
+    }
+    
+    // 안전한 텍스트 검증
+    function isSafeText(text, maxLength) {
+      return isValidString(text, maxLength) && 
+             hasNoXSS(text) && 
+             hasNoSQLInjection(text);
+    }
 
     // Updated: Check for 'admin', 'manager', and 'staff' roles
     function isPrivileged() {
@@ -85,11 +114,11 @@ service cloud.firestore {
       allow create: if hasValidRole() && 
         request.resource.data.keys().hasAll(['title', 'description', 'location', 'status', 'createdBy']) &&
         request.resource.data.createdBy == request.auth.uid &&
-        request.resource.data.title is string &&
-        request.resource.data.description is string &&
-        request.resource.data.location is string &&
+        isSafeText(request.resource.data.title, 200) &&
+        isSafeText(request.resource.data.description, 2000) &&
+        isSafeText(request.resource.data.location, 200) &&
         request.resource.data.status in ['open', 'closed'] &&
-        (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
+        (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);

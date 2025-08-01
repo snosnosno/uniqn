@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { logger } from '../utils/logger';
 import { collection, addDoc, query, where, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase';
@@ -67,7 +68,7 @@ export const useTemplateManager = () => {
       
       return true;
     } catch (error) {
-      console.error('템플릿 저장 오류:', error);
+      logger.error('템플릿 저장 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useTemplateManager' });
       throw error;
     }
   }, [currentUser, templateName, templateDescription]);
@@ -89,7 +90,7 @@ export const useTemplateManager = () => {
       
       return formData;
     } catch (error) {
-      console.error('템플릿 불러오기 오류:', error);
+      logger.error('템플릿 불러오기 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useTemplateManager' });
       throw error;
     }
   }, []);
@@ -104,7 +105,7 @@ export const useTemplateManager = () => {
       await deleteDoc(doc(db, 'jobPostingTemplates', templateId));
       return true;
     } catch (error) {
-      console.error('템플릿 삭제 오류:', error);
+      logger.error('템플릿 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useTemplateManager' });
       throw error;
     }
   }, []);

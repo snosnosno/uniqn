@@ -1,4 +1,5 @@
 import { StarIcon } from '@heroicons/react/24/solid';
+import { logger } from '../../utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -56,7 +57,7 @@ const DashboardPage: React.FC = () => {
         setStats(result.data);
 
       } catch (err: any) {
-        console.error("Error fetching dashboard stats:", err);
+        logger.error('Error fetching dashboard stats:', err instanceof Error ? err : new Error(String(err)), { component: 'DashboardPage' });
         setError(err.message);
       } finally {
         setLoading(false);

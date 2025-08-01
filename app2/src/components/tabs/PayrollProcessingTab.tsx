@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { callFunctionLazy } from '../../utils/firebase-dynamic';
 
@@ -119,7 +120,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
             isRelatedToJobPosting(p, jobPosting)
           );
         } catch (error) {
-          console.error(`Error fetching payroll for user ${userId}:`, error);
+          logger.error('Error fetching payroll for user ${userId}:', error instanceof Error ? error : new Error(String(error)), { component: 'PayrollProcessingTab' });
           return [];
         }
       });
@@ -138,8 +139,8 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
       });
 
       setPayrolls(payrollsWithStaffNames);
-    } catch (error: any) {
-      console.error('급여 데이터 조회 오류:', error);
+    } catch (error) {
+      logger.error('급여 데이터 조회 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'PayrollProcessingTab' });
       setError('급여 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -169,7 +170,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
         selectedPeriod.end
       );
     } catch (error) {
-      console.error('고급 급여 계산 오류:', error);
+      logger.error('고급 급여 계산 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'PayrollProcessingTab' });
       setError('고급 급여 계산에 실패했습니다.');
     }
   };

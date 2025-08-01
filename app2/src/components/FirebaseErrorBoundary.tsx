@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 
+import { logger } from '../utils/logger';
 import { emergencyFirebaseReset } from '../utils/firebaseEmergencyReset';
 
 interface Props {
@@ -32,7 +33,10 @@ class FirebaseErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 Firebase Error Boundary caught an error:', error, errorInfo);
+    logger.error('🚨 Firebase Error Boundary caught an error:', error, { 
+      component: 'FirebaseErrorBoundary', 
+      data: errorInfo.componentStack 
+    });
     
     // Firebase 내부 오류인 경우 자동 재설정 시도
     if (error.message.includes('FIRESTORE') && 
@@ -42,7 +46,7 @@ class FirebaseErrorBoundary extends Component<Props, State> {
   }
 
   private handleFirebaseError = async () => {
-    console.log('🔥 Handling Firebase internal error...');
+    logger.debug('🔥 Handling Firebase internal error...', { component: 'FirebaseErrorBoundary' });
     
     this.setState({ isResetting: true });
     
@@ -50,7 +54,7 @@ class FirebaseErrorBoundary extends Component<Props, State> {
       // 긴급 재설정 실행
       await emergencyFirebaseReset();
     } catch (resetError) {
-      console.error('❌ Emergency reset failed:', resetError);
+      logger.error('❌ Emergency reset failed:', resetError instanceof Error ? resetError : new Error(String(resetError)), { component: 'FirebaseErrorBoundary' });
       // 수동 재설정 버튼 표시
       this.setState({ isResetting: false });
     }
@@ -62,7 +66,7 @@ class FirebaseErrorBoundary extends Component<Props, State> {
     try {
       await emergencyFirebaseReset();
     } catch (error) {
-      console.error('❌ Manual reset failed:', error);
+      logger.error('❌ Manual reset failed:', error instanceof Error ? error : new Error(String(error)), { component: 'FirebaseErrorBoundary' });
       this.setState({ isResetting: false });
     }
   };

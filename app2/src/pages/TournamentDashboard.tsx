@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { IconType } from 'react-icons';
 import { FaUsers, FaClock, FaTrophy } from 'react-icons/fa';
@@ -35,7 +36,7 @@ const TournamentDashboard = () => {
                     break;
             }
         } catch (error) {
-            console.error("Error setting up test data:", error);
+            logger.error('Error setting up test data:', error instanceof Error ? error : new Error(String(error)), { component: 'TournamentDashboard' });
             alert(t('tournamentDashboard.seeding.unexpectedError'));
         } finally {
             setIsSeeding(false);

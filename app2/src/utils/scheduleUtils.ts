@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
+import { logger } from '../utils/logger';
 /**
  * 스케줄 관련 유틸리티 함수들
  */
@@ -56,7 +57,7 @@ export const safeDateToString = (dateValue: any): string => {
     const isoString = date.toISOString();
     return isoString.substring(0, 10);
   } catch (error) {
-    console.error('날짜 변환 오류:', error, dateValue);
+    logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'scheduleUtils', data: { dateValue } });
     return '';
   }
 };
@@ -129,7 +130,7 @@ export const parseTimeString = (
       endTime: Timestamp.fromDate(endDate)
     };
   } catch (error) {
-    console.error('시간 파싱 오류:', error, timeString, dateString);
+    logger.error('시간 파싱 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'scheduleUtils', data: { timeString, dateString } });
     return { startTime: null, endTime: null };
   }
 };

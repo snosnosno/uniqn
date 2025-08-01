@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
 import { useTournament } from '../contexts/TournamentContextAdapter';
@@ -56,7 +57,7 @@ const PrizesPage: React.FC = () => {
   const handleSave = () => {
     const payoutsToSave = isManual ? manualPayouts : calculatedPayouts;
     // TODO: SAVE_PAYOUTS 구현 필요
-    console.log("Dispatching SAVE_PAYOUTS action (not implemented yet)", payoutsToSave);
+    logger.debug('Dispatching SAVE_PAYOUTS action (not implemented yet)', { component: 'PrizesPage', data: payoutsToSave });
     alert(t('prizes.alertSaved'));
   }
 

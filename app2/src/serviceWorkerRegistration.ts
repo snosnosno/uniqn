@@ -10,6 +10,8 @@
 // To learn more about the benefits of this model and instructions on how to
 // opt-in, read https://cra.link/PWA
 
+import { logger } from './utils/logger';
+
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
     // [::1] is the IPv6 localhost address.
@@ -85,7 +87,7 @@ function registerValidSW(swUrl: string, config?: Config) {
               // At this point, everything has been precached.
               // It's the perfect time to display a
               // "Content is cached for offline use." message.
-              console.log('Content is cached for offline use.');
+              logger.debug('Content is cached for offline use.', { component: 'serviceWorkerRegistration' });
 
               // Execute callback
               if (config && config.onSuccess) {
@@ -97,7 +99,7 @@ function registerValidSW(swUrl: string, config?: Config) {
       };
     })
     .catch((error) => {
-      console.error('Error during service worker registration:', error);
+      logger.error('Error during service worker registration:', error instanceof Error ? error : new Error(String(error)), { component: 'serviceWorkerRegistration' });
     });
 }
 
@@ -125,7 +127,7 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
       }
     })
     .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.');
+      logger.debug('No internet connection found. App is running in offline mode.', { component: 'serviceWorkerRegistration' });
     });
 }
 

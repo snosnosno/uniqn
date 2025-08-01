@@ -5,6 +5,7 @@
 
 import { getApp } from 'firebase/app';
 
+import { logger } from '../utils/logger';
 // Storage 모듈 캐시
 let storageModule: any = null;
 let storageInstance: any = null;
@@ -20,13 +21,13 @@ const isEmulator = process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true';
  */
 export const getStorageLazy = async () => {
   if (!storageModule) {
-    console.log('🔄 Firebase Storage 모듈 로딩 중...');
+    logger.debug('🔄 Firebase Storage 모듈 로딩 중...', { component: 'firebase-dynamic' });
     const startTime = performance.now();
     
     storageModule = await import('firebase/storage');
     
     const loadTime = performance.now() - startTime;
-    console.log(`✅ Firebase Storage 로드 완료 (${loadTime.toFixed(2)}ms)`);
+    logger.debug('✅ Firebase Storage 로드 완료 (${loadTime.toFixed(2)}ms)', { component: 'firebase-dynamic' });
   }
   
   if (!storageInstance) {
@@ -34,7 +35,7 @@ export const getStorageLazy = async () => {
     storageInstance = storageModule.getStorage(app);
     
     // Storage 에뮬레이터는 별도 설정 없음
-    console.log(`📦 Firebase Storage 인스턴스 생성 완료`);
+    logger.debug('📦 Firebase Storage 인스턴스 생성 완료', { component: 'firebase-dynamic' });
   }
   
   return storageInstance;
@@ -67,16 +68,16 @@ export const uploadFileLazy = async (file: File, path: string) => {
       (snapshot: any) => {
         // 진행률 계산
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log(`📤 업로드 진행률: ${progress.toFixed(0)}%`);
+        logger.debug('📤 업로드 진행률: ${progress.toFixed(0)}%', { component: 'firebase-dynamic' });
       },
       (error: any) => {
-        console.error('❌ 업로드 오류:', error);
+        logger.error('❌ 업로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
         reject(error);
       },
       async () => {
         // 업로드 완료 후 다운로드 URL 가져오기
         const downloadURL = await storageModule.getDownloadURL(uploadTask.snapshot.ref);
-        console.log('✅ 업로드 완료:', downloadURL);
+        logger.debug('✅ 업로드 완료:', { component: 'firebase-dynamic', data: downloadURL });
         resolve(downloadURL);
       }
     );
@@ -89,13 +90,13 @@ export const uploadFileLazy = async (file: File, path: string) => {
  */
 export const getFunctionsLazy = async () => {
   if (!functionsModule) {
-    console.log('🔄 Firebase Functions 모듈 로딩 중...');
+    logger.debug('🔄 Firebase Functions 모듈 로딩 중...', { component: 'firebase-dynamic' });
     const startTime = performance.now();
     
     functionsModule = await import('firebase/functions');
     
     const loadTime = performance.now() - startTime;
-    console.log(`✅ Firebase Functions 로드 완료 (${loadTime.toFixed(2)}ms)`);
+    logger.debug('✅ Firebase Functions 로드 완료 (${loadTime.toFixed(2)}ms)', { component: 'firebase-dynamic' });
   }
   
   if (!functionsInstance) {
@@ -106,13 +107,13 @@ export const getFunctionsLazy = async () => {
     if (isEmulator) {
       try {
         functionsModule.connectFunctionsEmulator(functionsInstance, 'localhost', 5001);
-        console.log('🔗 Firebase Functions 에뮬레이터 연결됨');
+        logger.debug('🔗 Firebase Functions 에뮬레이터 연결됨', { component: 'firebase-dynamic' });
       } catch (error) {
-        console.log('ℹ️ Functions 에뮬레이터 이미 연결되어 있거나 사용할 수 없음');
+        logger.debug('ℹ️ Functions 에뮬레이터 이미 연결되어 있거나 사용할 수 없음', { component: 'firebase-dynamic' });
       }
     }
     
-    console.log(`⚡ Firebase Functions 인스턴스 생성 완료`);
+    logger.debug('⚡ Firebase Functions 인스턴스 생성 완료', { component: 'firebase-dynamic' });
   }
   
   return functionsInstance;
@@ -128,12 +129,12 @@ export const callFunctionLazy = async (functionName: string, data?: any) => {
   const callable = functionsModule.httpsCallable(functions, functionName);
   
   try {
-    console.log(`🔄 Cloud Function 호출 중: ${functionName}`);
+    logger.debug('🔄 Cloud Function 호출 중: ${functionName}', { component: 'firebase-dynamic' });
     const result = await callable(data);
-    console.log(`✅ Cloud Function 호출 성공: ${functionName}`);
+    logger.debug('✅ Cloud Function 호출 성공: ${functionName}', { component: 'firebase-dynamic' });
     return result.data;
   } catch (error) {
-    console.error(`❌ Cloud Function 호출 실패: ${functionName}`, error);
+    logger.error('❌ Cloud Function 호출 실패: ${functionName}', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
     throw error;
   }
 };
@@ -154,7 +155,7 @@ export const getDownloadURLLazy = async (path: string) => {
     const url = await storageModule.getDownloadURL(storageRef);
     return url;
   } catch (error) {
-    console.error('다운로드 URL 가져오기 실패:', error);
+    logger.error('다운로드 URL 가져오기 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
     throw error;
   }
 };
@@ -173,9 +174,9 @@ export const deleteFileLazy = async (path: string) => {
   
   try {
     await storageModule.deleteObject(storageRef);
-    console.log('✅ 파일 삭제 완료:', path);
+    logger.debug('✅ 파일 삭제 완료:', { component: 'firebase-dynamic', data: path });
   } catch (error) {
-    console.error('파일 삭제 실패:', error);
+    logger.error('파일 삭제 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
     throw error;
   }
 };
@@ -195,7 +196,7 @@ export const getLoadStatus = () => {
  * 사용자가 기능을 사용하기 전에 백그라운드에서 로드할 수 있습니다.
  */
 export const preloadModules = async () => {
-  console.log('🔄 Firebase 모듈 사전 로딩 시작...');
+  logger.debug('🔄 Firebase 모듈 사전 로딩 시작...', { component: 'firebase-dynamic' });
   
   const promises = [];
   
@@ -211,8 +212,8 @@ export const preloadModules = async () => {
   
   if (promises.length > 0) {
     await Promise.all(promises);
-    console.log('✅ Firebase 모듈 사전 로딩 완료');
+    logger.debug('✅ Firebase 모듈 사전 로딩 완료', { component: 'firebase-dynamic' });
   } else {
-    console.log('ℹ️ 모든 모듈이 이미 로드되어 있습니다');
+    logger.debug('ℹ️ 모든 모듈이 이미 로드되어 있습니다', { component: 'firebase-dynamic' });
   }
 };

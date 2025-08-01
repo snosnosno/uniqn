@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 
+import { logger } from '../utils/logger';
 interface GroupByDateOptions<T> {
   data: T[];
   getDateKey: (item: T) => string;
@@ -53,7 +54,7 @@ export const useGroupByDate = <T>(
           const expandedArray = JSON.parse(savedExpanded);
           setExpandedKeys(new Set(expandedArray));
         } catch (error) {
-          console.error('확장 상태 복원 오류:', error);
+          logger.error('확장 상태 복원 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useGroupByDate' });
           // 기본값 설정
           if (defaultExpanded) {
             const allKeys = Array.from(new Set(data.map(getDateKey)));

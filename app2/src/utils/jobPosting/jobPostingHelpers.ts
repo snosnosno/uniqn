@@ -1,4 +1,5 @@
-import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate } from '../../types/jobPosting';
+import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting } from '../../types/jobPosting';
+import { logger } from '../logger';
 import { convertToTimestamp, getTodayString } from './dateUtils';
 
 /**
@@ -72,38 +73,38 @@ export const templateToFormData = (template: JobPostingTemplate) => {
 /**
  * 폼 데이터를 Firebase 저장용으로 변환
  */
-export const prepareFormDataForFirebase = (formData: any) => {
-  console.log('🔍 prepareFormDataForFirebase 입력 데이터:', formData);
+export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
+  logger.debug('🔍 prepareFormDataForFirebase 입력 데이터:', { component: 'jobPostingHelpers', data: formData });
   
   // 모든 역할을 수집하여 requiredRoles 배열 생성
   const requiredRoles = new Set<string>();
   
   if (formData.usesDifferentDailyRequirements && formData.dateSpecificRequirements) {
-    console.log('📅 일자별 다른 요구사항 처리 중...');
+    logger.debug('📅 일자별 다른 요구사항 처리 중...', { component: 'jobPostingHelpers' });
     formData.dateSpecificRequirements.forEach((req: DateSpecificRequirement) => {
       req.timeSlots.forEach((timeSlot: TimeSlot) => {
         timeSlot.roles.forEach((role: RoleRequirement) => {
           if (role.name) {
             requiredRoles.add(role.name);
-            console.log('👤 역할 추가:', role.name);
+            logger.debug('👤 역할 추가:', { component: 'jobPostingHelpers', data: role.name });
           }
         });
       });
     });
   } else if (formData.timeSlots) {
-    console.log('⏰ 일반 시간대 처리 중...');
+    logger.debug('⏰ 일반 시간대 처리 중...', { component: 'jobPostingHelpers' });
     formData.timeSlots.forEach((timeSlot: TimeSlot) => {
       timeSlot.roles.forEach((role: RoleRequirement) => {
         if (role.name) {
           requiredRoles.add(role.name);
-          console.log('👤 역할 추가:', role.name);
+          logger.debug('👤 역할 추가:', { component: 'jobPostingHelpers', data: role.name });
         }
       });
     });
   }
 
   const requiredRolesArray = Array.from(requiredRoles);
-  console.log('✅ 최종 requiredRoles:', requiredRolesArray);
+  logger.debug('✅ 최종 requiredRoles:', { component: 'jobPostingHelpers', data: requiredRolesArray });
 
   const result = {
     ...formData,
@@ -118,23 +119,45 @@ export const prepareFormDataForFirebase = (formData: any) => {
     })) || []
   };
 
-  console.log('🚀 Firebase 저장용 최종 데이터:', result);
+  logger.debug('🚀 Firebase 저장용 최종 데이터:', { component: 'jobPostingHelpers', data: result });
   return result;
 };
 
 /**
  * Firebase 데이터를 폼 데이터로 변환
  */
-export const prepareFirebaseDataForForm = (data: any) => {
-  return {
-    ...data,
-    startDate: data.startDate?.toDate?.() || data.startDate,
-    endDate: data.endDate?.toDate?.() || data.endDate,
-    dateSpecificRequirements: (data.dateSpecificRequirements || []).map((req: any) => ({
-      ...req,
-      date: req.date?.toDate?.() || req.date
-    }))
+export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostingFormData => {
+  const convertDate = (dateValue: any): string => {
+    if (!dateValue) return '';
+    if (typeof dateValue === 'string') return dateValue;
+    if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+      const date = dateValue.toDate();
+      return date.toISOString().split('T')[0] || '';
+    }
+    if (dateValue instanceof Date) {
+      return dateValue.toISOString().split('T')[0] || '';
+    }
+    return '';
   };
+
+  return {
+    title: data.title || '',
+    type: data.type || 'application',
+    description: data.description || '',
+    location: data.location || '',
+    detailedAddress: data.detailedAddress,
+    startDate: convertDate(data.startDate),
+    endDate: convertDate(data.endDate),
+    status: data.status || 'open',
+    usesDifferentDailyRequirements: data.usesDifferentDailyRequirements,
+    timeSlots: data.timeSlots,
+    dateSpecificRequirements: (data.dateSpecificRequirements || []).map((req: DateSpecificRequirement) => ({
+      ...req,
+      date: convertDate(req.date)
+    })),
+    preQuestions: data.preQuestions,
+    requiredRoles: data.requiredRoles
+  } as JobPostingFormData;
 };
 
 /**

@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useEffect } from 'react';
+import { logger } from '../../../utils/logger';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -32,8 +33,8 @@ const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
 
   // 스케줄 이벤트를 FullCalendar 이벤트로 변환
   const calendarEvents = useMemo(() => {
-    console.log('\n📅 ========== 캘린더 이벤트 변환 시작 ==========');
-    console.log('입력된 스케줄 수:', schedules.length);
+    logger.debug('\n📅 ========== 캘린더 이벤트 변환 시작 ==========', { component: 'ScheduleCalendar' });
+    logger.debug('입력된 스케줄 수:', { component: 'ScheduleCalendar', data: schedules.length });
     
     // 입력 스케줄 상세
     schedules.forEach((schedule, index) => {
@@ -114,9 +115,9 @@ const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       return event;
     });
     
-    console.log('\n📅 ========== 캘린더 이벤트 변환 완료 ==========');
-    console.log('생성된 이벤트 수:', events.length);
-    console.log('========================================\n');
+    logger.debug('\n📅 ========== 캘린더 이벤트 변환 완료 ==========', { component: 'ScheduleCalendar' });
+    logger.debug('생성된 이벤트 수:', { component: 'ScheduleCalendar', data: events.length });
+    logger.debug('========================================\n', { component: 'ScheduleCalendar' });
     
     return events;
   }, [schedules]);

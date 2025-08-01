@@ -1,4 +1,5 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { useState, useEffect } from 'react';
 
 import { db } from '../firebase';
@@ -43,7 +44,7 @@ export const useSettings = () => {
         setLoading(false);
       },
       (err) => {
-        console.error('Error fetching settings:', err);
+        logger.error('Error fetching settings:', err instanceof Error ? err : new Error(String(error)), { component: 'useSettings' });
         setError(err);
         setLoading(false);
       }
@@ -58,7 +59,7 @@ export const useSettings = () => {
       await setDoc(settingsDocRef, newSettings, { merge: true });
       logAction('settings_updated', { ...newSettings });
     } catch (e) {
-      console.error("Error updating settings:", e);
+      logger.error('Error updating settings:', e instanceof Error ? e : new Error(String(e)), { component: 'useSettings' });
       setError(e as Error);
     }
   };

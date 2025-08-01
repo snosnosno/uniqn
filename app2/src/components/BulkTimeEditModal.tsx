@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { ClockIcon, SaveIcon, TimesIcon, UsersIcon, CalendarIcon } from './Icons';
 import { doc, Timestamp, writeBatch } from 'firebase/firestore';
@@ -90,14 +91,14 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     try {
       const timeParts = timeString.split(':').map(Number);
       if (timeParts.length !== 2) {
-        console.error('Invalid time string format:', timeString);
+        logger.error('Invalid time string format:', new Error('Invalid time format'), { component: 'BulkTimeEditModal' });
         return null;
       }
       
       const [hours, minutes] = timeParts;
       
       if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        console.error('Invalid time string:', timeString);
+        logger.error('Invalid time string:', new Error(`Invalid time: ${timeString}`), { component: 'BulkTimeEditModal' });
         return null;
       }
       
@@ -121,13 +122,13 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       }
       
       if (isNaN(date.getTime())) {
-        console.error('Invalid date created:', date);
+        logger.error('Invalid date created:', new Error('Invalid date'), { component: 'BulkTimeEditModal' });
         return null;
       }
       
       return Timestamp.fromDate(date);
     } catch (error) {
-      console.error('Error parsing time string:', error, timeString);
+      logger.error('Error parsing time string:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal', data: { timeString } });
       return null;
     }
   };
@@ -250,7 +251,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           
           successCount++;
         } catch (error) {
-          console.error(`Error updating staff ${staff.id}:`, error);
+          logger.error('Error updating staff ${staff.id}:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
           errorCount++;
         }
       }
@@ -282,7 +283,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       
       onClose();
     } catch (error) {
-      console.error('일괄 업데이트 오류:', error);
+      logger.error('일괄 업데이트 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
       showError('일괄 수정 중 오류가 발생했습니다.');
     } finally {
       setIsUpdating(false);

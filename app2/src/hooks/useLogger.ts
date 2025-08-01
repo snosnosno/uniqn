@@ -52,8 +52,8 @@ export const logAction = async (action: ActionType, details: Record<string, any>
     await logActionCallable({ action, details });
     
     logger.info(`Action logged successfully: ${action}`, context);
-  } catch (error: any) {
-    logger.error(`Failed to log action: ${action}`, error, context);
+  } catch (error) {
+    logger.error(`Failed to log action: ${action}`, error instanceof Error ? error : new Error(String(error)), context);
   }
 };
 

@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
 import { StaffData } from '../hooks/useStaffManagement';
@@ -175,7 +176,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     
     // 다중 선택 모드에서는 무시
     if (multiSelectMode) {
-      console.log('다중 선택 모드에서 시작 시간 클릭 무시됨');
+      logger.debug('다중 선택 모드에서 시작 시간 클릭 무시됨', { component: 'StaffRow' });
       return;
     }
     

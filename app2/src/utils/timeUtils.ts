@@ -1,4 +1,6 @@
 // 시간 관련 유틸리티 함수들
+import { logger } from './logger';
+
 export interface TimeInterval {
   label: string;
   value: number; // 분 단위
@@ -24,7 +26,7 @@ export const generateTimeSlots = (
   const end = new Date(`2024-01-01T${endTime}:00`);
   
   if (start >= end) {
-    console.warn('Start time must be before end time');
+    logger.warn('Start time must be before end time', { component: 'timeUtils' });
     return [];
   }
   

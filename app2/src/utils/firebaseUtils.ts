@@ -18,8 +18,8 @@ export const resetFirebaseConnection = async (): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     logger.info('✅ Firebase connection reset completed', { operation: 'resetFirebaseConnection' });
-  } catch (error: any) {
-    logger.error('❌ Error resetting Firebase connection', error, { operation: 'resetFirebaseConnection' });
+  } catch (error) {
+    logger.error('❌ Error resetting Firebase connection', error instanceof Error ? error : new Error(String(error)), { operation: 'resetFirebaseConnection' });
   }
 };
 
@@ -33,8 +33,8 @@ export const forceFirebaseReconnection = async (): Promise<void> => {
     
     // Force a page reload to completely reset Firebase state
     window.location.reload();
-  } catch (error: any) {
-    logger.error('❌ Error forcing Firebase reconnection', error, { operation: 'forceFirebaseReconnection' });
+  } catch (error) {
+    logger.error('❌ Error forcing Firebase reconnection', error instanceof Error ? error : new Error(String(error)), { operation: 'forceFirebaseReconnection' });
     // Fallback to page reload
     window.location.reload();
   }
@@ -55,8 +55,8 @@ export const checkFirebaseConnection = async (): Promise<boolean> => {
     const testDoc = db.app.options;
     logger.info('✅ Firebase connection is healthy', { operation: 'checkFirebaseConnection' });
     return true;
-  } catch (error: any) {
-    logger.error('❌ Firebase connection check failed', error, { operation: 'checkFirebaseConnection' });
+  } catch (error) {
+    logger.error('❌ Firebase connection check failed', error instanceof Error ? error : new Error(String(error)), { operation: 'checkFirebaseConnection' });
     return false;
   }
 };
@@ -66,10 +66,10 @@ export const cleanupFirebaseListeners = (listeners: Unsubscribe[]): void => {
   listeners.forEach(unsubscribe => {
     try {
       unsubscribe();
-    } catch (error: any) {
+    } catch (error) {
       logger.warn('⚠️ Error cleaning up Firebase listener', { 
         operation: 'cleanupFirebaseListeners',
-        additionalData: { errorMessage: error.message }
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });

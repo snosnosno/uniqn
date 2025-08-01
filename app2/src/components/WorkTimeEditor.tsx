@@ -1,4 +1,5 @@
 import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SaveIcon, TimesIcon, EditIcon } from './Icons';
@@ -179,7 +180,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     setIsUpdating(true);
     try {
       const baseDate = toDate(workLog.scheduledStartTime || new Date());
-      console.log('handleUpdateTime - baseDate:', baseDate);
+      logger.debug('handleUpdateTime - baseDate:', { component: 'WorkTimeEditor', data: baseDate });
       
       const newStartTime = startTime && startTime.trim() !== '' ? 
         parseTimeString(startTime, baseDate, false) : null;
@@ -212,7 +213,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
             const scheduledEndDate = toDate(workLog.scheduledEndTime);
             scheduledEndTimestamp = Timestamp.fromDate(scheduledEndDate);
           } catch (error) {
-            console.error('Error converting scheduledEndTime:', error);
+            logger.error('Error converting scheduledEndTime:', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
           }
         }
         
@@ -263,7 +264,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       showSuccess(t('attendance.messages.timeUpdated'));
       onClose();
     } catch (error) {
-      console.error('Error updating work time:', error);
+      logger.error('Error updating work time:', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
       showError(t('attendance.messages.updateError'));
     } finally {
       setIsUpdating(false);

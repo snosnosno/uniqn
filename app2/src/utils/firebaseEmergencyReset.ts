@@ -1,4 +1,6 @@
 // Firebase 긴급 재설정 유틸리티
+import { logger } from './logger';
+
 export class FirebaseEmergencyReset {
   private static instance: FirebaseEmergencyReset;
   private resetInProgress = false;
@@ -13,12 +15,12 @@ export class FirebaseEmergencyReset {
   // 긴급 재설정 실행
   public async emergencyReset(): Promise<void> {
     if (this.resetInProgress) {
-      console.log('🔄 Reset already in progress...');
+      logger.debug('🔄 Reset already in progress...', { component: 'firebaseEmergencyReset' });
       return;
     }
 
     this.resetInProgress = true;
-    console.log('🚨 Starting Firebase emergency reset...');
+    logger.debug('🚨 Starting Firebase emergency reset...', { component: 'firebaseEmergencyReset' });
 
     try {
       // 1. 모든 Firebase 리스너 정리
@@ -34,7 +36,7 @@ export class FirebaseEmergencyReset {
       this.forcePageReload();
       
     } catch (error) {
-      console.error('❌ Emergency reset failed:', error);
+      logger.error('❌ Emergency reset failed:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseEmergencyReset' });
       // 실패 시에도 페이지 새로고침
       this.forcePageReload();
     }
@@ -42,7 +44,7 @@ export class FirebaseEmergencyReset {
 
   // 모든 리스너 정리
   private clearAllListeners(): void {
-    console.log('🧹 Clearing all Firebase listeners...');
+    logger.debug('🧹 Clearing all Firebase listeners...', { component: 'firebaseEmergencyReset' });
     
     // 전역 이벤트 리스너 정리
     const events = ['beforeunload', 'unload', 'pagehide'];
@@ -63,7 +65,7 @@ export class FirebaseEmergencyReset {
 
   // 브라우저 캐시 클리어
   private clearBrowserCache(): void {
-    console.log('🗑️ Clearing browser cache...');
+    logger.debug('🗑️ Clearing browser cache...', { component: 'firebaseEmergencyReset' });
     
     try {
       // IndexedDB 클리어
@@ -104,7 +106,7 @@ export class FirebaseEmergencyReset {
 
   // Firebase 연결 재설정
   private async resetFirebaseConnection(): Promise<void> {
-    console.log('🔄 Resetting Firebase connection...');
+    logger.debug('🔄 Resetting Firebase connection...', { component: 'firebaseEmergencyReset' });
     
     try {
       // Firebase 앱 재초기화를 위한 지연
@@ -120,7 +122,7 @@ export class FirebaseEmergencyReset {
 
   // Firebase 스크립트 재로드
   private reloadFirebaseScripts(): void {
-    console.log('📜 Reloading Firebase scripts...');
+    logger.debug('📜 Reloading Firebase scripts...', { component: 'firebaseEmergencyReset' });
     
     try {
       // Firebase 관련 스크립트 태그 찾기 및 재로드
@@ -142,7 +144,7 @@ export class FirebaseEmergencyReset {
 
   // 페이지 강제 새로고침
   private forcePageReload(): void {
-    console.log('🔄 Force reloading page...');
+    logger.debug('🔄 Force reloading page...', { component: 'firebaseEmergencyReset' });
     
     // 모든 상태 정리 후 새로고침
     setTimeout(() => {

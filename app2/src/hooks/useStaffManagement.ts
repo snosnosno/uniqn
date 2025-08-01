@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 import { db } from '../firebase';
 import { formatDate } from '../utils/jobPosting/dateUtils';
 import type { WorkLog } from '../types/common';
+import { logger } from '../utils/logger';
 
 // 업무 역할 정의
 type JobRole = 
@@ -206,7 +207,7 @@ export const useStaffManagement = (
         setLoading(false);
       },
       (error) => {
-        console.error('❌ 스태프 데이터 실시간 구독 오류:', error);
+        logger.error('스태프 데이터 실시간 구독 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement' });
         setError(t('staffListPage.fetchError'));
         setLoading(false);
       }
@@ -264,7 +265,7 @@ export const useStaffManagement = (
         
       },
       (error) => {
-        console.error('❌ workLogs 데이터 실시간 구독 오류:', error);
+        logger.error('workLogs 데이터 실시간 구독 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement' });
       }
     );
 
@@ -283,7 +284,7 @@ export const useStaffManagement = (
           const expandedArray = JSON.parse(savedExpanded);
           setExpandedDates(new Set(expandedArray));
         } catch (error) {
-          console.error('확장 상태 복원 오류:', error);
+          logger.warn('확장 상태 복원 오류', { component: 'useStaffManagement', error: String(error) });
         }
       }
     }
@@ -341,7 +342,7 @@ export const useStaffManagement = (
       showSuccess(t('staffManagement.deleteSuccess'));
       setError('');
     } catch (error) {
-      console.error('스태프 삭제 오류:', error);
+      logger.error('스태프 삭제 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement' });
       setError(t('staffManagement.deleteError'));
       showError(t('staffManagement.deleteError'));
     }
@@ -404,7 +405,7 @@ export const useStaffManagement = (
           // Timestamp 문자열을 포맷된 날짜로 변환
           date = formatDate(staff.assignedDate);
         } catch (error) {
-          console.error('❌ useStaffManagement 날짜 포맷 오류:', error, staff.assignedDate);
+          logger.error('useStaffManagement 날짜 포맷 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement', data: { assignedDate: staff.assignedDate } });
           date = '날짜 오류';
         }
       }
@@ -460,7 +461,7 @@ export const useStaffManagement = (
       try {
         return formatDate(staff.assignedDate);
       } catch (error) {
-        console.error('❌ availableDates 날짜 포맷 오류:', error, staff.assignedDate);
+        logger.error('availableDates 날짜 포맷 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement', data: { assignedDate: staff.assignedDate } });
         return '날짜 오류';
       }
     }));

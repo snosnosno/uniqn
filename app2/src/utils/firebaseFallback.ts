@@ -1,5 +1,6 @@
 import { collection, getDocs, query, where, DocumentData } from 'firebase/firestore';
 
+import { logger } from '../utils/logger';
 import { db } from '../firebase';
 
 // Firebase 연결 상태 관리
@@ -38,7 +39,7 @@ class FirebaseFallbackManager {
   // 안전한 데이터 가져오기 (Firebase 실패 시 폴백 사용)
   public async safeGetDocs(collectionName: string, filters?: any[]): Promise<any[]> {
     if (!this.isConnected || this.retryAttempts >= this.maxRetries) {
-      console.log(`Using fallback data for ${collectionName}`);
+      logger.debug('Using fallback data for ${collectionName}', { component: 'firebaseFallback' });
       return this.getFallbackData(collectionName);
     }
 
@@ -61,7 +62,7 @@ class FirebaseFallbackManager {
       
       return data;
     } catch (error) {
-      console.error(`Firebase query failed for ${collectionName}:`, error);
+      logger.error('Firebase query failed for ${collectionName}:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseFallback' });
       this.retryAttempts++;
       
       // 폴백 데이터 반환
@@ -71,7 +72,7 @@ class FirebaseFallbackManager {
 
   // 연결 재설정
   public async resetConnection(): Promise<void> {
-    console.log('🔄 Resetting Firebase connection...');
+    logger.debug('🔄 Resetting Firebase connection...', { component: 'firebaseFallback' });
     this.retryAttempts = 0;
     
     // 페이지 새로고침으로 완전한 재초기화

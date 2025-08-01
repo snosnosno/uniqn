@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../../utils/logger';
 // import { useTranslation } from 'react-i18next'; // not used
 import { 
   FaCalendarAlt, 
@@ -96,15 +97,15 @@ const MySchedulePage: React.FC = () => {
   
   // 스케줄 데이터 디버깅
   useEffect(() => {
-    console.log('\n🎯 ========== MySchedulePage 렌더링 ==========');
-    console.log('현재 스케줄 수:', schedules.length);
-    console.log('로딩 상태:', loading);
-    console.log('에러:', error);
-    console.log('필터:', filters);
-    console.log('통계:', stats);
+    logger.debug('\n🎯 ========== MySchedulePage 렌더링 ==========', { component: 'index' });
+    logger.debug('현재 스케줄 수:', { component: 'index', data: schedules.length });
+    logger.debug('로딩 상태:', { component: 'index', data: loading });
+    logger.debug('에러:', { component: 'index', data: error });
+    logger.debug('필터:', { component: 'index', data: filters });
+    logger.debug('통계:', { component: 'index', data: stats });
     
     if (schedules.length > 0) {
-      console.log('스케줄 샘플:');
+      logger.debug('스케줄 샘플:', { component: 'index' });
       schedules.slice(0, 3).forEach((schedule, index) => {
         console.log(`  [${index}]`, {
           id: schedule.id,
@@ -115,7 +116,7 @@ const MySchedulePage: React.FC = () => {
         });
       });
     }
-    console.log('========================================\n');
+    logger.debug('========================================\n', { component: 'index' });
   }, [schedules, loading, error, filters, stats]);
 
   // 이벤트 클릭 핸들러
@@ -134,7 +135,7 @@ const MySchedulePage: React.FC = () => {
     
     setPendingCheckInSchedule(schedule);
     setIsQRScannerOpen(true);
-    console.log('🔍 QR 스캐너 열기 - 출근 대기:', scheduleId);
+    logger.debug('🔍 QR 스캐너 열기 - 출근 대기:', { component: 'index', data: scheduleId });
   };
 
   // 실제 출근 처리 (QR 스캔 완료 후 실행)
@@ -144,7 +145,7 @@ const MySchedulePage: React.FC = () => {
       
       // 🔥 workLogId가 없는 경우 자동 생성 (applications → workLogs 변환)
       if (!workLogId && schedule.sourceCollection === 'applications') {
-        console.log('🏗️ 확정된 지원서에 대한 workLog 자동 생성:', schedule.eventName);
+        logger.debug('🏗️ 확정된 지원서에 대한 workLog 자동 생성:', { component: 'index', data: schedule.eventName });
         
         // 새 workLog 문서 생성
         const newWorkLogRef = doc(collection(db, 'workLogs'));
@@ -181,7 +182,7 @@ const MySchedulePage: React.FC = () => {
         });
         
         workLogId = newWorkLogRef.id;
-        console.log('✅ workLog 자동 생성 완료:', workLogId);
+        logger.debug('✅ workLog 자동 생성 완료:', { component: 'index', data: workLogId });
         
       } else if (!workLogId) {
         throw new Error('워크로그 정보를 찾을 수 없습니다.');
@@ -195,9 +196,9 @@ const MySchedulePage: React.FC = () => {
       }
 
       showSuccess(`${schedule.eventName} 출근 처리가 완료되었습니다.`);
-      console.log('✅ 출근 처리 완료:', schedule.id);
+      logger.debug('✅ 출근 처리 완료:', { component: 'index', data: schedule.id });
     } catch (error) {
-      console.error('❌ 출근 처리 오류:', error);
+      logger.error('❌ 출근 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('출근 처리 중 오류가 발생했습니다.');
     }
   };
@@ -218,9 +219,9 @@ const MySchedulePage: React.FC = () => {
       });
 
       showSuccess('퇴근 처리되었습니다.');
-      console.log('✅ 퇴근 처리 완료:', scheduleId);
+      logger.debug('✅ 퇴근 처리 완료:', { component: 'index', data: scheduleId });
     } catch (error) {
-      console.error('❌ 퇴근 처리 오류:', error);
+      logger.error('❌ 퇴근 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('퇴근 처리 중 오류가 발생했습니다.');
     }
   };
@@ -228,7 +229,7 @@ const MySchedulePage: React.FC = () => {
   // QR 스캔 완료 핸들러
   const handleQRScanComplete = async (data: string) => {
     try {
-      console.log('🔍 QR 스캔 데이터:', data);
+      logger.debug('🔍 QR 스캔 데이터:', { component: 'index', data: data });
       
       if (!pendingCheckInSchedule) {
         showError('출근 처리할 일정이 없습니다.');
@@ -243,9 +244,9 @@ const MySchedulePage: React.FC = () => {
       setIsQRScannerOpen(false);
       setPendingCheckInSchedule(null);
       
-      console.log('✅ QR 인증 및 출근 처리 완료');
+      logger.debug('✅ QR 인증 및 출근 처리 완료', { component: 'index' });
     } catch (error) {
-      console.error('❌ QR 처리 오류:', error);
+      logger.error('❌ QR 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('QR 코드 처리 중 오류가 발생했습니다.');
       
       // 에러 시에도 상태 초기화
@@ -269,9 +270,9 @@ const MySchedulePage: React.FC = () => {
       });
 
       showSuccess('지원이 취소되었습니다.');
-      console.log('✅ 지원 취소 완료:', scheduleId);
+      logger.debug('✅ 지원 취소 완료:', { component: 'index', data: scheduleId });
     } catch (error) {
-      console.error('❌ 지원 취소 오류:', error);
+      logger.error('❌ 지원 취소 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('지원 취소 중 오류가 발생했습니다.');
     }
   };
@@ -307,7 +308,7 @@ const MySchedulePage: React.FC = () => {
       // 사용자 확인
       const confirmed = window.confirm(`"${schedule.eventName}" 일정을 삭제하시겠습니까?\n\n삭제된 일정은 복구할 수 없습니다.`);
       if (!confirmed) {
-        console.log('ℹ️ 사용자가 삭제를 취소했습니다.');
+        logger.debug('ℹ️ 사용자가 삭제를 취소했습니다.', { component: 'index' });
         return;
       }
 
@@ -315,7 +316,7 @@ const MySchedulePage: React.FC = () => {
       if (schedule.sourceCollection === 'applications' && schedule.applicationId) {
         // applications: 완전 삭제
         await deleteDoc(doc(db, 'applications', schedule.applicationId));
-        console.log('✅ applications 문서 삭제 완료:', schedule.applicationId);
+        logger.debug('✅ applications 문서 삭제 완료:', { component: 'index', data: schedule.applicationId });
         
       } else if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
         // workLogs: 이력 보존을 위해 상태만 변경
@@ -324,12 +325,12 @@ const MySchedulePage: React.FC = () => {
           cancelledAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         });
-        console.log('✅ workLogs 상태 변경 완료:', schedule.workLogId);
+        logger.debug('✅ workLogs 상태 변경 완료:', { component: 'index', data: schedule.workLogId });
         
       } else if (schedule.sourceCollection === 'staff' && schedule.sourceId) {
         // staff: 해당 일정 정보만 제거 (전체 문서는 보존)
         // 실제 구현은 staff 문서 구조에 따라 달라질 수 있음
-        console.log('⚠️ staff 컬렉션 삭제는 추가 구현이 필요합니다:', schedule.sourceId);
+        logger.debug('⚠️ staff 컬렉션 삭제는 추가 구현이 필요합니다:', { component: 'index', data: schedule.sourceId });
         showError('직원 일정 삭제는 관리자에게 문의하세요.');
         return;
         
@@ -345,7 +346,7 @@ const MySchedulePage: React.FC = () => {
       });
 
     } catch (error) {
-      console.error('❌ 일정 삭제 오류:', error);
+      logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('일정 삭제 중 오류가 발생했습니다.');
     }
   };
@@ -582,7 +583,7 @@ const MySchedulePage: React.FC = () => {
           onClose={() => {
             setIsQRScannerOpen(false);
             setPendingCheckInSchedule(null);
-            console.log('🔍 QR 스캐너 취소됨');
+            logger.debug('🔍 QR 스캐너 취소됨', { component: 'index' });
           }}
           onScan={(data) => {
             if (data) {
@@ -590,7 +591,7 @@ const MySchedulePage: React.FC = () => {
             }
           }}
           onError={(error) => {
-            console.error('❌ QR 스캔 오류:', error);
+            logger.error('❌ QR 스캔 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
             showError('QR 코드 스캔 중 오류가 발생했습니다. 다시 시도해주세요.');
           }}
         />

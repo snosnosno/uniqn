@@ -1,5 +1,6 @@
 // 급여 데이터 관리 훅
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { useState, useEffect, useCallback } from 'react';
 
 import { db } from '../firebase';
@@ -95,7 +96,7 @@ export const usePayrollData = (props: UsePayrollDataProps = {}) => {
       }
 
     } catch (err) {
-      console.error('급여 데이터 생성 중 오류:', err);
+      logger.error('급여 데이터 생성 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'usePayrollData' });
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -143,7 +144,7 @@ export const usePayrollData = (props: UsePayrollDataProps = {}) => {
       }
 
     } catch (err) {
-      console.error('급여 데이터 조회 중 오류:', err);
+      logger.error('급여 데이터 조회 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'usePayrollData' });
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -166,9 +167,9 @@ export const usePayrollData = (props: UsePayrollDataProps = {}) => {
         });
       }
 
-      console.log(`${data.length}개의 급여 데이터가 저장되었습니다.`);
+      logger.debug('${data.length}개의 급여 데이터가 저장되었습니다.', { component: 'usePayrollData' });
     } catch (err) {
-      console.error('급여 데이터 저장 중 오류:', err);
+      logger.error('급여 데이터 저장 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'usePayrollData' });
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -187,7 +188,7 @@ export const usePayrollData = (props: UsePayrollDataProps = {}) => {
         updatedAt: Timestamp.now()
       });
     } catch (err) {
-      console.error('급여 상태 업데이트 중 오류:', err);
+      logger.error('급여 상태 업데이트 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'usePayrollData' });
       setError(err as Error);
     }
   }, []);
@@ -262,7 +263,7 @@ async function getStaffJobRole(staffId: string): Promise<string> {
     
     return 'Dealer'; // 기본값
   } catch (error) {
-    console.error('스태프 직무 조회 중 오류:', error);
+    logger.error('스태프 직무 조회 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'usePayrollData' });
     return 'Dealer';
   }
 }
@@ -282,7 +283,7 @@ async function getEventName(eventId: string): Promise<string> {
     
     return eventId;
   } catch (error) {
-    console.error('이벤트 이름 조회 중 오류:', error);
+    logger.error('이벤트 이름 조회 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'usePayrollData' });
     return eventId;
   }
 }

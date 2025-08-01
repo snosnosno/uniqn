@@ -1,4 +1,5 @@
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { logger } from '../../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -41,7 +42,7 @@ const UserManagementPage: React.FC = () => {
       setUserList(list);
       setLoading(false);
     }, (err) => {
-        console.error("Error fetching user list: ", err);
+        logger.error('Error fetching user list: ', err instanceof Error ? err : new Error(String(error)), { component: 'UserManagementPage' });
         setError(t('userManagement.fetchError'));
         setLoading(false);
     });
@@ -59,7 +60,7 @@ const UserManagementPage: React.FC = () => {
         await callFunctionLazy('deleteUser', { uid: userId });
         alert(t('userManagement.deleteSuccess'));
     } catch (err: any) {
-        console.error("Error deleting user:", err);
+        logger.error('Error deleting user:', err instanceof Error ? err : new Error(String(err)), { component: 'UserManagementPage' });
         setError(err.message || t('userManagement.deleteError'));
     }
   };

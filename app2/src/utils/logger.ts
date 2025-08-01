@@ -16,7 +16,7 @@ export interface LogContext {
   component?: string;
   fieldName?: string;
   duration?: number;
-  value?: any;
+  value?: unknown;
   minLength?: number;
   maxLength?: number;
   min?: number;
@@ -27,22 +27,22 @@ export interface LogContext {
   missingFields?: string[];
   requiredFields?: string[];
   index?: number;
-  item?: any;
+  item?: unknown;
   validLength?: number;
   errors?: string[];
   warnings?: string[];
-  data?: any;
+  data?: unknown;
   step?: string;
   eventId?: string;
   tokenGenerated?: boolean;
-  errorCode?: any;
-  errorMessage?: any;
+  errorCode?: string | number;
+  errorMessage?: string;
   errorInfo?: string;
   error?: string;
   attempt?: number;
   maxRetries?: number;
   strategy?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
   timestamp?: string;
 }
 
@@ -183,11 +183,11 @@ class StructuredLogger {
       const result = await operation();
       this.info(`Operation completed successfully: ${operationName}`, { ...context, operation: operationName });
       return result;
-    } catch (error: any) {
-      this.error(`Operation failed: ${operationName}`, error, { ...context, operation: operationName });
+    } catch (error) {
+      this.error(`Operation failed: ${operationName}`, error instanceof Error ? error : new Error(String(error)), { ...context, operation: operationName });
       
       // Firebase 내부 에러 처리
-      if (error.message && error.message.includes('INTERNAL ASSERTION FAILED')) {
+      if (error instanceof Error && error.message && error.message.includes('INTERNAL ASSERTION FAILED')) {
         this.warn(`Detected Firebase internal error, attempting recovery for: ${operationName}`, {
           ...context,
           operation: operationName
@@ -228,11 +228,11 @@ class StructuredLogger {
       });
       
       return result;
-    } catch (error: any) {
+    } catch (error) {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      this.error(`Performance: ${operationName} failed after ${duration.toFixed(2)}ms`, error, {
+      this.error(`Performance: ${operationName} failed after ${duration.toFixed(2)}ms`, error instanceof Error ? error : new Error(String(error)), {
         ...context,
         operation: operationName,
         duration

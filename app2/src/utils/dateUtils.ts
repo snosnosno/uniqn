@@ -1,10 +1,22 @@
 import { Timestamp } from 'firebase/firestore';
 
+import { logger } from '../utils/logger';
+
+// Firebase Timestamp 또는 변환 가능한 날짜 타입 정의
+type TimestampInput = 
+  | Timestamp 
+  | Date 
+  | string 
+  | number
+  | { toDate?: () => Date; seconds?: number; _seconds?: number; nanoseconds?: number; assignedDate?: TimestampInput }
+  | null 
+  | undefined;
+
 /**
  * Firebase Timestamp를 로컬 날짜 문자열(yyyy-MM-dd)로 변환
  * 타임존 차이로 인한 날짜 변경 문제를 해결
  */
-export function timestampToLocalDateString(timestamp: any): string {
+export function timestampToLocalDateString(timestamp: TimestampInput): string {
   if (!timestamp) {
     const isoString = new Date().toISOString();
     const datePart = isoString.split('T')[0];
@@ -17,12 +29,12 @@ export function timestampToLocalDateString(timestamp: any): string {
     // Firebase Timestamp 객체인 경우
     if (timestamp instanceof Timestamp) {
       date = timestamp.toDate();
-      console.log('🔍 Firebase Timestamp 인스턴스 사용:', { 
+      logger.debug('🔍 Firebase Timestamp 인스턴스 사용:', { component: 'dateUtils', data: { 
         date: date.toISOString(), 
         timestamp,
         seconds: timestamp.seconds,
         nanoseconds: timestamp.nanoseconds
-      });
+      }});
     }
     // Timestamp-like 객체인 경우 (seconds, nanoseconds 속성을 가진 객체)
     else if (timestamp && typeof timestamp === 'object') {
@@ -30,35 +42,35 @@ export function timestampToLocalDateString(timestamp: any): string {
       const constructorName = timestamp.constructor?.name;
       if (constructorName === 'Timestamp' || constructorName === 't') {
         // Firebase Timestamp 객체의 toDate 메서드 사용 시도
-        if (typeof timestamp.toDate === 'function') {
+        if ('toDate' in timestamp && typeof timestamp.toDate === 'function') {
           date = timestamp.toDate();
-          console.log('🔍 Firebase Timestamp constructor 감지:', { 
+          logger.debug('🔍 Firebase Timestamp constructor 감지:', { component: 'dateUtils', data: { 
             constructorName,
             date: date.toISOString(), 
             timestamp
-          });
+          }});
         } else if ('seconds' in timestamp) {
           // toDate가 없으면 seconds로 직접 변환
           const seconds = timestamp.seconds;
           date = new Date(seconds * 1000);
-          console.log('🔍 Firebase Timestamp seconds 직접 변환:', { 
+          logger.debug('🔍 Firebase Timestamp seconds 직접 변환:', { component: 'dateUtils', data: { 
             constructorName,
             seconds,
             date: date.toISOString()
-          });
+          }});
         } else {
           date = new Date();
         }
       }
       // toDate 메서드가 있으면 사용 (가장 일반적인 경우)
-      else if (typeof timestamp.toDate === 'function') {
+      else if ('toDate' in timestamp && typeof timestamp.toDate === 'function') {
         date = timestamp.toDate();
-        console.log('🔍 Firebase Timestamp toDate 메서드 사용:', { 
+        logger.debug('🔍 Firebase Timestamp toDate 메서드 사용:', { component: 'dateUtils', data: { 
           date: date.toISOString(), 
           timestamp,
-          seconds: timestamp.seconds,
+          seconds: 'seconds' in timestamp ? timestamp.seconds : undefined,
           type: timestamp.constructor?.name
-        });
+        }});
       }
       // seconds 속성이 있는 경우
       else if ('seconds' in timestamp || '_seconds' in timestamp) {
@@ -70,7 +82,7 @@ export function timestampToLocalDateString(timestamp: any): string {
           const secondsNum = typeof seconds === 'number' ? seconds : Number(seconds);
           
           if (isNaN(secondsNum)) {
-            console.error('⚠️ 잘못된 seconds 값:', seconds);
+            logger.error('⚠️ 잘못된 seconds 값:', new Error(`Invalid seconds value: ${seconds}`), { component: 'dateUtils' });
             date = new Date();
           } else {
             // milliseconds 계산
@@ -79,19 +91,21 @@ export function timestampToLocalDateString(timestamp: any): string {
             
             // NaN 체크
             if (isNaN(date.getTime())) {
-              console.error('⚠️ Invalid Date 생성됨:', { seconds: secondsNum, milliseconds });
+              logger.error('⚠️ Invalid Date 생성됨:', new Error(`Invalid Date created from seconds: ${secondsNum}`), { component: 'dateUtils', data: { seconds: secondsNum, milliseconds } });
               date = new Date();
             } else {
-              console.log('🔍 Firebase Timestamp seconds 속성 사용:', { 
-                date: date.toISOString(), 
-                seconds: secondsNum, 
-                milliseconds,
-                timestamp 
+              logger.debug('🔍 Firebase Timestamp seconds 속성 사용:', { 
+                component: 'dateUtils',
+                data: { 
+                  date: date.toISOString(), 
+                  seconds: secondsNum, 
+                  milliseconds
+                }
               });
             }
           }
         } catch (e) {
-          console.error('⚠️ Timestamp 변환 실패:', e);
+          logger.error('⚠️ Timestamp 변환 실패:', e instanceof Error ? e : new Error(String(e)), { component: 'dateUtils' });
           date = new Date();
         }
       }
@@ -104,15 +118,15 @@ export function timestampToLocalDateString(timestamp: any): string {
           constructor: timestamp.constructor?.name
         });
         // assignedDate가 객체 내부에 있는 경우를 처리
-        if (timestamp.assignedDate) {
+        if ('assignedDate' in timestamp && timestamp.assignedDate) {
           return timestampToLocalDateString(timestamp.assignedDate);
         }
         date = new Date();
       }
     }
     // Date 객체인 경우
-    else if (timestamp instanceof Date) {
-      date = timestamp;
+    else if ((timestamp as any) instanceof Date) {
+      date = timestamp as any;
     }
     // 문자열인 경우
     else if (typeof timestamp === 'string') {
@@ -179,12 +193,12 @@ export function timestampToLocalDateString(timestamp: any): string {
           const day = dayPart.replace('.', '').padStart(2, '0');
           const result = `${year}-${month}-${day}`;
           
-          console.log('✅ timestampToLocalDateString 결과:', { 
+          logger.debug('✅ timestampToLocalDateString 결과:', { component: 'dateUtils', data: { 
             input: timestamp,
             dateTime: date.toISOString(),
             koreanDateString,
             result
-          });
+          }});
           
           return result;
         }
@@ -199,14 +213,14 @@ export function timestampToLocalDateString(timestamp: any): string {
     const day = String(date.getDate()).padStart(2, '0');
     const result = `${year}-${month}-${day}`;
     
-    console.log('✅ timestampToLocalDateString 결과 (기본):', { 
+    logger.debug('✅ timestampToLocalDateString 결과 (기본):', { component: 'dateUtils', data: { 
       input: timestamp,
       result
-    });
+    }});
     
     return result;
   } catch (error) {
-    console.error('🔴 날짜 변환 오류:', error, timestamp);
+    logger.error('🔴 날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { timestamp } });
     // 오류 발생 시 오늘 날짜 반환
     const today = new Date();
     const year = today.getFullYear();
@@ -249,7 +263,7 @@ export function formatDateDisplay(dateString: string): string {
     
     return `${month}월 ${day}일 (${weekday})`;
   } catch (error) {
-    console.error('날짜 포맷 오류:', error);
+    logger.error('날짜 포맷 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils' });
     return dateString;
   }
 }

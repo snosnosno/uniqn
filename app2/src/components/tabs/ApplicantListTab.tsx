@@ -1,4 +1,5 @@
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, runTransaction, getDoc, deleteDoc } from 'firebase/firestore';
+import { logger } from '../../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -67,15 +68,18 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       const querySnapshot = await getDocs(q);
       const fetchedApplicants = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log('🔍 Firebase 지원자 원본 데이터:', {
-          id: doc.id,
-          data: data,
-          role: data.role,
-          timeSlot: data.timeSlot,
-          date: data.date,
-          assignedRole: data.assignedRole,
-          assignedTime: data.assignedTime,
-          assignedDate: data.assignedDate
+        logger.debug('🔍 Firebase 지원자 원본 데이터:', { 
+          component: 'ApplicantListTab',
+          data: { 
+            id: doc.id, 
+            data: data,
+            role: data.role,
+            timeSlot: data.timeSlot,
+            date: data.date,
+            assignedRole: data.assignedRole,
+            assignedTime: data.assignedTime,
+            assignedDate: data.assignedDate
+          }
         });
         // Firebase 필드명을 Applicant 인터페이스에 맞게 매핑
         // assignedDate를 Timestamp에서 문자열로 변환
@@ -90,7 +94,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
               dateString = data.assignedDate;
             }
           } catch (error) {
-            console.error('날짜 변환 오류:', error);
+            logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab' });
           }
         }
         
@@ -126,7 +130,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             }
             return applicant;
           } catch (error) {
-            console.error('Error fetching user data for applicant:', applicant.applicantId, error);
+            logger.error('Error fetching user data for applicant:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { applicantId: applicant.applicantId } });
             return applicant;
           }
         })
@@ -143,7 +147,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       
 
     } catch (error) {
-      console.error('Error fetching applicants: ', error);
+      logger.error('Error fetching applicants: ', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab' });
       alert(t('jobPostingAdmin.alerts.fetchApplicantsFailed'));
     } finally {
       setLoadingApplicants(false);
@@ -159,12 +163,15 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     
     const assignments = selectedAssignment[applicant.id];
     
-    console.log('🔍 handleConfirmApplicant 시작:', {
-      applicantId: applicant.id,
-      applicantName: applicant.applicantName,
-      selectedAssignment: selectedAssignment,
-      assignments,
-      assignmentsLength: assignments?.length
+    logger.debug('🔍 handleConfirmApplicant 시작:', { 
+      component: 'ApplicantListTab',
+      data: {
+        applicantId: applicant.id,
+        applicantName: applicant.applicantName,
+        selectedAssignment: selectedAssignment,
+        assignments,
+        assignmentsLength: assignments?.length
+      }
     });
     
     if (!assignments || assignments.length === 0) {
@@ -235,11 +242,14 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
 
       // 각 assignment마다 별도의 스태프 문서 생성 (다중 날짜/시간대 지원)
       if (currentUser && assignments.length > 0) {
-        console.log('🔍 다중 promoteToStaff 호출 시작:', {
-          assignments,
-          assignmentsCount: assignments.length,
-          applicantId: applicant.applicantId,
-          applicantName: applicant.applicantName
+        logger.debug('🔍 다중 promoteToStaff 호출 시작:', { 
+          component: 'ApplicantListTab',
+          data: {
+            assignments,
+            assignmentsCount: assignments.length,
+            applicantId: applicant.applicantId,
+            applicantName: applicant.applicantName
+          }
         });
         
         // role 값을 적절한 JobRole 형식으로 변환
@@ -277,15 +287,18 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           // 고유한 문서 ID 생성 (userId + assignment index)
           const staffDocId = `${applicant.applicantId}_${i}`;
           
-          console.log(`🔍 promoteToStaff 호출 ${i + 1}/${assignments.length}:`, {
-            assignment,
-            assignedDate,
-            finalAssignedDate,
-            jobRole,
-            staffDocId,
-            'assignment.date': assignment?.date,
-            'assignment.role': assignment?.role,
-            'assignment.timeSlot': assignment?.timeSlot
+          logger.debug(`🔍 promoteToStaff 호출 ${i + 1}/${assignments.length}:`, { 
+            component: 'ApplicantListTab',
+            data: {
+              assignment,
+              assignedDate,
+              finalAssignedDate,
+              jobRole,
+              staffDocId,
+              'assignment.date': assignment?.date,
+              'assignment.role': assignment?.role,
+              'assignment.timeSlot': assignment?.timeSlot
+            }
           });
           
           try {
@@ -302,14 +315,14 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
               finalAssignedDate, // assignedDate - 지원자에서 확정된 날짜 (기본값 포함)
               applicant.applicantId // 실제 사용자 ID
             );
-            console.log(`✅ promoteToStaff 성공 ${i + 1}/${assignments.length}:`, staffDocId);
+            logger.debug('✅ promoteToStaff 성공 ${i + 1}/${assignments.length}:', { component: 'ApplicantListTab', data: staffDocId });
           } catch (promoteError) {
-            console.error(`❌ promoteToStaff 오류 ${i + 1}/${assignments.length}:`, promoteError);
+            logger.error('❌ promoteToStaff 오류 ${i + 1}/${assignments.length}:', promoteError instanceof Error ? promoteError : new Error(String(promoteError)), { component: 'ApplicantListTab' });
             // 개별 promoteToStaff 실패해도 전체 프로세스는 계속 진행
           }
         }
         
-        console.log('✅ 모든 promoteToStaff 호출 완료');
+        logger.debug('✅ 모든 promoteToStaff 호출 완료', { component: 'ApplicantListTab' });
       }
       
       // 해당 지원자의 선택 상태 초기화
@@ -361,7 +374,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       
       loadApplicants(jobPosting.id); // Refresh applicants list
     } catch (error) {
-      console.error("Error confirming applicant: ", error);
+      logger.error('Error confirming applicant: ', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab' });
       alert(t('jobPostingAdmin.alerts.applicantConfirmFailed'));
     }
   };
@@ -377,16 +390,19 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   
   
   const getApplicantSelections = (applicant: Applicant) => {
-    console.log('🔍 getApplicantSelections 호출:', {
-      applicantId: applicant.id,
-      applicantName: applicant.applicantName,
-      hasMultiple: hasMultipleSelections(applicant),
-      assignedRoles: applicant.assignedRoles,
-      assignedTimes: applicant.assignedTimes,
-      assignedDates: applicant.assignedDates,
-      assignedRole: applicant.assignedRole,
-      assignedTime: applicant.assignedTime,
-      assignedDate: applicant.assignedDate
+    logger.debug('🔍 getApplicantSelections 호출:', { 
+      component: 'ApplicantListTab',
+      data: {
+        applicantId: applicant.id,
+        applicantName: applicant.applicantName,
+        hasMultiple: hasMultipleSelections(applicant),
+        assignedRoles: applicant.assignedRoles,
+        assignedTimes: applicant.assignedTimes,
+        assignedDates: applicant.assignedDates,
+        assignedRole: applicant.assignedRole,
+        assignedTime: applicant.assignedTime,
+        assignedDate: applicant.assignedDate
+      }
     });
     
     // 다중 선택이 있는 경우
@@ -410,7 +426,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             try {
               dateValue = (rawDate as any).toDate().toISOString().split('T')[0] || '';
             } catch (error) {
-              console.error('❌ assignedDates Timestamp 변환 오류:', error, rawDate);
+              logger.error('❌ assignedDates Timestamp 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { rawDate } });
               dateValue = '';
             }
           } else if ((rawDate as any).seconds) {
@@ -418,7 +434,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             try {
               dateValue = new Date((rawDate as any).seconds * 1000).toISOString().split('T')[0] || '';
             } catch (error) {
-              console.error('❌ assignedDates seconds 변환 오류:', error, rawDate);
+              logger.error('❌ assignedDates seconds 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { rawDate } });
               dateValue = '';
             }
           } else {
@@ -426,7 +442,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             try {
               dateValue = String(rawDate);
             } catch (error) {
-              console.error('❌ assignedDates 배열 요소 변환 오류:', error, rawDate);
+              logger.error('❌ assignedDates 배열 요소 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { rawDate } });
               dateValue = '';
             }
           }
@@ -439,7 +455,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         });
       }
       
-      console.log('🔍 다중 선택 결과:', selections);
+      logger.debug('🔍 다중 선택 결과:', { component: 'ApplicantListTab', data: selections });
       return selections;
     }
     
@@ -455,7 +471,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           try {
             singleDateValue = (applicant.assignedDate as any).toDate().toISOString().split('T')[0] || '';
           } catch (error) {
-            console.error('❌ assignedDate Timestamp 변환 오류:', error, applicant.assignedDate);
+            logger.error('❌ assignedDate Timestamp 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { assignedDate: applicant.assignedDate } });
             singleDateValue = '';
           }
         } else if ((applicant.assignedDate as any).seconds) {
@@ -463,14 +479,14 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           try {
             singleDateValue = new Date((applicant.assignedDate as any).seconds * 1000).toISOString().split('T')[0] || '';
           } catch (error) {
-            console.error('❌ assignedDate seconds 변환 오류:', error, applicant.assignedDate);
+            logger.error('❌ assignedDate seconds 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { assignedDate: applicant.assignedDate } });
             singleDateValue = '';
           }
         } else {
           try {
             singleDateValue = String(applicant.assignedDate);
           } catch (error) {
-            console.error('❌ assignedDate 변환 오류:', error, applicant.assignedDate);
+            logger.error('❌ assignedDate 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab', data: { assignedDate: applicant.assignedDate } });
             singleDateValue = '';
           }
         }
@@ -482,17 +498,17 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         date: singleDateValue
       }];
       
-      console.log('🔍 단일 선택 결과:', singleSelection);
+      logger.debug('🔍 단일 선택 결과:', { component: 'ApplicantListTab', data: singleSelection });
       return singleSelection;
     }
     
-    console.log('🔍 선택 사항 없음');
+    logger.debug('🔍 선택 사항 없음', { component: 'ApplicantListTab' });
     return [];
   };
 
   // 다중 선택용 체크박스 토글 함수
   const handleMultipleAssignmentToggle = (applicantId: string, value: string, isChecked: boolean) => {
-    console.log('🔍 handleMultipleAssignmentToggle 시작:', { applicantId, value, isChecked });
+    logger.debug('🔍 handleMultipleAssignmentToggle 시작:', { component: 'ApplicantListTab', data: { applicantId, value, isChecked } });
     
     // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
     const parts = value.split('__');
@@ -512,10 +528,13 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       date: date.trim() 
     };
     
-    console.log('🔍 assignment 파싱 결과:', {
-      parts,
-      newAssignment,
-      originalValue: value
+    logger.debug('🔍 assignment 파싱 결과:', { 
+      component: 'ApplicantListTab',
+      data: {
+        parts,
+        newAssignment,
+        originalValue: value
+      }
     });
     
     setSelectedAssignment(prev => {
@@ -660,13 +679,13 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           }
         }
       } catch (err) {
-        console.error('자동 마감 해제 처리 중 오류:', err);
+        logger.error('자동 마감 해제 처리 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'ApplicantListTab' });
         alert('자동 마감 해제 처리 중 오류가 발생했습니다.');
       }
 
       // 2. staff 컬렉션 자동 삭제 (다중 문서 지원)
       try {
-        console.log('🔍 다중 스태프 문서 삭제 시작:', applicant.applicantId);
+        logger.debug('🔍 다중 스태프 문서 삭제 시작:', { component: 'ApplicantListTab', data: applicant.applicantId });
         
         // 해당 지원자와 관련된 모든 스태프 문서 찾기
         const staffQuery = query(
@@ -676,18 +695,18 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         );
         
         const staffSnapshot = await getDocs(staffQuery);
-        console.log('🔍 삭제할 스태프 문서 수:', staffSnapshot.size);
+        logger.debug('🔍 삭제할 스태프 문서 수:', { component: 'ApplicantListTab', data: staffSnapshot.size });
         
         // 각 스태프 문서 개별 삭제
         const deletePromises = staffSnapshot.docs.map(async (staffDoc) => {
-          console.log('🗑️ 스태프 문서 삭제:', staffDoc.id);
+          logger.debug('🗑️ 스태프 문서 삭제:', { component: 'ApplicantListTab', data: staffDoc.id });
           return deleteDoc(doc(db, 'staff', staffDoc.id));
         });
         
         await Promise.all(deletePromises);
-        console.log('✅ 모든 스태프 문서 삭제 완료');
+        logger.debug('✅ 모든 스태프 문서 삭제 완료', { component: 'ApplicantListTab' });
       } catch (err) {
-        console.error('staff 컬렉션 자동 삭제 중 오류:', err);
+        logger.error('staff 컬렉션 자동 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'ApplicantListTab' });
         alert('staff 컬렉션 자동 삭제 중 오류가 발생했습니다.');
       }
 
@@ -698,7 +717,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       loadApplicants(jobPosting.id);
 
     } catch (error) {
-      console.error('Error cancelling confirmation:', error);
+      logger.error('Error cancelling confirmation:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab' });
       alert('확정 취소 중 오류가 발생했습니다.');
     }
   };
@@ -824,13 +843,16 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                               ? `${safeDateString}__${selection.time}__${selection.role}`
                               : `${selection.time}__${selection.role}`;
                             
-                            console.log('🔍 체크박스 optionValue 생성:', {
-                              index,
-                              selection,
-                              'selection.date (truthy?)': !!selection.date,
-                              'selection.date (raw)': selection.date,
-                              'safeDateString': safeDateString,
-                              optionValue
+                            logger.debug('🔍 체크박스 optionValue 생성:', { 
+                              component: 'ApplicantListTab',
+                              data: {
+                                index,
+                                selection,
+                                'selection.date (truthy?)': !!selection.date,
+                                'selection.date (raw)': selection.date,
+                                'safeDateString': safeDateString,
+                                optionValue
+                              }
                             });
                             const isSelected = isAssignmentSelected(applicant.id, selection.time, selection.role, safeDateString);
                             
@@ -851,33 +873,36 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                             
                             // 필요 인원 수 계산 (디버깅 추가)
                             let requiredCount = 0;
-                            console.log('지원자 목록 디버깅:', {
-                              safeDateString,
-                              selectionTime: selection.time,
-                              selectionRole: selection.role,
-                              hasDailyRequirements: !!jobPosting.dateSpecificRequirements,
-                              hasTimeSlots: !!jobPosting.timeSlots
+                            logger.debug('지원자 목록 디버깅:', { 
+                              component: 'ApplicantListTab',
+                              data: {
+                                safeDateString,
+                                selectionTime: selection.time,
+                                selectionRole: selection.role,
+                                hasDailyRequirements: !!jobPosting.dateSpecificRequirements,
+                                hasTimeSlots: !!jobPosting.timeSlots
+                              }
                             });
                             
                             if (safeDateString && jobPosting.dateSpecificRequirements) {
-                              console.log('dateSpecificRequirements 날짜들:', jobPosting.dateSpecificRequirements.map((dr: DateSpecificRequirement) => ({
+                              logger.debug('dateSpecificRequirements 날짜들:', { component: 'ApplicantListTab', data: jobPosting.dateSpecificRequirements.map((dr: DateSpecificRequirement) => ({
                                 date: dr.date,
                                 type: typeof dr.date,
                                 timeSlots: dr.timeSlots.length
-                              })));
-                              console.log('찾으려는 날짜:', safeDateString, 'type:', typeof safeDateString);
+                              })) });
+                              logger.debug('찾으려는 날짜:', { component: 'ApplicantListTab', data: { date: safeDateString, type: typeof safeDateString } });
                               
                               
                               const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => {
                                 const drDateString = timestampToLocalDateString(dr.date);
-                                console.log(`비교: ${drDateString} === ${safeDateString} => ${drDateString === safeDateString}`);
+                                logger.debug(`비교: ${drDateString} === ${safeDateString} => ${drDateString === safeDateString}`, { component: 'ApplicantListTab' });
                                 return drDateString === safeDateString;
                               });
-                              console.log('날짜별 요구사항 찾기:', dateReq);
+                              logger.debug('날짜별 요구사항 찾기:', { component: 'ApplicantListTab', data: dateReq });
                               const ts = dateReq?.timeSlots.find((t: TimeSlot) => t.time === selection.time);
-                              console.log('시간대 찾기:', ts);
+                              logger.debug('시간대 찾기:', { component: 'ApplicantListTab', data: ts });
                               const roleReq = ts?.roles.find((r: RoleRequirement) => r.name === selection.role);
-                              console.log('역할 찾기:', roleReq);
+                              logger.debug('역할 찾기:', { component: 'ApplicantListTab', data: roleReq });
                               requiredCount = roleReq?.count || 0;
                             } else if (jobPosting.timeSlots) {
                               const ts = jobPosting.timeSlots.find((t: TimeSlot) => t.time === selection.time);
@@ -967,7 +992,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                       
                                       alert('지원 시간이 성공적으로 수정되었습니다.');
                                     } catch (error) {
-                                      console.error('Error updating application time:', error);
+                                      logger.error('Error updating application time:', error instanceof Error ? error : new Error(String(error)), { component: 'ApplicantListTab' });
                                       alert('지원 시간 수정 중 오류가 발생했습니다.');
                                     }
                                   }}

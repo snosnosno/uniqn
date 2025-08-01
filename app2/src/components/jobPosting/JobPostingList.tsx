@@ -22,7 +22,7 @@ interface JobPostingListProps {
   isDeleting?: string | null;
 }
 
-const JobPostingList: React.FC<JobPostingListProps> = ({
+const JobPostingList: React.FC<JobPostingListProps> = React.memo(({
   jobPostings,
   loading,
   onEdit,
@@ -245,6 +245,6 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default JobPostingList;

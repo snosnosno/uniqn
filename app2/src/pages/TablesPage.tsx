@@ -1,4 +1,5 @@
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { logger } from '../utils/logger';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -123,7 +124,7 @@ const TablesPage: React.FC = () => {
                 );
                 handleCloseMoveSeatModal();
             } catch (error) {
-                console.error("Failed to move participant:", error);
+                logger.error('Failed to move participant:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
                 alert(`${t('tables.errorMoveFailed')} ${error instanceof Error ? error.message : String(error)}`);
             }
         }

@@ -17,6 +17,28 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ## 🔥 최근 주요 업데이트 (2025-01-31)
 
+### 구조화된 로깅 시스템 도입 (2025-01-31)
+- **console.log 완전 제거**: 316개 파일의 모든 console.log를 구조화된 logger로 교체
+- **로깅 시스템 구현**:
+  - 5단계 로그 레벨: DEBUG 🔍, INFO ℹ️, WARN ⚠️, ERROR ❌, CRITICAL 🚨
+  - 환경별 동작: 개발(컬러 콘솔), 프로덕션(서버 전송)
+  - 상세 컨텍스트: component, userId, operation 등 40+ 필드
+  - 성능 측정 및 에러 추적 내장
+- **사용 패턴**:
+  ```typescript
+  // 기존: console.log('메시지', data);
+  // 변경: logger.debug('메시지', { component: 'ComponentName', data });
+  
+  // 에러 처리
+  logger.error('오류 발생', error, { component: 'Component' });
+  
+  // 성능 측정
+  await logger.withPerformanceTracking(
+    async () => await operation(),
+    'Operation Name'
+  );
+  ```
+
 ### TypeScript Strict Mode 마이그레이션 완료
 - **tsconfig.json 설정 강화**:
   ```json
@@ -76,7 +98,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   - TypeScript strict mode 준수 (모든 타입 명시적 정의)
   - 배열/객체 접근 시 undefined 체크 필수
   - dealerId/staffId 호환성 유지
-- **디버깅**: 한국어 로그와 상세한 console.log로 투명한 디버깅
+- **디버깅**: 한국어 로그와 구조화된 logger로 투명한 디버깅
 
 ### 🎯 핵심 컴포넌트
 - **WorkTimeEditor**: 통합 시간 편집 (예정시간 = scheduledStartTime/EndTime)
@@ -92,6 +114,15 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - workLogs: 날짜별 개별 근무 기록 (scheduledStartTime/EndTime, actualStartTime/EndTime)
 - attendanceRecords: 출석 상태 및 실시간 추적
 - jobPostings: Initialize 공고 정보
+```
+
+### 핵심 유틸리티
+```typescript
+- logger: 구조화된 로깅 시스템 (src/utils/logger.ts)
+  - 5단계 로그 레벨 지원
+  - 환경별 동작 (개발/프로덕션)
+  - 성능 측정 및 에러 추적 기능
+  - Firebase 에러 자동 복구
 ```
 
 ### 핵심 Hook 구조
@@ -117,7 +148,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ### 필수 구현 패턴
 - **실시간 구독**: `onSnapshot(query, callback)` 패턴 사용
-- **한국어 로깅**: 모든 console.log는 한국어로 명확하게 작성
+- **한국어 로깅**: 모든 logger 메시지는 한국어로 명확하게 작성
 - **타입 안전성**: 
   - dealerId/staffId 호환성 유지
   - 모든 any 타입 제거 및 구체적 타입 정의
@@ -180,6 +211,9 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   - react-data-grid → LightweightDataGrid (85% 크기 감소)
   - react-icons → 커스텀 SVG 아이콘 (92% 크기 감소)
 - ~~Context API 성능 이슈~~ → Zustand 마이그레이션 준비
+- ~~console.log 사용~~ → 구조화된 logger 시스템으로 완전 교체 (316개 파일)
+- ~~CEO 대시보드 성능~~ → 실시간 구독 9개 → 5개로 최적화 (44% 감소)
+- ~~보안 취약점~~ → CSP, XSS 방지, CSRF 보호 구현 완료
 
 ### 개선 필요
 - 환경 변수 미설정 (API 키 노출) ⚠️
@@ -271,3 +305,4 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - `번들최적화완료`: 주요 라이브러리 교체로 44% 크기 감소 (2025-01-31)
 - `환경변수설정필요`: Firebase API 키 등 민감 정보 보호 필요 ⚠️
 - `테스트커버리지개선필요`: 현재 15% → 목표 70%
+- `logger시스템도입완료`: console.log 316개 → 구조화된 logger로 완전 교체 (2025-01-31)

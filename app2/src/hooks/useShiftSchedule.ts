@@ -1,4 +1,5 @@
 import { collection, doc, onSnapshot, query, where, updateDoc, setDoc, serverTimestamp, Timestamp, addDoc, getDocs } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { db } from '../firebase';
@@ -91,7 +92,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         setError(null);
       },
       (err) => {
-        console.error('Error fetching shift schedule:', err);
+        logger.error('Error fetching shift schedule:', err instanceof Error ? err : new Error(String(error)), { component: 'useShiftSchedule' });
         setError(err);
         setLoading(false);
       }
@@ -126,7 +127,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       
       return newScheduleId;
     } catch (err) {
-      console.error('Error creating schedule:', err);
+      logger.error('Error creating schedule:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
       setError(err as Error);
       throw err;
     }
@@ -149,7 +150,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         updatedAt: serverTimestamp(),
       });
     } catch (err) {
-      console.error('Error updating dealer assignment:', err);
+      logger.error('Error updating dealer assignment:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
       setError(err as Error);
       throw err;
     }
@@ -176,7 +177,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         updatedAt: serverTimestamp(),
       });
     } catch (err) {
-      console.error('Error adding dealer:', err);
+      logger.error('Error adding dealer:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
       setError(err as Error);
       throw err;
     }
@@ -222,7 +223,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
   
       await updateDoc(scheduleRef, updates);
     } catch (err) {
-      console.error('Error updating schedule settings:', err);
+      logger.error('Error updating schedule settings:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
       setError(err as Error);
       throw err;
     }
@@ -353,10 +354,10 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         await addDoc(workLogsCollection, log);
       }
 
-      console.log(`${generatedLogs.length}개의 근무기록이 생성되었습니다.`);
+      logger.debug('${generatedLogs.length}개의 근무기록이 생성되었습니다.', { component: 'useShiftSchedule' });
       return generatedLogs;
     } catch (error) {
-      console.error('근무기록 생성 중 오류:', error);
+      logger.error('근무기록 생성 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useShiftSchedule' });
       throw error;
     }
   }, [schedule, eventId, date, dealers, timeSlots]);
@@ -376,7 +377,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       const snapshot = await getDocs(workLogsQuery);
       return !snapshot.empty;
     } catch (error) {
-      console.error('근무기록 확인 중 오류:', error);
+      logger.error('근무기록 확인 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useShiftSchedule' });
       return false;
     }
   }, [eventId, date]);

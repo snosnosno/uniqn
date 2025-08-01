@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -101,7 +102,10 @@ class JobBoardErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('JobBoard Error Boundary caught an error:', error, errorInfo);
+    logger.error('JobBoard Error Boundary caught an error:', error, { 
+      component: 'JobBoardErrorBoundary', 
+      data: errorInfo.componentStack 
+    });
     
     this.setState({
       error,

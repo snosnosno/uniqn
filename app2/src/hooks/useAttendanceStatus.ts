@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 
+import { logger } from '../utils/logger';
 import { AttendanceStatus } from '../components/AttendanceStatusCard';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
@@ -55,11 +56,14 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
               workLog.eventId === currentEventId
             );
             
-            console.log('🔍 useAttendanceStatus - 필터링된 workLogs:', {
-              currentEventId,
-              totalWorkLogs: workLogs.length,
-              filteredCount: filteredWorkLogs.length,
-              eventIds: Array.from(new Set(workLogs.map(w => w.eventId)))
+            logger.debug('🔍 useAttendanceStatus - 필터링된 workLogs:', { 
+              component: 'useAttendanceStatus',
+              data: {
+                currentEventId,
+                totalWorkLogs: workLogs.length,
+                filteredCount: filteredWorkLogs.length,
+                eventIds: Array.from(new Set(workLogs.map(w => w.eventId)))
+              }
             });
             
             // 변경 감지를 위한 상세 로깅
@@ -68,17 +72,20 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
               records.push(attendanceRecord);
               
               // 모든 workLog의 상태 변경 추적
-              console.log('📊 useAttendanceStatus - workLog 처리:', {
-                workLogId: workLog.id,
-                dealerId: workLog.dealerId,
-                eventId: workLog.eventId,
-                date: workLog.date,
-                workLogStatus: workLog.status,
-                calculatedStatus: attendanceRecord.status,
-                hasActualStartTime: !!workLog.actualStartTime,
-                hasActualEndTime: !!workLog.actualEndTime,
-                updatedAt: workLog.updatedAt,
-                timestamp: new Date().toISOString()
+              logger.debug('📊 useAttendanceStatus - workLog 처리:', { 
+                component: 'useAttendanceStatus',
+                data: {
+                  workLogId: workLog.id,
+                  dealerId: workLog.dealerId,
+                  eventId: workLog.eventId,
+                  date: workLog.date,
+                  workLogStatus: workLog.status,
+                  calculatedStatus: attendanceRecord.status,
+                  hasActualStartTime: !!workLog.actualStartTime,
+                  hasActualEndTime: !!workLog.actualEndTime,
+                  updatedAt: workLog.updatedAt,
+                  timestamp: new Date().toISOString()
+                }
               });
             });
 
@@ -90,14 +97,17 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
             });
 
             if (changedRecords.length > 0) {
-              console.log('🔄 useAttendanceStatus - 상태 변경 감지:', {
-                changedCount: changedRecords.length,
-                changes: changedRecords.map(r => ({
-                  workLogId: r.workLogId,
-                  staffId: r.staffId,
-                  oldStatus: prevRecordsMap.get(r.workLogId),
-                  newStatus: r.status
-                }))
+              logger.debug('🔄 useAttendanceStatus - 상태 변경 감지:', { 
+                component: 'useAttendanceStatus',
+                data: {
+                  changedCount: changedRecords.length,
+                  changes: changedRecords.map(r => ({
+                    workLogId: r.workLogId,
+                    staffId: r.staffId,
+                    oldStatus: prevRecordsMap.get(r.workLogId),
+                    newStatus: r.status
+                  }))
+                }
               });
             }
 
@@ -105,14 +115,14 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
             setAttendanceRecords([...records]);
             setError(null);
           } catch (err) {
-            console.error('출석 상태 계산 오류:', err);
+            logger.error('출석 상태 계산 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useAttendanceStatus' });
             setError('출석 상태를 계산하는 중 오류가 발생했습니다.');
           } finally {
             setLoading(false);
           }
         },
         (err) => {
-          console.error('출석 기록 구독 오류:', err);
+          logger.error('출석 기록 구독 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useAttendanceStatus' });
           setError('출석 기록을 불러오는 중 오류가 발생했습니다.');
           setLoading(false);
         }
@@ -120,7 +130,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
       return () => unsubscribe();
     } catch (err) {
-      console.error('출석 상태 훅 초기화 오류:', err);
+      logger.error('출석 상태 훅 초기화 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useAttendanceStatus' });
       setError('출석 상태 시스템을 초기화하는 중 오류가 발생했습니다.');
       setLoading(false);
       return () => {};
@@ -137,11 +147,14 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     // workLog의 status 필드가 있으면 우선 사용 (수동 출석 상태 변경을 반영)
     if (workLog.status && ['not_started', 'checked_in', 'checked_out'].includes(workLog.status)) {
       status = workLog.status as AttendanceStatus;
-      console.log('📊 workLog.status 사용:', {
-        workLogId: workLog.id,
-        dealerId: workLog.dealerId,
-        status: workLog.status,
-        date: workLog.date
+      logger.debug('📊 workLog.status 사용:', { 
+        component: 'useAttendanceStatus',
+        data: {
+          workLogId: workLog.id,
+          dealerId: workLog.dealerId,
+          status: workLog.status,
+          date: workLog.date
+        }
       });
     } else {
       // status 필드가 없거나 유효하지 않은 경우 실제 출퇴근 시간으로 계산
@@ -168,13 +181,16 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         }
       }
       
-      console.log('🕐 실제 시간 기반 상태 계산:', {
-        workLogId: workLog.id,
-        dealerId: workLog.dealerId,
-        hasActualStartTime,
-        hasActualEndTime,
-        calculatedStatus: status,
-        date: workLog.date
+      logger.debug('🕐 실제 시간 기반 상태 계산:', { 
+        component: 'useAttendanceStatus',
+        data: {
+          workLogId: workLog.id,
+          dealerId: workLog.dealerId,
+          hasActualStartTime,
+          hasActualEndTime,
+          calculatedStatus: status,
+          date: workLog.date
+        }
       });
     }
 
@@ -222,7 +238,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         
         return undefined;
       } catch (error) {
-        console.error('시간 포맷 변환 오류:', error, timestamp);
+        logger.error('시간 포맷 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useAttendanceStatus' });
         return undefined;
       }
     };
@@ -244,7 +260,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
   // Optimistic update를 위한 함수
   const applyOptimisticUpdate = (workLogId: string, newStatus: AttendanceStatus) => {
-    console.log('🚀 Optimistic update 적용:', { workLogId, newStatus });
+    logger.debug('🚀 Optimistic update 적용:', { component: 'useAttendanceStatus', data: { workLogId, newStatus } });
     
     // 로컬 업데이트 맵에 추가
     setLocalUpdates(prev => {
@@ -257,10 +273,13 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     setAttendanceRecords(prev => {
       return prev.map(record => {
         if (record.workLogId === workLogId) {
-          console.log('✨ Optimistic update - 레코드 업데이트:', {
-            workLogId: record.workLogId,
-            oldStatus: record.status,
-            newStatus
+          logger.debug('✨ Optimistic update - 레코드 업데이트:', { 
+            component: 'useAttendanceStatus',
+            data: {
+              workLogId: record.workLogId,
+              oldStatus: record.status,
+              newStatus
+            }
           });
           return {
             ...record,
@@ -283,14 +302,17 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
   // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
   const getStaffAttendanceStatus = (staffIdOrWorkLogId: string): AttendanceRecord | null => {
-    console.log('🔍 getStaffAttendanceStatus 호출:', {
-      input: staffIdOrWorkLogId,
-      totalRecords: attendanceRecords.length,
-      recordIds: attendanceRecords.map(r => ({
-        workLogId: r.workLogId,
-        staffId: r.staffId,
-        date: r.workLog?.date
-      }))
+    logger.debug('🔍 getStaffAttendanceStatus 호출:', { 
+      component: 'useAttendanceStatus',
+      data: {
+        input: staffIdOrWorkLogId,
+        totalRecords: attendanceRecords.length,
+        recordIds: attendanceRecords.map(r => ({
+          workLogId: r.workLogId,
+          staffId: r.staffId,
+          date: r.workLog?.date
+        }))
+      }
     });
 
     // workLogId로 먼저 검색 시도 (virtual_ 접두사 포함)
@@ -299,10 +321,13 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       const record = attendanceRecords.find(record => record.workLogId === staffIdOrWorkLogId);
       
       if (record) {
-        console.log('✅ getStaffAttendanceStatus - workLogId로 직접 찾음:', {
-          workLogId: staffIdOrWorkLogId,
-          status: record.status,
-          date: record.workLog?.date
+        logger.debug('✅ getStaffAttendanceStatus - workLogId로 직접 찾음:', { 
+          component: 'useAttendanceStatus',
+          data: {
+            workLogId: staffIdOrWorkLogId,
+            status: record.status,
+            date: record.workLog?.date
+          }
         });
         return record;
       }
@@ -317,10 +342,13 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           const staffId = match[1];
           const date = match[2];
           
-          console.log('🔎 virtual ID 파싱 결과:', {
-            virtualId: staffIdOrWorkLogId,
-            parsedStaffId: staffId,
-            parsedDate: date
+          logger.debug('🔎 virtual ID 파싱 결과:', { 
+            component: 'useAttendanceStatus',
+            data: {
+              virtualId: staffIdOrWorkLogId,
+              parsedStaffId: staffId,
+              parsedDate: date
+            }
           });
           
           const matchedRecord = attendanceRecords.find(record => {
@@ -331,40 +359,49 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
             const isMatch = isStaffMatch && isDateMatch;
             
             if (isStaffMatch) {
-              console.log('📋 스태프 매칭 확인:', {
-                recordStaffId,
-                targetStaffId: staffId,
-                recordDate: record.workLog?.date,
-                targetDate: date,
-                isDateMatch,
-                workLogId: record.workLogId,
-                isMatch
+              logger.debug('📋 스태프 매칭 확인:', { 
+                component: 'useAttendanceStatus',
+                data: {
+                  recordStaffId,
+                  targetStaffId: staffId,
+                  recordDate: record.workLog?.date,
+                  targetDate: date,
+                  isDateMatch,
+                  workLogId: record.workLogId,
+                  isMatch
+                }
               });
             }
             return isMatch;
           });
           
           if (matchedRecord) {
-            console.log('✅ getStaffAttendanceStatus - virtual ID 매칭 성공:', {
-              virtualId: staffIdOrWorkLogId,
-              staffId,
-              date,
-              status: matchedRecord.status,
-              workLogId: matchedRecord.workLogId
+            logger.debug('✅ getStaffAttendanceStatus - virtual ID 매칭 성공:', { 
+              component: 'useAttendanceStatus',
+              data: {
+                virtualId: staffIdOrWorkLogId,
+                staffId,
+                date,
+                status: matchedRecord.status,
+                workLogId: matchedRecord.workLogId
+              }
             });
             return matchedRecord;
           } else {
-            console.log('❌ virtual ID 매칭 실패:', {
-              virtualId: staffIdOrWorkLogId,
-              staffId,
-              date,
-              availableDates: attendanceRecords
-                .filter(r => r.staffId === staffId)
-                .map(r => r.workLog?.date)
+            logger.debug('❌ virtual ID 매칭 실패:', { 
+              component: 'useAttendanceStatus',
+              data: {
+                virtualId: staffIdOrWorkLogId,
+                staffId,
+                date,
+                availableDates: attendanceRecords
+                  .filter(r => r.staffId === staffId)
+                  .map(r => r.workLog?.date)
+              }
             });
           }
         } else {
-          console.log('⚠️ virtual ID 파싱 실패:', staffIdOrWorkLogId);
+          logger.debug('⚠️ virtual ID 파싱 실패:', { component: 'useAttendanceStatus', data: staffIdOrWorkLogId });
         }
       }
     }
@@ -393,25 +430,31 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     });
 
     if (fallbackRecord) {
-      console.log('⚠️ getStaffAttendanceStatus - staffId로 fallback 검색 성공:', {
-        input: staffIdOrWorkLogId,
-        baseStaffId,
-        targetDate,
-        foundStaffId: fallbackRecord.staffId,
-        foundDate: fallbackRecord.workLog?.date,
-        status: fallbackRecord.status,
-        workLogId: fallbackRecord.workLogId
+      logger.debug('⚠️ getStaffAttendanceStatus - staffId로 fallback 검색 성공:', { 
+        component: 'useAttendanceStatus',
+        data: {
+          input: staffIdOrWorkLogId,
+          baseStaffId,
+          targetDate,
+          foundStaffId: fallbackRecord.staffId,
+          foundDate: fallbackRecord.workLog?.date,
+          status: fallbackRecord.status,
+          workLogId: fallbackRecord.workLogId
+        }
       });
     } else {
-      console.log('❌ getStaffAttendanceStatus - 매칭 실패:', {
-        input: staffIdOrWorkLogId,
-        baseStaffId,
-        targetDate,
-        availableRecords: attendanceRecords.map(r => ({
-          staffId: r.staffId,
-          date: r.workLog?.date,
-          workLogId: r.workLogId
-        }))
+      logger.debug('❌ getStaffAttendanceStatus - 매칭 실패:', { 
+        component: 'useAttendanceStatus',
+        data: {
+          input: staffIdOrWorkLogId,
+          baseStaffId,
+          targetDate,
+          availableRecords: attendanceRecords.map(r => ({
+            staffId: r.staffId,
+            date: r.workLog?.date,
+            workLogId: r.workLogId
+          }))
+        }
       });
     }
     

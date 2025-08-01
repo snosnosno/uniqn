@@ -1,4 +1,5 @@
 import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
@@ -103,7 +104,7 @@ const ShiftSchedulePage: React.FC = () => {
           setSettings(JSON.parse(savedSettings));
         }
       } catch (error) {
-        console.error('설정 로드 실패:', error);
+        logger.error('설정 로드 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
       }
     };
     loadSettings();
@@ -127,7 +128,7 @@ const ShiftSchedulePage: React.FC = () => {
       showSuccess(t('shiftSchedule.settingsSaved'));
       setIsSettingsModalOpen(false);
     } catch (error) {
-      console.error('설정 저장 실패:', error);
+      logger.error('설정 저장 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
       showError(t('shiftSchedule.settingsSaveError'));
     }
   };
@@ -152,7 +153,7 @@ const ShiftSchedulePage: React.FC = () => {
     try {
       await addDealer(dealerId, dealerName, schedule.startTime);
     } catch (error) {
-      console.error('Error adding dealer:', error);
+      logger.error('Error adding dealer:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
     }
   };
   
@@ -168,7 +169,7 @@ const ShiftSchedulePage: React.FC = () => {
         updatedAt: serverTimestamp()
       });
     } catch (error) {
-      console.error('Error removing dealer:', error);
+      logger.error('Error removing dealer:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
     }
   };
   
@@ -190,7 +191,7 @@ const ShiftSchedulePage: React.FC = () => {
       setWorkLogsGenerated(true);
       alert(`${logs.length}개의 근무기록이 성공적으로 생성되었습니다.`);
     } catch (error) {
-      console.error('Error generating work logs:', error);
+      logger.error('Error generating work logs:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
       alert('근무기록 생성에 실패했습니다.');
     } finally {
       setIsGeneratingWorkLogs(false);
@@ -209,7 +210,7 @@ const ShiftSchedulePage: React.FC = () => {
     try {
       await createSchedule(selectedEventId, selectedDate);
     } catch (error) {
-      console.error('Error creating schedule:', error);
+      logger.error('Error creating schedule:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
     }
   };
   
@@ -220,7 +221,7 @@ const ShiftSchedulePage: React.FC = () => {
     try {
       await updateScheduleSettings(newInterval);
     } catch (error) {
-      console.error('Error updating interval:', error);
+      logger.error('Error updating interval:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
     }
   };
   
@@ -259,7 +260,7 @@ const ShiftSchedulePage: React.FC = () => {
       };
       return date.toLocaleDateString('ko-KR', options);
     } catch (error) {
-      console.error('Error formatting date:', error, dateInput);
+      logger.error('Error formatting date:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage', data: { dateInput } });
       return String(dateInput); // Convert to string as fallback
     }
   };

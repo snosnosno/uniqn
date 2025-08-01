@@ -1,5 +1,17 @@
 import { Timestamp } from 'firebase/firestore';
 
+import { logger } from '../../utils/logger';
+
+// 날짜 입력 타입 정의
+type DateInput = 
+  | Timestamp 
+  | Date 
+  | string 
+  | number
+  | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
+  | null 
+  | undefined;
+
 // 전역 캐시 맵 - formatDate 함수 성능 최적화
 const formatDateCache = new Map<string, string>();
 const maxCacheSize = 1000; // 최대 캐시 크기
@@ -19,7 +31,7 @@ const addToCache = (key: string, value: string) => {
  * 통합된 Timestamp/Date 변환 함수
  * 모든 유형의 날짜 입력을 Date 객체로 변환
  */
-export const parseToDate = (dateInput: any): Date | null => {
+export const parseToDate = (dateInput: DateInput): Date | null => {
   if (!dateInput) {
     return null;
   }
@@ -137,7 +149,7 @@ export const parseToDate = (dateInput: any): Date | null => {
 
     return null;
   } catch (error) {
-    console.error('Error parsing date:', error, dateInput);
+    logger.error('Error parsing date:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
     return null;
   }
 };
@@ -146,7 +158,7 @@ export const parseToDate = (dateInput: any): Date | null => {
  * 다양한 날짜 형식을 yy-MM-dd(요일) 형식으로 포맷팅
  * 캐싱 시스템을 통한 성능 최적화 적용
  */
-export const formatDate = (dateInput: any): string => {
+export const formatDate = (dateInput: DateInput): string => {
   // 캐시 키 생성
   const cacheKey = typeof dateInput === 'object' 
     ? JSON.stringify(dateInput) 
@@ -185,7 +197,7 @@ export const formatDate = (dateInput: any): string => {
     addToCache(cacheKey, formattedResult);
     return formattedResult;
   } catch (error) {
-    console.error('Error formatting date:', error, dateInput);
+    logger.error('Error formatting date:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
     const errorResult = '날짜 처리 오류';
     addToCache(cacheKey, errorResult);
     return errorResult;
@@ -196,7 +208,7 @@ export const formatDate = (dateInput: any): string => {
  * 다양한 날짜 형식을 yyyy-MM-dd 문자열로 변환
  * 타임존으로 인한 날짜 변경 문제를 방지
  */
-export const convertToDateString = (dateInput: any): string => {
+export const convertToDateString = (dateInput: DateInput): string => {
   if (!dateInput) {
     return '';
   }
@@ -222,7 +234,7 @@ export const convertToDateString = (dateInput: any): string => {
     
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error('Error converting date to string:', error, dateInput);
+    logger.error('Error converting date to string:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
     return '';
   }
 };
@@ -241,7 +253,7 @@ export const dateStringToDropdownValue = (dateString: string): { year?: string; 
       day: day || ''
     };
   } catch (error) {
-    console.error('Error converting date string to dropdown value:', error, dateString);
+    logger.error('Error converting date string to dropdown value:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateString } });
     return {};
   }
 };
@@ -266,7 +278,7 @@ export const dropdownValueToDateString = (value: { year?: string; month?: string
 /**
  * 다양한 날짜 형식을 Firebase Timestamp로 변환
  */
-export const convertToTimestamp = (dateInput: any): Timestamp | null => {
+export const convertToTimestamp = (dateInput: DateInput): Timestamp | null => {
   if (!dateInput) {
     return null;
   }
@@ -274,11 +286,11 @@ export const convertToTimestamp = (dateInput: any): Timestamp | null => {
   try {
     // 이미 Timestamp 객체인 경우 그대로 반환
     if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
-      return dateInput; // 이미 Timestamp 객체
+      return dateInput as Timestamp; // 이미 Timestamp 객체
     }
     
     if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
-      return dateInput; // 이미 Timestamp 객체 (legacy)
+      return dateInput as Timestamp; // 이미 Timestamp 객체 (legacy)
     }
     
     // 통합된 변환 함수 사용
@@ -291,7 +303,7 @@ export const convertToTimestamp = (dateInput: any): Timestamp | null => {
     
     return Timestamp.fromDate(date);
   } catch (error) {
-    console.error('Error converting to Timestamp:', error, dateInput);
+    logger.error('Error converting to Timestamp:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
     return null;
   }
 };

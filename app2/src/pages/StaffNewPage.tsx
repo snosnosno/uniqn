@@ -39,9 +39,9 @@ const StaffNewPage: React.FC = () => {
       await callFunctionLazy('createUserAccount', formData);
       alert(t('staffNew.alertSuccess'));
       navigate('/admin/staff'); // Redirect to staff list after creation
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || t('staffNew.errorUnknown'));
+      setError(err instanceof Error ? err.message : t('staffNew.errorUnknown'));
     } finally {
       setIsSubmitting(false);
     }

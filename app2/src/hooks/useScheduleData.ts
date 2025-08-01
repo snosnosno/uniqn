@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { logger } from '../utils/logger';
 import { 
   collection, 
   query, 
@@ -69,14 +70,14 @@ const getRoleForApplicationStatus = (data: any, targetDate?: string): string => 
       
       if (dateIndex >= 0 && data.assignedRoles[dateIndex]) {
         const confirmedRole = data.assignedRoles[dateIndex];
-        console.log(`  ✅ 확정 상태 - 날짜별 역할 (${targetDate}):`, confirmedRole);
+        logger.debug('  ✅ 확정 상태 - 날짜별 역할 (${targetDate}):', { component: 'useScheduleData', data: confirmedRole });
         return confirmedRole;
       }
     }
     
     // 날짜별 매칭 실패 시 기본 확정 역할 사용
     const confirmedRole = data.assignedRole || data.confirmedRole || data.role || '';
-    console.log('  ✅ 확정 상태 - 기본 역할:', confirmedRole);
+    logger.debug('  ✅ 확정 상태 - 기본 역할:', { component: 'useScheduleData', data: confirmedRole });
     return confirmedRole;
   }
   
@@ -109,7 +110,7 @@ const getRoleForApplicationStatus = (data: any, targetDate?: string): string => 
       if (dateRoles.length > 0) {
         const uniqueRoles = Array.from(new Set(dateRoles)); // 중복 제거
         const roleString = uniqueRoles.join(', ');
-        console.log(`  🎭 지원 중 - 날짜별 역할 (${targetDate}):`, roleString);
+        logger.debug('  🎭 지원 중 - 날짜별 역할 (${targetDate}):', { component: 'useScheduleData', data: roleString });
         return roleString;
       }
     }
@@ -119,26 +120,26 @@ const getRoleForApplicationStatus = (data: any, targetDate?: string): string => 
     
     if (data.assignedRoles && Array.isArray(data.assignedRoles)) {
       appliedRoles.push(...data.assignedRoles);
-      console.log('  📋 전체 assignedRoles 배열 사용 (fallback):', data.assignedRoles);
+      logger.debug('  📋 전체 assignedRoles 배열 사용 (fallback):', { component: 'useScheduleData', data: data.assignedRoles });
     } else if (data.assignedRole) {
       appliedRoles.push(data.assignedRole);
-      console.log('  📝 단일 assignedRole 사용 (fallback):', data.assignedRole);
+      logger.debug('  📝 단일 assignedRole 사용 (fallback):', { component: 'useScheduleData', data: data.assignedRole });
     } else if (data.role) {
       appliedRoles.push(data.role);
-      console.log('  📝 단일 role 사용 (fallback):', data.role);
+      logger.debug('  📝 단일 role 사용 (fallback):', { component: 'useScheduleData', data: data.role });
     }
     
     if (appliedRoles.length > 0) {
       const uniqueRoles = Array.from(new Set(appliedRoles)); // 중복 제거
       const roleString = uniqueRoles.join(', ');
-      console.log('  🎭 지원 중 - 전체 역할 (fallback):', roleString);
+      logger.debug('  🎭 지원 중 - 전체 역할 (fallback):', { component: 'useScheduleData', data: roleString });
       return roleString;
     }
   }
   
   // 기본값
   const defaultRole = data.role || '';
-  console.log('  ⚠️ 기본값 사용:', defaultRole);
+  logger.debug('  ⚠️ 기본값 사용:', { component: 'useScheduleData', data: defaultRole });
   return defaultRole;
 };
 
@@ -220,12 +221,12 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         
         // 날짜가 여전히 유효하지 않은 경우 추가 처리
         if (!scheduleEvent.date || scheduleEvent.date === '') {
-          console.warn(`⚠️ WorkLog 날짜 변환 실패: ${docId}`);
+          logger.warn('⚠️ WorkLog 날짜 변환 실패: ${docId}', { component: 'useScheduleData' });
           // 다른 날짜 필드들 확인
           const fallbackDate = extractDateFromFields(data, ['createdAt', 'updatedAt', 'scheduledDate']);
           if (fallbackDate) {
             scheduleEvent.date = fallbackDate;
-            console.log(`✅ 대체 날짜 사용: ${fallbackDate}`);
+            logger.debug('✅ 대체 날짜 사용: ${fallbackDate}', { component: 'useScheduleData' });
           }
         }
       } else if (source === 'applications') {
@@ -245,7 +246,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               });
             }
           } catch (err) {
-            console.error('공고 정보 조회 오류:', err);
+            logger.error('공고 정보 조회 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useScheduleData' });
           }
         }
         
@@ -280,7 +281,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             }
             
             if (!dateStr) {
-              console.warn(`⚠️ Application 인덱스 ${i}의 날짜 없음, 건너뜀`);
+              logger.warn('⚠️ Application 인덱스 ${i}의 날짜 없음, 건너뜀', { component: 'useScheduleData' });
               continue;
             }
             
@@ -304,12 +305,12 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             
             // 시간 정보 파싱
             if (timeData && dateStr) {
-              console.log(`⏰ 인덱스 ${i} 시간 파싱: ${timeData}`);
+              logger.debug('⏰ 인덱스 ${i} 시간 파싱: ${timeData}', { component: 'useScheduleData' });
               const { startTime, endTime } = parseTimeString(timeData, dateStr);
               if (startTime && endTime) {
                 singleEvent.startTime = startTime;
                 singleEvent.endTime = endTime;
-                console.log(`  ✅ 시간 설정 완료: ${timeData}`);
+                logger.debug('  ✅ 시간 설정 완료: ${timeData}', { component: 'useScheduleData' });
               }
             }
             
@@ -333,20 +334,20 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           const dateFields = ['workDate', 'eventDate', 'assignedDate', 'applicationDate', 'date'];
           let dateStr = extractDateFromFields(data, dateFields);
           
-          console.log('📅 Application 단일 날짜 필드 검색 완료:', dateStr);
+          logger.debug('📅 Application 단일 날짜 필드 검색 완료:', { component: 'useScheduleData', data: dateStr });
           
           // 공고에서 날짜 정보 가져오기 시도
           if (!dateStr && jobPostingData) {
             // 공고 시작일 사용
             const jobDateStr = extractDateFromFields(jobPostingData, ['startDate', 'date']);
             dateStr = jobDateStr;
-            console.log(`  - 공고 날짜 사용: ${dateStr} (${data.postTitle})`);
+            logger.debug('  - 공고 날짜 사용: ${dateStr} (${data.postTitle})', { component: 'useScheduleData' });
           }
           
           console.log(`Application 단일 날짜 변환: ${dateStr} (${data.postTitle || '제목없음'})`);
           
           if (!dateStr) {
-            console.log('⚠️ Application 날짜 없음:', data);
+            logger.debug('⚠️ Application 날짜 없음:', { component: 'useScheduleData', data: data });
           }
           
           scheduleEvent = {
@@ -377,15 +378,15 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           
           // assignedTime에서 시간 정보 파싱 - 유틸리티 함수 사용
           if (data.assignedTime && scheduleEvent.date) {
-            console.log(`⏰ 단일 assignedTime 발견: ${data.assignedTime}`);
+            logger.debug('⏰ 단일 assignedTime 발견: ${data.assignedTime}', { component: 'useScheduleData' });
             
             const { startTime, endTime } = parseTimeString(data.assignedTime, scheduleEvent.date);
             if (startTime && endTime) {
               scheduleEvent.startTime = startTime;
               scheduleEvent.endTime = endTime;
-              console.log(`  ✅ 단일 시간 설정 완료: ${data.assignedTime}`);
+              logger.debug('  ✅ 단일 시간 설정 완료: ${data.assignedTime}', { component: 'useScheduleData' });
             } else {
-              console.log(`  ℹ️ 단일 시간 파싱 실패 또는 미정: ${data.assignedTime}`);
+              logger.debug('  ℹ️ 단일 시간 파싱 실패 또는 미정: ${data.assignedTime}', { component: 'useScheduleData' });
             }
           }
         }
@@ -393,23 +394,23 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         // 🔧 날짜 표준화 - 모든 날짜를 YYYY-MM-DD 형식으로 통일
         if (scheduleEvent && scheduleEvent.date && typeof scheduleEvent.date !== 'string') {
           scheduleEvent.date = safeDateToString(scheduleEvent.date);
-          console.log(`Application 날짜 변환 (Timestamp): ${scheduleEvent.date}`);
+          logger.debug('Application 날짜 변환 (Timestamp): ${scheduleEvent.date}', { component: 'useScheduleData' });
         }
         
         // 날짜가 여전히 유효하지 않은 경우 추가 처리
         if (scheduleEvent && (!scheduleEvent.date || scheduleEvent.date === '')) {
-          console.warn(`⚠️ Application 날짜 변환 실패: ${docId}`);
+          logger.warn('⚠️ Application 날짜 변환 실패: ${docId}', { component: 'useScheduleData' });
           // 지원서의 다른 날짜 필드들 확인
           const fallbackDate = extractDateFromFields(data, ['createdAt', 'updatedAt', 'appliedAt']);
           if (fallbackDate) {
             scheduleEvent.date = fallbackDate;
-            console.log(`✅ 대체 날짜 사용: ${fallbackDate}`);
+            logger.debug('✅ 대체 날짜 사용: ${fallbackDate}', { component: 'useScheduleData' });
           } else if (jobPostingData) {
             // 공고 날짜 사용
             const jobFallbackDate = extractDateFromFields(jobPostingData, ['createdAt', 'updatedAt']);
             if (jobFallbackDate) {
               scheduleEvent.date = jobFallbackDate;
-              console.log(`✅ 공고 날짜 사용: ${jobFallbackDate}`);
+              logger.debug('✅ 공고 날짜 사용: ${jobFallbackDate}', { component: 'useScheduleData' });
             }
           }
         }
@@ -424,7 +425,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           });
           
           // 모든 필드 순회하며 날짜 관련 필드 찾기
-          console.log('📊 모든 필드 검사:');
+          logger.debug('📊 모든 필드 검사:', { component: 'useScheduleData' });
           Object.keys(data).forEach(key => {
             const value = data[key];
             console.log(`  - ${key}:`, {
@@ -439,7 +440,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                 key.toLowerCase().includes('schedule') ||
                 key.toLowerCase().includes('day') ||
                 key.toLowerCase().includes('work')) {
-              console.log(`    💡 날짜 관련 필드 발견: ${key}`);
+              logger.debug('    💡 날짜 관련 필드 발견: ${key}', { component: 'useScheduleData' });
             }
           });
           
@@ -482,14 +483,14 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               
               if (convertedDate) {
                 convertedDates.push(convertedDate);
-                console.log(`  [${index}] 날짜 변환 성공: ${convertedDate}`);
+                logger.debug('  [${index}] 날짜 변환 성공: ${convertedDate}', { component: 'useScheduleData' });
               }
             });
             
             // 여러 날짜가 있으면 각 날짜마다 이벤트 생성
             if (convertedDates.length > 0) {
               if (convertedDates.length > 1) {
-                console.log(`📆 여러 날짜 이벤트 생성: ${convertedDates.length}개`);
+                logger.debug('📆 여러 날짜 이벤트 생성: ${convertedDates.length}개', { component: 'useScheduleData' });
                 
                 // 각 날짜마다 별도의 스케줄 이벤트 생성
                 const multipleEvents: ScheduleEvent[] = [];
@@ -504,10 +505,10 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                   
                   if (data.assignedTimes && Array.isArray(data.assignedTimes) && data.assignedTimes[index]) {
                     timeInfo = data.assignedTimes[index];
-                    console.log(`    assignedTimes[${index}]: ${timeInfo}`);
+                    logger.debug('    assignedTimes[${index}]: ${timeInfo}', { component: 'useScheduleData' });
                   } else if (data.assignedTime) {
                     timeInfo = data.assignedTime;
-                    console.log(`    assignedTime 사용: ${timeInfo}`);
+                    logger.debug('    assignedTime 사용: ${timeInfo}', { component: 'useScheduleData' });
                   }
                   
                   if (timeInfo && timeInfo !== '미정' && timeInfo.includes('-')) {
@@ -530,7 +531,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                     }
                     
                     eventCopy.endTime = Timestamp.fromDate(endDate);
-                    console.log(`    시간 설정: ${timeInfo}`);
+                    logger.debug('    시간 설정: ${timeInfo}', { component: 'useScheduleData' });
                   } else {
                     console.log(`    시간: ${timeInfo || '미정'}`);
                   }
@@ -540,18 +541,18 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                   const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
                   const dayOfWeek = dayNames[dateObj.getDay()] || '';
                   
-                  console.log(`  [Day ${index + 1}] ${date} (${dayOfWeek}): ${eventCopy.eventName}`);
+                  logger.debug('  [Day ${index + 1}] ${date} (${dayOfWeek}): ${eventCopy.eventName}', { component: 'useScheduleData' });
                   multipleEvents.push(eventCopy);
                 });
                 
-                console.log(`✅ ${multipleEvents.length}개의 이벤트 생성 완료`);
+                logger.debug('✅ ${multipleEvents.length}개의 이벤트 생성 완료', { component: 'useScheduleData' });
                 return multipleEvents;
               } else {
                 // 단일 날짜
                 const firstDate = convertedDates[0];
                 if (firstDate) {
                   scheduleEvent.date = firstDate;
-                  console.log(`✅ assignedDates에서 날짜 설정 완료: ${scheduleEvent.date}`);
+                  logger.debug('✅ assignedDates에서 날짜 설정 완료: ${scheduleEvent.date}', { component: 'useScheduleData' });
                 }
               }
             }
@@ -565,17 +566,17 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             assignedDate = safeDateToString(assignedDate);
             
             scheduleEvent.date = assignedDate;
-            console.log(`✅ assignedDate에서 날짜 설정: ${assignedDate}`);
+            logger.debug('✅ assignedDate에서 날짜 설정: ${assignedDate}', { component: 'useScheduleData' });
           }
           
           // assignedSchedules 배열 확인 (다른 형태일 수도 있음)
           if (!scheduleEvent.date && data.assignedSchedules) {
-            console.log('📅 assignedSchedules 발견:', data.assignedSchedules);
+            logger.debug('📅 assignedSchedules 발견:', { component: 'useScheduleData', data: data.assignedSchedules });
             
             // 배열인 경우 각 요소 확인
             if (Array.isArray(data.assignedSchedules)) {
               data.assignedSchedules.forEach((schedule: any, index: number) => {
-                console.log(`  스케줄 ${index}:`, schedule);
+                logger.debug('  스케줄 ${index}:', { component: 'useScheduleData', data: schedule });
                 
                 // 날짜 찾기
                 if (schedule.date) {
@@ -586,7 +587,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                   // 첫 번째 날짜만 사용 (나중에 여러 날짜 지원 가능)
                   if (index === 0) {
                     scheduleEvent.date = assignedDate;
-                    console.log(`✅ assignedSchedules에서 날짜 설정: ${assignedDate}`);
+                    logger.debug('✅ assignedSchedules에서 날짜 설정: ${assignedDate}', { component: 'useScheduleData' });
                   }
                 }
               });
@@ -595,19 +596,19 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           
           // confirmedSchedules 필드 확인 (다른 이름일 수도 있음)
           if (data.confirmedSchedules) {
-            console.log('📅 confirmedSchedules 발견:', data.confirmedSchedules);
+            logger.debug('📅 confirmedSchedules 발견:', { component: 'useScheduleData', data: data.confirmedSchedules });
           }
           
           // 날짜가 여전히 없으면 공고 정보에서 가져오기
           if (!scheduleEvent.date && jobPostingData) {
-            console.log('🔍 공고 정보에서 날짜 찾기:', jobPostingData);
+            logger.debug('🔍 공고 정보에서 날짜 찾기:', { component: 'useScheduleData', data: jobPostingData });
             
             // 공고의 다양한 날짜 필드 확인
             const possibleDateFields = ['date', 'startDate', 'eventDate', 'dates', 'eventDates'];
             
             for (const field of possibleDateFields) {
               if (jobPostingData[field]) {
-                console.log(`  - ${field}:`, jobPostingData[field]);
+                logger.debug('  - ${field}:', { component: 'useScheduleData', data: jobPostingData[field] });
                 
                 let dateValue = jobPostingData[field];
                 
@@ -628,7 +629,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
                 }
                 
                 if (scheduleEvent.date) {
-                  console.log(`✅ 공고의 ${field}에서 날짜 설정: ${scheduleEvent.date}`);
+                  logger.debug('✅ 공고의 ${field}에서 날짜 설정: ${scheduleEvent.date}', { component: 'useScheduleData' });
                   break;
                 }
               }
@@ -638,7 +639,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             if (!scheduleEvent.date) {
               const today = getTodayString();
               scheduleEvent.date = today;
-              console.log(`⚠️ 날짜를 찾을 수 없어 오늘 날짜 사용: ${today}`);
+              logger.debug('⚠️ 날짜를 찾을 수 없어 오늘 날짜 사용: ${today}', { component: 'useScheduleData' });
             }
           }
         }
@@ -657,7 +658,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               const isoString = new Date(seconds * 1000).toISOString();
               const datePart = isoString.substring(0, 10);
               dateStr = datePart || '';
-              console.log(`Staff Timestamp 문자열 변환: ${dateStr}`);
+              logger.debug('Staff Timestamp 문자열 변환: ${dateStr}', { component: 'useScheduleData' });
             }
           } else if (typeof dateStr === 'object') {
             // 유틸리티 함수로 날짜 변환
@@ -668,7 +669,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         console.log(`Staff 날짜 변환: ${dateStr} (${data.postingTitle || '제목없음'})`);
         
         if (!dateStr) {
-          console.log('⚠️ Staff 날짜 없음:', data);
+          logger.debug('⚠️ Staff 날짜 없음:', { component: 'useScheduleData', data: data });
         }
         
         // 문자열로 확실히 변환
@@ -696,7 +697,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           const isoString = new Date((scheduleEvent.date as any).seconds * 1000).toISOString();
           const datePart = isoString.substring(0, 10);
           scheduleEvent.date = datePart || '';
-          console.log(`Staff 날짜 변환: ${scheduleEvent.date}`);
+          logger.debug('Staff 날짜 변환: ${scheduleEvent.date}', { component: 'useScheduleData' });
         }
         
         // assignedTime에서 시간 정보 파싱 - 유틸리티 함수 사용
@@ -712,7 +713,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       // 최종 날짜 확인 및 변환 - 유틸리티 함수 사용
       if (scheduleEvent.date && typeof scheduleEvent.date === 'object') {
         scheduleEvent.date = safeDateToString(scheduleEvent.date);
-        console.log(`최종 날짜 변환 (${source}): ${scheduleEvent.date} - ${scheduleEvent.eventName}`);
+        logger.debug('최종 날짜 변환 (${source}): ${scheduleEvent.date} - ${scheduleEvent.eventName}', { component: 'useScheduleData' });
       }
       
       // 날짜가 없으면 null 반환
@@ -738,7 +739,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       
       return scheduleEvent;
     } catch (error) {
-      console.error(`${source} 데이터 변환 오류:`, error);
+      logger.error('${source} 데이터 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useScheduleData' });
       return null;
     }
   }, []);
@@ -750,7 +751,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       return;
     }
 
-    console.log('🔍 스케줄 데이터 실시간 구독 시작');
+    logger.debug('🔍 스케줄 데이터 실시간 구독 시작', { component: 'useScheduleData' });
     const unsubscribes: (() => void)[] = [];
 
     // 스케줄 데이터 업데이트 함수
@@ -762,7 +763,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
 
     const updateAllSchedules = (source: string, newSchedules: ScheduleEvent[]) => {
       schedulesBySource[source] = newSchedules;
-      console.log(`📊 ${source} 스케줄 업데이트:`, newSchedules.length);
+      logger.debug('📊 ${source} 스케줄 업데이트:', { component: 'useScheduleData', data: newSchedules.length });
       
       // 모든 소스의 스케줄 통합
       const merged = [
@@ -791,7 +792,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         
         if (!acc.has(key)) {
           acc.set(key, schedule);
-          console.log(`✅ 새 일정 추가: ${schedule.eventName} (${schedule.sourceCollection})`);
+          logger.debug('✅ 새 일정 추가: ${schedule.eventName} (${schedule.sourceCollection})', { component: 'useScheduleData' });
         } else {
           const existing = acc.get(key)!;
           
@@ -808,7 +809,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
             if (schedule.type === 'confirmed' || existing.type === 'confirmed') {
               // 확정된 일정이 있으면 확정 역할만 표시 (workLogs에서 오는 경우가 많음)
               updatedSchedule.role = schedule.role || existing.role;
-              console.log(`✅ 확정 역할 사용: ${updatedSchedule.role}`);
+              logger.debug('✅ 확정 역할 사용: ${updatedSchedule.role}', { component: 'useScheduleData' });
             } else if (schedule.type === 'applied' && existing.type === 'applied') {
               // 둘 다 지원중이면 모든 지원 역할 통합
               const existingRoles = existing.role.split(', ').filter(r => r.trim());
@@ -816,11 +817,11 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               const allRoles = existingRoles.concat(scheduleRoles);
               const uniqueRoles = Array.from(new Set(allRoles));
               updatedSchedule.role = uniqueRoles.join(', ');
-              console.log(`👥 지원 역할 통합: ${updatedSchedule.role}`);
+              logger.debug('👥 지원 역할 통합: ${updatedSchedule.role}', { component: 'useScheduleData' });
             }
             
             acc.set(key, updatedSchedule);
-            console.log(`🔄 중복 대체: ${existing.sourceCollection} → ${schedule.sourceCollection} (${schedule.eventName})`);
+            logger.debug('🔄 중복 대체: ${existing.sourceCollection} → ${schedule.sourceCollection} (${schedule.eventName})', { component: 'useScheduleData' });
           } else if (currentPriority === existingPriority) {
             // 같은 우선순위면 역할 정보만 통합
             const existingSchedule = acc.get(key)!;
@@ -832,10 +833,10 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               const allRoles = existingRoles.concat(newRoles);
               const uniqueRoles = Array.from(new Set(allRoles));
               existingSchedule.role = uniqueRoles.join(', ');
-              console.log(`👥 동급 지원 역할 통합: ${existingSchedule.role}`);
+              logger.debug('👥 동급 지원 역할 통합: ${existingSchedule.role}', { component: 'useScheduleData' });
             }
           } else {
-            console.log(`🔒 중복 유지: ${existing.sourceCollection} 우선 유지 (${schedule.eventName})`);
+            logger.debug('🔒 중복 유지: ${existing.sourceCollection} 우선 유지 (${schedule.eventName})', { component: 'useScheduleData' });
           }
         }
         
@@ -849,7 +850,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       
       setSchedules(sortedSchedules);
       setLoading(false);
-      console.log('✅ 전체 스케줄 업데이트 완료:', sortedSchedules.length);
+      logger.debug('✅ 전체 스케줄 업데이트 완료:', { component: 'useScheduleData', data: sortedSchedules.length });
     };
 
     // 1. workLogs 구독
@@ -862,11 +863,11 @@ export const useScheduleData = (): UseScheduleDataReturn => {
     const unsubWorkLogs = onSnapshot(
       workLogsQuery,
       async (snapshot) => {
-        console.log('📊 workLogs 업데이트, 문서 수:', snapshot.size);
+        logger.debug('📊 workLogs 업데이트, 문서 수:', { component: 'useScheduleData', data: snapshot.size });
         
         const workLogSchedules: ScheduleEvent[] = [];
         for (const doc of snapshot.docs) {
-          console.log('WorkLog 문서:', doc.id, doc.data());
+          logger.debug('WorkLog 문서:', { component: 'useScheduleData', data: { id: doc.id, data: doc.data() } });
           const result = await convertToScheduleEvent(doc.data(), 'workLogs', doc.id);
           if (result) {
             if (Array.isArray(result)) {
@@ -881,19 +882,19 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         updateAllSchedules('workLogs', workLogSchedules);
       },
       (error: any) => {
-        console.error('❌ workLogs 구독 오류:', error);
-        console.error('오류 코드:', error.code);
-        console.error('오류 메시지:', error.message);
-        console.error('전체 오류 객체:', error);
+        logger.error('❌ workLogs 구독 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useScheduleData' });
+        logger.error('오류 코드:', error.code instanceof Error ? error.code : new Error(String(error.code)), { component: 'useScheduleData' });
+        logger.error('오류 메시지:', error.message instanceof Error ? error.message : new Error(String(error.message)), { component: 'useScheduleData' });
+        logger.error('전체 오류 객체:', error instanceof Error ? error : new Error(String(error)), { component: 'useScheduleData' });
         
         // Firestore 인덱스 오류인 경우 안내
         if (error.message?.includes('index') || error.code === 'failed-precondition') {
-          console.error('🔥 Firestore 인덱스가 필요합니다. 콘솔에서 제공하는 링크를 클릭하여 인덱스를 생성하세요.');
+          logger.error('🔥 Firestore 인덱스가 필요합니다. 콘솔에서 제공하는 링크를 클릭하여 인덱스를 생성하세요.', new Error('🔥 Firestore 인덱스가 필요합니다. 콘솔에서 제공하는 링크를 클릭하여 인덱스를 생성하세요.'), { component: 'useScheduleData' });
         }
         
         // INTERNAL ASSERTION FAILED 오류 처리
         if (error.message?.includes('INTERNAL ASSERTION FAILED')) {
-          console.error('⚠️ Firestore 내부 오류 발생. 쿼리를 단순화합니다.');
+          logger.error('⚠️ Firestore 내부 오류 발생. 쿼리를 단순화합니다.', new Error('⚠️ Firestore 내부 오류 발생. 쿼리를 단순화합니다.'), { component: 'useScheduleData' });
           // 단순한 쿼리로 재시도
           const simpleQuery = query(
             collection(db, 'workLogs'),
@@ -904,7 +905,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
           const retryUnsub = onSnapshot(
             simpleQuery,
             async (snapshot) => {
-              console.log('📊 workLogs 재시도 성공, 문서 수:', snapshot.size);
+              logger.debug('📊 workLogs 재시도 성공, 문서 수:', { component: 'useScheduleData', data: snapshot.size });
               const workLogSchedules: ScheduleEvent[] = [];
               for (const doc of snapshot.docs) {
                 const result = await convertToScheduleEvent(doc.data(), 'workLogs', doc.id);
@@ -919,7 +920,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               updateAllSchedules('workLogs', workLogSchedules);
             },
             (retryError) => {
-              console.error('❌ workLogs 재시도도 실패:', retryError);
+              logger.error('❌ workLogs 재시도도 실패:', retryError instanceof Error ? retryError : new Error(String(error)), { component: 'useScheduleData' });
               setError('근무 기록을 불러오는 중 오류가 발생했습니다.');
             }
           );
@@ -943,28 +944,28 @@ export const useScheduleData = (): UseScheduleDataReturn => {
     const unsubApplications = onSnapshot(
       applicationsQuery,
       async (snapshot) => {
-        console.log('📊 applications 업데이트, 문서 수:', snapshot.size);
+        logger.debug('📊 applications 업데이트, 문서 수:', { component: 'useScheduleData', data: snapshot.size });
         
         const applicationSchedules: ScheduleEvent[] = [];
         for (const doc of snapshot.docs) {
-          console.log('Application 문서:', doc.id, doc.data());
+          logger.debug('Application 문서:', { component: 'useScheduleData', data: { id: doc.id, data: doc.data() } });
           const result = await convertToScheduleEvent(doc.data(), 'applications', doc.id);
           if (result) {
             if (Array.isArray(result)) {
-              console.log(`📅 ${result.length}개의 날짜별 이벤트 추가`);
+              logger.debug(`📅 ${result.length}개의 날짜별 이벤트 추가`, { component: 'useScheduleData' });
               applicationSchedules.push(...result);
             } else {
               applicationSchedules.push(result);
             }
           } else {
-            console.log('❌ Application 스케줄 변환 실패:', doc.id);
+            logger.debug('❌ Application 스케줄 변환 실패:', { component: 'useScheduleData', data: doc.id });
           }
         }
         
         updateAllSchedules('applications', applicationSchedules);
       },
       (error) => {
-        console.error('❌ applications 구독 오류:', error);
+        logger.error('❌ applications 구독 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useScheduleData' });
       }
     );
     unsubscribes.push(unsubApplications);
@@ -978,11 +979,11 @@ export const useScheduleData = (): UseScheduleDataReturn => {
     const unsubStaff = onSnapshot(
       staffQuery,
       async (snapshot) => {
-        console.log('📊 staff 업데이트, 문서 수:', snapshot.size);
+        logger.debug('📊 staff 업데이트, 문서 수:', { component: 'useScheduleData', data: snapshot.size });
         
         const staffSchedules: ScheduleEvent[] = [];
         for (const doc of snapshot.docs) {
-          console.log('Staff 문서:', doc.id, doc.data());
+          logger.debug('Staff 문서:', { component: 'useScheduleData', data: { id: doc.id, data: doc.data() } });
           const result = await convertToScheduleEvent(doc.data(), 'staff', doc.id);
           if (result) {
             if (Array.isArray(result)) {
@@ -991,29 +992,29 @@ export const useScheduleData = (): UseScheduleDataReturn => {
               staffSchedules.push(result);
             }
           } else {
-            console.log('❌ Staff 스케줄 변환 실패:', doc.id);
+            logger.debug('❌ Staff 스케줄 변환 실패:', { component: 'useScheduleData', data: doc.id });
           }
         }
         
         updateAllSchedules('staff', staffSchedules);
       },
       (error) => {
-        console.error('❌ staff 구독 오류:', error);
+        logger.error('❌ staff 구독 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useScheduleData' });
       }
     );
     unsubscribes.push(unsubStaff);
 
     // 클린업
     return () => {
-      console.log('🧹 스케줄 데이터 구독 해제');
+      logger.debug('🧹 스케줄 데이터 구독 해제', { component: 'useScheduleData' });
       unsubscribes.forEach(unsub => unsub());
     };
   }, [currentUser, convertToScheduleEvent]);
 
   // 필터링된 스케줄
   const filteredSchedules = useMemo(() => {
-    console.log('\n🔍 ========== 필터링 시작 ==========');
-    console.log('전체 스케줄 수:', schedules.length);
+    logger.debug('\n🔍 ========== 필터링 시작 ==========', { component: 'useScheduleData' });
+    logger.debug('전체 스케줄 수:', { component: 'useScheduleData', data: schedules.length });
     console.log('필터 설정:', {
       dateRange: filters.dateRange,
       searchTerm: filters.searchTerm
@@ -1047,20 +1048,20 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       let dateStr: string = s.date;
       
       if (!dateStr) {
-        console.log(`❌ 날짜 없음 제외: ${s.eventName} (${s.id})`);
+        logger.debug('❌ 날짜 없음 제외: ${s.eventName} (${s.id})', { component: 'useScheduleData' });
         return false;
       }
       
       // Timestamp 객체인 경우 문자열로 변환 - 유틸리티 함수 사용
       if (typeof dateStr === 'object') {
-        console.log(`⚠️ 날짜가 여전히 객체임: ${s.eventName}`);
+        logger.debug('⚠️ 날짜가 여전히 객체임: ${s.eventName}', { component: 'useScheduleData' });
         
         const convertedDate = safeDateToString(dateStr);
         if (convertedDate) {
           dateStr = convertedDate;
-          console.log(`  → 날짜 변환 완료: ${dateStr}`);
+          logger.debug('  → 날짜 변환 완료: ${dateStr}', { component: 'useScheduleData' });
         } else {
-          console.log(`  → 변환 실패, 제외`);
+          logger.debug('  → 변환 실패, 제외', { component: 'useScheduleData' });
           return false;
         }
       }
@@ -1068,15 +1069,15 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       const isInRange = dateStr >= filters.dateRange.start && dateStr <= filters.dateRange.end;
       
       if (isInRange) {
-        console.log(`✅ 날짜 범위 내: ${dateStr} - ${s.eventName}`);
+        logger.debug('✅ 날짜 범위 내: ${dateStr} - ${s.eventName}', { component: 'useScheduleData' });
       } else {
-        console.log(`❌ 날짜 범위 밖: ${dateStr} - ${s.eventName}`);
+        logger.debug('❌ 날짜 범위 밖: ${dateStr} - ${s.eventName}', { component: 'useScheduleData' });
       }
       
       return isInRange;
     });
     
-    console.log(`\n날짜 필터 결과: ${beforeDateFilter}개 → ${filtered.length}개`);
+    logger.debug('\n날짜 필터 결과: ${beforeDateFilter}개 → ${filtered.length}개', { component: 'useScheduleData' });
 
     // 검색어 필터
     if (filters.searchTerm) {
@@ -1088,9 +1089,9 @@ export const useScheduleData = (): UseScheduleDataReturn => {
       );
     }
 
-    console.log('\n✅ ========== 필터링 완료 ==========');
-    console.log('최종 필터링 결과:', filtered.length);
-    console.log('필터링된 스케줄 상세:');
+    logger.debug('\n✅ ========== 필터링 완료 ==========', { component: 'useScheduleData' });
+    logger.debug('최종 필터링 결과:', { component: 'useScheduleData', data: filtered.length });
+    logger.debug('필터링된 스케줄 상세:', { component: 'useScheduleData' });
     filtered.forEach((schedule, index) => {
       console.log(`  [${index}]`, {
         date: schedule.date,
@@ -1098,7 +1099,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
         type: schedule.type
       });
     });
-    console.log('========================================\n');
+    logger.debug('========================================\n', { component: 'useScheduleData' });
     
     return filtered;
   }, [schedules, filters]);
@@ -1144,7 +1145,7 @@ export const useScheduleData = (): UseScheduleDataReturn => {
 
   // 데이터 새로고침 (필요시)
   const refreshData = useCallback(() => {
-    console.log('🔄 스케줄 데이터 새로고침 (실시간 구독 중이므로 자동 업데이트)');
+    logger.debug('🔄 스케줄 데이터 새로고침 (실시간 구독 중이므로 자동 업데이트)', { component: 'useScheduleData' });
   }, []);
 
   return {

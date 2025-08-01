@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from 'react-icons/fa';
 import { doc, getDoc } from 'firebase/firestore';
@@ -45,19 +46,19 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
       // staff.userId 또는 staff.id를 사용 (staff 컬렉션에서 userId가 실제 사용자 ID)
       const userId = staff?.userId || staff?.id;
       if (!userId) {
-        console.log('userId를 찾을 수 없습니다:', staff);
+        logger.debug('userId를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: staff });
         return;
       }
       
       setLoading(true);
       try {
-        console.log('🔍 사용자 프로필 조회 시작:', userId);
+        logger.debug('🔍 사용자 프로필 조회 시작:', { component: 'StaffProfileModal', data: userId });
         const userDocRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userDocRef);
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          console.log('🔍 사용자 프로필 데이터 로드:', userData);
+          logger.debug('🔍 사용자 프로필 데이터 로드:', { component: 'StaffProfileModal', data: userData });
           setUserProfile({
             ...staff,
             ...userData,
@@ -76,11 +77,11 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             notes: userData.notes || staff.notes
           } as ProfileData);
         } else {
-          console.log('사용자 프로필 문서를 찾을 수 없습니다:', userId);
+          logger.debug('사용자 프로필 문서를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: userId });
           setUserProfile(staff as ProfileData);
         }
       } catch (error) {
-        console.error('사용자 프로필 로드 오류:', error);
+        logger.error('사용자 프로필 로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffProfileModal' });
         setUserProfile(staff as ProfileData);
       } finally {
         setLoading(false);
@@ -120,7 +121,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         }
         return null;
       } catch (error) {
-        console.error('시간 포맷팅 오류:', error);
+        logger.error('시간 포맷팅 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffProfileModal' });
         return null;
       }
     };

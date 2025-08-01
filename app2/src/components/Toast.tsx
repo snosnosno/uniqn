@@ -6,7 +6,7 @@ interface ToastProps {
   toast: ToastType;
 }
 
-const Toast: React.FC<ToastProps> = ({ toast }) => {
+const Toast: React.FC<ToastProps> = React.memo(({ toast }) => {
   const { removeToast } = useToastContext();
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -96,10 +96,10 @@ const Toast: React.FC<ToastProps> = ({ toast }) => {
       </div>
     </div>
   );
-};
+});
 
 // Toast Container Component
-export const ToastContainer: React.FC = () => {
+export const ToastContainer: React.FC = React.memo(() => {
   const { toasts } = useToastContext();
 
   if (toasts.length === 0) return null;
@@ -111,6 +111,6 @@ export const ToastContainer: React.FC = () => {
       ))}
     </div>
   );
-};
+});
 
 export default Toast;

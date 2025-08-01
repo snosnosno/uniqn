@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { logger } from '../utils/logger';
 import { FixedSizeList as List } from 'react-window';
 
 import { StaffData } from '../hooks/useStaffManagement';
@@ -177,8 +178,8 @@ const VirtualizedTableRow: React.FC<{
         <div className="ml-3 min-w-0 flex-1">
           <button
             onClick={() => {
-              console.log('🔍 VirtualizedStaffTable 이름 클릭:', staff.id, staff.name);
-              console.log('🔍 onShowProfile 함수 존재:', !!onShowProfile);
+              logger.debug('🔍 VirtualizedStaffTable 이름 클릭:', { component: 'VirtualizedStaffTable', data: { id: staff.id, name: staff.name } });
+              logger.debug('🔍 onShowProfile 함수 존재:', { component: 'VirtualizedStaffTable', data: !!onShowProfile });
               if (onShowProfile) {
                 onShowProfile(staff.id);
               }

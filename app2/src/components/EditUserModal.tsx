@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 
@@ -106,7 +107,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       alert(t('editUserModal.updateSuccess'));
       onClose();
     } catch (err: any) {
-      console.error("Error updating user:", err);
+      logger.error('Error updating user:', err instanceof Error ? err : new Error(String(err)), { component: 'EditUserModal' });
       setError(err.message || t('editUserModal.updateError'));
     } finally {
       setIsSubmitting(false);

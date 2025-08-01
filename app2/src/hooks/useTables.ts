@@ -1,4 +1,5 @@
 import { collection, onSnapshot, doc, runTransaction, DocumentData, QueryDocumentSnapshot, getDocs, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { useState, useEffect, useCallback } from 'react';
 
 import { db } from '../firebase';
@@ -79,7 +80,7 @@ export const useTables = () => {
       await updateDoc(tableRef, data);
       logAction('table_details_updated', { tableId, ...data });
     } catch (e) {
-      console.error("Error updating table details:", e);
+      logger.error('Error updating table details:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
       throw e;
     }
@@ -90,7 +91,7 @@ export const useTables = () => {
     try {
       await updateDoc(tableRef, { position });
     } catch (e) {
-      console.error("Error updating table position:", e);
+      logger.error('Error updating table position:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
       throw e;
     }
@@ -106,7 +107,7 @@ export const useTables = () => {
         await batch.commit();
         logAction('table_order_updated', { tableCount: tables.length });
     } catch (e) {
-        console.error("Error updating table order:", e);
+        logger.error('Error updating table order:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
         setError(e as Error);
         throw e;
     }
@@ -126,7 +127,7 @@ export const useTables = () => {
       const docRef = await addDoc(tablesCollection, newTable);
       logAction('table_created_standby', { tableId: docRef.id, tableNumber: newTable.tableNumber, maxSeats: maxSeatsSetting });
     } catch (e) {
-      console.error("Error opening new table:", e);
+      logger.error('Error opening new table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
     } finally {
       setLoading(false);
@@ -139,7 +140,7 @@ export const useTables = () => {
       await updateDoc(tableRef, { status: 'open' });
       logAction('table_activated', { tableId });
     } catch (e) {
-      console.error("Error activating table:", e);
+      logger.error('Error activating table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
       throw e;
     }
@@ -239,7 +240,7 @@ export const useTables = () => {
         errorMessage: e instanceof Error ? e.message : String(e),
       };
       logAction('action_failed', errorContext);
-      console.error("Error closing table:", e);
+      logger.error('Error closing table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
       throw e;
     } finally {
@@ -312,7 +313,7 @@ export const useTables = () => {
       }
       
       await batch.commit();
-      console.log("좌석 밸런싱 재배정이 성공적으로 완료되었습니다.");
+      logger.debug('좌석 밸런싱 재배정이 성공적으로 완료되었습니다.', { component: 'useTables' });
       logAction('seats_reassigned_with_balancing', { participantsCount: participants.length, tableCount: openTables.length });
     } catch (e) {
       const errorContext = {
@@ -321,7 +322,7 @@ export const useTables = () => {
         errorMessage: e instanceof Error ? e.message : String(e),
       };
       logAction('action_failed', errorContext);
-      console.error("좌석 자동 재배정 중 오류가 발생했습니다:", e);
+      logger.error('좌석 자동 재배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       alert(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
       setError(e as Error);
       throw e;
@@ -391,7 +392,7 @@ export const useTables = () => {
         logAction('seat_moved', { participantId, from: `${fromTable?.tableNumber}-${from.seatIndex+1}`, to: `${toTable?.tableNumber}-${to.seatIndex+1}` });
 
     } catch (e) {
-        console.error("An error occurred while moving the seat:", e);
+        logger.error('An error occurred while moving the seat:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
         setError(e as Error);
         throw e;
     }
@@ -412,7 +413,7 @@ export const useTables = () => {
       });
       logAction('participant_busted', { participantId });
     } catch (e) {
-      console.error("탈락 처리 중 오류 발생:", e);
+      logger.error('탈락 처리 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
     }
   }, [tables]);
@@ -452,7 +453,7 @@ export const useTables = () => {
 
       logAction('max_seats_updated', { tableId, newMaxSeats });
     } catch (e) {
-      console.error("최대 좌석 수 변경 중 오류 발생:", e);
+      logger.error('최대 좌석 수 변경 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
       throw e; // Rethrow to be caught by the UI
     }

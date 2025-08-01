@@ -8,6 +8,7 @@ import {
   signInWithPopup,
   sendPasswordResetEmail
 } from 'firebase/auth';
+import { logger } from '../utils/logger';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // import { doc, getDoc } from 'firebase/firestore';
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userRole = idTokenResult.claims.role as string || null;
           setRole(userRole);
         } catch (error) {
-          console.error("Error fetching user role:", error);
+          logger.error('Error fetching user role:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
           setRole(null);
         }
       } else {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 
@@ -273,7 +274,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           batch.set(workLogRef, newWorkLogData);
           successCount++;
         } catch (error) {
-          console.error(`Staff ${staffId} 상태 업데이트 오류:`, error);
+          logger.error('Staff ${staffId} 상태 업데이트 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffManagementTab' });
           errorCount++;
         }
       }
@@ -291,7 +292,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       }
       
     } catch (error) {
-      console.error('출석 상태 일괄 변경 오류:', error);
+      logger.error('출석 상태 일괄 변경 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffManagementTab' });
       showError('출석 상태 변경 중 오류가 발생했습니다.');
     }
   };

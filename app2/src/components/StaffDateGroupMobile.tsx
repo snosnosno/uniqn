@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { logger } from '../utils/logger';
 import { StaffData } from '../hooks/useStaffManagement';
 import StaffCard from './StaffCard';
 
@@ -143,7 +144,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                           }
                           return '';
                         } catch (error) {
-                          console.error('요일 계산 오류:', error);
+                          logger.error('요일 계산 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffDateGroupMobile' });
                           return '';
                         }
                       })()}

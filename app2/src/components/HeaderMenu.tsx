@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { IconType } from 'react-icons';
 import { 
@@ -50,7 +51,7 @@ export const HeaderMenu: React.FC = () => {
       await signOut();
       navigate('/login');
     } catch (error) {
-      console.error('Failed to log out', error);
+      logger.error('Failed to log out', error instanceof Error ? error : new Error(String(error)), { component: 'HeaderMenu' });
     }
   }, [signOut, navigate]);
 
@@ -171,6 +172,8 @@ export const HeaderMenu: React.FC = () => {
               {/* Admin only menu */}
               {role === 'admin' && (
                 <>
+                  <hr className="my-2 border-t border-gray-200" />
+                  <NavItem to="/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/user-management" label={t('nav.userManagement')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/approvals" label={t('nav.approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
                 </>

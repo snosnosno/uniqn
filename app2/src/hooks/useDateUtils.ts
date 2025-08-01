@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { 
   formatDate, 
   convertToDateString, 
@@ -8,14 +9,24 @@ import {
   getTodayString
 } from '../utils/jobPosting/dateUtils';
 
+// 날짜 입력 타입 정의
+type DateInput = 
+  | Timestamp 
+  | Date 
+  | string 
+  | number
+  | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
+  | null 
+  | undefined;
+
 export const useDateUtils = () => {
   // 날짜 포맷팅 (yy-MM-dd(요일))
-  const formatDateDisplay = useCallback((dateInput: any) => {
+  const formatDateDisplay = useCallback((dateInput: DateInput) => {
     return formatDate(dateInput);
   }, []);
 
   // 날짜를 문자열로 변환 (yyyy-MM-dd)
-  const toDateString = useCallback((dateInput: any) => {
+  const toDateString = useCallback((dateInput: DateInput) => {
     return convertToDateString(dateInput);
   }, []);
 
@@ -30,7 +41,7 @@ export const useDateUtils = () => {
   }, []);
 
   // Timestamp로 변환
-  const toTimestamp = useCallback((dateInput: any) => {
+  const toTimestamp = useCallback((dateInput: DateInput) => {
     return convertToTimestamp(dateInput);
   }, []);
 

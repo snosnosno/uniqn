@@ -58,16 +58,18 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
       } else {
         throw new Error('토큰 생성 실패');
       }
-    } catch (error: any) {
-      logger.error('QR 코드 생성 실패', error, { 
+    } catch (error) {
+      logger.error('QR 코드 생성 실패', error instanceof Error ? error : new Error(String(error)), { 
         operation: 'generateQrCode',
         eventId,
-        errorCode: error.code,
-        errorMessage: error.message
+        errorCode: error instanceof Error && 'code' in error ? (error as any).code : undefined,
+        errorMessage: error instanceof Error ? error.message : String(error)
       });
       
       // CORS 또는 네트워크 오류 시 폴백 처리
-      if (error.code === 'functions/unavailable' || error.message?.includes('CORS')) {
+      const errorCode = error instanceof Error && 'code' in error ? (error as any).code : undefined;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorCode === 'functions/unavailable' || errorMessage?.includes('CORS')) {
         logger.warn('CORS 문제 감지, 폴백 모드로 전환', { 
           operation: 'generateQrCode',
           eventId 

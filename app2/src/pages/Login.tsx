@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from 'react-icons/fa';
 import { useNavigate, Link } from "react-router-dom";
@@ -39,7 +40,7 @@ const Login: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       setError(t('googleSignIn.error'));
-      console.error('Google Sign-In Error:', err);
+      logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
     }
   };
 

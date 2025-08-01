@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+import { logger } from '../utils/logger';
 import { StaffData } from '../hooks/useStaffManagement';
 
 interface BulkActionsModalProps {
@@ -54,7 +55,7 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
       }
       onClose();
     } catch (error) {
-      console.error('일괄 작업 오류:', error);
+      logger.error('일괄 작업 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkActionsModal' });
     } finally {
       setIsLoading(false);
     }

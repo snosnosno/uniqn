@@ -10,6 +10,7 @@ import {
   getDocs,
   runTransaction,
 } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { useState, useEffect } from 'react';
 
 import { db } from '../firebase';
@@ -130,7 +131,7 @@ export const useParticipants = () => {
         });
         logAction('participant_added_and_seated', { participantId: newParticipantRef.id, tableId, seatIndex });
     } catch (e) {
-        console.error("Error adding participant and assigning to seat:", e);
+        logger.error('Error adding participant and assigning to seat:', e instanceof Error ? e : new Error(String(e)), { component: 'useParticipants' });
         setError(e as Error);
         throw e;
     } finally {

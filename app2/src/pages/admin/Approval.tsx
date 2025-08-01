@@ -1,4 +1,5 @@
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { logger } from '../../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,7 +30,7 @@ const ApprovalPage: React.FC = () => {
             setPendingManagers(users);
             setLoading(false);
         }, (err) => {
-            console.error("Error fetching pending managers: ", err);
+            logger.error('Error fetching pending managers: ', err instanceof Error ? err : new Error(String(err)), { component: 'Approval' });
             setError(t('approvalPage.fetchError'));
             setLoading(false);
         });
@@ -42,7 +43,7 @@ const ApprovalPage: React.FC = () => {
             await callFunctionLazy('processRegistration', { targetUid, action });
             // The onSnapshot listener will automatically update the list
         } catch (err: any) {
-            console.error(`Error processing ${action} for ${targetUid}:`, err);
+            logger.error('Error processing ${action} for ${targetUid}:', err instanceof Error ? err : new Error(String(err)), { component: 'Approval' });
             // Use a more specific error message from the 'approvalPage' namespace
             alert(t('approvalPage.processError', { action: t(action) }));
         }

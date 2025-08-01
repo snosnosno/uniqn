@@ -1,4 +1,5 @@
 import { collection, addDoc, query, where, getDocs, serverTimestamp, doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -63,9 +64,9 @@ const JobBoardPage = () => {
   // Flatten the infinite query data
   const jobPostings = useMemo(() => {
     const result = infiniteData?.pages.flatMap((page: any) => page.jobs) || [];
-    console.log('📋 JobBoardPage - 최종 공고 목록:', result);
-    console.log('📋 JobBoardPage - 공고 개수:', result.length);
-    console.log('📋 JobBoardPage - 현재 필터:', filters);
+    logger.debug('📋 JobBoardPage - 최종 공고 목록:', { component: 'JobBoardPage', data: result });
+    logger.debug('📋 JobBoardPage - 공고 개수:', { component: 'JobBoardPage', data: result.length });
+    logger.debug('📋 JobBoardPage - 현재 필터:', { component: 'JobBoardPage', data: filters });
     return result;
   }, [infiniteData, filters]);
   
@@ -135,7 +136,7 @@ const JobBoardPage = () => {
               } : null
             };
           } catch (error) {
-            console.error('Error fetching job posting:', error);
+            logger.error('Error fetching job posting:', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
             return {
               id: applicationDoc.id,
               ...applicationData,
@@ -156,13 +157,13 @@ const JobBoardPage = () => {
       const validApplications = applicationsData.filter(app => app.jobPosting !== null);
       
       // 디버깅: 애플리케이션 데이터 구조 확인
-      console.log('🔍 MyApplications 데이터:', validApplications);
+      logger.debug('🔍 MyApplications 데이터:', { component: 'JobBoardPage', data: validApplications });
       validApplications.forEach((app: any, index) => {
-        console.log(`📋 Application ${index}:`, app);
+        logger.debug('📋 Application ${index}:', { component: 'JobBoardPage', data: app });
         if (app.preQuestionAnswers) {
-          console.log('📝 사전질문 답변:', app.preQuestionAnswers);
+          logger.debug('📝 사전질문 답변:', { component: 'JobBoardPage', data: app.preQuestionAnswers });
           app.preQuestionAnswers.forEach((answer: any, answerIndex: number) => {
-            console.log(`  - Answer ${answerIndex} 전체 객체:`, answer);
+            logger.debug('  - Answer ${answerIndex} 전체 객체:', { component: 'JobBoardPage', data: answer });
             console.log(`  - Answer ${answerIndex} 분석:`, {
               question: answer.question,
               questionText: answer.questionText, 
@@ -178,7 +179,7 @@ const JobBoardPage = () => {
       
       setMyApplications(validApplications);
     } catch (error) {
-      console.error('Error fetching my applications:', error);
+      logger.error('Error fetching my applications:', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
       showError('지원 현황을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoadingMyApplications(false);
@@ -356,7 +357,7 @@ const JobBoardPage = () => {
       setSelectedPost(null);
 
     } catch (error) {
-      console.error("Error submitting application: ", error);
+      logger.error('Error submitting application: ', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
       showError(t('jobBoard.alerts.applicationFailed'));
     } finally {
         setIsProcessing(null);
@@ -388,7 +389,7 @@ const JobBoardPage = () => {
                   return newMap;
               });
           } catch (error) {
-              console.error("Error cancelling application: ", error);
+              logger.error('Error cancelling application: ', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
               showError(t('jobBoard.alerts.cancelFailed'));
           } finally {
               setIsProcessing(null);

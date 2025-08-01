@@ -21,6 +21,7 @@ import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
+const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const PayrollAdminPage = lazy(() => import('./pages/admin/PayrollAdminPage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
@@ -121,6 +122,7 @@ const App: React.FC = () => {
 
                     {/* Admin Only Route */}
                     <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                        <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
                         <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                         <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
                     </Route>

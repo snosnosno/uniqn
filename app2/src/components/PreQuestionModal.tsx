@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '../contexts/ToastContext';
@@ -40,7 +41,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
           const parsed = JSON.parse(savedAnswers);
           setAnswers(parsed);
         } catch (error) {
-          console.error('Failed to parse saved answers:', error);
+          logger.error('Failed to parse saved answers:', error instanceof Error ? error : new Error(String(error)), { component: 'PreQuestionModal' });
         }
       }
     }
@@ -105,7 +106,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
       onClose();
       
     } catch (error) {
-      console.error('Failed to submit pre-questions:', error);
+      logger.error('Failed to submit pre-questions:', error instanceof Error ? error : new Error(String(error)), { component: 'PreQuestionModal' });
       showError(t('jobBoard.preQuestion.error'));
     } finally {
       setIsSubmitting(false);

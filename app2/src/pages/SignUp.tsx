@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from 'react-icons/fa';
 import { useNavigate, Link } from 'react-router-dom';
@@ -60,7 +61,7 @@ const SignUp: React.FC = () => {
       });
 
     } catch (err: any) {
-      console.error('Registration request failed:', err);
+      logger.error('Registration request failed:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });
       if (err.code === 'functions/already-exists') {
         setError(t('signUp.emailInUseError'));
       } else if (err.code === 'functions/invalid-argument') {
@@ -87,7 +88,7 @@ const SignUp: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       setError(t('googleSignIn.error'));
-      console.error('Google Sign-In Error:', err);
+      logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });
     }
   };
 

@@ -1,4 +1,5 @@
 import { doc, getDoc } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
@@ -170,7 +171,7 @@ const JobPostingDetailPageContent: React.FC = () => {
           setError('Job posting not found');
         }
       } catch (error) {
-        console.error('Error fetching job posting:', error);
+        logger.error('Error fetching job posting:', error instanceof Error ? error : new Error(String(error)), { component: 'JobPostingDetailPage' });
         setError('Failed to load job posting');
       } finally {
         setLoading(false);

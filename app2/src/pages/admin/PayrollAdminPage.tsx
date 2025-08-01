@@ -1,4 +1,5 @@
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { logger } from '../../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -48,7 +49,7 @@ const PayrollAdminPage: React.FC = () => {
             setPayrolls(payrollsWithNames);
 
         } catch (err) {
-            console.error('Error fetching payrolls:', err);
+            logger.error('Error fetching payrolls:', err instanceof Error ? err : new Error(String(err)), { component: 'PayrollAdminPage' });
             setError(t('payrollAdmin.errorFetch'));
         } finally {
             setLoading(false);
@@ -64,7 +65,7 @@ const PayrollAdminPage: React.FC = () => {
             alert(t('payrollAdmin.alertSuccess'));
             handleFetchPayrolls(); // Refresh the list
         } catch (err) {
-            console.error('Error calculating payrolls:', err);
+            logger.error('Error calculating payrolls:', err instanceof Error ? err : new Error(String(err)), { component: 'PayrollAdminPage' });
             setError(t('payrollAdmin.errorCalculate'));
         } finally {
             setLoading(false);
