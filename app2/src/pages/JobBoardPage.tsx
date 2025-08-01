@@ -13,6 +13,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useInfiniteJobPostings, JobPosting } from '../hooks/useJobPostings';
 import { TimeSlot, RoleRequirement, JobPostingUtils, DateSpecificRequirement, PreQuestionAnswer, ConfirmedStaff } from '../types/jobPosting';
 import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
+import { timestampToLocalDateString } from '../utils/dateUtils';
 
 const JobBoardPage = () => {
   const { t } = useTranslation();
@@ -656,13 +657,7 @@ const JobBoardPage = () => {
                               <span className="text-gray-600"> - </span>
                               {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
                                 // Firebase Timestamp를 문자열로 변환
-                                const dateString = typeof dateReq.date === 'string' 
-                                  ? dateReq.date 
-                                  : (dateReq.date as any)?.toDate 
-                                    ? (dateReq.date as any).toDate().toISOString().split('T')[0] || ''
-                                    : (dateReq.date as any)?.seconds
-                                      ? new Date((dateReq.date as any).seconds * 1000).toISOString().split('T')[0] || ''
-                                      : String(dateReq.date || '');
+                                const dateString = timestampToLocalDateString(dateReq.date);
                                 
                                 const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
                                   post,

@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import LoadingSpinner from '../LoadingSpinner';
 import { JobPostingUtils } from '../../types/jobPosting';
+import { timestampToLocalDateString } from '../../utils/dateUtils';
 
 interface JobPostingListProps {
   jobPostings: any[];
@@ -139,13 +140,7 @@ const JobPostingList: React.FC<JobPostingListProps> = ({
                                 <div key={tsIndex} className="ml-4 text-xs">
                                   {ts.time} - {ts.roles.map((role: any, roleIndex: number) => {
                                     // Firebase Timestamp를 문자열로 변환
-                                    const dateString = typeof req.date === 'string' 
-                                      ? req.date 
-                                      : req.date?.toDate 
-                                        ? req.date.toDate().toISOString().split('T')[0] || ''
-                                        : req.date?.seconds
-                                          ? new Date(req.date.seconds * 1000).toISOString().split('T')[0] || ''
-                                          : String(req.date || '');
+                                    const dateString = timestampToLocalDateString(req.date);
                                     
                                     const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
                                       post,

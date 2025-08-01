@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { db, promoteToStaff } from '../../firebase';
-import { RoleRequirement, TimeSlot, shouldCloseJobPosting, DateSpecificRequirement, JobPostingUtils, JobPosting } from '../../types/jobPosting';
+import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingUtils, JobPosting } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
+import { timestampToLocalDateString } from '../../utils/dateUtils';
 // Applicant interface (extended for multiple selections)
 interface Applicant {
   id: string;
@@ -866,20 +867,9 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                               })));
                               console.log('찾으려는 날짜:', safeDateString, 'type:', typeof safeDateString);
                               
-                              // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
-                              const convertToDateString = (dateValue: any): string => {
-                                if (typeof dateValue === 'string') return dateValue;
-                                if (dateValue && dateValue.toDate) {
-                                  return dateValue.toDate().toISOString().split('T')[0] || '';
-                                }
-                                if (dateValue && dateValue.seconds) {
-                                  return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
-                                }
-                                return String(dateValue || '');
-                              };
                               
                               const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => {
-                                const drDateString = convertToDateString(dr.date);
+                                const drDateString = timestampToLocalDateString(dr.date);
                                 console.log(`비교: ${drDateString} === ${safeDateString} => ${drDateString === safeDateString}`);
                                 return drDateString === safeDateString;
                               });
@@ -991,19 +981,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                                     </option>
                                   ))}
                                   {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) => {
-                                    // Firebase Timestamp를 문자열로 변환
-                                    const convertToDateString = (dateValue: any): string => {
-                                      if (typeof dateValue === 'string') return dateValue;
-                                      if (dateValue && dateValue.toDate) {
-                                        return dateValue.toDate().toISOString().split('T')[0] || '';
-                                      }
-                                      if (dateValue && dateValue.seconds) {
-                                        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
-                                      }
-                                      return String(dateValue || '');
-                                    };
                                     
-                                    const dateString = convertToDateString(dateReq.date);
+                                    const dateString = timestampToLocalDateString(dateReq.date);
                                     return dateReq.timeSlots.map((ts: TimeSlot) => (
                                       <option key={`${dateString}-${ts.time}`} value={ts.time}>
                                         {ts.time}
@@ -1057,19 +1036,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                         {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
                           dateReq.timeSlots.flatMap((ts: TimeSlot) =>
                             ts.roles.map((r: RoleRequirement) => {
-                              // Firebase Timestamp를 문자열로 변환
-                              const convertToDateString = (dateValue: any): string => {
-                                if (typeof dateValue === 'string') return dateValue;
-                                if (dateValue && dateValue.toDate) {
-                                  return dateValue.toDate().toISOString().split('T')[0] || '';
-                                }
-                                if (dateValue && dateValue.seconds) {
-                                  return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
-                                }
-                                return String(dateValue || '');
-                              };
                               
-                              const dateString = convertToDateString(dateReq.date);
+                              const dateString = timestampToLocalDateString(dateReq.date);
                               const isFull = JobPostingUtils.isRoleFull(jobPosting, ts.time, r.name, dateString);
                               const confirmedCount = JobPostingUtils.getConfirmedStaffCount(jobPosting, dateString, ts.time, r.name);
                               

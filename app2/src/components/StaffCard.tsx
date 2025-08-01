@@ -5,7 +5,6 @@ import { useHapticFeedback } from '../hooks/useHapticFeedback';
 import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { StaffData } from '../hooks/useStaffManagement';
-import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
@@ -45,7 +44,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   getStaffWorkLog,
   multiSelectMode = false
 }) => {
-  const { t } = useTranslation();
+  useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showActions, setShowActions] = useState(false);
   
@@ -54,8 +53,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
 
   // 메모이제이션된 포맷팅 훅 사용
   const formattedDate = useCachedFormatDate(staff.assignedDate);
-  const formattedTime = useCachedTimeDisplay(staff.assignedTime, formatTimeDisplay);
-  const timeSlotColor = useCachedTimeSlotColor(staff.assignedTime, getTimeSlotColor);
+  useCachedTimeDisplay(staff.assignedTime, formatTimeDisplay);
+  useCachedTimeSlotColor(staff.assignedTime, getTimeSlotColor);
 
   // 메모이제이션된 기본 스태프 데이터
   const memoizedStaffData = useMemo(() => ({
@@ -192,11 +191,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     };
   }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
   
-  // 메모이제이션된 이벤트 핸들러들
-  const handleCardClick = useCallback((e: React.MouseEvent) => {
-    // 카드 클릭은 이제 사용하지 않음
-    e.stopPropagation();
-  }, []);
 
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

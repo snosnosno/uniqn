@@ -3,7 +3,6 @@ import { FixedSizeList as List } from 'react-window';
 
 import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
-import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { getTodayString, convertToDateString } from '../utils/jobPosting/dateUtils';
 
@@ -59,8 +58,8 @@ const VirtualizedTableRow: React.FC<{
   
   // 메모이제이션된 포맷팅 (항상 호출하되 결과는 조건부로 사용)
   const formattedDate = useCachedFormatDate(staff?.assignedDate);
-  const formattedTime = useCachedTimeDisplay(staff?.assignedTime, formatTimeDisplay);
-  const timeSlotColor = useCachedTimeSlotColor(staff?.assignedTime, getTimeSlotColor);
+  useCachedTimeDisplay(staff?.assignedTime, formatTimeDisplay);
+  useCachedTimeSlotColor(staff?.assignedTime, getTimeSlotColor);
   
   // 출석 데이터 (항상 호출) - workLogId 생성하여 날짜별 구분
   const workLogId = useMemo(() => {

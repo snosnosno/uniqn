@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface PerformanceMetrics {
   renderCount: number;
@@ -46,23 +46,6 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     totalItems
   });
 
-  // 캐시 히트율 계산
-  const calculateCacheHitRate = useCallback(() => {
-    try {
-      // useCachedFormatDate에서 캐시 통계 가져오기
-      const { getCacheStats } = require('../hooks/useCachedFormatDate');
-      const stats = getCacheStats();
-      
-      // 총 캐시 시도 대비 히트율 추정 (실제 히트 카운터가 없으므로 캐시 사용률로 추정)
-      const totalCacheSize = stats.formatDateCacheSize + stats.timeDisplayCacheSize + stats.timeSlotColorCacheSize;
-      const maxCacheSize = 1000 + 500 + 200; // 각 캐시의 최대 크기
-      
-      return totalCacheSize > 0 ? Math.min((totalCacheSize / maxCacheSize) * 100, 95) : 0;
-    } catch (error) {
-      console.warn('캐시 통계 계산 실패:', error);
-      return 0;
-    }
-  }, []);
 
 
   // 컴포넌트 마운트 시와 주요 props 변경 시에만 성능 측정

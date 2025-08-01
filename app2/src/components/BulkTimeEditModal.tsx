@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClockIcon, SaveIcon, TimesIcon, UsersIcon, CalendarIcon } from './Icons';
-import { doc, updateDoc, setDoc, Timestamp, writeBatch } from 'firebase/firestore';
+import { doc, Timestamp, writeBatch } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -31,7 +31,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
   eventId,
   onComplete
 }) => {
-  const { t } = useTranslation();
+  useTranslation();
   const { showSuccess, showError } = useToast();
   
   const [isUpdating, setIsUpdating] = useState(false);

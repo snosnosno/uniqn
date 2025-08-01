@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../contexts/AuthContext';

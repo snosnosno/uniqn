@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
-import AttendanceStatusCard from './AttendanceStatusCard';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { getTodayString, convertToDateString } from '../utils/jobPosting/dateUtils';
 
@@ -44,12 +43,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   isSelected = false,
   onSelect
 }) => {
-  const { t } = useTranslation();
+  useTranslation();
 
   // 메모이제이션된 포맷팅 훅 사용
   const formattedDate = useCachedFormatDate(staff.assignedDate);
-  const formattedTime = useCachedTimeDisplay(staff.assignedTime, formatTimeDisplay);
-  const timeSlotColor = useCachedTimeSlotColor(staff.assignedTime, getTimeSlotColor);
+  useCachedTimeDisplay(staff.assignedTime, formatTimeDisplay);
+  useCachedTimeSlotColor(staff.assignedTime, getTimeSlotColor);
 
   // 메모이제이션된 기본 스태프 데이터
   const memoizedStaffData = useMemo(() => ({

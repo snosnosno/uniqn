@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePerformanceMetrics, ComponentPerformance, PerformanceReport } from '../hooks/usePerformanceMetrics';
+import { usePerformanceMetrics } from '../hooks/usePerformanceMetrics';
 
 interface PerformanceDashboardProps {
   isVisible?: boolean;

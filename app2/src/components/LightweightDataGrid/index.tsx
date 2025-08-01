@@ -1,11 +1,9 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   ColumnDef,
-  Row,
-  Cell,
 } from '@tanstack/react-table';
 import { ClockIcon, CoffeeIcon, TableIcon, UserIcon, ExclamationIcon, CheckCircleIcon, InformationCircleIcon } from '../Icons';
 import { ValidationResult, ValidationViolation } from '../../utils/shiftValidation';

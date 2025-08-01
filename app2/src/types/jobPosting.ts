@@ -1,4 +1,5 @@
 // Job Posting 관련 타입 정의
+import { timestampToLocalDateString } from '../utils/dateUtils';
 
 // 사전 질문 타입 정의
 export interface PreQuestion {
@@ -238,23 +239,12 @@ export class JobPostingUtils {
   ): number {
     if (!jobPosting.confirmedStaff) return 0;
     
-    // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
-    const convertToDateString = (dateValue: any): string => {
-      if (typeof dateValue === 'string') return dateValue;
-      if (dateValue && dateValue.toDate) {
-        return dateValue.toDate().toISOString().split('T')[0] || '';
-      }
-      if (dateValue && dateValue.seconds) {
-        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
-      }
-      return String(dateValue || '');
-    };
     
     // 입력 날짜도 변환 (안전성을 위해)
-    const targetDate = convertToDateString(date);
+    const targetDate = timestampToLocalDateString(date);
     
     return jobPosting.confirmedStaff.filter(staff => {
-      const staffDate = convertToDateString(staff.date);
+      const staffDate = timestampToLocalDateString(staff.date);
       return staff.timeSlot === timeSlot && 
              staff.role === role &&
              staffDate === targetDate; // 정확한 날짜 매칭만
@@ -360,26 +350,15 @@ export class JobPostingUtils {
   ): boolean {
     if (!jobPosting.confirmedStaff) return false;
     
-    // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
-    const convertToDateString = (dateValue: any): string => {
-      if (typeof dateValue === 'string') return dateValue;
-      if (dateValue && dateValue.toDate) {
-        return dateValue.toDate().toISOString().split('T')[0] || '';
-      }
-      if (dateValue && dateValue.seconds) {
-        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
-      }
-      return String(dateValue || '');
-    };
     
     // 해당 시간대와 역할의 요구 인원 수 찾기
     let requiredCount = 0;
     
     if (date && this.hasDateSpecificRequirements(jobPosting)) {
       // 날짜별 요구사항에서 찾기
-      const targetDate = convertToDateString(date);
+      const targetDate = timestampToLocalDateString(date);
       const dateReq = jobPosting.dateSpecificRequirements?.find(dr => {
-        const drDate = convertToDateString(dr.date);
+        const drDate = timestampToLocalDateString(dr.date);
         return drDate === targetDate;
       });
       const ts = dateReq?.timeSlots.find(t => t.time === timeSlot);
@@ -910,22 +889,11 @@ export const getConfirmedStaffCountByDate = (
     return 0;
   }
   
-  // Firebase Timestamp를 문자열로 변환하는 헬퍼 함수
-  const convertToDateString = (dateValue: any): string => {
-    if (typeof dateValue === 'string') return dateValue;
-    if (dateValue && dateValue.toDate) {
-      return dateValue.toDate().toISOString().split('T')[0] || '';
-    }
-    if (dateValue && dateValue.seconds) {
-      return new Date(dateValue.seconds * 1000).toISOString().split('T')[0] || '';
-    }
-    return String(dateValue || '');
-  };
   
-  const targetDate = convertToDateString(date);
+  const targetDate = timestampToLocalDateString(date);
   
   return jobPosting.confirmedStaff.filter((staff: any) => {
-    const staffDate = convertToDateString(staff.date);
+    const staffDate = timestampToLocalDateString(staff.date);
     return staffDate === targetDate && 
            staff.timeSlot === timeSlot && 
            staff.role === roleName;

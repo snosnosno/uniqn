@@ -1,13 +1,13 @@
-import { doc, updateDoc, setDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClockIcon, SaveIcon, TimesIcon, EditIcon } from './Icons';
+import { SaveIcon, TimesIcon, EditIcon } from './Icons';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
 import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
-import { calculateMinutes, formatMinutesToTime, toDate as utilToDate } from '../utils/timeUtils';
+import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
 
 import Modal from './Modal';
 // import { WorkLog } from '../hooks/useShiftSchedule';
@@ -44,7 +44,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
-  const { getStaffAttendanceStatus } = useAttendanceStatus({
+  useAttendanceStatus({
     ...(workLog?.eventId && { eventId: workLog.eventId }),
     ...(workLog?.date && { date: workLog.date })
   });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTimes, FaPhone, FaEnvelope, FaBriefcase, FaCalendarAlt, FaClock, FaIdCard, FaStar, FaGlobe, FaMapMarkerAlt, FaUser, FaCalendar, FaWallet, FaUniversity, FaCreditCard, FaVenusMars, FaBirthdayCake } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from 'react-icons/fa';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import Modal from './Modal';
@@ -35,7 +35,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   attendanceRecord,
   workLogRecord
 }) => {
-  const { t } = useTranslation();
+  useTranslation();
   const [userProfile, setUserProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -133,7 +133,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     };
   };
 
-  const workTimes = getWorkTimes();
+  getWorkTimes();
 
   // 출석 상태 계산
   const getAttendanceStatus = () => {
@@ -147,7 +147,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     return statusMap[status] || statusMap['not_started'];
   };
 
-  const attendanceStatus = getAttendanceStatus();
+  getAttendanceStatus();
 
   // 국가 표시
   const countries = [
