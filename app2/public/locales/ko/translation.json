@@ -484,6 +484,10 @@
       "role": "역할",
       "allRoles": "전체 역할",
       "startDate": "시작일",
+      "month": "월",
+      "allMonths": "전체",
+      "day": "일",
+      "allDays": "전체",
       "reset": "초기화"
     },
     "types": {
@@ -641,7 +645,7 @@
       "remove": "삭제",
       "dealer": "딜러",
       "floor": "플로어",
-      "registration": "등록",
+      "registration": "레지",
       "serving": "서빙",
       "tournament_director": "토너먼트 디렉터",
       "chip_master": "칩 마스터",
@@ -858,6 +862,20 @@
     "4": "목",
     "5": "금",
     "6": "토"
+  },
+  "months": {
+    "1": "1월",
+    "2": "2월",
+    "3": "3월",
+    "4": "4월",
+    "5": "5월",
+    "6": "6월",
+    "7": "7월",
+    "8": "8월",
+    "9": "9월",
+    "10": "10월",
+    "11": "11월",
+    "12": "12월"
   },
   "tournament": {
     "initialName": "T-Holdem 초기 토너먼트"

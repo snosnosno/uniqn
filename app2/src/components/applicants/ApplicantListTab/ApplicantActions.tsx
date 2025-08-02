@@ -54,7 +54,7 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
                     value={`${dateString}__${ts.time}__${r.name}`}
                     disabled={isFull}
                   >
-                    📅 {formatDateDisplay(dateString)} | {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
+                    {formatDateDisplay(dateString)} | {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
                     ({confirmedCount}/{r.count}{isFull ? ' - 마감' : ''})
                   </option>
                 );
@@ -75,7 +75,7 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
                   value={`${ts.time}__${r.name}`}
                   disabled={isFull}
                 >
-                  {ts.time} - {t(`jobPostingAdmin.create.${r.name}`, r.name)}
+                  {t(`jobPostingAdmin.create.${r.name}`, r.name)}
                   ({confirmedCount}/{r.count}{isFull ? ' - 마감' : ''})
                 </option>
               );

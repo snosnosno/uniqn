@@ -265,7 +265,9 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handleSalaryAmountChange = useCallback((salaryAmount: string) => {
-    setFormData((prev: any) => ({ ...prev, salaryAmount }));
+    // 숫자만 입력 가능하도록 필터링
+    const numericValue = salaryAmount.replace(/[^0-9]/g, '');
+    setFormData((prev: any) => ({ ...prev, salaryAmount: numericValue }));
   }, []);
 
   // 복리후생 관련 핸들러들

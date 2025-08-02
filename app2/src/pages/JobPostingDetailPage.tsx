@@ -6,7 +6,6 @@ import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 
 import ApplicantListTab from '../components/tabs/ApplicantListTab';
-import EventManagementTab from '../components/tabs/EventManagementTab';
 import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
@@ -18,7 +17,7 @@ import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames } from '../utils/jobPosting/jobPostingHelpers';
 
 
-type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
+type TabType = 'applicants' | 'staff' | 'shifts' | 'payroll';
 
 interface TabConfig {
   id: TabType;
@@ -34,31 +33,25 @@ interface TabConfig {
 const allTabs: TabConfig[] = [
   { 
     id: 'applicants', 
-    label: '지원자 목록', 
+    label: '지원자', 
     component: ApplicantListTab,
     requiredPermission: { resource: 'jobPostings', action: 'manageApplicants' }
   },
   { 
     id: 'staff', 
-    label: '스태프 관리', 
+    label: '스태프', 
     component: StaffManagementTab,
     requiredPermission: { resource: 'jobPostings', action: 'manageApplicants' }
   },
   { 
-    id: 'events', 
-    label: '이벤트 관리', 
-    component: EventManagementTab,
-    allowedRoles: ['admin', 'manager']
-  },
-  { 
     id: 'shifts', 
-    label: '시프트 관리', 
+    label: '시프트', 
     component: ShiftManagementTab,
     allowedRoles: ['admin', 'manager']
   },
   { 
     id: 'payroll', 
-    label: '급여 처리', 
+    label: '정산', 
     component: PayrollProcessingTab,
     allowedRoles: ['admin', 'manager']
   },
@@ -218,7 +211,7 @@ const JobPostingDetailPageContent: React.FC = () => {
             onClick={() => navigate('/admin/job-postings')}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            공고 목록으로 돌아가기
+            뒤로
           </button>
         </div>
       </div>
@@ -265,7 +258,7 @@ const JobPostingDetailPageContent: React.FC = () => {
             onClick={() => navigate('/admin/job-postings')}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            공고 목록으로 돌아가기
+            뒤로
           </button>
         </div>
       </div>
@@ -287,7 +280,7 @@ const JobPostingDetailPageContent: React.FC = () => {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              공고 목록으로 돌아가기
+              뒤로
             </button>
             
             {/* 공고 제목 - 중앙에 배치 */}

@@ -93,9 +93,10 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   };
 
   return (
-    <div className="ml-4 space-y-3">
+    <div className="ml-2 sm:ml-4 space-y-3">
       <div className="text-sm font-medium text-gray-700 mb-2">
-        ✅ 확정할 시간대 선택 ({selections.length}개 옵션 중 {selectedCount}개 선택):
+        ✅ 확정할 시간 선택<br />
+        <span className="text-xs">({selections.length}개 중 {selectedCount}개):</span>
       </div>
       <div className="space-y-2">
         {selections.map((selection, index) => {
@@ -153,41 +154,35 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
           }
             
           return (
-            <div key={index} className={`flex items-center justify-between p-2 border rounded ${
-              isFull ? 'bg-gray-100 border-gray-300' :
-              isSelected ? 'bg-green-50 border-green-300' : 
-              'bg-white border-gray-200'
-            }`}>
-              <label className={`flex items-center ${isFull ? 'cursor-not-allowed' : 'cursor-pointer'} flex-1`}>
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  disabled={isFull}
-                  onChange={(e) => onAssignmentToggle(optionValue, e.target.checked)}
-                  className={`h-4 w-4 ${isFull ? 'text-gray-400' : 'text-green-600'} focus:ring-green-500 border-gray-300 rounded ${isFull ? 'cursor-not-allowed' : ''}`}
-                />
-                <div className="ml-3 flex-1">
-                  <div className="flex items-center space-x-2 text-sm">
-                    {safeDateString ? 
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                        📅 {formatDateDisplay(safeDateString)}
-                      </span> : null
-                    }
-                    <span className={isFull ? "text-gray-500" : "text-gray-700"}>⏰ {selection.time}</span>
-                    <span className={isFull ? "text-gray-500" : "text-gray-700"}>👤 {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
-                    <span className={`ml-2 text-xs ${isFull ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                      ({confirmedCount}/{requiredCount} {isFull ? '- 마감' : ''})
-                    </span>
-                  </div>
+            <div 
+              key={index} 
+              className={`flex items-center justify-between p-2 border rounded ${
+                isFull ? 'bg-gray-100 border-gray-300 cursor-not-allowed' :
+                isSelected ? 'bg-green-50 border-green-300 cursor-pointer hover:bg-green-100' : 
+                'bg-white border-gray-200 cursor-pointer hover:bg-gray-50'
+              }`}
+              onClick={() => !isFull && onAssignmentToggle(optionValue, !isSelected)}
+            >
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 text-sm">
+                  {safeDateString ? 
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                      {formatDateDisplay(safeDateString)}
+                    </span> : null
+                  }
+                  <span className={isFull ? "text-gray-500" : "text-gray-700"}>{t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
+                  <span className={`ml-2 text-xs ${isFull ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                    ({confirmedCount}/{requiredCount} {isFull ? '- 마감' : ''})
+                  </span>
                 </div>
-              </label>
+              </div>
               
               {/* 시간 수정 드롭다운 */}
               <select
                 value={selection.time}
                 disabled={isFull}
                 onChange={(e) => handleTimeChange(index, e.target.value)}
-                className={`text-xs border border-gray-300 rounded px-2 py-1 ml-2 ${isFull ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`text-xs border border-gray-300 rounded px-1 py-1 ml-2 w-16 ${isFull ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* 사용 가능한 시간대 옵션들 */}
@@ -211,10 +206,10 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       </div>
       <button 
         onClick={onConfirm}
-        className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="px-2 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 text-xs font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
         disabled={selectedCount === 0 || !canEdit}
       >
-        ✓ 선택한 시간대로 확정 ({selectedCount}개)
+        ✓ 선택한 시간 확정 ({selectedCount}개)
       </button>
     </div>
   );

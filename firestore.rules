@@ -213,12 +213,15 @@ service cloud.firestore {
     // --- Job Posting Templates Collection ---
     match /jobPostingTemplates/{templateId} {
       // Users can read their own templates, privileged users can read all
-      allow read: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
+      allow read: if isSignedIn() && (
+        isPrivileged() || 
+        (resource != null && isOwner(resource.data.createdBy))
+      );
       
       // Users can create templates for themselves, privileged users can create for anyone
       allow create: if isSignedIn() && 
         request.resource.data.keys().hasAll(['name', 'templateData', 'createdBy', 'createdAt']) &&
-        (isOwner(request.resource.data.createdBy) || isPrivileged()) &&
+        (isPrivileged() || isOwner(request.resource.data.createdBy)) &&
         request.resource.data.name is string &&
         request.resource.data.name.size() >= 2 &&
         request.resource.data.name.size() <= 50 &&
@@ -229,10 +232,16 @@ service cloud.firestore {
         (!('isPublic' in request.resource.data) || request.resource.data.isPublic is bool);
       
       // Users can update their own templates, privileged users can update all
-      allow update: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
+      allow update: if isSignedIn() && (
+        isPrivileged() || 
+        (resource != null && isOwner(resource.data.createdBy))
+      );
       
       // Users can delete their own templates, privileged users can delete all
-      allow delete: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
+      allow delete: if isSignedIn() && (
+        isPrivileged() || 
+        (resource != null && isOwner(resource.data.createdBy))
+      );
     }
     
     // --- Tournaments Collection ---

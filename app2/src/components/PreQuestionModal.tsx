@@ -11,6 +11,7 @@ interface PreQuestionModalProps {
   onComplete: (answers: PreQuestionAnswer[]) => void;
   questions: PreQuestion[];
   jobPostingId?: string;
+  existingAnswers?: PreQuestionAnswer[] | undefined;
 }
 
 const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
@@ -18,7 +19,8 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   onClose,
   onComplete,
   questions,
-  jobPostingId
+  jobPostingId,
+  existingAnswers
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -32,20 +34,30 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     return `preQuestionAnswers_${jobPostingId || 'default'}`;
   };
 
-  // 초기화 시 localStorage에서 기존 답변 복원
+  // 초기화 시 기존 답변 또는 localStorage에서 답변 복원
   useEffect(() => {
     if (isOpen && questions.length > 0) {
-      const savedAnswers = localStorage.getItem(getStorageKey());
-      if (savedAnswers) {
-        try {
-          const parsed = JSON.parse(savedAnswers);
-          setAnswers(parsed);
-        } catch (error) {
-          logger.error('Failed to parse saved answers:', error instanceof Error ? error : new Error(String(error)), { component: 'PreQuestionModal' });
+      // 1. 먼저 existingAnswers prop에서 답변 확인
+      if (existingAnswers && existingAnswers.length > 0) {
+        const answersMap: { [questionId: string]: string } = {};
+        existingAnswers.forEach(answer => {
+          answersMap[answer.questionId] = answer.answer;
+        });
+        setAnswers(answersMap);
+      } else {
+        // 2. existingAnswers가 없으면 localStorage에서 복원
+        const savedAnswers = localStorage.getItem(getStorageKey());
+        if (savedAnswers) {
+          try {
+            const parsed = JSON.parse(savedAnswers);
+            setAnswers(parsed);
+          } catch (error) {
+            logger.error('Failed to parse saved answers:', error instanceof Error ? error : new Error(String(error)), { component: 'PreQuestionModal' });
+          }
         }
       }
     }
-  }, [isOpen, questions, jobPostingId]);
+  }, [isOpen, questions, jobPostingId, existingAnswers]);
 
   // 답변 변경 시 localStorage에 자동 저장
   useEffect(() => {
@@ -128,13 +140,8 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" 
-      onClick={onClose}
-    >
-      <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white h-[95vh] sm:h-[85vh] flex flex-col"
       >
         {/* 헤더 */}
         <div className="flex justify-between items-center p-4 border-b">
@@ -153,6 +160,10 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${getProgress()}%` }}
                   />
+                </div>
+                {/* 지원 완료시 수정불가 안내 문구 */}
+                <div className="mt-2 text-xs text-red-600 font-medium">
+                  ※ 지원 완료시 수정불가
                 </div>
               </div>
             )}

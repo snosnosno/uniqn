@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { JobFilters } from './hooks/useJobBoard';
 
 interface JobFiltersProps {
@@ -33,27 +32,10 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
 
   return (
     <div className="mb-6">
-      {/* Mobile Filter Toggle */}
-      <div className="sm:hidden mb-4">
-        <button
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <div className="flex items-center justify-between">
-            <span>{t('jobBoard.filters.title')}</span>
-            {isFilterOpen ? (
-              <ChevronUpIcon className="w-5 h-5" />
-            ) : (
-              <ChevronDownIcon className="w-5 h-5" />
-            )}
-          </div>
-        </button>
-      </div>
 
       {/* Filter Form */}
-      {(isFilterOpen || window.innerWidth >= 640) && (
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Location Filter */}
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
@@ -100,7 +82,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
                 <option value="">{t('jobBoard.filters.allMonths')}</option>
                 {[...Array(12)].map((_, i) => (
                   <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                    {i + 1}{t('jobBoard.filters.monthUnit')}
+                    {i + 1}월
                   </option>
                 ))}
               </select>
@@ -120,7 +102,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
                 <option value="">{t('jobBoard.filters.allDays')}</option>
                 {[...Array(31)].map((_, i) => (
                   <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                    {i + 1}{t('jobBoard.filters.dayUnit')}
+                    {i + 1}일
                   </option>
                 ))}
               </select>
@@ -160,8 +142,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
             </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 };
 

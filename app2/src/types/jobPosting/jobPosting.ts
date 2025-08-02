@@ -90,10 +90,14 @@ export interface JobPostingStats {
  */
 export interface JobPostingTemplate {
   id?: string;
-  templateName: string;
+  name: string;
+  description?: string;
   createdBy: string;
   createdAt: any;
   templateData: Partial<JobPostingFormData>;
+  usageCount?: number;
+  lastUsedAt?: any;
+  isPublic?: boolean;
 }
 
 /**

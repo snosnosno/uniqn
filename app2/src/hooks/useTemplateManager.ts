@@ -9,7 +9,7 @@ import { templateToFormData } from '../utils/jobPosting/jobPostingHelpers';
 import { useMemo } from 'react';
 
 export const useTemplateManager = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, role } = useAuth();
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isLoadTemplateModalOpen, setIsLoadTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
@@ -40,7 +40,7 @@ export const useTemplateManager = () => {
 
     try {
       const templateData = {
-        templateName: templateName.trim(),
+        name: templateName.trim(),
         description: templateDescription.trim(),
         templateData: {
           title: formData.title,
@@ -50,8 +50,13 @@ export const useTemplateManager = () => {
           usesDifferentDailyRequirements: formData.usesDifferentDailyRequirements,
           description: formData.description,
           location: formData.location,
+          district: formData.district,
           detailedAddress: formData.detailedAddress,
+          salaryType: formData.salaryType,
+          salaryAmount: formData.salaryAmount,
+          benefits: formData.benefits,
           preQuestions: formData.preQuestions,
+          usesPreQuestions: formData.usesPreQuestions,
         },
         createdBy: currentUser.uid,
         createdAt: new Date(),

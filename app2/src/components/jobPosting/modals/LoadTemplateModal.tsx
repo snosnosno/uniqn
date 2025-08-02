@@ -63,7 +63,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                 <div key={template.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{template.templateName}</h4>
+                      <h4 className="font-medium text-gray-900">{template.name}</h4>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="info" size="sm" icon="📍">
                           {template.templateData.location}
@@ -101,7 +101,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                         type="button"
                         variant="danger"
                         size="sm"
-                        onClick={() => handleDeleteTemplate(template.id || '', template.templateName)}
+                        onClick={() => handleDeleteTemplate(template.id || '', template.name)}
                       >
                         삭제
                       </Button>

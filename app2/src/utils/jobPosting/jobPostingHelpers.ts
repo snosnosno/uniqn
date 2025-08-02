@@ -70,16 +70,18 @@ export const createNewDateSpecificRequirement = (date: string): DateSpecificRequ
  * 템플릿에서 폼 데이터로 변환
  */
 export const templateToFormData = (template: JobPostingTemplate) => {
+  const templateData = template.templateData as any;
   return {
-    ...template.templateData,
+    ...templateData,
     startDate: getTodayString(),
     endDate: getTodayString(),
     status: 'open' as const, // 템플릿에서 불러온 공고는 항상 open 상태로 설정
     // 새로운 필드들도 템플릿에서 가져오기
-    district: template.templateData.district || '',
-    salaryType: template.templateData.salaryType,
-    salaryAmount: template.templateData.salaryAmount || '',
-    benefits: template.templateData.benefits || {}
+    district: templateData.district || '',
+    salaryType: templateData.salaryType,
+    salaryAmount: templateData.salaryAmount || '',
+    benefits: templateData.benefits || {},
+    usesPreQuestions: templateData.usesPreQuestions || false
   };
 };
 
@@ -338,14 +340,42 @@ export const getBenefitDisplayNames = (benefits?: Benefits | Record<string, stri
 };
 
 /**
- * 복리후생 정보를 2개씩 그룹화하여 반환
+ * 복리후생 정보를 2줄로 나누어 반환 (첫줄: 보장, 식비, 교통비 / 둘째줄: 복장, 식사, 숙소)
  */
 export const getBenefitDisplayGroups = (benefits?: Benefits | Record<string, string>): string[][] => {
-  const benefitNames = getBenefitDisplayNames(benefits);
+  if (!benefits) return [];
+  
+  const benefitMap: Record<string, string> = {
+    guaranteedHours: '보장',
+    mealAllowance: '식비',
+    transportation: '교통비',
+    clothing: '복장',
+    meal: '식사',
+    accommodation: '숙소'
+  };
+  
+  // 첫 번째 줄: 보장, 식비, 교통비
+  const firstLineKeys = ['guaranteedHours', 'mealAllowance', 'transportation'];
+  const firstLine = firstLineKeys
+    .filter(key => key in benefits && benefits[key as keyof typeof benefits])
+    .map(key => `${benefitMap[key]}: ${benefits[key as keyof typeof benefits]}`);
+  
+  // 두 번째 줄: 복장, 식사, 숙소
+  const secondLineKeys = ['clothing', 'meal', 'accommodation'];
+  const secondLine = secondLineKeys
+    .filter(key => key in benefits && benefits[key as keyof typeof benefits])
+    .map(key => `${benefitMap[key]}: ${benefits[key as keyof typeof benefits]}`);
+  
   const groups: string[][] = [];
   
-  for (let i = 0; i < benefitNames.length; i += 2) {
-    groups.push(benefitNames.slice(i, i + 2));
+  // 첫 번째 줄이 있으면 추가
+  if (firstLine.length > 0) {
+    groups.push(firstLine);
+  }
+  
+  // 두 번째 줄이 있으면 추가
+  if (secondLine.length > 0) {
+    groups.push(secondLine);
   }
   
   return groups;

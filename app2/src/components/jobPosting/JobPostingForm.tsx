@@ -138,6 +138,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               value={formData.title}
               onChange={handleFormChange}
               placeholder="대회명(매장명)"
+              maxLength={25}
               required
               disabled={isSubmitting}
             />
@@ -184,6 +185,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 value={formData.district || ''}
                 onChange={(e) => handleDistrictChange(e.target.value)}
                 placeholder="시/군/구를 입력하세요"
+                maxLength={25}
                 disabled={isSubmitting}
               />
             </div>
@@ -199,6 +201,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               value={formData.detailedAddress}
               onChange={handleFormChange}
               placeholder="상세 주소를 입력하세요"
+              maxLength={25}
               disabled={isSubmitting}
             />
           </div>
@@ -244,7 +247,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
         {/* 복리후생 */}
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700">복리후생</label>
+          <label className="block text-sm font-medium text-gray-700">복리후생 (제공되는 정보만 입력)</label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 보장시간 */}
             <div className="flex items-center space-x-2">
@@ -265,6 +268,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value={formData.benefits.guaranteedHours}
                   onChange={(e) => handleBenefitChange('guaranteedHours', e.target.value)}
                   placeholder="보장시간 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
                 />
@@ -290,6 +294,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value={formData.benefits.clothing}
                   onChange={(e) => handleBenefitChange('clothing', e.target.value)}
                   placeholder="복장 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
                 />
@@ -315,6 +320,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value={formData.benefits.meal}
                   onChange={(e) => handleBenefitChange('meal', e.target.value)}
                   placeholder="식사 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
                 />
@@ -340,6 +346,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value={formData.benefits.transportation}
                   onChange={(e) => handleBenefitChange('transportation', e.target.value)}
                   placeholder="교통비 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
                 />
@@ -365,6 +372,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value={formData.benefits.mealAllowance}
                   onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
                   placeholder="식비 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
                 />
@@ -390,6 +398,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value={formData.benefits.accommodation}
                   onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
                   placeholder="숙소 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
                 />
@@ -461,7 +470,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               disabled={isSubmitting}
             />
             <label htmlFor="usesPreQuestions" className="text-sm text-gray-700">
-              사전질문 사용
+              사전질문 사용(지원하기 전 설문조사)
             </label>
           </div>
 

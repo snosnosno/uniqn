@@ -17,6 +17,8 @@ interface ApplyModalProps {
   onAssignmentChange: (assignment: Assignment, isChecked: boolean) => void;
   onApply: () => void;
   isProcessing: boolean;
+  onBack?: () => void;
+  hasPreQuestions?: boolean;
 }
 
 /**
@@ -29,7 +31,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
   selectedAssignments,
   onAssignmentChange,
   onApply,
-  isProcessing
+  isProcessing,
+  onBack,
+  hasPreQuestions
 }) => {
   const { t } = useTranslation();
 
@@ -46,7 +50,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-4 sm:top-20 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+      <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white h-[95vh] sm:h-[85vh] flex flex-col">
         <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
           {t('jobBoard.applyModal.title', { postTitle: jobPosting.title })}
         </h3>
@@ -68,7 +72,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           </div>
         )}
         
-        <div className="max-h-64 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           <label className="block text-sm font-medium text-gray-700 mb-3">
             시간대 및 역할 선택 (여러 개 선택 가능)
           </label>
@@ -202,20 +206,32 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           )}
         </div>
         
-        <div className="flex justify-end mt-4 space-x-2">
-          <button 
-            onClick={onClose} 
-            className="py-3 px-6 sm:py-2 sm:px-4 bg-gray-500 text-white rounded hover:bg-gray-700 min-h-[48px] text-sm sm:text-base"
-          >
-            {t('jobBoard.applyModal.cancel')}
-          </button>
-          <button 
-            onClick={onApply} 
-            disabled={selectedAssignments.length === 0 || isProcessing} 
-            className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 min-h-[48px] text-sm sm:text-base"
-          >
-            {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개 선택)`}
-          </button>
+        <div className="flex justify-between mt-4">
+          <div>
+            {hasPreQuestions && onBack && (
+              <button 
+                onClick={onBack} 
+                className="py-3 px-6 sm:py-2 sm:px-4 bg-blue-500 text-white rounded hover:bg-blue-700 min-h-[48px] text-sm sm:text-base"
+              >
+                뒤로 (수정)
+              </button>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            <button 
+              onClick={onClose} 
+              className="py-3 px-6 sm:py-2 sm:px-4 bg-gray-500 text-white rounded hover:bg-gray-700 min-h-[48px] text-sm sm:text-base"
+            >
+              {t('jobBoard.applyModal.cancel')}
+            </button>
+            <button 
+              onClick={onApply} 
+              disabled={selectedAssignments.length === 0 || isProcessing} 
+              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 min-h-[48px] text-sm sm:text-base"
+            >
+              {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개)`}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ interface JobListTabProps {
   jobPostings: JobPosting[];
   appliedJobs: Map<string, string>;
   onApply: (post: JobPosting) => void;
+  onViewDetail: (post: JobPosting) => void;
   isProcessing: string | null;
   canApply: boolean;
   loadMoreRef: React.RefObject<HTMLDivElement>;
@@ -25,6 +26,7 @@ const JobListTab: React.FC<JobListTabProps> = ({
   jobPostings,
   appliedJobs,
   onApply,
+  onViewDetail,
   isProcessing,
   canApply,
   loadMoreRef,
@@ -86,6 +88,7 @@ const JobListTab: React.FC<JobListTabProps> = ({
               post={post}
               appliedStatus={appliedJobs.get(post.id)}
               onApply={onApply}
+              onViewDetail={onViewDetail}
               isProcessing={isProcessing === post.id}
               canApply={canApply}
             />

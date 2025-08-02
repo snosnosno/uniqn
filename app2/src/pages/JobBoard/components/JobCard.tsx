@@ -9,6 +9,7 @@ interface JobCardProps {
   post: JobPosting;
   appliedStatus: string | undefined;
   onApply: (post: JobPosting) => void;
+  onViewDetail: (post: JobPosting) => void;
   isProcessing: boolean;
   canApply: boolean;
 }
@@ -19,7 +20,8 @@ interface JobCardProps {
 const JobCard: React.FC<JobCardProps> = ({ 
   post, 
   appliedStatus, 
-  onApply, 
+  onApply,
+  onViewDetail,
   isProcessing,
   canApply 
 }) => {
@@ -52,7 +54,7 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded cursor-not-allowed text-sm font-medium"
         >
           로그인 필요
         </button>
@@ -63,7 +65,7 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-gray-500 text-white py-3 px-4 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-gray-500 text-white py-2 px-4 rounded cursor-not-allowed text-sm font-medium"
         >
           지원완료
         </button>
@@ -74,7 +76,7 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded cursor-not-allowed text-sm font-medium"
         >
           확정됨
         </button>
@@ -85,9 +87,13 @@ const JobCard: React.FC<JobCardProps> = ({
       <button
         onClick={() => onApply(post)}
         disabled={isProcessing}
-        className="w-full bg-green-600 text-white py-3 px-4 rounded hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
+        className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
       >
-        {isProcessing ? t('jobBoard.applying') : t('jobBoard.apply')}
+        {isProcessing 
+          ? t('jobBoard.applying') 
+          : post.preQuestions && post.preQuestions.length > 0 
+            ? '지원하기(사전질문)'
+            : t('jobBoard.apply')}
       </button>
     );
   };
@@ -125,15 +131,25 @@ const JobCard: React.FC<JobCardProps> = ({
               </p>
             )}
             
-            {post.benefits && Object.keys(post.benefits).length > 0 && (
-              <div className="text-sm text-gray-500 mb-1">
-                {getBenefitDisplayGroups(post.benefits).map((group, index) => (
-                  <p key={index} className={index > 0 ? "ml-5" : ""}>
-                    {index === 0 ? '🎁 ' : '   '}{group.join(', ')}
-                  </p>
-                ))}
-              </div>
-            )}
+            {post.benefits && Object.keys(post.benefits).length > 0 && (() => {
+              const groups = getBenefitDisplayGroups(post.benefits);
+              return (
+                <div className="text-sm text-gray-500 mb-1">
+                  {groups[0] && (
+                    <p>
+                      <span className="inline-block w-7">🎁</span>
+                      {groups[0].join(', ')}
+                    </p>
+                  )}
+                  {groups[1] && (
+                    <p>
+                      <span className="inline-block w-7"></span>
+                      {groups[1].join(', ')}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             
             {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
             {JobPostingUtils.hasDateSpecificRequirements(post) ? (
@@ -215,13 +231,21 @@ const JobCard: React.FC<JobCardProps> = ({
               ))
             )}
             
-            <p className="text-sm text-gray-500 mt-2">
-              설명: {post.description}
-            </p>
           </div>
           
           <div className="w-full lg:w-auto lg:ml-4">
-            {renderActionButton()}
+            <div className="flex flex-col space-y-2">
+              {/* 자세히보기 버튼 */}
+              <button
+                onClick={() => onViewDetail(post)}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm font-medium"
+              >
+                자세히보기
+              </button>
+              
+              {/* 지원하기 버튼 */}
+              {renderActionButton()}
+            </div>
           </div>
         </div>
       </div>

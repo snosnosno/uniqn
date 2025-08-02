@@ -7,6 +7,7 @@ import JobFiltersComponent from './JobFilters';
 import JobListTab from './components/JobListTab';
 import MyApplicationsTab from './components/MyApplicationsTab';
 import ApplyModal from './components/ApplyModal';
+import JobDetailModal from './components/JobDetailModal';
 import { useJobBoard } from './hooks/useJobBoard';
 
 /**
@@ -36,6 +37,8 @@ const JobBoardPage = () => {
     hasNextPage,
     isFetchingNextPage,
     loadMoreRef,
+    isDetailModalOpen,
+    selectedDetailPost,
     
     // 함수
     handleFilterChange,
@@ -45,10 +48,16 @@ const JobBoardPage = () => {
     handleCancelApplication,
     handlePreQuestionComplete,
     fetchMyApplications,
+    handleBackToPreQuestions,
+    handleOpenDetailModal,
+    handleCloseDetailModal,
     
     // 유틸리티
     currentUser,
-    t
+    t,
+    
+    // 사전질문 관련
+    preQuestionAnswers
   } = useJobBoard();
 
   if (loading) {
@@ -124,6 +133,7 @@ const JobBoardPage = () => {
             jobPostings={jobPostings}
             appliedJobs={appliedJobs}
             onApply={handleOpenApplyModal}
+            onViewDetail={handleOpenDetailModal}
             isProcessing={isProcessing}
             canApply={!!currentUser}
             loadMoreRef={loadMoreRef}
@@ -164,6 +174,10 @@ const JobBoardPage = () => {
             onAssignmentChange={handleMultipleAssignmentChange}
             onApply={handleApply}
             isProcessing={isProcessing === selectedPost.id}
+            {...(selectedPost.preQuestions && selectedPost.preQuestions.length > 0 && {
+              onBack: handleBackToPreQuestions,
+              hasPreQuestions: true
+            })}
           />
         )}
         
@@ -175,8 +189,18 @@ const JobBoardPage = () => {
             onComplete={handlePreQuestionComplete}
             questions={selectedPost.preQuestions}
             jobPostingId={selectedPost.id}
+            {...(preQuestionAnswers.get(selectedPost.id) && {
+              existingAnswers: preQuestionAnswers.get(selectedPost.id)
+            })}
           />
         )}
+        
+        {/* Detail Modal */}
+        <JobDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={handleCloseDetailModal}
+          jobPosting={selectedDetailPost}
+        />
       </div>
     </JobBoardErrorBoundary>
   );

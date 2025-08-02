@@ -152,6 +152,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               value={formData.title}
               onChange={handleFormChange}
               placeholder="대회명(매장명)"
+              maxLength={25}
               required
               disabled={isUpdating}
             />
@@ -198,6 +199,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 value={formData.district || ''}
                 onChange={(e) => handleDistrictChange(e.target.value)}
                 placeholder="시/군/구를 입력하세요"
+                maxLength={25}
                 disabled={isUpdating}
               />
             </div>
@@ -213,6 +215,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               value={formData.detailedAddress}
               onChange={handleFormChange}
               placeholder="상세 주소를 입력하세요"
+              maxLength={25}
               disabled={isUpdating}
             />
           </div>
@@ -279,6 +282,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   value={formData.benefits.guaranteedHours}
                   onChange={(e) => handleBenefitChange('guaranteedHours', e.target.value)}
                   placeholder="보장시간 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
                 />
@@ -304,6 +308,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   value={formData.benefits.clothing}
                   onChange={(e) => handleBenefitChange('clothing', e.target.value)}
                   placeholder="복장 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
                 />
@@ -329,6 +334,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   value={formData.benefits.meal}
                   onChange={(e) => handleBenefitChange('meal', e.target.value)}
                   placeholder="식사 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
                 />
@@ -354,6 +360,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   value={formData.benefits.transportation}
                   onChange={(e) => handleBenefitChange('transportation', e.target.value)}
                   placeholder="교통비 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
                 />
@@ -379,6 +386,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   value={formData.benefits.mealAllowance}
                   onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
                   placeholder="식비 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
                 />
@@ -404,6 +412,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   value={formData.benefits.accommodation}
                   onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
                   placeholder="숙소 정보 입력"
+                  maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
                 />

@@ -48,6 +48,10 @@ export const useJobBoard = () => {
   
   // 지원 관련 상태
   const [appliedJobs, setAppliedJobs] = useState<Map<string, string>>(new Map());
+  
+  // 상세보기 모달 상태
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDetailPost, setSelectedDetailPost] = useState<JobPosting | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<JobPosting | null>(null);
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
@@ -192,6 +196,11 @@ export const useJobBoard = () => {
   };
   
   const handleOpenApplyModal = (post: JobPosting) => {
+    // 이미 지원한 경우는 바로 리턴 (지원완료 상태에서는 수정 불가)
+    if (appliedJobs.get(post.id)) {
+      return;
+    }
+    
     // 사전질문이 있고 아직 답변하지 않은 경우
     if (post.preQuestions && post.preQuestions.length > 0 && !preQuestionCompleted.get(post.id)) {
       setSelectedPost(post);
@@ -332,6 +341,24 @@ export const useJobBoard = () => {
     }
   };
   
+  // 지원 모달에서 사전질문 모달로 돌아가기
+  const handleBackToPreQuestions = () => {
+    setIsApplyModalOpen(false);
+    setIsPreQuestionModalOpen(true);
+  };
+  
+  // 상세보기 모달 열기
+  const handleOpenDetailModal = (post: JobPosting) => {
+    setSelectedDetailPost(post);
+    setIsDetailModalOpen(true);
+  };
+  
+  // 상세보기 모달 닫기
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedDetailPost(null);
+  };
+
   return {
     // 상태
     activeTab,
@@ -355,6 +382,8 @@ export const useJobBoard = () => {
     hasNextPage,
     isFetchingNextPage,
     loadMoreRef,
+    isDetailModalOpen,
+    selectedDetailPost,
     
     // 함수
     handleFilterChange,
@@ -364,9 +393,15 @@ export const useJobBoard = () => {
     handleCancelApplication,
     handlePreQuestionComplete,
     fetchMyApplications,
+    handleBackToPreQuestions,
+    handleOpenDetailModal,
+    handleCloseDetailModal,
     
     // 유틸리티
     currentUser,
-    t
+    t,
+    
+    // 사전질문 관련
+    preQuestionAnswers
   };
 };
