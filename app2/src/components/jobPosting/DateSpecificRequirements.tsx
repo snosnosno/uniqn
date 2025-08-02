@@ -133,7 +133,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
             <div className="flex items-center space-x-2">
               <span className="text-sm font-semibold text-gray-700">📅</span>
               <DateDropdownSelector
-                value={toDropdownValue(requirement.date)}
+                value={toDropdownValue(typeof requirement.date === 'string' ? requirement.date : '')}
                 onChange={(value) => handleDateChange(requirementIndex, value)}
                 minDate={startDate}
                 maxDate={endDate}

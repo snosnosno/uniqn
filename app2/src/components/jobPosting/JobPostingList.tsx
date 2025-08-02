@@ -225,13 +225,6 @@ const JobPostingList: React.FC<JobPostingListProps> = React.memo(({
                 </div>
               </div>
 
-              {/* 설명 */}
-              {post.description && (
-                <div className="mt-3 text-sm text-gray-600 line-clamp-2">
-                  {post.description}
-                </div>
-              )}
-
               {/* 생성/수정 정보 */}
               <div className="mt-3 text-xs text-gray-400 flex justify-between">
                 <span>생성: {formatDateDisplay(post.createdAt)}</span>

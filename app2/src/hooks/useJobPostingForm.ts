@@ -9,7 +9,9 @@ import {
 } from '../utils/jobPosting/jobPostingHelpers';
 import { convertToDateString, dropdownValueToDateString } from '../utils/jobPosting/dateUtils';
 
-export const useJobPostingForm = (initialData?: any) => {
+import { JobPosting } from '../types/jobPosting';
+
+export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   const [formData, setFormData] = useState(() => 
     initialData ? initialData : createInitialFormData()
   );
@@ -18,7 +20,7 @@ export const useJobPostingForm = (initialData?: any) => {
   // 기본 폼 핸들러
   const handleFormChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
   // 시간대 관련 핸들러들

@@ -35,7 +35,7 @@ export const createInitialFormData = () => {
     endDate: today,
     salaryType: undefined,
     salaryAmount: '',
-    benefits: {}
+    benefits: {} as Benefits
   };
 };
 
@@ -297,17 +297,18 @@ export const getSalaryTypeDisplayName = (type: string): string => {
 /**
  * 급여 정보를 포맷팅하여 표시
  */
-export const formatSalaryDisplay = (salaryType?: string, salaryAmount?: string): string => {
+export const formatSalaryDisplay = (salaryType?: string, salaryAmount?: string | number): string => {
   if (!salaryType || !salaryAmount) return '';
   
   const typeName = getSalaryTypeDisplayName(salaryType);
+  const amount = String(salaryAmount);
   
   if (salaryType === 'other') {
-    return `${typeName}: ${salaryAmount}`;
+    return `${typeName}: ${amount}`;
   }
   
   // 숫자에 천 단위 콤마 추가
-  const formattedAmount = salaryAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const formattedAmount = amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${typeName} ${formattedAmount}원`;
 };
 

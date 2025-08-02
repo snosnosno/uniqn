@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
 import { AttendanceStatus } from '../components/AttendanceStatusCard';
@@ -195,14 +196,14 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     }
 
     // Timestamp를 시간 문자열로 변환하는 함수
-    const formatTimeFromTimestamp = (timestamp: any): string | undefined => {
+    const formatTimeFromTimestamp = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | Date | string | null | undefined): string | undefined => {
       if (!timestamp) return undefined;
       
       try {
         let date: Date;
         
         // Timestamp 객체인 경우
-        if (timestamp && typeof timestamp.toDate === 'function') {
+        if (timestamp && typeof timestamp === 'object' && 'toDate' in timestamp && typeof timestamp.toDate === 'function') {
           date = timestamp.toDate();
         }
         // Date 객체인 경우

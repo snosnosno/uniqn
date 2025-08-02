@@ -4,7 +4,7 @@ import { collection, addDoc, query, where, deleteDoc, doc, updateDoc, increment 
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { JobPostingTemplate, CreateTemplateRequest } from '../types/jobPosting';
+import { JobPostingTemplate } from '../types/jobPosting';
 import { templateToFormData } from '../utils/jobPosting/jobPostingHelpers';
 import { useMemo } from 'react';
 
@@ -39,8 +39,8 @@ export const useTemplateManager = () => {
     }
 
     try {
-      const templateData: CreateTemplateRequest = {
-        name: templateName.trim(),
+      const templateData = {
+        templateName: templateName.trim(),
         description: templateDescription.trim(),
         templateData: {
           title: formData.title,
@@ -52,7 +52,6 @@ export const useTemplateManager = () => {
           location: formData.location,
           detailedAddress: formData.detailedAddress,
           preQuestions: formData.preQuestions,
-          usesPreQuestions: formData.usesPreQuestions,
         },
         createdBy: currentUser.uid,
         createdAt: new Date(),

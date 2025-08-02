@@ -1,0 +1,18 @@
+
+> app@0.1.0 build
+> react-scripts build --no-eslint 2
+
+Creating an optimized production build...
+Failed to compile.
+
+TS2345: Argument of type 'string | Timestamp | { seconds: number; }' is not assignable to parameter of type 'string'.
+  Type 'Timestamp' is not assignable to type 'string'.
+  [0m [90m 390 |[39m                                 [36mconst[39m confirmedCount [33m=[39m [33mJobPostingUtils[39m[33m.[39mgetConfirmedStaffCount(
+   [90m 391 |[39m                                   jobPosting[33m,[39m
+  [31m[1m>[22m[39m[90m 392 |[39m                                   dateReq[33m.[39mdate[33m,[39m
+   [90m     |[39m                                   [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 393 |[39m                                   ts[33m.[39mtime[33m,[39m
+   [90m 394 |[39m                                   role[33m.[39mname
+   [90m 395 |[39m                                 )[33m;[39m[0m
+
+

@@ -149,7 +149,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             </label>
             <Select
               name="type"
-              value={formData.type}
+              value={'type' in formData ? formData.type : 'application'}
               onChange={(value) => handleFormChange({ target: { name: 'type', value } } as any)}
               options={[
                 { value: 'application', label: '지원' },
@@ -405,7 +405,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               시작일 <span className="text-red-500">*</span>
             </label>
             <DateDropdownSelector
-              value={toDropdownValue(formData.startDate)}
+              value={toDropdownValue(typeof formData.startDate === 'string' ? formData.startDate : '')}
               onChange={handleStartDateChange}
               disabled={isSubmitting}
             />
@@ -416,7 +416,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               종료일 <span className="text-red-500">*</span>
             </label>
             <DateDropdownSelector
-              value={toDropdownValue(formData.endDate)}
+              value={toDropdownValue(typeof formData.endDate === 'string' ? formData.endDate : '')}
               onChange={handleEndDateChange}
               disabled={isSubmitting}
             />
@@ -424,11 +424,11 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         </div>
 
         {/* 시간대 및 역할 설정 */}
-        {formData.usesDifferentDailyRequirements ? (
+        {'usesDifferentDailyRequirements' in formData && formData.usesDifferentDailyRequirements ? (
           <DateSpecificRequirements
-            requirements={formData.dateSpecificRequirements}
-            startDate={formData.startDate}
-            endDate={formData.endDate}
+            requirements={formData.dateSpecificRequirements || []}
+            startDate={typeof formData.startDate === 'string' ? formData.startDate : ''}
+            endDate={typeof formData.endDate === 'string' ? formData.endDate : ''}
             onRequirementsChange={handleDateSpecificRequirementsChange}
             onDateSpecificTimeSlotChange={handleDateSpecificTimeSlotChange}
             onDateSpecificTimeToBeAnnouncedToggle={handleDateSpecificTimeToBeAnnouncedToggle}
@@ -437,7 +437,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           />
         ) : (
           <TimeSlotManager
-            timeSlots={formData.timeSlots}
+            timeSlots={formData.timeSlots || []}
             onTimeSlotChange={handleTimeSlotChange}
             onTimeToBeAnnouncedToggle={handleTimeToBeAnnouncedToggle}
             onTentativeDescriptionChange={handleTentativeDescriptionChange}
@@ -455,7 +455,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             <input
               type="checkbox"
               id="usesPreQuestions"
-              checked={formData.usesPreQuestions}
+              checked={'usesPreQuestions' in formData ? formData.usesPreQuestions : false}
               onChange={(e) => handlePreQuestionsToggle(e.target.checked)}
               className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               disabled={isSubmitting}
@@ -465,9 +465,9 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             </label>
           </div>
 
-          {formData.usesPreQuestions && (
+          {'usesPreQuestions' in formData && formData.usesPreQuestions && (
             <PreQuestionManager
-              preQuestions={formData.preQuestions}
+              preQuestions={formData.preQuestions || []}
               onPreQuestionChange={handlePreQuestionChange}
               onPreQuestionOptionChange={handlePreQuestionOptionChange}
               onAddPreQuestion={addPreQuestion}

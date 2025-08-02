@@ -387,12 +387,17 @@ const JobPostingDetailPageContent: React.FC = () => {
                             <p className="font-semibold text-gray-700">{ts.time}</p>
                             <div className="text-sm text-gray-600">
                               {ts.roles.map((role, roleIndex) => {
-                                const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                const dateStr = typeof dateReq.date === 'string' 
+                                  ? dateReq.date 
+                                  : dateReq.date && typeof dateReq.date === 'object' && 'toDate' in dateReq.date
+                                    ? dateReq.date.toDate().toISOString().split('T')[0]
+                                    : '';
+                                const confirmedCount = dateStr ? JobPostingUtils.getConfirmedStaffCount(
                                   jobPosting,
-                                  dateReq.date,
+                                  dateStr,
                                   ts.time,
                                   role.name
-                                );
+                                ) : 0;
                                 const isFull = confirmedCount >= role.count;
                                 const remaining = role.count - confirmedCount;
                                 return (

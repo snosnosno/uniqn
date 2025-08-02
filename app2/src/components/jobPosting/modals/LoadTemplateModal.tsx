@@ -5,6 +5,7 @@ import { formatSalaryDisplay, getBenefitDisplayNames } from '../../../utils/jobP
 import Modal from '../../Modal';
 import Button from '../../common/Button';
 import LoadingSpinner from '../../LoadingSpinner';
+import { EmptyState, Badge, InfoCard } from '../../common';
 
 interface LoadTemplateModalProps {
   isOpen: boolean;
@@ -50,11 +51,11 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
             <p className="text-gray-500 mt-2">템플릿 목록을 불러오는 중...</p>
           </div>
         ) : templates.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-2">📂</div>
-            <p className="text-gray-500">저장된 템플릿이 없습니다.</p>
-            <p className="text-sm text-gray-400 mt-1">공고를 작성한 후 "템플릿으로 저장" 버튼을 눌러보세요.</p>
-          </div>
+          <EmptyState
+            icon="📂"
+            title="저장된 템플릿이 없습니다."
+            description='공고를 작성한 후 "템플릿으로 저장" 버튼을 눌러보세요.'
+          />
         ) : (
           <div className="max-h-96 overflow-y-auto">
             <div className="grid gap-3">
@@ -62,27 +63,19 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                 <div key={template.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{template.name}</h4>
-                      {template.description && (
-                        <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                      )}
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          📍 {template.templateData.location}
+                      <h4 className="font-medium text-gray-900">{template.templateName}</h4>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge variant="info" size="sm" icon="📍">
+                          {template.templateData.location}
                           {template.templateData.district && ` ${template.templateData.district}`}
-                        </span>
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                          📋 {template.templateData.type === 'application' ? '지원' : '고정'}
-                        </span>
+                        </Badge>
+                        <Badge variant="success" size="sm" icon="📋">
+                          {template.templateData.type === 'application' ? '지원' : '고정'}
+                        </Badge>
                         {template.templateData.salaryType && template.templateData.salaryAmount && (
-                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                            💰 {formatSalaryDisplay(template.templateData.salaryType, template.templateData.salaryAmount)}
-                          </span>
-                        )}
-                        {template.usageCount && template.usageCount > 0 && (
-                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                            📊 {template.usageCount}회 사용
-                          </span>
+                          <Badge variant="warning" size="sm" icon="💰">
+                            {formatSalaryDisplay(template.templateData.salaryType, template.templateData.salaryAmount)}
+                          </Badge>
                         )}
                       </div>
                       {template.templateData.benefits && Object.keys(template.templateData.benefits).length > 0 && (
@@ -108,7 +101,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                         type="button"
                         variant="danger"
                         size="sm"
-                        onClick={() => handleDeleteTemplate(template.id, template.name)}
+                        onClick={() => handleDeleteTemplate(template.id || '', template.templateName)}
                       >
                         삭제
                       </Button>
@@ -120,11 +113,12 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           </div>
         )}
         
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-700">
-            <span className="font-medium">※ 안내:</span> 템플릿 불러오기 후 시작일과 종료일을 설정해주세요.
-          </p>
-        </div>
+        <InfoCard
+          type="info"
+          title="※ 안내:"
+          message="템플릿 불러오기 후 시작일과 종료일을 설정해주세요."
+          className="mt-4"
+        />
         
         <div className="flex justify-end mt-4">
           <Button

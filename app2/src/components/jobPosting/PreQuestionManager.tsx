@@ -3,6 +3,7 @@ import { PreQuestion } from '../../types/jobPosting';
 import Button from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
+import { EmptyState } from '../common';
 
 interface PreQuestionManagerProps {
   preQuestions: PreQuestion[];
@@ -141,18 +142,20 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
               ))}
 
               {(!question.options || question.options.length === 0) && (
-                <div className="text-center py-4 text-gray-500">
-                  <p className="text-sm">선택 옵션을 추가해주세요.</p>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="xs"
-                    onClick={() => onAddPreQuestionOption(questionIndex)}
-                    className="mt-2"
-                  >
-                    첫 번째 옵션 추가
-                  </Button>
-                </div>
+                <EmptyState
+                  title="선택 옵션을 추가해주세요."
+                  action={
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="xs"
+                      onClick={() => onAddPreQuestionOption(questionIndex)}
+                    >
+                      첫 번째 옵션 추가
+                    </Button>
+                  }
+                  className="py-4"
+                />
               )}
             </div>
           )}
@@ -160,18 +163,19 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
       ))}
 
       {preQuestions.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <p>사전질문을 추가해주세요.</p>
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={onAddPreQuestion}
-            className="mt-2"
-          >
-            첫 번째 질문 추가
-          </Button>
-        </div>
+        <EmptyState
+          title="사전질문을 추가해주세요."
+          action={
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={onAddPreQuestion}
+            >
+              첫 번째 질문 추가
+            </Button>
+          }
+        />
       )}
     </div>
   );

@@ -42,7 +42,7 @@ export const useJobPostings = (filters: JobPostingFilters) => {
           logger.debug('🔍 Applying client-side role filter:', { component: 'useJobPostings', data: filters.role });
           jobs = jobs.filter(job => {
             const requiredRoles = job.requiredRoles || [];
-            return requiredRoles.includes(filters.role);
+            return requiredRoles.includes(filters.role!);
           });
         }
         
@@ -55,7 +55,7 @@ export const useJobPostings = (filters: JobPostingFilters) => {
         // Client-side type filtering when role filter took priority  
         if (filters.startDate && filters.role && filters.role !== 'all' && filters.type && filters.type !== 'all') {
           logger.debug('🔍 Applying client-side type filter:', { component: 'useJobPostings', data: filters.type });
-          jobs = jobs.filter(job => job.type === filters.type);
+          jobs = jobs.filter(job => job.recruitmentType === filters.type);
         }
         
         return jobs;
@@ -103,7 +103,7 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
           logger.debug('🔍 Applying client-side role filter:', { component: 'useJobPostings', data: filters.role });
           jobs = jobs.filter(job => {
             const requiredRoles = job.requiredRoles || [];
-            return requiredRoles.includes(filters.role);
+            return requiredRoles.includes(filters.role!);
           });
         }
         
@@ -116,7 +116,7 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
         // Client-side type filtering when role filter took priority  
         if (filters.startDate && filters.role && filters.role !== 'all' && filters.type && filters.type !== 'all') {
           logger.debug('🔍 Applying client-side type filter:', { component: 'useJobPostings', data: filters.type });
-          jobs = jobs.filter(job => job.type === filters.type);
+          jobs = jobs.filter(job => job.recruitmentType === filters.type);
         }
         
         console.log('✅ Query successful:', { 

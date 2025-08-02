@@ -9,16 +9,26 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 ### 🛠️ 기술 스택
 - **Frontend**: React 18, TypeScript (Strict Mode), Tailwind CSS
 - **Backend**: Firebase (Auth, Firestore, Functions, Storage)
-- **State Management**: Context API (Auth, Tournament, Toast, JobPosting), Zustand (마이그레이션 진행중)
+- **State Management**: Context API (Auth, Tournament, Toast, JobPosting), Zustand (일부 도입)
 - **Performance**: React Window (가상화), useMemo/useCallback 최적화, Code Splitting, 성능 모니터링 시스템
-- **Testing**: Jest, React Testing Library (확장 필요)
+- **Testing**: Jest, React Testing Library (11개 테스트 파일)
 - **Build**: Create React App, PostCSS
 - **타입 시스템**: TypeScript Strict Mode (`strict: true`, `exactOptionalPropertyTypes: true`, `noUncheckedIndexedAccess: true`)
 - **로깅**: 구조화된 로깅 시스템 (5단계 레벨, 컨텍스트 기반)
 - **보안**: CSP, XSS 방지 (DOMPurify), CSRF 토큰
 - **모니터링**: PerformanceMonitor (Web Vitals, 번들 크기, 메모리 사용량)
 
-## 🔥 최근 주요 업데이트 (2025-01-31)
+## 🔥 최근 주요 업데이트 (2025-08-02)
+
+### 환경 변수 설정 완료 ✅ (2025-08-02)
+- **Firebase API 키 보호**: .env 파일로 모든 Firebase 설정 이동 완료
+- **환경 변수 활용**: `REACT_APP_FIREBASE_*` 환경 변수로 안전한 관리
+- **보안 강화**: API 키 노출 문제 해결
+
+### 프로젝트 구조 최신화 (2025-08-02)
+- **Zustand 부분 도입**: tournamentStore.ts로 상태 관리 개선 시작
+- **테스트 파일 현황**: 11개 테스트 파일 존재 (커버리지 확대 필요)
+- **성능 보고서 페이지**: /admin/performance가 아닌 별도 PerformanceReport.tsx 구현
 
 ### 대규모 성능 최적화 및 코드 품질 개선 (2025-01-31)
 - **성능 개선 성과**:
@@ -33,74 +43,8 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - **성능 모니터링 시스템 구축**:
   - PerformanceMonitor 유틸리티 구현
   - Web Vitals 측정 (FCP, LCP, CLS)
-  - 실시간 성능 보고서 페이지 (/admin/performance)
+  - 성능 보고서 페이지 구현
   - 컴포넌트별 렌더링 성능 추적
-
-### 구조화된 로깅 시스템 도입 (2025-01-31)
-- **console.log 완전 제거**: 316개 파일의 모든 console.log를 구조화된 logger로 교체
-- **로깅 시스템 구현**:
-  - 5단계 로그 레벨: DEBUG 🔍, INFO ℹ️, WARN ⚠️, ERROR ❌, CRITICAL 🚨
-  - 환경별 동작: 개발(컬러 콘솔), 프로덕션(서버 전송)
-  - 상세 컨텍스트: component, userId, operation 등 40+ 필드
-  - 성능 측정 및 에러 추적 내장
-- **사용 패턴**:
-  ```typescript
-  // 기존: console.log('메시지', data);
-  // 변경: logger.debug('메시지', { component: 'ComponentName', data });
-  
-  // 에러 처리
-  logger.error('오류 발생', error, { component: 'Component' });
-  
-  // 성능 측정
-  await logger.withPerformanceTracking(
-    async () => await operation(),
-    'Operation Name'
-  );
-  ```
-
-### TypeScript Strict Mode 마이그레이션 완료
-- **tsconfig.json 설정 강화**:
-  ```json
-  {
-    "strict": true,
-    "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true
-  }
-  ```
-- **타입 안전성 개선**:
-  - 모든 any 타입 제거 및 구체적인 인터페이스 정의
-  - 배열/객체 접근 시 undefined 체크 필수화
-  - 조건부 spread 패턴으로 optional property 처리
-- **주요 패턴 적용**:
-  ```typescript
-  // 배열 접근 안전성
-  const value = array[index] || defaultValue;
-  
-  // split() 결과 안전 처리
-  const parts = str.split(':');
-  const hour = parts[0] || '0';
-  
-  // 조건부 속성 처리
-  const props = {
-    ...baseProps,
-    ...(optionalValue && { optionalProp: optionalValue })
-  };
-  ```
-
-### 출석 관리 시스템 개선 (2025-01-31)
-- **자동 상태 변경 기능 제거**: 퇴근시간 설정 시 자동 퇴근 상태 변경 기능 제거 (사용자 요청)
-- **실시간 반영 개선**:
-  - StaffRow memo 비교 함수 최적화로 상태 변경 즉시 반영
-  - 새로고침 없이 모든 출석 상태 변경 실시간 업데이트
-- **출근 시간 표시 수정**:
-  - useStaffManagement의 workLogsMap 생성 로직 수정 (dealerId 사용)
-  - 출근 상태일 때 "출근: HH:MM" 형식으로 실제 시간 정확히 표시
-
-### 스태프 관리 시스템 고도화 완료
-- **날짜별 개별 시간 관리**: workLogs 컬렉션 기반으로 각 날짜별 독립적 시간 설정 가능
-- **실시간 데이터 동기화**: Firebase onSnapshot을 통한 즉시 UI 반영
-- **출석 상태 분리 관리**: 시간 수정과 출석 상태를 완전 분리, AttendanceStatusDropdown으로 직접 편집
-- **UI 개선**: '시간' 열을 '출근'/'퇴근' 분리, '미정' 상태 표시, 드롭다운 시간 선택
 
 ## Development Preferences
 
@@ -214,14 +158,14 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ## 🚨 보안 및 성능 개선 사항 (Critical)
 
-### 즉시 적용 필요 (1-2주)
-1. **환경 변수 설정**
-   - Firebase API 키를 .env 파일로 이동
-   - `REACT_APP_FIREBASE_API_KEY` 등 환경 변수 사용
+### 즉시 적용 필요 ✅ 완료
+1. **환경 변수 설정** ✅ (2025-08-02 완료)
+   - Firebase API 키를 .env 파일로 이동 완료
+   - `REACT_APP_FIREBASE_API_KEY` 등 환경 변수 사용 중
    
 2. **타입 안전성 강화** ✅ (2025-01-30 완료)
-   - ~~any 타입을 구체적 인터페이스로 교체~~
-   - ~~tsconfig.json에 strict 모드 활성화~~
+   - 모든 any 타입을 구체적 인터페이스로 교체
+   - tsconfig.json에 strict 모드 활성화
    - TypeScript strict mode 마이그레이션 완료
 
 ### 중기 개선 사항 (2-4주)
@@ -257,6 +201,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - TypeScript Strict Mode 전면 적용 완료
 - 번들 크기 44% 감소 (1.6MB → 890KB)
 - 초기 로딩 시간 43% 개선 (3.5초 → 2.0초)
+- Firebase API 키 환경 변수로 안전 관리 (.env 파일)
 
 ### 개선 완료 ✅
 - ~~any 타입 과다 사용~~ → TypeScript strict mode로 해결
@@ -264,17 +209,18 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   - FullCalendar → LightweightCalendar (96% 크기 감소)
   - react-data-grid → LightweightDataGrid (85% 크기 감소)
   - react-icons → 커스텀 SVG 아이콘 (92% 크기 감소)
-- ~~Context API 성능 이슈~~ → Zustand 마이그레이션 준비
+- ~~Context API 성능 이슈~~ → Zustand 도입 시작 (tournamentStore.ts)
 - ~~console.log 사용~~ → 구조화된 logger 시스템으로 완전 교체 (316개 파일)
 - ~~CEO 대시보드 성능~~ → 실시간 구독 9개 → 5개로 최적화 (44% 감소)
 - ~~보안 취약점~~ → CSP, XSS 방지, CSRF 보호 구현 완료
+- ~~환경 변수 미설정~~ → Firebase API 키를 .env 파일로 관리 (2025-08-02)
 
 ### 개선 필요
-- 환경 변수 미설정 (API 키 노출) ⚠️ **[최우선]**
-- 테스트 커버리지 부족 (~15%) → 목표 70%
-- CI/CD 파이프라인 부재
+- 테스트 커버리지 부족 (11개 파일, ~15%) → 목표 70%
+- CI/CD 파이프라인 부재 (GitHub Actions 미구축)
 - SSR/SSG 도입 검토 (Next.js)
 - 에러 모니터링 도구 필요 (Sentry 등)
+- Zustand 마이그레이션 확대 필요 (현재 tournamentStore만 구현)
 
 ## 🚀 성능 최적화 현황
 
@@ -298,68 +244,24 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - 단위 테스트 및 통합 테스트 기반 구축
 - Firebase 모킹 환경 구성
 
-## 📋 구인공고 시스템 개선 (2025-01-31)
-
-### 🎯 개선 완료 사항
-
-#### 1. 날짜 표시 형식 개선
-- **이전**: 2025-08-01 형식의 긴 날짜 표시
-- **개선**: 08-01(금) 형식의 간결하고 직관적인 표시
-- **효과**: 사용자가 날짜를 더 빠르게 인식하고, 요일 정보로 일정 파악이 용이해짐
-
-#### 2. 확정 인원 실시간 표시
-- **구인공고 게시판**: 각 역할별로 "딜러: 3명 (1/3)", "플로어: 1명 (1/1 - 마감)" 형식으로 모집 현황 한눈에 파악
-- **공고 상세 관리**: 날짜별, 시간대별로 세분화된 인원 현황 표시
-- **지원자 목록**: 각 지원자별로 선택 가능한 시간대와 마감 여부 실시간 표시
-
-#### 3. 마감 상태 자동 관리
-- 모집 인원이 다 찬 역할은 자동으로 "마감" 표시
-- 지원자가 선택할 수 없도록 비활성화 처리
-- 확정 취소 시 자동으로 마감 해제되어 다시 지원 가능
-
-### 💡 사용자 경험 개선
-
-#### 1. 운영자 편의성
-- 각 공고의 모집 현황을 목록에서 바로 확인 가능
-- 어떤 날짜/시간/역할이 부족한지 즉시 파악
-- 확정/취소 작업이 실시간으로 반영되어 수동 새로고침 불필요
-
-#### 2. 지원자 편의성
-- 마감된 포지션이 명확히 표시되어 헛수고 방지
-- 남은 자리 수를 보고 지원 우선순위 결정 가능
-- 날짜와 요일이 함께 표시되어 일정 조율 용이
-
-#### 3. 데이터 정확성
-- Firebase Timestamp와 문자열 날짜 형식 간 호환성 문제 해결
-- 모든 페이지에서 일관된 데이터 표시
-- 실시간 동기화로 항상 최신 정보 제공
-
-### 🔧 기술적 개선사항
-- TypeScript strict mode 준수로 타입 안전성 강화
-- Firebase Timestamp 변환 로직을 공통 유틸리티로 통합하여 일관성 확보
-- 날짜 형식 변환 유틸리티로 코드 재사용성 향상
-- 사용하지 않는 import 및 변수 제거로 코드 품질 개선
 
 ## 🚧 앞으로의 개발 방향
 
 ### 단기 목표 (1-2주)
-1. **환경 변수 설정** 🔴 [긴급]
-   ```bash
-   # .env.local 파일 생성
-   REACT_APP_FIREBASE_API_KEY=your-api-key
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your-auth-domain
-   REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-   ```
-
-2. **테스트 인프라 구축**
+1. **테스트 인프라 구축** 🔴 [긴급]
    - 주요 컴포넌트 단위 테스트 작성
    - 통합 테스트 추가
    - 테스트 커버리지 70% 달성
 
-3. **CI/CD 파이프라인**
+2. **CI/CD 파이프라인**
    - GitHub Actions 설정
    - 자동 빌드 및 테스트
    - 자동 배포 프로세스
+
+3. **에러 모니터링**
+   - Sentry 또는 유사 도구 도입
+   - 실시간 에러 추적
+   - 사용자 영향도 분석
 
 ### 중기 목표 (1개월)
 1. **상태 관리 최적화**
@@ -401,10 +303,134 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - **[기술 보고서](app2/docs/TECHNICAL_REPORTS.md)**: 상태 관리 분석, 성능 측정, 로드맵
 - **[성능 측정 보고서](app2/docs/PERFORMANCE_MEASUREMENT_REPORT.md)**: 최적화 결과 및 성과 분석
 
+## 🛡️ TypeScript Strict Mode 오류 방지 가이드
+
+### 자주 발생하는 오류와 해결 방법
+
+#### 1. **undefined 처리 패턴**
+```typescript
+// ❌ 오류 발생 코드
+const value = formData.startDate;  // Type: string | undefined
+toDropdownValue(value);  // Error: Argument of type 'string | undefined' is not assignable
+
+// ✅ 올바른 처리
+const value = formData.startDate || '';  // 기본값 제공
+const value = formData.startDate ?? '';  // null/undefined만 체크
+const value = typeof formData.startDate === 'string' ? formData.startDate : '';  // 타입 체크
+```
+
+#### 2. **배열/객체 접근 안전성**
+```typescript
+// ❌ 오류 발생 코드
+const item = array[index];  // Type: T | undefined
+item.property;  // Error: Object is possibly 'undefined'
+
+// ✅ 올바른 처리
+const item = array[index];
+if (item) {
+  item.property;  // 타입 가드로 안전 보장
+}
+// 또는
+const item = array[index] || defaultItem;
+const property = array[index]?.property || defaultValue;
+```
+
+#### 3. **빈 객체 타입 처리**
+```typescript
+// ❌ 오류 발생 코드
+const benefits = {};  // Type: {}
+benefits.guaranteedHours;  // Error: Property 'guaranteedHours' does not exist
+
+// ✅ 올바른 처리
+const benefits = {} as Benefits;  // 타입 캐스팅
+const benefits: Benefits = {};  // 타입 명시
+const benefits: Partial<Benefits> = {};  // 부분 타입 사용
+```
+
+#### 4. **Union 타입 처리**
+```typescript
+// ❌ 오류 발생 코드
+function processDate(date: string | Timestamp | undefined) {
+  date.toDate();  // Error: Property 'toDate' does not exist on type 'string'
+}
+
+// ✅ 올바른 처리
+function processDate(date: string | Timestamp | undefined) {
+  if (!date) return '';
+  
+  if (typeof date === 'string') {
+    return date;
+  }
+  
+  if (date && typeof date === 'object' && 'toDate' in date) {
+    return date.toDate().toISOString();
+  }
+  
+  return '';
+}
+```
+
+#### 5. **Optional 속성 처리**
+```typescript
+// ❌ 오류 발생 코드
+<Component items={data.items} />  // Type 'undefined' is not assignable
+
+// ✅ 올바른 처리
+<Component items={data.items || []} />
+<Component items={data.items ?? []} />
+<Component {...(data.items && { items: data.items })} />
+```
+
+### 개발 시 필수 체크사항
+
+#### 타입 정의 시
+- [ ] Optional 속성은 `?`로 명확히 표시
+- [ ] Union 타입은 모든 경우를 처리하는 타입 가드 작성
+- [ ] `any` 타입 절대 사용 금지 - 구체적인 타입 정의
+- [ ] 빈 객체는 타입 캐스팅 또는 인터페이스 지정
+
+#### 컴포넌트 Props 처리
+- [ ] Optional props는 기본값 제공
+- [ ] 배열 props는 빈 배열 `[]` 기본값
+- [ ] 객체 props는 타입에 맞는 초기값 제공
+
+#### Firebase 데이터 처리
+- [ ] Timestamp는 항상 string과 구분하여 처리
+- [ ] Firestore 데이터는 undefined 가능성 항상 체크
+- [ ] 날짜 변환 시 타입 체크 필수
+
+#### 에러 방지 코딩 습관
+1. **Early Return 패턴 활용**
+   ```typescript
+   if (!data) return defaultValue;
+   if (typeof data !== 'string') return '';
+   ```
+
+2. **Optional Chaining 적극 활용**
+   ```typescript
+   const value = data?.nested?.property ?? defaultValue;
+   ```
+
+3. **타입 가드 함수 작성**
+   ```typescript
+   function isTimestamp(value: unknown): value is Timestamp {
+     return value != null && 
+            typeof value === 'object' && 
+            'toDate' in value;
+   }
+   ```
+
+4. **Nullish Coalescing (`??`) 활용**
+   ```typescript
+   const result = value ?? defaultValue;  // null/undefined만 체크
+   ```
+
 ## 🔑 개발 체크리스트
 
 ### 새로운 기능 개발 시
 - [ ] TypeScript strict mode 준수 (any 타입 사용 금지)
+- [ ] 모든 optional 값에 대한 undefined 처리
+- [ ] Union 타입의 모든 경우 처리
 - [ ] 구조화된 logger 사용 (console.log 금지)
 - [ ] Firebase 실시간 구독 사용 (onSnapshot)
 - [ ] 메모이제이션 적용 (useMemo, useCallback)
@@ -413,7 +439,9 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - [ ] 성능 측정 및 최적화
 
 ### 코드 리뷰 체크포인트
-- [ ] 타입 안전성 검증
+- [ ] 타입 안전성 검증 (undefined, null 처리)
+- [ ] Union 타입 완전성 검사
+- [ ] Optional chaining 적절한 사용
 - [ ] 성능 영향 평가
 - [ ] 보안 취약점 검사
 - [ ] 접근성 준수 확인
@@ -425,13 +453,15 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - `도구사용`: 사용가능한 MCP, SUB AGENTS 모두 적극 사용
 - `실시간반영중시`: Firebase onSnapshot 구독으로 즉시 UI 업데이트, 수동 새로고침 제거
 - `날짜별시간관리`: workLogs 컬렉션 기반으로 각 날짜별 독립적인 시간 설정 시스템 구현 완료
-- `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendancePopover으로 관리
+- `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendanceStatusDropdown으로 관리
 - `출석자동변경제거`: 퇴근시간 설정 시 자동 상태 변경 기능 제거 (2025-01-31)
 - `workLogs우선`: workLogs 데이터를 staff 데이터보다 우선하여 날짜별 독립성 보장
 - `타입안전성강화완료`: TypeScript strict mode 적용 완료 (2025-01-30)
 - `번들최적화완료`: 주요 라이브러리 교체로 44% 크기 감소 (2025-01-31)
-- `환경변수설정필요`: Firebase API 키 등 민감 정보 보호 필요 ⚠️
-- `테스트커버리지개선필요`: 현재 15% → 목표 70%
+- `환경변수설정완료`: Firebase API 키 등 민감 정보 .env 파일로 보호 완료 ✅ (2025-08-02)
+- `테스트커버리지개선필요`: 현재 11개 파일 (~15%) → 목표 70%
 - `logger시스템도입완료`: console.log 316개 → 구조화된 logger로 완전 교체 (2025-01-31)
 - `성능모니터링구축완료`: PerformanceMonitor 유틸리티 및 보고서 페이지 구현 (2025-01-31)
 - `보안강화완료`: CSP, XSS 방지, CSRF 토큰 구현 (2025-01-31)
+- `CI/CD구축필요`: GitHub Actions 설정 필요
+- `Zustand마이그레이션진행중`: tournamentStore.ts 구현 완료, 확대 필요
