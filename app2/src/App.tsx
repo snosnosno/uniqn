@@ -18,6 +18,7 @@ import { ToastProvider } from './contexts/ToastContext';
 // Zustand 마이그레이션: Context 대신 Adapter 사용
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
+import { performanceMonitor } from './utils/performanceMonitor';
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
@@ -45,6 +46,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
 const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
+const PerformanceReport = lazy(() => import('./pages/PerformanceReport'));
 
 
 // A component to handle role-based redirection
@@ -66,9 +68,22 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
-  // Firebase 자동 복구 활성화
+  // Firebase 자동 복구 활성화 및 성능 모니터링
   React.useEffect(() => {
     firebaseConnectionManager.enableAutoRecovery();
+    
+    // 성능 모니터링 시작
+    performanceMonitor.measureWebVitals();
+    performanceMonitor.measureMemory();
+    
+    // 페이지 로드 완료 후 번들 크기 분석
+    window.addEventListener('load', () => {
+      performanceMonitor.analyzeBundleSize();
+    });
+    
+    return () => {
+      performanceMonitor.cleanup();
+    };
   }, []);
 
   return (
@@ -125,6 +140,7 @@ const App: React.FC = () => {
                         <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
                         <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                         <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
+                        <Route path="performance" element={<Suspense fallback={<LoadingSpinner />}><PerformanceReport /></Suspense>} />
                     </Route>
                   </Route>
                 </Route>

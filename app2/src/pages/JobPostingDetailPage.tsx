@@ -15,6 +15,7 @@ import { db } from '../firebase';
 import { usePermissions } from '../hooks/usePermissions';
 import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
 import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
+import { formatSalaryDisplay, getBenefitDisplayNames } from '../utils/jobPosting/jobPostingHelpers';
 
 
 type TabType = 'applicants' | 'staff' | 'events' | 'shifts' | 'payroll';
@@ -337,7 +338,10 @@ const JobPostingDetailPageContent: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="font-medium text-gray-700">위치:</span>
-                <span className="ml-2">{jobPosting.location}</span>
+                <span className="ml-2">{jobPosting.location}
+                  {jobPosting.district && ` ${jobPosting.district}`}
+                  {jobPosting.detailedAddress && ` ${jobPosting.detailedAddress}`}
+                </span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">유형:</span>
@@ -352,6 +356,18 @@ const JobPostingDetailPageContent: React.FC = () => {
                   }
                 </span>
               </div>
+              {jobPosting.salaryType && jobPosting.salaryAmount && (
+                <div>
+                  <span className="font-medium text-gray-700">급여:</span>
+                  <span className="ml-2">{formatSalaryDisplay(jobPosting.salaryType, jobPosting.salaryAmount)}</span>
+                </div>
+              )}
+              {jobPosting.benefits && Object.keys(jobPosting.benefits).length > 0 && (
+                <div className="md:col-span-2">
+                  <span className="font-medium text-gray-700">복리후생:</span>
+                  <span className="ml-2">{getBenefitDisplayNames(jobPosting.benefits).join(', ')}</span>
+                </div>
+              )}
             </div>
             
             {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}

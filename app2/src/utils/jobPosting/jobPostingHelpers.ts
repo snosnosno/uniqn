@@ -1,4 +1,4 @@
-import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting } from '../../types/jobPosting';
+import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting, Benefits } from '../../types/jobPosting';
 import { logger } from '../logger';
 import { convertToTimestamp, getTodayString } from './dateUtils';
 
@@ -15,21 +15,29 @@ export const createInitialTimeSlot = (): TimeSlot => ({
 /**
  * 초기 폼 데이터 생성
  */
-export const createInitialFormData = () => ({
-  title: '',
-  type: 'application' as const,
-  timeSlots: [createInitialTimeSlot()],
-  dateSpecificRequirements: [] as DateSpecificRequirement[],
-  usesDifferentDailyRequirements: false,
-  description: '',
-  status: 'open' as const,
-  location: '서울',
-  detailedAddress: '',
-  preQuestions: [] as any[],
-  usesPreQuestions: false,
-  startDate: getTodayString(),
-  endDate: getTodayString(),
-});
+export const createInitialFormData = () => {
+  const today = getTodayString();
+  
+  return {
+    title: '',
+    type: 'application' as const,
+    timeSlots: [createInitialTimeSlot()],
+    dateSpecificRequirements: [createNewDateSpecificRequirement(today)],
+    usesDifferentDailyRequirements: true,
+    description: '',
+    status: 'open' as const,
+    location: '서울',
+    detailedAddress: '',
+    district: '',
+    preQuestions: [] as any[],
+    usesPreQuestions: false,
+    startDate: today,
+    endDate: today,
+    salaryType: undefined,
+    salaryAmount: '',
+    benefits: {}
+  };
+};
 
 /**
  * 새로운 역할 추가
@@ -67,6 +75,11 @@ export const templateToFormData = (template: JobPostingTemplate) => {
     startDate: getTodayString(),
     endDate: getTodayString(),
     status: 'open' as const, // 템플릿에서 불러온 공고는 항상 open 상태로 설정
+    // 새로운 필드들도 템플릿에서 가져오기
+    district: template.templateData.district || '',
+    salaryType: template.templateData.salaryType,
+    salaryAmount: template.templateData.salaryAmount || '',
+    benefits: template.templateData.benefits || {}
   };
 };
 
@@ -116,7 +129,12 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
     dateSpecificRequirements: formData.dateSpecificRequirements?.map((req: DateSpecificRequirement) => ({
       ...req,
       date: convertToTimestamp(req.date)
-    })) || []
+    })) || [],
+    // 새로운 필드들 추가 (undefined 값은 Firebase에 저장되지 않음)
+    ...(formData.district && { district: formData.district }),
+    ...(formData.salaryType && { salaryType: formData.salaryType }),
+    ...(formData.salaryAmount && { salaryAmount: formData.salaryAmount }),
+    ...(formData.benefits && Object.keys(formData.benefits).length > 0 && { benefits: formData.benefits })
   };
 
   logger.debug('🚀 Firebase 저장용 최종 데이터:', { component: 'jobPostingHelpers', data: result });
@@ -146,6 +164,7 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     description: data.description || '',
     location: data.location || '',
     detailedAddress: data.detailedAddress,
+    district: data.district,
     startDate: convertDate(data.startDate),
     endDate: convertDate(data.endDate),
     status: data.status || 'open',
@@ -156,7 +175,10 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
       date: convertDate(req.date)
     })),
     preQuestions: data.preQuestions,
-    requiredRoles: data.requiredRoles
+    requiredRoles: data.requiredRoles,
+    salaryType: data.salaryType,
+    salaryAmount: data.salaryAmount,
+    benefits: data.benefits
   } as JobPostingFormData;
 };
 
@@ -256,4 +278,74 @@ export const calculateTotalPositionsFromDateRequirements = (requirements: DateSp
   return requirements.reduce((total, requirement) => {
     return total + calculateTotalPositions(requirement.timeSlots);
   }, 0);
+};
+
+/**
+ * 급여 타입을 한국어로 변환
+ */
+export const getSalaryTypeDisplayName = (type: string): string => {
+  const typeMap: Record<string, string> = {
+    hourly: '시급',
+    daily: '일급',
+    monthly: '월급',
+    other: '기타'
+  };
+  
+  return typeMap[type] || type;
+};
+
+/**
+ * 급여 정보를 포맷팅하여 표시
+ */
+export const formatSalaryDisplay = (salaryType?: string, salaryAmount?: string): string => {
+  if (!salaryType || !salaryAmount) return '';
+  
+  const typeName = getSalaryTypeDisplayName(salaryType);
+  
+  if (salaryType === 'other') {
+    return `${typeName}: ${salaryAmount}`;
+  }
+  
+  // 숫자에 천 단위 콤마 추가
+  const formattedAmount = salaryAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${typeName} ${formattedAmount}원`;
+};
+
+/**
+ * 복리후생 정보를 한국어로 변환하여 배열로 반환
+ */
+export const getBenefitDisplayNames = (benefits?: Benefits | Record<string, string>): string[] => {
+  if (!benefits) return [];
+  
+  const benefitMap: Record<string, string> = {
+    guaranteedHours: '보장',
+    clothing: '복장',
+    meal: '식사',
+    transportation: '교통비',
+    mealAllowance: '식비',
+    accommodation: '숙소'
+  };
+  
+  // 정해진 순서대로 정렬
+  const benefitOrder = ['guaranteedHours', 'clothing', 'meal', 'transportation', 'mealAllowance', 'accommodation'];
+  
+  const sortedBenefits = benefitOrder
+    .filter(key => key in benefits && benefits[key as keyof typeof benefits])
+    .map(key => `${benefitMap[key]}: ${benefits[key as keyof typeof benefits]}`);
+  
+  return sortedBenefits;
+};
+
+/**
+ * 복리후생 정보를 2개씩 그룹화하여 반환
+ */
+export const getBenefitDisplayGroups = (benefits?: Benefits | Record<string, string>): string[][] => {
+  const benefitNames = getBenefitDisplayNames(benefits);
+  const groups: string[][] = [];
+  
+  for (let i = 0; i < benefitNames.length; i += 2) {
+    groups.push(benefitNames.slice(i, i + 2));
+  }
+  
+  return groups;
 };

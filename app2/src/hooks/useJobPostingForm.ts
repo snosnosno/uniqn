@@ -252,6 +252,41 @@ export const useJobPostingForm = (initialData?: any) => {
     setFormData((prev: any) => ({ ...prev, endDate: dateString }));
   }, []);
 
+  // 지역 관련 핸들러
+  const handleDistrictChange = useCallback((district: string) => {
+    setFormData((prev: any) => ({ ...prev, district }));
+  }, []);
+
+  // 급여 관련 핸들러들
+  const handleSalaryTypeChange = useCallback((salaryType: 'hourly' | 'daily' | 'monthly' | 'other') => {
+    setFormData((prev: any) => ({ ...prev, salaryType }));
+  }, []);
+
+  const handleSalaryAmountChange = useCallback((salaryAmount: string) => {
+    setFormData((prev: any) => ({ ...prev, salaryAmount }));
+  }, []);
+
+  // 복리후생 관련 핸들러들
+  const handleBenefitToggle = useCallback((benefitType: keyof NonNullable<typeof formData.benefits>, checked: boolean) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      benefits: {
+        ...prev.benefits,
+        [benefitType]: checked ? '' : undefined
+      }
+    }));
+  }, []);
+
+  const handleBenefitChange = useCallback((benefitType: keyof NonNullable<typeof formData.benefits>, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      benefits: {
+        ...prev.benefits,
+        [benefitType]: value
+      }
+    }));
+  }, []);
+
   // 폼 초기화
   const resetForm = useCallback(() => {
     setFormData(createInitialFormData());
@@ -304,5 +339,16 @@ export const useJobPostingForm = (initialData?: any) => {
     // 날짜 핸들러
     handleStartDateChange,
     handleEndDateChange,
+    
+    // 지역 핸들러
+    handleDistrictChange,
+    
+    // 급여 핸들러
+    handleSalaryTypeChange,
+    handleSalaryAmountChange,
+    
+    // 복리후생 핸들러
+    handleBenefitToggle,
+    handleBenefitChange,
   };
 };

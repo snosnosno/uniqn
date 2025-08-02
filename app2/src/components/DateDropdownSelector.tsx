@@ -150,12 +150,6 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
           })}
         </select>
       </div>
-      
-      {/* Display selected date */}
-      {value.month && value.day ? <p className="text-xs text-gray-500">
-          {includeYear && value.year ? `${value.year}년 ` : ''}
-          {parseInt(value.month)}월 {parseInt(value.day)}일
-        </p> : null}
     </div>
   );
 };

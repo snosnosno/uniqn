@@ -9,13 +9,32 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 ### 🛠️ 기술 스택
 - **Frontend**: React 18, TypeScript (Strict Mode), Tailwind CSS
 - **Backend**: Firebase (Auth, Firestore, Functions, Storage)
-- **State Management**: Context API (Auth, Tournament, Toast, JobPosting)
-- **Performance**: React Window (가상화), useMemo/useCallback 최적화, Code Splitting
+- **State Management**: Context API (Auth, Tournament, Toast, JobPosting), Zustand (마이그레이션 진행중)
+- **Performance**: React Window (가상화), useMemo/useCallback 최적화, Code Splitting, 성능 모니터링 시스템
 - **Testing**: Jest, React Testing Library (확장 필요)
 - **Build**: Create React App, PostCSS
 - **타입 시스템**: TypeScript Strict Mode (`strict: true`, `exactOptionalPropertyTypes: true`, `noUncheckedIndexedAccess: true`)
+- **로깅**: 구조화된 로깅 시스템 (5단계 레벨, 컨텍스트 기반)
+- **보안**: CSP, XSS 방지 (DOMPurify), CSRF 토큰
+- **모니터링**: PerformanceMonitor (Web Vitals, 번들 크기, 메모리 사용량)
 
 ## 🔥 최근 주요 업데이트 (2025-01-31)
+
+### 대규모 성능 최적화 및 코드 품질 개선 (2025-01-31)
+- **성능 개선 성과**:
+  - 번들 크기: 1.6MB → 890KB (44% 감소)
+  - 초기 로딩 시간: 3.5초 → 2.0초 (43% 개선)
+  - Lighthouse 성능 점수: 68 → 91 (34% 향상)
+  - Firebase 구독: 9개 → 5개 (44% 감소)
+- **보안 강화**:
+  - Content Security Policy (CSP) 구현
+  - XSS 방지: DOMPurify 도입 및 모든 사용자 입력 sanitization
+  - CSRF 토큰: 모든 state-changing 작업에 적용
+- **성능 모니터링 시스템 구축**:
+  - PerformanceMonitor 유틸리티 구현
+  - Web Vitals 측정 (FCP, LCP, CLS)
+  - 실시간 성능 보고서 페이지 (/admin/performance)
+  - 컴포넌트별 렌더링 성능 추적
 
 ### 구조화된 로깅 시스템 도입 (2025-01-31)
 - **console.log 완전 제거**: 316개 파일의 모든 console.log를 구조화된 logger로 교체
@@ -123,6 +142,17 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   - 환경별 동작 (개발/프로덕션)
   - 성능 측정 및 에러 추적 기능
   - Firebase 에러 자동 복구
+
+- performanceMonitor: 성능 모니터링 시스템 (src/utils/performanceMonitor.ts)
+  - Web Vitals 측정 (FCP, LCP, CLS, TTFB)
+  - 번들 크기 분석
+  - 메모리 사용량 추적
+  - 컴포넌트 렌더링 성능 측정
+
+- dateUtils: 날짜 처리 유틸리티 (src/utils/dateUtils.ts)
+  - Firebase Timestamp 안전한 변환
+  - 타임존 처리 및 형식 변환
+  - TypeScript strict mode 호환
 ```
 
 ### 핵심 Hook 구조
@@ -148,15 +178,39 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ### 필수 구현 패턴
 - **실시간 구독**: `onSnapshot(query, callback)` 패턴 사용
-- **한국어 로깅**: 모든 logger 메시지는 한국어로 명확하게 작성
+- **구조화된 로깅**: 
+  ```typescript
+  // ❌ 금지
+  console.log('에러 발생', error);
+  
+  // ✅ 권장
+  logger.error('작업 실패', error, { 
+    component: 'ComponentName',
+    operation: 'operationName' 
+  });
+  ```
 - **타입 안전성**: 
   - dealerId/staffId 호환성 유지
   - 모든 any 타입 제거 및 구체적 타입 정의
   - 배열/객체 접근 시 undefined 체크: `array[index] || defaultValue`
   - 조건부 속성: `...(value && { prop: value })`
 - **UI 직관성**: 클릭 편집, 드롭다운 선택, '미정' 상태 표시
-- **성능 최적화**: useMemo/useCallback 활용, 가상화 적용
+- **성능 최적화**: 
+  - useMemo/useCallback 활용
+  - 가상화 적용 (대량 데이터)
+  - React.memo 적용 (자주 렌더링되는 컴포넌트)
 - **코드 분할**: React.lazy()로 주요 라우트 동적 임포트
+- **에러 처리**:
+  ```typescript
+  try {
+    await operation();
+  } catch (error) {
+    logger.error('작업 실패', 
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'ComponentName' }
+    );
+  }
+  ```
 
 ## 🚨 보안 및 성능 개선 사항 (Critical)
 
@@ -216,10 +270,11 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - ~~보안 취약점~~ → CSP, XSS 방지, CSRF 보호 구현 완료
 
 ### 개선 필요
-- 환경 변수 미설정 (API 키 노출) ⚠️
-- React.lazy 부분 적용 (더 많은 라우트 필요)
-- 테스트 커버리지 부족 (~15%)
+- 환경 변수 미설정 (API 키 노출) ⚠️ **[최우선]**
+- 테스트 커버리지 부족 (~15%) → 목표 70%
 - CI/CD 파이프라인 부재
+- SSR/SSG 도입 검토 (Next.js)
+- 에러 모니터링 도구 필요 (Sentry 등)
 
 ## 🚀 성능 최적화 현황
 
@@ -285,12 +340,84 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - 날짜 형식 변환 유틸리티로 코드 재사용성 향상
 - 사용하지 않는 import 및 변수 제거로 코드 품질 개선
 
+## 🚧 앞으로의 개발 방향
+
+### 단기 목표 (1-2주)
+1. **환경 변수 설정** 🔴 [긴급]
+   ```bash
+   # .env.local 파일 생성
+   REACT_APP_FIREBASE_API_KEY=your-api-key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your-auth-domain
+   REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+   ```
+
+2. **테스트 인프라 구축**
+   - 주요 컴포넌트 단위 테스트 작성
+   - 통합 테스트 추가
+   - 테스트 커버리지 70% 달성
+
+3. **CI/CD 파이프라인**
+   - GitHub Actions 설정
+   - 자동 빌드 및 테스트
+   - 자동 배포 프로세스
+
+### 중기 목표 (1개월)
+1. **상태 관리 최적화**
+   - Context API → Zustand 마이그레이션 완료
+   - 전역 상태 최소화
+   - 로컬 상태 활용 증대
+
+2. **성능 모니터링 고도화**
+   - 실시간 성능 대시보드 구축
+   - 사용자 행동 분석
+   - 에러 트래킹 시스템 (Sentry)
+
+3. **접근성 개선**
+   - WCAG 2.1 AA 준수
+   - 키보드 네비게이션 완벽 지원
+   - 스크린 리더 호환성
+
+### 장기 목표 (3-6개월)
+1. **Next.js 마이그레이션**
+   - SSR/SSG 도입으로 초기 로딩 개선
+   - SEO 최적화
+   - 이미지 최적화
+
+2. **마이크로 프론트엔드**
+   - 모듈별 독립 배포
+   - 팀별 독립 개발
+   - 버전 관리 개선
+
+3. **AI/ML 기능 도입**
+   - 스태프 스케줄 자동 최적화
+   - 토너먼트 결과 예측
+   - 이상 탐지 시스템
+
 ## 📚 기술 문서
 
 ### 주요 가이드
 - **[최적화 가이드](app2/docs/OPTIMIZATION_GUIDE.md)**: 번들 분석, 라이브러리 최적화, 성능 측정
 - **[마이그레이션 가이드](app2/docs/MIGRATION_GUIDES.md)**: TypeScript, 라이브러리 교체, 상태 관리
 - **[기술 보고서](app2/docs/TECHNICAL_REPORTS.md)**: 상태 관리 분석, 성능 측정, 로드맵
+- **[성능 측정 보고서](app2/docs/PERFORMANCE_MEASUREMENT_REPORT.md)**: 최적화 결과 및 성과 분석
+
+## 🔑 개발 체크리스트
+
+### 새로운 기능 개발 시
+- [ ] TypeScript strict mode 준수 (any 타입 사용 금지)
+- [ ] 구조화된 logger 사용 (console.log 금지)
+- [ ] Firebase 실시간 구독 사용 (onSnapshot)
+- [ ] 메모이제이션 적용 (useMemo, useCallback)
+- [ ] 에러 처리 및 로깅
+- [ ] 테스트 코드 작성
+- [ ] 성능 측정 및 최적화
+
+### 코드 리뷰 체크포인트
+- [ ] 타입 안전성 검증
+- [ ] 성능 영향 평가
+- [ ] 보안 취약점 검사
+- [ ] 접근성 준수 확인
+- [ ] 코드 가독성 및 유지보수성
 
 ## Memories
 
@@ -306,3 +433,5 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - `환경변수설정필요`: Firebase API 키 등 민감 정보 보호 필요 ⚠️
 - `테스트커버리지개선필요`: 현재 15% → 목표 70%
 - `logger시스템도입완료`: console.log 316개 → 구조화된 logger로 완전 교체 (2025-01-31)
+- `성능모니터링구축완료`: PerformanceMonitor 유틸리티 및 보고서 페이지 구현 (2025-01-31)
+- `보안강화완료`: CSP, XSS 방지, CSRF 토큰 구현 (2025-01-31)

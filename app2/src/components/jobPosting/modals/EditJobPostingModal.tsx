@@ -1,6 +1,7 @@
 import React from 'react';
 import { useJobPostingForm } from '../../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../../hooks/useDateUtils';
+import { useTemplateManager } from '../../../hooks/useTemplateManager';
 import { LOCATIONS } from '../../../utils/jobPosting/jobPostingHelpers';
 import Modal from '../../Modal';
 import Button from '../../common/Button';
@@ -10,6 +11,8 @@ import DateDropdownSelector from '../../DateDropdownSelector';
 import TimeSlotManager from '../TimeSlotManager';
 import DateSpecificRequirements from '../DateSpecificRequirements'; 
 import PreQuestionManager from '../PreQuestionManager';
+import TemplateModal from './TemplateModal';
+import LoadTemplateModal from './LoadTemplateModal';
 
 interface EditJobPostingModalProps {
   isOpen: boolean;
@@ -52,8 +55,32 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     removePreQuestionOption,
     handleStartDateChange,
     handleEndDateChange,
-    setFormData
+    setFormData,
+    setFormDataFromTemplate,
+    handleDistrictChange,
+    handleSalaryTypeChange,
+    handleSalaryAmountChange,
+    handleBenefitToggle,
+    handleBenefitChange
   } = useJobPostingForm(currentPost);
+
+  const {
+    templates,
+    templatesLoading,
+    isTemplateModalOpen,
+    isLoadTemplateModalOpen,
+    templateName,
+    templateDescription,
+    setTemplateName,
+    setTemplateDescription,
+    handleSaveTemplate,
+    handleLoadTemplate,
+    handleDeleteTemplate,
+    openTemplateModal,
+    closeTemplateModal,
+    openLoadTemplateModal,
+    closeLoadTemplateModal,
+  } = useTemplateManager();
 
   React.useEffect(() => {
     if (currentPost) {
@@ -75,22 +102,56 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     setFormData((prev: any) => ({ ...prev, dateSpecificRequirements: requirements }));
   };
 
+  const handleSaveTemplateWrapper = async () => {
+    await handleSaveTemplate(formData);
+  };
+
+  const handleLoadTemplateWrapper = async (template: any) => {
+    const templateFormData = await handleLoadTemplate(template);
+    setFormDataFromTemplate(templateFormData);
+    return templateFormData;
+  };
+
   if (!isOpen || !currentPost) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="공고 수정">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title="공고 수정">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={openLoadTemplateModal}
+              disabled={isUpdating}
+            >
+              템플릿 불러오기
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={openTemplateModal}
+              disabled={isUpdating}
+            >
+              템플릿으로 저장
+            </Button>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
         {/* 기본 정보 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              제목 <span className="text-red-500">*</span>
+              대회명(매장명) <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleFormChange}
+              placeholder="대회명(매장명)"
               required
               disabled={isUpdating}
             />
@@ -112,18 +173,34 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              지역 <span className="text-red-500">*</span>
-            </label>
-            <Select
-              name="location"
-              value={formData.location}
-              onChange={(value) => handleFormChange({ target: { name: 'location', value } } as any)}
-              options={LOCATIONS.map(location => ({ value: location, label: location }))}
-              required
-              disabled={isUpdating}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                지역 <span className="text-red-500">*</span>
+              </label>
+              <Select
+                name="location"
+                value={formData.location}
+                onChange={(value) => handleFormChange({ target: { name: 'location', value } } as any)}
+                options={LOCATIONS.map(location => ({ value: location, label: location }))}
+                required
+                disabled={isUpdating}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                시/군/구
+              </label>
+              <Input
+                type="text"
+                name="district"
+                value={formData.district || ''}
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                placeholder="시/군/구를 입력하세요"
+                disabled={isUpdating}
+              />
+            </div>
           </div>
 
           <div>
@@ -135,8 +212,203 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               name="detailedAddress"
               value={formData.detailedAddress}
               onChange={handleFormChange}
+              placeholder="상세 주소를 입력하세요"
               disabled={isUpdating}
             />
+          </div>
+        </div>
+
+        {/* 급여 정보 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              급여 유형 <span className="text-red-500">*</span>
+            </label>
+            <Select
+              name="salaryType"
+              value={formData.salaryType || ''}
+              onChange={(value) => handleSalaryTypeChange(value as 'hourly' | 'daily' | 'monthly' | 'other')}
+              options={[
+                { value: '', label: '선택하세요' },
+                { value: 'hourly', label: '시급' },
+                { value: 'daily', label: '일급' },
+                { value: 'monthly', label: '월급' },
+                { value: 'other', label: '기타' }
+              ]}
+              required
+              disabled={isUpdating}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              급여 금액 <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="text"
+              name="salaryAmount"
+              value={formData.salaryAmount || ''}
+              onChange={(e) => handleSalaryAmountChange(e.target.value)}
+              placeholder="급여 금액을 입력하세요"
+              required
+              disabled={isUpdating}
+            />
+          </div>
+        </div>
+
+        {/* 복리후생 */}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700">복리후생</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 보장시간 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="benefit-guaranteedHours-edit"
+                checked={!!formData.benefits?.guaranteedHours}
+                onChange={(e) => handleBenefitToggle('guaranteedHours', e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isUpdating}
+              />
+              <label htmlFor="benefit-guaranteedHours-edit" className="text-sm text-gray-700 whitespace-nowrap">
+                보장시간
+              </label>
+              {formData.benefits?.guaranteedHours !== undefined && (
+                <Input
+                  type="text"
+                  value={formData.benefits.guaranteedHours}
+                  onChange={(e) => handleBenefitChange('guaranteedHours', e.target.value)}
+                  placeholder="보장시간 정보 입력"
+                  className="flex-1"
+                  disabled={isUpdating}
+                />
+              )}
+            </div>
+
+            {/* 복장 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="benefit-clothing-edit"
+                checked={!!formData.benefits?.clothing}
+                onChange={(e) => handleBenefitToggle('clothing', e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isUpdating}
+              />
+              <label htmlFor="benefit-clothing-edit" className="text-sm text-gray-700 whitespace-nowrap">
+                복장
+              </label>
+              {formData.benefits?.clothing !== undefined && (
+                <Input
+                  type="text"
+                  value={formData.benefits.clothing}
+                  onChange={(e) => handleBenefitChange('clothing', e.target.value)}
+                  placeholder="복장 정보 입력"
+                  className="flex-1"
+                  disabled={isUpdating}
+                />
+              )}
+            </div>
+
+            {/* 식사 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="benefit-meal-edit"
+                checked={!!formData.benefits?.meal}
+                onChange={(e) => handleBenefitToggle('meal', e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isUpdating}
+              />
+              <label htmlFor="benefit-meal-edit" className="text-sm text-gray-700 whitespace-nowrap">
+                식사
+              </label>
+              {formData.benefits?.meal !== undefined && (
+                <Input
+                  type="text"
+                  value={formData.benefits.meal}
+                  onChange={(e) => handleBenefitChange('meal', e.target.value)}
+                  placeholder="식사 정보 입력"
+                  className="flex-1"
+                  disabled={isUpdating}
+                />
+              )}
+            </div>
+
+            {/* 교통비 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="benefit-transportation-edit"
+                checked={!!formData.benefits?.transportation}
+                onChange={(e) => handleBenefitToggle('transportation', e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isUpdating}
+              />
+              <label htmlFor="benefit-transportation-edit" className="text-sm text-gray-700 whitespace-nowrap">
+                교통비
+              </label>
+              {formData.benefits?.transportation !== undefined && (
+                <Input
+                  type="text"
+                  value={formData.benefits.transportation}
+                  onChange={(e) => handleBenefitChange('transportation', e.target.value)}
+                  placeholder="교통비 정보 입력"
+                  className="flex-1"
+                  disabled={isUpdating}
+                />
+              )}
+            </div>
+
+            {/* 식비 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="benefit-mealAllowance-edit"
+                checked={!!formData.benefits?.mealAllowance}
+                onChange={(e) => handleBenefitToggle('mealAllowance', e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isUpdating}
+              />
+              <label htmlFor="benefit-mealAllowance-edit" className="text-sm text-gray-700 whitespace-nowrap">
+                식비
+              </label>
+              {formData.benefits?.mealAllowance !== undefined && (
+                <Input
+                  type="text"
+                  value={formData.benefits.mealAllowance}
+                  onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
+                  placeholder="식비 정보 입력"
+                  className="flex-1"
+                  disabled={isUpdating}
+                />
+              )}
+            </div>
+
+            {/* 숙소 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="benefit-accommodation-edit"
+                checked={!!formData.benefits?.accommodation}
+                onChange={(e) => handleBenefitToggle('accommodation', e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isUpdating}
+              />
+              <label htmlFor="benefit-accommodation-edit" className="text-sm text-gray-700 whitespace-nowrap">
+                숙소
+              </label>
+              {formData.benefits?.accommodation !== undefined && (
+                <Input
+                  type="text"
+                  value={formData.benefits.accommodation}
+                  onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
+                  placeholder="숙소 정보 입력"
+                  className="flex-1"
+                  disabled={isUpdating}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -144,7 +416,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              시작 날짜 <span className="text-red-500">*</span>
+              시작일 <span className="text-red-500">*</span>
             </label>
             <DateDropdownSelector
               value={toDropdownValue(formData.startDate)}
@@ -155,7 +427,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              종료 날짜 <span className="text-red-500">*</span>
+              종료일 <span className="text-red-500">*</span>
             </label>
             <DateDropdownSelector
               value={toDropdownValue(formData.endDate)}
@@ -163,21 +435,6 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               disabled={isUpdating}
             />
           </div>
-        </div>
-
-        {/* 일자별 다른 요구사항 토글 */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="usesDifferentDailyRequirements-edit"
-            checked={formData.usesDifferentDailyRequirements}
-            onChange={(e) => handleDifferentDailyRequirementsToggle(e.target.checked)}
-            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            disabled={isUpdating}
-          />
-          <label htmlFor="usesDifferentDailyRequirements-edit" className="text-sm text-gray-700">
-            일자별로 다른 인원 요구사항 사용
-          </label>
         </div>
 
         {/* 시간대 및 역할 설정 */}
@@ -288,6 +545,28 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
         </div>
       </form>
     </Modal>
+
+    {/* 템플릿 저장 모달 */}
+    <TemplateModal
+      isOpen={isTemplateModalOpen}
+      onClose={closeTemplateModal}
+      templateName={templateName}
+      templateDescription={templateDescription}
+      onTemplateNameChange={setTemplateName}
+      onTemplateDescriptionChange={setTemplateDescription}
+      onSave={handleSaveTemplateWrapper}
+    />
+
+    {/* 템플릿 불러오기 모달 */}
+    <LoadTemplateModal
+      isOpen={isLoadTemplateModalOpen}
+      onClose={closeLoadTemplateModal}
+      templates={templates}
+      templatesLoading={templatesLoading}
+      onLoadTemplate={handleLoadTemplateWrapper}
+      onDeleteTemplate={handleDeleteTemplate}
+    />
+  </>
   );
 };
 

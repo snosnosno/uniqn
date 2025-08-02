@@ -14,6 +14,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useInfiniteJobPostings, JobPosting } from '../hooks/useJobPostings';
 import { TimeSlot, RoleRequirement, JobPostingUtils, DateSpecificRequirement, PreQuestionAnswer, ConfirmedStaff } from '../types/jobPosting';
 import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
+import { formatSalaryDisplay, getBenefitDisplayNames, getBenefitDisplayGroups, getRoleDisplayName } from '../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 
 const JobBoardPage = () => {
@@ -48,6 +49,8 @@ const JobBoardPage = () => {
     month: '', // 모든 월 표시하도록 변경
     day: '' // Default to all days
   });
+  
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   
   
@@ -468,9 +471,29 @@ const JobBoardPage = () => {
         {/* 구인 목록 탭 */}
         {activeTab === 'jobs' && (
           <>
-            {/* Filter Component */}
-            <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 필터와 새로고침 버튼 */}
+            <div className="flex justify-between items-center mb-4">
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center"
+              >
+                <svg className={`w-5 h-5 mr-2 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isFilterOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                </svg>
+                필터
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                🔄 새로고침
+              </button>
+            </div>
+
+            {/* Filter Component - 접을 수 있도록 수정 */}
+            {isFilterOpen && (
+              <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Location Filter */}
             <div>
               <label htmlFor="location-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -593,22 +616,17 @@ const JobBoardPage = () => {
             </div>
           </div>
         
-          {/* Reset and Refresh Buttons */}
-          <div className="mt-4 flex justify-end space-x-3">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              🔄 새로고침
-            </button>
-            <button
-              onClick={resetFilters}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {t('jobBoard.filters.reset')}
-            </button>
-          </div>
-        </div>
+                {/* Reset Button Only - 새로고침 버튼은 밖으로 이동함 */}
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={resetFilters}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    {t('jobBoard.filters.reset')}
+                  </button>
+                </div>
+              </div>
+            )}
 
         {/* Job Postings List */}
         <div className="space-y-4">
@@ -619,20 +637,87 @@ const JobBoardPage = () => {
 
             return (
               <div key={post.id} className="bg-white p-3 sm:p-6 rounded-lg shadow-md">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-2 sm:space-y-0">
-                  <div className="flex-grow">
+                <div className="relative">
+                  {/* 버튼들을 오른쪽 상단으로 이동 */}
+                  <div className="absolute top-0 right-0 flex flex-col space-y-2">
+                    <button
+                      onClick={() => showInfo('상세 정보 기능은 준비 중입니다.')}
+                      className="px-4 py-2 text-sm font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 rounded"
+                    >
+                      자세히보기
+                    </button>
+                    {applicationStatus ? (
+                      applicationStatus === 'confirmed' ? (
+                        <button
+                          disabled
+                          className="px-4 py-2 text-sm font-medium rounded text-white bg-yellow-500 cursor-not-allowed"
+                        >
+                          확정
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-4 py-2 text-sm font-medium rounded text-white bg-gray-500 cursor-not-allowed"
+                        >
+                          신청완료
+                        </button>
+                      )
+                    ) : (
+                      <>
+                        {hasPreQuestions(post) && !preQuestionCompleted.get(post.id) && (
+                          <button
+                            onClick={() => handleOpenPreQuestionModal(post)}
+                            className="px-4 py-2 text-sm font-medium rounded text-white bg-orange-600 hover:bg-orange-700"
+                          >
+                            사전질문
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (hasPreQuestions(post) && !preQuestionCompleted.get(post.id)) {
+                              handleOpenPreQuestionModal(post);
+                            } else {
+                              handleOpenApplyModal(post);
+                            }
+                          }}
+                          disabled={isProcessing === post.id}
+                          className="px-4 py-2 text-sm font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                        >
+                          {isProcessing === post.id ? '처리중...' : '지원하기'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="pr-20">
                     <div className="flex items-center mb-2">
                       <h2 className="text-xl font-bold mr-4">{post.title}</h2>
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800`}>
                         {post.status}
                       </span>
                     </div>
+                    {/* 날짜를 대회명 바로 아래로 이동 */}
                     <p className="text-sm text-gray-500 mb-1">
-                      {t('jobPostingAdmin.manage.location')}: {post.location}
+                      📅 {formattedStartDate} ~ {formattedEndDate}
                     </p>
                     <p className="text-sm text-gray-500 mb-1">
-                                            {t('jobPostingAdmin.manage.date')}: {formattedStartDate} ~ {formattedEndDate}
+                      📍 {post.location}
+                      {post.district && ` ${post.district}`}
                     </p>
+                    {post.salaryType && post.salaryAmount && (
+                      <p className="text-sm text-gray-500 mb-1">
+                        💰 {formatSalaryDisplay(post.salaryType, post.salaryAmount)}
+                      </p>
+                    )}
+                    {post.benefits && Object.keys(post.benefits).length > 0 && (
+                      <div className="text-sm text-gray-500 mb-1">
+                        {getBenefitDisplayGroups(post.benefits).map((group, index) => (
+                          <p key={index} className={index > 0 ? "ml-5" : ""}>
+                            {index === 0 ? '🎁 ' : '   '}{group.join(', ')}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
                     {JobPostingUtils.hasDateSpecificRequirements(post) ? (
                       /* 일자별 다른 인원 요구사항이 있는 경우 */
@@ -642,11 +727,11 @@ const JobBoardPage = () => {
                             📅 {formatDateUtil(dateReq.date)} 일정
                           </div>
                           {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
-                            <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 text-sm">
-                              <span className="font-semibold text-gray-700">
+                            <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-6 flex">
+                              <div className="font-semibold text-gray-700 text-sm min-w-[60px]">
                                 {ts.isTimeToBeAnnounced ? (
                                   <span className="text-orange-600">
-                                    ⏰ 미정
+                                    미정
                                     {ts.tentativeDescription && (
                                       <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
                                     )}
@@ -654,29 +739,27 @@ const JobBoardPage = () => {
                                 ) : (
                                   ts.time
                                 )}
-                              </span>
-                              <span className="text-gray-600"> - </span>
-                              {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
-                                // Firebase Timestamp를 문자열로 변환
-                                const dateString = timestampToLocalDateString(dateReq.date);
-                                
-                                const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                  post,
-                                  dateString,
-                                  ts.time,
-                                  r.name
-                                );
-                                const isFull = confirmedCount >= r.count;
-                                return (
-                                  <span key={roleIndex}>
-                                    {roleIndex > 0 && <span className="text-gray-400">, </span>}
-                                    <span className={isFull ? 'text-red-600 font-medium' : 'text-gray-700'}>
+                              </div>
+                              <div className="ml-4 space-y-1">
+                                {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                                  // Firebase Timestamp를 문자열로 변환
+                                  const dateString = timestampToLocalDateString(dateReq.date);
+                                  
+                                  const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                    post,
+                                    dateString,
+                                    ts.time,
+                                    r.name
+                                  );
+                                  const isFull = confirmedCount >= r.count;
+                                  return (
+                                    <div key={roleIndex} className={`text-sm ${isFull ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
                                       {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명 
                                       {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
-                                    </span>
-                                  </span>
-                                );
-                              })}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -684,11 +767,11 @@ const JobBoardPage = () => {
                     ) : (
                       /* 기존 방식: 전체 기간 공통 timeSlots */
                       post.timeSlots?.map((ts: TimeSlot, index: number) => (
-                        <div key={index} className="mt-2 pl-4 text-sm">
-                          <span className="font-semibold text-gray-700">
+                        <div key={index} className="mt-2 pl-4 flex">
+                          <div className="font-semibold text-gray-700 text-sm min-w-[60px]">
                             {ts.isTimeToBeAnnounced ? (
                               <span className="text-orange-600">
-                                ⏰ 미정
+                                미정
                                 {ts.tentativeDescription && (
                                   <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
                                 )}
@@ -696,97 +779,30 @@ const JobBoardPage = () => {
                             ) : (
                               ts.time
                             )}
-                          </span>
-                          <span className="text-gray-600"> - </span>
-                          {ts.roles.map((r: RoleRequirement, i: number) => {
-                            const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
-                              staff.timeSlot === ts.time && staff.role === r.name
-                            ).length || 0;
-                            const isFull = confirmedCount >= r.count;
-                            return (
-                              <span key={i}>
-                                {i > 0 && <span className="text-gray-400">, </span>}
-                                <span className={isFull ? 'text-red-600 font-medium' : 'text-gray-700'}>
+                          </div>
+                          <div className="ml-4 space-y-1">
+                            {ts.roles.map((r: RoleRequirement, i: number) => {
+                              const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
+                                staff.timeSlot === ts.time && staff.role === r.name
+                              ).length || 0;
+                              const isFull = confirmedCount >= r.count;
+                              return (
+                                <div key={i} className={`text-sm ${isFull ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
                                   {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
                                   {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
-                                </span>
-                              </span>
-                            );
-                          })}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       ))
                     )}
                     <p className="text-sm text-gray-500 mt-2">
-                      {t('jobPostingAdmin.create.description')}: {post.description}
+                      설명: {post.description}
                     </p>
-                  </div>
-                  <div className='flex flex-col items-end space-y-2'>
-                    <button
-                      onClick={() => showInfo('Detailed view not implemented yet.')}
-                      className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                    >
-                      {t('jobBoard.viewDetails')}
-                    </button>
-                    {applicationStatus ? (
-                      applicationStatus === 'confirmed' ? (
-                        <button
-                          disabled
-                          className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-500 cursor-not-allowed"
-                        >
-                          {t('jobBoard.confirmed', 'Confirmed')}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleCancelApplication(post.id)}
-                          disabled={isProcessing === post.id}
-                          className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
-                        >
-                          {isProcessing === post.id ? t('jobBoard.cancelling', 'Cancelling...') : t('jobBoard.cancelApplication', 'Cancel Application')}
-                        </button>
-                      )
-                    ) : (
-                      <div className="w-full space-y-2">
-                        {hasPreQuestions(post) ? (
-                          <>
-                            {/* 사전질문이 있는 경우 */}
-                            <button
-                              onClick={() => handleOpenPreQuestionModal(post)}
-                              disabled={isProcessing === post.id}
-                              className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
-                            >
-                              📝 사전질문 확인
-                            </button>
-                            <button
-                              onClick={() => handleOpenApplyModal(post)}
-                              disabled={isProcessing === post.id || !preQuestionCompleted.get(post.id)}
-                              className={`w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
-                                preQuestionCompleted.get(post.id) 
-                                  ? 'bg-green-600 hover:bg-green-700' 
-                                  : 'bg-gray-400 cursor-not-allowed'
-                              } disabled:bg-gray-400`}
-                            >
-                              {isProcessing === post.id 
-                                ? t('jobBoard.applying') 
-                                : preQuestionCompleted.get(post.id) 
-                                  ? '✅ 지원하기' 
-                                  : '🔒 지원하기 (사전질문 필요)'}
-                            </button>
-                          </>
-                        ) : (
-                          /* 사전질문이 없는 경우 - 기존 방식 */
-                          <button
-                            onClick={() => handleOpenApplyModal(post)}
-                            disabled={isProcessing === post.id}
-                            className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-                          >
-                            {isProcessing === post.id ? t('jobBoard.applying') : t('jobBoard.applyNow')}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
+            </div>
             );
           })}
         </div>
@@ -1033,8 +1049,27 @@ const JobBoardPage = () => {
                     </div>
 
                     {application.jobPosting ? <div className="mb-4 text-sm text-gray-600">
-                        <p>📍 {application.jobPosting.location}</p>
+                        <p>📍 {application.jobPosting.location}
+                          {application.jobPosting.district && ` ${application.jobPosting.district}`}
+                          {application.jobPosting.detailedAddress && ` - ${application.jobPosting.detailedAddress}`}
+                        </p>
                         <p>📅 {formatDateUtil(application.jobPosting.startDate)} ~ {formatDateUtil(application.jobPosting.endDate)}</p>
+                        
+                        {/* 급여 정보 추가 */}
+                        {application.jobPosting.salaryType && application.jobPosting.salaryAmount && (
+                          <p>💰 {formatSalaryDisplay(application.jobPosting.salaryType, application.jobPosting.salaryAmount)}</p>
+                        )}
+                        
+                        {/* 복리후생 정보 추가 */}
+                        {application.jobPosting.benefits && Object.keys(application.jobPosting.benefits).length > 0 && (
+                          <div>
+                            {getBenefitDisplayGroups(application.jobPosting.benefits).map((group, index) => (
+                              <p key={index} className={index > 0 ? "ml-5" : ""}>
+                                {index === 0 ? '🎁 ' : '   '}{group.join(', ')}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div> : null}
 
                     <div className="border-t pt-4">

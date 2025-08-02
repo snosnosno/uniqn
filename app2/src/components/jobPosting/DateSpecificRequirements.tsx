@@ -128,30 +128,39 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
       </div>
 
       {requirements.map((requirement, requirementIndex) => (
-        <div key={requirementIndex} className="border border-gray-300 rounded-lg p-4 space-y-4">
-          <div className="flex justify-between items-center">
+        <div key={requirementIndex} className="border border-gray-300 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 flex justify-between items-center border-b border-gray-200">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-gray-700">날짜:</span>
+              <span className="text-sm font-semibold text-gray-700">📅</span>
               <DateDropdownSelector
                 value={toDropdownValue(requirement.date)}
                 onChange={(value) => handleDateChange(requirementIndex, value)}
                 minDate={startDate}
                 maxDate={endDate}
               />
-            </div>
-            {requirements.length > 1 && (
               <Button
                 type="button"
-                variant="danger"
-                size="xs"
-                onClick={() => removeDateRequirement(requirementIndex)}
+                variant="secondary"
+                size="sm"
+                onClick={() => addTimeSlotToDate(requirementIndex)}
               >
-                날짜 삭제
+                시간대 추가
               </Button>
+            </div>
+            {requirements.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeDateRequirement(requirementIndex)}
+                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                title="날짜 삭제"
+              >
+                삭제
+              </button>
             )}
           </div>
 
-          <TimeSlotManager
+          <div className="p-4">
+            <TimeSlotManager
             timeSlots={requirement.timeSlots}
             onTimeSlotChange={(timeSlotIndex, value) => 
               onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, value)
@@ -169,9 +178,9 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
             onRemoveRole={(timeSlotIndex, roleIndex) => 
               removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)
             }
-            onAddTimeSlot={() => addTimeSlotToDate(requirementIndex)}
             onRemoveTimeSlot={(timeSlotIndex) => removeTimeSlotFromDate(requirementIndex, timeSlotIndex)}
           />
+          </div>
         </div>
       ))}
 

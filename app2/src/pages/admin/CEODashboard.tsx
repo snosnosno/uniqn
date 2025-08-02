@@ -20,11 +20,13 @@ import { SimpleBarChart } from '../../components/SimpleChart';
 import { AnimatedNumber } from '../../components/AnimatedNumber';
 import { useCEODashboardOptimized } from '../../hooks/useCEODashboardOptimized';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { withPerformanceMonitoring, usePerformanceMeasure } from '../../utils/performanceMonitor';
 
 const CEODashboard: React.FC = () => {
   const { t } = useTranslation();
   const { data, loading, error } = useCEODashboardOptimized();
   const [lastUpdated, setLastUpdated] = React.useState(new Date());
+  const { startMeasure, endMeasure } = usePerformanceMeasure('CEO Dashboard 렌더링');
 
   // 30초마다 자동 업데이트
   React.useEffect(() => {
@@ -48,6 +50,14 @@ const CEODashboard: React.FC = () => {
 
     return staffData;
   }, [data]);
+
+  // 컴포넌트 렌더링 시작
+  React.useEffect(() => {
+    startMeasure();
+    return () => {
+      endMeasure();
+    };
+  }, [startMeasure, endMeasure]);
 
   if (loading) {
     return (
@@ -355,4 +365,4 @@ const CEODashboard: React.FC = () => {
   );
 };
 
-export default CEODashboard;
+export default withPerformanceMonitoring(CEODashboard, 'CEODashboard');

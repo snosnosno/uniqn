@@ -2,13 +2,18 @@ import { StarIcon } from '@heroicons/react/24/solid';
 import { logger } from '../../utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 import { DashboardCard } from '../../components/DashboardCard';
-import { auth } from '../../firebase'; // Import auth
+import { auth, db } from '../../firebase'; // Import auth and db
 
 interface DashboardStats {
   ongoingEventsCount: number;
   totalDealersCount: number;
+  todayCheckedInCount: number;
+  todayTournamentsCount: number;
+  activeJobPostingsCount: number;
+  weeklyRevenue: number;
   topRatedDealers: {
     id: string;
     name: string;
@@ -31,33 +36,126 @@ const DashboardPage: React.FC = () => {
       try {
         const user = auth.currentUser;
         if (!user) {
-          throw new Error("Authentication required. Please sign in.");
+          throw new Error("인증이 필요합니다. 로그인해주세요.");
         }
 
-        const idToken = await user.getIdToken();
-
-        // The exact URL of your deployed HTTP function
-        const functionUrl = 'https://us-central1-tholdem-ebc18.cloudfunctions.net/getDashboardStats';
+        // Firestore에서 직접 데이터 가져오기
+        const now = Timestamp.now();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStart = Timestamp.fromDate(today);
         
-        const response = await fetch(functionUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${idToken}`,
-            'Content-Type': 'application/json'
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const todayEnd = Timestamp.fromDate(tomorrow);
+        
+        let ongoingEventsCount = 0;
+        let totalDealersCount = 0;
+        let todayCheckedInCount = 0;
+        let todayTournamentsCount = 0;
+        let activeJobPostingsCount = 0;
+        let dealersSnapshot: any = null;
+        
+        // 진행 중인 이벤트 수
+        try {
+          const ongoingEventsQuery = query(
+            collection(db, 'events'),
+            where('startDate', '<=', now),
+            where('endDate', '>=', now)
+          );
+          const ongoingEventsSnapshot = await getDocs(ongoingEventsQuery);
+          ongoingEventsCount = ongoingEventsSnapshot.size;
+        } catch (err) {
+          logger.warn('events 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+        }
+
+        // 전체 딜러 수
+        try {
+          const dealersQuery = query(
+            collection(db, 'staff'),
+            where('role', '==', 'dealer'),
+            where('isActive', '==', true)
+          );
+          dealersSnapshot = await getDocs(dealersQuery);
+          totalDealersCount = dealersSnapshot.size;
+        } catch (err) {
+          logger.warn('staff 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+        }
+
+        // 오늘 체크인한 딜러 수
+        try {
+          const todayAttendanceQuery = query(
+            collection(db, 'attendanceRecords'),
+            where('checkInTime', '>=', todayStart),
+            where('checkInTime', '<', todayEnd)
+          );
+          const todayAttendanceSnapshot = await getDocs(todayAttendanceQuery);
+          todayCheckedInCount = todayAttendanceSnapshot.size;
+        } catch (err) {
+          logger.warn('attendanceRecords 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+        }
+
+        // 오늘 예정된 토너먼트 수
+        try {
+          const todayTournamentsQuery = query(
+            collection(db, 'tournaments'),
+            where('date', '>=', todayStart),
+            where('date', '<', todayEnd)
+          );
+          const todayTournamentsSnapshot = await getDocs(todayTournamentsQuery);
+          todayTournamentsCount = todayTournamentsSnapshot.size;
+        } catch (err) {
+          logger.warn('tournaments 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+        }
+
+        // 활성 공고 수
+        try {
+          const activeJobsQuery = query(
+            collection(db, 'jobPostings'),
+            where('status', '==', 'active')
+          );
+          const activeJobsSnapshot = await getDocs(activeJobsQuery);
+          activeJobPostingsCount = activeJobsSnapshot.size;
+        } catch (err) {
+          logger.warn('jobPostings 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+        }
+
+        // top rated dealers 가져오기
+        const dealersWithRatings = [];
+        if (dealersSnapshot) {
+          for (const doc of dealersSnapshot.docs) {
+            const dealerData = doc.data();
+            if (dealerData.rating && dealerData.ratingCount > 0) {
+              dealersWithRatings.push({
+                id: doc.id,
+                name: dealerData.name,
+                rating: dealerData.rating,
+                ratingCount: dealerData.ratingCount
+              });
+            }
           }
+        }
+        
+        // 평점 기준으로 정렬하고 상위 5명만
+        const topRatedDealers = dealersWithRatings
+          .sort((a, b) => b.rating - a.rating)
+          .slice(0, 5);
+
+        // 이번 주 수익 (예시 - 실제 구조에 맞게 수정 필요)
+        const weekRevenue = 0; // TODO: 실제 수익 계산 로직 구현
+
+        setStats({
+          ongoingEventsCount,
+          totalDealersCount,
+          topRatedDealers,
+          todayTournamentsCount,
+          todayCheckedInCount,
+          activeJobPostingsCount,
+          weeklyRevenue: weekRevenue
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          // Use the error message from the backend if available
-          throw new Error(errorData?.data?.error || `Request failed with status ${response.status}`);
-        }
-
-        const result = await response.json();
-        setStats(result.data);
-
       } catch (err: any) {
-        logger.error('Error fetching dashboard stats:', err instanceof Error ? err : new Error(String(err)), { component: 'DashboardPage' });
+        logger.error('대시보드 통계 조회 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'DashboardPage' });
         setError(err.message);
       } finally {
         setLoading(false);

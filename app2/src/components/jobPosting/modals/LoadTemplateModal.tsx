@@ -1,6 +1,7 @@
 import React from 'react';
 import { JobPostingTemplate } from '../../../types/jobPosting';
 import { useDateUtils } from '../../../hooks/useDateUtils';
+import { formatSalaryDisplay, getBenefitDisplayNames } from '../../../utils/jobPosting/jobPostingHelpers';
 import Modal from '../../Modal';
 import Button from '../../common/Button';
 import LoadingSpinner from '../../LoadingSpinner';
@@ -68,16 +69,27 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                       <div className="mt-2 flex flex-wrap gap-2 text-xs">
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
                           📍 {template.templateData.location}
+                          {template.templateData.district && ` ${template.templateData.district}`}
                         </span>
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
                           📋 {template.templateData.type === 'application' ? '지원' : '고정'}
                         </span>
+                        {template.templateData.salaryType && template.templateData.salaryAmount && (
+                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            💰 {formatSalaryDisplay(template.templateData.salaryType, template.templateData.salaryAmount)}
+                          </span>
+                        )}
                         {template.usageCount && template.usageCount > 0 && (
                           <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
                             📊 {template.usageCount}회 사용
                           </span>
                         )}
                       </div>
+                      {template.templateData.benefits && Object.keys(template.templateData.benefits).length > 0 && (
+                        <div className="mt-2 text-xs text-gray-600">
+                          <span className="text-green-700">✅ {getBenefitDisplayNames(template.templateData.benefits).join(', ')}</span>
+                        </div>
+                      )}
                       <p className="text-xs text-gray-400 mt-2">
                         생성: {formatDateDisplay(template.createdAt)}
                       </p>
@@ -108,7 +120,13 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           </div>
         )}
         
-        <div className="flex justify-end">
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-700">
+            <span className="font-medium">※ 안내:</span> 템플릿 불러오기 후 시작일과 종료일을 설정해주세요.
+          </p>
+        </div>
+        
+        <div className="flex justify-end mt-4">
           <Button
             type="button"
             variant="secondary"

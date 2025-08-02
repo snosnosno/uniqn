@@ -77,7 +77,7 @@ const JobPostingAdminPage = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">구인공고 관리</h1>
-              <p className="mt-2 text-gray-600">Hold'em 토너먼트 구인공고를 등록하고 관리하세요.</p>
+              <p className="mt-2 text-gray-600">토너먼트 구인공고를 등록하고 관리하세요.</p>
             </div>
             
             {canCreateJobPostings && (

@@ -235,6 +235,19 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (isOwner(resource.data.createdBy) || isPrivileged());
     }
     
+    // --- Tournaments Collection ---
+    match /tournaments/{tournamentId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isPrivileged();
+    }
+    
+    // --- Attendance Records Collection ---
+    match /attendanceRecords/{recordId} {
+      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.dealerId);
+      allow create, update: if isSignedIn() && hasValidRole();
+      allow delete: if isPrivileged();
+    }
+    
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;

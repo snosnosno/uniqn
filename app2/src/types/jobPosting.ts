@@ -48,6 +48,16 @@ export interface MultipleSelection {
   dates: string[];
 }
 
+// 복리후생 정보 타입
+export interface Benefits {
+  guaranteedHours?: string; // 보장시간
+  clothing?: string;        // 복장
+  meal?: string;           // 식사
+  transportation?: string;  // 교통비
+  mealAllowance?: string;   // 식비
+  accommodation?: string;   // 숙소
+}
+
 // 공고 작성/수정 폼 데이터 타입
 export interface JobPostingFormData {
   title: string;
@@ -55,6 +65,7 @@ export interface JobPostingFormData {
   description: string;
   location: string;
   detailedAddress?: string;
+  district?: string;       // 시/군/구
   startDate: string;
   endDate: string;
   status: 'open' | 'closed';
@@ -63,6 +74,9 @@ export interface JobPostingFormData {
   dateSpecificRequirements?: DateSpecificRequirement[];
   preQuestions?: PreQuestion[];
   requiredRoles?: string[];
+  salaryType?: 'hourly' | 'daily' | 'monthly' | 'other'; // 급여 유형
+  salaryAmount?: string;    // 급여 금액
+  benefits?: Benefits;       // 복리후생 정보
 }
 
 export interface SelectionItem {
@@ -101,6 +115,7 @@ export interface JobPosting {
   description: string;
   location: string;
   detailedAddress?: string; // 상세 주소 (선택사항)
+  district?: string;       // 시/군/구 (선택사항)
   type: string;
   status: 'open' | 'closed';
   startDate: import('firebase/firestore').Timestamp; // Firebase Timestamp
@@ -118,6 +133,9 @@ export interface JobPosting {
   requirements?: any[];
   manager?: string;
   requiredRoles?: string[]; // 필터링용
+  salaryType?: 'hourly' | 'daily' | 'monthly' | 'other'; // 급여 유형 (선택사항)
+  salaryAmount?: string;    // 급여 금액 (선택사항)
+  benefits?: Benefits;       // 복리후생 정보 (선택사항)
   [key: string]: any;
 }
 
@@ -680,11 +698,15 @@ export interface JobPostingTemplate {
     description: string;
     location: string;
     detailedAddress?: string;
+    district?: string;
     timeSlots?: TimeSlot[];
     dateSpecificRequirements?: DateSpecificRequirement[];
     usesDifferentDailyRequirements: boolean;
     preQuestions?: PreQuestion[];
     usesPreQuestions: boolean;
+    salaryType?: 'hourly' | 'daily' | 'monthly' | 'other';
+    salaryAmount?: string;
+    benefits?: Benefits;
   };
   
   // 메타 정보
