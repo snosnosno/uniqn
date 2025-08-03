@@ -54,7 +54,8 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-gray-300 text-gray-500 py-3 sm:py-2 px-4 rounded cursor-not-allowed text-sm font-medium min-h-[44px]"
+          aria-label="로그인이 필요합니다"
         >
           로그인 필요
         </button>
@@ -65,7 +66,8 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-gray-500 text-white py-2 px-4 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-gray-500 text-white py-3 sm:py-2 px-4 rounded cursor-not-allowed text-sm font-medium min-h-[44px]"
+          aria-label="이미 지원완료한 공고입니다"
         >
           지원완료
         </button>
@@ -76,7 +78,8 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-green-600 text-white py-3 sm:py-2 px-4 rounded cursor-not-allowed text-sm font-medium min-h-[44px]"
+          aria-label="지원이 확정된 공고입니다"
         >
           확정됨
         </button>
@@ -87,7 +90,8 @@ const JobCard: React.FC<JobCardProps> = ({
       <button
         onClick={() => onApply(post)}
         disabled={isProcessing}
-        className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
+        className="w-full bg-green-600 text-white py-3 sm:py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium min-h-[44px]"
+        aria-label={`${post.title}에 지원하기`}
       >
         {isProcessing 
           ? t('jobBoard.applying') 
@@ -234,17 +238,20 @@ const JobCard: React.FC<JobCardProps> = ({
           </div>
           
           <div className="w-full lg:w-auto lg:ml-4">
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-row sm:flex-col gap-2">
               {/* 자세히보기 버튼 */}
               <button
                 onClick={() => onViewDetail(post)}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm font-medium"
+                className="flex-1 sm:w-full bg-blue-600 text-white py-3 sm:py-2 px-4 rounded hover:bg-blue-700 text-sm font-medium min-h-[44px]"
+                aria-label={`${post.title} 상세정보 보기`}
               >
                 자세히보기
               </button>
               
               {/* 지원하기 버튼 */}
-              {renderActionButton()}
+              <div className="flex-1 sm:w-full">
+                {renderActionButton()}
+              </div>
             </div>
           </div>
         </div>
@@ -253,4 +260,4 @@ const JobCard: React.FC<JobCardProps> = ({
   );
 };
 
-export default JobCard;
+export default React.memo(JobCard);

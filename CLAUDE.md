@@ -11,14 +11,26 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 - **Backend**: Firebase (Auth, Firestore, Functions, Storage)
 - **State Management**: Context API (Auth, Tournament, Toast, JobPosting), Zustand (일부 도입)
 - **Performance**: React Window (가상화), useMemo/useCallback 최적화, Code Splitting, 성능 모니터링 시스템
-- **Testing**: Jest, React Testing Library (11개 테스트 파일)
+- **Testing**: Jest, React Testing Library (10개 테스트 파일)
 - **Build**: Create React App, PostCSS
 - **타입 시스템**: TypeScript Strict Mode (`strict: true`, `exactOptionalPropertyTypes: true`, `noUncheckedIndexedAccess: true`)
 - **로깅**: 구조화된 로깅 시스템 (5단계 레벨, 컨텍스트 기반)
 - **보안**: CSP, XSS 방지 (DOMPurify), CSRF 토큰
 - **모니터링**: PerformanceMonitor (Web Vitals, 번들 크기, 메모리 사용량)
+- **추가 라이브러리**: 
+  - @tanstack/react-table (^8.21.3) - 고성능 테이블 컴포넌트
+  - @tanstack/react-query (^5.17.0) - 서버 상태 관리
+  - date-fns (^4.1.0) - 날짜 처리 유틸리티
+  - @heroicons/react (^2.2.0) - 아이콘 라이브러리
+  - DnD: @dnd-kit + react-dnd (중복 사용 중)
 
-## 🔥 최근 주요 업데이트 (2025-08-02)
+## 🔥 최근 주요 업데이트 (2025-08-03)
+
+### 대규모 코드 모듈화 및 UI 개선 (2025-08-03)
+- **지원자 목록 모바일 UI 개선**: 반응형 디자인 최적화 및 이벤트 탭 제거
+- **코드 모듈화**: JobBoardPage를 JobBoard/ 디렉토리로 완전 모듈화
+- **구인공고 게시판 UI/UX 개선**: 사용자 경험 대폭 향상
+- **Firebase 오류 해결**: INTERNAL ASSERTION FAILED 오류 수정 및 안정성 향상
 
 ### 환경 변수 설정 완료 ✅ (2025-08-02)
 - **Firebase API 키 보호**: .env 파일로 모든 Firebase 설정 이동 완료
@@ -27,7 +39,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ### 프로젝트 구조 최신화 (2025-08-02)
 - **Zustand 부분 도입**: tournamentStore.ts로 상태 관리 개선 시작
-- **테스트 파일 현황**: 11개 테스트 파일 존재 (커버리지 확대 필요)
+- **테스트 파일 현황**: 10개 테스트 파일 존재 (커버리지 확대 필요)
 - **성능 보고서 페이지**: /admin/performance가 아닌 별도 PerformanceReport.tsx 구현
 
 ### 대규모 성능 최적화 및 코드 품질 개선 (2025-01-31)
@@ -71,12 +83,27 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ## 🏗️ 프로젝트 구조 가이드
 
+### 주요 디렉토리 구조
+```
+- app2/src/              # 메인 애플리케이션 소스
+  - components/          # 재사용 가능한 컴포넌트
+    - applicants/        # 지원자 관련 모듈화된 컴포넌트
+    - common/            # 공통 UI 컴포넌트
+    - jobPosting/        # 구인공고 관련 컴포넌트
+  - pages/              
+    - JobBoard/          # 모듈화된 구인공고 페이지
+  - stores/             # Zustand 스토어
+- SHRIMP/               # 태스크 관리 시스템
+- claude_set/           # SuperClaude 설정
+- scripts/              # 유틸리티 스크립트
+```
+
 ### Firebase Collections 구조
 ```
 - staff: 스태프 기본 정보 (이름, 연락처, 역할 등)
 - workLogs: 날짜별 개별 근무 기록 (scheduledStartTime/EndTime, actualStartTime/EndTime)
 - attendanceRecords: 출석 상태 및 실시간 추적
-- jobPostings: Initialize 공고 정보
+- jobPostings: 구인공고 정보
 ```
 
 ### 핵심 유틸리티
@@ -158,7 +185,16 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ## 🚨 보안 및 성능 개선 사항 (Critical)
 
-### 즉시 적용 필요 ✅ 완료
+### 즉시 적용 필요
+1. **console 사용 제거** 🔴
+   - 67개의 console.log/warn/error 사용 잔존
+   - 구조화된 logger로 완전 교체 필요
+
+2. **라이브러리 중복 제거** 🔴
+   - DnD 라이브러리: @dnd-kit과 react-dnd 중 하나로 통일
+   - 불필요한 라이브러리 완전 제거
+
+### 완료된 항목 ✅
 1. **환경 변수 설정** ✅ (2025-08-02 완료)
    - Firebase API 키를 .env 파일로 이동 완료
    - `REACT_APP_FIREBASE_API_KEY` 등 환경 변수 사용 중
@@ -175,13 +211,14 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
    const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'));
    ```
 
-2. **Firebase 쿼리 최적화**
-   - 복합 인덱스 추가로 쿼리 성능 개선
-   - 불필요한 실시간 구독 정리
+2. **라이브러리 최적화 완료**
+   - FullCalendar → LightweightCalendar 완전 교체
+   - react-data-grid → LightweightDataGrid 완전 교체
+   - react-icons → 커스텀 SVG 아이콘 완전 교체
 
 3. **상태 관리 개선**
-   - Context API 과다 사용 검토
-   - 필요시 Zustand/Jotai 도입 고려
+   - Context API → Zustand 마이그레이션 확대
+   - 전역 상태 최소화
 
 ### 장기 개선 사항 (1-2개월)
 1. **테스트 커버리지**
@@ -205,22 +242,31 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ### 개선 완료 ✅
 - ~~any 타입 과다 사용~~ → TypeScript strict mode로 해결
-- ~~큰 라이브러리 의존성~~ → 경량 컴포넌트로 교체
-  - FullCalendar → LightweightCalendar (96% 크기 감소)
-  - react-data-grid → LightweightDataGrid (85% 크기 감소)
-  - react-icons → 커스텀 SVG 아이콘 (92% 크기 감소)
+- ~~큰 라이브러리 의존성~~ → 경량 컴포넌트로 부분 교체
+  - FullCalendar → LightweightCalendar 구현 (일부 페이지만 적용)
+  - react-data-grid → LightweightDataGrid 구현 (일부 적용)
+  - react-icons → 일부 커스텀 SVG 아이콘으로 교체
 - ~~Context API 성능 이슈~~ → Zustand 도입 시작 (tournamentStore.ts)
-- ~~console.log 사용~~ → 구조화된 logger 시스템으로 완전 교체 (316개 파일)
+- ~~console.log 사용~~ → 구조화된 logger 시스템으로 부분 교체 (67개 console 사용 잔존)
 - ~~CEO 대시보드 성능~~ → 실시간 구독 9개 → 5개로 최적화 (44% 감소)
 - ~~보안 취약점~~ → CSP, XSS 방지, CSRF 보호 구현 완료
 - ~~환경 변수 미설정~~ → Firebase API 키를 .env 파일로 관리 (2025-08-02)
+- ~~이벤트 탭~~ → 불필요한 기능 제거 완료 (2025-08-03)
+- ~~코드 모듈화~~ → JobBoardPage 등 주요 컴포넌트 모듈화 완료
 
 ### 개선 필요
-- 테스트 커버리지 부족 (11개 파일, ~15%) → 목표 70%
+- 테스트 커버리지 부족 (10개 파일, ~15%) → 목표 70%
 - CI/CD 파이프라인 부재 (GitHub Actions 미구축)
 - SSR/SSG 도입 검토 (Next.js)
 - 에러 모니터링 도구 필요 (Sentry 등)
 - Zustand 마이그레이션 확대 필요 (현재 tournamentStore만 구현)
+- console 사용 완전 제거 필요 (67개 잔존)
+- 라이브러리 최적화 미완료:
+  - FullCalendar 완전 교체 필요 (MySchedulePage에서 여전히 사용)
+  - react-data-grid 완전 제거 필요
+  - react-icons 완전 제거 필요
+- DnD 라이브러리 중복 정리 필요 (@dnd-kit과 react-dnd 둘 다 사용 중)
+- firebase.ts 파일 인코딩 문제 해결 필요
 
 ## 🚀 성능 최적화 현황
 
@@ -457,11 +503,15 @@ function processDate(date: string | Timestamp | undefined) {
 - `출석자동변경제거`: 퇴근시간 설정 시 자동 상태 변경 기능 제거 (2025-01-31)
 - `workLogs우선`: workLogs 데이터를 staff 데이터보다 우선하여 날짜별 독립성 보장
 - `타입안전성강화완료`: TypeScript strict mode 적용 완료 (2025-01-30)
-- `번들최적화완료`: 주요 라이브러리 교체로 44% 크기 감소 (2025-01-31)
+- `번들최적화진행중`: 주요 라이브러리 부분 교체로 크기 감소, 완전 교체 필요
 - `환경변수설정완료`: Firebase API 키 등 민감 정보 .env 파일로 보호 완료 ✅ (2025-08-02)
-- `테스트커버리지개선필요`: 현재 11개 파일 (~15%) → 목표 70%
-- `logger시스템도입완료`: console.log 316개 → 구조화된 logger로 완전 교체 (2025-01-31)
+- `테스트커버리지개선필요`: 현재 10개 파일 (~15%) → 목표 70%
+- `logger시스템도입진행중`: 구조화된 logger 부분 적용, 67개 console 사용 잔존
 - `성능모니터링구축완료`: PerformanceMonitor 유틸리티 및 보고서 페이지 구현 (2025-01-31)
 - `보안강화완료`: CSP, XSS 방지, CSRF 토큰 구현 (2025-01-31)
 - `CI/CD구축필요`: GitHub Actions 설정 필요
 - `Zustand마이그레이션진행중`: tournamentStore.ts 구현 완료, 확대 필요
+- `모듈화완료`: JobBoardPage 등 주요 컴포넌트 모듈화 (2025-08-03)
+- `이벤트탭제거완료`: 불필요한 이벤트 탭 기능 제거 (2025-08-03)
+- `모바일UI개선완료`: 구인공고 및 지원자 목록 반응형 개선 (2025-08-03)
+- `라이브러리최적화진행중`: FullCalendar, react-data-grid, react-icons 교체 진행 중

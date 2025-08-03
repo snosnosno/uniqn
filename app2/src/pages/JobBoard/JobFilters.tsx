@@ -30,6 +30,16 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
     });
   };
 
+  // 필터가 적용되었는지 확인
+  const hasActiveFilters = () => {
+    return filters.location !== 'all' || 
+           filters.type !== 'all' || 
+           filters.startDate !== '' || 
+           filters.role !== 'all' || 
+           filters.month !== '' || 
+           filters.day !== '';
+  };
+
   return (
     <div className="mb-6">
 
@@ -133,12 +143,23 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
           </div>
 
           {/* Reset Button */}
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end items-center gap-4">
+            {hasActiveFilters() && (
+              <span className="text-sm text-blue-600 font-medium">
+                필터 적용 중
+              </span>
+            )}
             <button
               onClick={resetFilters}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={!hasActiveFilters()}
+              className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
+                hasActiveFilters() 
+                  ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
+                  : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
+              }`}
+              aria-label="필터 초기화"
             >
-              {t('jobBoard.filters.reset')}
+              필터 초기화
             </button>
           </div>
         </div>

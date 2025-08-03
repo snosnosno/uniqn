@@ -44,6 +44,7 @@ interface MyApplicationsTabProps {
   onCancel: (postId: string) => void;
   isProcessing: string | null;
   onTabChange: () => void;
+  onViewDetail?: (jobPosting: any) => void;
 }
 
 /**
@@ -55,7 +56,8 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
   onRefresh,
   onCancel,
   isProcessing,
-  onTabChange
+  onTabChange,
+  onViewDetail
 }) => {
   const { t } = useTranslation();
 
@@ -225,15 +227,26 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
               </p>
             )}
             
-            {application.status === 'applied' && application.jobPosting && (
-              <div className="mt-4 flex space-x-2">
-                <button
-                  onClick={() => onCancel(application.postId)}
-                  disabled={isProcessing === application.postId}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm"
-                >
-                  {isProcessing === application.postId ? '취소 중...' : '지원 취소'}
-                </button>
+            {application.jobPosting && (
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                {onViewDetail && (
+                  <button
+                    onClick={() => onViewDetail(application.jobPosting)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex-1 sm:flex-initial"
+                    aria-label="공고 상세정보 보기"
+                  >
+                    자세히보기
+                  </button>
+                )}
+                {application.status === 'applied' && (
+                  <button
+                    onClick={() => onCancel(application.postId)}
+                    disabled={isProcessing === application.postId}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm flex-1 sm:flex-initial"
+                  >
+                    {isProcessing === application.postId ? '취소 중...' : '지원 취소'}
+                  </button>
+                )}
               </div>
             )}
           </div>

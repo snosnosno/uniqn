@@ -75,7 +75,7 @@ const JobBoardPage = () => {
         <h1 className="text-2xl font-bold mb-4">{t('jobBoard.title')}</h1>
         
         {/* 탭 네비게이션 */}
-        <div className="flex space-x-4 mb-6 border-b">
+        <div className="flex space-x-4 mb-6 border-b" role="tablist">
           <button
             onClick={() => setActiveTab('jobs')}
             className={`pb-2 px-4 font-medium transition-colors ${
@@ -83,6 +83,10 @@ const JobBoardPage = () => {
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
+            role="tab"
+            aria-selected={activeTab === 'jobs'}
+            aria-controls="jobs-panel"
+            id="jobs-tab"
           >
             구인 목록
           </button>
@@ -93,6 +97,10 @@ const JobBoardPage = () => {
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
+            role="tab"
+            aria-selected={activeTab === 'myApplications'}
+            aria-controls="myApplications-panel"
+            id="myApplications-tab"
           >
             내 지원 현황
           </button>
@@ -129,7 +137,8 @@ const JobBoardPage = () => {
         
         {/* 구인 목록 탭 */}
         {activeTab === 'jobs' && (
-          <JobListTab
+          <div role="tabpanel" id="jobs-panel" aria-labelledby="jobs-tab">
+            <JobListTab
             jobPostings={jobPostings}
             appliedJobs={appliedJobs}
             onApply={handleOpenApplyModal}
@@ -141,6 +150,7 @@ const JobBoardPage = () => {
             hasNextPage={hasNextPage}
             isFilterOpen={isFilterOpen}
             onFilterToggle={() => setIsFilterOpen(!isFilterOpen)}
+            filters={filters}
             filterComponent={
               isFilterOpen && (
                 <JobFiltersComponent
@@ -150,18 +160,22 @@ const JobBoardPage = () => {
               )
             }
           />
+          </div>
         )}
         
         {/* 내 지원 현황 탭 */}
         {activeTab === 'myApplications' && (
-          <MyApplicationsTab
+          <div role="tabpanel" id="myApplications-panel" aria-labelledby="myApplications-tab">
+            <MyApplicationsTab
             applications={myApplications}
             loading={loadingMyApplications}
             onRefresh={fetchMyApplications}
             onCancel={handleCancelApplication}
             isProcessing={isProcessing}
             onTabChange={() => setActiveTab('jobs')}
+            onViewDetail={handleOpenDetailModal}
           />
+          </div>
         )}
         
         {/* Apply Modal */}
