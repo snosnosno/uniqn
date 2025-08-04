@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 import { 
   ExtendedRolePermissions, 
   PermissionUtils, 
@@ -16,13 +17,27 @@ export function usePermissions(): PermissionContextType {
   
   // 사용자 역할이 변경될 때 권한 정보 업데이트
   useEffect(() => {
+    logger.info('usePermissions role 변경', { 
+      component: 'usePermissions',
+      data: { role, currentUser: currentUser?.uid }
+    });
+    
     if (role) {
       const rolePermissions = PermissionUtils.getPermissionsByRole(role);
+      logger.info('권한 설정 결과', { 
+        component: 'usePermissions',
+        data: { 
+          role, 
+          permissions: rolePermissions,
+          canManageApplicants: rolePermissions?.permissions.jobPostings.manageApplicants
+        }
+      });
       setPermissions(rolePermissions);
     } else {
+      logger.info('권한 초기화', { component: 'usePermissions' });
       setPermissions(null);
     }
-  }, [role]);
+  }, [role, currentUser]);
   
   // 권한 검사 함수
   const checkPermission = useCallback((

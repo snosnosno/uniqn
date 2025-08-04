@@ -55,8 +55,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setCurrentUser(user);
       if (user) {
         try {
+          logger.info('사용자 토큰 조회 시작', { 
+            component: 'AuthContext',
+            data: { uid: user.uid, email: user.email }
+          });
+          
           const idTokenResult = await user.getIdTokenResult(true);
           const userRole = idTokenResult.claims.role as string || null;
+          
+          logger.info('사용자 role 조회 결과', { 
+            component: 'AuthContext',
+            data: { 
+              uid: user.uid, 
+              email: user.email,
+              role: userRole,
+              allClaims: idTokenResult.claims,
+              isAdmin: userRole === 'admin' || userRole === 'manager'
+            }
+          });
+          
           setRole(userRole);
           
           // Sentry에 사용자 정보 설정
@@ -71,6 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setRole(null);
         }
       } else {
+        logger.info('사용자 로그아웃', { component: 'AuthContext' });
         setRole(null);
         // 로그아웃 시 Sentry 사용자 정보 제거
         setSentryUser(null);

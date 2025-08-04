@@ -8,7 +8,6 @@ import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';
 
 const JobPostingAdminPage = () => {
-  const { t } = useTranslation();
   const { canCreateJobPostings } = usePermissions();
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -24,17 +23,14 @@ const JobPostingAdminPage = () => {
     handleNavigateToDetail,
     openEditModal,
     closeEditModal,
-    setCurrentPost,
   } = useJobPostingOperations();
 
   // 공고 생성 핸들러
   const handleCreate = async (formData: any) => {
     try {
-      const postId = await handleCreateJobPosting(formData);
+      await handleCreateJobPosting(formData);
       alert('공고가 성공적으로 등록되었습니다.');
       setIsCreateFormVisible(false);
-      // 생성 후 상세 페이지로 이동할 수도 있음
-      // handleNavigateToDetail(postId);
     } catch (error) {
       alert(error instanceof Error ? error.message : '공고 등록 중 오류가 발생했습니다.');
       throw error; // JobPostingForm에서 로딩 상태 해제를 위해
@@ -77,7 +73,7 @@ const JobPostingAdminPage = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">구인공고 관리</h1>
-              <p className="mt-2 text-gray-600">토너먼트 구인공고를 등록하고 관리하세요.</p>
+              <p className="mt-2 text-gray-600">구인공고를 등록하고 관리하세요.</p>
             </div>
             
             {canCreateJobPostings && (

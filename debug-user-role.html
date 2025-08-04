@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 Role 디버깅</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>사용자 Role 디버깅 도구</h1>
+    
+    <div>
+        <button onclick="checkCurrentUser()">현재 사용자 확인</button>
+        <button onclick="checkIdToken()">ID 토큰 확인</button>
+        <button onclick="checkFirestoreUser()">Firestore 사용자 데이터 확인</button>
+        <button onclick="fixUserRole()">사용자 Role 수정 (admin 전용)</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNXkiDKnWJeM6DEzGn7lG1a7LiAhWxhac",
+            authDomain: "t-holdem-8b1c1.firebaseapp.com",
+            projectId: "t-holdem-8b1c1",
+            storageBucket: "t-holdem-8b1c1.firebasestorage.app",
+            messagingSenderId: "243889361451",
+            appId: "1:243889361451:web:54d2c2a3a5e1c0b8899fdc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const functions = getFunctions(app);
+
+        let currentUser = null;
+
+        function addResult(message, type = 'result') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        // 현재 사용자 확인
+        window.checkCurrentUser = async function() {
+            if (!currentUser) {
+                addResult('로그인되지 않음', 'error');
+                return;
+            }
+
+            try {
+                addResult(`
+                    <h3>현재 사용자 정보:</h3>
+                    <p><strong>UID:</strong> ${currentUser.uid}</p>
+                    <p><strong>Email:</strong> ${currentUser.email}</p>
+                    <p><strong>Display Name:</strong> ${currentUser.displayName}</p>
+                    <p><strong>Email Verified:</strong> ${currentUser.emailVerified}</p>
+                `, 'success');
+            } catch (error) {
+                addResult(`오류: ${error.message}`, 'error');
+            }
+        };
+
+        // ID 토큰 및 claims 확인
+        window.checkIdToken = async function() {
+            if (!currentUser) {
+                addResult('로그인되지 않음', 'error');
+                return;
+            }
+
+            try {
+                const idTokenResult = await currentUser.getIdTokenResult(true);
+                addResult(`
+                    <h3>ID 토큰 Claims:</h3>
+                    <p><strong>Role:</strong> ${idTokenResult.claims.role || '없음'}</p>
+                    <p><strong>모든 Claims:</strong></p>
+                    <pre>${JSON.stringify(idTokenResult.claims, null, 2)}</pre>
+                `, idTokenResult.claims.role ? 'success' : 'error');
+            } catch (error) {
+                addResult(`ID 토큰 조회 오류: ${error.message}`, 'error');
+            }
+        };
+
+        // Firestore 사용자 데이터 확인
+        window.checkFirestoreUser = async function() {
+            if (!currentUser) {
+                addResult('로그인되지 않음', 'error');
+                return;
+            }
+
+            try {
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    addResult(`
+                        <h3>Firestore 사용자 데이터:</h3>
+                        <pre>${JSON.stringify(userData, null, 2)}</pre>
+                    `, userData.role ? 'success' : 'error');
+                } else {
+                    addResult('Firestore에 사용자 문서가 없습니다!', 'error');
+                }
+            } catch (error) {
+                addResult(`Firestore 조회 오류: ${error.message}`, 'error');
+            }
+        };
+
+        // 사용자 Role 수정 (admin 전용)
+        window.fixUserRole = async function() {
+            if (!currentUser) {
+                addResult('로그인되지 않음', 'error');
+                return;
+            }
+
+            const newRole = prompt('새로운 role을 입력하세요 (admin, manager, staff):', 'admin');
+            if (!newRole) return;
+
+            try {
+                // Firestore에서 role 업데이트
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                    role: newRole,
+                    updatedAt: new Date()
+                });
+
+                addResult(`Firestore role이 ${newRole}로 업데이트되었습니다. 페이지를 새로고침하여 토큰을 다시 받아보세요.`, 'success');
+                
+                // 몇 초 후 토큰 새로고침
+                setTimeout(async () => {
+                    try {
+                        await currentUser.getIdToken(true);
+                        addResult('토큰이 새로고침되었습니다.', 'success');
+                    } catch (error) {
+                        addResult(`토큰 새로고침 오류: ${error.message}`, 'error');
+                    }
+                }, 2000);
+
+            } catch (error) {
+                addResult(`Role 업데이트 오류: ${error.message}`, 'error');
+            }
+        };
+
+        // 인증 상태 모니터링
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                addResult(`로그인됨: ${user.email}`, 'success');
+            } else {
+                addResult('로그아웃됨', 'error');
+            }
+        });
+
+        addResult('디버깅 도구가 로드되었습니다. 로그인 후 버튼을 클릭하여 확인하세요.');
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
     FaTrophy, FaBullhorn, FaUserCircle, FaFileInvoice, FaClipboardList, FaQrcode,
-    FaBars, FaSignOutAlt, FaUserCheck, FaHistory, FaCalendarAlt
+    FaSignOutAlt, FaUserCheck, FaHistory, FaCalendarAlt
 } from './Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -39,19 +39,27 @@ const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => 
 export const HeaderMenu: React.FC = () => {
   const { t, i18n, ready } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAdmin, role, signOut } = useAuth();
-  const { canManageApplicants } = usePermissions();
+  const { isAdmin, role, signOut, currentUser, loading: authLoading } = useAuth();
+  const { canManageApplicants, permissions } = usePermissions();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // 디버깅을 위한 로그
+  // 권한 디버깅을 위한 로그
   React.useEffect(() => {
-    logger.info('HeaderMenu mounted', { 
+    logger.info('HeaderMenu 권한 상태', { 
       component: 'HeaderMenu',
-      data: { FaBars: !!FaBars, isMenuOpen, i18nReady: ready }
+      data: { 
+        currentUser: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
+        role,
+        isAdmin,
+        canManageApplicants,
+        permissions: permissions ? { role: permissions.role } : null,
+        authLoading,
+        i18nReady: ready
+      }
     });
-  }, [isMenuOpen, ready]);
+  }, [currentUser, role, isAdmin, canManageApplicants, permissions, authLoading, ready]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -161,39 +169,59 @@ export const HeaderMenu: React.FC = () => {
 
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
+              {/* 기본 메뉴 (모든 사용자) */}
               <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard', 'Dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/attendance" label={t('nav.attendance', 'Attendance')} Icon={FaQrcode} isOpen={true} onNavigate={closeMenu} />
               
-              <hr className="my-2 border-t border-gray-200" />
-              
-              {/* Job Posting Management - Available to Staff with permission */}
-              {canManageApplicants && (
-                <NavItem to="/admin/job-postings" label={t('nav.managePostings', 'Manage Postings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
-              )}
-
-              {/* Admin and Manager common menus */}
-              {isAdmin ? <>
-                  <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/payroll" label={t('nav.processPayroll', 'Process Payroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
-                  <hr className="my-2 border-t border-gray-200" />
-                  <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/announcements" label={t('nav.announcements', 'Announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/history" label="기록/히스토리" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
-                </> : null}
-
-              {/* Admin only menu */}
-              {role === 'admin' && (
+              {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
+              {!authLoading && currentUser && (
                 <>
                   <hr className="my-2 border-t border-gray-200" />
-                  <NavItem to="/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
+                  
+                  {/* Job Posting Management - 모든 역할에서 표시 (권한은 개별 확인) */}
+                  <NavItem to="/admin/job-postings" label={t('nav.managePostings', 'Manage Postings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+
+                  {/* Admin and Manager 메뉴 */}
+                  {(role === 'admin' || role === 'manager') && (
+                    <>
+                      <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/payroll" label={t('nav.processPayroll', 'Process Payroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+                      <hr className="my-2 border-t border-gray-200" />
+                      <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/announcements" label={t('nav.announcements', 'Announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/history" label="기록/히스토리" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
+                    </>
+                  )}
+
+                  {/* Admin 전용 메뉴 */}
+                  {role === 'admin' && (
+                    <>
+                      <hr className="my-2 border-t border-gray-200" />
+                      <NavItem to="/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
+                    </>
+                  )}
                 </>
+              )}
+
+              {/* 로딩 상태 표시 */}
+              {authLoading && (
+                <div className="p-4 text-center text-gray-500">
+                  권한 확인 중...
+                </div>
+              )}
+
+              {/* 인증되지 않은 상태 */}
+              {!authLoading && !currentUser && (
+                <div className="p-4 text-center text-gray-500">
+                  로그인이 필요합니다
+                </div>
               )}
             </nav>
 

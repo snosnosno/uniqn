@@ -9,12 +9,12 @@ import ApplicantListTab from '../components/tabs/ApplicantListTab';
 import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
+import JobPostingCard from '../components/common/JobPostingCard';
+import JobPostingDetailContent from '../components/jobPosting/JobPostingDetailContent';
 import { JobPostingProvider } from '../contexts/JobPostingContextAdapter';
 import { db } from '../firebase';
 import { usePermissions } from '../hooks/usePermissions';
-import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';
-import { formatDate as formatDateUtil } from '../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames } from '../utils/jobPosting/jobPostingHelpers';
+import { JobPosting } from '../types/jobPosting';
 
 
 type TabType = 'applicants' | 'staff' | 'shifts' | 'payroll';
@@ -265,9 +265,6 @@ const JobPostingDetailPageContent: React.FC = () => {
     );
   }
 
-  const formattedStartDate = formatDateUtil(jobPosting.startDate);
-  const formattedEndDate = formatDateUtil(jobPosting.endDate);
-
   return (
     <div className="container mx-auto p-4">
       {/* Header */}
@@ -322,126 +319,16 @@ const JobPostingDetailPageContent: React.FC = () => {
         </div>
         
         {/* Basic Info Section */}
-        {isInfoExpanded ? <div
-          id="basic-info-section"
-          className="bg-white rounded-lg shadow-md p-6"
-          role="region"
-          aria-label={t('jobPosting.info.section')}
-        >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">위치:</span>
-                <span className="ml-2">{jobPosting.location}
-                  {jobPosting.district && ` ${jobPosting.district}`}
-                  {jobPosting.detailedAddress && ` ${jobPosting.detailedAddress}`}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">유형:</span>
-                <span className="ml-2">{jobPosting.type === 'application' ? '지원형' : '고정형'}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">기간:</span>
-                <span className="ml-2">
-                  {jobPosting.endDate && jobPosting.endDate !== jobPosting.startDate 
-                    ? `${formattedStartDate} ~ ${formattedEndDate}` 
-                    : formattedStartDate
-                  }
-                </span>
-              </div>
-              {jobPosting.salaryType && jobPosting.salaryAmount && (
-                <div>
-                  <span className="font-medium text-gray-700">급여:</span>
-                  <span className="ml-2">{formatSalaryDisplay(jobPosting.salaryType, jobPosting.salaryAmount)}</span>
-                </div>
-              )}
-              {jobPosting.benefits && Object.keys(jobPosting.benefits).length > 0 && (
-                <div className="md:col-span-2">
-                  <span className="font-medium text-gray-700">복리후생:</span>
-                  <span className="ml-2">{getBenefitDisplayNames(jobPosting.benefits).join(', ')}</span>
-                </div>
-              )}
-            </div>
-            
-            {/* 시간대 및 역할 표시 - 일자별 다른 인원 요구사항 고려 */}
-            {JobPostingUtils.hasDateSpecificRequirements(jobPosting) ? (
-              /* 일자별 다른 인원 요구사항이 있는 경우 */
-              <div className="mt-4">
-                <span className="font-medium text-gray-700">시간대 및 역할 (일자별 다른 인원 요구사항):</span>
-                <div className="mt-2 space-y-4">
-                  {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
-                    <div key={dateIndex} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="text-sm font-medium text-blue-800 mb-3">
-                        📅 {formatDateUtil(dateReq.date)} 일정
-                      </div>
-                      <div className="space-y-2">
-                        {dateReq.timeSlots.map((ts, tsIndex) => (
-                          <div key={`${dateIndex}-${tsIndex}`} className="pl-4 border-l-2 border-blue-300 bg-white rounded-r p-2">
-                            <p className="font-semibold text-gray-700">{ts.time}</p>
-                            <div className="text-sm text-gray-600">
-                              {ts.roles.map((role, roleIndex) => {
-                                const dateStr = typeof dateReq.date === 'string' 
-                                  ? dateReq.date 
-                                  : dateReq.date && typeof dateReq.date === 'object' && 'toDate' in dateReq.date
-                                    ? dateReq.date.toDate().toISOString().split('T')[0]
-                                    : '';
-                                const confirmedCount = dateStr ? JobPostingUtils.getConfirmedStaffCount(
-                                  jobPosting,
-                                  dateStr,
-                                  ts.time,
-                                  role.name
-                                ) : 0;
-                                const isFull = confirmedCount >= role.count;
-                                const remaining = role.count - confirmedCount;
-                                return (
-                                  <span key={roleIndex} className={`mr-4 ${isFull ? 'text-red-600 font-medium' : ''}`}>
-                                    {role.name}: {role.count}명 모집
-                                    {isFull ? ' (마감)' : confirmedCount > 0 ? ` (${confirmedCount}명 확정, ${remaining}명 남음)` : ''}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : jobPosting.timeSlots && jobPosting.timeSlots.length > 0 ? (
-              /* 기존 방식: 전체 기간 공통 timeSlots */
-              <div className="mt-4">
-                <span className="font-medium text-gray-700">시간대 및 역할:</span>
-                <div className="mt-2 space-y-2">
-                  {jobPosting.timeSlots.map((ts, index) => (
-                    <div key={index} className="pl-4 border-l-2 border-gray-200">
-                      <p className="font-semibold text-gray-700">{ts.time}</p>
-                      <div className="text-sm text-gray-600">
-                        {ts.roles.map((role, i) => {
-                          const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
-                            staff.timeSlot === ts.time && staff.role === role.name
-                          ).length || 0;
-                          const isFull = confirmedCount >= role.count;
-                          const remaining = role.count - confirmedCount;
-                          return (
-                            <span key={i} className={`mr-4 ${isFull ? 'text-red-600 font-medium' : ''}`}>
-                              {role.name}: {role.count}명 모집
-                              {isFull ? ' (마감)' : confirmedCount > 0 ? ` (${confirmedCount}명 확정, ${remaining}명 남음)` : ''}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            
-            {jobPosting.description ? <div className="mt-4">
-                <span className="font-medium text-gray-700">설명:</span>
-                <p className="mt-1 text-gray-600">{jobPosting.description}</p>
-              </div> : null}
-          </div> : null}
+        {isInfoExpanded && (
+          <div
+            id="basic-info-section"
+            role="region"
+            aria-label={t('jobPosting.info.section')}
+            className="bg-white rounded-lg shadow-md p-6 mb-6"
+          >
+            <JobPostingDetailContent jobPosting={jobPosting} />
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}

@@ -31,7 +31,7 @@ const Button: React.FC<ButtonProps> = ({
   const variantClasses = {
     primary: 'btn-primary focus:ring-primary',
     secondary: 'btn-secondary focus:ring-secondary',
-    danger: 'btn-error focus:ring-error',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
     ghost: 'btn-ghost focus:ring-gray-400',
     link: 'btn-link focus:ring-blue-400'
   };
