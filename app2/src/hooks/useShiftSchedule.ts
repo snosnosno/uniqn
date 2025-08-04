@@ -354,7 +354,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         await addDoc(workLogsCollection, log);
       }
 
-      logger.debug('${generatedLogs.length}개의 근무기록이 생성되었습니다.', { component: 'useShiftSchedule' });
+      logger.debug(`${generatedLogs.length}개의 근무기록이 생성되었습니다.`, { component: 'useShiftSchedule' });
       return generatedLogs;
     } catch (error) {
       logger.error('근무기록 생성 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useShiftSchedule' });

@@ -162,7 +162,7 @@ class UnifiedErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('UnifiedErrorBoundary caught an error', error, { 
+    logger.error('UnifiedErrorBoundary caught an error', error instanceof Error ? error : new Error(String(error)), { 
       component: 'UnifiedErrorBoundary',
       errorInfo: errorInfo.toString() 
     });

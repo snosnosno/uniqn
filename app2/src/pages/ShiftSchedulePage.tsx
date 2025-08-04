@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
-import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaHistory } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaHistory } from '../components/Icons/ReactIconsReplacement';
 
 import ShiftGridComponent from '../components/ShiftGridComponent';
 import TimeIntervalSelector from '../components/TimeIntervalSelector';
@@ -243,13 +243,13 @@ const ShiftSchedulePage: React.FC = () => {
         // String date
         date = new Date(dateInput);
       } else {
-        console.warn('Unknown date format:', dateInput);
+        logger.warn('Unknown date format:', { component: 'ShiftSchedulePage', data: dateInput });
         return String(dateInput); // Convert to string as fallback
       }
       
       // Check if date is valid
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date:', dateInput);
+        logger.warn('Invalid date:', { component: 'ShiftSchedulePage', data: dateInput });
         return String(dateInput); // Convert to string as fallback
       }
       
@@ -276,32 +276,32 @@ const ShiftSchedulePage: React.FC = () => {
     return (
       <div className="bg-white p-4 rounded-lg shadow-md mb-4">
         <h3 className="text-lg font-semibold mb-3 flex items-center">
-          <FaCheckCircle className="mr-2 text-blue-600" />
+          <FaCheckCircle className="w-5 h-5 mr-2 text-blue-600" />
           {t('shiftSchedule.validationResults')}
         </h3>
         
         <div className="flex items-center gap-4 mb-3">
           {errorCount > 0 && (
             <div className="flex items-center text-red-600">
-              <FaExclamationTriangle className="mr-1" />
+              <FaExclamationTriangle className="w-4 h-4 mr-1" />
               <span className="font-semibold">{errorCount}{t('shiftSchedule.errors')}</span>
             </div>
           )}
           {warningCount > 0 && (
             <div className="flex items-center text-yellow-600">
-              <FaExclamationTriangle className="mr-1" />
+              <FaExclamationTriangle className="w-4 h-4 mr-1" />
               <span className="font-semibold">{warningCount}{t('shiftSchedule.warnings')}</span>
             </div>
           )}
           {infoCount > 0 && (
             <div className="flex items-center text-blue-600">
-              <FaInfoCircle className="mr-1" />
+              <FaInfoCircle className="w-4 h-4 mr-1" />
               <span className="font-semibold">{infoCount}{t('shiftSchedule.infos')}</span>
             </div>
           )}
           {validationResult.violations.length === 0 && (
             <div className="flex items-center text-green-600">
-              <FaCheckCircle className="mr-1" />
+              <FaCheckCircle className="w-4 h-4 mr-1" />
               <span className="font-semibold">{t('shiftSchedule.validationPassed')}</span>
             </div>
           )}
@@ -354,7 +354,7 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 날짜 선택 */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <FaCalendarAlt className="text-blue-600" />
+              <FaCalendarAlt className="w-5 h-5 text-blue-600" />
               <label className="font-semibold text-gray-700">
                 {t('shiftSchedule.selectDate')}:
               </label>
@@ -371,7 +371,7 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 시간 간격 선택 */}
           {schedule ? <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <FaClock className="text-purple-600" />
+                <FaClock className="w-5 h-5 text-purple-600" />
                 <label className="font-semibold text-gray-700">
                   {t('shiftSchedule.timeInterval')}:
                 </label>
@@ -443,7 +443,7 @@ const ShiftSchedulePage: React.FC = () => {
         <div className="xl:col-span-3">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-              <FaTable className="mr-2"/> 
+              <FaTable className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.scheduleGrid')}
               {schedule ? <span className="ml-2 text-sm font-normal text-gray-500">
                   ({schedule.timeInterval}{t('shiftSchedule.minuteInterval')})
@@ -500,7 +500,7 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 현재 스케줄의 딜러들 */}
           {schedule && dealers.length > 0 ? <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-                <FaUsers className="mr-2"/> 
+                <FaUsers className="w-5 h-5 mr-2"/> 
                 {t('shiftSchedule.assignedDealers')} ({dealers.length})
               </h2>
               <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -530,7 +530,7 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 사용 가능한 딜러 */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
-              <FaUsers className="mr-2"/> 
+              <FaUsers className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.availableDealers')} ({dealersNotInSchedule.length})
             </h2>
             <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -565,7 +565,7 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 테이블 정보 */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
-              <FaTable className="mr-2"/> 
+              <FaTable className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.availableTables')} ({tables?.length || 0})
             </h2>
             <div className="space-y-2 max-h-48 overflow-y-auto">

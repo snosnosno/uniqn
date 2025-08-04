@@ -11,27 +11,27 @@ function replaceConsoleLog(content, fileName) {
     // console.log('message')
     { 
       regex: /console\.log\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-      replacement: (match, message) => `logger.debug('${message}', { component: '${getComponentName(fileName)}' })`
+      replacement: (match, message) => `logger.debug(`${message}`, { component: '${getComponentName(fileName)}' })`
     },
     // console.log('message', data)
     { 
       regex: /console\.log\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.+?)\s*\)/g,
-      replacement: (match, message, data) => `logger.debug('${message}', { component: '${getComponentName(fileName)}', data: ${data} })`
+      replacement: (match, message, data) => `logger.debug(`${message}`, { component: '${getComponentName(fileName)}', data: ${data} })`
     },
     // console.error('message')
     { 
       regex: /console\.error\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-      replacement: (match, message) => `logger.error('${message}', new Error('${message}'), { component: '${getComponentName(fileName)}' })`
+      replacement: (match, message) => `logger.error(`${message}`, new Error('${message}'), { component: '${getComponentName(fileName)}' })`
     },
     // console.error('message', error)
     { 
       regex: /console\.error\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.+?)\s*\)/g,
-      replacement: (match, message, error) => `logger.error('${message}', ${error} instanceof Error ? ${error} : new Error(String(${error})), { component: '${getComponentName(fileName)}' })`
+      replacement: (match, message, error) => `logger.error(`${message}`, ${error} instanceof Error ? ${error} : new Error(String(${error})), { component: '${getComponentName(fileName)}' })`
     },
     // console.warn('message')
     { 
       regex: /console\.warn\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-      replacement: (match, message) => `logger.warn('${message}', { component: '${getComponentName(fileName)}' })`
+      replacement: (match, message) => `logger.warn(`${message}`, { component: '${getComponentName(fileName)}' })`
     }
   ];
 

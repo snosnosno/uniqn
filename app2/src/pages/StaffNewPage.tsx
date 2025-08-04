@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 
 
+import { logger } from '../utils/logger';
 const StaffNewPage: React.FC = () => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
@@ -40,7 +41,7 @@ const StaffNewPage: React.FC = () => {
       alert(t('staffNew.alertSuccess'));
       navigate('/admin/staff'); // Redirect to staff list after creation
     } catch (err) {
-      console.error(err);
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'StaffNewPage' });
       setError(err instanceof Error ? err.message : t('staffNew.errorUnknown'));
     } finally {
       setIsSubmitting(false);

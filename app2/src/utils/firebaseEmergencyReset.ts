@@ -58,7 +58,7 @@ export class FirebaseEmergencyReset {
         // Firebase 인스턴스 정리
         delete (window as any).firebase;
       } catch (error) {
-        console.warn('Could not clear Firebase instance:', error);
+        logger.warn('Could not clear Firebase instance:', { component: 'firebaseEmergencyReset', data: error });
       }
     }
   }
@@ -100,7 +100,7 @@ export class FirebaseEmergencyReset {
       sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
 
     } catch (error) {
-      console.warn('Could not clear browser cache:', error);
+      logger.warn('Could not clear browser cache:', { component: 'firebaseEmergencyReset', data: error });
     }
   }
 
@@ -116,7 +116,7 @@ export class FirebaseEmergencyReset {
       this.reloadFirebaseScripts();
       
     } catch (error) {
-      console.warn('Firebase connection reset failed:', error);
+      logger.warn('Firebase connection reset failed:', { component: 'firebaseEmergencyReset', data: error });
     }
   }
 
@@ -138,7 +138,7 @@ export class FirebaseEmergencyReset {
         }
       });
     } catch (error) {
-      console.warn('Could not reload Firebase scripts:', error);
+      logger.warn('Could not reload Firebase scripts:', { component: 'firebaseEmergencyReset', data: error });
     }
   }
 

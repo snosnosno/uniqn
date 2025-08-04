@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 
 
+import { logger } from '../utils/logger';
 const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const timeKeys = ['morning', 'afternoon', 'evening', 'night'];
 
@@ -62,7 +63,7 @@ const AvailableTimesPage = () => {
       await setDoc(availabilityRef, availability);
       alert(t('availableTimes.alerts.updateSuccess'));
     } catch (err) {
-      console.error(err);
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AvailableTimesPage' });
       alert(t('availableTimes.alerts.updateFailed'));
     }
   };

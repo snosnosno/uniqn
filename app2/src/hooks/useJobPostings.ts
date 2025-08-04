@@ -119,11 +119,11 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
           jobs = jobs.filter(job => job.recruitmentType === filters.type);
         }
         
-        console.log('✅ Query successful:', { 
+        logger.debug('✅ Query successful:', { component: 'useJobPostings', data: { 
           originalCount: snapshot.docs.length, 
           filteredCount: jobs.length, 
           hasNextPage: snapshot.docs.length >= 20 
-        });
+        } });
         
         // Return jobs and cursor for next page
         return {

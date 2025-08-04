@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
-import { Toast as ToastType, useToastContext } from '../contexts/ToastContext';
+import { Toast as ToastType, useToastStore } from '../stores/toastStore';
 
 interface ToastProps {
   toast: ToastType;
 }
 
 const Toast: React.FC<ToastProps> = React.memo(({ toast }) => {
-  const { removeToast } = useToastContext();
+  const { removeToast } = useToastStore();
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
@@ -100,7 +100,7 @@ const Toast: React.FC<ToastProps> = React.memo(({ toast }) => {
 
 // Toast Container Component
 export const ToastContainer: React.FC = React.memo(() => {
-  const { toasts } = useToastContext();
+  const { toasts } = useToastStore();
 
   if (toasts.length === 0) return null;
 

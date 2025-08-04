@@ -27,7 +27,7 @@ export const getStorageLazy = async () => {
     storageModule = await import('firebase/storage');
     
     const loadTime = performance.now() - startTime;
-    logger.debug('✅ Firebase Storage 로드 완료 (${loadTime.toFixed(2)}ms)', { component: 'firebase-dynamic' });
+    logger.debug(`✅ Firebase Storage 로드 완료 (${loadTime.toFixed(2)}ms)`, { component: 'firebase-dynamic' });
   }
   
   if (!storageInstance) {
@@ -68,7 +68,7 @@ export const uploadFileLazy = async (file: File, path: string) => {
       (snapshot: any) => {
         // 진행률 계산
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        logger.debug('📤 업로드 진행률: ${progress.toFixed(0)}%', { component: 'firebase-dynamic' });
+        logger.debug(`📤 업로드 진행률: ${progress.toFixed(0)}%`, { component: 'firebase-dynamic' });
       },
       (error: any) => {
         logger.error('❌ 업로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
@@ -96,7 +96,7 @@ export const getFunctionsLazy = async () => {
     functionsModule = await import('firebase/functions');
     
     const loadTime = performance.now() - startTime;
-    logger.debug('✅ Firebase Functions 로드 완료 (${loadTime.toFixed(2)}ms)', { component: 'firebase-dynamic' });
+    logger.debug(`✅ Firebase Functions 로드 완료 (${loadTime.toFixed(2)}ms)`, { component: 'firebase-dynamic' });
   }
   
   if (!functionsInstance) {
@@ -129,12 +129,12 @@ export const callFunctionLazy = async (functionName: string, data?: any) => {
   const callable = functionsModule.httpsCallable(functions, functionName);
   
   try {
-    logger.debug('🔄 Cloud Function 호출 중: ${functionName}', { component: 'firebase-dynamic' });
+    logger.debug(`🔄 Cloud Function 호출 중: ${functionName}`, { component: 'firebase-dynamic' });
     const result = await callable(data);
-    logger.debug('✅ Cloud Function 호출 성공: ${functionName}', { component: 'firebase-dynamic' });
+    logger.debug(`✅ Cloud Function 호출 성공: ${functionName}`, { component: 'firebase-dynamic' });
     return result.data;
   } catch (error) {
-    logger.error('❌ Cloud Function 호출 실패: ${functionName}', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
+    logger.error(`❌ Cloud Function 호출 실패: ${functionName}`, error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
     throw error;
   }
 };

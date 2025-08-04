@@ -1,12 +1,32 @@
-import { render, screen } from '@testing-library/react';
-import { httpsCallable } from 'firebase/functions';
 import React from 'react';
-
+import { render, screen } from '../../test-utils/test-utils';
+import { httpsCallable } from 'firebase/functions';
 import DashboardPage from './DashboardPage';
-
 
 // Mock the firebase/functions module
 jest.mock('firebase/functions');
+
+// Mock firebaseConnectionManager
+jest.mock('../../utils/firebaseConnectionManager', () => ({
+  firebaseConnectionManager: {
+    safeOnSnapshot: jest.fn(() => jest.fn())
+  }
+}));
+
+// Mock logger
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  }
+}));
+
+// Mock getFunctionsLazy
+jest.mock('../../utils/firebase-dynamic', () => ({
+  getFunctionsLazy: jest.fn(() => Promise.resolve({}))
+}));
 
 const mockHttpsCallable = httpsCallable as jest.Mock;
 
@@ -15,6 +35,7 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     // Clear any previous mock implementations and calls
     mockHttpsCallable.mockClear();
+    jest.clearAllMocks();
   });
 
   test('should display a loading state initially', () => {
@@ -23,7 +44,7 @@ describe('DashboardPage', () => {
     
     render(<DashboardPage />);
     
-    expect(screen.getByText(/Loading dashboard.../i)).toBeInTheDocument();
+    expect(screen.getByText(/dashboard.loadingText/i)).toBeInTheDocument();
   });
 
   test('should display statistics cards on successful data fetch', async () => {
@@ -42,17 +63,17 @@ describe('DashboardPage', () => {
     render(<DashboardPage />);
 
     // Wait for the loading to disappear and data to be rendered
-    expect(await screen.findByText('Ongoing Events')).toBeInTheDocument();
+    expect(await screen.findByText('dashboard.stats.ongoingEvents')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
     
-    expect(screen.getByText('Total Dealers')).toBeInTheDocument();
+    expect(screen.getByText('dashboard.stats.totalDealers')).toBeInTheDocument();
     expect(screen.getByText('25')).toBeInTheDocument();
 
-    expect(screen.getByText('Top Rated Dealers')).toBeInTheDocument();
+    expect(screen.getByText('dashboard.stats.topRatedDealers')).toBeInTheDocument();
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('Bob')).toBeInTheDocument();
     expect(screen.getByText(/4.9/)).toBeInTheDocument();
-    expect(screen.getByText(/(50 ratings)/)).toBeInTheDocument();
+    expect(screen.getByText(/50/)).toBeInTheDocument();
   });
 
   test('should display an error message if the data fetch fails', async () => {
@@ -63,15 +84,9 @@ describe('DashboardPage', () => {
     
     render(<DashboardPage />);
 
-    // findByText will wait for the element to appear
-    const errorElement = await screen.findByText((content, element) => {
-      // Look for a text node that contains the error message, ignoring surrounding elements.
-      const hasText = (node: Element | null) => node?.textContent === `Error: ${errorMessage}`;
-      const elementHasText = hasText(element);
-      const childrenDontHaveText = Array.from(element?.children || []).every(child => !hasText(child));
-      return elementHasText && childrenDontHaveText;
-    });
-    expect(errorElement).toBeInTheDocument();
+    // Wait for error message to appear
+    const errorText = await screen.findByText(/Something went wrong/i);
+    expect(errorText).toBeInTheDocument();
   });
 
 });

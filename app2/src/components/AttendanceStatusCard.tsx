@@ -21,12 +21,24 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const getIconSize = () => {
+    switch (size) {
+      case 'sm':
+        return 'w-4 h-4';
+      case 'lg':
+        return 'w-6 h-6';
+      default:
+        return 'w-5 h-5';
+    }
+  };
+
   const getStatusConfig = () => {
+    const iconSize = getIconSize();
     // 출석 상태별 설정
     switch (status) {
       case 'not_started':
         return {
-          icon: <ClockIcon className="text-gray-500" />,
+          icon: <ClockIcon className={`${iconSize} text-gray-500`} />,
           text: t('attendance.status.notStarted', '출근 전'),
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-700',
@@ -34,7 +46,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
         };
       case 'checked_in':
         return {
-          icon: <CheckCircleIcon className="text-green-500" />,
+          icon: <CheckCircleIcon className={`${iconSize} text-green-500`} />,
           text: t('attendance.status.checkedIn', '출근'),
           bgColor: 'bg-green-100',
           textColor: 'text-green-700',
@@ -42,7 +54,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
         };
       case 'checked_out':
         return {
-          icon: <CheckCircleIcon className="text-blue-500" />,
+          icon: <CheckCircleIcon className={`${iconSize} text-blue-500`} />,
           text: t('attendance.status.checkedOut', '퇴근'),
           bgColor: 'bg-blue-100',
           textColor: 'text-blue-700',
@@ -50,7 +62,7 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
         };
       default:
         return {
-          icon: <ExclamationTriangleIcon className="text-yellow-500" />,
+          icon: <ExclamationTriangleIcon className={`${iconSize} text-yellow-500`} />,
           text: t('attendance.status.unknown', '알 수 없음'),
           bgColor: 'bg-yellow-100',
           textColor: 'text-yellow-700',

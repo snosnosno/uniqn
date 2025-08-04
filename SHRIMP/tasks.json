@@ -1,274 +1,301 @@
 {
   "tasks": [
     {
-      "id": "24f591d1-e8ad-4e40-9455-77abcae62993",
-      "name": "코드 품질 분석 및 TypeScript 최적화",
-      "description": "TypeScript strict mode 적용 현황을 분석하고 남은 any 타입을 구체적 인터페이스로 교체하며, 과도한 console.log 사용을 구조화된 로깅 시스템으로 개선합니다.",
-      "notes": "현재 TypeScript strict mode는 적용되었으나 일부 파일에서 any 타입이 여전히 사용되고 있어 타입 안전성을 완전히 확보하지 못한 상태입니다.",
+      "id": "7f57bb5c-c4e1-4e2e-8988-57f171a01c9d",
+      "name": "Console 사용 제거 및 Logger 마이그레이션",
+      "description": "105개의 console 사용을 구조화된 logger 시스템으로 완전 교체. 34개 파일에 분산된 console.log/warn/error를 자동화 스크립트를 활용하여 일괄 변환.",
+      "notes": "serviceWorkerRegistration.ts는 특수 케이스로 별도 처리 필요. 개발 환경에서만 로깅되도록 환경 체크 추가.",
       "status": "pending",
       "dependencies": [],
-      "createdAt": "2025-08-01T14:38:45.764Z",
-      "updatedAt": "2025-08-01T14:38:45.764Z",
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
       "relatedFiles": [
-        {
-          "path": "app2/src/hooks/useCEODashboard.ts",
-          "type": "TO_MODIFY",
-          "description": "CEO 대시보드 훅의 any 타입 교체",
-          "lineStart": 302,
-          "lineEnd": 307
-        },
-        {
-          "path": "app2/src/hooks/useJobPostingForm.ts",
-          "type": "TO_MODIFY",
-          "description": "폼 훅의 any 타입 교체",
-          "lineStart": 1,
-          "lineEnd": 50
-        },
         {
           "path": "app2/src/utils/logger.ts",
           "type": "REFERENCE",
-          "description": "기존 로깅 시스템 구조",
-          "lineStart": 1,
-          "lineEnd": 100
+          "description": "기존 logger 시스템"
         },
         {
-          "path": "app2/tsconfig.json",
-          "type": "REFERENCE",
-          "description": "TypeScript 설정 확인",
-          "lineStart": 1,
-          "lineEnd": 44
+          "path": "app2/src/utils/replaceConsoleLog.js",
+          "type": "TO_MODIFY",
+          "description": "자동화 스크립트"
+        },
+        {
+          "path": "app2/src/**/*.ts",
+          "type": "TO_MODIFY",
+          "description": "console 사용 파일들"
         }
       ],
-      "implementationGuide": "1. any 타입 검출 및 분석:\\n   - Grep으로 모든 any 타입 사용처 검색\\n   - 각 any 타입에 대한 구체적 인터페이스 정의\\n   - useCEODashboard.ts의 any 타입을 JobPostingDetail 인터페이스로 교체\\n2. Console 로그 최적화:\\n   - 528개 console.log 위치 파악\\n   - 개발/운영 환경 분리된 로깅 시스템 구축\\n   - logger.ts 활용한 구조화된 로깅 적용\\n3. 명명 규칙 일관성 검증:\\n   - 컴포넌트, 함수, 변수 명명 규칙 점검\\n   - 한국어/영어 혼용 패턴 표준화",
-      "verificationCriteria": "1. Grep으로 any 타입 검색 시 0개 결과 반환\\n2. console.log 수가 50개 이하로 감소\\n3. 모든 TypeScript 컴파일 에러 해결\\n4. 로깅 시스템이 개발/운영 환경별로 적절히 작동",
-      "analysisResult": "T-HOLDEM 프로젝트의 종합적인 코드베이스 분석을 통해 4개 주요 영역(코드 품질, 보안, 성능, 아키텍처)의 심각도별 개선 권장사항을 도출하고 구체적인 실행 계획을 제시합니다."
+      "implementationGuide": "1. replaceConsoleLog.js 스크립트 검토 및 개선\n2. console.log → logger.info 변환\n3. console.error → logger.error(message, error, context) 변환\n4. console.warn → logger.warn 변환\n5. 각 파일에 logger import 추가\n6. 컨텍스트 정보 추가 (component, operation)",
+      "verificationCriteria": "1. npm run build 성공\n2. console 사용 0개 확인 (grep 검색)\n3. 로그 레벨별 적절한 분류\n4. 컨텍스트 정보 포함 여부",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
     },
     {
-      "id": "65dce7f5-d7b3-482d-af8d-5efe79e30b3f",
-      "name": "Firebase 보안 강화 및 인증 시스템 점검",
-      "description": "Firebase 보안 규칙, 인증 시스템, API 키 관리를 점검하고 XSS/CSRF 보호 메커니즘을 강화합니다.",
-      "notes": "현재 환경변수로 Firebase 설정이 관리되고 있으나 추가적인 보안 강화가 필요합니다.",
+      "id": "b29dbb4b-44b7-4de2-bee0-51c62bf97e20",
+      "name": "DnD 라이브러리 통일 (@dnd-kit으로 일원화)",
+      "description": "react-dnd를 제거하고 @dnd-kit으로 통일. 4개 파일(Seat.tsx, TableCard.tsx, TableDetailModal.tsx, TablesPage.tsx)의 DnD 구현 마이그레이션.",
+      "notes": "기존 드래그 앤 드롭 기능이 정상 작동하도록 철저한 테스트 필요. 좌석 이동 기능이 핵심.",
       "status": "pending",
       "dependencies": [],
-      "createdAt": "2025-08-01T14:38:45.764Z",
-      "updatedAt": "2025-08-01T14:38:45.764Z",
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
       "relatedFiles": [
         {
-          "path": "app2/src/firebase.ts",
+          "path": "app2/src/components/Seat.tsx",
           "type": "TO_MODIFY",
-          "description": "Firebase 설정 보안 강화",
-          "lineStart": 12,
-          "lineEnd": 20
+          "description": "react-dnd 사용 컴포넌트"
         },
         {
-          "path": "firestore.rules",
-          "type": "REFERENCE",
-          "description": "Firestore 보안 규칙",
-          "lineStart": 1,
-          "lineEnd": 100
+          "path": "app2/src/components/TableCard.tsx",
+          "type": "TO_MODIFY",
+          "description": "테이블 카드 컴포넌트"
         },
         {
-          "path": "app2/src/contexts/AuthContext.tsx",
-          "type": "REFERENCE",
-          "description": "인증 컨텍스트",
-          "lineStart": 1,
-          "lineEnd": 100
+          "path": "app2/src/components/TableDetailModal.tsx",
+          "type": "TO_MODIFY",
+          "description": "테이블 상세 모달"
         },
         {
-          "path": "app2/src/utils/dataValidator.ts",
+          "path": "app2/src/pages/TablesPage.tsx",
           "type": "REFERENCE",
-          "description": "데이터 검증 유틸",
-          "lineStart": 1,
-          "lineEnd": 50
+          "description": "@dnd-kit 사용 예시"
         }
       ],
-      "implementationGuide": "1. 환경변수 보안 검증:\\n   - .env 파일 존재 여부 확인\\n   - Firebase API 키 노출 위험 점검\\n   - process.env 사용 패턴 분석\\n2. Firebase 보안 규칙 검토:\\n   - firestore.rules 파일 분석\\n   - 역할 기반 접근 제어 효과성 평가\\n   - 데이터 읽기/쓰기 권한 최소화 원칙 적용\\n3. 인증 플로우 보안성 검증:\\n   - 비밀번호 정책 및 인증 토큰 관리\\n   - 세션 관리 및 자동 로그아웃 메커니즘\\n   - 권한 상승 공격 방어 체계\\n4. XSS/CSRF 보호:\\n   - 사용자 입력 데이터 검증\\n   - dangerouslySetInnerHTML 사용 금지\\n   - Content Security Policy 적용",
-      "verificationCriteria": "1. 모든 민감한 정보가 환경변수로 관리됨\\n2. Firebase 보안 규칙이 최소 권한 원칙을 따름\\n3. XSS/CSRF 보호 메커니즘이 적용됨\\n4. 보안 스캔 도구로 취약점 0개 확인",
-      "analysisResult": "T-HOLDEM 프로젝트의 종합적인 코드베이스 분석을 통해 4개 주요 영역(코드 품질, 보안, 성능, 아키텍처)의 심각도별 개선 권장사항을 도출하고 구체적인 실행 계획을 제시합니다."
+      "implementationGuide": "1. Seat.tsx의 useDrag/useDrop을 @dnd-kit의 useDraggable/useDroppable로 변경\n2. react-dnd의 DndProvider를 @dnd-kit의 DndContext로 교체\n3. 드래그 앤 드롭 로직 재구현\n4. package.json에서 react-dnd, react-dnd-html5-backend 제거\n5. 번들 크기 측정 및 비교",
+      "verificationCriteria": "1. 좌석 드래그 앤 드롭 정상 작동\n2. react-dnd 의존성 완전 제거\n3. 번들 크기 감소 확인\n4. 빌드 성공",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
     },
     {
-      "id": "db997b06-4066-43aa-9be8-86b6ebffd8fa",
-      "name": "CEO 대시보드 성능 최적화",
-      "description": "CEO 대시보드의 9개 실시간 Firebase 구독을 최적화하고 메모리 누수를 방지하며 캐시 전략을 개선합니다.",
-      "notes": "현재 CEO 대시보드는 9개의 실시간 구독으로 인해 네트워크 과부하와 메모리 누수 위험이 있습니다.",
+      "id": "67f1e786-3a8b-42db-8290-25efc50d18f6",
+      "name": "테스트 인프라 복구 및 환경 설정",
+      "description": "깨진 테스트 환경 복구. 누락된 의존성 설치, vi → jest 마이그레이션, Firebase 모킹 수정으로 테스트 실행 가능하도록 환경 정상화.",
+      "notes": "현재 13개 테스트 스위트 중 12개 실패. 기본적인 의존성 문제부터 해결.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/__tests__/setup/firebase-mock.ts",
+          "type": "TO_MODIFY",
+          "description": "Firebase 모킹 설정"
+        },
+        {
+          "path": "app2/src/__tests__/setup/test-utils.tsx",
+          "type": "TO_MODIFY",
+          "description": "테스트 유틸리티"
+        },
+        {
+          "path": "app2/package.json",
+          "type": "TO_MODIFY",
+          "description": "의존성 추가"
+        }
+      ],
+      "implementationGuide": "1. npm install --save-dev @testing-library/user-event @firebase/rules-unit-testing\n2. firebase-mock.ts의 vi.fn() → jest.fn() 변경\n3. 테스트 설정 파일 검토 및 수정\n4. 각 테스트 파일의 import 경로 확인\n5. npm test 실행 및 오류 해결",
+      "verificationCriteria": "1. npm test 실행 시 의존성 오류 없음\n2. 최소 50% 테스트 통과\n3. 테스트 커버리지 리포트 생성 가능",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
+    },
+    {
+      "id": "5f2561a7-2dbc-40ef-95ca-b0d85d914023",
+      "name": "GitHub Actions CI/CD 파이프라인 구축",
+      "description": "자동 빌드, 테스트, 배포를 위한 GitHub Actions 워크플로우 설정. PR 검증, 메인 브랜치 자동 배포 프로세스 구축.",
+      "notes": "Firebase 배포 토큰은 firebase login:ci 명령으로 생성. 환경별 배포 전략 고려.",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "24f591d1-e8ad-4e40-9455-77abcae62993"
+          "taskId": "67f1e786-3a8b-42db-8290-25efc50d18f6"
         }
       ],
-      "createdAt": "2025-08-01T14:38:45.764Z",
-      "updatedAt": "2025-08-01T14:38:45.764Z",
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
       "relatedFiles": [
         {
-          "path": "app2/src/hooks/useCEODashboard.ts",
-          "type": "TO_MODIFY",
-          "description": "CEO 대시보드 훅 최적화",
-          "lineStart": 96,
-          "lineEnd": 442
+          "path": ".github/workflows/ci.yml",
+          "type": "CREATE",
+          "description": "CI 워크플로우"
         },
         {
-          "path": "app2/src/pages/admin/CEODashboard.tsx",
-          "type": "TO_MODIFY",
-          "description": "CEO 대시보드 컴포넌트",
-          "lineStart": 1,
-          "lineEnd": 358
+          "path": ".github/workflows/deploy.yml",
+          "type": "CREATE",
+          "description": "배포 워크플로우"
         },
         {
-          "path": "app2/src/components/DashboardCard.tsx",
-          "type": "REFERENCE",
-          "description": "대시보드 카드 컴포넌트",
-          "lineStart": 1,
-          "lineEnd": 50
-        },
-        {
-          "path": "app2/src/components/AnimatedNumber.tsx",
-          "type": "REFERENCE",
-          "description": "애니메이션 숫자 컴포넌트",
-          "lineStart": 1,
-          "lineEnd": 50
+          "path": ".github/pull_request_template.md",
+          "type": "CREATE",
+          "description": "PR 템플릿"
         }
       ],
-      "implementationGuide": "1. 실시간 구독 최적화:\\n   - 9개 개별 구독을 배치 처리로 통합\\n   - 불필요한 구독 제거 및 폴링 방식 혼용\\n   - onSnapshot 중복 호출 방지\\n2. 메모리 누수 방지:\\n   - useEffect cleanup 함수 강화\\n   - unsubscribe 로직 검증\\n   - 컴포넌트 언마운트 시 구독 해제 확인\\n3. 캐시 전략 개선:\\n   - 10초 TTL을 30초로 조정\\n   - 캐시 무효화 전략 구현\\n   - 로컬 스토리지 활용한 영구 캐시\\n4. 렌더링 성능 최적화:\\n   - useMemo/useCallback 추가 적용\\n   - 불필요한 리렌더링 방지\\n   - 가상화 컴포넌트 적용 검토",
-      "verificationCriteria": "1. Firebase 구독 수가 5개 이하로 감소\\n2. 메모리 사용량 30% 감소\\n3. 대시보드 로딩 시간 50% 단축\\n4. 캐시 히트율 80% 이상 달성",
-      "analysisResult": "T-HOLDEM 프로젝트의 종합적인 코드베이스 분석을 통해 4개 주요 영역(코드 품질, 보안, 성능, 아키텍처)의 심각도별 개선 권장사항을 도출하고 구체적인 실행 계획을 제시합니다."
+      "implementationGuide": "1. .github/workflows/ci.yml 작성 (빌드, 테스트, 린트)\n2. .github/workflows/deploy.yml 작성 (Firebase 배포)\n3. GitHub Secrets 설정 (FIREBASE_TOKEN 등)\n4. 브랜치 보호 규칙 설정\n5. PR 템플릿 작성",
+      "verificationCriteria": "1. PR 생성 시 자동 빌드/테스트 실행\n2. 메인 브랜치 머지 시 자동 배포\n3. 빌드 상태 배지 표시\n4. 실패 시 알림 설정",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
     },
     {
-      "id": "4cbbb7f8-0be0-44c1-b9e3-24ac0a05af8c",
-      "name": "번들 크기 및 로딩 성능 추가 최적화",
-      "description": "현재 44% 번들 크기 감소를 달성한 상태에서 추가 최적화를 통해 더 나은 성능을 확보합니다.",
-      "notes": "이미 44% 번들 크기 감소를 달성했으나 추가 최적화 여지가 있습니다.",
+      "id": "531f0401-cc88-4b77-bd37-2b28a4a06d71",
+      "name": "Sentry 에러 모니터링 도입",
+      "description": "실시간 에러 추적 및 성능 모니터링을 위한 Sentry 통합. logger 시스템과 연동하여 프로덕션 에러 자동 수집.",
+      "notes": "개발 환경에서는 비활성화. 민감한 정보 필터링 규칙 설정 필수.",
       "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-08-01T14:38:45.764Z",
-      "updatedAt": "2025-08-01T14:38:45.764Z",
-      "relatedFiles": [
+      "dependencies": [
         {
-          "path": "app2/package.json",
-          "type": "REFERENCE",
-          "description": "패키지 의존성",
-          "lineStart": 1,
-          "lineEnd": 111
-        },
+          "taskId": "7f57bb5c-c4e1-4e2e-8988-57f171a01c9d"
+        }
+      ],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
+      "relatedFiles": [
         {
           "path": "app2/src/App.tsx",
           "type": "TO_MODIFY",
-          "description": "라우팅 및 코드 분할",
-          "lineStart": 1,
-          "lineEnd": 100
+          "description": "Sentry 초기화"
         },
         {
-          "path": "app2/webpack.config.js",
+          "path": "app2/src/utils/logger.ts",
+          "type": "TO_MODIFY",
+          "description": "Sentry 통합"
+        },
+        {
+          "path": "app2/.env.example",
+          "type": "TO_MODIFY",
+          "description": "Sentry DSN 추가"
+        }
+      ],
+      "implementationGuide": "1. npm install @sentry/react\n2. Sentry 프로젝트 생성 및 DSN 획득\n3. App.tsx에 Sentry 초기화 코드 추가\n4. logger.error()와 Sentry 연동\n5. 소스맵 업로드 설정\n6. 환경별 설정 분리",
+      "verificationCriteria": "1. 에러 발생 시 Sentry 대시보드에 표시\n2. 소스맵으로 정확한 에러 위치 파악\n3. 성능 메트릭 수집 확인\n4. 개발 환경 비활성화 확인",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
+    },
+    {
+      "id": "d0270acf-1171-416b-8f3e-31f14c5f7337",
+      "name": "주요 컴포넌트 단위 테스트 작성",
+      "description": "핵심 비즈니스 로직을 가진 컴포넌트들의 단위 테스트 작성. StaffManagement, JobPosting, Tournament 관련 컴포넌트 우선 작성.",
+      "notes": "기존 테스트 파일 참고하여 일관된 패턴 유지. React Testing Library 베스트 프랙티스 준수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "67f1e786-3a8b-42db-8290-25efc50d18f6"
+        }
+      ],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/__tests__/",
+          "type": "TO_MODIFY",
+          "description": "기존 테스트 파일들"
+        },
+        {
+          "path": "app2/src/components/jobPosting/__tests__/",
           "type": "CREATE",
-          "description": "웹팩 설정 파일 생성",
-          "lineStart": 1,
-          "lineEnd": 1
-        },
-        {
-          "path": "app2/docs/OPTIMIZATION_GUIDE.md",
-          "type": "REFERENCE",
-          "description": "최적화 가이드",
-          "lineStart": 1,
-          "lineEnd": 100
+          "description": "새 테스트 디렉토리"
         }
       ],
-      "implementationGuide": "1. 추가 코드 분할:\\n   - React.lazy()를 더 많은 라우트에 적용\\n   - 청크 크기 분석 및 최적화\\n   - 동적 import 활용 확대\\n2. 미사용 코드 제거:\\n   - Tree shaking 효과 분석\\n   - 사용하지 않는 의존성 제거\\n   - 데드 코드 탐지 및 정리\\n3. 이미지 및 에셋 최적화:\\n   - 이미지 포맷 최적화 (WebP)\\n   - SVG 아이콘 인라인화\\n   - 폰트 로딩 최적화\\n4. 런타임 성능 개선:\\n   - Web Vitals 메트릭 개선\\n   - Core Web Vitals 최적화\\n   - 사용자 경험 지표 향상",
-      "verificationCriteria": "1. 번들 크기 추가 20% 감소\\n2. First Contentful Paint 1.5초 이하\\n3. Largest Contentful Paint 2.5초 이하\\n4. Lighthouse Performance 점수 95 이상",
-      "analysisResult": "T-HOLDEM 프로젝트의 종합적인 코드베이스 분석을 통해 4개 주요 영역(코드 품질, 보안, 성능, 아키텍처)의 심각도별 개선 권장사항을 도출하고 구체적인 실행 계획을 제시합니다."
+      "implementationGuide": "1. StaffRow, StaffCard 컴포넌트 테스트 복구\n2. JobCard, JobPostingForm 테스트 작성\n3. TournamentTable 관련 테스트 작성\n4. Firebase 모킹 패턴 확립\n5. 테스트 커버리지 70% 목표",
+      "verificationCriteria": "1. 각 컴포넌트 최소 3개 이상 테스트 케이스\n2. 엣지 케이스 처리 검증\n3. 사용자 인터랙션 시뮬레이션\n4. 커버리지 70% 달성",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
     },
     {
-      "id": "f6a32058-e4a2-4f82-8121-a143d9dd2575",
-      "name": "아키텍처 일관성 개선 및 상태 관리",
-      "description": "Context API와 Zustand 혼재 사용을 정리하고 컴포넌트 계층 구조를 최적화합니다.",
-      "notes": "현재 Context API와 Zustand가 혼재되어 사용되고 있어 일관성이 부족합니다.",
+      "id": "b7896a33-548a-40d9-ac87-6d9233cba191",
+      "name": "FullCalendar를 LightweightCalendar로 완전 교체",
+      "description": "MySchedulePage에서 사용 중인 FullCalendar를 기존 구현된 LightweightCalendar로 교체. 번들 크기 96% 감소 목표.",
+      "notes": "기존 LightweightCalendar 구현 참고. 달력 뷰 전환, 이벤트 클릭 등 기능 보존.",
       "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "24f591d1-e8ad-4e40-9455-77abcae62993"
-        }
-      ],
-      "createdAt": "2025-08-01T14:38:45.764Z",
-      "updatedAt": "2025-08-01T14:38:45.764Z",
+      "dependencies": [],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
       "relatedFiles": [
         {
-          "path": "app2/src/contexts",
+          "path": "app2/src/pages/MySchedulePage/index.tsx",
           "type": "TO_MODIFY",
-          "description": "모든 컨텍스트 파일",
-          "lineStart": 1,
-          "lineEnd": 100
+          "description": "FullCalendar 사용 페이지"
         },
         {
-          "path": "app2/src/stores",
-          "type": "TO_MODIFY",
-          "description": "Zustand 스토어",
-          "lineStart": 1,
-          "lineEnd": 100
-        },
-        {
-          "path": "app2/src/types",
-          "type": "TO_MODIFY",
-          "description": "타입 정의 파일들",
-          "lineStart": 1,
-          "lineEnd": 50
-        },
-        {
-          "path": "app2/src/hooks",
+          "path": "app2/src/components/LightweightCalendar.tsx",
           "type": "REFERENCE",
-          "description": "사용자 정의 훅들",
-          "lineStart": 1,
-          "lineEnd": 50
+          "description": "경량 캘린더 구현"
         }
       ],
-      "implementationGuide": "1. 상태 관리 통합:\\n   - Context API vs Zustand 사용 기준 정립\\n   - 전역 상태와 로컬 상태 구분\\n   - 상태 중복 제거 및 정규화\\n2. 컴포넌트 아키텍처 개선:\\n   - 컴포넌트 책임 분리\\n   - Props drilling 문제 해결\\n   - 재사용 가능한 컴포넌트 식별\\n3. 훅 최적화:\\n   - 사용자 정의 훅 성능 개선\\n   - 의존성 배열 최적화\\n   - 캐시 전략 일관성 확보\\n4. 타입 정의 개선:\\n   - 인터페이스 중복 제거\\n   - 타입 가드 함수 구현\\n   - 제네릭 타입 활용",
-      "verificationCriteria": "1. 상태 관리 패턴이 일관되게 적용됨\\n2. Props drilling이 3단계 이하로 제한됨\\n3. 컴포넌트 재사용률 80% 이상\\n4. 타입 오류 0개 달성",
-      "analysisResult": "T-HOLDEM 프로젝트의 종합적인 코드베이스 분석을 통해 4개 주요 영역(코드 품질, 보안, 성능, 아키텍처)의 심각도별 개선 권장사항을 도출하고 구체적인 실행 계획을 제시합니다."
+      "implementationGuide": "1. MySchedulePage의 FullCalendar import 제거\n2. LightweightCalendar 컴포넌트로 교체\n3. 이벤트 데이터 포맷 변환\n4. 상호작용 기능 재구현\n5. package.json에서 @fullcalendar/* 의존성 제거",
+      "verificationCriteria": "1. 캘린더 기능 정상 작동\n2. 번들 크기 500KB 이상 감소\n3. 성능 개선 측정\n4. 사용자 경험 동일 유지",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
     },
     {
-      "id": "4046e299-2a89-417a-9824-45650d9db99c",
-      "name": "테스트 커버리지 확대 및 품질 보증",
-      "description": "현재 15% 테스트 커버리지를 70%까지 확대하고 CI/CD 파이프라인에 품질 게이트를 추가합니다.",
-      "notes": "현재 15% 테스트 커버리지로 품질 보증이 부족한 상태입니다.",
+      "id": "70df23b1-1c4e-47c7-b527-e3ebe1318f41",
+      "name": "react-data-grid를 LightweightDataGrid로 완전 교체",
+      "description": "남은 react-data-grid 사용처를 모두 찾아 LightweightDataGrid로 교체. 번들 크기 85% 감소 목표.",
+      "notes": "기존 LightweightDataGrid 패턴 활용. 가상화 성능 유지 중요.",
       "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "f6a32058-e4a2-4f82-8121-a143d9dd2575"
-        }
-      ],
-      "createdAt": "2025-08-01T14:38:45.764Z",
-      "updatedAt": "2025-08-01T14:38:45.764Z",
+      "dependencies": [],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
       "relatedFiles": [
         {
-          "path": "app2/src/__tests__",
-          "type": "TO_MODIFY",
-          "description": "기존 테스트 파일들",
-          "lineStart": 1,
-          "lineEnd": 100
-        },
-        {
-          "path": "app2/playwright.config.ts",
+          "path": "app2/src/components/LightweightDataGrid/",
           "type": "REFERENCE",
-          "description": "E2E 테스트 설정",
-          "lineStart": 1,
-          "lineEnd": 50
+          "description": "경량 데이터그리드 구현"
         },
         {
-          "path": "app2/src/setupTests.ts",
-          "type": "REFERENCE",
-          "description": "테스트 설정",
-          "lineStart": 1,
-          "lineEnd": 50
-        },
-        {
-          "path": "app2/package.json",
+          "path": "app2/src/**/*.tsx",
           "type": "TO_MODIFY",
-          "description": "테스트 스크립트 추가",
-          "lineStart": 45,
-          "lineEnd": 68
+          "description": "react-data-grid 사용 파일"
         }
       ],
-      "implementationGuide": "1. 단위 테스트 확대:\\n   - 핵심 비즈니스 로직 테스트\\n   - 사용자 정의 훅 테스트\\n   - 유틸리티 함수 테스트\\n2. 통합 테스트 구현:\\n   - 컴포넌트 상호작용 테스트\\n   - API 통합 테스트\\n   - Firebase 모킹 테스트\\n3. E2E 테스트 추가:\\n   - 사용자 시나리오 기반 테스트\\n   - 크리티컬 패스 테스트\\n   - 크로스 브라우저 테스트\\n4. 품질 게이트 설정:\\n   - 코드 커버리지 70% 임계값\\n   - 린팅 및 포맷팅 검사\\n   - 성능 회귀 테스트",
-      "verificationCriteria": "1. 테스트 커버리지 70% 이상 달성\\n2. 모든 PR에서 품질 게이트 통과\\n3. E2E 테스트 통과율 95% 이상\\n4. CI/CD 파이프라인에서 자동 테스트 실행",
-      "analysisResult": "T-HOLDEM 프로젝트의 종합적인 코드베이스 분석을 통해 4개 주요 영역(코드 품질, 보안, 성능, 아키텍처)의 심각도별 개선 권장사항을 도출하고 구체적인 실행 계획을 제시합니다."
+      "implementationGuide": "1. react-data-grid 사용처 전체 검색\n2. 각 사용처를 LightweightDataGrid로 변경\n3. 컬럼 정의 및 데이터 포맷 조정\n4. 정렬, 필터링 기능 재구현\n5. package.json에서 react-data-grid 제거",
+      "verificationCriteria": "1. 데이터 테이블 기능 정상 작동\n2. 번들 크기 170KB 이상 감소\n3. 가상화 성능 유지\n4. 정렬/필터 기능 작동",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
+    },
+    {
+      "id": "21db1d57-aae2-45ed-afc0-713436b4208c",
+      "name": "react-icons를 커스텀 SVG 아이콘으로 교체",
+      "description": "react-icons 의존성을 제거하고 필요한 아이콘만 SVG로 직접 구현. 번들 크기 92% 감소 목표.",
+      "notes": "@heroicons/react 활용 고려. 자주 사용하는 아이콘만 구현.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/components/icons/",
+          "type": "CREATE",
+          "description": "커스텀 아이콘 디렉토리"
+        },
+        {
+          "path": "app2/src/**/*.tsx",
+          "type": "TO_MODIFY",
+          "description": "react-icons 사용 파일"
+        }
+      ],
+      "implementationGuide": "1. react-icons 사용처 전체 검색 (FaPlus, FaThList 등)\n2. 사용 중인 아이콘 목록 작성\n3. components/icons/ 디렉토리에 SVG 컴포넌트 생성\n4. import 경로 일괄 변경\n5. package.json에서 react-icons 제거",
+      "verificationCriteria": "1. 모든 아이콘 정상 표시\n2. 번들 크기 60KB 이상 감소\n3. 아이콘 품질 유지\n4. 타입 안전성 보장",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
+    },
+    {
+      "id": "064616a9-ae58-4372-945d-455bd0dd6078",
+      "name": "Context API를 Zustand로 완전 마이그레이션",
+      "description": "AuthContext, TournamentContext, ToastContext, JobPostingContext를 Zustand 스토어로 전환. 성능 향상 및 보일러플레이트 감소.",
+      "notes": "기존 tournamentStore.ts 패턴 참고. 점진적 마이그레이션 전략 수립.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-08-04T08:14:57.058Z",
+      "updatedAt": "2025-08-04T08:14:57.058Z",
+      "relatedFiles": [
+        {
+          "path": "app2/src/stores/tournamentStore.ts",
+          "type": "REFERENCE",
+          "description": "Zustand 패턴 참고"
+        },
+        {
+          "path": "app2/src/contexts/",
+          "type": "TO_MODIFY",
+          "description": "Context 파일들"
+        },
+        {
+          "path": "app2/src/stores/",
+          "type": "CREATE",
+          "description": "새 스토어 파일들"
+        }
+      ],
+      "implementationGuide": "1. tournamentStore 패턴 분석\n2. authStore, toastStore, jobPostingStore 생성\n3. Context Provider 제거 및 스토어 훅으로 교체\n4. 컴포넌트에서 useContext → useStore 변경\n5. 불필요한 리렌더링 제거 확인",
+      "verificationCriteria": "1. 상태 관리 기능 동일 유지\n2. 성능 개선 측정\n3. 타입 안전성 유지\n4. 리렌더링 최적화 확인",
+      "analysisResult": "T-HOLDEM 프로젝트의 CLAUDE.md 문서 기반 개선사항 구현. React 18 + TypeScript + Firebase 기반 홀덤 토너먼트 관리 플랫폼의 기술 부채 해결 및 성능 최적화."
     }
   ]
 }

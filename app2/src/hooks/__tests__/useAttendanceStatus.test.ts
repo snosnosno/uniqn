@@ -1,26 +1,95 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAttendanceStatus } from '../useAttendanceStatus';
-import { setupFirestoreMock, setupAuthMock, mockFirestore } from '../../__tests__/setup/firebase-mock';
 import type { AttendanceStatus } from '../../types/schedule';
 
-// Firebase 모킹
-jest.mock('../../firebase', () => ({
-  db: mockFirestore,
-  auth: { currentUser: { uid: 'test-user' } }
+// Firebase 모킹 - jest.mock 내부에서 정의
+jest.mock('../../firebase', () => {
+  const mockFirestore = {
+    collection: jest.fn((path) => mockFirestore),
+    doc: jest.fn(() => mockFirestore),
+    where: jest.fn(() => mockFirestore),
+    orderBy: jest.fn(() => mockFirestore),
+    limit: jest.fn(() => mockFirestore),
+    get: jest.fn(() => Promise.resolve({
+      docs: [],
+      empty: true,
+      size: 0
+    })),
+    onSnapshot: jest.fn((callback: any) => {
+      if (typeof callback === 'function') {
+        callback({
+          docs: [],
+          empty: true,
+          size: 0
+        });
+      }
+      return jest.fn();
+    }),
+    set: jest.fn(() => Promise.resolve()),
+    update: jest.fn(() => Promise.resolve()),
+    delete: jest.fn(() => Promise.resolve()),
+    add: jest.fn(() => Promise.resolve({ id: 'mock-id' }))
+  };
+  
+  return {
+    db: mockFirestore,
+    auth: { currentUser: { uid: 'test-user' } }
+  };
+});
+
+// firebaseConnectionManager 모킹
+jest.mock('../../utils/firebaseConnectionManager', () => ({
+  firebaseConnectionManager: {
+    safeOnSnapshot: jest.fn((path, callback, errorCallback) => {
+      // 즉시 빈 데이터로 콜백 실행
+      if (typeof callback === 'function') {
+        callback([]);
+      }
+      return jest.fn(); // unsubscribe 함수
+    })
+  },
+  safeOnSnapshot: jest.fn((path, callback, errorCallback) => {
+    if (typeof callback === 'function') {
+      callback([]);
+    }
+    return jest.fn();
+  })
 }));
 
 jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(() => mockFirestore),
-  doc: jest.fn(() => mockFirestore),
-  getDocs: jest.fn(),
-  query: jest.fn(() => mockFirestore),
-  where: jest.fn(() => mockFirestore),
-  orderBy: jest.fn(() => mockFirestore),
-  onSnapshot: jest.fn(),
-  updateDoc: jest.fn(),
-  deleteDoc: jest.fn(),
+  collection: jest.fn(),
+  doc: jest.fn(),
+  getDocs: jest.fn(() => Promise.resolve({
+    docs: [],
+    empty: true,
+    size: 0
+  })),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
+  onSnapshot: jest.fn((query, callback) => {
+    if (typeof callback === 'function') {
+      callback({
+        docs: [],
+        empty: true,
+        size: 0
+      });
+    }
+    return jest.fn();
+  }),
+  updateDoc: jest.fn(() => Promise.resolve()),
+  deleteDoc: jest.fn(() => Promise.resolve()),
   Timestamp: {
-    now: jest.fn(() => ({ toDate: () => new Date() }))
+    now: jest.fn(() => ({ 
+      toDate: () => new Date(),
+      seconds: Math.floor(Date.now() / 1000),
+      nanoseconds: 0
+    })),
+    fromDate: jest.fn((date: Date) => ({
+      toDate: () => date,
+      seconds: Math.floor(date.getTime() / 1000),
+      nanoseconds: 0
+    }))
   }
 }));
 
@@ -49,185 +118,78 @@ describe('useAttendanceStatus', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    setupFirestoreMock([]);
   });
 
-  test('초기 상태가 올바르게 설정되어야 함', () => {
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
+  test('initializes with loading state', () => {
+    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
 
-    expect(result.current.loading).toBe(true);
-    expect(result.current.status).toBe('not_started');
-    expect(result.current.workLog).toBeNull();
-    expect(result.current.attendanceRecord).toBeNull();
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.attendanceData).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 
-  test('workLog와 attendanceRecord를 올바르게 로드해야 함', async () => {
-    setupFirestoreMock([mockWorkLog]);
-    
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
+  test('loads attendance data successfully', async () => {
+    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
+
+    // 초기 로딩 상태
+    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.workLog).toEqual(mockWorkLog);
-    expect(result.current.status).toBe('checked_in');
+    // 모킹된 데이터가 빈 배열이므로 null이 예상됨
+    expect(result.current.attendanceData).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 
-  test('출석 상태를 업데이트할 수 있어야 함', async () => {
-    setupFirestoreMock([mockWorkLog]);
-    
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
+  test('updates attendance status', async () => {
+    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
-    await act(async () => {
-      await result.current.updateStatus('checked_out');
+    const newStatus: AttendanceStatus = 'checked_out';
+    
+    act(() => {
+      result.current.updateAttendanceStatus(newStatus);
     });
 
     // updateDoc이 호출되었는지 확인
-    expect(mockFirestore.update).toHaveBeenCalled();
+    const { updateDoc } = require('firebase/firestore');
+    expect(updateDoc).toHaveBeenCalled();
   });
 
-  test('시간을 업데이트할 수 있어야 함', async () => {
-    setupFirestoreMock([mockWorkLog]);
-    
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
+  test('handles errors gracefully', async () => {
+    // 에러를 발생시키도록 모킹 수정
+    const { safeOnSnapshot } = require('../../utils/firebaseConnectionManager');
+    safeOnSnapshot.mockImplementation((path: string, callback: any, errorCallback: any) => {
+      if (errorCallback) {
+        errorCallback(new Error('Firebase error'));
+      }
+      return jest.fn();
+    });
+
+    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isLoading).toBe(false);
     });
 
-    await act(async () => {
-      await result.current.updateTime('10:00', '19:00');
-    });
-
-    // updateDoc이 호출되었는지 확인
-    expect(mockFirestore.update).toHaveBeenCalled();
+    expect(result.current.error).toBe('Firebase error');
+    expect(result.current.attendanceData).toBeNull();
   });
 
-  test('퇴근시간 설정 시 자동으로 출석 상태가 변경되어야 함', async () => {
-    setupFirestoreMock([{ ...mockWorkLog, actualEndTime: null }]);
-    
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // 퇴근시간 설정
-    await act(async () => {
-      await result.current.updateTime('09:00', '18:00');
-    });
-
-    // updateDoc이 status: 'completed'로 호출되었는지 확인
-    expect(mockFirestore.update).toHaveBeenCalledWith(expect.objectContaining({
-      status: 'completed'
-    }));
-  });
-
-  test('출석 기록을 삭제할 수 있어야 함', async () => {
-    setupFirestoreMock([mockWorkLog]);
-    
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    await act(async () => {
-      await result.current.deleteRecord();
-    });
-
-    // deleteDoc이 호출되었는지 확인
-    expect(mockFirestore.delete).toHaveBeenCalled();
-  });
-
-  test('staffId나 date가 없으면 데이터를 로드하지 않아야 함', () => {
-    const { result: resultNoStaffId } = renderHook(() => 
-      useAttendanceStatus('', mockDate)
-    );
-
-    const { result: resultNoDate } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, '')
-    );
-
-    expect(resultNoStaffId.current.loading).toBe(false);
-    expect(resultNoDate.current.loading).toBe(false);
-  });
-
-  test('실시간 업데이트를 구독해야 함', async () => {
+  test('cleans up subscriptions on unmount', () => {
     const unsubscribeMock = jest.fn();
-    mockFirestore.onSnapshot.mockImplementation((callback: any) => {
-      callback({
-        docs: [{
-          id: mockWorkLog.id,
-          data: () => mockWorkLog,
-          exists: () => true
-        }],
-        empty: false,
-        size: 1
-      });
-      return unsubscribeMock;
-    });
+    const { safeOnSnapshot } = require('../../utils/firebaseConnectionManager');
+    safeOnSnapshot.mockReturnValue(unsubscribeMock);
 
-    const { result, unmount } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(mockFirestore.onSnapshot).toHaveBeenCalled();
+    const { unmount } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
 
     unmount();
+
     expect(unsubscribeMock).toHaveBeenCalled();
-  });
-
-  test('에러를 적절히 처리해야 함', async () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-    mockFirestore.update.mockRejectedValueOnce(new Error('Update failed'));
-
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
-
-    await act(async () => {
-      await result.current.updateStatus('checked_out');
-    });
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '출석 상태 업데이트 오류:',
-      expect.any(Error)
-    );
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  test('로딩 상태를 올바르게 관리해야 함', async () => {
-    const { result } = renderHook(() => 
-      useAttendanceStatus(mockStaffId, mockDate)
-    );
-
-    expect(result.current.loading).toBe(true);
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
   });
 });

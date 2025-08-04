@@ -11,6 +11,7 @@
 
 import { Applicant, MultipleSelection, SelectionItem } from '../types/jobPosting';
 
+import { logger } from './logger';
 // 로깅 레벨 정의
 export enum LogLevel {
   INFO = 'INFO',
@@ -53,10 +54,10 @@ export class MigrationUtils {
     
     switch (level) {
       case LogLevel.ERROR:
-        console.error(logMessage, data);
+        logger.error(message, new Error(message), { component: 'migrationUtils', data: { message: logMessage, additionalData: data } });
         break;
       case LogLevel.WARN:
-        console.warn(logMessage, data);
+        logger.warn(message, { component: 'migrationUtils', data: { message: logMessage, additionalData: data } });
         break;
       case LogLevel.DEBUG:
         if (process.env.NODE_ENV === 'development') {
@@ -64,7 +65,7 @@ export class MigrationUtils {
         }
         break;
       default:
-        console.log(logMessage, data);
+        logger.info(message, { component: 'migrationUtils', data: { message: logMessage, additionalData: data } });
     }
   }
 

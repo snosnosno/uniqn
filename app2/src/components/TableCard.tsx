@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaUsers, FaEllipsisV } from 'react-icons/fa';
+import { FaUsers, FaEllipsisV } from './Icons/ReactIconsReplacement';
 
 import { Table } from '../hooks/useTables';
 
@@ -60,7 +60,7 @@ const TableCard: React.FC<TableCardProps> = ({
             {table.name || `Table ${table.tableNumber}`}
         </h3>
         <div className="flex items-center text-sm text-gray-600">
-            <FaUsers className="mr-2" />
+            <FaUsers className="w-4 h-4 mr-2" />
             <span>{playerCount} / {maxSeats}</span>
         </div>
         <button 
@@ -70,7 +70,7 @@ const TableCard: React.FC<TableCardProps> = ({
                 onTableClick();
             }}
         >
-            <FaEllipsisV />
+            <FaEllipsisV className="w-4 h-4" />
         </button>
       </div>
 

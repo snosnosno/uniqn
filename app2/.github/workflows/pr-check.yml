@@ -1,0 +1,75 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        cache-dependency-path: app2/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd app2
+        npm ci
+
+    - name: Check code formatting
+      run: |
+        cd app2
+        npm run format:check || true
+
+    - name: Run linter
+      run: |
+        cd app2
+        npm run lint
+
+    - name: Run type check
+      run: |
+        cd app2
+        npm run type-check || true
+
+    - name: Run tests with coverage
+      run: |
+        cd app2
+        npm test -- --coverage --watchAll=false --passWithNoTests
+      env:
+        CI: true
+
+    - name: Comment PR with coverage
+      uses: ArtiomTr/jest-coverage-report-action@v2
+      if: always()
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: app2
+        skip-step: install
+        annotations: failed-tests
+        
+    - name: Check bundle size
+      run: |
+        cd app2
+        npm run build
+        echo "Build size report:"
+        du -sh build/static/js/*.js | sort -h
+      env:
+        CI: true
+
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v9
+      with:
+        urls: |
+          http://localhost:3000
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+      continue-on-error: true

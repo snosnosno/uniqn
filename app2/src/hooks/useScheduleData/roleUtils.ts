@@ -7,14 +7,14 @@ import { logger } from '../../utils/logger';
  * @returns 해당 날짜에 지원한 역할 문자열
  */
 export const getRoleForApplicationStatus = (data: any, targetDate?: string): string => {
-  console.log('🎯 getRoleForApplicationStatus 호출:', {
+  logger.debug('🎯 getRoleForApplicationStatus 호출:', { component: 'roleUtils', data: {
     status: data.status,
     targetDate,
     assignedRole: data.assignedRole,
     assignedRoles: data.assignedRoles,
     assignedDates: data.assignedDates,
     assignedTimes: data.assignedTimes
-  });
+  } });
   
   // 확정된 경우: 날짜별 확정 역할 찾기
   if (data.status === 'confirmed') {
@@ -33,7 +33,7 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
       
       if (dateIndex >= 0 && data.assignedRoles[dateIndex]) {
         const confirmedRole = data.assignedRoles[dateIndex];
-        logger.debug('  ✅ 확정 상태 - 날짜별 역할 (${targetDate}):', { component: 'useScheduleData', data: confirmedRole });
+        logger.debug(`  ✅ 확정 상태 - 날짜별 역할 (${targetDate}):`, { component: 'useScheduleData', data: confirmedRole });
         return confirmedRole;
       }
     }
@@ -51,11 +51,11 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
     if (targetDate && data.assignedDates && data.assignedRoles && 
         Array.isArray(data.assignedDates) && Array.isArray(data.assignedRoles)) {
       
-      console.log('  📅 날짜별 역할 매칭 시도:', {
+      logger.debug('  📅 날짜별 역할 매칭 시도:', { component: 'roleUtils', data: {
         targetDate,
         assignedDates: data.assignedDates,
         assignedRoles: data.assignedRoles
-      });
+      } });
       
       // 해당 날짜의 모든 역할 수집
       const dateRoles: string[] = [];
@@ -65,12 +65,12 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
                        date?.seconds ? new Date(date.seconds * 1000).toISOString().substring(0, 10) :
                        String(date);
         
-        console.log(`    [${index}] 날짜 비교:`, {
+        logger.debug(`    [${index}] 날짜 비교:`, { component: 'roleUtils', data: {
           dateStr,
           targetDate,
           matches: dateStr === targetDate,
           role: data.assignedRoles?.[index]
-        });
+        } });
         
         if (dateStr === targetDate && data.assignedRoles[index]) {
           dateRoles.push(data.assignedRoles[index]);
@@ -79,7 +79,7 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
       
       if (dateRoles.length > 0) {
         const appliedRoles = dateRoles.join(', ');
-        logger.debug('  📝 지원 상태 - 날짜별 역할들 (${targetDate}):', { component: 'useScheduleData', data: appliedRoles });
+        logger.debug(`  📝 지원 상태 - 날짜별 역할들 (${targetDate}):`, { component: 'useScheduleData', data: appliedRoles });
         return appliedRoles;
       }
     }

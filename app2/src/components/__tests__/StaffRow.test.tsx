@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StaffRow from '../StaffRow';
-import { customRender } from '../../__tests__/setup/test-utils';
+import { render } from '../../test-utils/test-utils';
 import type { StaffData } from '../../hooks/useStaffManagement';
 
 // AttendanceStatusCard 컴포넌트 모킹
@@ -68,7 +68,7 @@ describe('StaffRow', () => {
   });
 
   test('스태프 정보가 올바르게 표시되어야 함', () => {
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     expect(screen.getByText('홍길동')).toBeInTheDocument();
     expect(screen.getByText('딜러')).toBeInTheDocument();
@@ -78,20 +78,20 @@ describe('StaffRow', () => {
   });
 
   test('날짜가 표시 모드일 때 날짜가 보여야 함', () => {
-    customRender(<StaffRow {...defaultProps} showDate={true} />);
+    render(<StaffRow {...defaultProps} showDate={true} />);
 
     expect(screen.getByText('7월 25일')).toBeInTheDocument();
   });
 
   test('편집 권한이 없을 때 편집 버튼이 숨겨져야 함', () => {
-    customRender(<StaffRow {...defaultProps} canEdit={false} />);
+    render(<StaffRow {...defaultProps} canEdit={false} />);
 
     expect(screen.queryByText('Edit Status')).not.toBeInTheDocument();
   });
 
   test('시간 편집 버튼 클릭 시 콜백이 호출되어야 함', async () => {
     const user = userEvent.setup();
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     const timeDisplay = screen.getByText('09:00-18:00');
     await user.click(timeDisplay);
@@ -101,7 +101,7 @@ describe('StaffRow', () => {
 
   test('프로필 보기 버튼 클릭 시 콜백이 호출되어야 함', async () => {
     const user = userEvent.setup();
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     const profileButton = screen.getByRole('button', { name: /프로필 보기/i });
     await user.click(profileButton);
@@ -113,7 +113,7 @@ describe('StaffRow', () => {
     const user = userEvent.setup();
     window.confirm = jest.fn(() => true);
     
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     const deleteButton = screen.getByRole('button', { name: /삭제/i });
     await user.click(deleteButton);
@@ -123,13 +123,13 @@ describe('StaffRow', () => {
   });
 
   test('멀티 선택 모드에서 체크박스가 표시되어야 함', () => {
-    customRender(<StaffRow {...defaultProps} multiSelectMode={true} />);
+    render(<StaffRow {...defaultProps} multiSelectMode={true} />);
 
     expect(screen.getByRole('checkbox')).toBeInTheDocument();
   });
 
   test('선택된 상태에서 올바른 스타일이 적용되어야 함', () => {
-    customRender(<StaffRow {...defaultProps} multiSelectMode={true} isSelected={true} />);
+    render(<StaffRow {...defaultProps} multiSelectMode={true} isSelected={true} />);
 
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
@@ -139,7 +139,7 @@ describe('StaffRow', () => {
     const user = userEvent.setup();
     const onSelect = jest.fn();
     
-    customRender(
+    render(
       <StaffRow 
         {...defaultProps} 
         multiSelectMode={true} 
@@ -163,7 +163,7 @@ describe('StaffRow', () => {
       email: undefined
     };
 
-    customRender(<StaffRow {...defaultProps} staff={incompleteStaff} />);
+    render(<StaffRow {...defaultProps} staff={incompleteStaff} />);
 
     expect(screen.getByText('이름 미정')).toBeInTheDocument();
     expect(screen.getByText('역할 미정')).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('StaffRow', () => {
       workLogId: 'work-log-1'
     });
 
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     expect(screen.getByText('checked_in')).toBeInTheDocument();
   });
@@ -184,7 +184,7 @@ describe('StaffRow', () => {
   test('시간 슬롯 색상이 올바르게 적용되어야 함', () => {
     defaultProps.getTimeSlotColor.mockReturnValue('bg-green-100 text-green-800');
     
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     const timeElement = screen.getByText('09:00-18:00');
     expect(timeElement.className).toContain('bg-green-100');
@@ -197,7 +197,7 @@ describe('StaffRow', () => {
       scheduledEndTime: '19:00'
     });
 
-    customRender(<StaffRow {...defaultProps} />);
+    render(<StaffRow {...defaultProps} />);
 
     // formatTimeDisplay가 workLog 시간으로 호출되었는지 확인
     expect(defaultProps.formatTimeDisplay).toHaveBeenCalledWith('10:00-19:00');

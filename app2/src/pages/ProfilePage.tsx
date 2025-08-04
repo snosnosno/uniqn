@@ -154,7 +154,7 @@ const ProfilePage = () => {
             setIsEditing(false);
             alert(t('profilePage.updateSuccess'));
         } catch (err: any) {
-            logger.error("Error updating profile", err, { 
+            logger.error("Error updating profile", err instanceof Error ? err : new Error(String(err)), { 
                 operation: 'updateProfile',
                 ...(profileId && { userId: profileId })
             });

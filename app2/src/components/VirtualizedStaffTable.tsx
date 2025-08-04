@@ -70,12 +70,12 @@ const VirtualizedTableRow: React.FC<{
     
     // 날짜가 제대로 파싱되었는지 확인
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      console.warn('⚠️ VirtualizedStaffTable - assignedDate 파싱 실패:', {
+      logger.warn('⚠️ VirtualizedStaffTable - assignedDate 파싱 실패:', { component: 'VirtualizedStaffTable', data: {
         staffId: staff.id,
         staffName: staff.name,
         assignedDate: staff.assignedDate,
         parsedDate: dateString
-      });
+      } });
     }
     
     const actualStaffId = staff.id.replace(/_\d+$/, '');

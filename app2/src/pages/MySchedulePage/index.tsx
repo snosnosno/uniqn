@@ -12,7 +12,7 @@ import {
   FaCheckCircle,
   FaHourglassHalf,
   FaTimesCircle
-} from 'react-icons/fa';
+} from '../../components/Icons/ReactIconsReplacement';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -60,13 +60,13 @@ const MySchedulePage: React.FC = () => {
   const renderStatusIcon = (event: ScheduleEvent) => {
     switch (event.type) {
       case 'applied':
-        return <FaHourglassHalf className="text-yellow-500" />;
+        return <FaHourglassHalf className="w-4 h-4 text-yellow-500" />;
       case 'confirmed':
-        return <FaCheckCircle className="text-green-500" />;
+        return <FaCheckCircle className="w-4 h-4 text-green-500" />;
       case 'completed':
-        return <FaCheckCircle className="text-blue-500" />;
+        return <FaCheckCircle className="w-4 h-4 text-blue-500" />;
       case 'cancelled':
-        return <FaTimesCircle className="text-red-500" />;
+        return <FaTimesCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }
@@ -107,13 +107,13 @@ const MySchedulePage: React.FC = () => {
     if (schedules.length > 0) {
       logger.debug('스케줄 샘플:', { component: 'index' });
       schedules.slice(0, 3).forEach((schedule, index) => {
-        console.log(`  [${index}]`, {
+        logger.debug(`  [${index}]`, { component: 'index', data: {
           id: schedule.id,
           date: schedule.date,
           eventName: schedule.eventName,
           type: schedule.type,
           status: schedule.status
-        });
+        } });
       });
     }
     logger.debug('========================================\n', { component: 'index' });
@@ -285,13 +285,13 @@ const MySchedulePage: React.FC = () => {
         throw new Error('스케줄 정보를 찾을 수 없습니다.');
       }
 
-      console.log('🗑️ 일정 삭제 시작:', {
+      logger.debug('🗑️ 일정 삭제 시작:', { component: 'index', data: {
         scheduleId,
         eventName: schedule.eventName,
         type: schedule.type,
         status: schedule.status,
         sourceCollection: schedule.sourceCollection
-      });
+      } });
 
       // 삭제 가능한 일정인지 확인 (완료된 일정은 삭제 불가)
       if (schedule.type === 'completed') {
@@ -339,11 +339,11 @@ const MySchedulePage: React.FC = () => {
       }
 
       showSuccess('일정이 삭제되었습니다.');
-      console.log('✅ 일정 삭제 완료:', {
+      logger.debug('✅ 일정 삭제 완료:', { component: 'index', data: {
         scheduleId,
         eventName: schedule.eventName,
         sourceCollection: schedule.sourceCollection
-      });
+      } });
 
     } catch (error) {
       logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
@@ -394,7 +394,7 @@ const MySchedulePage: React.FC = () => {
                   }`}
                   title="캘린더 뷰"
                 >
-                  <FaCalendarAlt />
+                  <FaCalendarAlt className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
@@ -405,7 +405,7 @@ const MySchedulePage: React.FC = () => {
                   }`}
                   title="리스트 뷰"
                 >
-                  <FaList />
+                  <FaList className="w-5 h-5" />
                 </button>
               </div>
             )}
@@ -417,7 +417,7 @@ const MySchedulePage: React.FC = () => {
                 className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 title="QR 출퇴근"
               >
-                <FaCamera />
+                <FaCamera className="w-5 h-5" />
               </button>
             )}
             
@@ -427,7 +427,7 @@ const MySchedulePage: React.FC = () => {
               className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               title="새로고침"
             >
-              <FaSync />
+              <FaSync className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -451,7 +451,7 @@ const MySchedulePage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm">
           {schedules.length === 0 ? (
             <div className="p-8 text-center">
-              <FaCalendarAlt className="text-4xl text-gray-400 mx-auto mb-4" />
+              <FaCalendarAlt className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">등록된 일정이 없습니다.</p>
             </div>
           ) : (

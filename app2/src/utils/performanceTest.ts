@@ -4,6 +4,7 @@
 
 import { StaffData } from '../hooks/useStaffManagement';
 
+import { logger } from './logger';
 // 가짜 스태프 데이터 생성기
 export const generateMockStaffData = (count: number): StaffData[] => {
   const roles = ['Dealer', 'Floor', 'Server', 'Tournament Director', 'Chip Master', 'Registration', 'Security', 'Cashier'];
@@ -110,7 +111,7 @@ export class PerformanceBenchmark {
     this.results = [];
     
     for (const scenario of scenarios) {
-      console.log(`성능 테스트 실행: ${scenario.name} (${scenario.itemCount}개 항목, 가상화: ${scenario.virtualized ? '활성' : '비활성'})`);
+      logger.debug(`성능 테스트 실행: ${scenario.name} (${scenario.itemCount}개 항목, 가상화: ${scenario.virtualized ? '활성' : '비활성'})`, { component: 'performanceTest' });
       
       const renderTime = await this.measureRenderPerformance(
         scenario.name,

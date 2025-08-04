@@ -42,7 +42,7 @@ class PerformanceMonitor {
       navigationObserver.observe({ entryTypes: ['navigation'] });
       this.observers.push(navigationObserver);
     } catch (error) {
-      logger.warn('Navigation timing observer 초기화 실패', { error: String(error) });
+      logger.warn('Navigation timing observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
     }
 
     // Resource Timing API
@@ -64,7 +64,7 @@ class PerformanceMonitor {
       resourceObserver.observe({ entryTypes: ['resource'] });
       this.observers.push(resourceObserver);
     } catch (error) {
-      logger.warn('Resource timing observer 초기화 실패', { error: String(error) });
+      logger.warn('Resource timing observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
     }
 
     // Long Task API
@@ -84,7 +84,7 @@ class PerformanceMonitor {
       longTaskObserver.observe({ entryTypes: ['longtask'] });
       this.observers.push(longTaskObserver);
     } catch (error) {
-      logger.warn('Long task observer 초기화 실패', { error: String(error) });
+      logger.warn('Long task observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
     }
   }
 
@@ -178,7 +178,7 @@ class PerformanceMonitor {
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(lcpObserver);
     } catch (error) {
-      logger.warn('LCP observer 초기화 실패', { error: String(error) });
+      logger.warn('LCP observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
     }
 
     // Cumulative Layout Shift (CLS)
@@ -195,7 +195,7 @@ class PerformanceMonitor {
       clsObserver.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(clsObserver);
     } catch (error) {
-      logger.warn('CLS observer 초기화 실패', { error: String(error) });
+      logger.warn('CLS observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
     }
   }
 
@@ -242,7 +242,7 @@ class PerformanceMonitor {
 
   // 콘솔에 보고서 출력
   logReport(): void {
-    console.log(this.generateReport());
+    logger.debug('Log output', { component: 'performanceMonitor', data: this.generateReport() });
   }
 
   // 정리

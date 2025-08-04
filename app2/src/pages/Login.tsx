@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { FaGoogle } from 'react-icons/fa';
+import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
 import { useNavigate, Link } from "react-router-dom";
 
 import AuthLayout from '../components/AuthLayout';
@@ -29,7 +29,7 @@ const Login: React.FC = () => {
       } else {
         setError(t('adminLogin.errorMessage'));
       }
-      console.error(err);
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
     }
   };
 

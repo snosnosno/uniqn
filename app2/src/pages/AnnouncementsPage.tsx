@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { logger } from '../utils/logger';
 const AnnouncementsPage: React.FC = () => {
     const { t } = useTranslation();
     const [message, setMessage] = useState('');
@@ -10,7 +11,7 @@ const AnnouncementsPage: React.FC = () => {
         if (!message.trim()) return;
 
         // TODO: POST_ANNOUNCEMENT 구현 필요
-        console.log(`Dispatching POST_ANNOUNCEMENT with message: "${message}" (not implemented yet)`);
+        logger.debug(`Dispatching POST_ANNOUNCEMENT with message: "${message}" (not implemented yet)`, { component: 'AnnouncementsPage' });
         
         setMessage('');
     };

@@ -76,7 +76,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
           setLoading(false);
         },
         (err) => {
-          logger.error('Applications 구독 오류:', err, { component: 'useScheduleData' });
+          logger.error('Applications 구독 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useScheduleData' });
           setError('일정 데이터를 불러오는 중 오류가 발생했습니다.');
           setLoading(false);
         }
@@ -118,7 +118,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
           setLoading(false);
         },
         (err) => {
-          logger.error('WorkLogs 구독 오류:', err, { component: 'useScheduleData' });
+          logger.error('WorkLogs 구독 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useScheduleData' });
           setError('근무 기록을 불러오는 중 오류가 발생했습니다.');
           setLoading(false);
         }

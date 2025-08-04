@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaClock, FaCheckCircle } from 'react-icons/fa';
+import { FaClock, FaCheckCircle } from './Icons/ReactIconsReplacement';
 import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 import { db } from '../firebase';

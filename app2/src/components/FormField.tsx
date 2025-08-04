@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash } from './Icons/ReactIconsReplacement';
 
 interface FormFieldProps {
   id: string;
@@ -57,7 +57,7 @@ const FormField: React.FC<FormFieldProps> = ({
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
             aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
           >
-            {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
+            {isPasswordVisible ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
           </button> : null}
       </div>
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}

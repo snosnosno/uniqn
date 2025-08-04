@@ -1,8 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { IconType } from 'react-icons';
-import { FaUsers, FaClock, FaTrophy } from 'react-icons/fa';
+import { IconType, FaUsers, FaClock, FaTrophy } from '../components/Icons/ReactIconsReplacement';
 
 import { TournamentContext, Participant } from '../contexts/TournamentContext';
 import { setupTestData } from '../firebase';
@@ -60,7 +59,7 @@ const TournamentDashboard = () => {
     const StatCard = ({ title, value, icon: Icon, color }: StatCardProps) => (
         <div className="bg-white p-6 rounded-lg shadow-md flex items-center">
             <div className={`p-3 rounded-full mr-4 ${color}`}>
-                <Icon size={24} className="text-white" />
+                <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
                 <p className="text-sm text-gray-500">{title}</p>

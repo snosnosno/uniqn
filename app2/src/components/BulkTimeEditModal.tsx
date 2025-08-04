@@ -251,7 +251,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           
           successCount++;
         } catch (error) {
-          logger.error('Error updating staff ${staff.id}:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
+          logger.error(`Error updating staff ${staff.id}:`, error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
           errorCount++;
         }
       }

@@ -110,19 +110,24 @@ const JobListTab: React.FC<JobListTabProps> = ({
             width="100%"
             className="grid gap-4"
           >
-            {({ index, style }) => (
-              <div style={style} className="pb-4">
-                <JobCard
-                  key={jobPostings[index].id}
-                  post={jobPostings[index]}
-                  appliedStatus={appliedJobs.get(jobPostings[index].id)}
-                  onApply={onApply}
-                  onViewDetail={onViewDetail}
-                  isProcessing={isProcessing === jobPostings[index].id}
-                  canApply={canApply}
-                />
-              </div>
-            )}
+            {({ index, style }) => {
+              const post = jobPostings[index];
+              if (!post) return null;
+              
+              return (
+                <div style={style} className="pb-4">
+                  <JobCard
+                    key={post.id}
+                    post={post}
+                    appliedStatus={appliedJobs.get(post.id)}
+                    onApply={onApply}
+                    onViewDetail={onViewDetail}
+                    isProcessing={isProcessing === post.id}
+                    canApply={canApply}
+                  />
+                </div>
+              );
+            }}
           </List>
         ) : (
           // 일반 렌더링 (50개 미만일 때)

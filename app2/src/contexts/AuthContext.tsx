@@ -9,6 +9,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { logger } from '../utils/logger';
+import { setSentryUser } from '../utils/sentry';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // import { doc, getDoc } from 'firebase/firestore';
@@ -30,7 +31,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -57,12 +58,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const idTokenResult = await user.getIdTokenResult(true);
           const userRole = idTokenResult.claims.role as string || null;
           setRole(userRole);
+          
+          // Sentry에 사용자 정보 설정
+          const sentryUserData: { id: string; email?: string; username?: string } = {
+            id: user.uid
+          };
+          if (user.email) sentryUserData.email = user.email;
+          if (user.displayName) sentryUserData.username = user.displayName;
+          setSentryUser(sentryUserData);
         } catch (error) {
           logger.error('Error fetching user role:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
           setRole(null);
         }
       } else {
         setRole(null);
+        // 로그아웃 시 Sentry 사용자 정보 제거
+        setSentryUser(null);
       }
       setLoading(false);
     });

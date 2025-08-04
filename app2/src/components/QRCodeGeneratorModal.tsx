@@ -70,10 +70,10 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
       const errorCode = error instanceof Error && 'code' in error ? (error as any).code : undefined;
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorCode === 'functions/unavailable' || errorMessage?.includes('CORS')) {
-        logger.warn('CORS 문제 감지, 폴백 모드로 전환', { 
+        logger.warn('CORS 문제 감지, 폴백 모드로 전환', { component: 'QRCodeGeneratorModal', data: {  
           operation: 'generateQrCode',
           eventId 
-        });
+         } });
         
         // 폴백: 로컬 토큰 생성
         const fallbackToken = `fallback-${eventId}-${Date.now()}`;

@@ -3,8 +3,8 @@ import { collection, query, where, doc, deleteDoc, onSnapshot } from 'firebase/f
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../contexts/AuthContext';
-import { useJobPostingContext } from '../contexts/JobPostingContext';
-import { useToast } from '../contexts/ToastContext';
+import { useJobPostingContext } from '../contexts/JobPostingContextAdapter';
+import { useToast } from '../hooks/useToast';
 import { db } from '../firebase';
 import { formatDate } from '../utils/jobPosting/dateUtils';
 import type { WorkLog } from '../types/common';

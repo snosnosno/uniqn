@@ -1,7 +1,7 @@
-import { useToastContext, Toast } from '../contexts/ToastContext';
+import { useToastStore, Toast } from '../stores/toastStore';
 
 export const useToast = () => {
-  const { addToast, removeToast, clearAllToasts } = useToastContext();
+  const { addToast, removeToast, clearAllToasts } = useToastStore();
 
   // Convenience methods for different toast types
   const showSuccess = (message: string, title?: string, duration?: number) => {

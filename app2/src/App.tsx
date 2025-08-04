@@ -8,13 +8,13 @@ import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 
 import FirebaseErrorBoundary from './components/FirebaseErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import RoleBasedRoute from './components/RoleBasedRoute';
 import { ToastContainer } from './components/Toast';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ToastProvider } from './contexts/ToastContext';
 // Zustand 마이그레이션: Context 대신 Adapter 사용
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
@@ -87,70 +87,70 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <FirebaseErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
+    <ErrorBoundary>
+      <FirebaseErrorBoundary>
+        <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <TournamentProvider>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/live/:tournamentId" element={<Suspense fallback={<LoadingSpinner />}><ParticipantLivePage /></Suspense>} />
-                
-                {/* Authenticated Routes */}
-                <Route element={<PrivateRoute />}>
-                  <Route path="/" element={<Layout />}>
-                    <Route index element={<HomeRedirect />} />
-                    <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
-                    <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
-                    <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
-                    <Route path="payroll/:userId" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
-                    
-                    {/* Dealer facing routes */}
-                    <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
-                    <Route path="my-schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
-                    <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><AttendancePage /></Suspense>} />
-                    <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/live/:tournamentId" element={<Suspense fallback={<LoadingSpinner />}><ParticipantLivePage /></Suspense>} />
+                  
+                  {/* Authenticated Routes */}
+                  <Route element={<PrivateRoute />}>
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<HomeRedirect />} />
+                      <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
+                      <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
+                      <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
+                      <Route path="payroll/:userId" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
+                      
+                      {/* Dealer facing routes */}
+                      <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
+                      <Route path="my-schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
+                      <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><AttendancePage /></Suspense>} />
+                      <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
 
-                    {/* Admin & Manager Routes */}
-                    <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
-                      <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>} />
-                      <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
-                      <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
-                      <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollAdminPage /></Suspense>} />
-                      <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
-                      <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
-                      <Route path="blinds" element={<Suspense fallback={<LoadingSpinner />}><BlindsPage /></Suspense>} />
-                      <Route path="prizes" element={<Suspense fallback={<LoadingSpinner />}><PrizesPage /></Suspense>} />
-                      <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
-                      <Route path="history" element={<Suspense fallback={<LoadingSpinner />}><HistoryPage /></Suspense>} />
-                      <Route path="history/:logId" element={<Suspense fallback={<LoadingSpinner />}><HistoryDetailPage /></Suspense>} />
-                    </Route>
+                      {/* Admin & Manager Routes */}
+                      <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
+                        <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>} />
+                        <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
+                        <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
+                        <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollAdminPage /></Suspense>} />
+                        <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
+                        <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
+                        <Route path="blinds" element={<Suspense fallback={<LoadingSpinner />}><BlindsPage /></Suspense>} />
+                        <Route path="prizes" element={<Suspense fallback={<LoadingSpinner />}><PrizesPage /></Suspense>} />
+                        <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
+                        <Route path="history" element={<Suspense fallback={<LoadingSpinner />}><HistoryPage /></Suspense>} />
+                        <Route path="history/:logId" element={<Suspense fallback={<LoadingSpinner />}><HistoryDetailPage /></Suspense>} />
+                      </Route>
 
-                    {/* Job Posting Management - Admin, Manager, Staff with permission */}
-                    <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
-                      <Route path="job-postings" element={<Suspense fallback={<LoadingSpinner />}><JobPostingAdminPage /></Suspense>} />
-                      <Route path="job-posting/:id" element={<Suspense fallback={<LoadingSpinner />}><JobPostingDetailPage /></Suspense>} />
-                    </Route>
+                      {/* Job Posting Management - Admin, Manager, Staff with permission */}
+                      <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
+                        <Route path="job-postings" element={<Suspense fallback={<LoadingSpinner />}><JobPostingAdminPage /></Suspense>} />
+                        <Route path="job-posting/:id" element={<Suspense fallback={<LoadingSpinner />}><JobPostingDetailPage /></Suspense>} />
+                      </Route>
 
-                    {/* Admin Only Route */}
-                    <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
-                        <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
-                        <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
-                        <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
-                        <Route path="performance" element={<Suspense fallback={<LoadingSpinner />}><PerformanceReport /></Suspense>} />
+                      {/* Admin Only Route */}
+                      <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                          <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
+                          <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
+                          <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
+                          <Route path="performance" element={<Suspense fallback={<LoadingSpinner />}><PerformanceReport /></Suspense>} />
+                      </Route>
                     </Route>
                   </Route>
-                </Route>
-              </Routes>
-            </TournamentProvider>
-          </AuthProvider>
+                </Routes>
+              </TournamentProvider>
+            </AuthProvider>
+          </QueryClientProvider>
           <ToastContainer />
-        </ToastProvider>
-      </QueryClientProvider>
-    </FirebaseErrorBoundary>
+      </FirebaseErrorBoundary>
+    </ErrorBoundary>
   );
 }
 

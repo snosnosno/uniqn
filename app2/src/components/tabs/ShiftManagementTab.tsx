@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaHistory } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaHistory } from '../Icons/ReactIconsReplacement';
 
 // import { useAuth } from '../../contexts/AuthContext';
-import { useJobPostingContext } from '../../contexts/JobPostingContext';
+import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 
 interface ShiftManagementTabProps {
   jobPosting?: any;
@@ -69,7 +69,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 날짜 선택 */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <FaCalendarAlt className="text-blue-600" />
+              <FaCalendarAlt className="w-5 h-5 text-blue-600" />
               <label className="font-semibold text-gray-700">
                 {t('shiftSchedule.selectDate', '날짜 선택')}:
               </label>
@@ -116,7 +116,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
         <div className="xl:col-span-3">
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-              <FaTable className="mr-2"/> 
+              <FaTable className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.scheduleGrid', '스케줄 그리드')}
             </h4>
             
@@ -144,11 +144,11 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 할당된 스태프 */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-              <FaUsers className="mr-2"/> 
+              <FaUsers className="w-5 h-5 mr-2"/> 
               할당된 스태프 ({staff.length})
             </h4>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {staff.length > 0 ? staff.map(staffMember => (
+              {staff.length > 0 ? staff.map((staffMember: any) => (
                 <div key={staffMember.id} className="flex items-center bg-blue-50 p-3 rounded-lg shadow-sm">
                   <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center mr-3">
                     <span className="text-sm font-semibold text-blue-700">
@@ -173,7 +173,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 시간대 정보 */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
-              <FaClock className="mr-2"/> 
+              <FaClock className="w-5 h-5 mr-2"/> 
               시간대 정보
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -199,7 +199,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 테이블 정보 */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
-              <FaTable className="mr-2"/> 
+              <FaTable className="w-5 h-5 mr-2"/> 
               테이블 정보
             </h4>
             <div className="text-center py-8">

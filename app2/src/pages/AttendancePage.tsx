@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 
 
+import { logger } from '../utils/logger';
 const AttendancePage: React.FC = () => {
     const { t } = useTranslation();
     const [scanResult, setScanResult] = useState<string>('');
@@ -29,7 +30,7 @@ const AttendancePage: React.FC = () => {
                     await callFunctionLazy('recordAttendance', { qrCodeToken: token });
                     setFeedback({ type: 'success', message: t('attendancePage.success') });
                 } catch (err: any) {
-                    console.error(err);
+                    logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AttendancePage' });
                     setFeedback({ type: 'error', message: err.message || t('attendancePage.fail') });
                 } finally {
                     setIsSubmitting(false);
@@ -40,7 +41,7 @@ const AttendancePage: React.FC = () => {
         }
 
         if (!!error) {
-            // console.info(error);
+            // logger.info('Info', { component: 'AttendancePage', data: error });
         }
     }
 

@@ -6,6 +6,7 @@ import AuthLayout from '../components/AuthLayout';
 import FormField from '../components/FormField';
 import { useAuth } from '../contexts/AuthContext';
 
+import { logger } from '../utils/logger';
 const ForgotPassword = () => {
   const { t } = useTranslation();
   const { sendPasswordReset } = useAuth();
@@ -25,7 +26,7 @@ const ForgotPassword = () => {
       setMessage(t('forgotPassword.successMessage'));
     } catch (err: any) {
       setError(t('forgotPassword.errorMessage'));
-      console.error(err);
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'ForgotPassword' });
     } finally {
       setLoading(false);
     }

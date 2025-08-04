@@ -1,5 +1,4 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
-
 // 로그 레벨 정의
 export enum LogLevel {
   DEBUG = 'debug',
@@ -102,7 +101,9 @@ class StructuredLogger {
     
     if (error) {
       console.error('Error:', error);
-      console.log('Stack:', error.stack);
+      if (error instanceof Error && error.stack) {
+        console.log('Stack:', error.stack);
+      }
     }
     
     console.groupEnd();

@@ -2,14 +2,14 @@ import { doc, getDoc } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
+import { FaChevronUp, FaChevronDown } from '../components/Icons/ReactIconsReplacement';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 
 import ApplicantListTab from '../components/tabs/ApplicantListTab';
 import PayrollProcessingTab from '../components/tabs/PayrollProcessingTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
-import { JobPostingProvider } from '../contexts/JobPostingContext';
+import { JobPostingProvider } from '../contexts/JobPostingContextAdapter';
 import { db } from '../firebase';
 import { usePermissions } from '../hooks/usePermissions';
 import { JobPosting, JobPostingUtils, DateSpecificRequirement } from '../types/jobPosting';

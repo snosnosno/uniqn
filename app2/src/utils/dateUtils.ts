@@ -111,12 +111,12 @@ export function timestampToLocalDateString(timestamp: TimestampInput): string {
       }
       // 기타 객체 형식 - 디버깅을 위한 자세한 로그
       else {
-        console.warn('⚠️ 알 수 없는 timestamp 객체 형식:', {
+        logger.warn('⚠️ 알 수 없는 timestamp 객체 형식:', { component: 'dateUtils', data: {
           timestamp,
           keys: Object.keys(timestamp),
           type: typeof timestamp,
           constructor: timestamp.constructor?.name
-        });
+        } });
         // assignedDate가 객체 내부에 있는 경우를 처리
         if ('assignedDate' in timestamp && timestamp.assignedDate) {
           return timestampToLocalDateString(timestamp.assignedDate);
@@ -141,7 +141,7 @@ export function timestampToLocalDateString(timestamp: TimestampInput): string {
           const seconds = parseInt(match[1], 10);
           date = new Date(seconds * 1000);
         } else {
-          console.warn('⚠️ Firebase Timestamp 문자열 파싱 실패:', timestamp);
+          logger.warn('⚠️ Firebase Timestamp 문자열 파싱 실패:', { component: 'dateUtils', data: timestamp });
           date = new Date();
         }
       } else {
@@ -154,18 +154,21 @@ export function timestampToLocalDateString(timestamp: TimestampInput): string {
       date = new Date(timestamp);
     }
     else {
-      console.warn('⚠️ 예상치 못한 timestamp 타입:', { timestamp, type: typeof timestamp });
+      logger.warn('⚠️ 예상치 못한 timestamp 타입:', { component: 'dateUtils', ...{ timestamp, type: typeof timestamp } });
       // 기본값: 오늘 날짜
       date = new Date();
     }
 
     // 날짜가 유효한지 확인
     if (!date || isNaN(date.getTime())) {
-      console.error('❌ 유효하지 않은 날짜:', { 
-        timestamp, 
-        date,
-        timestampType: typeof timestamp,
-        timestampKeys: timestamp && typeof timestamp === 'object' ? Object.keys(timestamp) : null 
+      logger.error('❌ 유효하지 않은 날짜', new Error('Invalid date'), { 
+        component: 'dateUtils',
+        data: {
+          timestamp, 
+          date,
+          timestampType: typeof timestamp,
+          timestampKeys: timestamp && typeof timestamp === 'object' ? Object.keys(timestamp) : null
+        }
       });
       const isoString = new Date().toISOString();
     const datePart = isoString.split('T')[0];
@@ -204,7 +207,7 @@ export function timestampToLocalDateString(timestamp: TimestampInput): string {
         }
       }
     } catch (localeError) {
-      console.warn('⚠️ 로케일 변환 실패, 기본 방식 사용:', localeError);
+      logger.warn('⚠️ 로케일 변환 실패, 기본 방식 사용:', { component: 'dateUtils', data: localeError });
     }
     
     // 로케일 변환 실패 시 기본 방식 사용

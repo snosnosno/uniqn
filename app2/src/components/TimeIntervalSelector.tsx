@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaClock, FaInfo, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaClock, FaInfo, FaChevronDown, FaChevronUp } from './Icons/ReactIconsReplacement';
 
 // import { useTranslation } from 'react-i18next';
 import { TIME_INTERVALS, TimeInterval } from '../utils/timeUtils';

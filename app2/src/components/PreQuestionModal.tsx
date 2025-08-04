@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../hooks/useToast';
 import { PreQuestion, PreQuestionAnswer } from '../types/jobPosting';
 
 interface PreQuestionModalProps {

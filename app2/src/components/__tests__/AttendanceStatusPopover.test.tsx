@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AttendanceStatusPopover from '../AttendanceStatusPopover';
-import { customRender } from '../../__tests__/setup/test-utils';
+import { customRender as render } from '../../__tests__/setup/test-utils';
 import { updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 // Firebase 함수 모킹
@@ -40,14 +40,14 @@ describe('AttendanceStatusPopover', () => {
   });
 
   test('현재 상태가 올바르게 표시되어야 함', () => {
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     expect(screen.getByText('출근 전')).toBeInTheDocument();
   });
 
   test('버튼 클릭 시 팝오버가 열려야 함', async () => {
     const user = userEvent.setup();
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     await user.click(statusButton);
@@ -58,7 +58,7 @@ describe('AttendanceStatusPopover', () => {
   });
 
   test('편집 권한이 없을 때 버튼이 비활성화되어야 함', () => {
-    customRender(<AttendanceStatusPopover {...defaultProps} canEdit={false} />);
+    render(<AttendanceStatusPopover {...defaultProps} canEdit={false} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     expect(statusButton).toBeDisabled();
@@ -68,7 +68,7 @@ describe('AttendanceStatusPopover', () => {
     const user = userEvent.setup();
     (updateDoc as jest.Mock).mockResolvedValue(undefined);
     
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     await user.click(statusButton);
@@ -87,7 +87,7 @@ describe('AttendanceStatusPopover', () => {
     const user = userEvent.setup();
     (updateDoc as jest.Mock).mockResolvedValue(undefined);
     
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     await user.click(statusButton);
@@ -110,7 +110,7 @@ describe('AttendanceStatusPopover', () => {
     const user = userEvent.setup();
     (updateDoc as jest.Mock).mockResolvedValue(undefined);
     
-    customRender(
+    render(
       <AttendanceStatusPopover 
         {...defaultProps} 
         currentStatus="checked_in"
@@ -137,7 +137,7 @@ describe('AttendanceStatusPopover', () => {
 
   test('이미 선택된 상태를 다시 선택하면 변경되지 않아야 함', async () => {
     const user = userEvent.setup();
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     await user.click(statusButton);
@@ -153,7 +153,7 @@ describe('AttendanceStatusPopover', () => {
     const startTime = Timestamp.fromDate(new Date('2024-07-25T09:05:00'));
     const endTime = Timestamp.fromDate(new Date('2024-07-25T18:10:00'));
     
-    customRender(
+    render(
       <AttendanceStatusPopover 
         {...defaultProps}
         currentStatus="checked_out"
@@ -168,7 +168,7 @@ describe('AttendanceStatusPopover', () => {
 
   test('팝오버 외부 클릭 시 닫혀야 함', async () => {
     const user = userEvent.setup();
-    customRender(
+    render(
       <div>
         <AttendanceStatusPopover {...defaultProps} />
         <button>Outside Button</button>
@@ -194,7 +194,7 @@ describe('AttendanceStatusPopover', () => {
       new Promise(resolve => setTimeout(resolve, 100))
     );
     
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     await user.click(statusButton);
@@ -214,7 +214,7 @@ describe('AttendanceStatusPopover', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     (updateDoc as jest.Mock).mockRejectedValue(new Error('Update failed'));
     
-    customRender(<AttendanceStatusPopover {...defaultProps} />);
+    render(<AttendanceStatusPopover {...defaultProps} />);
 
     const statusButton = screen.getByRole('button', { name: /출근 전/i });
     await user.click(statusButton);
@@ -233,7 +233,7 @@ describe('AttendanceStatusPopover', () => {
   });
 
   test('다양한 크기가 올바르게 적용되어야 함', () => {
-    const { rerender } = customRender(
+    const { rerender } = render(
       <AttendanceStatusPopover {...defaultProps} size="sm" />
     );
 

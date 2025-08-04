@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useTournamentStore } from '../stores/tournamentStore';
 import type { User } from '../types/common';
@@ -85,7 +86,7 @@ export const TournamentProvider = ({ children }: TournamentProviderProps) => {
         store.addParticipant(action.payload.name);
         break;
       default:
-        console.warn('Unknown action type:', action);
+        logger.warn('Unknown action type:', { component: 'TournamentContextAdapter', data: action });
     }
   };
 

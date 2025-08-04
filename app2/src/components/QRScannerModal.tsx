@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from '../utils/logger';
 // @ts-ignore
 import { useTranslation } from 'react-i18next';
 import QrScanner from 'react-qr-scanner';
@@ -23,7 +24,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose, onScan
 
   const handleError = (err: any) => {
     onError(err);
-    console.error(err);
+    logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'QRScannerModal' });
   };
 
   const previewStyle = {

@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPlus, FaThList, FaUserPlus } from 'react-icons/fa';
+import { FaPlus, FaThList, FaUserPlus } from '../components/Icons/ReactIconsReplacement';
 
 import MoveSeatModal from '../components/MoveSeatModal';
 import ParticipantDetailModal from '../components/ParticipantDetailModal';
@@ -169,15 +169,15 @@ const TablesPage: React.FC = () => {
                             {t('tables.buttonAutoAssign')}
                         </button>
                         <button onClick={openNewTable} className="btn btn-primary">
-                            <FaPlus className="mr-2"/>{t('tables.buttonAddTable')}
+                            <FaPlus className="w-4 h-4 mr-2"/>{t('tables.buttonAddTable')}
                         </button>
                     </div>
                 </div>
 
                 <div className="flex justify-between items-center text-gray-600">
                     <div className="flex items-center space-x-6">
-                        <div className="flex items-center"><FaThList className="mr-2 text-blue-500" /> {t('tables.infoTables')} <span className="font-bold ml-1">{tables.length}</span></div>
-                        <div className="flex items-center"><FaUserPlus className="mr-2 text-green-500" /> {t('tables.infoEmptySeats')} <span className="font-bold ml-1">{totalEmptySeats}</span></div>
+                        <div className="flex items-center"><FaThList className="w-5 h-5 mr-2 text-blue-500" /> {t('tables.infoTables')} <span className="font-bold ml-1">{tables.length}</span></div>
+                        <div className="flex items-center"><FaUserPlus className="w-5 h-5 mr-2 text-green-500" /> {t('tables.infoEmptySeats')} <span className="font-bold ml-1">{totalEmptySeats}</span></div>
                     </div>
                     <div className="flex items-center space-x-2">
                         <label htmlFor="max-seats" className="font-semibold">{t('tables.labelMaxSeats')}</label>

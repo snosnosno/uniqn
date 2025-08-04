@@ -49,12 +49,12 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
       
       // 유효성 검증 (1970~2038년 범위)
       if (typeof seconds !== 'number' || seconds < 0 || seconds > 2147483647) {
-        console.warn('Invalid Timestamp seconds:', seconds);
+        logger.warn('Invalid Timestamp seconds:', { component: 'dateUtils', data: seconds });
         return null;
       }
       
       if (typeof nanoseconds !== 'number' || nanoseconds < 0 || nanoseconds >= 1000000000) {
-        console.warn('Invalid Timestamp nanoseconds:', nanoseconds);
+        logger.warn('Invalid Timestamp nanoseconds:', { component: 'dateUtils', data: nanoseconds });
         return null;
       }
       
@@ -75,7 +75,7 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
       const seconds = dateInput.seconds;
       
       if (typeof seconds !== 'number' || seconds < 0 || seconds > 2147483647) {
-        console.warn('Invalid legacy Timestamp seconds:', seconds);
+        logger.warn('Invalid legacy Timestamp seconds:', { component: 'dateUtils', data: seconds });
         return null;
       }
       
@@ -223,7 +223,7 @@ export const convertToDateString = (dateInput: DateInput): string => {
     const date = parseToDate(dateInput);
     
     if (!date) {
-      console.warn('Invalid date for convertToDateString:', dateInput);
+      logger.warn('Invalid date for convertToDateString:', { component: 'dateUtils', data: dateInput });
       return '';
     }
     
@@ -297,7 +297,7 @@ export const convertToTimestamp = (dateInput: DateInput): Timestamp | null => {
     const date = parseToDate(dateInput);
     
     if (!date) {
-      console.warn('Invalid date for Timestamp conversion:', dateInput);
+      logger.warn('Invalid date for Timestamp conversion:', { component: 'dateUtils', data: dateInput });
       return null;
     }
     

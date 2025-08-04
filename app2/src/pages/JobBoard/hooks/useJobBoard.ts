@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, serverTimestamp, addDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../contexts/ToastContext';
+import { useToast } from '../../../hooks/useToast';
 import { db } from '../../../firebase';
 import { useInfiniteJobPostings } from '../../../hooks/useJobPostings';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';

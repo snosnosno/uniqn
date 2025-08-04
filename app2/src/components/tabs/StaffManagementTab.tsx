@@ -274,7 +274,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           batch.set(workLogRef, newWorkLogData);
           successCount++;
         } catch (error) {
-          logger.error('Staff ${staffId} 상태 업데이트 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffManagementTab' });
+          logger.error(`Staff ${staffId} 상태 업데이트 오류:`, error instanceof Error ? error : new Error(String(error)), { component: 'StaffManagementTab' });
           errorCount++;
         }
       }

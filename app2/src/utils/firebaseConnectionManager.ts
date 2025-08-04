@@ -36,7 +36,7 @@ class FirebaseConnectionManager {
     
     // 중복 구독 방지를 위한 경고
     if (this.activeCollections.has(collectionPath)) {
-      logger.warn('⚠️ Multiple listeners detected for collection: ${collectionPath}', { component: 'firebaseConnectionManager' });
+      logger.warn(`⚠️ Multiple listeners detected for collection: ${collectionPath}`, { component: 'firebaseConnectionManager' });
     }
     
     try {
@@ -55,7 +55,7 @@ class FirebaseConnectionManager {
           }
         },
         (error) => {
-          logger.error('Firebase listener error for ${collectionPath}:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseConnectionManager' });
+          logger.error(`Firebase listener error for ${collectionPath}:`, error instanceof Error ? error : new Error(String(error)), { component: 'firebaseConnectionManager' });
           
           // Handle internal assertion errors - 재시도하지 않고 정리만 수행
           if (error.message && error.message.includes('INTERNAL ASSERTION FAILED')) {
@@ -97,7 +97,7 @@ class FirebaseConnectionManager {
     }
 
     this.retryCount++;
-    logger.debug('🔄 Firebase internal assertion error detected (attempt ${this.retryCount}/${this.maxRetries})', { component: 'firebaseConnectionManager' });
+    logger.debug(`🔄 Firebase internal assertion error detected (attempt ${this.retryCount}/${this.maxRetries})`, { component: 'firebaseConnectionManager' });
 
     // Clean up existing listeners to prevent state corruption
     this.cleanupAllListeners();
@@ -117,7 +117,7 @@ class FirebaseConnectionManager {
       try {
         unsubscribe();
       } catch (error) {
-        console.warn('Error removing listener:', error);
+        logger.warn('Error removing listener:', { component: 'firebaseConnectionManager', data: error });
       }
       this.listeners.delete(listenerId);
       
@@ -139,7 +139,7 @@ class FirebaseConnectionManager {
       try {
         unsubscribe();
       } catch (error) {
-        console.warn(`Error cleaning up listener ${listenerId}:`, error);
+        logger.warn(`Error cleaning up listener ${listenerId}:`, { component: 'firebaseConnectionManager', data: error });
       }
     });
     this.listeners.clear();

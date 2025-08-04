@@ -24,7 +24,7 @@ export const safeDateToString = (dateValue: any): string => {
       } else if (dateValue instanceof Date) {
         date = dateValue;
       } else {
-        console.warn('알 수 없는 날짜 객체 타입:', dateValue);
+        logger.warn('알 수 없는 날짜 객체 타입:', { component: 'scheduleUtils', data: dateValue });
         return '';
       }
     } else if (typeof dateValue === 'string') {
@@ -36,20 +36,20 @@ export const safeDateToString = (dateValue: any): string => {
           const seconds = parseInt(match[1]);
           date = new Date(seconds * 1000);
         } else {
-          console.warn('Timestamp 문자열 파싱 실패:', dateValue);
+          logger.warn('Timestamp 문자열 파싱 실패:', { component: 'scheduleUtils', data: dateValue });
           return '';
         }
       } else {
         date = new Date(dateValue);
       }
     } else {
-      console.warn('지원되지 않는 날짜 타입:', typeof dateValue, dateValue);
+      logger.warn('지원되지 않는 날짜 타입:', { component: 'scheduleUtils', data: { type: typeof dateValue, value: dateValue } });
       return '';
     }
 
     // 날짜 유효성 검사
     if (isNaN(date.getTime())) {
-      console.warn('잘못된 날짜:', dateValue);
+      logger.warn('잘못된 날짜:', { component: 'scheduleUtils', data: { value: dateValue } });
       return '';
     }
 
@@ -83,14 +83,14 @@ export const parseTimeString = (
     const endStr = timeParts[1];
     
     if (!startStr || !endStr) {
-      console.warn('시간 문자열 파싱 실패:', timeString);
+      logger.warn('시간 문자열 파싱 실패:', { component: 'scheduleUtils', data: timeString });
       return { startTime: null, endTime: null };
     }
     
     const dateObj = new Date(dateString);
 
     if (isNaN(dateObj.getTime())) {
-      console.warn('잘못된 날짜 문자열:', dateString);
+      logger.warn('잘못된 날짜 문자열:', { component: 'scheduleUtils', data: dateString });
       return { startTime: null, endTime: null };
     }
 
@@ -100,7 +100,7 @@ export const parseTimeString = (
     const startMin = startTimeParts[1] ? Number(startTimeParts[1]) : NaN;
     
     if (isNaN(startHour) || isNaN(startMin)) {
-      console.warn('잘못된 시작 시간:', startStr);
+      logger.warn('잘못된 시작 시간:', { component: 'scheduleUtils', data: startStr });
       return { startTime: null, endTime: null };
     }
 
@@ -113,7 +113,7 @@ export const parseTimeString = (
     const endMin = endTimeParts[1] ? Number(endTimeParts[1]) : NaN;
     
     if (isNaN(endHour) || isNaN(endMin)) {
-      console.warn('잘못된 종료 시간:', endStr);
+      logger.warn('잘못된 종료 시간:', { component: 'scheduleUtils', data: endStr });
       return { startTime: null, endTime: null };
     }
 

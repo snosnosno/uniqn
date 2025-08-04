@@ -1,17 +1,32 @@
 import { renderHook, act } from '@testing-library/react';
 import { useHapticFeedback } from '../useHapticFeedback';
 
-// Mock navigator.vibrate
-const mockVibrate = jest.fn();
-
-Object.defineProperty(navigator, 'vibrate', {
-  writable: true,
-  value: mockVibrate
-});
-
 describe('useHapticFeedback', () => {
+  let mockVibrate: jest.Mock;
+  let originalVibrate: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockVibrate = jest.fn();
+    originalVibrate = navigator.vibrate;
+    
+    // Setup vibrate mock
+    Object.defineProperty(navigator, 'vibrate', {
+      writable: true,
+      configurable: true,
+      value: mockVibrate
+    });
+  });
+
+  afterEach(() => {
+    // Restore original vibrate
+    if (originalVibrate !== undefined) {
+      Object.defineProperty(navigator, 'vibrate', {
+        writable: true,
+        configurable: true,
+        value: originalVibrate
+      });
+    }
   });
 
   test('returns all feedback functions', () => {
@@ -104,10 +119,10 @@ describe('useHapticFeedback', () => {
   });
 
   test('handles missing vibrate API gracefully', () => {
-    // Mock navigator without vibrate
-    const originalVibrate = navigator.vibrate;
+    // Remove vibrate API
     Object.defineProperty(navigator, 'vibrate', {
       writable: true,
+      configurable: true,
       value: undefined
     });
 
@@ -125,12 +140,6 @@ describe('useHapticFeedback', () => {
       result.current.warningFeedback();
       result.current.selectionFeedback();
     }).not.toThrow();
-
-    // Restore vibrate
-    Object.defineProperty(navigator, 'vibrate', {
-      writable: true,
-      value: originalVibrate
-    });
   });
 
   test('feedback functions are stable across renders', () => {

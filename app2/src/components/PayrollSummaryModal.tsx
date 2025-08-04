@@ -1,7 +1,7 @@
 // 급여 요약 모달 컴포넌트
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTimes, FaFileExport, FaMoneyBillWave, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTimes, FaFileExport, FaMoneyBillWave, FaClock, FaExclamationTriangle } from './Icons/ReactIconsReplacement';
 
 import { PayrollCalculationData, PayrollSummary } from '../utils/payroll/types';
 
@@ -42,14 +42,14 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
       <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
-            <FaMoneyBillWave className="mr-2 text-green-600" />
+            <FaMoneyBillWave className="w-6 h-6 mr-2 text-green-600" />
             {t('payroll.summary.title', '급여 계산 요약')}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-xl"
           >
-            <FaTimes />
+            <FaTimes className="w-6 h-6" />
           </button>
         </div>
 
@@ -57,7 +57,7 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
         {summary ? <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
-                <FaClock className="mr-2" />
+                <FaClock className="w-5 h-5 mr-2" />
                 {t('payroll.summary.totalHours', '총 근무시간')}
               </h3>
               <p className="text-2xl font-bold text-blue-600">{formatHours(summary.totalHours)}</p>
@@ -69,7 +69,7 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
 
             <div className="bg-green-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-green-800 mb-2 flex items-center">
-                <FaMoneyBillWave className="mr-2" />
+                <FaMoneyBillWave className="w-5 h-5 mr-2" />
                 {t('payroll.summary.totalPay', '총 급여')}
               </h3>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(summary.totalPay)}</p>
@@ -80,7 +80,7 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
 
             <div className="bg-orange-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-orange-800 mb-2 flex items-center">
-                <FaExclamationTriangle className="mr-2" />
+                <FaExclamationTriangle className="w-5 h-5 mr-2" />
                 {t('payroll.summary.exceptions', '예외 사항')}
               </h3>
               <p className="text-2xl font-bold text-orange-600">{summary.totalExceptions}</p>
@@ -167,7 +167,7 @@ const PayrollSummaryModal: React.FC<PayrollSummaryModalProps> = ({
             onClick={onExport}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center"
           >
-            <FaFileExport className="mr-2" />
+            <FaFileExport className="w-4 h-4 mr-2" />
             {t('payroll.export', '급여 CSV 내보내기')}
           </button>
         </div>

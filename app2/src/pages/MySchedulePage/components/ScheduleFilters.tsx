@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaFilter, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaFilter, FaSearch, FaTimes } from '../../../components/Icons/ReactIconsReplacement';
 import { ScheduleFilters as FiltersType } from '../../../types/schedule';
 // import { subDays, addDays, format } from 'date-fns'; // not used
 
@@ -65,7 +65,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
       <div className="bg-white rounded-lg shadow-sm p-4 space-y-4">
         {/* 검색 */}
         <div className="relative">
-          <FaSearch className="absolute left-3 top-3 text-gray-400" />
+          <FaSearch className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
             type="text"
             value={filters.searchTerm || ''}
@@ -99,7 +99,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
             onClick={handleReset}
             className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center justify-center gap-2"
           >
-            <FaTimes />
+            <FaTimes className="w-4 h-4" />
             필터 초기화 ({activeFilterCount})
           </button>
         )}
@@ -112,13 +112,13 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-gray-700">
-          <FaFilter />
+          <FaFilter className="w-4 h-4" />
           <span className="font-medium">필터</span>
         </div>
 
         {/* 검색 */}
         <div className="relative flex-1 min-w-[200px]">
-          <FaSearch className="absolute left-3 top-3 text-gray-400" />
+          <FaSearch className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
             type="text"
             value={filters.searchTerm || ''}
@@ -153,7 +153,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
             onClick={handleReset}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center gap-2"
           >
-            <FaTimes />
+            <FaTimes className="w-4 h-4" />
             초기화
           </button>
         )}

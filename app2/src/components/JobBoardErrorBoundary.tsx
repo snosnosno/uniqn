@@ -102,7 +102,7 @@ class JobBoardErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('JobBoard Error Boundary caught an error:', error, { 
+    logger.error('JobBoard Error Boundary caught an error:', error instanceof Error ? error : new Error(String(error)), { 
       component: 'JobBoardErrorBoundary', 
       data: errorInfo.componentStack 
     });

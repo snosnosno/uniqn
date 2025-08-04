@@ -432,12 +432,12 @@ export class DataValidator {
             valid.push(item);
           } else {
             invalid.push(item);
-            logger.warn(`Array item validation failed`, { 
+            logger.warn(`Array item validation failed`, { component: 'dataValidator', data: {  
               operation: 'validateArray',
               fieldName,
               index,
               item 
-            });
+             } });
           }
         } catch (error) {
           invalid.push(item);
@@ -517,11 +517,11 @@ export class DataValidator {
     const isValid = errors.length === 0;
 
     if (!isValid) {
-      logger.warn(`Data validation failed`, { 
+      logger.warn(`Data validation failed`, { component: 'dataValidator', data: {  
         operation: 'validateWithRules',
         errors,
         warnings 
-      });
+       } });
     }
 
     return {

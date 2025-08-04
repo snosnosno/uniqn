@@ -33,7 +33,7 @@ class FirebaseErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('🚨 Firebase Error Boundary caught an error:', error, { 
+    logger.error('🚨 Firebase Error Boundary caught an error:', error instanceof Error ? error : new Error(String(error)), { 
       component: 'FirebaseErrorBoundary', 
       data: errorInfo.componentStack 
     });

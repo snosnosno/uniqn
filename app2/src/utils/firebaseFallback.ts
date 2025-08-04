@@ -20,7 +20,7 @@ class FirebaseFallbackManager {
       this.retryAttempts = 0;
       return true;
     } catch (error) {
-      console.warn('Firebase connection check failed:', error);
+      logger.warn('Firebase connection check failed:', { component: 'firebaseFallback', data: error });
       this.isConnected = false;
       return false;
     }
@@ -39,7 +39,7 @@ class FirebaseFallbackManager {
   // 안전한 데이터 가져오기 (Firebase 실패 시 폴백 사용)
   public async safeGetDocs(collectionName: string, filters?: any[]): Promise<any[]> {
     if (!this.isConnected || this.retryAttempts >= this.maxRetries) {
-      logger.debug('Using fallback data for ${collectionName}', { component: 'firebaseFallback' });
+      logger.debug(`Using fallback data for ${collectionName}`, { component: 'firebaseFallback' });
       return this.getFallbackData(collectionName);
     }
 
@@ -62,7 +62,7 @@ class FirebaseFallbackManager {
       
       return data;
     } catch (error) {
-      logger.error('Firebase query failed for ${collectionName}:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseFallback' });
+      logger.error(`Firebase query failed for ${collectionName}:`, error instanceof Error ? error : new Error(String(error)), { component: 'firebaseFallback' });
       this.retryAttempts++;
       
       // 폴백 데이터 반환

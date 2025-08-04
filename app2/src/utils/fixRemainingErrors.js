@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+
 const fs = require('fs');
 const path = require('path');
 
@@ -54,19 +56,19 @@ function processFile(filePath) {
     
     if (changesMade) {
       fs.writeFileSync(filePath, fixed, 'utf8');
-      console.log(`✅ Fixed remaining errors in: ${filePath}`);
+      logger.info(`✅ Fixed remaining errors in: ${filePath}`, { component: 'fixRemainingErrors' });
       return true;
     }
     return false;
   } catch (error) {
-    console.error(`❌ Error processing ${filePath}:`, error.message);
+    logger.error('❌ Error processing ${filePath}:', error.message instanceof Error ? error.message : new Error(String(error.message)), { component: 'fixRemainingErrors' });
     return false;
   }
 }
 
 // 실행
 const srcPath = path.join(__dirname, '..');
-console.log('🔄 Fixing remaining catch errors...');
-console.log(`📁 Processing directory: ${srcPath}`);
+logger.info('🔄 Fixing remaining catch errors...', { component: 'fixRemainingErrors' });
+logger.info(`📁 Processing directory: ${srcPath}`, { component: 'fixRemainingErrors' });
 const totalFixed = processDirectory(srcPath);
-console.log(`✨ Fix complete! Fixed ${totalFixed} files.`);
+logger.info('✨ Fix complete! Fixed ${totalFixed} files.', { component: 'fixRemainingErrors' });

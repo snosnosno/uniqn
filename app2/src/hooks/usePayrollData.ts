@@ -167,7 +167,7 @@ export const usePayrollData = (props: UsePayrollDataProps = {}) => {
         });
       }
 
-      logger.debug('${data.length}개의 급여 데이터가 저장되었습니다.', { component: 'usePayrollData' });
+      logger.debug(`${data.length}개의 급여 데이터가 저장되었습니다.`, { component: 'usePayrollData' });
     } catch (err) {
       logger.error('급여 데이터 저장 중 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'usePayrollData' });
       setError(err as Error);

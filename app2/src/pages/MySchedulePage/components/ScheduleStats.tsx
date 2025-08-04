@@ -4,7 +4,7 @@ import {
   FaHourglassHalf, 
   FaMoneyBillWave, 
   FaClock 
-} from 'react-icons/fa';
+} from '../../../components/Icons/ReactIconsReplacement';
 import { ScheduleStats as StatsType } from '../../../types/schedule';
 
 interface ScheduleStatsProps {
@@ -15,7 +15,7 @@ interface ScheduleStatsProps {
 const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }) => {
   const statItems = [
     {
-      icon: <FaCalendarCheck className="text-blue-500" />,
+      icon: <FaCalendarCheck className="w-5 h-5 text-blue-500" />,
       label: '완료 일정',
       value: `${stats.completedSchedules}건`,
       subValue: `전체 ${stats.totalSchedules}건`,
@@ -23,7 +23,7 @@ const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }
       borderColor: 'border-blue-200'
     },
     {
-      icon: <FaHourglassHalf className="text-yellow-500" />,
+      icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500" />,
       label: '예정 일정',
       value: `${stats.upcomingSchedules}건`,
       subValue: '확정된 일정',
@@ -31,7 +31,7 @@ const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }
       borderColor: 'border-yellow-200'
     },
     {
-      icon: <FaMoneyBillWave className="text-green-500" />,
+      icon: <FaMoneyBillWave className="w-5 h-5 text-green-500" />,
       label: '이번달 수입',
       value: `₩${stats.thisMonthEarnings.toLocaleString()}`,
       subValue: `총 ₩${stats.totalEarnings.toLocaleString()}`,
@@ -39,7 +39,7 @@ const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }
       borderColor: 'border-green-200'
     },
     {
-      icon: <FaClock className="text-purple-500" />,
+      icon: <FaClock className="w-5 h-5 text-purple-500" />,
       label: '총 근무시간',
       value: `${stats.hoursWorked}시간`,
       subValue: '실제 근무 기준',

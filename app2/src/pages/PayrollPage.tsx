@@ -101,7 +101,7 @@ const PayrollPage = () => {
                             eventName: eventDoc.exists() ? eventDoc.data()?.title : t('payrollPage.unknownEvent', '알 수 없는 이벤트')
                         };
                     } catch (err) {
-                        logger.error('Error fetching event ${p.eventId}:', err instanceof Error ? err : new Error(String(err)), { component: 'PayrollPage' });
+                        logger.error(`Error fetching event ${p.eventId}:`, err instanceof Error ? err : new Error(String(err)), { component: 'PayrollPage' });
                         return { ...p, eventName: t('payrollPage.unknownEvent', '알 수 없는 이벤트') };
                     }
                 })

@@ -67,10 +67,10 @@ export const cleanupFirebaseListeners = (listeners: Unsubscribe[]): void => {
     try {
       unsubscribe();
     } catch (error) {
-      logger.warn('⚠️ Error cleaning up Firebase listener', { 
+      logger.warn('⚠️ Error cleaning up Firebase listener', { component: 'firebaseUtils', data: {  
         operation: 'cleanupFirebaseListeners',
         error: error instanceof Error ? error.message : String(error)
-      });
+       } });
     }
   });
 }; 

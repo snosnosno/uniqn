@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DndContext, DragEndEvent, pointerWithin } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
 
 import { Table } from '../hooks/useTables';
@@ -58,6 +57,19 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
 
   if (!table) return null;
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.data.current && over.data.current) {
+      const { participantId, from } = active.data.current;
+      const { tableId, seatIndex } = over.data.current;
+      
+      if (participantId && from && tableId !== undefined && seatIndex !== undefined) {
+        onMoveSeat(participantId, from, { tableId, seatIndex });
+      }
+    }
+  };
+
   const handleMaxSeatsChange = async (newMaxSeats: number) => {
     if (table) {
       try {
@@ -102,7 +114,10 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="">
-      <DndProvider backend={HTML5Backend}>
+      <DndContext 
+        onDragEnd={handleDragEnd}
+        collisionDetection={pointerWithin}
+      >
         <div className="relative">
           {isDimmed ? <div className="absolute inset-0 bg-black bg-opacity-50 z-10 rounded-md" aria-hidden="true"></div> : null}
           
@@ -197,7 +212,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
             ))}
           </div>
         </div>
-      </DndProvider>
+      </DndContext>
     </Modal>
   );
 };

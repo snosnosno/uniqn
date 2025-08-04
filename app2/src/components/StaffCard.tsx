@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { logger } from '../utils/logger';
 
 import { useHapticFeedback } from '../hooks/useHapticFeedback';
 import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
@@ -71,12 +72,12 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     
     // 날짜가 제대로 파싱되었는지 확인
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      console.warn('⚠️ StaffCard - assignedDate 파싱 실패:', {
+      logger.warn('⚠️ StaffCard - assignedDate 파싱 실패:', { component: 'StaffCard', data: {
         staffId: staff.id,
         staffName: staff.name,
         assignedDate: staff.assignedDate,
         parsedDate: dateString
-      });
+      } });
     }
     
     // staffId에서 _숫자 패턴 제거
@@ -87,16 +88,19 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     const attendanceRecord = getStaffAttendanceStatus(workLogId);
     const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
     
-    console.log('🔄 StaffCard memoizedAttendanceData 재계산:', {
-      staffId: staff.id,
-      staffName: staff.name,
-      workLogId,
-      attendanceRecord: attendanceRecord ? {
-        status: attendanceRecord.status,
-        workLogId: attendanceRecord.workLogId,
-        staffId: attendanceRecord.staffId
-      } : null,
-      timestamp: new Date().toISOString()
+    logger.debug('StaffCard memoizedAttendanceData 재계산', {
+      component: 'StaffCard',
+      data: {
+        staffId: staff.id,
+        staffName: staff.name,
+        workLogId,
+        attendanceRecord: attendanceRecord ? {
+          status: attendanceRecord.status,
+          workLogId: attendanceRecord.workLogId,
+          staffId: attendanceRecord.staffId
+        } : null,
+        timestamp: new Date().toISOString()
+      }
     });
     
     // 실제 workLogId 추출 (Firebase에 저장된 형식)
@@ -364,10 +368,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 canEdit={!!canEdit && !multiSelectMode}
                 onStatusChange={(newStatus) => {
                   // 상태 변경 시 강제 리렌더링
-                  console.log('🔄 StaffCard - onStatusChange 호출:', {
-                    staffId: staff.id,
-                    newStatus,
-                    realWorkLogId: memoizedAttendanceData.realWorkLogId
+                  logger.debug('StaffCard - onStatusChange 호출', {
+                    component: 'StaffCard',
+                    data: {
+                      staffId: staff.id,
+                      newStatus,
+                      realWorkLogId: memoizedAttendanceData.realWorkLogId
+                    }
                   });
                 }}
               />
@@ -709,10 +716,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   
   // 출석 기록 개수가 다르면 리렌더링
   if (prevAttendanceRecords.length !== nextAttendanceRecords.length) {
-    console.log('🔄 StaffCard 리렌더링 - 출석 기록 개수 변경:', {
-      staffId: prevProps.staff.id,
-      prevCount: prevAttendanceRecords.length,
-      nextCount: nextAttendanceRecords.length
+    logger.debug('StaffCard 리렌더링 - 출석 기록 개수 변경', {
+      component: 'StaffCard',
+      data: {
+        staffId: prevProps.staff.id,
+        prevCount: prevAttendanceRecords.length,
+        nextCount: nextAttendanceRecords.length
+      }
     });
     return false;
   }
@@ -725,12 +735,15 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     if (prev.status !== next.status || 
         prev.workLogId !== next.workLogId ||
         JSON.stringify(prev.workLog?.updatedAt) !== JSON.stringify(next.workLog?.updatedAt)) {
-      console.log('🔄 StaffCard 리렌더링 - 출석 상태 변경 감지:', {
-        staffId: prevProps.staff.id,
-        prevStatus: prev.status,
-        nextStatus: next.status,
-        prevWorkLogId: prev.workLogId,
-        nextWorkLogId: next.workLogId
+      logger.debug('StaffCard 리렌더링 - 출석 상태 변경 감지', {
+        component: 'StaffCard',
+        data: {
+          staffId: prevProps.staff.id,
+          prevStatus: prev.status,
+          nextStatus: next.status,
+          prevWorkLogId: prev.workLogId,
+          nextWorkLogId: next.workLogId
+        }
       });
       return false; // 리렌더링 필요
     }

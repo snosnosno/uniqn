@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from './Icons/ReactIconsReplacement';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import Modal from './Modal';
@@ -231,7 +231,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           </p>
           {extendedStaff.rating && (
             <div className="flex items-center justify-center mb-2">
-              <FaStar className="text-yellow-400 mr-1" />
+              <FaStar className="w-5 h-5 text-yellow-400 mr-1" />
               <span className="font-medium">평점 {extendedStaff.rating.toFixed(1)}</span>
               <span className="text-gray-500 ml-1">({extendedStaff.ratingCount || 0}개 평점)</span>
             </div>
@@ -245,14 +245,14 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         {/* 연락처 정보 */}
         <div className="bg-gray-50 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-            <FaIdCard className="mr-2" />
+            <FaIdCard className="w-4 h-4 mr-2" />
             연락처 정보
           </h3>
           <div className="space-y-3">
             {staff.phone ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm">
-                  <FaPhone className="text-gray-400 mr-2" />
+                  <FaPhone className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-900">{staff.phone}</span>
                 </div>
                 <a
@@ -269,7 +269,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             {staff.email ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm">
-                  <FaEnvelope className="text-gray-400 mr-2" />
+                  <FaEnvelope className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-900 break-all">{staff.email}</span>
                 </div>
                 <a
@@ -288,7 +288,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         {/* 상세 정보 */}
         <div className="bg-gray-50 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-            <FaUser className="mr-2" />
+            <FaUser className="w-4 h-4 mr-2" />
             상세 정보
           </h3>
           <div className="grid grid-cols-2 gap-4 text-sm">

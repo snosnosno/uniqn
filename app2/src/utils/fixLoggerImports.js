@@ -72,16 +72,16 @@ function processFile(filePath) {
     
     if (content !== fixed) {
       fs.writeFileSync(filePath, fixed, 'utf8');
-      console.log(`✅ Fixed import in: ${filePath}`);
+      logger.info(`✅ Fixed import in: ${filePath}`, { component: 'fixLoggerImports' });
     }
   } catch (error) {
-    console.error(`❌ Error processing ${filePath}:`, error.message);
+    logger.error('❌ Error processing ${filePath}:', error.message instanceof Error ? error.message : new Error(String(error.message)), { component: 'fixLoggerImports' });
   }
 }
 
 // 실행
 const srcPath = path.join(__dirname, '..');
-console.log('🔄 Fixing logger imports...');
-console.log(`📁 Processing directory: ${srcPath}`);
+logger.info('🔄 Fixing logger imports...', { component: 'fixLoggerImports' });
+logger.info(`📁 Processing directory: ${srcPath}`, { component: 'fixLoggerImports' });
 processDirectory(srcPath);
-console.log('✨ Import fix complete!');
+logger.info('✨ Import fix complete!', { component: 'fixLoggerImports' });

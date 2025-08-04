@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { IconType } from 'react-icons';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
     FaTrophy, FaBullhorn, FaUserCircle, FaFileInvoice, FaClipboardList, FaQrcode,
     FaBars, FaSignOutAlt, FaUserCheck, FaHistory, FaCalendarAlt
-} from 'react-icons/fa';
+} from './Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -16,7 +15,7 @@ import { usePermissions } from '../hooks/usePermissions';
 interface NavItemProps {
     to: string;
     label: string;
-    Icon: IconType;
+    Icon: React.ComponentType<any>;
     isOpen: boolean;
     onNavigate?: () => void;
 }
@@ -31,20 +30,28 @@ const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => 
   
     return (
       <NavLink to={to} className={navLinkClasses} onClick={onNavigate}>
-        <span className={isMobile ? 'text-2xl' : 'text-lg'}><Icon /></span>
+        <Icon className={isMobile ? 'w-6 h-6' : 'w-5 h-5'} />
         <span className={`ml-3 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 h-0 w-0'}`}>{label}</span>
       </NavLink>
     );
 });
 
 export const HeaderMenu: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n, ready } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAdmin, role, signOut } = useAuth();
   const { canManageApplicants } = usePermissions();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // 디버깅을 위한 로그
+  React.useEffect(() => {
+    logger.info('HeaderMenu mounted', { 
+      component: 'HeaderMenu',
+      data: { FaBars: !!FaBars, isMenuOpen, i18nReady: ready }
+    });
+  }, [isMenuOpen, ready]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -96,18 +103,28 @@ export const HeaderMenu: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative flex items-center" ref={menuRef}>
       {/* 햄버거 메뉴 버튼 */}
       <button
         onClick={toggleMenu}
-        className={`rounded-lg text-gray-600 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          isMobile ? 'p-3' : 'p-2'
+        className={`flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-100 text-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+          isMobile ? 'p-3 w-12 h-12' : 'p-2 w-10 h-10'
         }`}
         aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={isMenuOpen}
         aria-haspopup="true"
+        style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
       >
-        <FaBars className={`${isMobile ? 'text-2xl' : 'text-xl'}`} />
+        <svg 
+          className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
 
       {/* 드롭다운 메뉴 */}
@@ -129,8 +146,8 @@ export const HeaderMenu: React.FC = () => {
             <div className={`border-b border-gray-200 ${isMobile ? 'p-6' : 'p-4'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-2xl' : 'text-lg'}`}>{t('layout.title')}</h2>
-                  <p className={`text-gray-500 ${isMobile ? 'text-base' : 'text-sm'}`}>{t('layout.subtitle')}</p>
+                  <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-2xl' : 'text-lg'}`}>{t('layout.title', 'T-HOLDEM')}</h2>
+                  <p className={`text-gray-500 ${isMobile ? 'text-base' : 'text-sm'}`}>{t('layout.subtitle', 'Tournament Management System')}</p>
                 </div>
                 {isMobile ? <button
                     onClick={() => setIsMenuOpen(false)}
@@ -144,28 +161,28 @@ export const HeaderMenu: React.FC = () => {
 
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
-              <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/profile" label={t('nav.myProfile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/jobs" label={t('nav.jobBoard')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard', 'Dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/attendance" label={t('nav.attendance')} Icon={FaQrcode} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/attendance" label={t('nav.attendance', 'Attendance')} Icon={FaQrcode} isOpen={true} onNavigate={closeMenu} />
               
               <hr className="my-2 border-t border-gray-200" />
               
               {/* Job Posting Management - Available to Staff with permission */}
               {canManageApplicants && (
-                <NavItem to="/admin/job-postings" label={t('nav.managePostings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+                <NavItem to="/admin/job-postings" label={t('nav.managePostings', 'Manage Postings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
               )}
 
               {/* Admin and Manager common menus */}
               {isAdmin ? <>
-                  <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/payroll" label={t('nav.processPayroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/payroll" label={t('nav.processPayroll', 'Process Payroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                   <hr className="my-2 border-t border-gray-200" />
                   <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/tables" label={t('nav.tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/prizes" label={t('nav.prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/announcements" label={t('nav.announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/announcements" label={t('nav.announcements', 'Announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/admin/history" label="기록/히스토리" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
                 </> : null}
 
@@ -174,8 +191,8 @@ export const HeaderMenu: React.FC = () => {
                 <>
                   <hr className="my-2 border-t border-gray-200" />
                   <NavItem to="/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/user-management" label={t('nav.userManagement')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/admin/approvals" label={t('nav.approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
                 </>
               )}
             </nav>
@@ -197,8 +214,8 @@ export const HeaderMenu: React.FC = () => {
                 onClick={handleLogout} 
                 className="w-full flex items-center p-2 rounded-lg transition-colors text-red-600 hover:bg-red-100 justify-start"
               >
-                <span className="text-lg"><FaSignOutAlt /></span>
-                <span className="ml-3">{t('nav.logout')}</span>
+                <FaSignOutAlt className="w-5 h-5" />
+                <span className="ml-3">{t('nav.logout', 'Logout')}</span>
               </button>
             </div>
           </div>

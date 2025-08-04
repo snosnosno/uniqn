@@ -10,7 +10,7 @@ import {
   FaHourglassHalf,
   FaTimesCircle,
   FaTrash
-} from 'react-icons/fa';
+} from '../../../components/Icons/ReactIconsReplacement';
 import Modal from '../../../components/Modal';
 import { ScheduleEvent } from '../../../types/schedule';
 
@@ -81,25 +81,25 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     switch (schedule.type) {
       case 'applied':
         return {
-          icon: <FaHourglassHalf className="text-yellow-500" />,
+          icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500" />,
           text: '지원중',
           color: 'text-yellow-600 bg-yellow-100'
         };
       case 'confirmed':
         return {
-          icon: <FaCheckCircle className="text-green-500" />,
+          icon: <FaCheckCircle className="w-5 h-5 text-green-500" />,
           text: '확정',
           color: 'text-green-600 bg-green-100'
         };
       case 'completed':
         return {
-          icon: <FaCheckCircle className="text-blue-500" />,
+          icon: <FaCheckCircle className="w-5 h-5 text-blue-500" />,
           text: '완료',
           color: 'text-blue-600 bg-blue-100'
         };
       case 'cancelled':
         return {
-          icon: <FaTimesCircle className="text-red-500" />,
+          icon: <FaTimesCircle className="w-5 h-5 text-red-500" />,
           text: '취소',
           color: 'text-red-600 bg-red-100'
         };
@@ -150,7 +150,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         <div className="space-y-4">
           {/* 날짜 */}
           <div className="flex items-start gap-3">
-            <FaCalendarAlt className="text-gray-400 mt-1" />
+            <FaCalendarAlt className="w-5 h-5 text-gray-400 mt-1" />
             <div>
               <p className="text-sm text-gray-500">날짜</p>
               <p className="font-medium">{formatDate(schedule.date)}</p>
@@ -159,7 +159,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
           {/* 시간 */}
           <div className="flex items-start gap-3">
-            <FaClock className="text-gray-400 mt-1" />
+            <FaClock className="w-5 h-5 text-gray-400 mt-1" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">근무 시간</p>
               <p className="font-medium">
@@ -189,7 +189,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
           {/* 역할 */}
           <div className="flex items-start gap-3">
-            <FaInfoCircle className="text-gray-400 mt-1" />
+            <FaInfoCircle className="w-5 h-5 text-gray-400 mt-1" />
             <div>
               <p className="text-sm text-gray-500">역할</p>
               <p className="font-medium">{schedule.role}</p>
@@ -199,7 +199,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           {/* 장소 */}
           {schedule.location && (
             <div className="flex items-start gap-3">
-              <FaMapMarkerAlt className="text-gray-400 mt-1" />
+              <FaMapMarkerAlt className="w-5 h-5 text-gray-400 mt-1" />
               <div>
                 <p className="text-sm text-gray-500">장소</p>
                 <p className="font-medium">{schedule.location}</p>
@@ -213,7 +213,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           {/* 급여 정보 */}
           {schedule.payrollAmount && schedule.type === 'completed' && (
             <div className="flex items-start gap-3">
-              <FaMoneyBillWave className="text-gray-400 mt-1" />
+              <FaMoneyBillWave className="w-5 h-5 text-gray-400 mt-1" />
               <div>
                 <p className="text-sm text-gray-500">급여</p>
                 <p className="font-medium text-green-600">

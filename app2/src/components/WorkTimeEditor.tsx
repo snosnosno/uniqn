@@ -187,12 +187,12 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       const newEndTime = endTime && endTime.trim() !== '' ? 
         parseTimeString(endTime, baseDate, true, startTime) : null;
       
-      console.log('handleUpdateTime - parsed times:', {
+      logger.debug('handleUpdateTime - parsed times:', { component: 'WorkTimeEditor', data: {
         startTime,
         endTime,
         newStartTime,
         newEndTime
-      });
+      } });
       
       // 시작 시간과 종료 시간이 모두 없는 경우 스태프의 assignedTime을 '미정'로 설정
       

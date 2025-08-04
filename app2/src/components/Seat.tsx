@@ -1,11 +1,8 @@
 import React from 'react';
-import { useDrag, useDrop } from 'react-dnd';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 import { Table } from '../hooks/useTables';
-
-const ItemTypes = {
-  SEAT: 'seat',
-};
 
 export interface SeatProps {
   table: Table;
@@ -21,33 +18,44 @@ export interface SeatProps {
 }
 
 export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, getParticipantName, onMoveSeat }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.SEAT,
-    item: { participantId, from: { tableId: table.id, seatIndex } },
-    canDrag: !!participantId,
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }), [participantId, table.id, seatIndex]);
-
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
-    accept: ItemTypes.SEAT,
-    drop: (item: { participantId: string; from: { tableId: string; seatIndex: number } }) => {
-      if (item.participantId) {
-        onMoveSeat(item.participantId, item.from, { tableId: table.id, seatIndex });
-      }
+  const seatId = `${table.id}-${seatIndex}`;
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: `drag-${seatId}`,
+    data: {
+      participantId,
+      from: { tableId: table.id, seatIndex }
     },
-    canDrop: () => !participantId, // Crucial fix: Can only drop on an empty seat.
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-      canDrop: !!monitor.canDrop(),
-    }),
-  }), [table.id, seatIndex, onMoveSeat, participantId]);
+    disabled: !participantId,
+  });
+
+  const {
+    setNodeRef: setDropRef,
+    isOver,
+  } = useDroppable({
+    id: `drop-${seatId}`,
+    data: {
+      tableId: table.id,
+      seatIndex
+    },
+    disabled: !!participantId, // Can only drop on empty seats
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const participantName = getParticipantName(participantId);
   
   const getBackgroundColor = () => {
-    if (isOver && canDrop) {
+    if (isOver && !participantId) {
       return 'bg-green-200'; // Highlight drop target
     }
     if (participantId) {
@@ -58,8 +66,13 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, get
 
   return (
     <div
-      ref={(node) => drag(drop(node))}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
+      ref={(node) => {
+        setDragRef(node);
+        setDropRef(node);
+      }}
+      style={style}
+      {...(participantId ? listeners : {})}
+      {...(participantId ? attributes : {})}
       className={`relative p-2 rounded-md h-16 flex flex-col justify-center items-center text-xs group ${getBackgroundColor()}`}
     >
       <span className="font-bold text-sm mb-1">{seatIndex + 1}</span>

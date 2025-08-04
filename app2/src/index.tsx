@@ -8,6 +8,10 @@ import reportWebVitals from './reportWebVitals';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import './i18n';
 import { logger } from './utils/logger';
+import { initSentry } from './utils/sentry';
+
+// Sentry 초기화
+initSentry();
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

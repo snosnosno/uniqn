@@ -6,7 +6,7 @@ import { callFunctionLazy } from '../../utils/firebase-dynamic';
 // import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 // import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useJobPostingContext } from '../../contexts/JobPostingContext';
+import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 import { usePayrollData } from '../../hooks/usePayrollData';
 import { formatCurrency, formatDate } from '../../i18n-helpers';
 // import { PayrollCalculationData } from '../../utils/payroll/types';
@@ -99,7 +99,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
       setError(null);
 
       // 해당 공고의 스태프 ID들 추출
-      const staffUserIds = staff.map(s => s.id).filter(Boolean);
+      const staffUserIds = staff.map((s: any) => s.id).filter(Boolean);
       
       if (staffUserIds.length === 0) {
         setPayrolls([]);
@@ -108,7 +108,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
       }
 
       // Firebase Functions를 통해 스태프별 급여 데이터 가져오기
-      const payrollPromises = staffUserIds.map(async (userId) => {
+      const payrollPromises = staffUserIds.map(async (userId: any) => {
         try {
           const result: any = await callFunctionLazy('getPayrollsForUsers', { userId });
           const userPayrolls = result?.payrolls || [];
@@ -120,7 +120,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
             isRelatedToJobPosting(p, jobPosting)
           );
         } catch (error) {
-          logger.error('Error fetching payroll for user ${userId}:', error instanceof Error ? error : new Error(String(error)), { component: 'PayrollProcessingTab' });
+          logger.error(`Error fetching payroll for user ${userId}:`, error instanceof Error ? error : new Error(String(error)), { component: 'PayrollProcessingTab' });
           return [];
         }
       });
@@ -130,7 +130,7 @@ const PayrollProcessingTab: React.FC<PayrollProcessingTabProps> = () => {
 
       // 스태프 정보와 매칭하여 이름 추가
       const payrollsWithStaffNames = flatPayrolls.map((p: Payroll) => {
-        const staffMember = staff.find(s => s.id === p.userId);
+        const staffMember = staff.find((s: any) => s.id === p.userId);
         return {
           ...p,
           staffName: staffMember?.name || `User ${p.userId}`,
