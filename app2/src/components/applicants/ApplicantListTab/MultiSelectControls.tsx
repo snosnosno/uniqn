@@ -8,10 +8,7 @@ import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { Applicant, Assignment } from './types';
 import { 
   getApplicantSelectionsByDate, 
-  getDateSelectionStats,
-  isDuplicateInSameDate,
-  DateGroupedSelections,
-  formatDateDisplay 
+  getDateSelectionStats
 } from './utils/applicantHelpers';
 
 interface MultiSelectControlsProps {
@@ -117,7 +114,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   };
 
   return (
-    <div className="ml-2 sm:ml-4 space-y-3">
+    <div className="space-y-3">
       {/* 헤더 */}
       <div className="text-sm font-medium text-gray-700 mb-3">
         ✅ 확정할 시간 선택

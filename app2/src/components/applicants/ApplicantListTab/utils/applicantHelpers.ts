@@ -55,7 +55,7 @@ export const convertDateToString = (rawDate: any): string => {
 };
 
 /**
- * 지원자의 선택 사항을 가져오는 함수
+ * 지원자의 선택 사항을 가져오는 함수 (확정 취소 후 복원 지원)
  */
 export const getApplicantSelections = (applicant: Applicant) => {
   logger.debug('🔍 getApplicantSelections 호출:', { 
@@ -63,6 +63,7 @@ export const getApplicantSelections = (applicant: Applicant) => {
     data: {
       applicantId: applicant.id,
       applicantName: applicant.applicantName,
+      status: applicant.status,
       hasMultiple: hasMultipleSelections(applicant),
       assignedRoles: applicant.assignedRoles,
       assignedTimes: applicant.assignedTimes,
@@ -73,7 +74,7 @@ export const getApplicantSelections = (applicant: Applicant) => {
     }
   });
   
-  // 다중 선택이 있는 경우
+  // 1. 다중 선택 배열이 있는 경우 (확정 후 또는 확정 취소 후)
   if (hasMultipleSelections(applicant)) {
     const selections = [];
     const maxLength = Math.max(
@@ -92,11 +93,18 @@ export const getApplicantSelections = (applicant: Applicant) => {
       });
     }
     
-    logger.debug('🔍 다중 선택 결과:', { component: 'applicantHelpers', data: selections });
+    logger.debug('🔍 다중 선택 결과:', { 
+      component: 'applicantHelpers', 
+      data: { 
+        status: applicant.status,
+        selectionsCount: selections.length,
+        selections 
+      } 
+    });
     return selections;
   }
   
-  // 기존 단일 선택 방식
+  // 2. 단일 선택 필드만 있는 경우 (기존 방식 또는 확정 취소 후 배열이 비어있는 경우)
   if (applicant.assignedRole && applicant.assignedTime) {
     const singleDateValue = convertDateToString(applicant.assignedDate);
     
@@ -106,11 +114,53 @@ export const getApplicantSelections = (applicant: Applicant) => {
       date: singleDateValue
     }];
     
-    logger.debug('🔍 단일 선택 결과:', { component: 'applicantHelpers', data: singleSelection });
+    logger.debug('🔍 단일 선택 결과:', { 
+      component: 'applicantHelpers', 
+      data: { 
+        status: applicant.status,
+        singleSelection 
+      } 
+    });
     return singleSelection;
   }
   
-  logger.debug('🔍 선택 사항 없음', { component: 'applicantHelpers' });
+  // 3. 확정 취소된 상태에서 배열 데이터만 있고 단일 필드가 비어있는 경우
+  // (확정 취소 시 assignedRole/assignedTime은 null로 설정되지만 배열은 유지됨)
+  if (applicant.status === 'applied' && 
+      (applicant.assignedRoles?.length || applicant.assignedTimes?.length || applicant.assignedDates?.length)) {
+    const selections = [];
+    const maxLength = Math.max(
+      applicant.assignedRoles?.length || 0,
+      applicant.assignedTimes?.length || 0,
+      applicant.assignedDates?.length || 0
+    );
+    
+    for (let i = 0; i < maxLength; i++) {
+      const dateValue = convertDateToString(applicant.assignedDates?.[i]);
+      
+      // 빈 값들도 포함하여 원본 지원 상태 복원
+      selections.push({
+        role: applicant.assignedRoles?.[i] || '',
+        time: applicant.assignedTimes?.[i] || '',
+        date: dateValue
+      });
+    }
+    
+    logger.debug('🔍 확정 취소 후 배열 복원:', { 
+      component: 'applicantHelpers', 
+      data: { 
+        status: applicant.status,
+        restoredCount: selections.length,
+        selections 
+      } 
+    });
+    return selections;
+  }
+  
+  logger.debug('🔍 선택 사항 없음', { 
+    component: 'applicantHelpers',
+    data: { status: applicant.status }
+  });
   return [];
 };
 
