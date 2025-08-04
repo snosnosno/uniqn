@@ -15,11 +15,6 @@ export class JobPostingUtils {
   static flattenTimeSlots(jobPosting: JobPosting): TimeSlot[] {
     const allTimeSlots: TimeSlot[] = [];
     
-    // 기본 timeSlots 추가
-    if (jobPosting.timeSlots) {
-      allTimeSlots.push(...jobPosting.timeSlots);
-    }
-    
     // dateSpecificRequirements의 timeSlots 추가
     if (jobPosting.dateSpecificRequirements) {
       jobPosting.dateSpecificRequirements.forEach(dateReq => {
@@ -52,24 +47,7 @@ export class JobPostingUtils {
   static groupTimeSlotsByDate(jobPosting: JobPosting): Map<string, TimeSlot[]> {
     const dateMap = new Map<string, TimeSlot[]>();
     
-    // 기존 방식: 전체 기간에 적용되는 timeSlots
-    if (jobPosting.timeSlots && jobPosting.timeSlots.length > 0) {
-      // 시작일부터 종료일까지 각 날짜에 동일한 timeSlots 적용
-      const startDate = new Date(timestampToLocalDateString(jobPosting.startDate));
-      const endDate = new Date(timestampToLocalDateString(jobPosting.endDate));
-      
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0] || '';
-        if (dateStr) {
-          dateMap.set(dateStr, jobPosting.timeSlots.map(ts => ({
-            time: ts.time,
-            roles: ts.roles
-          })));
-        }
-      }
-    }
-    
-    // 날짜별 요구사항이 있는 경우 덮어쓰기
+    // 날짜별 요구사항을 Map에 추가
     if (jobPosting.dateSpecificRequirements) {
       jobPosting.dateSpecificRequirements.forEach(dateReq => {
         const dateStr = timestampToLocalDateString(dateReq.date);
@@ -89,19 +67,6 @@ export class JobPostingUtils {
   static getDatesForTimeSlot(jobPosting: JobPosting, timeSlot: string): string[] {
     const dates = new Set<string>();
     
-    // 전체 기간 timeSlots 확인
-    if (jobPosting.timeSlots?.some(ts => ts.time === timeSlot)) {
-      const startDate = new Date(timestampToLocalDateString(jobPosting.startDate));
-      const endDate = new Date(timestampToLocalDateString(jobPosting.endDate));
-      
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0] || '';
-        if (dateStr) {
-          dates.add(dateStr);
-        }
-      }
-    }
-    
     // 날짜별 요구사항 확인
     if (jobPosting.dateSpecificRequirements) {
       jobPosting.dateSpecificRequirements.forEach(dateReq => {
@@ -114,27 +79,7 @@ export class JobPostingUtils {
     return Array.from(dates).sort();
   }
   
-  /**
-   * 모든 날짜에 공통으로 적용되는 TimeSlot들만 반환
-   * @param jobPosting 
-   * @returns TimeSlot 배열
-   */
-  static getCommonTimeSlots(jobPosting: JobPosting): TimeSlot[] {
-    return jobPosting.timeSlots?.map(ts => ({
-      time: ts.time,
-      roles: ts.roles
-    })) || [];
-  }
 
-  /**
-   * JobPosting이 일자별 요구사항을 사용하는지 확인
-   * @param jobPosting 
-   * @returns boolean
-   */
-  static hasDateSpecificRequirements(jobPosting: JobPosting): boolean {
-    return !!(jobPosting.dateSpecificRequirements && 
-              jobPosting.dateSpecificRequirements.length > 0);
-  }
 
   /**
    * 특정 날짜의 TimeSlot들을 가져오기
@@ -146,13 +91,8 @@ export class JobPostingUtils {
     jobPosting: JobPosting, 
     date: string
   ): TimeSlot[] {
-    if (this.hasDateSpecificRequirements(jobPosting)) {
-      const dateReq = jobPosting.dateSpecificRequirements?.find(dr => dr.date === date);
-      return dateReq?.timeSlots || [];
-    }
-    
-    // 기존 방식: 전체 기간 공통 timeSlots 사용
-    return jobPosting.timeSlots || [];
+    const dateReq = jobPosting.dateSpecificRequirements?.find(dr => dr.date === date);
+    return dateReq?.timeSlots || [];
   }
 
   /**
@@ -162,13 +102,6 @@ export class JobPostingUtils {
    */
   static extractRequiredRoles(jobPosting: JobPosting): string[] {
     const roles = new Set<string>();
-    
-    // 기존 timeSlots에서 역할 추출
-    if (jobPosting.timeSlots) {
-      jobPosting.timeSlots.forEach(ts => {
-        ts.roles.forEach(role => roles.add(role.name));
-      });
-    }
     
     // 일자별 요구사항에서 역할 추출
     if (jobPosting.dateSpecificRequirements) {
@@ -214,39 +147,28 @@ export class JobPostingUtils {
    * @param jobPosting 
    * @param timeSlot 
    * @param role 
-   * @param date 선택적 날짜 (날짜별 요구사항이 있는 경우)
+   * @param date 날짜
    * @returns 역할이 가득 찼는지 여부
    */
   static isRoleFull(
     jobPosting: JobPosting,
     timeSlot: string,
     role: string,
-    date?: string
+    date: string
   ): boolean {
     let requiredCount = 0;
     
-    if (date && this.hasDateSpecificRequirements(jobPosting)) {
-      // 날짜별 요구사항이 있는 경우
-      const dateReq = jobPosting.dateSpecificRequirements?.find(
-        dr => timestampToLocalDateString(dr.date) === date
-      );
-      const timeSlotData = dateReq?.timeSlots.find(ts => ts.time === timeSlot);
-      const roleData = timeSlotData?.roles.find(r => r.name === role);
-      requiredCount = roleData?.count || 0;
-    } else {
-      // 전체 기간 공통 요구사항
-      const timeSlotData = jobPosting.timeSlots?.find(ts => ts.time === timeSlot);
-      const roleData = timeSlotData?.roles.find(r => r.name === role);
-      requiredCount = roleData?.count || 0;
-    }
+    // 날짜별 요구사항에서 확인
+    const dateReq = jobPosting.dateSpecificRequirements?.find(
+      dr => timestampToLocalDateString(dr.date) === date
+    );
+    const timeSlotData = dateReq?.timeSlots.find(ts => ts.time === timeSlot);
+    const roleData = timeSlotData?.roles.find(r => r.name === role);
+    requiredCount = roleData?.count || 0;
     
     if (requiredCount === 0) return false;
     
-    const confirmedCount = date 
-      ? this.getConfirmedStaffCount(jobPosting, date, timeSlot, role)
-      : jobPosting.confirmedStaff?.filter(
-          staff => staff.timeSlot === timeSlot && staff.role === role
-        ).length || 0;
+    const confirmedCount = this.getConfirmedStaffCount(jobPosting, date, timeSlot, role);
     
     return confirmedCount >= requiredCount;
   }
@@ -273,33 +195,21 @@ export class JobPostingUtils {
     let totalRequired = 0;
     let totalConfirmed = 0;
     
-    if (this.hasDateSpecificRequirements(jobPosting)) {
-      // 날짜별 요구사항이 있는 경우
-      jobPosting.dateSpecificRequirements?.forEach(dateReq => {
-        const dateStr = timestampToLocalDateString(dateReq.date);
-        dateReq.timeSlots.forEach(ts => {
-          ts.roles.forEach(role => {
-            totalRequired += role.count;
-            totalConfirmed += this.getConfirmedStaffCount(
-              jobPosting, 
-              dateStr, 
-              ts.time, 
-              role.name
-            );
-          });
-        });
-      });
-    } else {
-      // 전체 기간 공통 요구사항
-      jobPosting.timeSlots?.forEach(ts => {
+    // 날짜별 요구사항 처리
+    jobPosting.dateSpecificRequirements?.forEach(dateReq => {
+      const dateStr = timestampToLocalDateString(dateReq.date);
+      dateReq.timeSlots.forEach(ts => {
         ts.roles.forEach(role => {
           totalRequired += role.count;
-          totalConfirmed += jobPosting.confirmedStaff?.filter(
-            staff => staff.timeSlot === ts.time && staff.role === role.name
-          ).length || 0;
+          totalConfirmed += this.getConfirmedStaffCount(
+            jobPosting, 
+            dateStr, 
+            ts.time, 
+            role.name
+          );
         });
       });
-    }
+    });
     
     return totalRequired > 0 ? Math.round((totalConfirmed / totalRequired) * 100) : 0;
   }
@@ -312,44 +222,21 @@ export class JobPostingUtils {
   static getRequirementProgress(jobPosting: JobPosting): Map<string, {required: number, confirmed: number}> {
     const progressMap = new Map<string, {required: number, confirmed: number}>();
     
-    if (this.hasDateSpecificRequirements(jobPosting)) {
-      // 날짜별 요구사항 처리
-      jobPosting.dateSpecificRequirements?.forEach(dateReq => {
-        const dateStr = timestampToLocalDateString(dateReq.date);
-        let required = 0;
-        let confirmed = 0;
-        
-        dateReq.timeSlots.forEach(ts => {
-          ts.roles.forEach(role => {
-            required += role.count;
-            confirmed += this.getConfirmedStaffCount(jobPosting, dateStr, ts.time, role.name);
-          });
-        });
-        
-        progressMap.set(dateStr, { required, confirmed });
-      });
-    } else {
-      // 전체 기간 공통 요구사항 처리
-      const startDate = new Date(timestampToLocalDateString(jobPosting.startDate));
-      const endDate = new Date(timestampToLocalDateString(jobPosting.endDate));
+    // 날짜별 요구사항 처리
+    jobPosting.dateSpecificRequirements?.forEach(dateReq => {
+      const dateStr = timestampToLocalDateString(dateReq.date);
+      let required = 0;
+      let confirmed = 0;
       
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0] || '';
-        if (!dateStr) continue;
-        
-        let required = 0;
-        let confirmed = 0;
-        
-        jobPosting.timeSlots?.forEach(ts => {
-          ts.roles.forEach(role => {
-            required += role.count;
-            confirmed += this.getConfirmedStaffCount(jobPosting, dateStr, ts.time, role.name);
-          });
+      dateReq.timeSlots.forEach(ts => {
+        ts.roles.forEach(role => {
+          required += role.count;
+          confirmed += this.getConfirmedStaffCount(jobPosting, dateStr, ts.time, role.name);
         });
-        
-        progressMap.set(dateStr, { required, confirmed });
-      }
-    }
+      });
+      
+      progressMap.set(dateStr, { required, confirmed });
+    });
     
     return progressMap;
   }

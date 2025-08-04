@@ -2,7 +2,6 @@ import React from 'react';
 import { DateSpecificRequirement } from '../../types/jobPosting';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { createNewDateSpecificRequirement } from '../../utils/jobPosting/jobPostingHelpers';
-import TimeSlotManager from './TimeSlotManager';
 import Button from '../common/Button';
 import DateDropdownSelector from '../DateDropdownSelector';
 
@@ -160,26 +159,139 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
           </div>
 
           <div className="p-4">
-            <TimeSlotManager
-            timeSlots={requirement.timeSlots}
-            onTimeSlotChange={(timeSlotIndex, value) => 
-              onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, value)
-            }
-            onTimeToBeAnnouncedToggle={(timeSlotIndex, isAnnounced) => 
-              onDateSpecificTimeToBeAnnouncedToggle(requirementIndex, timeSlotIndex, isAnnounced)
-            }
-            onTentativeDescriptionChange={(timeSlotIndex, description) => 
-              onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, description)
-            }
-            onRoleChange={(timeSlotIndex, roleIndex, field, value) => 
-              onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, field, value)
-            }
-            onAddRole={(timeSlotIndex) => addRoleToTimeSlot(requirementIndex, timeSlotIndex)}
-            onRemoveRole={(timeSlotIndex, roleIndex) => 
-              removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)
-            }
-            onRemoveTimeSlot={(timeSlotIndex) => removeTimeSlotFromDate(requirementIndex, timeSlotIndex)}
-          />
+            {/* TimeSlot 관리 UI 직접 구현 */}
+            <div className="space-y-4">
+              {requirement.timeSlots.map((timeSlot, timeSlotIndex) => (
+                <div key={timeSlotIndex} className="border border-gray-200 rounded-md p-4 bg-white">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-gray-700">⏰ 시간대 {timeSlotIndex + 1}</span>
+                      {requirement.timeSlots.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeTimeSlotFromDate(requirementIndex, timeSlotIndex)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                          title="시간대 삭제"
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 시간 미정 토글 */}
+                  <div className="mb-3">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={timeSlot.isTimeToBeAnnounced || false}
+                        onChange={(e) => 
+                          onDateSpecificTimeToBeAnnouncedToggle(requirementIndex, timeSlotIndex, e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">시간 미정</span>
+                    </label>
+                  </div>
+
+                  {/* 시간 입력 또는 미정 설명 */}
+                  {timeSlot.isTimeToBeAnnounced ? (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        미정 시간 설명
+                      </label>
+                      <input
+                        type="text"
+                        value={timeSlot.tentativeDescription || ''}
+                        onChange={(e) =>
+                          onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
+                        }
+                        placeholder="예: 토너먼트 진행 상황에 따라 결정"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        시간
+                      </label>
+                      <input
+                        type="time"
+                        value={timeSlot.time}
+                        onChange={(e) =>
+                          onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, e.target.value)
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  )}
+
+                  {/* 역할 관리 */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h5 className="text-sm font-medium text-gray-700">필요 역할</h5>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => addRoleToTimeSlot(requirementIndex, timeSlotIndex)}
+                      >
+                        역할 추가
+                      </Button>
+                    </div>
+
+                    {timeSlot.roles.map((role, roleIndex) => (
+                      <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            역할명
+                          </label>
+                          <input
+                            type="text"
+                            value={role.name}
+                            onChange={(e) =>
+                              onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value)
+                            }
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="dealer"
+                          />
+                        </div>
+                        <div className="w-20">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            인원
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={role.count}
+                            onChange={(e) =>
+                              onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', parseInt(e.target.value) || 1)
+                            }
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        {timeSlot.roles.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)}
+                            className="text-red-500 hover:text-red-700 text-sm p-1"
+                            title="역할 삭제"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {requirement.timeSlots.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  <p className="text-sm">시간대를 추가해주세요.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       ))}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '../../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
 
 interface Assignment {
@@ -77,9 +77,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             시간대 및 역할 선택 (여러 개 선택 가능)
           </label>
           
-          {/* 일자별 다른 인원 요구사항이 있는 경우 */}
-          {JobPostingUtils.hasDateSpecificRequirements(jobPosting) ? (
-            jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
+          {/* 일자별 인원 요구사항 표시 */}
+          {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
+            jobPosting.dateSpecificRequirements.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
               <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
                 <h4 className="text-sm font-semibold text-blue-800 mb-3">
                   📅 {formatDateUtil(dateReq.date)}
@@ -145,64 +145,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               </div>
             ))
           ) : (
-            /* 기존 방식: 전체 기간 공통 timeSlots */
-            jobPosting.timeSlots?.map((ts: TimeSlot, tsIndex: number) => (
-              <div key={tsIndex} className="mb-4 border border-gray-200 rounded-lg p-4">
-                <div className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                  ⏰ {ts.isTimeToBeAnnounced ? (
-                    <span className="text-orange-600">
-                      미정
-                      {ts.tentativeDescription && (
-                        <span className="text-gray-600 font-normal ml-2">
-                          ({ts.tentativeDescription})
-                        </span>
-                      )}
-                    </span>
-                  ) : (
-                    ts.time
-                  )}
-                </div>
-                <div className="space-y-2">
-                  {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
-                    const assignment = { timeSlot: ts.time, role: r.name };
-                    const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
-                      staff.timeSlot === ts.time && 
-                      staff.role === r.name
-                    ).length || 0;
-                    const isFull = confirmedCount >= r.count;
-                    const isSelected = isAssignmentSelected(assignment);
-                    
-                    return (
-                      <label 
-                        key={roleIndex} 
-                        className={`flex items-center p-2 rounded cursor-pointer ${
-                          isFull ? 'bg-gray-100 cursor-not-allowed' : 
-                          isSelected ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={isFull}
-                          onChange={(e) => onAssignmentChange(assignment, e.target.checked)}
-                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
-                        />
-                        <span className={`ml-3 text-sm ${
-                          isFull ? 'text-gray-400' : 'text-gray-700'
-                        }`}>
-                          👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
-                          <span className={`ml-2 text-xs ${
-                            isFull ? 'text-red-500 font-medium' : 'text-gray-500'
-                          }`}>
-                            ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
-                          </span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
+            <div className="text-center py-8 text-gray-500">
+              <p>지원 가능한 시간대가 없습니다.</p>
+            </div>
           )}
         </div>
         

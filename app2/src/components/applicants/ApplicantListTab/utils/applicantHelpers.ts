@@ -135,6 +135,128 @@ export const formatDateDisplay = (dateStr: string): string => {
 };
 
 /**
+ * 선택 항목 인터페이스 (내부 사용)
+ */
+interface Selection {
+  role: string;
+  time: string;
+  date: string;
+}
+
+/**
+ * 날짜별 그룹화된 선택 사항 인터페이스
+ */
+export interface DateGroupedSelections {
+  date: string;
+  displayDate: string; // "01-15(수)" 형식
+  selections: Selection[];
+  selectedCount: number;
+  totalCount: number;
+}
+
+/**
+ * 통계 정보가 포함된 선택 항목 인터페이스
+ */
+export interface SelectionWithStats extends Selection {
+  confirmedCount: number;
+  requiredCount: number;
+  isFull: boolean;
+  isSelected: boolean;
+}
+
+/**
+ * 지원자의 선택 사항을 날짜별로 그룹화하는 함수
+ */
+export const getApplicantSelectionsByDate = (applicant: Applicant): DateGroupedSelections[] => {
+  logger.debug('🔍 getApplicantSelectionsByDate 호출:', { 
+    component: 'applicantHelpers',
+    data: {
+      applicantId: applicant.id,
+      applicantName: applicant.applicantName
+    }
+  });
+
+  const selections = getApplicantSelections(applicant);
+  
+  if (selections.length === 0) {
+    return [];
+  }
+
+  // 날짜별로 그룹화
+  const dateGroups = new Map<string, Selection[]>();
+  
+  selections.forEach(selection => {
+    const dateKey = selection.date || 'no-date';
+    if (!dateGroups.has(dateKey)) {
+      dateGroups.set(dateKey, []);
+    }
+    dateGroups.get(dateKey)?.push(selection);
+  });
+
+  // Map을 배열로 변환하고 날짜순 정렬
+  const groupedSelections: DateGroupedSelections[] = Array.from(dateGroups.entries())
+    .map(([date, selections]) => ({
+      date,
+      displayDate: formatDateDisplay(date),
+      selections,
+      selectedCount: 0, // 나중에 MultiSelectControls에서 계산
+      totalCount: selections.length
+    }))
+    .sort((a, b) => {
+      // 날짜 없는 경우는 마지막으로
+      if (a.date === 'no-date') return 1;
+      if (b.date === 'no-date') return -1;
+      // 날짜순 정렬
+      return a.date.localeCompare(b.date);
+    });
+
+  logger.debug('🔍 날짜별 그룹화 결과:', { 
+    component: 'applicantHelpers', 
+    data: {
+      groupCount: groupedSelections.length,
+      groups: groupedSelections.map(g => ({
+        date: g.date,
+        displayDate: g.displayDate,
+        count: g.totalCount
+      }))
+    }
+  });
+
+  return groupedSelections;
+};
+
+/**
+ * 같은 날짜 내에서 중복 선택인지 확인하는 함수
+ */
+export const isDuplicateInSameDate = (
+  existingSelections: Selection[], 
+  newSelection: Selection
+): boolean => {
+  return existingSelections.some(existing => 
+    existing.date === newSelection.date &&
+    existing.time === newSelection.time &&
+    existing.role === newSelection.role
+  );
+};
+
+/**
+ * 특정 날짜의 선택 통계를 계산하는 함수
+ */
+export const getDateSelectionStats = (
+  selections: Selection[], 
+  selectedAssignments: Array<{timeSlot: string, role: string, date: string}>,
+  targetDate: string
+) => {
+  const dateSelections = selections.filter(s => s.date === targetDate);
+  const selectedInDate = selectedAssignments.filter(s => s.date === targetDate);
+  
+  return {
+    totalCount: dateSelections.length,
+    selectedCount: selectedInDate.length
+  };
+};
+
+/**
  * 역할 이름을 한글로 변환하는 맵
  */
 export const jobRoleMap: { [key: string]: string } = {

@@ -103,8 +103,8 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
       <div className="border-b pb-4">
         <h4 className="font-semibold mb-3">⏰ 모집 시간대 및 역할</h4>
         
-        {JobPostingUtils.hasDateSpecificRequirements(jobPosting) ? (
-          /* 일자별 다른 인원 요구사항이 있는 경우 */
+        {/* 일자별 인원 요구사항 표시 */}
+        {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
           <div className="space-y-4">
             {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
               <div key={dateIndex} className="bg-gray-50 p-3 rounded-lg">
@@ -151,38 +151,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
             ))}
           </div>
         ) : (
-          /* 기존 방식: 전체 기간 공통 timeSlots */
-          <div className="space-y-3">
-            {jobPosting.timeSlots?.map((ts: TimeSlot, index: number) => (
-              <div key={index} className="flex items-start bg-gray-50 p-3 rounded-lg">
-                <div className="font-semibold text-gray-700 text-sm min-w-[80px]">
-                  {ts.isTimeToBeAnnounced ? (
-                    <span className="text-orange-600">
-                      미정
-                      {ts.tentativeDescription && (
-                        <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
-                      )}
-                    </span>
-                  ) : (
-                    ts.time
-                  )}
-                </div>
-                <div className="ml-4 space-y-1">
-                  {ts.roles.map((r: RoleRequirement, i: number) => {
-                    const confirmedCount = jobPosting.confirmedStaff?.filter((staff: ConfirmedStaff) => 
-                      staff.timeSlot === ts.time && staff.role === r.name
-                    ).length || 0;
-                    const isFull = confirmedCount >= r.count;
-                    return (
-                      <div key={i} className={`text-sm ${isFull ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                        {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
-                        {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          /* 날짜별 요구사항이 없는 경우 */
+          <div className="text-sm text-gray-600">
+            모집 시간대 정보가 없습니다.
           </div>
         )}
       </div>

@@ -23,7 +23,6 @@ export const createInitialFormData = () => {
     type: 'application' as const,
     timeSlots: [createInitialTimeSlot()],
     dateSpecificRequirements: [createNewDateSpecificRequirement(today)],
-    usesDifferentDailyRequirements: true,
     description: '',
     status: 'open' as const,
     location: '서울',
@@ -94,8 +93,9 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
   // 모든 역할을 수집하여 requiredRoles 배열 생성
   const requiredRoles = new Set<string>();
   
-  if (formData.usesDifferentDailyRequirements && formData.dateSpecificRequirements) {
-    logger.debug('📅 일자별 다른 요구사항 처리 중...', { component: 'jobPostingHelpers' });
+  // 날짜별 요구사항만 사용
+  if (formData.dateSpecificRequirements) {
+    logger.debug('📅 일자별 요구사항 처리 중...', { component: 'jobPostingHelpers' });
     formData.dateSpecificRequirements.forEach((req: DateSpecificRequirement) => {
       req.timeSlots.forEach((timeSlot: TimeSlot) => {
         timeSlot.roles.forEach((role: RoleRequirement) => {
@@ -104,16 +104,6 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
             logger.debug('👤 역할 추가:', { component: 'jobPostingHelpers', data: role.name });
           }
         });
-      });
-    });
-  } else if (formData.timeSlots) {
-    logger.debug('⏰ 일반 시간대 처리 중...', { component: 'jobPostingHelpers' });
-    formData.timeSlots.forEach((timeSlot: TimeSlot) => {
-      timeSlot.roles.forEach((role: RoleRequirement) => {
-        if (role.name) {
-          requiredRoles.add(role.name);
-          logger.debug('👤 역할 추가:', { component: 'jobPostingHelpers', data: role.name });
-        }
       });
     });
   }
@@ -170,8 +160,6 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     startDate: convertDate(data.startDate),
     endDate: convertDate(data.endDate),
     status: data.status || 'open',
-    usesDifferentDailyRequirements: data.usesDifferentDailyRequirements,
-    timeSlots: data.timeSlots,
     dateSpecificRequirements: (data.dateSpecificRequirements || []).map((req: DateSpecificRequirement) => ({
       ...req,
       date: convertDate(req.date)

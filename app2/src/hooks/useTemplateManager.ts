@@ -45,9 +45,7 @@ export const useTemplateManager = () => {
         templateData: {
           title: formData.title,
           type: formData.type,
-          timeSlots: formData.timeSlots,
           dateSpecificRequirements: formData.dateSpecificRequirements,
-          usesDifferentDailyRequirements: formData.usesDifferentDailyRequirements,
           description: formData.description,
           location: formData.location,
           district: formData.district,

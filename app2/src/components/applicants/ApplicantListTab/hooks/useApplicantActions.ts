@@ -52,13 +52,33 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     setIsProcessing(true);
     
     try {
+      // 같은 날짜 중복 확정 방지 검사
+      const targetDates = assignments
+        .map(a => a.date)
+        .filter(date => date && date.trim() !== '');
+      
+      if (targetDates.length > 0) {
+        const existingConfirmations = (jobPosting.confirmedStaff || []).filter((staff: any) => 
+          staff.userId === applicant.applicantId && 
+          targetDates.includes(staff.date)
+        );
+
+        if (existingConfirmations.length > 0) {
+          alert(`같은 날짜에 중복 확정할 수 없습니다.`);
+          return;
+        }
+      }
+
       // 선택된 역할들이 마감되었는지 확인
       const fullRoles = assignments.filter(assignment => {
+        // 날짜별 요구사항만 사용하므로 date는 필수
+        if (!assignment.date) return false;
+        
         return JobPostingUtils.isRoleFull(
           jobPosting,
           assignment.timeSlot,
           assignment.role,
-          assignment.date || undefined
+          assignment.date
         );
       });
       
@@ -294,8 +314,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         let shouldClose = false;
         let closeMessage = '';
         
-        if (JobPostingUtils.hasDateSpecificRequirements(updatedPost)) {
-          // 날짜별 요구사항이 있는 경우
+        // 날짜별 요구사항 확인
+        if (updatedPost.dateSpecificRequirements && updatedPost.dateSpecificRequirements.length > 0) {
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           let allFulfilled = true;
           Array.from(progressMap.entries()).forEach(([date, progress]) => {
@@ -349,8 +369,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         let shouldReopen = false;
         let reopenMessage = '';
         
-        if (JobPostingUtils.hasDateSpecificRequirements(updatedPost)) {
-          // 날짜별 요구사항이 있는 경우
+        // 날짜별 요구사항 확인
+        if (updatedPost.dateSpecificRequirements && updatedPost.dateSpecificRequirements.length > 0) {
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           Array.from(progressMap.entries()).some(([date, progress]) => {
             const percentage = progress.required > 0 ? (progress.confirmed / progress.required) * 100 : 0;

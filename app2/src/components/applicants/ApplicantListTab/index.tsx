@@ -57,7 +57,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   }, [applicants]);
 
   /**
-   * 다중 선택용 체크박스 토글 함수
+   * 다중 선택용 체크박스 토글 함수 (날짜별 중복 방지 강화)
    */
   const handleMultipleAssignmentToggle = useCallback((applicantId: string, value: string, isChecked: boolean) => {
     logger.debug('🔍 handleMultipleAssignmentToggle 시작:', { 
@@ -90,7 +90,22 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       const currentAssignments = prev[applicantId] || [];
       
       if (isChecked) {
-        // 체크됨: 중복 체크 후 배열에 추가
+        // 체크됨: 같은 날짜에 이미 선택된 항목이 있는지 확인
+        const sameDate = newAssignment.date;
+        const alreadySelectedInSameDate = currentAssignments.some(assignment => 
+          assignment.date === sameDate && assignment.date.trim() !== ''
+        );
+        
+        if (alreadySelectedInSameDate && sameDate.trim() !== '') {
+          logger.warn('같은 날짜 중복 선택 시도 차단:', {
+            component: 'ApplicantListTab',
+            data: { applicantId, sameDate, newAssignment }
+          });
+          // 사용자에게 알림 없이 조용히 차단 (UI에서 이미 시각적으로 표시됨)
+          return prev;
+        }
+        
+        // 완전 중복 체크
         const isDuplicate = currentAssignments.some(assignment => 
           assignment.timeSlot === newAssignment.timeSlot && 
           assignment.role === newAssignment.role && 
@@ -100,6 +115,11 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         if (isDuplicate) {
           return prev;
         }
+        
+        logger.debug('선택 항목 추가:', {
+          component: 'ApplicantListTab',
+          data: { applicantId, newAssignment }
+        });
         
         return {
           ...prev,
@@ -112,6 +132,11 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             assignment.role === newAssignment.role && 
             assignment.date === newAssignment.date)
         );
+        
+        logger.debug('선택 항목 제거:', {
+          component: 'ApplicantListTab',
+          data: { applicantId, newAssignment, remainingCount: filtered.length }
+        });
         
         return {
           ...prev,
@@ -169,7 +194,14 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   return (
     <div className="p-3 sm:p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-base md:text-lg font-medium">{t('jobPostingAdmin.applicants.title')}</h3>
+        <h3 className="text-base md:text-lg font-medium">
+          {loadingApplicants ? (
+            <span>지원자 목록 (로딩 중...)</span>
+          ) : (
+            <span className="hidden sm:inline">지원자 목록 (총 {applicants.length}명)</span>
+          )}
+          <span className="sm:hidden">지원자 ({applicants.length}명)</span>
+        </h3>
         <button
           onClick={refreshApplicants}
           className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"

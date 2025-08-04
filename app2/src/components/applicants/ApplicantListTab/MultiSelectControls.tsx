@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
@@ -6,7 +6,13 @@ import { logger } from '../../../utils/logger';
 import { TimeSlot, DateSpecificRequirement, JobPostingUtils } from '../../../types/jobPosting';
 import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { Applicant, Assignment } from './types';
-import { getApplicantSelections, formatDateDisplay } from './utils/applicantHelpers';
+import { 
+  getApplicantSelectionsByDate, 
+  getDateSelectionStats,
+  isDuplicateInSameDate,
+  DateGroupedSelections,
+  formatDateDisplay 
+} from './utils/applicantHelpers';
 
 interface MultiSelectControlsProps {
   applicant: Applicant;
@@ -19,7 +25,7 @@ interface MultiSelectControlsProps {
 }
 
 /**
- * 지원자의 다중 선택을 처리하는 컴포넌트
+ * 지원자의 다중 선택을 처리하는 컴포넌트 (날짜별 UI)
  */
 const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   applicant,
@@ -31,13 +37,31 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   onRefresh
 }) => {
   const { t } = useTranslation();
-  const selections = getApplicantSelections(applicant);
   
-  if (selections.length === 0) {
+  // 날짜별 그룹화된 선택 사항 (메모이제이션)
+  const dateGroupedSelections = useMemo(() => {
+    const groups = getApplicantSelectionsByDate(applicant);
+    
+    // 각 그룹의 선택된 개수 계산
+    return groups.map(group => {
+      const stats = getDateSelectionStats(
+        group.selections, 
+        selectedAssignments, 
+        group.date
+      );
+      return {
+        ...group,
+        selectedCount: stats.selectedCount
+      };
+    });
+  }, [applicant, selectedAssignments]);
+  
+  if (dateGroupedSelections.length === 0) {
     return null;
   }
 
-  const selectedCount = selectedAssignments.length;
+  const totalSelectedCount = selectedAssignments.length;
+  const totalCount = dateGroupedSelections.reduce((sum, group) => sum + group.totalCount, 0);
 
   /**
    * 특정 assignment가 선택되었는지 확인하는 함수
@@ -94,125 +118,188 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 
   return (
     <div className="ml-2 sm:ml-4 space-y-3">
-      <div className="text-sm font-medium text-gray-700 mb-2">
-        ✅ 확정할 시간 선택<br />
-        <span className="text-xs">({selections.length}개 중 {selectedCount}개):</span>
+      {/* 헤더 */}
+      <div className="text-sm font-medium text-gray-700 mb-3">
+        ✅ 확정할 시간 선택
+        <br />
+        <span className="text-xs text-gray-500">
+          (총 {totalCount}개 중 {totalSelectedCount}개)
+        </span>
       </div>
-      <div className="space-y-2">
-        {selections.map((selection, index) => {
-          const safeDateString = selection.date || '';
-          const optionValue = safeDateString.trim() !== '' 
-            ? `${safeDateString}__${selection.time}__${selection.role}`
-            : `${selection.time}__${selection.role}`;
-          
-          const isSelected = isAssignmentSelected(selection.time, selection.role, safeDateString);
-          
-          // 역할이 마감되었는지 확인
-          const isFull = JobPostingUtils.isRoleFull(
-            jobPosting,
-            selection.time,
-            selection.role,
-            safeDateString || undefined
-          );
-          
-          // 해당 역할의 확정 인원 수 계산
-          const confirmedCount = safeDateString 
-            ? JobPostingUtils.getConfirmedStaffCount(jobPosting, safeDateString, selection.time, selection.role)
-            : (jobPosting.confirmedStaff?.filter((staff: any) => 
-                staff.timeSlot === selection.time && staff.role === selection.role
-              ).length || 0);
-          
-          // 필요 인원 수 계산
-          let requiredCount = 0;
-          
-          if (safeDateString && jobPosting.dateSpecificRequirements) {
-            const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => {
-              const drDateString = timestampToLocalDateString(dr.date);
-              return drDateString === safeDateString;
-            });
-            const ts = dateReq?.timeSlots.find((t: TimeSlot) => t.time === selection.time);
-            const roleReq = ts?.roles.find((r: any) => r.name === selection.role);
-            requiredCount = roleReq?.count || 0;
-          } else if (jobPosting.timeSlots) {
-            const ts = jobPosting.timeSlots.find((t: TimeSlot) => t.time === selection.time);
-            const roleReq = ts?.roles.find((r: any) => r.name === selection.role);
-            requiredCount = roleReq?.count || 0;
-          }
-          
-          // "미정" 시간대의 경우 특별 처리
-          if (selection.time === '미정' && requiredCount === 0) {
-            if (safeDateString && jobPosting.dateSpecificRequirements) {
-              const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => dr.date === safeDateString);
-              const undefinedTimeSlot = dateReq?.timeSlots.find((t: TimeSlot) => t.isTimeToBeAnnounced || t.time === '미정');
-              const roleReq = undefinedTimeSlot?.roles.find((r: any) => r.name === selection.role);
-              requiredCount = roleReq?.count || 0;
-            } else if (jobPosting.timeSlots) {
-              const undefinedTimeSlot = jobPosting.timeSlots.find((t: TimeSlot) => t.isTimeToBeAnnounced || t.time === '미정');
-              const roleReq = undefinedTimeSlot?.roles.find((r: any) => r.name === selection.role);
-              requiredCount = roleReq?.count || 0;
-            }
-          }
-            
-          return (
-            <div 
-              key={index} 
-              className={`flex items-center justify-between p-2 border rounded ${
-                isFull ? 'bg-gray-100 border-gray-300 cursor-not-allowed' :
-                isSelected ? 'bg-green-50 border-green-300 cursor-pointer hover:bg-green-100' : 
-                'bg-white border-gray-200 cursor-pointer hover:bg-gray-50'
-              }`}
-              onClick={() => !isFull && onAssignmentToggle(optionValue, !isSelected)}
-            >
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 text-sm">
-                  {safeDateString ? 
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                      {formatDateDisplay(safeDateString)}
-                    </span> : null
-                  }
-                  <span className={isFull ? "text-gray-500" : "text-gray-700"}>{t(`jobPostingAdmin.create.${selection.role}`) || selection.role}</span>
-                  <span className={`ml-2 text-xs ${isFull ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                    ({confirmedCount}/{requiredCount} {isFull ? '- 마감' : ''})
+
+      {/* 날짜별 섹션 */}
+      <div className="space-y-4">
+        {dateGroupedSelections.map((dateGroup, groupIndex) => (
+          <div key={`${dateGroup.date}-${groupIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
+            {/* 날짜 헤더 */}
+            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-base">📅</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {dateGroup.date === 'no-date' ? '날짜 미정' : dateGroup.displayDate}
                   </span>
                 </div>
+                <span className="text-xs text-gray-500">
+                  {dateGroup.selectedCount}개 선택됨
+                </span>
               </div>
-              
-              {/* 시간 수정 드롭다운 */}
-              <select
-                value={selection.time}
-                disabled={isFull}
-                onChange={(e) => handleTimeChange(index, e.target.value)}
-                className={`text-xs border border-gray-300 rounded px-1 py-1 ml-2 w-16 ${isFull ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* 사용 가능한 시간대 옵션들 */}
-                {jobPosting?.timeSlots?.map((ts: TimeSlot) => (
-                  <option key={ts.time} value={ts.time}>
-                    {ts.time}
-                  </option>
-                ))}
-                {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) => {
-                  const dateString = timestampToLocalDateString(dateReq.date);
-                  return dateReq.timeSlots.map((ts: TimeSlot) => (
-                    <option key={`${dateString}-${ts.time}`} value={ts.time}>
-                      {ts.time}
-                    </option>
-                  ));
-                })}
-              </select>
             </div>
-          );
-        })}
+
+            {/* 선택 항목들 */}
+            <div className="divide-y divide-gray-100">
+              {dateGroup.selections.map((selection, selectionIndex) => {
+                const safeDateString = selection.date || '';
+                const optionValue = safeDateString.trim() !== '' 
+                  ? `${safeDateString}__${selection.time}__${selection.role}`
+                  : `${selection.time}__${selection.role}`;
+                
+                const isSelected = isAssignmentSelected(selection.time, selection.role, safeDateString);
+                
+                // 같은 날짜에 이미 다른 항목이 선택되었는지 확인
+                const hasOtherSelectionInSameDate = safeDateString.trim() !== '' && 
+                  selectedAssignments.some(assignment => 
+                    assignment.date === safeDateString && 
+                    !(assignment.timeSlot === selection.time && assignment.role === selection.role)
+                  );
+                
+                // 역할이 마감되었는지 확인
+                const isFull = safeDateString 
+                  ? JobPostingUtils.isRoleFull(
+                      jobPosting,
+                      selection.time,
+                      selection.role,
+                      safeDateString
+                    )
+                  : false;
+                
+                // 선택 불가능한 상태 (마감 또는 같은 날짜에 다른 선택이 있는 경우)
+                const isDisabled = isFull || hasOtherSelectionInSameDate;
+                
+                // 해당 역할의 확정 인원 수 계산
+                const confirmedCount = safeDateString 
+                  ? JobPostingUtils.getConfirmedStaffCount(jobPosting, safeDateString, selection.time, selection.role)
+                  : (jobPosting.confirmedStaff?.filter((staff: any) => 
+                      staff.timeSlot === selection.time && staff.role === selection.role
+                    ).length || 0);
+                
+                // 필요 인원 수 계산
+                let requiredCount = 0;
+                
+                if (safeDateString && jobPosting.dateSpecificRequirements) {
+                  const dateReq = jobPosting.dateSpecificRequirements.find((dr: DateSpecificRequirement) => {
+                    const drDateString = timestampToLocalDateString(dr.date);
+                    return drDateString === safeDateString;
+                  });
+                  const ts = dateReq?.timeSlots.find((t: TimeSlot) => t.time === selection.time);
+                  const roleReq = ts?.roles.find((r: any) => r.name === selection.role);
+                  requiredCount = roleReq?.count || 0;
+                  
+                  // "미정" 시간대의 경우 특별 처리
+                  if (selection.time === '미정' && requiredCount === 0) {
+                    const undefinedTimeSlot = dateReq?.timeSlots.find((t: TimeSlot) => t.isTimeToBeAnnounced || t.time === '미정');
+                    const roleReqUndefined = undefinedTimeSlot?.roles.find((r: any) => r.name === selection.role);
+                    requiredCount = roleReqUndefined?.count || 0;
+                  }
+                }
+
+                return (
+                  <div 
+                    key={`${groupIndex}-${selectionIndex}`}
+                    className={`flex items-center justify-between p-3 ${
+                      isDisabled 
+                        ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                        : isSelected 
+                        ? 'bg-green-50 hover:bg-green-100 cursor-pointer' 
+                        : 'bg-white hover:bg-gray-50 cursor-pointer'
+                    }`}
+                    onClick={() => !isDisabled && onAssignmentToggle(optionValue, !isSelected)}
+                  >
+                    {/* 왼쪽: 체크박스와 역할 정보 */}
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      {/* 체크박스 */}
+                      <div className="flex-shrink-0">
+                        {isDisabled ? (
+                          <div className="w-4 h-4 bg-gray-300 rounded border border-gray-400 flex items-center justify-center">
+                            <span className="text-xs text-gray-600">
+                              {isFull ? '×' : hasOtherSelectionInSameDate ? '!' : '×'}
+                            </span>
+                          </div>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // onClick으로 처리
+                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                          />
+                        )}
+                      </div>
+                      
+                      {/* 역할 정보 */}
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-sm font-medium truncate ${
+                          isDisabled ? 'text-gray-500' : 'text-gray-900'
+                        }`}>
+                          {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}
+                        </span>
+                        <div className="flex items-center space-x-2 mt-0.5">
+                          <span className={`text-xs ${
+                            isDisabled ? 'text-red-600 font-medium' : 'text-gray-500'
+                          }`}>
+                            ({confirmedCount}/{requiredCount})
+                          </span>
+                          {isFull && (
+                            <span className="text-xs text-red-600 font-medium">마감</span>
+                          )}
+                          {hasOtherSelectionInSameDate && !isFull && (
+                            <span className="text-xs text-orange-600 font-medium">날짜 중복</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 오른쪽: 시간 드롭다운 */}
+                    <div className="flex-shrink-0 ml-2">
+                      <select
+                        value={selection.time}
+                        disabled={isDisabled}
+                        onChange={(e) => handleTimeChange(selectionIndex, e.target.value)}
+                        className={`text-xs border border-gray-300 rounded px-2 py-1 min-w-[4rem] ${
+                          isDisabled ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* 사용 가능한 시간대 옵션들 */}
+                        {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) => {
+                          const dateString = timestampToLocalDateString(dateReq.date);
+                          return dateReq.timeSlots.map((ts: TimeSlot) => (
+                            <option key={`${dateString}-${ts.time}`} value={ts.time}>
+                              {ts.time}
+                            </option>
+                          ));
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
-      <button 
-        onClick={onConfirm}
-        className="px-2 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 text-xs font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-        disabled={selectedCount === 0 || !canEdit}
-      >
-        ✓ 선택한 시간 확정 ({selectedCount}개)
-      </button>
+
+      {/* 확정 버튼 */}
+      <div className="pt-2">
+        <button 
+          onClick={onConfirm}
+          className="w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          disabled={totalSelectedCount === 0 || !canEdit}
+        >
+          ✓ 선택한 시간 확정 ({totalSelectedCount}개)
+        </button>
+      </div>
     </div>
   );
 };
 
-export default MultiSelectControls;
+export default React.memo(MultiSelectControls);

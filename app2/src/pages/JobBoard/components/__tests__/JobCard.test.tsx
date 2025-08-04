@@ -33,50 +33,52 @@ describe('JobCard Component', () => {
     description: '경험 많은 딜러를 모집합니다',
     startDate: new Date('2024-01-20'),
     endDate: new Date('2024-01-21'),
-    status: 'active',
+    status: 'open',
     createdAt: new Date(),
     updatedAt: new Date(),
     createdBy: 'admin',
     updatedBy: 'admin',
     location: '강남점',
-    eventType: 'tournament',
-    timeSlots: [
+    type: 'application',
+    salaryType: 'daily',
+    salaryAmount: '150000',
+    benefits: {
+      transportation: '교통비 지원',
+      meal: '식사 제공',
+    },
+    confirmedStaff: [],
+    dateSpecificRequirements: [
       {
-        time: '18:00 - 02:00',
-        roles: [
+        date: '2024-01-20',
+        timeSlots: [
           {
-            name: 'dealer',
-            count: 10,
-          },
+            time: '18:00 - 02:00',
+            roles: [
+              {
+                name: 'dealer',
+                count: 10,
+              },
+            ],
+            isTimeToBeAnnounced: false,
+          } as TimeSlot,
         ],
-        isTimeToBeAnnounced: false,
-      } as TimeSlot,
-    ],
-    roleRequirements: [
+      },
       {
-        role: 'dealer',
-        count: 10,
+        date: '2024-01-21',
+        timeSlots: [
+          {
+            time: '18:00 - 02:00',
+            roles: [
+              {
+                name: 'dealer',
+                count: 10,
+              },
+            ],
+            isTimeToBeAnnounced: false,
+          } as TimeSlot,
+        ],
       },
     ],
-    salary: 150000,
-    benefits: {
-      transportation: true,
-      meals: true,
-      parking: false,
-      accommodation: false,
-      bonus: false,
-      overtimePay: false,
-      nightShiftAllowance: false,
-      weekendAllowance: false,
-      holidayAllowance: false,
-      other: '',
-    },
-    additionalRequirements: '경력 1년 이상',
-    confirmedStaff: [],
-    workDates: ['2024-01-20', '2024-01-21'],
-    dateSpecificRequirements: [],
-    differentDailyRequirements: false,
-    showDateRange: true,
   };
 
   const defaultProps = {
@@ -150,17 +152,22 @@ describe('JobCard Component', () => {
   test('shows multiple time slots', () => {
     const postWithMultipleSlots = {
       ...mockPost,
-      timeSlots: [
+      dateSpecificRequirements: [
         {
-          time: '10:00 - 18:00',
-          roles: [{ name: 'dealer', count: 5 }],
-          isTimeToBeAnnounced: false,
-        } as TimeSlot,
-        {
-          time: '18:00 - 02:00',
-          roles: [{ name: 'dealer', count: 5 }],
-          isTimeToBeAnnounced: false,
-        } as TimeSlot,
+          date: '2024-01-20',
+          timeSlots: [
+            {
+              time: '10:00 - 18:00',
+              roles: [{ name: 'dealer', count: 5 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+            {
+              time: '18:00 - 02:00',
+              roles: [{ name: 'dealer', count: 5 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+          ],
+        },
       ],
     };
     
@@ -173,15 +180,20 @@ describe('JobCard Component', () => {
   test('shows role requirements', () => {
     const postWithMultipleRoles = {
       ...mockPost,
-      timeSlots: [
+      dateSpecificRequirements: [
         {
-          time: '18:00 - 02:00',
-          roles: [
-            { name: 'dealer', count: 10 },
-            { name: 'manager', count: 2 },
+          date: '2024-01-20',
+          timeSlots: [
+            {
+              time: '18:00 - 02:00',
+              roles: [
+                { name: 'dealer', count: 10 },
+                { name: 'manager', count: 2 },
+              ],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
           ],
-          isTimeToBeAnnounced: false,
-        } as TimeSlot,
+        },
       ],
     };
     

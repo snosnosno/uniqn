@@ -61,26 +61,6 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
               })
             )
           )}
-          
-          {/* 기존 방식 timeSlots */}
-          {jobPosting?.timeSlots?.flatMap((ts: TimeSlot) => 
-            ts.roles.map((r: RoleRequirement) => {
-              const isFull = JobPostingUtils.isRoleFull(jobPosting, ts.time, r.name);
-              const confirmedCount = jobPosting.confirmedStaff?.filter((staff: any) => 
-                staff.timeSlot === ts.time && staff.role === r.name
-              ).length || 0;
-              return (
-                <option 
-                  key={`${ts.time}-${r.name}`} 
-                  value={`${ts.time}__${r.name}`}
-                  disabled={isFull}
-                >
-                  {t(`jobPostingAdmin.create.${r.name}`, r.name)}
-                  ({confirmedCount}/{r.count}{isFull ? ' - 마감' : ''})
-                </option>
-              );
-            })
-          )}
         </select>
         <button 
           onClick={onConfirm}

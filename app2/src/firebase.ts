@@ -347,12 +347,17 @@ export const migrateJobPostingsRequiredRoles = async (): Promise<void> => {
         return;
       }
       
-      // Extract roles from timeSlots
-      const timeSlots = data.timeSlots || [];
+      // Extract roles from dateSpecificRequirements
+      const dateSpecificRequirements = data.dateSpecificRequirements || [];
       const requiredRoles = Array.from(new Set(
-        timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) => {
-          if (ts.roles && Array.isArray(ts.roles)) {
-            return ts.roles.map((r: { name: string }) => r.name);
+        dateSpecificRequirements.flatMap((dateReq: { timeSlots?: Array<{ roles?: Array<{ name: string }> }> }) => {
+          if (dateReq.timeSlots && Array.isArray(dateReq.timeSlots)) {
+            return dateReq.timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) => {
+              if (ts.roles && Array.isArray(ts.roles)) {
+                return ts.roles.map((r: { name: string }) => r.name);
+              }
+              return [];
+            });
           }
           return [];
         })

@@ -92,36 +92,25 @@ export const validateJobPostingForm = (formData: any): string[] => {
     errors.push('시작 날짜는 종료 날짜보다 이전이어야 합니다.');
   }
   
-  // 시간대 검증
-  if (formData.usesDifferentDailyRequirements) {
-    if (formData.dateSpecificRequirements.length === 0) {
-      errors.push('일자별 요구사항을 추가해주세요.');
-    }
-    
-    // 일자별 요구사항의 날짜가 시작날짜와 종료날짜 범위 내에 있는지 검증
-    formData.dateSpecificRequirements.forEach((requirement: DateSpecificRequirement, index: number) => {
-      if (requirement.date && formData.startDate && formData.endDate) {
-        if (requirement.date < formData.startDate) {
-          errors.push(`일자 ${index + 1}: 날짜가 시작 날짜(${formData.startDate})보다 이전입니다.`);
-        }
-        if (requirement.date > formData.endDate) {
-          errors.push(`일자 ${index + 1}: 날짜가 종료 날짜(${formData.endDate})보다 이후입니다.`);
-        }
-      }
-      
-      const requirementErrors = validateDateSpecificRequirement(requirement);
-      errors.push(...requirementErrors.map(error => `일자 ${index + 1}: ${error}`));
-    });
-  } else {
-    if (formData.timeSlots.length === 0) {
-      errors.push('최소 하나의 시간대를 추가해주세요.');
-    }
-    
-    formData.timeSlots.forEach((timeSlot: TimeSlot, index: number) => {
-      const timeSlotErrors = validateTimeSlot(timeSlot);
-      errors.push(...timeSlotErrors.map(error => `시간대 ${index + 1}: ${error}`));
-    });
+  // 시간대 검증 - 날짜별 요구사항만 사용
+  if (formData.dateSpecificRequirements.length === 0) {
+    errors.push('일자별 요구사항을 추가해주세요.');
   }
+  
+  // 일자별 요구사항의 날짜가 시작날짜와 종료날짜 범위 내에 있는지 검증
+  formData.dateSpecificRequirements.forEach((requirement: DateSpecificRequirement, index: number) => {
+    if (requirement.date && formData.startDate && formData.endDate) {
+      if (requirement.date < formData.startDate) {
+        errors.push(`일자 ${index + 1}: 날짜가 시작 날짜(${formData.startDate})보다 이전입니다.`);
+      }
+      if (requirement.date > formData.endDate) {
+        errors.push(`일자 ${index + 1}: 날짜가 종료 날짜(${formData.endDate})보다 이후입니다.`);
+      }
+    }
+    
+    const requirementErrors = validateDateSpecificRequirement(requirement);
+    errors.push(...requirementErrors.map(error => `일자 ${index + 1}: ${error}`));
+  });
   
   // 사전질문 검증
   if (formData.usesPreQuestions) {

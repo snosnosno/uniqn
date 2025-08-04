@@ -7,7 +7,6 @@ import Button from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import DateDropdownSelector from '../DateDropdownSelector';
-import TimeSlotManager from './TimeSlotManager';
 import DateSpecificRequirements from './DateSpecificRequirements';
 import PreQuestionManager from './PreQuestionManager';
 import TemplateModal from './modals/TemplateModal';
@@ -26,15 +25,6 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   const {
     formData,
     handleFormChange,
-    handleTimeSlotChange,
-    handleTimeToBeAnnouncedToggle,
-    handleTentativeDescriptionChange,
-    handleRoleChange,
-    addRole,
-    removeRole,
-    addTimeSlot,
-    removeTimeSlot,
-    handleDifferentDailyRequirementsToggle,
     handleDateSpecificTimeSlotChange,
     handleDateSpecificTimeToBeAnnouncedToggle,
     handleDateSpecificTentativeDescriptionChange,
@@ -432,31 +422,17 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           </div>
         </div>
 
-        {/* 시간대 및 역할 설정 */}
-        {'usesDifferentDailyRequirements' in formData && formData.usesDifferentDailyRequirements ? (
-          <DateSpecificRequirements
-            requirements={formData.dateSpecificRequirements || []}
-            startDate={typeof formData.startDate === 'string' ? formData.startDate : ''}
-            endDate={typeof formData.endDate === 'string' ? formData.endDate : ''}
-            onRequirementsChange={handleDateSpecificRequirementsChange}
-            onDateSpecificTimeSlotChange={handleDateSpecificTimeSlotChange}
-            onDateSpecificTimeToBeAnnouncedToggle={handleDateSpecificTimeToBeAnnouncedToggle}
-            onDateSpecificTentativeDescriptionChange={handleDateSpecificTentativeDescriptionChange}
-            onDateSpecificRoleChange={handleDateSpecificRoleChange}
-          />
-        ) : (
-          <TimeSlotManager
-            timeSlots={formData.timeSlots || []}
-            onTimeSlotChange={handleTimeSlotChange}
-            onTimeToBeAnnouncedToggle={handleTimeToBeAnnouncedToggle}
-            onTentativeDescriptionChange={handleTentativeDescriptionChange}
-            onRoleChange={handleRoleChange}
-            onAddRole={addRole}
-            onRemoveRole={removeRole}
-            onAddTimeSlot={addTimeSlot}
-            onRemoveTimeSlot={removeTimeSlot}
-          />
-        )}
+        {/* 시간대 및 역할 설정 - 항상 날짜별 요구사항 사용 */}
+        <DateSpecificRequirements
+          requirements={formData.dateSpecificRequirements || []}
+          startDate={typeof formData.startDate === 'string' ? formData.startDate : ''}
+          endDate={typeof formData.endDate === 'string' ? formData.endDate : ''}
+          onRequirementsChange={handleDateSpecificRequirementsChange}
+          onDateSpecificTimeSlotChange={handleDateSpecificTimeSlotChange}
+          onDateSpecificTimeToBeAnnouncedToggle={handleDateSpecificTimeToBeAnnouncedToggle}
+          onDateSpecificTentativeDescriptionChange={handleDateSpecificTentativeDescriptionChange}
+          onDateSpecificRoleChange={handleDateSpecificRoleChange}
+        />
 
         {/* 사전질문 설정 */}
         <div className="space-y-4">

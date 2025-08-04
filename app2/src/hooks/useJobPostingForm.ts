@@ -24,110 +24,8 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   // 시간대 관련 핸들러들
-  const handleTimeSlotChange = useCallback((timeSlotIndex: number, value: string) => {
-    setFormData((prev: any) => {
-      const newTimeSlots = [...prev.timeSlots];
-      newTimeSlots[timeSlotIndex].time = value;
-      return { ...prev, timeSlots: newTimeSlots };
-    });
-  }, []);
-
-  const handleTimeToBeAnnouncedToggle = useCallback((timeSlotIndex: number, isAnnounced: boolean) => {
-    setFormData((prev: any) => {
-      const newTimeSlots = [...prev.timeSlots];
-      newTimeSlots[timeSlotIndex].isTimeToBeAnnounced = isAnnounced;
-      if (isAnnounced) {
-        newTimeSlots[timeSlotIndex].time = '미정';
-      } else {
-        newTimeSlots[timeSlotIndex].time = '';
-        newTimeSlots[timeSlotIndex].tentativeDescription = '';
-      }
-      return { ...prev, timeSlots: newTimeSlots };
-    });
-  }, []);
-
-  const handleTentativeDescriptionChange = useCallback((timeSlotIndex: number, description: string) => {
-    setFormData((prev: any) => {
-      const newTimeSlots = [...prev.timeSlots];
-      newTimeSlots[timeSlotIndex].tentativeDescription = description;
-      return { ...prev, timeSlots: newTimeSlots };
-    });
-  }, []);
-
-  const addTimeSlot = useCallback(() => {
-    setFormData((prev: any) => ({
-      ...prev,
-      timeSlots: [...prev.timeSlots, createInitialTimeSlot()]
-    }));
-  }, []);
-
-  const removeTimeSlot = useCallback((index: number) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      timeSlots: prev.timeSlots.filter((_: any, i: number) => i !== index)
-    }));
-  }, []);
-
-  // 역할 관련 핸들러들
-  const handleRoleChange = useCallback((timeSlotIndex: number, roleIndex: number, field: 'name' | 'count', value: string | number) => {
-    setFormData((prev: any) => {
-      const newTimeSlots = [...prev.timeSlots];
-      if (field === 'name') {
-        newTimeSlots[timeSlotIndex].roles[roleIndex].name = value as string;
-      } else {
-        newTimeSlots[timeSlotIndex].roles[roleIndex].count = Number(value);
-      }
-      return { ...prev, timeSlots: newTimeSlots };
-    });
-  }, []);
-
-  const addRole = useCallback((timeSlotIndex: number) => {
-    setFormData((prev: any) => {
-      const newTimeSlots = [...prev.timeSlots];
-      newTimeSlots[timeSlotIndex].roles.push(createNewRole());
-      return { ...prev, timeSlots: newTimeSlots };
-    });
-  }, []);
-
-  const removeRole = useCallback((timeSlotIndex: number, roleIndex: number) => {
-    setFormData((prev: any) => {
-      const newTimeSlots = [...prev.timeSlots];
-      newTimeSlots[timeSlotIndex].roles = newTimeSlots[timeSlotIndex].roles.filter(
-        (_: any, i: number) => i !== roleIndex
-      );
-      return { ...prev, timeSlots: newTimeSlots };
-    });
-  }, []);
 
   // 일자별 요구사항 관련 핸들러들
-  const handleDifferentDailyRequirementsToggle = useCallback((enabled: boolean) => {
-    setFormData((prev: any) => {
-      if (enabled) {
-        // 기존 시간대를 첫 번째 날짜의 요구사항으로 변환
-        const startDate = convertToDateString(prev.startDate);
-        const firstRequirement = createNewDateSpecificRequirement(startDate);
-        firstRequirement.timeSlots = [...prev.timeSlots];
-        
-        return {
-          ...prev,
-          usesDifferentDailyRequirements: true,
-          dateSpecificRequirements: [firstRequirement]
-        };
-      } else {
-        // 첫 번째 일자별 요구사항을 기본 시간대로 변환
-        const timeSlots = prev.dateSpecificRequirements.length > 0 
-          ? prev.dateSpecificRequirements[0].timeSlots 
-          : [createInitialTimeSlot()];
-        
-        return {
-          ...prev,
-          usesDifferentDailyRequirements: false,
-          timeSlots,
-          dateSpecificRequirements: []
-        };
-      }
-    });
-  }, []);
 
   const handleDateSpecificTimeSlotChange = useCallback((dateIndex: number, timeSlotIndex: number, value: string) => {
     setFormData((prev: any) => {
@@ -312,20 +210,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     resetForm,
     setFormDataFromTemplate,
     
-    // 시간대 핸들러
-    handleTimeSlotChange,
-    handleTimeToBeAnnouncedToggle,
-    handleTentativeDescriptionChange,
-    addTimeSlot,
-    removeTimeSlot,
-    
-    // 역할 핸들러
-    handleRoleChange,
-    addRole,
-    removeRole,
-    
     // 일자별 요구사항 핸들러
-    handleDifferentDailyRequirementsToggle,
     handleDateSpecificTimeSlotChange,
     handleDateSpecificTimeToBeAnnouncedToggle,
     handleDateSpecificTentativeDescriptionChange,

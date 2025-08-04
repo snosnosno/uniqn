@@ -174,25 +174,33 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
               <FaClock className="w-5 h-5 mr-2"/> 
-              시간대 정보
+              시간대 정보 ({selectedDate})
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {jobPosting.timeSlots?.length > 0 ? (
-                jobPosting.timeSlots.map((timeSlot: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="font-medium text-gray-700">
-                      {timeSlot.time}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {timeSlot.roles?.length || 0} 역할
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  설정된 시간대가 없습니다.
-                </p>
-              )}
+              {(() => {
+                const dateReq = jobPosting.dateSpecificRequirements?.find((dr: any) => 
+                  new Date(dr.date).toISOString().split('T')[0] === selectedDate
+                );
+                
+                if (dateReq && dateReq.timeSlots?.length > 0) {
+                  return dateReq.timeSlots.map((timeSlot: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="font-medium text-gray-700">
+                        {timeSlot.time}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {timeSlot.roles?.length || 0} 역할
+                      </span>
+                    </div>
+                  ));
+                } else {
+                  return (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      선택된 날짜에 설정된 시간대가 없습니다.
+                    </p>
+                  );
+                }
+              })()}
             </div>
           </div>
 

@@ -2,12 +2,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, ConfirmedStaff, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, calculateTotalPositions, calculateTotalPositionsFromDateRequirements } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 
 export interface JobPostingCardProps {
-  post: JobPosting;
+  post: JobPosting & { applicationCount?: number };
   variant: 'admin-list' | 'user-card' | 'detail-info';
   renderActions?: (post: JobPosting) => React.ReactNode;
   renderExtra?: (post: JobPosting) => React.ReactNode;
@@ -35,7 +35,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   const { formatDateDisplay } = useDateUtils();
 
   // 날짜 변환 처리
-  const formatDate = (date: any): string => {
+  const formatDate = (date: string | Date | { toDate: () => Date } | { seconds: number } | null | undefined): string => {
     if (!date) return '미정';
     
     // Firebase Timestamp
@@ -55,10 +55,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   const formattedStartDate = formatDate(post.startDate);
   const formattedEndDate = formatDate(post.endDate);
 
-  // 총 모집인원 계산
-  const totalPositions = post.usesDifferentDailyRequirements
-    ? calculateTotalPositionsFromDateRequirements(post.dateSpecificRequirements || [])
-    : calculateTotalPositions(post.timeSlots || []);
 
   // 전체 진행률 계산 (관리자용)
   const getProgressInfo = () => {
@@ -137,25 +133,25 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
   // 시간대 및 역할 렌더링
   const renderTimeSlots = () => {
-    if (JobPostingUtils.hasDateSpecificRequirements(post)) {
-      // 일자별 다른 인원 요구사항이 있는 경우
-      const dateReqs = post.dateSpecificRequirements || [];
+    // 날짜별 요구사항 표시
+    const dateReqs = post.dateSpecificRequirements || [];
+    if (dateReqs.length > 0) {
       const displayReqs = expandTimeSlots ? dateReqs : dateReqs.slice(0, 2);
       
       return (
-        <div className="text-sm text-gray-600 mb-2">
+        <div className="text-sm text-gray-600 mb-3">
           {displayReqs.map((req: DateSpecificRequirement, index: number) => (
             <div key={index} className="mb-3">
               <div className="font-medium text-gray-700 mb-1 flex items-center text-sm">
                 📅 {formatDate(req.date)} 일정
               </div>
               <div className="ml-4 space-y-1">
-                {req.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                {(req.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
                   <div key={tsIndex} className="mb-2">
                     {ts.isTimeToBeAnnounced ? (
                       <>
                         <>
-                          {ts.roles.map((role: RoleRequirement, roleIndex: number) => {
+                          {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
                             const dateString = timestampToLocalDateString(req.date);
                             const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
                               post,
@@ -182,7 +178,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                     </span>
                                   </>
                                 ) : (
-                                  <div className="pl-[40px]">
+                                  <div className="pl-[50px]">
                                     {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                       ({confirmedCount}/{role.count})
@@ -197,7 +193,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                     ) : (
                       <>
                         <>
-                          {ts.roles.map((role: RoleRequirement, roleIndex: number) => {
+                          {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
                             const dateString = timestampToLocalDateString(req.date);
                             const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
                               post,
@@ -219,7 +215,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                     </span>
                                   </>
                                 ) : (
-                                  <div className="pl-[40px]">
+                                  <div className="pl-[50px]">
                                     {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                       ({confirmedCount}/{role.count})
@@ -247,95 +243,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
         </div>
       );
     } else {
-      // 기존 방식: 전체 기간 공통 timeSlots
-      const timeSlots = post.timeSlots || [];
-      const displaySlots = expandTimeSlots ? timeSlots : timeSlots.slice(0, 2);
-      
+      // 날짜별 요구사항이 없는 경우
       return (
-        <div className="text-sm text-gray-600 mb-2">
-          {displaySlots.map((timeSlot: TimeSlot, index: number) => (
-            <div key={index} className="mb-3">
-              {timeSlot.isTimeToBeAnnounced ? (
-                <>
-                  <>
-                    {timeSlot.roles.map((role: RoleRequirement, roleIndex: number) => {
-                      const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
-                        staff.timeSlot === timeSlot.time && staff.role === role.name
-                      ).length || 0;
-                      const isFull = confirmedCount >= role.count;
-                      return (
-                        <div key={roleIndex} className="text-sm text-gray-600">
-                          {roleIndex === 0 ? (
-                            <>
-                              <span className="font-medium text-orange-600">
-                                미정
-                                {timeSlot.tentativeDescription && (
-                                  <span className="text-gray-600 font-normal ml-1">({timeSlot.tentativeDescription})</span>
-                                )}
-                              </span>
-                              <span className="ml-3">
-                                {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
-                                <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                  ({confirmedCount}/{role.count})
-                                </span>
-                              </span>
-                            </>
-                          ) : (
-                            <div className="pl-[40px]">
-                              {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
-                              <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                ({confirmedCount}/{role.count})
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                </>
-              ) : (
-                <>
-                  <>
-                    {timeSlot.roles.map((role: RoleRequirement, roleIndex: number) => {
-                      const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
-                        staff.timeSlot === timeSlot.time && staff.role === role.name
-                      ).length || 0;
-                      const isFull = confirmedCount >= role.count;
-                      return (
-                        <div key={roleIndex} className="text-sm text-gray-600">
-                          {roleIndex === 0 ? (
-                            <>
-                              <span className="font-medium text-gray-700">{timeSlot.time}</span>
-                              <span className="ml-3">
-                                {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
-                                <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                  ({confirmedCount}/{role.count})
-                                </span>
-                              </span>
-                            </>
-                          ) : (
-                            <div className="pl-[40px]">
-                              {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
-                              <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                ({confirmedCount}/{role.count})
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                </>
-              )}
-            </div>
-          ))}
-          {!expandTimeSlots && timeSlots.length > 2 && (
-            <div className="text-center text-gray-400 py-1">
-              <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                ... 외 {timeSlots.length - 2}개 시간대
-              </span>
-            </div>
-          )}
+        <div className="text-sm text-gray-500 mb-2">
+          시간대 정보가 없습니다.
         </div>
       );
     }
@@ -345,9 +256,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   const renderDetailedTimeSlots = () => {
     if (variant !== 'user-card') return null;
 
-    if (JobPostingUtils.hasDateSpecificRequirements(post)) {
+    if ((post.dateSpecificRequirements || []).length > 0) {
       return (
-        <div className="mb-2">
+        <div className="mb-4">
+          <div className="font-medium text-gray-700 mb-2 flex items-center text-sm">
+            <span className="mr-2">📋</span>
+            <span>모집 일정</span>
+          </div>
           <div className="space-y-2">
             {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
               <div key={dateIndex} className="">
@@ -355,11 +270,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   📅 {formatDateUtil(dateReq.date)}
                 </div>
                 <div className="space-y-2">
-                  {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                  {(dateReq.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
                     <div key={`${dateIndex}-${tsIndex}`} className="ml-2 mb-2">
                       {ts.isTimeToBeAnnounced ? (
                         <>
-                          {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                          {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
                             const dateString = timestampToLocalDateString(dateReq.date);
                             const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
                               post,
@@ -386,7 +301,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                     </span>
                                   </>
                                 ) : (
-                                  <div className="pl-[40px]">
+                                  <div className="pl-[50px]">
                                     {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                       {isFull ? '(마감)' : `(${confirmedCount}/${r.count})`}
@@ -399,7 +314,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                         </>
                       ) : (
                         <>
-                          {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                          {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
                             const dateString = timestampToLocalDateString(dateReq.date);
                             const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
                               post,
@@ -421,7 +336,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                     </span>
                                   </>
                                 ) : (
-                                  <div className="pl-[40px]">
+                                  <div className="pl-[50px]">
                                     {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                       {isFull ? '(마감)' : `(${confirmedCount}/${r.count})`}
@@ -443,80 +358,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       );
     } else {
       return (
-        <div className="mb-2">
-          <div className="space-y-2">
-            {post.timeSlots?.map((ts: TimeSlot, index: number) => (
-              <div key={index} className="">
-                {ts.isTimeToBeAnnounced ? (
-                  <>
-                    {ts.roles.map((r: RoleRequirement, i: number) => {
-                      const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
-                        staff.timeSlot === ts.time && staff.role === r.name
-                      ).length || 0;
-                      const isFull = confirmedCount >= r.count;
-                      return (
-                        <div key={i} className="text-sm text-gray-600">
-                          {i === 0 ? (
-                            <>
-                              <span className="font-medium text-orange-600">
-                                미정
-                                {ts.tentativeDescription && (
-                                  <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
-                                )}
-                              </span>
-                              <span className="ml-3">
-                                {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
-                                <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                  {isFull ? '(마감)' : ` (${confirmedCount}/${r.count})`}
-                                </span>
-                              </span>
-                            </>
-                          ) : (
-                            <div className="pl-[40px]">
-                              {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
-                              <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                {isFull ? '(마감)' : ` (${confirmedCount}/${r.count})`}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                ) : (
-                  <>
-                    {ts.roles.map((r: RoleRequirement, i: number) => {
-                      const confirmedCount = post.confirmedStaff?.filter((staff: ConfirmedStaff) => 
-                        staff.timeSlot === ts.time && staff.role === r.name
-                      ).length || 0;
-                      const isFull = confirmedCount >= r.count;
-                      return (
-                        <div key={i} className="text-sm text-gray-600">
-                          {i === 0 ? (
-                            <>
-                              <span className="font-medium text-gray-700">{ts.time}</span>
-                              <span className="ml-3">
-                                {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
-                                <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                  {isFull ? '(마감)' : ` (${confirmedCount}/${r.count})`}
-                                </span>
-                              </span>
-                            </>
-                          ) : (
-                            <div className="pl-[40px]">
-                              {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
-                              <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                {isFull ? '(마감)' : ` (${confirmedCount}/${r.count})`}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            ))}
+        <div className="mb-4">
+          <div className="font-medium text-gray-700 mb-2 flex items-center text-sm">
+            <span className="mr-2">⏰</span>
+            <span>모집 시간대</span>
+          </div>
+          <div className="text-sm text-gray-500">
+            시간대 정보가 없습니다.
           </div>
         </div>
       );
@@ -526,7 +374,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   return (
     <div className={`${getContainerClasses()} ${className}`}>
       <div className={getContentClasses()}>
-        <div className={variant === 'user-card' ? 'flex flex-col lg:flex-row lg:items-start lg:justify-between' : variant === 'admin-list' ? 'flex flex-col' : 'flex justify-between items-start'}>
+        <div className={variant === 'user-card' ? 'flex flex-col lg:flex-row lg:items-start lg:justify-between' : 'flex justify-between items-start'}>
           <div className={variant === 'user-card' ? 'flex-1 mb-4 lg:mb-0' : 'flex-1 min-w-0'}>
             {/* 제목과 상태/타입 배지 */}
             <div className="flex items-center space-x-2 mb-2">
@@ -559,17 +407,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   {post.recruitmentType === 'fixed' ? '고정' : '지원'}
                 </span>
               )}
-              
-              {/* 공고타입 배지 (📋지원/고정) */}
-              {post.type && (
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  post.type === 'fixed' 
-                    ? 'bg-gray-100 text-gray-800' 
-                    : 'bg-cyan-100 text-cyan-800'
-                }`}>
-                  {getTypeDisplayName(post.type)}
-                </span>
-              )}
             </div>
 
             {/* 기본 정보 */}
@@ -598,21 +435,16 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 </span>
               </div>
               
-              
-              {/* 모집인원 */}
-              {variant === 'admin-list' && (
+              {/* 유형 (관리자용) */}
+              {variant === 'admin-list' && post.type && (
                 <div className={getInfoItemClasses()}>
                   <span className="flex items-center">
-                    <span className="mr-2">👥</span>
-                    <span>
-                      총 {totalPositions}명 모집 
-                      {progressInfo && progressInfo.totalConfirmed > 0 && (
-                        <span className="text-green-600 ml-1">({progressInfo.totalConfirmed}명 확정)</span>
-                      )}
-                    </span>
+                    <span className="mr-2">📋</span>
+                    <span>{getTypeDisplayName(post.type)}</span>
                   </span>
                 </div>
               )}
+              
               
               {/* 급여 */}
               {post.salaryType && post.salaryAmount && (
@@ -625,13 +457,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               )}
               
               {/* 복리후생 */}
-              {post.benefits && Object.keys(post.benefits).length > 0 && (
+              {post.benefits && Object.keys(post.benefits || {}).length > 0 && (
                 <div className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}>
                   <span className="flex items-start">
                     <span className="mr-2 mt-0.5">🎁</span>
                     <div className="break-words leading-relaxed">
                       {(() => {
-                        const benefits = getBenefitDisplayNames(post.benefits);
+                        const benefits = getBenefitDisplayNames(post.benefits || {});
                         const midPoint = Math.ceil(benefits.length / 2);
                         const firstLine = benefits.slice(0, midPoint);
                         const secondLine = benefits.slice(midPoint);
@@ -659,9 +491,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             {variant === 'admin-list' ? renderTimeSlots() : renderDetailedTimeSlots()}
 
             {/* 지원자 수 */}
-            {showApplicationCount && post.applicants && post.applicants.length > 0 && (
+            {showApplicationCount && post.applicants && (post.applicants || []).length > 0 && (
               <div className="text-sm text-blue-600">
-                🙋‍♂️ {post.applicants.length}명 지원
+                🙋‍♂️ {(post.applicants || []).length}명 지원
               </div>
             )}
 
@@ -671,7 +503,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
           {/* 액션 버튼 영역 */}
           {renderActions && (
-            <div className={variant === 'admin-list' ? 'flex flex-row space-x-2 mt-3 w-full' : ''}>
+            <div className={variant === 'admin-list' ? 'flex flex-col space-y-2 ml-4' : ''}>
               {renderActions(post)}
             </div>
           )}

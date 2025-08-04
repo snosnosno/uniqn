@@ -20,9 +20,7 @@ export interface JobPostingFormData {
   startDate: string;
   endDate: string;
   status: 'open' | 'closed';
-  usesDifferentDailyRequirements?: boolean;
-  timeSlots?: TimeSlot[];
-  dateSpecificRequirements?: DateSpecificRequirement[];
+  dateSpecificRequirements: DateSpecificRequirement[];
   preQuestions?: PreQuestion[];
   requiredRoles?: string[];
   salaryType?: 'hourly' | 'daily' | 'monthly' | 'other'; // 급여 유형
@@ -43,9 +41,7 @@ export interface JobPosting {
   detailedAddress?: string;
   startDate: Timestamp | string;
   endDate: Timestamp | string;
-  usesDifferentDailyRequirements?: boolean;
-  timeSlots?: TimeSlot[];
-  dateSpecificRequirements?: DateSpecificRequirement[];
+  dateSpecificRequirements: DateSpecificRequirement[];
   requiredRoles?: string[];
   createdAt: Timestamp;
   updatedAt?: Timestamp;

@@ -154,7 +154,13 @@ export function timestampToLocalDateString(timestamp: TimestampInput): string {
       date = new Date(timestamp);
     }
     else {
-      logger.warn('⚠️ 예상치 못한 timestamp 타입:', { component: 'dateUtils', ...{ timestamp, type: typeof timestamp } });
+      logger.warn('⚠️ 예상치 못한 timestamp 타입:', { 
+        component: 'dateUtils', 
+        data: { 
+          timestampString: String(timestamp), 
+          type: typeof timestamp 
+        } 
+      });
       // 기본값: 오늘 날짜
       date = new Date();
     }
