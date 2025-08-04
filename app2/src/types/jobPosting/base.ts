@@ -66,7 +66,7 @@ export interface DateSpecificRequirement {
  * 확정된 스태프 정보
  */
 export interface ConfirmedStaff {
-  staffId: string;
+  userId: string;        // 실제 사용하는 필드명으로 수정 (staffId → userId)
   name: string;
   role: string;
   timeSlot: string;

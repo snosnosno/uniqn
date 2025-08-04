@@ -6,6 +6,7 @@ import { db, promoteToStaff } from '../../../../firebase';
 import { JobPostingUtils, JobPosting } from '../../../../types/jobPosting';
 import { Applicant, Assignment } from '../types';
 import { jobRoleMap } from '../utils/applicantHelpers';
+import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
 
 interface UseApplicantActionsProps {
   jobPosting?: any;
@@ -93,14 +94,19 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
       const applicationRef = doc(db, "applications", applicant.id);
 
+      // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
+      await ApplicationHistoryService.confirmApplication(applicant.id, assignments);
+      
+      // 🔄 jobPosting의 confirmedStaff 배열 업데이트
       await runTransaction(db, async (transaction) => {
-        // Update job posting with all confirmed staff assignments
         assignments.forEach(assignment => {
           const { timeSlot, role, date } = assignment;
           const staffEntry: any = {
-            userId: applicant.applicantId,
+            userId: applicant.applicantId,  // ✅ 타입 정의와 일치하는 필드명 사용
+            name: applicant.applicantName,
             role,
-            timeSlot
+            timeSlot,
+            confirmedAt: new Date()
           };
           
           // date가 존재하고 유효한 값일 때만 추가
@@ -111,22 +117,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           transaction.update(jobPostingRef, {
             confirmedStaff: arrayUnion(staffEntry)
           });
-        });
-        
-        // Update application status with multiple assignments
-        const confirmedAt = new Date();
-        
-        transaction.update(applicationRef, {
-          status: 'confirmed',
-          confirmedAt: confirmedAt,
-          // 기존 단일 필드는 첫 번째 항목으로 설정 (하위 호환성)
-          assignedRole: assignments[0]?.role || '',
-          assignedTime: assignments[0]?.timeSlot || '',
-          assignedDate: assignments[0]?.date || '',
-          // 새로운 다중 선택 필드들
-          assignedRoles: assignments.map(a => a.role),
-          assignedTimes: assignments.map(a => a.timeSlot),
-          assignedDates: assignments.map(a => String(a.date || '')),
         });
       });
 
@@ -247,33 +237,43 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
     try {
       const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
-      const applicationRef = doc(db, "applications", applicant.id);
 
+      // 🏗️ ApplicationHistory 서비스를 통한 확정 취소 (완전한 원본 데이터 복원)
+      await ApplicationHistoryService.cancelConfirmation(applicant.id);
+      
+      // 🔄 jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거
       await runTransaction(db, async (transaction) => {
-        // 1. applications 컬렉션에서 상태 변경 (원래 지원 정보는 유지)
-        transaction.update(applicationRef, {
-          status: 'applied',
-          // 확정 시 추가된 단일 선택 필드들은 제거
-          assignedRole: null,
-          assignedTime: null,
-          assignedDate: null,
-          // 확정 관련 필드 제거
-          confirmedAt: null,
-          cancelledAt: new Date()
-          // 원래 지원 정보(assignedRoles[], assignedTimes[], assignedDates[])는 유지
-        });
-
-        // 2. jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거
-        if (jobPosting.confirmedStaff && jobPosting.confirmedStaff.length > 0) {
-          const staffEntriesToRemove = jobPosting.confirmedStaff.filter(
-            (staff: any) => staff.userId === applicant.applicantId
+        const confirmedStaffArray = jobPosting.confirmedStaff ?? [];  // TypeScript strict mode
+        if (confirmedStaffArray.length > 0) {
+          const staffEntriesToRemove = confirmedStaffArray.filter(
+            (staff: any) => (staff.userId || staff.staffId) === applicant.applicantId  // 필드명 호환성
           );
+
+          logger.debug('🗑️ confirmedStaff 항목 제거 (강화된 버전):', {
+            component: 'useApplicantActions',
+            data: {
+              applicantId: applicant.applicantId,
+              applicantName: applicant.applicantName,
+              entriesToRemoveCount: staffEntriesToRemove.length,
+              staffEntriesToRemove: staffEntriesToRemove.map((s: any) => ({
+                userId: s.userId || s.staffId,
+                role: s.role,
+                timeSlot: s.timeSlot,
+                date: s.date
+              }))
+            }
+          });
 
           // 각 항목을 개별적으로 제거
           staffEntriesToRemove.forEach((staffEntry: any) => {
             transaction.update(jobPostingRef, {
               confirmedStaff: arrayRemove(staffEntry)
             });
+          });
+        } else {
+          logger.debug('ℹ️ confirmedStaff 배열이 비어있음 - 제거할 항목 없음', {
+            component: 'useApplicantActions',
+            data: { applicantId: applicant.applicantId }
           });
         }
       });

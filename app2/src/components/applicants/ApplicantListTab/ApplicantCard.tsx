@@ -16,7 +16,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
   const { t } = useTranslation();
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-4">
       {/* 2x2 그리드 레이아웃 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         
@@ -41,10 +41,24 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
                 <span className="font-medium min-w-12">지원:</span>
                 <span className="ml-2">
                   {(() => {
-                    const dateStr = typeof applicant.appliedAt === 'string' 
-                      ? applicant.appliedAt 
-                      : applicant.appliedAt?.toDate?.()?.toISOString?.()?.split('T')?.[0] || '';
-                    return formatDateDisplay(dateStr);
+                    // 🔧 TypeScript strict mode 준수: Union 타입 완전 처리
+                    if (typeof applicant.appliedAt === 'string') {
+                      return formatDateDisplay(applicant.appliedAt);
+                    }
+                    
+                    // Timestamp 타입 체크
+                    if (applicant.appliedAt && typeof applicant.appliedAt === 'object' && 'toDate' in applicant.appliedAt) {
+                      const dateStr = applicant.appliedAt.toDate().toISOString().split('T')[0] || '';
+                      return formatDateDisplay(dateStr);
+                    }
+                    
+                    // Date 타입 체크
+                    if (applicant.appliedAt instanceof Date) {
+                      const dateStr = applicant.appliedAt.toISOString().split('T')[0] || '';
+                      return formatDateDisplay(dateStr);
+                    }
+                    
+                    return '';
                   })()}
                 </span>
               </div>
@@ -106,61 +120,67 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
           {/* 확정된 경우 선택 정보 표시 */}
           {applicant.status === 'confirmed' && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center mb-3">
-                <span className="text-lg">✅</span>
-                <p className="font-semibold text-green-800 ml-2">{t('jobPostingAdmin.applicants.confirmed')}</p>
-              </div>
               {(() => {
                 const confirmedSelections = getApplicantSelections(applicant);
                 if (confirmedSelections.length > 0) {
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {confirmedSelections.map((selection, index) => {
-                        const confirmedSafeDateString = selection.date || '';
-                        return (
-                          <div key={index} className="flex items-center gap-2 text-sm bg-white p-2 rounded border">
-                            {confirmedSafeDateString ? 
-                              <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md">
-                                📅 {formatDateDisplay(confirmedSafeDateString)}
-                              </span> : null
-                            }
-                            <div className="flex items-center gap-1">
-                              <span className={`font-medium ${selection.time ? 'text-gray-700' : 'text-red-500'}`}>
-                                {selection.time || '미정'}
-                              </span>
-                              <span className="text-gray-500">-</span>
-                              <span className="font-medium text-gray-800">
-                                {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}
-                              </span>
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        {confirmedSelections.map((selection, index) => {
+                          const confirmedSafeDateString = selection.date || '';
+                          return (
+                            <div key={index} className="flex items-center gap-2 text-sm bg-white p-2 rounded border">
+                              {confirmedSafeDateString ? 
+                                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md">
+                                  📅 {formatDateDisplay(confirmedSafeDateString)}
+                                </span> : null
+                              }
+                              <div className="flex items-center gap-1">
+                                <span className={`font-medium ${selection.time ? 'text-gray-700' : 'text-red-500'}`}>
+                                  {selection.time || '미정'}
+                                </span>
+                                <span className="text-gray-500">-</span>
+                                <span className="font-medium text-gray-800">
+                                  {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-end">
+                        {children}
+                      </div>
+                    </>
                   );
                 }
                 
                 // 기존 단일 선택 지원자 표시 (하위 호환성)
                 return (
-                  <div className="text-sm bg-white p-2 rounded border">
-                    {applicant.assignedDate ? 
-                      <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md mr-2">
-                        📅 {formatDateDisplay(applicant.assignedDate)}
-                      </span> : null
-                    }
-                    <span className="font-medium text-gray-700">{applicant.assignedTime}</span>
-                    <span className="text-gray-600 mx-1">-</span>
-                    <span className="font-medium text-gray-800">
-                      {applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`) : applicant.assignedRole}
-                    </span>
-                  </div>
+                  <>
+                    <div className="text-sm bg-white p-2 rounded border mb-4">
+                      {applicant.assignedDate ? 
+                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md mr-2">
+                          📅 {formatDateDisplay(applicant.assignedDate)}
+                        </span> : null
+                      }
+                      <span className="font-medium text-gray-700">{applicant.assignedTime}</span>
+                      <span className="text-gray-600 mx-1">-</span>
+                      <span className="font-medium text-gray-800">
+                        {applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`) : applicant.assignedRole}
+                      </span>
+                    </div>
+                    <div className="flex justify-end">
+                      {children}
+                    </div>
+                  </>
                 );
               })()}
             </div>
           )}
           
-          {/* 확정 시간 선택 영역 (3-4사분면) */}
-          {children}
+          {/* 확정 시간 선택 영역 (3-4사분면) - 확정된 상태에서는 숨김 */}
+          {applicant.status !== 'confirmed' && children}
         </div>
       </div>
     </div>

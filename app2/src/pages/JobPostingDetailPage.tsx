@@ -266,27 +266,27 @@ const JobPostingDetailPageContent: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-2 sm:p-4">
       {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-4">
             <button 
               onClick={() => navigate('/admin/job-postings')}
               className="flex items-center text-gray-600 hover:text-gray-800 flex-shrink-0"
             >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              뒤로
+              <span className="text-sm sm:text-base">뒤로</span>
             </button>
             
             {/* 공고 제목 - 중앙에 배치 */}
-            <div className="flex-1 text-center px-4">
-              <h1 className="text-2xl font-bold text-gray-900 truncate">{jobPosting.title}</h1>
+            <div className="flex-1 text-center px-2 sm:px-4">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{jobPosting.title}</h1>
             </div>
             
-            <div className="flex items-center space-x-3 flex-shrink-0">
-              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+            <div className="flex items-center space-x-1 sm:space-x-3 flex-shrink-0">
+              <span className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-medium rounded-full ${
                 jobPosting.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
               }`}>
                 {jobPosting.status === 'open' ? '모집 중' : '모집 마감'}
@@ -300,18 +300,20 @@ const JobPostingDetailPageContent: React.FC = () => {
                 aria-expanded={isInfoExpanded}
                 aria-controls="basic-info-section"
                 aria-label={isInfoExpanded ? t('jobPosting.info.collapse') : t('jobPosting.info.expand')}
-                className="inline-flex justify-center py-2 px-3 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 min-h-[40px] toggle-button"
+                className="inline-flex justify-center py-1 px-2 sm:py-2 sm:px-3 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 min-h-[30px] sm:min-h-[40px] toggle-button"
                 type="button"
               >
               {isInfoExpanded ? (
                 <>
-                  <FaChevronUp className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {t('jobPosting.info.collapse')}
+                  <FaChevronUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" aria-hidden="true" />
+                  <span className="hidden sm:inline">{t('jobPosting.info.collapse')}</span>
+                  <span className="sm:hidden">닫기</span>
                 </>
               ) : (
                 <>
-                  <FaChevronDown className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {t('jobPosting.info.expand')}
+                  <FaChevronDown className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" aria-hidden="true" />
+                  <span className="hidden sm:inline">{t('jobPosting.info.expand')}</span>
+                  <span className="sm:hidden">열기</span>
                 </>
               )}
             </button>

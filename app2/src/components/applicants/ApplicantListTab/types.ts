@@ -1,4 +1,6 @@
 // Applicant 관련 타입 정의
+import { Timestamp } from 'firebase/firestore';
+import { JobPosting } from '../../../types/jobPosting';
 
 export interface Applicant {
   id: string;
@@ -7,7 +9,7 @@ export interface Applicant {
   status: 'applied' | 'confirmed' | 'rejected';
   assignedRole?: string;
   assignedTime?: string;
-  appliedAt: any;
+  appliedAt: Timestamp | string | Date;  // any → 구체적 타입으로 수정 (TypeScript strict mode 준수)
   // 추가된 사용자 정보
   gender?: string;
   age?: number;
@@ -31,7 +33,7 @@ export interface Applicant {
 }
 
 export interface ApplicantListTabProps {
-  jobPosting?: any; // JobPosting interface will be used later
+  jobPosting?: JobPosting; // any → JobPosting 타입으로 수정 (TypeScript strict mode 준수)
 }
 
 export interface Assignment {

@@ -1,5 +1,6 @@
 import { logger } from '../../../../utils/logger';
 import { Applicant } from '../types';
+import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
 
 /**
  * 지원자가 다중 선택을 했는지 확인하는 함수
@@ -55,15 +56,18 @@ export const convertDateToString = (rawDate: any): string => {
 };
 
 /**
- * 지원자의 선택 사항을 가져오는 함수 (확정 취소 후 복원 지원)
+ * 지원자의 선택 사항을 가져오는 함수 (상태별 데이터 소스 분리)
+ * - 확정 상태: 실제 확정된 선택사항만 반환
+ * - 지원 상태: 원본 지원 데이터 반환 (ApplicationHistory 기반)
  */
 export const getApplicantSelections = (applicant: Applicant) => {
-  logger.debug('🔍 getApplicantSelections 호출:', { 
+  logger.debug('🔍 getApplicantSelections 호출 (상태별 처리):', { 
     component: 'applicantHelpers',
     data: {
       applicantId: applicant.id,
       applicantName: applicant.applicantName,
       status: applicant.status,
+      hasOriginalApplication: !!(applicant as any).originalApplication,
       hasMultiple: hasMultipleSelections(applicant),
       assignedRoles: applicant.assignedRoles,
       assignedTimes: applicant.assignedTimes,
@@ -74,37 +78,142 @@ export const getApplicantSelections = (applicant: Applicant) => {
     }
   });
   
-  // 1. 다중 선택 배열이 있는 경우 (확정 후 또는 확정 취소 후)
+  // 🎯 확정된 상태: 실제 확정된 선택사항만 반환
+  if (applicant.status === 'confirmed') {
+    try {
+      const confirmedSelections = ApplicationHistoryService.getConfirmedSelections(applicant);
+      
+      logger.debug('✅ 확정된 선택사항 조회 성공:', { 
+        component: 'applicantHelpers', 
+        data: { 
+          status: applicant.status,
+          selectionsCount: confirmedSelections.length,
+          selections: confirmedSelections,
+          source: 'ConfirmedData'
+        } 
+      });
+      
+      return confirmedSelections;
+    } catch (error) {
+      logger.warn('⚠️ 확정된 선택사항 조회 실패, 폴백 진행:', {
+        component: 'applicantHelpers',
+        data: { error: error instanceof Error ? error.message : String(error) }
+      });
+      // 오류 시 빈 배열 반환 (확정된 상태에서는 확정 데이터만 표시)
+      return [];
+    }
+  }
+  
+  // 🔄 지원 상태: ApplicationHistory 서비스를 통한 원본 데이터 복원
+  // 이 방법이 가장 신뢰할 수 있는 데이터 소스입니다
+  try {
+    const originalData = ApplicationHistoryService.getOriginalApplicationData(applicant);
+    
+    if (originalData.roles.length > 0 || originalData.times.length > 0 || originalData.dates.length > 0) {
+      const selections = [];
+      const maxLength = Math.max(
+        originalData.roles.length,
+        originalData.times.length,
+        originalData.dates.length
+      );
+      
+      logger.debug('🏗️ ApplicationHistory 원본 데이터 발견:', {
+        component: 'applicantHelpers',
+        data: {
+          rolesLength: originalData.roles.length,
+          timesLength: originalData.times.length,
+          datesLength: originalData.dates.length,
+          maxLength,
+          status: applicant.status
+        }
+      });
+      
+      // 원본 데이터로부터 완전 복원
+      for (let i = 0; i < maxLength; i++) {
+        const roleValue = originalData.roles[i] ?? '';
+        const timeValue = originalData.times[i] ?? '';
+        const dateValue = convertDateToString(originalData.dates[i]);
+        
+        selections.push({
+          role: roleValue,
+          time: timeValue,
+          date: dateValue
+        });
+      }
+      
+      logger.debug('✅ ApplicationHistory 원본 데이터 복원 성공:', { 
+        component: 'applicantHelpers', 
+        data: { 
+          status: applicant.status,
+          selectionsCount: selections.length,
+          selections,
+          source: 'ApplicationHistory'
+        } 
+      });
+      return selections;
+    }
+  } catch (error) {
+    logger.warn('⚠️ ApplicationHistory 원본 데이터 접근 실패, 폴백 진행:', {
+      component: 'applicantHelpers',
+      data: { error: error instanceof Error ? error.message : String(error) }
+    });
+  }
+  
+  // 🔄 우선순위 2: 배열 데이터가 있는 경우 (기존 로직 유지)
   if (hasMultipleSelections(applicant)) {
     const selections = [];
+    
+    // 🔧 TypeScript strict mode: 배열 undefined 체크 강화
+    const rolesArray = applicant.assignedRoles ?? [];
+    const timesArray = applicant.assignedTimes ?? [];
+    const datesArray = applicant.assignedDates ?? [];
+    
     const maxLength = Math.max(
-      applicant.assignedRoles?.length || 0,
-      applicant.assignedTimes?.length || 0,
-      applicant.assignedDates?.length || 0
+      rolesArray.length,
+      timesArray.length,
+      datesArray.length
     );
     
+    logger.debug('🔧 배열 데이터 분석 (폴백):', {
+      component: 'applicantHelpers',
+      data: {
+        rolesLength: rolesArray.length,
+        timesLength: timesArray.length, 
+        datesLength: datesArray.length,
+        maxLength
+      }
+    });
+    
+    // 🔥 핵심: 모든 인덱스 완전 복원 (빈 값 필터링 제거)
     for (let i = 0; i < maxLength; i++) {
-      const dateValue = convertDateToString(applicant.assignedDates?.[i]);
+      const roleValue = rolesArray[i] ?? '';  // Optional chaining + nullish coalescing
+      const timeValue = timesArray[i] ?? '';  
+      const dateValue = convertDateToString(datesArray[i]);  // 안전한 날짜 변환
       
+      // ✅ 모든 데이터 보존 (빈 값 포함) - 원본 지원 상태 완전 복원
       selections.push({
-        role: applicant.assignedRoles?.[i] || '',
-        time: applicant.assignedTimes?.[i] || '',
+        role: roleValue,
+        time: timeValue,
         date: dateValue
       });
     }
     
-    logger.debug('🔍 다중 선택 결과:', { 
+    logger.debug('✅ 배열 데이터 복원 성공 (폴백):', { 
       component: 'applicantHelpers', 
       data: { 
         status: applicant.status,
         selectionsCount: selections.length,
-        selections 
+        selections,
+        source: 'Arrays',
+        isConfirmationCancelled: applicant.status === 'applied' && 
+          (!applicant.assignedRole && !applicant.assignedTime),
+        isFullyRestored: selections.length === maxLength
       } 
     });
     return selections;
   }
   
-  // 2. 단일 선택 필드만 있는 경우 (기존 방식 또는 확정 취소 후 배열이 비어있는 경우)
+  // 🔄 우선순위 3: 단일 필드만 있는 경우 (최초 지원)
   if (applicant.assignedRole && applicant.assignedTime) {
     const singleDateValue = convertDateToString(applicant.assignedDate);
     
@@ -114,52 +223,26 @@ export const getApplicantSelections = (applicant: Applicant) => {
       date: singleDateValue
     }];
     
-    logger.debug('🔍 단일 선택 결과:', { 
+    logger.debug('✅ 단일 필드 데이터 사용 (폴백):', { 
       component: 'applicantHelpers', 
       data: { 
         status: applicant.status,
-        singleSelection 
+        singleSelection,
+        source: 'SingleFields'
       } 
     });
     return singleSelection;
   }
   
-  // 3. 확정 취소된 상태에서 배열 데이터만 있고 단일 필드가 비어있는 경우
-  // (확정 취소 시 assignedRole/assignedTime은 null로 설정되지만 배열은 유지됨)
-  if (applicant.status === 'applied' && 
-      (applicant.assignedRoles?.length || applicant.assignedTimes?.length || applicant.assignedDates?.length)) {
-    const selections = [];
-    const maxLength = Math.max(
-      applicant.assignedRoles?.length || 0,
-      applicant.assignedTimes?.length || 0,
-      applicant.assignedDates?.length || 0
-    );
-    
-    for (let i = 0; i < maxLength; i++) {
-      const dateValue = convertDateToString(applicant.assignedDates?.[i]);
-      
-      // 빈 값들도 포함하여 원본 지원 상태 복원
-      selections.push({
-        role: applicant.assignedRoles?.[i] || '',
-        time: applicant.assignedTimes?.[i] || '',
-        date: dateValue
-      });
-    }
-    
-    logger.debug('🔍 확정 취소 후 배열 복원:', { 
-      component: 'applicantHelpers', 
-      data: { 
-        status: applicant.status,
-        restoredCount: selections.length,
-        selections 
-      } 
-    });
-    return selections;
-  }
-  
-  logger.debug('🔍 선택 사항 없음', { 
+  logger.debug('⚠️ 선택 사항 없음 - 모든 데이터 소스 부재:', { 
     component: 'applicantHelpers',
-    data: { status: applicant.status }
+    data: { 
+      status: applicant.status,
+      hasOriginalApplication: !!(applicant as any).originalApplication,
+      hasArrayData: hasMultipleSelections(applicant),
+      hasSingleData: !!(applicant.assignedRole && applicant.assignedTime),
+      source: 'None'
+    }
   });
   return [];
 };

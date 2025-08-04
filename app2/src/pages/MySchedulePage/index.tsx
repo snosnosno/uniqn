@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '../../utils/logger';
+import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
 // import { useTranslation } from 'react-i18next'; // not used
 import { 
   FaCalendarAlt, 
@@ -255,7 +256,7 @@ const MySchedulePage: React.FC = () => {
     }
   };
 
-  // 지원 취소
+  // 지원 취소 (ApplicationHistory 서비스 연동)
   const handleCancelApplication = async (scheduleId: string) => {
     try {
       const schedule = schedules.find(s => s.id === scheduleId);
@@ -263,16 +264,41 @@ const MySchedulePage: React.FC = () => {
         throw new Error('지원 정보를 찾을 수 없습니다.');
       }
 
-      // applications 컬렉션에서 상태 업데이트
-      await updateDoc(doc(db, 'applications', schedule.applicationId), {
-        status: 'cancelled',
-        updatedAt: Timestamp.now()
+      logger.debug('🔄 MySchedulePage 지원 취소 시작:', {
+        component: 'MySchedulePage', 
+        data: {
+          scheduleId,
+          applicationId: schedule.applicationId,
+          eventName: schedule.eventName,
+          type: schedule.type,
+          status: schedule.status
+        }
       });
 
+      // ApplicationHistory 서비스를 통한 지원 취소 (데이터 일관성 보장)
+      await ApplicationHistoryService.cancelApplication(schedule.applicationId);
+
       showSuccess('지원이 취소되었습니다.');
-      logger.debug('✅ 지원 취소 완료:', { component: 'index', data: scheduleId });
+      logger.debug('✅ MySchedulePage 지원 취소 완료:', { 
+        component: 'MySchedulePage', 
+        data: { 
+          scheduleId, 
+          applicationId: schedule.applicationId,
+          eventName: schedule.eventName
+        } 
+      });
+      
+      // 🔄 자동 새로고침으로 즉시 UI 업데이트
+      refreshData();
+      
     } catch (error) {
-      logger.error('❌ 지원 취소 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
+      logger.error('❌ MySchedulePage 지원 취소 오류:', 
+        error instanceof Error ? error : new Error(String(error)), 
+        { 
+          component: 'MySchedulePage',
+          data: { scheduleId }
+        }
+      );
       showError('지원 취소 중 오류가 발생했습니다.');
     }
   };

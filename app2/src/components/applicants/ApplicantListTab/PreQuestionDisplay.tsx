@@ -15,7 +15,6 @@ const PreQuestionDisplay: React.FC<PreQuestionDisplayProps> = ({ applicant }) =>
 
   return (
     <div className="mt-3 p-2 w-full bg-blue-50 rounded-lg border border-blue-200">
-      <h5 className="font-medium text-blue-800 mb-2">질문 답변</h5>
       <div className="space-y-2">
         {applicant.preQuestionAnswers.map((answer, index) => (
           <div key={index} className="text-sm">
