@@ -23,9 +23,9 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
         {/* 1사분면: 기본 정보 */}
         <div className="space-y-3">
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-medium text-gray-900 text-base">{applicant.applicantName}</h4>
-              <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${
+              <span className={`px-2 py-1 rounded-full text-xs ${
                 applicant.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                 applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
                 'bg-yellow-100 text-yellow-800'

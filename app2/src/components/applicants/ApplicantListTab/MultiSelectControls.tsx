@@ -124,8 +124,8 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
         </span>
       </div>
 
-      {/* 날짜별 섹션 */}
-      <div className="space-y-4">
+      {/* 날짜별 섹션 - 2x2 그리드 배치 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {dateGroupedSelections.map((dateGroup, groupIndex) => (
           <div key={`${dateGroup.date}-${groupIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
             {/* 날짜 헤더 */}
@@ -160,14 +160,31 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                     !(assignment.timeSlot === selection.time && assignment.role === selection.role)
                   );
                 
-                // 역할이 마감되었는지 확인
+                // 역할이 마감되었는지 확인 (실시간 상태 반영)
                 const isFull = safeDateString 
-                  ? JobPostingUtils.isRoleFull(
-                      jobPosting,
-                      selection.time,
-                      selection.role,
-                      safeDateString
-                    )
+                  ? (() => {
+                      // 필요 인원 수 계산
+                      let requiredCount = 0;
+                      const dateReq = jobPosting.dateSpecificRequirements?.find((dr: DateSpecificRequirement) => {
+                        const drDateString = timestampToLocalDateString(dr.date);
+                        return drDateString === safeDateString;
+                      });
+                      const ts = dateReq?.timeSlots.find((t: TimeSlot) => t.time === selection.time);
+                      const roleReq = ts?.roles.find((r: any) => r.name === selection.role);
+                      requiredCount = roleReq?.count || 0;
+                      
+                      if (requiredCount === 0) return false;
+                      
+                      // 실시간 확정 인원 수 계산 (현재 지원자 제외)
+                      const currentConfirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                        jobPosting, 
+                        safeDateString, 
+                        selection.time, 
+                        selection.role
+                      );
+                      
+                      return currentConfirmedCount >= requiredCount;
+                    })()
                   : false;
                 
                 // 선택 불가능한 상태 (마감 또는 같은 날짜에 다른 선택이 있는 경우)
