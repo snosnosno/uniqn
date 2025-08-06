@@ -433,121 +433,25 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               </button>
             </div>
             <div className="space-y-3">
-              {/* 출석 상태 변경 버튼들 */}
+              {/* 출석 상태 변경 - AttendanceStatusPopover 사용 */}
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-2">출석 상태 변경</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={(e) => handleActionClick(e, async () => {
-                      const { updateDoc, doc, setDoc, Timestamp } = await import('firebase/firestore');
-                      const { db } = await import('../firebase');
-                      const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
-                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
-                      
-                      if (memoizedAttendanceData.attendanceRecord?.workLogId) {
-                        // 기존 workLog 업데이트 - 상태만 변경
-                        await updateDoc(doc(db, 'workLogs', workLogId), {
-                          status: 'checked_in',
-                          updatedAt: Timestamp.now()
-                        });
-                      } else {
-                        // 새 workLog 생성
-                        await setDoc(doc(db, 'workLogs', workLogId), {
-                          eventId: staff.postingId || 'unknown',
-                          dealerId: staff.id,
-                          dealerName: staff.name || 'Unknown',
-                          date: staff.assignedDate || getTodayString(),
-                          status: 'checked_in',
-                          scheduledStartTime: null,
-                          scheduledEndTime: null,
-                          actualStartTime: null,
-                          actualEndTime: null,
-                          createdAt: Timestamp.now(),
-                          updatedAt: Timestamp.now()
-                        });
-                      }
-                    })}
-                    className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    출근
-                  </button>
-                  <button
-                    onClick={(e) => handleActionClick(e, async () => {
-                      const { updateDoc, doc, setDoc, Timestamp } = await import('firebase/firestore');
-                      const { db } = await import('../firebase');
-                      const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
-                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
-                      
-                      if (memoizedAttendanceData.attendanceRecord?.workLogId) {
-                        // 기존 workLog 업데이트 - 상태만 변경
-                        await updateDoc(doc(db, 'workLogs', workLogId), {
-                          status: 'checked_out',
-                          updatedAt: Timestamp.now()
-                        });
-                      } else {
-                        // 새 workLog 생성
-                        await setDoc(doc(db, 'workLogs', workLogId), {
-                          eventId: staff.postingId || 'unknown',
-                          dealerId: staff.id,
-                          dealerName: staff.name || 'Unknown',
-                          date: staff.assignedDate || getTodayString(),
-                          status: 'checked_out',
-                          scheduledStartTime: null,
-                          scheduledEndTime: null,
-                          actualStartTime: null,
-                          actualEndTime: null,
-                          createdAt: Timestamp.now(),
-                          updatedAt: Timestamp.now()
-                        });
-                      }
-                    })}
-                    className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    퇴근
-                  </button>
-                  <button
-                    onClick={(e) => handleActionClick(e, async () => {
-                      const { updateDoc, doc, setDoc, Timestamp, deleteField } = await import('firebase/firestore');
-                      const { db } = await import('../firebase');
-                      const workLogId = memoizedAttendanceData.attendanceRecord?.workLogId || 
-                                      `${staff.postingId || 'unknown'}_${staff.id}_${staff.assignedDate || getTodayString()}`;
-                      
-                      if (memoizedAttendanceData.attendanceRecord?.workLogId) {
-                        // 기존 workLog 업데이트 - 상태만 변경
-                        await updateDoc(doc(db, 'workLogs', workLogId), {
-                          status: 'not_started',
-                          updatedAt: Timestamp.now()
-                        });
-                      } else {
-                        // 새 workLog 생성
-                        await setDoc(doc(db, 'workLogs', workLogId), {
-                          eventId: staff.postingId || 'unknown',
-                          dealerId: staff.id,
-                          dealerName: staff.name || 'Unknown',
-                          date: staff.assignedDate || getTodayString(),
-                          status: 'not_started',
-                          scheduledStartTime: null,
-                          scheduledEndTime: null,
-                          actualStartTime: null,
-                          actualEndTime: null,
-                          createdAt: Timestamp.now(),
-                          updatedAt: Timestamp.now()
-                        });
-                      }
-                    })}
-                    className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    출근 전
-                  </button>
+                <div className="flex justify-center">
+                  <AttendanceStatusPopover
+                    workLogId={memoizedAttendanceData.workLogId}
+                    currentStatus={memoizedAttendanceData.displayStatus}
+                    staffId={staff.id}
+                    staffName={staff.name}
+                    size="md"
+                    eventId={staff.postingId}
+                    scheduledStartTime={memoizedAttendanceData.displayTimes.scheduledStartTime}
+                    scheduledEndTime={memoizedAttendanceData.displayTimes.scheduledEndTime}
+                    actualStartTime={memoizedAttendanceData.displayTimes.actualStartTime}
+                    actualEndTime={memoizedAttendanceData.displayTimes.actualEndTime}
+                    onStatusChange={() => {
+                      setShowActions(false);
+                    }}
+                  />
                 </div>
               </div>
               

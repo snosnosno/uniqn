@@ -26,6 +26,24 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   - @dnd-kit - 드래그 앤 드롭 (react-dnd 완전 제거)
   - @sentry/react (^8.44.0) - 에러 모니터링
 
+## 🔥 최근 주요 업데이트 (2025-08-06)
+
+### 스태프 관리 시스템 개선 (2025-08-06) 🚀
+- **날짜별 그룹화 기본값 설정**: 
+  - useStaffManagement의 groupByDate 초기값을 항상 true로 설정
+  - 스태프가 날짜별로 자동 그룹화되어 표시
+- **absent(결근) 상태 완전 제거**:
+  - AttendanceStatusPopover: not_started, checked_in, checked_out만 지원
+  - BulkOperationService에서 absent 상태 제거
+  - BulkActionsModal UI에서 absent 옵션 제거
+- **모바일 스와이프 액션 개선**:
+  - 직접 Firebase 조작 제거, AttendanceStatusPopover 컴포넌트 사용
+  - 일관된 상태 변경 로직과 에러 처리
+  - 상태 변경 후 자동으로 액션 메뉴 닫기
+- **코드 일관성 향상**:
+  - 모든 출석 상태 변경이 AttendanceStatusPopover를 통해 처리
+  - 실시간 Firebase 구독으로 즉각적인 UI 업데이트
+
 ## 🔥 최근 주요 업데이트 (2025-08-05)
 
 ### 지원자 관리 UI 개선 및 대규모 클린업 작업 (2025-08-05) 🎯
@@ -108,7 +126,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
 
 ### 🎯 핵심 컴포넌트
 - **WorkTimeEditor**: 통합 시간 편집 (예정시간 = scheduledStartTime/EndTime)
-- **AttendanceStatusDropdown**: 출석 상태 직접 편집 (not_started, checked_in, checked_out, absent)
+- **AttendanceStatusDropdown**: 출석 상태 직접 편집 (not_started, checked_in, checked_out)
 - **StaffRow/StaffCard**: workLogs 데이터 우선 표시, staff 데이터는 fallback
 - **실시간 훅들**: 모든 데이터 변경은 Firebase 구독으로 자동 반영
 

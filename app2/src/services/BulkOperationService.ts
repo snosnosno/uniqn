@@ -185,8 +185,7 @@ export class BulkOperationService {
         const statusMap: Record<string, string> = {
           not_started: '출근 전',
           checked_in: '출근',
-          checked_out: '퇴근',
-          absent: '결근'
+          checked_out: '퇴근'
         };
         const statusText = statusMap[details?.status || ''] || details?.status;
         message += `출석 상태가 "${statusText}"(으)로 변경되었습니다.`;
