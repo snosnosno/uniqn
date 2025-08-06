@@ -183,7 +183,8 @@ export const PREDEFINED_ROLES = [
   'chip_master',         // 칩 마스터
   'registration',        // 레지스트레이션
   'security',            // 보안요원
-  'cashier'              // 캐셔
+  'cashier',             // 캐셔
+  'other'                // 기타 (직접입력)
 ];
 
 /**
@@ -206,7 +207,8 @@ export const getRoleDisplayName = (roleName: string): string => {
     chip_master: '칩 마스터',
     registration: '레지스트레이션',
     security: '보안요원',
-    cashier: '캐셔'
+    cashier: '캐셔',
+    other: '기타'
   };
   
   return roleMap[roleName] || roleName;

@@ -1,9 +1,10 @@
 import React from 'react';
 import { DateSpecificRequirement } from '../../types/jobPosting';
 import { useDateUtils } from '../../hooks/useDateUtils';
-import { createNewDateSpecificRequirement } from '../../utils/jobPosting/jobPostingHelpers';
+import { createNewDateSpecificRequirement, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import Button from '../common/Button';
 import DateDropdownSelector from '../DateDropdownSelector';
+import { Select } from '../common/Select';
 
 interface DateSpecificRequirementsProps {
   requirements: DateSpecificRequirement[];
@@ -27,6 +28,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
   onDateSpecificRoleChange,
 }) => {
   const { toDropdownValue, fromDropdownValue, generateDateRange } = useDateUtils();
+  const [customRoleNames, setCustomRoleNames] = React.useState<Record<string, string>>({});
 
   // 날짜 추가
   const addDateRequirement = () => {
@@ -240,22 +242,55 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                       </Button>
                     </div>
 
-                    {timeSlot.roles.map((role, roleIndex) => (
-                      <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
-                        <div className="flex-1">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            역할명
-                          </label>
-                          <input
-                            type="text"
-                            value={role.name}
-                            onChange={(e) =>
-                              onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value)
-                            }
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="dealer"
-                          />
-                        </div>
+                    {timeSlot.roles.map((role, roleIndex) => {
+                      const roleKey = `${requirementIndex}-${timeSlotIndex}-${roleIndex}`;
+                      const isCustomRole = role.name === 'other' || !PREDEFINED_ROLES.includes(role.name);
+                      const displayValue = isCustomRole && !PREDEFINED_ROLES.includes(role.name) ? 'other' : role.name;
+                      
+                      return (
+                        <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                          <div className="flex-1">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              역할명
+                            </label>
+                            <div className="space-y-2">
+                              <Select
+                                name={`role-${roleKey}`}
+                                value={displayValue}
+                                onChange={(value) => {
+                                  if (value === 'other') {
+                                    onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', value);
+                                  } else {
+                                    onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', value);
+                                    // 기타가 아닌 경우 커스텀 이름 제거
+                                    const newCustomNames = { ...customRoleNames };
+                                    delete newCustomNames[roleKey];
+                                    setCustomRoleNames(newCustomNames);
+                                  }
+                                }}
+                                options={PREDEFINED_ROLES.map(roleName => ({
+                                  value: roleName,
+                                  label: roleName === 'other' ? '기타 (직접입력)' : getRoleDisplayName(roleName)
+                                }))}
+                                className="text-sm"
+                              />
+                              {isCustomRole && (
+                                <input
+                                  type="text"
+                                  value={customRoleNames[roleKey] || (!PREDEFINED_ROLES.includes(role.name) ? role.name : '')}
+                                  onChange={(e) => {
+                                    const newCustomNames = { ...customRoleNames };
+                                    newCustomNames[roleKey] = e.target.value;
+                                    setCustomRoleNames(newCustomNames);
+                                    // 실제 역할명을 커스텀 값으로 업데이트
+                                    onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value || 'other');
+                                  }}
+                                  placeholder="역할명을 입력하세요"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                              )}
+                            </div>
+                          </div>
                         <div className="w-20">
                           <label className="block text-xs font-medium text-gray-600 mb-1">
                             인원
@@ -281,7 +316,8 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                           </button>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}

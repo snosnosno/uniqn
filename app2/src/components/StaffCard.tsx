@@ -242,7 +242,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       className={`relative bg-white rounded-lg shadow-md border-2 transition-all duration-200 ${
         onSelect 
           ? isSelected 
-            ? 'border-blue-500 bg-blue-50 cursor-pointer' 
+            ? 'border-blue-500 bg-blue-50 cursor-pointer staff-card-selected' 
             : 'border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 cursor-pointer'
           : 'border-gray-200'
       } ${isExpanded ? 'shadow-lg' : 'shadow-md'} hover:shadow-lg touch-none select-none`}

@@ -1,0 +1,117 @@
+/* 스태프 선택 모드 스타일 */
+
+/* 선택된 행 스타일 - 데스크톱 */
+.staff-row-selected {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid rgb(59, 130, 246);
+  transition: all 0.2s ease-in-out;
+}
+
+.staff-row-selected:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+/* 선택된 카드 스타일 - 모바일 */
+.staff-card-selected {
+  border: 2px solid rgb(59, 130, 246);
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+/* 선택 체크박스 애니메이션 */
+.selection-checkbox {
+  transform: scale(1);
+  transition: transform 0.15s ease-in-out;
+}
+
+.selection-checkbox:hover {
+  transform: scale(1.1);
+}
+
+.selection-checkbox:active {
+  transform: scale(0.95);
+}
+
+/* 선택 모드 헤더 */
+.selection-mode-header {
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 플로팅 선택 정보 */
+.floating-selection-info {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 전체 선택 버튼 */
+.select-all-button {
+  background-color: #3b82f6;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.select-all-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.select-all-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* 모바일 선택 바 */
+.mobile-selection-bar {
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+/* 대량 선택 경고 */
+.bulk-selection-warning {
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
