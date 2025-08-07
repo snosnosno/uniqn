@@ -24,7 +24,6 @@ import { performanceMonitor } from './utils/performanceMonitor';
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
 const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
-const PayrollAdminPage = lazy(() => import('./pages/admin/PayrollAdminPage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 
 // Lazy load main pages
@@ -40,7 +39,7 @@ const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
 const MySchedulePage = lazy(() => import('./pages/MySchedulePage'));
 const ParticipantLivePage = lazy(() => import('./pages/ParticipantLivePage'));
 const ParticipantsPage = lazy(() => import('./pages/ParticipantsPage'));
-const PayrollPage = lazy(() => import('./pages/PayrollPage'));
+const SimplePayrollPage = lazy(() => import('./pages/SimplePayrollPage'));
 const PrizesPage = lazy(() => import('./pages/PrizesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
@@ -105,8 +104,8 @@ const App: React.FC = () => {
                       <Route index element={<HomeRedirect />} />
                       <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
                       <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
-                      <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
-                      <Route path="payroll/:userId" element={<Suspense fallback={<LoadingSpinner />}><PayrollPage /></Suspense>} />
+                      <Route path="simple-payroll" element={<Suspense fallback={<LoadingSpinner />}><SimplePayrollPage /></Suspense>} />
+                      <Route path="simple-payroll/:userId" element={<Suspense fallback={<LoadingSpinner />}><SimplePayrollPage /></Suspense>} />
                       
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
@@ -119,7 +118,6 @@ const App: React.FC = () => {
                         <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>} />
                         <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
                         <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
-                        <Route path="payroll" element={<Suspense fallback={<LoadingSpinner />}><PayrollAdminPage /></Suspense>} />
                         <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
                         <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
                         <Route path="blinds" element={<Suspense fallback={<LoadingSpinner />}><BlindsPage /></Suspense>} />
