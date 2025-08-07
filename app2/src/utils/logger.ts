@@ -154,6 +154,9 @@ class StructuredLogger {
 
   // 공개 메서드들
   public debug(message: string, context?: Partial<LogContext>): void {
+    // 프로덕션에서는 debug 로그 무시
+    if (this.isProduction) return;
+    
     this.log(LogLevel.DEBUG, message, context);
   }
 
@@ -248,7 +251,11 @@ class StructuredLogger {
 export const logger = new StructuredLogger();
 
 // 편의 함수들
-export const logDebug = (message: string, context?: Partial<LogContext>) => logger.debug(message, context);
+export const logDebug = (message: string, context?: Partial<LogContext>) => {
+  // 프로덕션에서는 debug 로그 무시 (이중 체크)
+  if (process.env.NODE_ENV === 'production') return;
+  logger.debug(message, context);
+};
 export const logInfo = (message: string, context?: Partial<LogContext>) => logger.info(message, context);
 export const logWarn = (message: string, context?: Partial<LogContext>) => logger.warn(message, context);
 export const logError = (message: string, error?: Error, context?: Partial<LogContext>) => logger.error(message, error, context);

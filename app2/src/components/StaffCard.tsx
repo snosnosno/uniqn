@@ -10,6 +10,12 @@ import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
 
+// 분리된 컴포넌트들 import
+import StaffCardHeader from './staff/StaffCardHeader';
+import StaffCardTimeSection from './staff/StaffCardTimeSection';
+import StaffCardActions from './staff/StaffCardActions';
+import StaffCardContactInfo from './staff/StaffCardContactInfo';
+
 interface StaffCardProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
@@ -202,12 +208,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   }, []);
 
 
-  const handleActionClick = useCallback((e: React.MouseEvent, action: () => void) => {
-    e.stopPropagation();
-    lightImpact();
-    action();
-  }, [lightImpact]);
-
   const toggleActions = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     mediumImpact();
@@ -264,73 +264,32 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
-            {/* 기본 정보 */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onShowProfile && !multiSelectMode) {
-                      onShowProfile(staff.id);
-                    }
-                  }}
-                  disabled={multiSelectMode}
-                  className={`text-lg font-semibold text-gray-900 truncate px-3 py-1 rounded-md border transition-all duration-200 text-left inline-block ${
-                    multiSelectMode 
-                      ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-50' 
-                      : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                  }`}
-                >
-                  {memoizedStaffData.displayName}
-                </button>
-                <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                  {memoizedStaffData.roleDisplay}
-                </span>
-              </div>
-              
-              {showDate && staff.assignedDate && (
-                <div className="flex items-center space-x-2 mt-1">
-                  <span className="text-sm text-gray-500">
-                    📅 {formattedDate}
-                  </span>
-                </div>
-              )}
-              
-              {/* 출근/퇴근 시간 */}
-              <div className="flex flex-col space-y-1 mt-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (canEdit && !multiSelectMode) {
-                      onEditWorkTime(staff.id, 'start');
-                    }
-                  }}
-                  disabled={!canEdit || multiSelectMode}
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${memoizedTimeData.startTimeColor} ${
-                    canEdit && !multiSelectMode ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
-                  } transition-opacity`}
-                >
-                  {memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} 출근: {memoizedTimeData.displayStartTime}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (canEdit && !multiSelectMode) {
-                      onEditWorkTime(staff.id, 'end');
-                    }
-                  }}
-                  disabled={!canEdit || multiSelectMode}
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-opacity ${
-                    canEdit && !multiSelectMode
-                      ? `hover:opacity-80 ${memoizedTimeData.endTimeColor}`
-                      : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
-                  }`}
-                  title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "예정 퇴근시간 수정"}
-                >
-                  {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} 퇴근: {memoizedTimeData.displayEndTime}
-                </button>
-              </div>
-            </div>
+            {/* 기본 정보 - StaffCardHeader 컴포넌트 사용 */}
+            <StaffCardHeader
+              name={memoizedStaffData.displayName}
+              {...(staff.role && { role: staff.role })}
+              {...(staff.assignedRole && { assignedRole: staff.assignedRole })}
+              {...(staff.assignedDate && { date: staff.assignedDate })}
+              {...(formattedDate && { formattedDate })}
+              {...(showDate && { showDate })}
+              {...(multiSelectMode && { multiSelectMode })}
+              {...(onShowProfile && { onShowProfile })}
+              staffId={staff.id}
+            />
+            
+            {/* 출근/퇴근 시간 - StaffCardTimeSection 컴포넌트 사용 */}
+            <StaffCardTimeSection
+              displayStartTime={memoizedTimeData.displayStartTime}
+              displayEndTime={memoizedTimeData.displayEndTime}
+              startTimeColor={memoizedTimeData.startTimeColor}
+              endTimeColor={memoizedTimeData.endTimeColor}
+              isScheduledTimeTBD={memoizedTimeData.isScheduledTimeTBD}
+              hasEndTime={memoizedTimeData.hasEndTime}
+              canEdit={canEdit}
+              multiSelectMode={multiSelectMode}
+              onEditWorkTime={onEditWorkTime}
+              staffId={staff.id}
+            />
           </div>
           
           {/* 선택 상태 표시 (우측 상단) */}
@@ -416,175 +375,34 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
           </div>
         )}
 
-        {/* 액션 메뉴 */}
-        {showActions && (
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-              <span>스와이프 액션</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  lightImpact();
-                  setShowActions(false);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-3">
-              {/* 출석 상태 변경 - AttendanceStatusPopover 사용 */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-2">출석 상태 변경</p>
-                <div className="flex justify-center">
-                  <AttendanceStatusPopover
-                    workLogId={memoizedAttendanceData.workLogId}
-                    currentStatus={memoizedAttendanceData.displayStatus}
-                    staffId={staff.id}
-                    staffName={staff.name}
-                    size="md"
-                    eventId={staff.postingId}
-                    scheduledStartTime={memoizedAttendanceData.displayTimes.scheduledStartTime}
-                    scheduledEndTime={memoizedAttendanceData.displayTimes.scheduledEndTime}
-                    actualStartTime={memoizedAttendanceData.displayTimes.actualStartTime}
-                    actualEndTime={memoizedAttendanceData.displayTimes.actualEndTime}
-                    onStatusChange={() => {
-                      setShowActions(false);
-                    }}
-                  />
-                </div>
-              </div>
-              
-              {/* 시간 편집 및 삭제 */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-2">기타 작업</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staff.id, 'start'))}
-                    disabled={!canEdit}
-                    className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                      canEdit 
-                        ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' 
-                        : 'text-gray-400 bg-gray-50 cursor-not-allowed'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    출근 시간
-                  </button>
-                  <button
-                    onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staff.id, 'end'))}
-                    disabled={!canEdit}
-                    className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                      canEdit
-                        ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                        : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
-                    }`}
-                    title={!canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    퇴근 시간
-                  </button>
-                  <button
-                    onClick={(e) => handleActionClick(e, () => canEdit && onDeleteStaff(staff.id))}
-                    disabled={!canEdit}
-                    className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                      canEdit 
-                        ? 'text-red-600 bg-red-50 hover:bg-red-100' 
-                        : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    삭제
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 액션 메뉴 - StaffCardActions 컴포넌트 사용 */}
+        <StaffCardActions
+          showActions={showActions}
+          setShowActions={setShowActions}
+          workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
+          currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
+          staffId={staff.id}
+          staffName={staff.name || ''}
+          eventId={staff.postingId}
+          scheduledStartTime={memoizedTimeData.displayStartTime}
+          scheduledEndTime={memoizedTimeData.displayEndTime}
+          canEdit={canEdit}
+          multiSelectMode={multiSelectMode}
+          onEditWorkTime={onEditWorkTime}
+          onDeleteStaff={onDeleteStaff}
+          onStatusChange={() => {}}
+          lightImpact={lightImpact}
+        />
       </div>
       
-      {/* 확장된 세부 정보 */}
+      {/* 확장된 세부 정보 - StaffCardContactInfo 컴포넌트 사용 */}
       {isExpanded && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
-          <div className="space-y-4">
-            {/* 연락처 정보 */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">연락처 정보</h4>
-              <div className="space-y-2">
-                {staff.phone && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                      </svg>
-                      <span className="text-sm text-gray-600">{staff.phone}</span>
-                    </div>
-                    <a
-                      href={`tel:${staff.phone}`}
-                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      통화
-                    </a>
-                  </div>
-                )}
-                {staff.email && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 flex-1 min-w-0">
-                      <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                      </svg>
-                      <span className="text-sm text-gray-600 truncate">{staff.email}</span>
-                    </div>
-                    <a
-                      href={`mailto:${staff.email}`}
-                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors flex-shrink-0 ml-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      메일
-                    </a>
-                  </div>
-                )}
-                {!memoizedStaffData.hasContact && (
-                  <div className="text-sm text-gray-400 italic">연락처 정보가 없습니다</div>
-                )}
-              </div>
-            </div>
-            
-            {/* 출석 세부 정보 */}
-            {memoizedAttendanceData.attendanceRecord && (memoizedAttendanceData.attendanceRecord.checkInTime || memoizedAttendanceData.attendanceRecord.checkOutTime) && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">출석 세부 정보</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {memoizedAttendanceData.attendanceRecord.checkInTime && (
-                    <div>
-                      <span className="text-gray-500">출근 시간</span>
-                      <div className="font-medium text-gray-900">
-                        {memoizedAttendanceData.attendanceRecord.checkInTime}
-                      </div>
-                    </div>
-                  )}
-                  {memoizedAttendanceData.attendanceRecord.checkOutTime && (
-                    <div>
-                      <span className="text-gray-500">퇴근 시간</span>
-                      <div className="font-medium text-gray-900">
-                        {memoizedAttendanceData.attendanceRecord.checkOutTime}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-          </div>
-        </div>
+        <StaffCardContactInfo
+          {...(staff.phone && { phone: staff.phone })}
+          {...(staff.email && { email: staff.email })}
+          {...(staff.postingTitle && { postingTitle: staff.postingTitle })}
+          {...(staff.postingId && { postingId: staff.postingId })}
+        />
       )}
     </div>
   );

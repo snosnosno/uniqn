@@ -1,9 +1,97 @@
 import { Timestamp } from 'firebase/firestore';
-import { parseToDate } from './jobPosting/dateUtils';
+import { parseToDate, getTodayString } from './jobPosting/dateUtils';
 
 /**
  * WorkLog 생성 및 관리를 위한 유틸리티 함수들
  */
+
+// 날짜 입력 타입 정의
+type DateInput = 
+  | Timestamp 
+  | Date 
+  | string 
+  | number
+  | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
+  | null 
+  | undefined;
+
+/**
+ * 다양한 날짜 형식을 YYYY-MM-DD 형식으로 표준화
+ * Firebase Timestamp, Date 객체, 문자열 등 모든 형식 처리
+ */
+export const normalizeStaffDate = (date: DateInput): string => {
+  if (!date) return getTodayString();
+  
+  try {
+    // Firebase Timestamp 객체 처리
+    if (typeof date === 'object' && 'seconds' in date) {
+      const seconds = date.seconds as number;
+      const isoString = new Date(seconds * 1000).toISOString();
+      const datePart = isoString.split('T')[0];
+      return datePart || getTodayString();
+    }
+    
+    // Timestamp 문자열 처리 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
+    if (typeof date === 'string' && date.startsWith('Timestamp(')) {
+      const match = date.match(/seconds=(\d+)/);
+      if (match && match[1]) {
+        const seconds = parseInt(match[1], 10);
+        const isoString = new Date(seconds * 1000).toISOString();
+        const datePart = isoString.split('T')[0];
+        return datePart || getTodayString();
+      }
+    }
+    
+    // 이미 YYYY-MM-DD 형식인 경우
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    
+    // toDate 메서드가 있는 객체 (Firebase Timestamp)
+    if (typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
+      const dateObj = date.toDate();
+      if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
+        const isoString = dateObj.toISOString();
+        const datePart = isoString.split('T')[0];
+        return datePart || getTodayString();
+      }
+    }
+    
+    // Date 객체 또는 문자열/숫자를 Date로 변환
+    const dateObj = date instanceof Date ? date : new Date(date as string | number);
+    if (!isNaN(dateObj.getTime())) {
+      const isoString = dateObj.toISOString();
+      const datePart = isoString.split('T')[0];
+      return datePart || getTodayString();
+    }
+  } catch (error) {
+    // 변환 실패 시 오늘 날짜 반환
+  }
+  
+  return getTodayString();
+};
+
+/**
+ * virtual_ prefix가 포함된 WorkLog ID 생성
+ * StaffCard와 StaffRow에서 사용하는 패턴과 완벽히 호환
+ */
+export const generateVirtualWorkLogId = (
+  staffId: string, 
+  date: DateInput, 
+  eventId?: string
+): string => {
+  // staffId에서 _숫자 패턴 제거
+  const actualStaffId = staffId.replace(/_\d+$/, '');
+  const normalizedDate = normalizeStaffDate(date);
+  
+  if (eventId) {
+    // eventId가 있으면 실제 workLogId 형식
+    return `${eventId}_${actualStaffId}_${normalizedDate}`;
+  }
+  
+  // eventId가 없으면 virtual_ prefix 추가
+  return `virtual_${actualStaffId}_${normalizedDate}`;
+};
 
 interface CreateWorkLogParams {
   eventId: string;

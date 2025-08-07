@@ -6,6 +6,7 @@ import { StaffData } from '../hooks/useStaffManagement';
 import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { getTodayString, convertToDateString } from '../utils/jobPosting/dateUtils';
+import { generateVirtualWorkLogId, normalizeStaffDate } from '../utils/workLogUtils';
 
 interface StaffRowProps {
   staff: StaffData;
@@ -61,17 +62,10 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
 
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
-    // workLogId 생성 (날짜별 출석 상태 구분을 위해)
-    const dateString = convertToDateString(staff.assignedDate) || getTodayString();
-    
-    // 날짜가 제대로 파싱되었는지 확인
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      // StaffRow - assignedDate 파싱 실패
-    }
-    
-    // staffId에서 _숫자 패턴 제거
-    const actualStaffId = staff.id.replace(/_\d+$/, '');
-    const workLogId = `virtual_${actualStaffId}_${dateString}`;
+    // workLogId 생성 - 유틸리티 함수 사용
+    const dateString = normalizeStaffDate(staff.assignedDate);
+    const workLogId = generateVirtualWorkLogId(staff.id, dateString, staff.postingId);
+    const actualStaffId = staff.id.replace(/_\d+$/, ''); // actualStaffId 정의 추가
     
     // workLogId로 출석 상태 가져오기 - 렌더링 시점마다 새로 호출
     const attendanceRecord = getStaffAttendanceStatus(workLogId);
