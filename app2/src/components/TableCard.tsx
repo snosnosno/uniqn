@@ -1,16 +1,18 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaUsers, FaEllipsisV } from './Icons/ReactIconsReplacement';
+import { FaUsers, FaEllipsisV, FaMoneyBillWave } from './Icons/ReactIconsReplacement';
 
 import { Table } from '../hooks/useTables';
+import { Participant } from '../hooks/useParticipants';
 
 interface TableCardProps {
   table: Table;
   onTableClick: () => void;
   isMobile: boolean;
   getDealerName: (dealerId: string | null) => string;
+  participants?: Participant[];
 }
 
 const TableCard: React.FC<TableCardProps> = ({
@@ -18,6 +20,7 @@ const TableCard: React.FC<TableCardProps> = ({
   onTableClick,
   isMobile,
   getDealerName,
+  participants,
 }) => {
   const { t } = useTranslation();
   const {
@@ -40,6 +43,17 @@ const TableCard: React.FC<TableCardProps> = ({
   const isStandby = table.status === 'standby';
   const playerCount = table.seats?.filter(s => s !== null).length || 0;
   const maxSeats = table.seats?.length || 9;
+  
+  // 테이블의 총 칩 카운트 계산 (메모이제이션으로 성능 최적화)
+  const totalChips = useMemo(() => {
+    if (!participants || !table.seats) return 0;
+    
+    return table.seats.reduce((total, participantId) => {
+      if (!participantId) return total;
+      const participant = participants.find(p => p.id === participantId);
+      return total + (participant?.chips || 0);
+    }, 0);
+  }, [participants, table.seats]);
 
   return (
     <div
@@ -59,9 +73,17 @@ const TableCard: React.FC<TableCardProps> = ({
         >
             {table.name || `Table ${table.tableNumber}`}
         </h3>
-        <div className="flex items-center text-sm text-gray-600">
-            <FaUsers className="w-4 h-4 mr-2" />
-            <span>{playerCount} / {maxSeats}</span>
+        <div className="flex items-center gap-3">
+            <div className="flex items-center text-sm text-gray-600">
+                <FaUsers className="w-4 h-4 mr-1" />
+                <span>{playerCount}/{maxSeats}</span>
+            </div>
+            {totalChips > 0 && (
+                <div className="flex items-center text-sm font-semibold text-green-600">
+                    <FaMoneyBillWave className="w-4 h-4 mr-1" />
+                    <span>{totalChips.toLocaleString()}</span>
+                </div>
+            )}
         </div>
         <button 
             className="p-2 rounded-full hover:bg-gray-200" 

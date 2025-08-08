@@ -28,6 +28,7 @@ const TablesPage: React.FC = () => {
         openNewTable,
         closeTable,
         autoAssignSeats,
+        autoBalanceByChips,
         activateTable,
         updateTableDetails,
         updateTableMaxSeats,
@@ -168,6 +169,13 @@ const TablesPage: React.FC = () => {
                         >
                             {t('tables.buttonAutoAssign')}
                         </button>
+                        <button 
+                            onClick={() => autoBalanceByChips(participants)}
+                            className="btn btn-secondary bg-green-600 hover:bg-green-700 text-white"
+                            disabled={tablesLoading || participantsLoading}
+                        >
+                            칩 균형 재배치
+                        </button>
                         <button onClick={openNewTable} className="btn btn-primary">
                             <FaPlus className="w-4 h-4 mr-2"/>{t('tables.buttonAddTable')}
                         </button>
@@ -206,6 +214,7 @@ const TablesPage: React.FC = () => {
                                 onTableClick={() => setDetailModalTable(table)}
                                 isMobile={isMobile}
                                 getDealerName={getDealerName}
+                                participants={participants}
                             />
                         ))}
                     </div>
