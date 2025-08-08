@@ -42,3 +42,25 @@ export function useMediaQuery(query: string): boolean {
 
   return matches;
 }
+
+/**
+ * 사전 정의된 브레이크포인트 훅
+ */
+export const useBreakpoint = () => {
+  const isMobile = useMediaQuery('(max-width: 640px)');
+  const isTablet = useMediaQuery('(min-width: 641px) and (max-width: 1024px)');
+  const isDesktop = useMediaQuery('(min-width: 1025px)');
+  const isLargeDesktop = useMediaQuery('(min-width: 1280px)');
+
+  return {
+    isMobile,
+    isTablet,
+    isDesktop,
+    isLargeDesktop,
+    // 유용한 조합
+    isMobileOrTablet: isMobile || isTablet,
+    isTabletOrDesktop: isTablet || isDesktop,
+  };
+};
+
+export default useMediaQuery;

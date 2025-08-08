@@ -562,8 +562,8 @@
     "create": {
       "selectOptions": "옵션 선택",
       "removeQuestion": "질문 삭제",
-      "title": "구인 공고 생성",
-      "button": "새 공고 작성",
+      "title": "공고 생성",
+      "button": "공고 작성",
       "postingTitle": "공고 제목",
       "type": "고용 형태",
       "typeApplication": "지원",

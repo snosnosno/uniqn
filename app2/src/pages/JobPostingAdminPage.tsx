@@ -71,8 +71,7 @@ const JobPostingAdminPage = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">구인공고 관리</h1>
-              <p className="mt-2 text-gray-600">구인공고를 등록하고 관리하세요.</p>
+              <h1 className="text-3xl font-bold text-gray-900">공고 관리</h1>
             </div>
             
             {canCreateJobPostings && (
@@ -80,7 +79,7 @@ const JobPostingAdminPage = () => {
                 variant="primary"
                 onClick={() => setIsCreateFormVisible(!isCreateFormVisible)}
               >
-                {isCreateFormVisible ? '목록 보기' : '새 공고 작성'}
+                {isCreateFormVisible ? '목록 보기' : '공고 작성'}
               </Button>
             )}
           </div>

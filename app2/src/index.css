@@ -2,55 +2,314 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Pretendard 폰트 임포트 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+/* CSS 변수 정의 - 디자인 토큰 */
+:root {
+  /* 색상 변수 */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-secondary: #22c55e;
+  --color-secondary-hover: #16a34a;
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-background: #ffffff;
+  --color-border: #d1d5db;
+  
+  /* 간격 변수 */
+  --spacing-base: 4px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* 반올림 변수 */
+  --radius-default: 4px;
+  --radius-lg: 8px;
+  
+  /* 그림자 변수 */
+  --shadow-default: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* 폰트 변수 */
+  --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --font-mono: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  
+  /* 타이포그래피 변수 */
+  --text-xs: 0.875rem;  /* 14px */
+  --text-sm: 0.9375rem; /* 15px */
+  --text-base: 1rem;    /* 16px */
+  --text-lg: 1.125rem;  /* 18px */
+  --text-xl: 1.25rem;   /* 20px */
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-body: 1.8;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  @apply bg-gray-50 text-gray-800;
+  @apply bg-gray-50 text-gray-900;
+  
+  /* 한글 최적화 */
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  word-wrap: break-word;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: var(--font-mono);
 }
 
 @layer components {
+  /* 카드 컴포넌트 */
   .card {
-    @apply bg-white rounded-lg shadow-md p-4 sm:p-6;
-  }
-  .btn {
-    @apply font-bold py-2 px-4 rounded-lg transition-colors;
-  }
-  .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700;
-  }
-  .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
-  }
-  .input-field {
-    @apply block w-full px-3 py-2 mt-2 text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50;
+    @apply bg-white rounded-lg shadow-md p-4 sm:p-6 transition-shadow hover:shadow-lg;
   }
   
-  /* 접근성 및 모바일 최적화 */
-  .toggle-button {
-    @apply touch-manipulation;
+  .card-sm {
+    @apply bg-white rounded-lg shadow p-3;
+  }
+  
+  .card-lg {
+    @apply bg-white rounded-lg shadow-lg p-6 sm:p-8;
+  }
+  
+  /* 버튼 컴포넌트 - 최소 터치 타겟 44px 보장 */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200;
+    @apply px-4 py-2 min-h-touch min-w-touch;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply text-sm md:text-base;
+  }
+  
+  .btn-xs {
+    @apply px-2 py-1 text-xs min-h-[36px];
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm min-h-[40px];
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-lg min-h-[48px];
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-500 text-white hover:bg-secondary-600 focus:ring-secondary-500;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-50 focus:ring-primary-500;
+  }
+  
+  .btn-ghost {
+    @apply text-gray-600 hover:bg-gray-100 focus:ring-gray-500;
+  }
+  
+  .btn-danger {
+    @apply bg-error text-white hover:bg-error-dark focus:ring-error;
+  }
+  
+  /* 입력 필드 컴포넌트 */
+  .input-field {
+    @apply block w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg;
+    @apply text-sm md:text-base leading-normal;
+    @apply placeholder-gray-400;
+    @apply focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50;
+    @apply disabled:bg-gray-50 disabled:text-gray-500;
+    min-height: 44px;
+  }
+  
+  .input-error {
+    @apply border-error focus:border-error focus:ring-error;
+  }
+  
+  .input-success {
+    @apply border-success focus:border-success focus:ring-success;
+  }
+  
+  /* 라벨 컴포넌트 */
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  
+  .label-required::after {
+    content: ' *';
+    @apply text-error;
+  }
+  
+  /* 헤딩 스타일 - 반응형 크기 */
+  .heading-1 {
+    @apply text-3xl md:text-5xl font-bold leading-tight text-gray-900 mb-6;
+  }
+  
+  .heading-2 {
+    @apply text-2xl md:text-4xl font-bold leading-tight text-gray-900 mb-5;
+  }
+  
+  .heading-3 {
+    @apply text-xl md:text-3xl font-semibold leading-snug text-gray-900 mb-4;
+  }
+  
+  .heading-4 {
+    @apply text-lg md:text-2xl font-semibold leading-snug text-gray-900 mb-3;
+  }
+  
+  .heading-5 {
+    @apply text-base md:text-xl font-medium leading-normal text-gray-900 mb-2;
+  }
+  
+  /* 텍스트 스타일 - 가독성 개선 */
+  .text-body {
+    @apply text-sm md:text-base leading-relaxed text-gray-700;
+  }
+  
+  .text-caption {
+    @apply text-xs md:text-sm text-gray-500;
+  }
+  
+  .text-link {
+    @apply text-primary-500 hover:text-primary-600 underline hover:no-underline transition-colors;
+  }
+  
+  /* 리스트 스타일 */
+  .list-disc-primary {
+    @apply list-disc list-inside space-y-2 text-gray-700;
+  }
+  
+  .list-decimal-primary {
+    @apply list-decimal list-inside space-y-2 text-gray-700;
+  }
+  
+  /* 테이블 스타일 */
+  .table-responsive {
+    @apply w-full overflow-x-auto;
+  }
+  
+  .table-primary {
+    @apply w-full text-sm text-left text-gray-700;
+  }
+  
+  .table-primary thead {
+    @apply text-xs text-gray-900 uppercase bg-gray-50 font-medium;
+  }
+  
+  .table-primary th {
+    @apply px-4 py-3;
+  }
+  
+  .table-primary td {
+    @apply px-4 py-3 border-b border-gray-200;
+  }
+  
+  /* 알림 컴포넌트 */
+  .alert {
+    @apply p-4 rounded-lg border;
+  }
+  
+  .alert-info {
+    @apply bg-info-light/10 border-info text-info-dark;
+  }
+  
+  .alert-success {
+    @apply bg-success-light/10 border-success text-success-dark;
+  }
+  
+  .alert-warning {
+    @apply bg-warning-light/10 border-warning text-warning-dark;
+  }
+  
+  .alert-error {
+    @apply bg-error-light/10 border-error text-error-dark;
+  }
+  
+  /* 배지 컴포넌트 */
+  .badge {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-error {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  /* 스켈레톤 로더 */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+  
+  .skeleton-text {
+    @apply h-4 bg-gray-200 rounded animate-pulse;
+  }
+  
+  .skeleton-card {
+    @apply h-32 bg-gray-200 rounded-lg animate-pulse;
+  }
+  
+  /* 접근성 헬퍼 */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  }
+  
+  .focus-visible-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
+  }
+  
+  /* 모바일 최적화 */
+  .touch-manipulation {
+    touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
   
   /* 고대비 모드 지원 */
   @media (prefers-contrast: high) {
-    .toggle-button {
+    .btn {
       @apply border-2 border-current;
+    }
+    
+    .input-field {
+      @apply border-2;
     }
   }
   
   /* 모션 감소 설정 지원 */
   @media (prefers-reduced-motion: reduce) {
-    .toggle-button {
-      @apply transition-none;
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
     }
+  }
+  
+  /* 다크 모드 지원 (향후 구현) */
+  @media (prefers-color-scheme: dark) {
+    /* 다크 모드 스타일은 추후 구현 */
   }
 }

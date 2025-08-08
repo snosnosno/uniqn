@@ -94,7 +94,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-gray-900">새 공고 작성</h2>
+        <h2 className="text-lg font-medium text-gray-900">공고 작성</h2>
         <div className="flex space-x-2">
           <Button
             type="button"
