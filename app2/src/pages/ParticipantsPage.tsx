@@ -7,7 +7,7 @@ import { useTables, Table } from '../hooks/useTables';
 
 const ParticipantsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant, addParticipantAndAssignToSeat } = useParticipants();
+  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants();
   const { tables, loading: tablesLoading, error: tablesError } = useTables();
 
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);

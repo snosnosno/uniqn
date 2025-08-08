@@ -235,7 +235,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                       }
                       onConfirm={() => handleConfirmApplicant(applicant, assignments)}
                       canEdit={canEdit}
-                      onRefresh={refreshApplicants}
+                      _onRefresh={refreshApplicants}
                     />
                   ) : (
                     // 단일 선택 UI

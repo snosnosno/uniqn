@@ -33,7 +33,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     return () => {
       store.cleanup();
     };
-  }, [jobPostingId]); // store는 의존성에서 제외 (stable reference)
+  }, [jobPostingId]); // store는 안정적인 참조이므로 의존성에서 제외
   
   // 지원자와 스태프 데이터 구독
   useEffect(() => {
@@ -41,7 +41,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
       store.refreshApplicants();
       store.refreshStaff();
     }
-  }, [jobPostingId, currentUser]); // store는 의존성에서 제외
+  }, [jobPostingId, currentUser]); // store는 안정적인 참조이므로 의존성에서 제외
   
   const value: JobPostingContextType = {
     jobPosting: store.jobPosting,

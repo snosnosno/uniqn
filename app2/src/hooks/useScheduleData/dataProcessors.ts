@@ -16,8 +16,7 @@ import { ApplicationData, WorkLogData, JobPostingData } from './types';
  */
 export const processApplicationData = async (
   docId: string, 
-  data: ApplicationData,
-  currentUserId?: string
+  data: ApplicationData
 ): Promise<ScheduleEvent[]> => {
   const events: ScheduleEvent[] = [];
   
@@ -162,8 +161,7 @@ export const processApplicationData = async (
  */
 export const processWorkLogData = (
   docId: string,
-  data: WorkLogData,
-  currentUserId?: string
+  data: WorkLogData
 ): ScheduleEvent => {
   const timeData = parseTimeString(
     `${data.scheduledStartTime || data.actualStartTime || ''}-${data.scheduledEndTime || data.actualEndTime || ''}`,

@@ -29,7 +29,7 @@ export const initSentry = () => {
       environment: process.env.REACT_APP_ENV || 'production',
       
       // 에러 필터링
-      beforeSend(event, hint) {
+      beforeSend(event) {
         // 개발자 확장 프로그램 에러 무시
         if (event.exception?.values?.[0]?.value?.includes('extension://')) {
           return null;

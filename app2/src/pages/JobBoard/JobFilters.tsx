@@ -12,7 +12,7 @@ interface JobFiltersProps {
  */
 const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChange }) => {
   const { t } = useTranslation();
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [_isFilterOpen, _setIsFilterOpen] = useState(false);
 
   const handleFilterChange = (filterType: keyof JobFilters, value: string) => {
     const newFilters = { ...filters, [filterType]: value };

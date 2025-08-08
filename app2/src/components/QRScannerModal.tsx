@@ -1,6 +1,5 @@
 import React from 'react';
 import { logger } from '../utils/logger';
-// @ts-ignore
 import { useTranslation } from 'react-i18next';
 import QrScanner from 'react-qr-scanner';
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   format, 
   startOfMonth, 
@@ -6,7 +6,6 @@ import {
   eachDayOfInterval, 
   getDay,
   isSameMonth,
-  isSameDay,
   isToday,
   addMonths,
   subMonths,
@@ -19,7 +18,7 @@ import {
   ScheduleEvent, 
   CalendarView, 
   SCHEDULE_COLORS,
-  EventColorConfig 
+ 
 } from '../../types/schedule';
 import { Timestamp } from 'firebase/firestore';
 
@@ -147,7 +146,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
               
               {/* 이벤트 목록 */}
               <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event, eventIdx) => {
+                {dayEvents.slice(0, 3).map((event, _eventIdx) => {
                   const colors = SCHEDULE_COLORS[event.type];
                   return (
                     <div
@@ -182,9 +181,9 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
 
   // 주 뷰 렌더링 (간단한 구현)
   const renderWeekView = () => {
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
-    const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
-    const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    const _weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+    const _weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+    // const weekDays = eachDayOfInterval({ start: _weekStart, end: _weekEnd });
     
     return (
       <div className="text-center py-20 text-gray-500">

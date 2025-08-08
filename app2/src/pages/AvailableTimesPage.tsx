@@ -33,7 +33,7 @@ const AvailableTimesPage = () => {
         if (dayKeys.includes(dayKey)) {
           translatedData[dayKey] = data[day].map((time: string) => {
              // Find the key for the stored English time
-            const timeKeyEntry = Object.entries(t('availableTimes.times', { returnObjects: true })).find(([key, value]) => value === time);
+            const timeKeyEntry = Object.entries(t('availableTimes.times', { returnObjects: true })).find(([_key, value]) => value === time);
             return timeKeyEntry ? timeKeyEntry[0] : time;
           });
         }

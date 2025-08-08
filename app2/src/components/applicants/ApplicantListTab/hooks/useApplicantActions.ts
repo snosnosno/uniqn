@@ -92,7 +92,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       }
 
       const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
-      const applicationRef = doc(db, "applications", applicant.id);
+      const _applicationRef = doc(db, "applications", applicant.id);
 
       // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
       await ApplicationHistoryService.confirmApplication(applicant.id, assignments);
@@ -318,7 +318,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         if (updatedPost.dateSpecificRequirements && updatedPost.dateSpecificRequirements.length > 0) {
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           let allFulfilled = true;
-          Array.from(progressMap.entries()).forEach(([date, progress]) => {
+          Array.from(progressMap.entries()).forEach(([_date, progress]) => {
             const percentage = progress.required > 0 ? (progress.confirmed / progress.required) * 100 : 0;
             if (percentage < 100) {
               allFulfilled = false;

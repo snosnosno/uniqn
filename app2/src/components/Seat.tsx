@@ -14,10 +14,10 @@ export interface SeatProps {
     from: { tableId: string; seatIndex: number },
     to: { tableId: string; seatIndex: number }
   ) => void;
-  onBustOut: (participantId: string) => void;
+  _onBustOut: (participantId: string) => void;
 }
 
-export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, getParticipantName, onMoveSeat }) => {
+export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, getParticipantName, onMoveSeat: _onMoveSeat, _onBustOut }) => {
   const seatId = `${table.id}-${seatIndex}`;
   
   const {

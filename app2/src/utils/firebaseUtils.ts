@@ -52,7 +52,7 @@ export const withFirebaseErrorHandling = async <T>(
 export const checkFirebaseConnection = async (): Promise<boolean> => {
   try {
     // Try to access Firestore to check connection
-    const testDoc = db.app.options;
+    const _testDoc = db.app.options;
     logger.info('✅ Firebase connection is healthy', { operation: 'checkFirebaseConnection' });
     return true;
   } catch (error) {

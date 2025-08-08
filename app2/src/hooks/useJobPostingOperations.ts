@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from './usePermissions';
 import { JobPosting, JobPostingFormData } from '../types/jobPosting';
-import { prepareFormDataForFirebase, prepareFirebaseDataForForm } from '../utils/jobPosting/jobPostingHelpers';
+import { prepareFormDataForFirebase } from '../utils/jobPosting/jobPostingHelpers';
 import { validateJobPostingForm } from '../utils/jobPosting/formValidation';
 
 export const useJobPostingOperations = () => {

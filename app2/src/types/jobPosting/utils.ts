@@ -1,6 +1,6 @@
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { JobPosting } from './jobPosting';
-import { TimeSlot, DateSpecificRequirement } from './base';
+import { TimeSlot } from './base';
 import { Applicant } from './applicant';
 
 /**

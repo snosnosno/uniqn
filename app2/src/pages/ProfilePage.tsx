@@ -119,7 +119,7 @@ const ProfilePage = () => {
         };
 
         fetchProfile();
-    }, [profileRef]);
+    }, [profileRef, profile]);
 
     const handleEditClick = () => {
         if (!isEditing) {

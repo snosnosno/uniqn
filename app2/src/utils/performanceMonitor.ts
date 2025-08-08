@@ -259,8 +259,7 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // React 컴포넌트 성능 측정 HOC
 export function withPerformanceMonitoring<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  componentName: string
+  WrappedComponent: React.ComponentType<P>
 ): React.ComponentType<P> {
   // HOC 단순화 - 현재는 패스스루로 동작
   return WrappedComponent;

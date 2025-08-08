@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import JobBoardErrorBoundary from '../../components/JobBoardErrorBoundary';
 import JobPostingSkeleton from '../../components/JobPostingSkeleton';
 import PreQuestionModal from '../../components/PreQuestionModal';

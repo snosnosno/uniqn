@@ -4,19 +4,27 @@ import LoadingSpinner from '../../../components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayGroups } from '../../../utils/jobPosting/jobPostingHelpers';
 
+interface FirebaseTimestamp {
+  seconds: number;
+  nanoseconds: number;
+  toDate?: () => Date;
+}
+
+type DateValue = string | Date | FirebaseTimestamp;
+
 interface Application {
   id: string;
   postId: string;
   status: string;
-  appliedAt: any;
-  confirmedAt?: any;
-  assignedTime?: string | any;
+  appliedAt: DateValue;
+  confirmedAt?: DateValue;
+  assignedTime?: string | DateValue;
   assignedRole?: string;
-  assignedDate?: any;
+  assignedDate?: DateValue;
   // 다중 선택 지원 필드
   assignedTimes?: string[];
   assignedRoles?: string[];
-  assignedDates?: any[];
+  assignedDates?: DateValue[];
   // 사전질문 답변
   preQuestionAnswers?: Array<{
     question: string;
@@ -29,11 +37,11 @@ interface Application {
     location: string;
     district?: string;
     detailedAddress?: string;
-    startDate: any;
-    endDate: any;
+    startDate: DateValue;
+    endDate: DateValue;
     salaryType?: string;
     salaryAmount?: number;
-    benefits?: any;
+    benefits?: Record<string, unknown>;
   } | null;
 }
 
@@ -157,11 +165,18 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
                     <div className="flex-1">
                       {application.assignedDates && application.assignedDates[index] && (
                         <span className="text-blue-600 font-medium">
-                          📅 {formatDateUtil(application.assignedDates[index])} | 
+                          📅 {formatDateUtil(application.assignedDates[index] as DateValue)} | 
                         </span>
                       )}
                       <span className="text-gray-700">
-                        ⏰ {time ? (typeof time === 'object' && (time as any)?.seconds ? formatDateUtil(time) : time) : ''}
+                        ⏰ {(() => {
+                          if (!time) return '';
+                          if (typeof time === 'string') return time;
+                          if (typeof time === 'object' && 'seconds' in time) {
+                            return formatDateUtil(time as FirebaseTimestamp);
+                          }
+                          return String(time);
+                        })()}
                       </span>
                       {application.assignedRoles && application.assignedRoles[index] && (
                         <span className="ml-2 text-gray-600">
@@ -185,7 +200,15 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
                     </span>
                   )}
                   <span className="text-gray-700">
-                    ⏰ {application.assignedTime ? (typeof application.assignedTime === 'object' && (application.assignedTime as any)?.seconds ? formatDateUtil(application.assignedTime) : application.assignedTime) : ''}
+                    ⏰ {(() => {
+                      const time = application.assignedTime;
+                      if (!time) return '';
+                      if (typeof time === 'string') return time;
+                      if (typeof time === 'object' && 'seconds' in time) {
+                        return formatDateUtil(time as FirebaseTimestamp);
+                      }
+                      return String(time);
+                    })()}
                   </span>
                   {application.assignedRole && (
                     <span className="ml-2 text-gray-600">
@@ -229,7 +252,7 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
             
             {application.jobPosting && (
               <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                {onViewDetail && (
+                {onViewDetail && application.jobPosting && (
                   <button
                     onClick={() => onViewDetail(application.jobPosting)}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex-1 sm:flex-initial"

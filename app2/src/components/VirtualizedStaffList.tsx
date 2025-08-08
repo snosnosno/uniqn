@@ -2,14 +2,16 @@ import React, { useMemo } from 'react';
 import { FixedSizeList as List } from 'react-window';
 
 import { StaffData } from '../hooks/useStaffManagement';
+import { AttendanceRecord } from '../hooks/useAttendanceStatus';
+import { WorkLog } from '../types/common';
 import StaffCard from './StaffCard';
 
 interface VirtualizedStaffListProps {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => any;
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (staffId: string) => AttendanceRecord | undefined;
+  attendanceRecords: AttendanceRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean;
@@ -21,15 +23,15 @@ interface VirtualizedStaffListProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null;
 }
 
 interface ItemData {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => any;
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (staffId: string) => AttendanceRecord | undefined;
+  attendanceRecords: AttendanceRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate: boolean;
@@ -39,7 +41,7 @@ interface ItemData {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null;
 }
 
 // 메모이제이션된 리스트 아이템 컴포넌트

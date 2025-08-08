@@ -78,7 +78,7 @@ const TablesPage: React.FC = () => {
         return p ? p.name : t('tables.participantUnknown');
     };
 
-    const getDealerName = (dealerId: string | null): string => {
+    const getDealerName = (_dealerId: string | null): string => {
         return t('tables.dealerNotApplicable');
     };
 
@@ -221,7 +221,7 @@ const TablesPage: React.FC = () => {
                     onCloseTable={closeTable}
                     getParticipantName={getParticipantName}
                     onMoveSeat={moveSeat}
-                    onBustOut={(participantId) => bustOutParticipant(participantId)}
+                    _onBustOut={(participantId) => bustOutParticipant(participantId)}
                     onPlayerSelect={onPlayerSelectInModal}
                     updateTableDetails={updateTableDetails}
                     updateTableMaxSeats={updateTableMaxSeats}
@@ -231,7 +231,7 @@ const TablesPage: React.FC = () => {
                     isOpen={!!actionMenu}
                     onClose={handleCloseActionMenu}
                     position={{ top: actionMenu.y, left: actionMenu.x }}
-                    onBustOut={handleBustOut}
+                    _onBustOut={handleBustOut}
                     onMoveSeat={handleOpenMoveSeatModal}
                     onShowDetails={handleShowDetails}
                 /> : null}

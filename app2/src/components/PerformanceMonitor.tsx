@@ -98,7 +98,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     if (onMetricsUpdate) {
       onMetricsUpdate(newMetrics);
     }
-  }, [isVirtualized, visibleItems, totalItems]);
+  }, [isVirtualized, visibleItems, totalItems]); // onMetricsUpdate는 무한 루프 방지를 위해 제외
 
   // 개발 모드에서만 성능 정보 표시
   const showPerformanceInfo = process.env.NODE_ENV === 'development';

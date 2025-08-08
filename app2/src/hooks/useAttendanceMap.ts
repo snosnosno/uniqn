@@ -74,7 +74,7 @@ export const useAttendanceMap = (
       const results: AttendanceRecord[] = [];
       const seen = new Set<string>(); // 중복 제거용
       
-      attendanceMap.forEach((record, key) => {
+      attendanceMap.forEach((record) => {
         if (record.workLog?.date === date && !seen.has(record.staffId)) {
           results.push(record);
           seen.add(record.staffId);

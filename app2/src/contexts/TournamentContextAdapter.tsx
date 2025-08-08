@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useTournamentStore } from '../stores/tournamentStore';
 import type { User } from '../types/common';
 import { TournamentState } from './TournamentContext';

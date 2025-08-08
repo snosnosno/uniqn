@@ -1,13 +1,10 @@
 import { useState, useCallback } from 'react';
-import { RoleRequirement, TimeSlot, DateSpecificRequirement } from '../types/jobPosting';
+// Removed unused type imports
 import { 
   createInitialFormData, 
-  createInitialTimeSlot, 
-  createNewRole, 
-  createNewPreQuestion,
-  createNewDateSpecificRequirement
+  createNewPreQuestion
 } from '../utils/jobPosting/jobPostingHelpers';
-import { convertToDateString, dropdownValueToDateString } from '../utils/jobPosting/dateUtils';
+import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils';
 
 import { JobPosting } from '../types/jobPosting';
 

@@ -61,37 +61,14 @@ export const convertDateToString = (rawDate: any): string => {
  * - 지원 상태: 원본 지원 데이터 반환 (ApplicationHistory 기반)
  */
 export const getApplicantSelections = (applicant: Applicant) => {
-  logger.debug('🔍 getApplicantSelections 호출 (상태별 처리):', { 
-    component: 'applicantHelpers',
-    data: {
-      applicantId: applicant.id,
-      applicantName: applicant.applicantName,
-      status: applicant.status,
-      hasOriginalApplication: !!(applicant as any).originalApplication,
-      hasMultiple: hasMultipleSelections(applicant),
-      assignedRoles: applicant.assignedRoles,
-      assignedTimes: applicant.assignedTimes,
-      assignedDates: applicant.assignedDates,
-      assignedRole: applicant.assignedRole,
-      assignedTime: applicant.assignedTime,
-      assignedDate: applicant.assignedDate
-    }
-  });
+  // logger.debug 제거 - 성능 최적화 (매번 호출되므로 성능 저하 원인)
   
   // 🎯 확정된 상태: 실제 확정된 선택사항만 반환
   if (applicant.status === 'confirmed') {
     try {
       const confirmedSelections = ApplicationHistoryService.getConfirmedSelections(applicant);
       
-      logger.debug('✅ 확정된 선택사항 조회 성공:', { 
-        component: 'applicantHelpers', 
-        data: { 
-          status: applicant.status,
-          selectionsCount: confirmedSelections.length,
-          selections: confirmedSelections,
-          source: 'ConfirmedData'
-        } 
-      });
+      // logger.debug 제거 - 성능 최적화
       
       return confirmedSelections;
     } catch (error) {
@@ -117,16 +94,7 @@ export const getApplicantSelections = (applicant: Applicant) => {
         originalData.dates.length
       );
       
-      logger.debug('🏗️ ApplicationHistory 원본 데이터 발견:', {
-        component: 'applicantHelpers',
-        data: {
-          rolesLength: originalData.roles.length,
-          timesLength: originalData.times.length,
-          datesLength: originalData.dates.length,
-          maxLength,
-          status: applicant.status
-        }
-      });
+      // logger.debug 제거 - 성능 최적화
       
       // 원본 데이터로부터 완전 복원
       for (let i = 0; i < maxLength; i++) {
@@ -141,15 +109,7 @@ export const getApplicantSelections = (applicant: Applicant) => {
         });
       }
       
-      logger.debug('✅ ApplicationHistory 원본 데이터 복원 성공:', { 
-        component: 'applicantHelpers', 
-        data: { 
-          status: applicant.status,
-          selectionsCount: selections.length,
-          selections,
-          source: 'ApplicationHistory'
-        } 
-      });
+      // logger.debug 제거 - 성능 최적화
       return selections;
     }
   } catch (error) {
@@ -174,15 +134,7 @@ export const getApplicantSelections = (applicant: Applicant) => {
       datesArray.length
     );
     
-    logger.debug('🔧 배열 데이터 분석 (폴백):', {
-      component: 'applicantHelpers',
-      data: {
-        rolesLength: rolesArray.length,
-        timesLength: timesArray.length, 
-        datesLength: datesArray.length,
-        maxLength
-      }
-    });
+    // logger.debug 제거 - 성능 최적화
     
     // 🔥 핵심: 모든 인덱스 완전 복원 (빈 값 필터링 제거)
     for (let i = 0; i < maxLength; i++) {
@@ -198,18 +150,7 @@ export const getApplicantSelections = (applicant: Applicant) => {
       });
     }
     
-    logger.debug('✅ 배열 데이터 복원 성공 (폴백):', { 
-      component: 'applicantHelpers', 
-      data: { 
-        status: applicant.status,
-        selectionsCount: selections.length,
-        selections,
-        source: 'Arrays',
-        isConfirmationCancelled: applicant.status === 'applied' && 
-          (!applicant.assignedRole && !applicant.assignedTime),
-        isFullyRestored: selections.length === maxLength
-      } 
-    });
+    // logger.debug 제거 - 성능 최적화
     return selections;
   }
   
@@ -223,27 +164,11 @@ export const getApplicantSelections = (applicant: Applicant) => {
       date: singleDateValue
     }];
     
-    logger.debug('✅ 단일 필드 데이터 사용 (폴백):', { 
-      component: 'applicantHelpers', 
-      data: { 
-        status: applicant.status,
-        singleSelection,
-        source: 'SingleFields'
-      } 
-    });
+    // logger.debug 제거 - 성능 최적화
     return singleSelection;
   }
   
-  logger.debug('⚠️ 선택 사항 없음 - 모든 데이터 소스 부재:', { 
-    component: 'applicantHelpers',
-    data: { 
-      status: applicant.status,
-      hasOriginalApplication: !!(applicant as any).originalApplication,
-      hasArrayData: hasMultipleSelections(applicant),
-      hasSingleData: !!(applicant.assignedRole && applicant.assignedTime),
-      source: 'None'
-    }
-  });
+  // logger.debug 제거 - 성능 최적화
   return [];
 };
 
@@ -301,13 +226,7 @@ export interface SelectionWithStats extends Selection {
  * 지원자의 선택 사항을 날짜별로 그룹화하는 함수
  */
 export const getApplicantSelectionsByDate = (applicant: Applicant): DateGroupedSelections[] => {
-  logger.debug('🔍 getApplicantSelectionsByDate 호출:', { 
-    component: 'applicantHelpers',
-    data: {
-      applicantId: applicant.id,
-      applicantName: applicant.applicantName
-    }
-  });
+  // logger.debug 제거 - 성능 최적화
 
   const selections = getApplicantSelections(applicant);
   
@@ -343,17 +262,7 @@ export const getApplicantSelectionsByDate = (applicant: Applicant): DateGroupedS
       return a.date.localeCompare(b.date);
     });
 
-  logger.debug('🔍 날짜별 그룹화 결과:', { 
-    component: 'applicantHelpers', 
-    data: {
-      groupCount: groupedSelections.length,
-      groups: groupedSelections.map(g => ({
-        date: g.date,
-        displayDate: g.displayDate,
-        count: g.totalCount
-      }))
-    }
-  });
+  // logger.debug 제거 - 성능 최적화
 
   return groupedSelections;
 };

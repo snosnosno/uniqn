@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useJobPostingOperations } from '../hooks/useJobPostingOperations';
 import { usePermissions } from '../hooks/usePermissions';
 import Button from '../components/common/Button';
@@ -10,7 +9,7 @@ import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingM
 const JobPostingAdminPage = () => {
   const { canCreateJobPostings } = usePermissions();
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [_isDeleting, _setIsDeleting] = useState<string | null>(null);
 
   const {
     jobPostings,
@@ -50,7 +49,7 @@ const JobPostingAdminPage = () => {
 
   // 공고 삭제 핸들러
   const handleDelete = async (postId: string, title: string) => {
-    setIsDeleting(postId);
+    _setIsDeleting(postId);
     try {
       const success = await handleDeleteJobPosting(postId, title);
       if (success) {
@@ -61,7 +60,7 @@ const JobPostingAdminPage = () => {
       alert(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
       throw error;
     } finally {
-      setIsDeleting(null);
+      _setIsDeleting(null);
     }
   };
 
@@ -100,7 +99,7 @@ const JobPostingAdminPage = () => {
               onEdit={openEditModal}
               onDelete={handleDelete}
               onNavigateToDetail={handleNavigateToDetail}
-              isDeleting={isDeleting}
+              isDeleting={_isDeleting}
             />
           )}
         </div>

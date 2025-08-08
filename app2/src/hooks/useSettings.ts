@@ -44,7 +44,7 @@ export const useSettings = () => {
         setLoading(false);
       },
       (err) => {
-        logger.error('Error fetching settings:', err instanceof Error ? err : new Error(String(error)), { component: 'useSettings' });
+        logger.error('Error fetching settings:', err instanceof Error ? err : new Error(String(err)), { component: 'useSettings' });
         setError(err);
         setLoading(false);
       }

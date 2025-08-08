@@ -257,7 +257,7 @@ export const formatMinutesToKorean = (minutes: number): string => {
   return `${hours}시간 ${remainingMinutes}분`;
 };
 
-export default {
+const timeUtilities = {
   TIME_INTERVALS,
   generateTimeSlots,
   isValidTimeString,
@@ -273,3 +273,5 @@ export default {
   formatMinutesToTime,
   formatMinutesToKorean,
 };
+
+export default timeUtilities;

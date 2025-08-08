@@ -7,7 +7,7 @@ import { formatCurrency, formatDate } from '../i18n-helpers';
 import SimplePayrollCalculator from '../components/SimplePayrollCalculator';
 
 const SimplePayrollPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const { currentUser, isAdmin } = useAuth();
   const { userId } = useParams<{ userId: string }>();
   

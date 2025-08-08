@@ -1,10 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
 import { 
-  TimeSlot, 
   DateSpecificRequirement, 
-  ConfirmedStaff, 
   PreQuestion, 
-  Benefits 
+  Benefits,
+  ConfirmedStaff
 } from './base';
 
 /**

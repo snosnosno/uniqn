@@ -3,8 +3,7 @@ import {
   collection, 
   query, 
   where, 
-  onSnapshot, 
-  Timestamp
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,7 +13,7 @@ import { getTodayString } from '../../utils/jobPosting/dateUtils';
 
 // Local imports
 import { UseScheduleDataReturn, ApplicationData, WorkLogData } from './types';
-import { processApplicationData, processWorkLogData, calculateStats } from './dataProcessors';
+import { processApplicationData, processWorkLogData } from './dataProcessors';
 import { filterSchedules, createDefaultFilters } from './filterUtils';
 
 /**
@@ -26,7 +25,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState(createDefaultFilters());
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [_lastRefresh, _setLastRefresh] = useState(Date.now());
 
   // 데이터 로드 함수
   const loadScheduleData = useCallback(async (): Promise<(() => void) | void> => {
@@ -40,7 +39,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
     setError(null);
 
     try {
-      const allEvents: ScheduleEvent[] = [];
+      const _allEvents: ScheduleEvent[] = [];
       const unsubscribes: (() => void)[] = [];
 
       // 1. Applications 데이터 구독
@@ -56,7 +55,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
           
           // 모든 문서 처리를 Promise 배열로 변환
           const promises = snapshot.docs.map(doc => 
-            processApplicationData(doc.id, doc.data() as ApplicationData, currentUser.uid)
+            processApplicationData(doc.id, doc.data() as ApplicationData)
           );
           
           // 모든 Promise가 완료될 때까지 대기
@@ -102,7 +101,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
             // 관리자이거나 본인의 기록인 경우만 표시
             // currentUser에 role이 없으므로 모든 본인 기록만 표시
             if (data.staffId === currentUser.uid) {
-              const event = processWorkLogData(doc.id, data as WorkLogData, currentUser.uid);
+              const event = processWorkLogData(doc.id, data as WorkLogData);
               workLogEvents.push(event);
             }
           });
@@ -137,7 +136,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
       setLoading(false);
     }
-  }, [currentUser, lastRefresh]);
+  }, [currentUser]);
 
   // 데이터 로드 Effect
   useEffect(() => {
@@ -176,7 +175,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       new Date(e.date) > now
     );
     
-    const thisMonthEvents = filteredSchedules.filter(e => {
+    const _thisMonthEvents = filteredSchedules.filter(e => {
       const eventDate = new Date(e.date);
       return eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear;
     });
@@ -193,7 +192,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
   // 새로고침 함수
   const refreshData = useCallback(() => {
-    setLastRefresh(Date.now());
+    _setLastRefresh(Date.now());
   }, []);
 
   // ID로 스케줄 찾기

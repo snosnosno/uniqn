@@ -178,9 +178,17 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {(() => {
-                const dateReq = jobPosting.dateSpecificRequirements?.find((dr: any) => 
-                  new Date(dr.date).toISOString().split('T')[0] === selectedDate
-                );
+                const dateReq = jobPosting.dateSpecificRequirements?.find((dr: any) => {
+                  try {
+                    const dateValue = dr.date;
+                    if (!dateValue) return false;
+                    const date = new Date(dateValue);
+                    if (isNaN(date.getTime())) return false;
+                    return date.toISOString().split('T')[0] === selectedDate;
+                  } catch {
+                    return false;
+                  }
+                });
                 
                 if (dateReq && dateReq.timeSlots?.length > 0) {
                   return dateReq.timeSlots.map((timeSlot: any, index: number) => (

@@ -8,7 +8,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import ApplicantListTab from '../components/tabs/ApplicantListTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
-import JobPostingCard from '../components/common/JobPostingCard';
+// JobPostingCard import removed - not used
 import JobPostingDetailContent from '../components/jobPosting/JobPostingDetailContent';
 import { JobPostingProvider } from '../contexts/JobPostingContextAdapter';
 import { db } from '../firebase';

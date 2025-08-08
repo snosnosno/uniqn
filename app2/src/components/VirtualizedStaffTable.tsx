@@ -80,7 +80,7 @@ const VirtualizedTableRow: React.FC<{
     
     const actualStaffId = staff.id.replace(/_\d+$/, '');
     return `virtual_${actualStaffId}_${dateString}`;
-  }, [staff?.id, staff?.assignedDate]);
+  }, [staff]);
   
   const attendanceRecord = staff && workLogId ? getStaffAttendanceStatus(workLogId) : null;
   const exceptionRecord = staff ? attendanceRecords.find(r => r.staffId === staff.id) : null;
@@ -118,7 +118,7 @@ const VirtualizedTableRow: React.FC<{
       hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
-  }, [staff?.id, staff?.assignedTime, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
+  }, [staff?.id, staff?.assignedTime, staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
   
   if (!staff) {
     return <div style={style} />;
@@ -178,8 +178,7 @@ const VirtualizedTableRow: React.FC<{
         <div className="ml-3 min-w-0 flex-1">
           <button
             onClick={() => {
-              logger.debug('🔍 VirtualizedStaffTable 이름 클릭:', { component: 'VirtualizedStaffTable', data: { id: staff.id, name: staff.name } });
-              logger.debug('🔍 onShowProfile 함수 존재:', { component: 'VirtualizedStaffTable', data: !!onShowProfile });
+              // logger.debug 제거 - 성능 최적화
               if (onShowProfile) {
                 onShowProfile(staff.id);
               }

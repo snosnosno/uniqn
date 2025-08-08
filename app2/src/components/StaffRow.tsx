@@ -58,7 +58,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     avatarInitial: (staff.name || 'U').charAt(0).toUpperCase(),
     roleDisplay: staff.assignedRole || staff.role || '역할 미정',
     hasContact: !!(staff.phone || staff.email)
-  }), [staff.id, staff.name, staff.assignedRole, staff.role, staff.phone, staff.email]);
+  }), [staff.name, staff.assignedRole, staff.role, staff.phone, staff.email]);
 
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
@@ -99,20 +99,10 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     };
   }, [
     staff.id, 
-    staff.name,
     staff.assignedDate, 
+    staff.postingId,  // postingId 추가
     getStaffAttendanceStatus, 
-    attendanceRecords.length,
-    eventId,
-    // 해당 스태프의 출석 기록 변화를 더 정확하게 감지
-    // attendanceRecords에서 해당 스태프 관련 데이터만 추출하여 비교
-    attendanceRecords.filter(r => {
-      const staffIdMatch = r.staffId === staff.id || 
-                          r.workLog?.dealerId === staff.id ||
-                          r.workLog?.dealerId === staff.id.replace(/_\d+$/, '');
-      const dateMatch = !staff.assignedDate || r.workLog?.date === (convertToDateString(staff.assignedDate) || getTodayString());
-      return staffIdMatch && dateMatch;
-    }).map(r => `${r.workLogId}:${r.status}`).join(',')
+    eventId
   ]);
 
   // 메모이제이션된 출근/퇴근 시간 데이터
@@ -375,7 +365,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           scheduledEndTime={memoizedTimeData.displayEndTime}
           canEdit={!!canEdit && !multiSelectMode}
           {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
-          onStatusChange={(newStatus) => {
+          onStatusChange={() => {
             // 상태 변경 시 강제 리렌더링
             // StaffRow - onStatusChange 호출
           }}

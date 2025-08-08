@@ -1,9 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { updateDoc, doc } from 'firebase/firestore';
-import { db } from '../../../firebase';
 import { logger } from '../../../utils/logger';
-import { TimeSlot, DateSpecificRequirement, JobPostingUtils } from '../../../types/jobPosting';
+import { TimeSlot, DateSpecificRequirement } from '../../../types/jobPosting';
 import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { Applicant, Assignment } from './types';
 import { 
@@ -18,7 +16,7 @@ interface MultiSelectControlsProps {
   onAssignmentToggle: (value: string, isChecked: boolean) => void;
   onConfirm: () => void;
   canEdit: boolean;
-  onRefresh: () => void;
+  _onRefresh: () => void;
 }
 
 /**
@@ -31,7 +29,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   onAssignmentToggle,
   onConfirm,
   canEdit,
-  onRefresh
+  _onRefresh
 }) => {
   const { t } = useTranslation();
   
@@ -58,7 +56,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   }
 
   const totalSelectedCount = selectedAssignments.length;
-  const totalCount = dateGroupedSelections.reduce((sum, group) => sum + group.totalCount, 0);
+  const _totalCount = dateGroupedSelections.reduce((sum, group) => sum + group.totalCount, 0);
 
   /**
    * 특정 assignment가 선택되었는지 확인하는 함수
@@ -78,39 +76,10 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   /**
    * 지원 시간을 수정하는 함수
    */
-  const handleTimeChange = async (index: number, newTime: string) => {
-    if (!jobPosting || !newTime) return;
-
-    try {
-      const applicationRef = doc(db, "applications", applicant.id);
-      
-      // assignedTimes 배열에서 해당 인덱스의 시간 업데이트
-      const updatedTimes = applicant.assignedTimes ? [...applicant.assignedTimes] : [];
-      if (updatedTimes.length > index) {
-        updatedTimes[index] = newTime;
-      } else {
-        // 배열 크기가 부족하면 빈 값으로 채우고 해당 인덱스에 설정
-        while (updatedTimes.length <= index) {
-          updatedTimes.push('');
-        }
-        updatedTimes[index] = newTime;
-      }
-      
-      await updateDoc(applicationRef, {
-        assignedTimes: updatedTimes,
-        assignedTime: index === 0 ? newTime : applicant.assignedTime // 첫 번째 시간만 단일 필드 업데이트
-      });
-      
-      // 지원자 목록 새로고침
-      onRefresh();
-      
-      alert('지원 시간이 성공적으로 수정되었습니다.');
-    } catch (error) {
-      logger.error('Error updating application time:', error instanceof Error ? error : new Error(String(error)), { 
-        component: 'MultiSelectControls' 
-      });
-      alert('지원 시간 수정 중 오류가 발생했습니다.');
-    }
+  const _handleTimeChange = async (_index: number, _newTime: string) => {
+    // 시간 변경 기능은 현재 비활성화됨
+    // 향후 필요시 구현 예정
+    alert('시간 변경 기능은 준비 중입니다.');
   };
 
   return (
@@ -342,25 +311,9 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 
                     {/* 오른쪽: 시간 드롭다운 */}
                     <div className="flex-shrink-0 ml-1 sm:ml-2">
-                      <select
-                        value={selection.time}
-                        disabled={isDisabled}
-                        onChange={(e) => handleTimeChange(selectionIndex, e.target.value)}
-                        className={`text-xs border border-gray-300 rounded px-1 sm:px-2 py-1 min-w-[3rem] sm:min-w-[4rem] ${
-                          isDisabled ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white'
-                        }`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {/* 사용 가능한 시간대 옵션들 */}
-                        {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) => {
-                          const dateString = timestampToLocalDateString(dateReq.date);
-                          return dateReq.timeSlots.map((ts: TimeSlot) => (
-                            <option key={`${dateString}-${ts.time}`} value={ts.time}>
-                              {ts.time}
-                            </option>
-                          ));
-                        })}
-                      </select>
+                      <span className="text-xs text-gray-700 font-medium px-1 sm:px-2 py-1 min-w-[3rem] sm:min-w-[4rem] bg-gray-50 rounded border">
+                        {selection.time}
+                      </span>
                     </div>
                   </div>
                 );

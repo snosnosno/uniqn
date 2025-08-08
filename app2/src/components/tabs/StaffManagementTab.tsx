@@ -1,20 +1,17 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { Timestamp } from 'firebase/firestore';
-
-import { db } from '../../firebase';
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useStaffManagement, StaffData } from '../../hooks/useStaffManagement';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
-import { parseToDate, getTodayString } from '../../utils/jobPosting/dateUtils';
+import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { useStaffSelection } from '../../hooks/useStaffSelection';
 import { useAttendanceMap } from '../../hooks/useAttendanceMap';
-import { createVirtualWorkLog, findStaffWorkLog } from '../../utils/workLogUtils';
+import { createVirtualWorkLog } from '../../utils/workLogUtils';
 import { BulkOperationService } from '../../services/BulkOperationService';
 import BulkActionsModal from '../BulkActionsModal';
 import BulkTimeEditModal from '../BulkTimeEditModal';
@@ -60,7 +57,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     getStaffWorkLog
   } = useStaffManagement({
     jobPostingId: jobPosting?.id,
-    enableGrouping: true,
     enableFiltering: true
   });
 
@@ -68,14 +64,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const { 
     attendanceRecords,
     getStaffAttendanceStatus,
-    loading: attendanceLoading,
     applyOptimisticUpdate
   } = useAttendanceStatus({
     eventId: jobPosting?.id || 'default-event'
   });
   
   // AttendanceRecords를 Map으로 변환하여 O(1) 검색
-  const { getStaffAttendance, getStaffAttendanceByDate } = useAttendanceMap(attendanceRecords);
+  const { getStaffAttendance } = useAttendanceMap(attendanceRecords);
   
   // 모달 상태
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -93,14 +88,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     toggleStaffSelection,
     selectAll,
     deselectAll,
-    isSelected,
-    selectedCount,
     isAllSelected,
     resetSelection
   } = useStaffSelection({
     totalStaffCount: staffData.length,
-    onSelectionChange: (count) => {
-      logger.debug('선택 변경', { component: 'StaffManagementTab', data: { count } });
+    onSelectionChange: (_count) => {
+      // logger.debug 제거 - 성능 최적화
     }
   });
   
@@ -110,6 +103,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   // 성능 모니터링 상태 (개발 환경에서만)
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const { registerComponentMetrics } = usePerformanceMetrics();
+  
+  // 성능 메트릭 업데이트 콜백 (안정적인 참조를 위해 useCallback 사용)
+  const onMetricsUpdate = useCallback((metrics: any) => {
+    registerComponentMetrics(
+      'StaffManagementTab',
+      metrics.lastRenderTime,
+      metrics.virtualizationActive,
+      metrics.totalItems,
+      metrics.visibleItems
+    );
+  }, [registerComponentMetrics]);
   
   // 권한 체크 - 공고 작성자만 수정 가능
   const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
@@ -154,28 +158,26 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     }
   };
   
-  const handleWorkTimeUpdate = async (updatedWorkLog: any) => {
+  const handleWorkTimeUpdate = async () => {
     // 실시간 구독으로 자동 업데이트되므로 별도 새로고침 불필요
     // useStaffManagement와 useAttendanceStatus 모두 실시간 구독 중
     // 성공 메시지는 WorkTimeEditor 내부에서 처리
   };
   
 
-  // 필터링된 데이터 계산 (메모이제이션 적용)
-  const flattenedStaffData = useMemo(() => 
-    Object.values(groupedStaffData.grouped).flat(),
-    [groupedStaffData.grouped]
-  );
+  // 필터링된 데이터 계산 (메모이제이션 최적화)
+  const flattenedStaffData = useMemo(() => {
+    const flattened = Object.values(groupedStaffData.grouped).flat();
+    // 객체 참조 안정성을 위한 추가 확인
+    return flattened.length === 0 ? [] : flattened;
+  }, [groupedStaffData.grouped]);
   
-  const filteredStaffCount = useMemo(() => 
-    flattenedStaffData.length,
-    [flattenedStaffData]
-  );
+  const filteredStaffCount = flattenedStaffData.length; // useMemo 제거 - 단순 계산
   
-  const selectedStaffData = useMemo(() => 
-    staffData.filter(staff => selectedStaff.has(staff.id)),
-    [staffData, selectedStaff]
-  );
+  const selectedStaffData = useMemo(() => {
+    if (selectedStaff.size === 0) return []; // 빈 배열 재사용
+    return staffData.filter(staff => selectedStaff.has(staff.id));
+  }, [staffData, selectedStaff]);
 
   // 가상화 설정
   const mobileVirtualization = useVirtualization({
@@ -193,7 +195,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   });
   
 
-  // 모바일 관련 핸들러 (커스텀 훅 사용으로 간소화)
+  // 최적화된 핸들러들 (메모이제이션 강화)
   const handleStaffSelect = useCallback((staffId: string) => {
     toggleStaffSelection(staffId);
   }, [toggleStaffSelection]);
@@ -201,6 +203,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const handleMultiSelectToggle = useCallback(() => {
     toggleMultiSelectMode();
   }, [toggleMultiSelectMode]);
+
+  // 고정된 props 값들 메모이제이션
+  const constantProps = useMemo(() => ({
+    showDate: true,
+    canEdit: !!canEdit,
+    eventId: jobPosting?.id || 'default-event'
+  }), [canEdit, jobPosting?.id]);
   
   const handleBulkActions = () => {
     setIsBulkActionsOpen(true);
@@ -297,15 +306,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         isVirtualized={mobileVirtualization.shouldVirtualize || desktopVirtualization.shouldVirtualize}
         totalItems={filteredStaffCount}
         visibleItems={mobileVirtualization.shouldVirtualize ? mobileVirtualization.maxVisibleItems : desktopVirtualization.shouldVirtualize ? desktopVirtualization.maxVisibleItems : filteredStaffCount}
-        onMetricsUpdate={(metrics) => {
-          registerComponentMetrics(
-            'StaffManagementTab',
-            metrics.lastRenderTime,
-            metrics.virtualizationActive,
-            metrics.totalItems,
-            metrics.visibleItems
-          );
-        }}
+        onMetricsUpdate={onMetricsUpdate}
       >
         <div className="p-6">
         <div className="flex justify-between items-center mb-6">
@@ -560,13 +561,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         attendanceRecords={attendanceRecords}
                         formatTimeDisplay={formatTimeDisplay}
                         getTimeSlotColor={getTimeSlotColor}
-                        showDate={true}
-                        isSelected={multiSelectMode ? selectedStaff.has(staff.id) : false}
+                        {...constantProps}
+                        isSelected={multiSelectMode && selectedStaff.has(staff.id)}
                         multiSelectMode={multiSelectMode}
                         {...(multiSelectMode && { onSelect: handleStaffSelect })}
                         onShowProfile={handleShowProfile}
-                        eventId={jobPosting?.id}
-                        canEdit={!!canEdit}
                         getStaffWorkLog={getStaffWorkLog}
                       />
                     ))}

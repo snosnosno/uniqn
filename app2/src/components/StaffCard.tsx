@@ -8,7 +8,6 @@ import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } fro
 import { StaffData } from '../hooks/useStaffManagement';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
-import { getTodayString } from '../utils/jobPosting/dateUtils';
 
 // 분리된 컴포넌트들 import
 import StaffCardHeader from './staff/StaffCardHeader';
@@ -69,7 +68,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     avatarInitial: (staff.name || 'U').charAt(0).toUpperCase(),
     roleDisplay: staff.assignedRole || staff.role || '역할 미정',
     hasContact: !!(staff.phone || staff.email)
-  }), [staff.id, staff.name, staff.assignedRole, staff.role, staff.phone, staff.email]);
+  }), [staff.name, staff.assignedRole, staff.role, staff.phone, staff.email]);
 
   // 메모이제이션된 출석 관련 데이터
   const memoizedAttendanceData = useMemo(() => {
@@ -94,20 +93,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     const attendanceRecord = getStaffAttendanceStatus(workLogId);
     const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
     
-    logger.debug('StaffCard memoizedAttendanceData 재계산', {
-      component: 'StaffCard',
-      data: {
-        staffId: staff.id,
-        staffName: staff.name,
-        workLogId,
-        attendanceRecord: attendanceRecord ? {
-          status: attendanceRecord.status,
-          workLogId: attendanceRecord.workLogId,
-          staffId: attendanceRecord.staffId
-        } : null,
-        timestamp: new Date().toISOString()
-      }
-    });
+    // 디버그 로깅 제거 - 성능 최적화
     
     // 실제 workLogId 추출 (Firebase에 저장된 형식)
     let realWorkLogId = workLogId; // 기본값은 virtual workLogId
@@ -122,34 +108,15 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       attendanceRecord,
       workLogRecord,
       workLogId,
-      realWorkLogId, // 실제 Firebase workLogId 추가
-      // 강제 리렌더링을 위한 timestamp 추가
-      timestamp: Date.now()
+      realWorkLogId // 실제 Firebase workLogId 추가
     };
   }, [
     staff.id, 
-    staff.name,
+    staff.name, 
     staff.assignedDate, 
-    getStaffAttendanceStatus, 
-    attendanceRecords, 
-    attendanceRecords.length,
-    // 전체 attendanceRecords 변경사항을 더 세밀하게 감지
-    JSON.stringify(attendanceRecords.map(r => ({
-      workLogId: r.workLogId,
-      staffId: r.staffId,
-      status: r.status,
-      workLogDate: r.workLog?.date
-    }))),
-    // 해당 스태프의 출석 기록 변화를 더 정확하게 감지
-    JSON.stringify(attendanceRecords.filter(r => 
-      r.staffId === staff.id || 
-      r.workLog?.dealerId === staff.id ||
-      r.workLogId?.includes(staff.id.replace(/_\d+$/, ''))
-    ).map(r => ({
-      workLogId: r.workLogId,
-      status: r.status,
-      timestamp: r.workLog?.updatedAt
-    })))
+    attendanceRecords,
+    eventId
+    // getStaffAttendanceStatus, getStaffWorkLog는 안정적인 참조이므로 제외
   ]);
 
   // 메모이제이션된 출근/퇴근 시간 데이터
@@ -325,16 +292,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 scheduledStartTime={memoizedTimeData.displayStartTime}
                 scheduledEndTime={memoizedTimeData.displayEndTime}
                 canEdit={!!canEdit && !multiSelectMode}
-                onStatusChange={(newStatus) => {
-                  // 상태 변경 시 강제 리렌더링
-                  logger.debug('StaffCard - onStatusChange 호출', {
-                    component: 'StaffCard',
-                    data: {
-                      staffId: staff.id,
-                      newStatus,
-                      realWorkLogId: memoizedAttendanceData.realWorkLogId
-                    }
-                  });
+                onStatusChange={(_newStatus) => {
+                  // logger.debug 제거 - 성능 최적화
                 }}
               />
             </div>
@@ -438,14 +397,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   
   // 출석 기록 개수가 다르면 리렌더링
   if (prevAttendanceRecords.length !== nextAttendanceRecords.length) {
-    logger.debug('StaffCard 리렌더링 - 출석 기록 개수 변경', {
-      component: 'StaffCard',
-      data: {
-        staffId: prevProps.staff.id,
-        prevCount: prevAttendanceRecords.length,
-        nextCount: nextAttendanceRecords.length
-      }
-    });
+    // logger.debug 제거 - 성능 최적화
     return false;
   }
   
@@ -457,16 +409,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     if (prev.status !== next.status || 
         prev.workLogId !== next.workLogId ||
         JSON.stringify(prev.workLog?.updatedAt) !== JSON.stringify(next.workLog?.updatedAt)) {
-      logger.debug('StaffCard 리렌더링 - 출석 상태 변경 감지', {
-        component: 'StaffCard',
-        data: {
-          staffId: prevProps.staff.id,
-          prevStatus: prev.status,
-          nextStatus: next.status,
-          prevWorkLogId: prev.workLogId,
-          nextWorkLogId: next.workLogId
-        }
-      });
+      // logger.debug 제거 - 성능 최적화
       return false; // 리렌더링 필요
     }
   }

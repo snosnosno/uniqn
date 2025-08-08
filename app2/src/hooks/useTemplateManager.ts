@@ -9,7 +9,7 @@ import { templateToFormData } from '../utils/jobPosting/jobPostingHelpers';
 import { useMemo } from 'react';
 
 export const useTemplateManager = () => {
-  const { currentUser, role } = useAuth();
+  const { currentUser } = useAuth();
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isLoadTemplateModalOpen, setIsLoadTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');

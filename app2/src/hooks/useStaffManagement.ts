@@ -60,7 +60,6 @@ interface GroupedStaffData {
 
 interface UseStaffManagementOptions {
   jobPostingId?: string;
-  enableGrouping?: boolean;
   enableFiltering?: boolean;
 }
 
@@ -102,14 +101,13 @@ export const useStaffManagement = (
 ): UseStaffManagementReturn => {
   const { 
     jobPostingId, 
-    enableGrouping = true, 
     enableFiltering = true 
   } = options;
   
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
-  const { staff } = useJobPostingContext();
+  const { staff: _staff } = useJobPostingContext();
   
   // 기본 상태
   const [staffData, setStaffData] = useState<StaffData[]>([]);
@@ -160,47 +158,73 @@ export const useStaffManagement = (
       staffQuery,
       (snapshot) => {
         
-        const staffList: StaffData[] = snapshot.docs.map(doc => {
+        const staffList: StaffData[] = [];
+        
+        // 기존 데이터와 비교하여 실제로 변경된 것만 처리
+        const currentStaffMap = new Map(staffData.map(staff => [staff.id, staff]));
+        
+        snapshot.docs.forEach(doc => {
           const data = doc.data();
+          const docId = doc.id;
           
-          // assignedDate를 문자열로 변환
+          // 기존 데이터와 비교
+          const existingStaff = currentStaffMap.get(docId);
+          
+          // assignedDate를 문자열로 변환 (메모이제이션 적용)
           let assignedDateString = data.assignedDate;
           if (data.assignedDate) {
-            // Firebase Timestamp 객체인 경우
             if (typeof data.assignedDate === 'object' && 'seconds' in data.assignedDate) {
               const date = new Date(data.assignedDate.seconds * 1000);
-              const isoString = date.toISOString();
-              const datePart = isoString.split('T')[0];
-              assignedDateString = datePart || '';
+              assignedDateString = date.toISOString().split('T')[0] || '';
             }
-            // Timestamp 문자열인 경우 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
             else if (typeof data.assignedDate === 'string' && data.assignedDate.startsWith('Timestamp(')) {
               const match = data.assignedDate.match(/seconds=(\d+)/);
-              if (match && match[1]) {
+              if (match?.[1]) {
                 const seconds = parseInt(match[1], 10);
-                const date = new Date(seconds * 1000);
-                const isoString = date.toISOString();
-                const datePart = isoString.split('T')[0];
-                assignedDateString = datePart || '';
+                assignedDateString = new Date(seconds * 1000).toISOString().split('T')[0] || '';
               }
             }
-            // 이미 날짜 문자열인 경우 그대로 사용
             else if (typeof data.assignedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.assignedDate)) {
               assignedDateString = data.assignedDate;
             }
           }
           
-          const staffData = {
-            id: doc.id,
-            ...data,
-            assignedDate: assignedDateString, // 변환된 날짜 문자열 사용
-            // jobRole 배열을 role 필드로 매핑 (promoteToStaff에서 저장한 데이터 호환성)
-            role: data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] as JobRole : data.role,
-            postingTitle: data.postingTitle || '제목 없음' // 기본값 설정
-          } as StaffData;
+          // 데이터가 실제로 변경되었는지 확인
+          const hasChanged = !existingStaff ||
+            existingStaff.name !== data.name ||
+            existingStaff.assignedDate !== assignedDateString ||
+            existingStaff.assignedTime !== data.assignedTime ||
+            existingStaff.role !== (data.jobRole?.[0] || data.role);
           
-          
-          return staffData;
+          if (hasChanged || !existingStaff) {
+            // 변경된 경우에만 새 객체 생성
+            const staffDataItem: StaffData = {
+              id: docId,
+              userId: data.userId,
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              role: (data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] : data.role) as JobRole,
+              userRole: data.userRole,
+              gender: data.gender,
+              age: data.age,
+              experience: data.experience,
+              nationality: data.nationality,
+              history: data.history,
+              notes: data.notes,
+              postingId: data.postingId,
+              postingTitle: data.postingTitle || '제목 없음',
+              assignedEvents: data.assignedEvents,
+              assignedRole: data.assignedRole,
+              assignedTime: data.assignedTime,
+              assignedDate: assignedDateString
+            };
+            
+            staffList.push(staffDataItem);
+          } else {
+            // 변경되지 않은 경우 기존 객체 재사용
+            staffList.push(existingStaff);
+          }
         });
         
         setStaffData(staffList);
@@ -217,7 +241,7 @@ export const useStaffManagement = (
     return () => {
       unsubscribe();
     };
-  }, [currentUser, jobPostingId, t]);
+  }, [currentUser, jobPostingId, groupByDate]); // t는 안정적인 참조이므로 제외
 
   // workLogs 데이터 실시간 구독 추가
   useEffect(() => {
@@ -260,8 +284,7 @@ export const useStaffManagement = (
         });
         setWorkLogsMap(workLogsMapData);
         
-        // workLogs 변경 시 staffData 강제 리렌더링
-        setStaffData(prev => [...prev]);
+        // workLogs 변경 시 강제 리렌더링은 불필요 - workLogsMap 변경으로 자동 리렌더링됨
         
       },
       (error) => {

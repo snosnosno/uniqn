@@ -6,7 +6,7 @@ import { logger } from '../utils/logger';
 const PerformanceReport: React.FC = () => {
   const [report, setReport] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [optimizationMetrics, setOptimizationMetrics] = useState({
+  const [_optimizationMetrics, _setOptimizationMetrics] = useState({
     consoleLogRemoval: {
       before: 316,
       after: 0,
@@ -93,9 +93,9 @@ const PerformanceReport: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">Console.log 제거</h3>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">제거 전: {optimizationMetrics.consoleLogRemoval.before}개 파일</p>
-              <p className="text-sm text-gray-600">제거 후: {optimizationMetrics.consoleLogRemoval.after}개</p>
-              <p className="text-lg font-bold text-green-600">개선율: {optimizationMetrics.consoleLogRemoval.improvement}</p>
+              <p className="text-sm text-gray-600">제거 전: {_optimizationMetrics.consoleLogRemoval.before}개 파일</p>
+              <p className="text-sm text-gray-600">제거 후: {_optimizationMetrics.consoleLogRemoval.after}개</p>
+              <p className="text-lg font-bold text-green-600">개선율: {_optimizationMetrics.consoleLogRemoval.improvement}</p>
             </div>
           </div>
 
@@ -103,9 +103,9 @@ const PerformanceReport: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">TypeScript Strict Mode</h3>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">any 타입 제거 전: {optimizationMetrics.typeScriptStrict.anyTypesBefore}개</p>
-              <p className="text-sm text-gray-600">any 타입 제거 후: {optimizationMetrics.typeScriptStrict.anyTypesAfter}개</p>
-              <p className="text-lg font-bold text-green-600">개선율: {optimizationMetrics.typeScriptStrict.improvement}</p>
+              <p className="text-sm text-gray-600">any 타입 제거 전: {_optimizationMetrics.typeScriptStrict.anyTypesBefore}개</p>
+              <p className="text-sm text-gray-600">any 타입 제거 후: {_optimizationMetrics.typeScriptStrict.anyTypesAfter}개</p>
+              <p className="text-lg font-bold text-green-600">개선율: {_optimizationMetrics.typeScriptStrict.improvement}</p>
             </div>
           </div>
 
@@ -113,9 +113,9 @@ const PerformanceReport: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">번들 크기 최적화</h3>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">최적화 전: {optimizationMetrics.bundleSize.before}</p>
-              <p className="text-sm text-gray-600">최적화 후: {optimizationMetrics.bundleSize.after}</p>
-              <p className="text-lg font-bold text-green-600">감소율: {optimizationMetrics.bundleSize.improvement}</p>
+              <p className="text-sm text-gray-600">최적화 전: {_optimizationMetrics.bundleSize.before}</p>
+              <p className="text-sm text-gray-600">최적화 후: {_optimizationMetrics.bundleSize.after}</p>
+              <p className="text-lg font-bold text-green-600">감소율: {_optimizationMetrics.bundleSize.improvement}</p>
             </div>
           </div>
 
@@ -123,9 +123,9 @@ const PerformanceReport: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">초기 로딩 시간</h3>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">최적화 전: {optimizationMetrics.initialLoadTime.before}</p>
-              <p className="text-sm text-gray-600">최적화 후: {optimizationMetrics.initialLoadTime.after}</p>
-              <p className="text-lg font-bold text-green-600">개선율: {optimizationMetrics.initialLoadTime.improvement}</p>
+              <p className="text-sm text-gray-600">최적화 전: {_optimizationMetrics.initialLoadTime.before}</p>
+              <p className="text-sm text-gray-600">최적화 후: {_optimizationMetrics.initialLoadTime.after}</p>
+              <p className="text-lg font-bold text-green-600">개선율: {_optimizationMetrics.initialLoadTime.improvement}</p>
             </div>
           </div>
 
@@ -133,9 +133,9 @@ const PerformanceReport: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">Firebase 구독 최적화</h3>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">구독 수 전: {optimizationMetrics.firebaseSubscriptions.before}개</p>
-              <p className="text-sm text-gray-600">구독 수 후: {optimizationMetrics.firebaseSubscriptions.after}개</p>
-              <p className="text-lg font-bold text-green-600">감소율: {optimizationMetrics.firebaseSubscriptions.improvement}</p>
+              <p className="text-sm text-gray-600">구독 수 전: {_optimizationMetrics.firebaseSubscriptions.before}개</p>
+              <p className="text-sm text-gray-600">구독 수 후: {_optimizationMetrics.firebaseSubscriptions.after}개</p>
+              <p className="text-lg font-bold text-green-600">감소율: {_optimizationMetrics.firebaseSubscriptions.improvement}</p>
             </div>
           </div>
 
@@ -143,9 +143,9 @@ const PerformanceReport: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">컴포넌트 최적화</h3>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">React.memo 적용: {optimizationMetrics.componentsOptimized.memoized}개</p>
-              <p className="text-sm text-gray-600">가상화 적용: {optimizationMetrics.componentsOptimized.virtualized}개</p>
-              <p className="text-lg font-bold text-green-600">총 최적화: {optimizationMetrics.componentsOptimized.total}개</p>
+              <p className="text-sm text-gray-600">React.memo 적용: {_optimizationMetrics.componentsOptimized.memoized}개</p>
+              <p className="text-sm text-gray-600">가상화 적용: {_optimizationMetrics.componentsOptimized.virtualized}개</p>
+              <p className="text-lg font-bold text-green-600">총 최적화: {_optimizationMetrics.componentsOptimized.total}개</p>
             </div>
           </div>
         </div>

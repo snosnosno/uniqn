@@ -178,7 +178,7 @@ const TableCell: React.FC<{
   hasViolations: boolean;
   validationResult: ValidationResult | null | undefined;
   isEditing: boolean;
-  readonly: boolean | undefined;
+  _readonly: boolean | undefined;
   tables: any[];
   onCellClick: () => void;
   onCellChange: (dealerId: string, timeSlot: string, value: string) => void;
@@ -192,7 +192,7 @@ const TableCell: React.FC<{
   hasViolations, 
   validationResult, 
   isEditing, 
-  readonly, 
+  _readonly,
   tables,
   onCellClick,
   onCellChange,
@@ -372,7 +372,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
             hasViolations={hasViolations}
             validationResult={validationResult}
             isEditing={isEditing}
-            readonly={readonly}
+            _readonly={readonly}
             tables={tables}
             onCellClick={handleCellClick}
             onCellChange={onCellChange}

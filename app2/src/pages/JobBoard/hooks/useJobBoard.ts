@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, where, getDocs, serverTimestamp, addDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -113,7 +113,7 @@ export const useJobBoard = () => {
   }, [jobPostings, currentUser]);
   
   // 내 지원 현황 가져오기
-  const fetchMyApplications = async () => {
+  const fetchMyApplications = useCallback(async () => {
     if (!currentUser) return;
     
     setLoadingMyApplications(true);
@@ -158,23 +158,22 @@ export const useJobBoard = () => {
         return bDate - aDate;
       });
       
-      // 삭제된 공고의 applications 필터링
-      const validApplications = applicationsData.filter(app => app.jobPosting !== null);
-      
-      setMyApplications(validApplications);
+      // 모든 지원 이력 표시 (삭제된 공고 포함)
+      setMyApplications(applicationsData);
     } catch (error) {
       logger.error('Error fetching my applications:', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
       showError('지원 현황을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoadingMyApplications(false);
     }
-  };
+  }, [currentUser, showError]);
   
   // 탭 변경 시 데이터 로딩
   useEffect(() => {
     if (activeTab === 'myApplications' && currentUser) {
       fetchMyApplications();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, currentUser]);
   
   // Filter handlers

@@ -17,7 +17,7 @@ interface TableDetailModalProps {
     from: { tableId: string; seatIndex: number },
     to: { tableId: string; seatIndex: number }
   ) => void;
-  onBustOut: (participantId: string, tableId: string) => void;
+  _onBustOut: (participantId: string, tableId: string) => void;
   onPlayerSelect: (participantId: string, tableId: string, seatIndex: number, event: React.MouseEvent) => void;
   updateTableDetails: (tableId: string, data: { name?: string; borderColor?: string }) => void;
   onCloseTable: (tableId: string) => void;
@@ -36,7 +36,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
   onClose,
   getParticipantName,
   onMoveSeat,
-  onBustOut,
+  _onBustOut,
   onPlayerSelect,
   updateTableDetails,
   onCloseTable,
@@ -206,7 +206,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
                   participantId={participantId}
                   getParticipantName={getParticipantName}
                   onMoveSeat={onMoveSeat}
-                  onBustOut={() => participantId && onBustOut(participantId, table.id)}
+                  _onBustOut={() => participantId && _onBustOut(participantId, table.id)}
                 />
               </div>
             ))}

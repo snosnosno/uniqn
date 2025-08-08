@@ -326,7 +326,7 @@ export const validateSchedule = (
   };
 };
 
-export default {
+const shiftValidationUtils = {
   validateSchedule,
   validateTableConflicts,
   validateContinuousWork,
@@ -337,3 +337,5 @@ export default {
   getTimeSlotDifference,
   DEFAULT_VALIDATION_SETTINGS
 };
+
+export default shiftValidationUtils;

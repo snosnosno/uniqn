@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FixedSizeList as List } from 'react-window';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+// import LoadingSpinner from '../../../components/LoadingSpinner'; // 미사용
 import JobCard from './JobCard';
 import { JobPosting } from '../../../types/jobPosting';
 import { JobFilters } from '../hooks/useJobBoard';

@@ -7,8 +7,7 @@ import {
   getDocs,
   Timestamp,
   orderBy,
-  limit,
-  DocumentData
+  limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns';

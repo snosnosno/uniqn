@@ -37,7 +37,7 @@ export function usePermissions(): PermissionContextType {
       logger.info('권한 초기화', { component: 'usePermissions' });
       setPermissions(null);
     }
-  }, [role, currentUser]);
+  }, [role, currentUser?.uid]);
   
   // 권한 검사 함수
   const checkPermission = useCallback((
@@ -120,7 +120,7 @@ export function useResourcePermission(
 /**
  * 공고 관리 권한을 확인하는 전용 훅 (스태프용 핵심 기능)
  */
-export function useJobPostingPermissions(jobPostingId?: string) {
+export function useJobPostingPermissions(_jobPostingId?: string) {
   const { permissions, checkPermission } = usePermissions();
   const { currentUser } = useAuth();
   
@@ -150,7 +150,7 @@ export function useJobPostingPermissions(jobPostingId?: string) {
       canViewAnalytics,
       hasAnyAccess: canView || canManageApplicants
     };
-  }, [permissions, currentUser, checkPermission, jobPostingId]);
+  }, [permissions, currentUser, checkPermission]);
 }
 
 /**

@@ -23,7 +23,7 @@ interface UseStaffSelectionReturn {
  * 스태프 선택 관리를 위한 커스텀 훅
  */
 export const useStaffSelection = ({
-  totalStaffCount,
+  totalStaffCount: _totalStaffCount,
   onSelectionChange
 }: UseStaffSelectionProps): UseStaffSelectionReturn => {
   const [multiSelectMode, setMultiSelectMode] = useState(false);

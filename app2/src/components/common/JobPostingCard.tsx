@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, ConfirmedStaff, JobPostingUtils } from '../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
@@ -55,7 +55,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   const formattedStartDate = formatDate(post.startDate);
   const formattedEndDate = formatDate(post.endDate);
 
-
   // 전체 진행률 계산 (관리자용)
   const getProgressInfo = () => {
     if (variant !== 'admin-list') return null;
@@ -72,7 +71,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     return { totalConfirmed, totalRequired };
   };
 
-  const progressInfo = getProgressInfo();
+  const _progressInfo = getProgressInfo();
 
   // variant별 레이아웃 클래스
   const getContainerClasses = () => {

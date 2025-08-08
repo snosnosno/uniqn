@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 interface PlayerActionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onBustOut: () => void;
+  _onBustOut: () => void;
   onMoveSeat: () => void;
   onShowDetails: () => void;
   position: { top: number; left: number };
@@ -14,7 +14,7 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
   isOpen,
   onClose,
   position,
-  onBustOut,
+  _onBustOut,
   onMoveSeat,
   onShowDetails,
 }) => {
@@ -77,7 +77,7 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
                     </li>
                     <li>
                         <button
-                            onClick={onBustOut}
+                            onClick={_onBustOut}
                             className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center font-semibold"
                         >
                             {t('playerActionModal.bustOut')}

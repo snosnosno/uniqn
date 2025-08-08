@@ -92,7 +92,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         setError(null);
       },
       (err) => {
-        logger.error('Error fetching shift schedule:', err instanceof Error ? err : new Error(String(error)), { component: 'useShiftSchedule' });
+        logger.error('Error fetching shift schedule:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
         setError(err);
         setLoading(false);
       }

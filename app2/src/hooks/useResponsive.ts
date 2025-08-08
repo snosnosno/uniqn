@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface ResponsiveBreakpoints {
   sm: number;
@@ -29,7 +29,7 @@ const defaultBreakpoints: ResponsiveBreakpoints = {
 };
 
 export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>): ResponsiveState => {
-  const breakpoints = { ...defaultBreakpoints, ...customBreakpoints };
+  const breakpoints = useMemo(() => ({ ...defaultBreakpoints, ...customBreakpoints }), [customBreakpoints]);
   
   const [state, setState] = useState<ResponsiveState>(() => {
     if (typeof window === 'undefined') {
@@ -97,7 +97,7 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
       window.removeEventListener('orientationchange', handleResize);
       clearTimeout(timeoutId);
     };
-  }, [breakpoints.md, breakpoints.lg, breakpoints.xl]);
+  }, [breakpoints]);
 
   return state;
 };

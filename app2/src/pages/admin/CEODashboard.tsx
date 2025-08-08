@@ -365,4 +365,4 @@ const CEODashboard: React.FC = () => {
   );
 };
 
-export default withPerformanceMonitoring(CEODashboard, 'CEODashboard');
+export default withPerformanceMonitoring(CEODashboard);

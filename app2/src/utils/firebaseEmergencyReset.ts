@@ -148,7 +148,7 @@ export class FirebaseEmergencyReset {
     
     // 모든 상태 정리 후 새로고침
     setTimeout(() => {
-      window.location.href = window.location.href;
+      window.location.reload();
     }, 500);
   }
 
