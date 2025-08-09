@@ -229,6 +229,7 @@ const TablesPage: React.FC = () => {
                     activateTable={activateTable}
                     onCloseTable={closeTable}
                     getParticipantName={getParticipantName}
+                    participants={participants}
                     onMoveSeat={moveSeat}
                     _onBustOut={(participantId) => bustOutParticipant(participantId)}
                     onPlayerSelect={onPlayerSelectInModal}

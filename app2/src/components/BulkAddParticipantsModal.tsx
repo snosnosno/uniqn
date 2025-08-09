@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { parseParticipantsText, ParsedParticipant } from '../utils/csvParser';
 import { FaCheckCircle, FaExclamationTriangle } from './Icons/ReactIconsReplacement';
+import { logger } from '../utils/logger';
 
 interface BulkAddParticipantsModalProps {
   isOpen: boolean;
@@ -41,7 +42,10 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
       setParsedData([]);
       onClose();
     } catch (error) {
-      console.error('대량 추가 실패:', error);
+      logger.error('대량 추가 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'BulkAddParticipantsModal',
+        data: { count: validParticipants.length }
+      });
       alert('참가자 추가 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);

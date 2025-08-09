@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { FaFileExport } from './Icons/ReactIconsReplacement';
 import { readCSVFile } from '../utils/csvParser';
+import { logger } from '../utils/logger';
 
 interface CSVUploadButtonProps {
   onFileRead: (content: string) => void;
@@ -24,7 +25,10 @@ const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled 
       const content = await readCSVFile(file);
       onFileRead(content);
     } catch (error) {
-      console.error('파일 읽기 실패:', error);
+      logger.error('파일 읽기 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'CSVUploadButton',
+        data: { fileName: file.name }
+      });
       alert('파일을 읽는 중 오류가 발생했습니다.');
     }
 

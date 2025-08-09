@@ -3,6 +3,7 @@ import { DndContext, DragEndEvent, pointerWithin } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
 
 import { Table } from '../hooks/useTables';
+import { Participant } from '../hooks/useParticipants';
 
 import Modal from './Modal';
 import { Seat } from './Seat';
@@ -12,6 +13,7 @@ interface TableDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   getParticipantName: (id: string | null) => string;
+  participants?: Participant[];
   onMoveSeat: (
     participantId: string,
     from: { tableId: string; seatIndex: number },
@@ -35,6 +37,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
   isOpen,
   onClose,
   getParticipantName,
+  participants,
   onMoveSeat,
   _onBustOut,
   onPlayerSelect,
@@ -198,18 +201,31 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 text-center">
-            {(table.seats || []).map((participantId, i) => (
-              <div key={i} onClick={(e) => participantId && onPlayerSelect(participantId, table.id, i, e)}>
-                <Seat
-                  table={table}
-                  seatIndex={i}
-                  participantId={participantId}
-                  getParticipantName={getParticipantName}
-                  onMoveSeat={onMoveSeat}
-                  _onBustOut={() => participantId && _onBustOut(participantId, table.id)}
-                />
-              </div>
-            ))}
+            {(table.seats || []).map((participantId, i) => {
+              const participant = participantId ? participants?.find(p => p.id === participantId) : undefined;
+              return (
+                <div 
+                  key={i} 
+                  onClick={(e) => {
+                    if (participantId) {
+                      e.stopPropagation();
+                      onPlayerSelect(participantId, table.id, i, e);
+                    }
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Seat
+                    table={table}
+                    seatIndex={i}
+                    participantId={participantId}
+                    {...(participant && { participant })}
+                    getParticipantName={getParticipantName}
+                    onMoveSeat={onMoveSeat}
+                    _onBustOut={() => participantId && _onBustOut(participantId, table.id)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </DndContext>
