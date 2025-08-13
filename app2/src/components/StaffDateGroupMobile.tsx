@@ -69,22 +69,6 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     }
   };
 
-  // 출석 상태별 통계
-  const attendanceStats = staffList.reduce((acc, staff) => {
-    const record = getStaffAttendanceStatus(staff.id);
-    const status = record?.status || 'not_started';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'checked_in': return '✅';
-      case 'checked_out': return '🏁';
-      default: return '⏰';
-    }
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
@@ -108,44 +92,24 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl">📅</span>
                   <div>
-                    <div className="text-lg font-bold">{date}</div>
-                    <div className="text-sm text-blue-100">
+                    <div className="text-lg font-bold">
                       {(() => {
                         try {
-                          // yy-MM-dd(요일) 형식에서 날짜 부분과 요일 추출
-                          if (date.includes('(') && date.includes(')')) {
-                            // 이미 요일이 포함된 경우 (예: "25-07-25(금)")
-                            const dayMatch = date.match(/\((.+)\)/);
-                            if (dayMatch && dayMatch[1]) {
-                              const dayChar = dayMatch[1];
-                              const dayMap: { [key: string]: string } = {
-                                '일': '일요일',
-                                '월': '월요일', 
-                                '화': '화요일',
-                                '수': '수요일',
-                                '목': '목요일',
-                                '금': '금요일',
-                                '토': '토요일'
-                              };
-                              return dayMap[dayChar] || dayChar;
-                            }
-                          }
-                          
-                          // yy-MM-dd 형식에서 날짜 부분 추출하여 요일 계산
+                          // yy-MM-dd 형식에서 MM-dd(요일) 형식으로 변환
                           const dateMatch = date.match(/(\d{2})-(\d{2})-(\d{2})/);
                           if (dateMatch) {
                             const [, year, month, day] = dateMatch;
-                            if (!year || !month || !day) return '';
+                            if (!year || !month || !day) return date;
                             const fullYear = 2000 + parseInt(year);
                             const dateObj = new Date(fullYear, parseInt(month) - 1, parseInt(day));
-                            return dateObj.toLocaleDateString('ko-KR', { 
-                              weekday: 'long' 
-                            });
+                            const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+                            const weekDay = weekDays[dateObj.getDay()];
+                            return `${month}-${day}(${weekDay})`;
                           }
-                          return '';
+                          return date;
                         } catch (error) {
-                          logger.error('요일 계산 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffDateGroupMobile' });
-                          return '';
+                          logger.error('날짜 형식 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffDateGroupMobile' });
+                          return date;
                         }
                       })()}
                     </div>
@@ -183,23 +147,11 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            {/* 출석 현황 요약 */}
-            <div className="flex items-center space-x-1">
-              {Object.entries(attendanceStats).map(([status, count]) => (
-                <div key={status} className="flex items-center space-x-1 bg-white bg-opacity-20 rounded-full px-2 py-1">
-                  <span className="text-sm">{getStatusIcon(status)}</span>
-                  <span className="text-white text-xs font-medium">{count}</span>
-                </div>
-              ))}
-            </div>
-            
-            {/* 확장/축소 아이콘 */}
-            <div className="text-white">
-              <svg className={`w-6 h-6 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+          {/* 확장/축소 아이콘 */}
+          <div className="text-white">
+            <svg className={`w-6 h-6 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
       </div>

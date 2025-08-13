@@ -352,20 +352,22 @@ const ShiftSchedulePage: React.FC = () => {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* 날짜 선택 */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
-              <FaCalendarAlt className="w-5 h-5 text-blue-600" />
-              <label className="font-semibold text-gray-700">
+              <FaCalendarAlt className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              <label className="text-sm sm:text-base font-semibold text-gray-700">
                 {t('shiftSchedule.selectDate')}:
               </label>
             </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-gray-500">({formatDate(selectedDate)})</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">({formatDate(selectedDate)})</span>
+            </div>
           </div>
           
           {/* 시간 간격 선택 */}
@@ -386,32 +388,40 @@ const ShiftSchedulePage: React.FC = () => {
             </div> : null}
           
           {/* 컨트롤 버튼들 */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {schedule && dealers.length > 0 ? <button 
                 onClick={handleGenerateWorkLogs}
                 disabled={isGeneratingWorkLogs}
-                className={`btn btn-sm flex items-center gap-2 ${
+                className={`btn btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${
                   workLogsGenerated ? 'btn-outline' : 'btn-secondary'
                 } ${isGeneratingWorkLogs ? 'loading' : ''}`}
               >
-                <FaHistory className="w-4 h-4" />
-                {isGeneratingWorkLogs ? t('shiftSchedule.generating') : 
-                 workLogsGenerated ? t('shiftSchedule.regenerateWorkLogs') : t('shiftSchedule.generateWorkLogs')}
+                <FaHistory className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">
+                  {isGeneratingWorkLogs ? t('shiftSchedule.generating') : 
+                   workLogsGenerated ? t('shiftSchedule.regenerateWorkLogs') : t('shiftSchedule.generateWorkLogs')}
+                </span>
+                <span className="sm:hidden">
+                  {isGeneratingWorkLogs ? '생성중' : 
+                   workLogsGenerated ? '재생성' : '생성'}
+                </span>
               </button> : null}
             <button 
               onClick={() => setIsSettingsModalOpen(true)}
-              className="btn btn-outline btn-sm flex items-center gap-2"
+              className="btn btn-outline btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
             >
-              <FaCog className="w-4 h-4" />
-              {t('shiftSchedule.settings')}
+              <FaCog className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{t('shiftSchedule.settings')}</span>
+              <span className="sm:hidden">설정</span>
             </button>
             {!schedule && (
               <button 
                 onClick={handleCreateSchedule}
-                className="btn btn-primary btn-sm flex items-center gap-2"
+                className="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
               >
-                <FaPlus className="w-4 h-4" />
-                {t('shiftSchedule.createSchedule')}
+                <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{t('shiftSchedule.createSchedule')}</span>
+                <span className="sm:hidden">생성</span>
               </button>
             )}
           </div>

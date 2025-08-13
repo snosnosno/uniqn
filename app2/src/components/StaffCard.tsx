@@ -207,8 +207,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
         aria-describedby={`staff-${staff.id}-details`}
       >
         <CardHeader className="p-0" id={`staff-${staff.id}-header`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 flex-1 min-w-0">
               <StaffCardHeader
                 name={memoizedStaffData.displayName}
                 {...(staff.role && { role: staff.role })}
@@ -236,23 +236,23 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
             </div>
             
             {onSelect && (
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-2 right-2 sm:static sm:mt-0">
                 {isSelected ? (
                   <div className="bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>선택됨</span>
+                    <span className="hidden sm:inline">선택됨</span>
                   </div>
                 ) : (
                   <div className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                    선택
+                    <span className="hidden sm:inline">선택</span>
                   </div>
                 )}
               </div>
             )}
             
-            <div className="flex items-center space-x-2 flex-shrink-0">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 mt-2 sm:mt-0">
               <div className="relative">
                 <AttendanceStatusPopover
                   workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
@@ -273,18 +273,18 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               
               <button
                 onClick={toggleActions}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                 </svg>
               </button>
               
               <button
                 onClick={toggleExpanded}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <svg className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>

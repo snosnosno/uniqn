@@ -26,7 +26,7 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
   staffId
 }) => {
   return (
-    <div className="flex flex-col space-y-1 mt-2">
+    <div className="flex flex-row sm:flex-col gap-2 sm:gap-1 mt-2 sm:mt-2">
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -37,9 +37,9 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
         disabled={!canEdit || multiSelectMode}
         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${startTimeColor} ${
           canEdit && !multiSelectMode ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
-        } transition-opacity`}
+        } transition-opacity whitespace-nowrap`}
       >
-        {isScheduledTimeTBD ? '📋' : '🕘'} 출근: {displayStartTime}
+        <span>출근: {displayStartTime}</span>
       </button>
       
       <button
@@ -50,14 +50,14 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
           }
         }}
         disabled={!canEdit || multiSelectMode}
-        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-opacity ${
+        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-opacity whitespace-nowrap ${
           canEdit && !multiSelectMode
             ? `hover:opacity-80 ${endTimeColor}`
             : 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
         }`}
         title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "예정 퇴근시간 수정"}
       >
-        {hasEndTime ? '🕕' : '⏳'} 퇴근: {displayEndTime}
+        <span>퇴근: {displayEndTime}</span>
       </button>
     </div>
   );

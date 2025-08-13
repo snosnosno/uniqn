@@ -53,9 +53,9 @@ const StaffNewPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-       <div className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-xl">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">{t('staffNew.title')}</h1>
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+       <div className="max-w-lg mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-xl">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">{t('staffNew.title')}</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('staffNew.labelName')}</label>
