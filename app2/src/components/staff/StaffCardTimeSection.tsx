@@ -5,8 +5,6 @@ interface StaffCardTimeSectionProps {
   displayEndTime: string;
   startTimeColor: string;
   endTimeColor: string;
-  isScheduledTimeTBD: boolean;
-  hasEndTime: boolean;
   canEdit: boolean;
   multiSelectMode: boolean;
   onEditWorkTime: (staffId: string, type: 'start' | 'end') => void;
@@ -18,8 +16,6 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
   displayEndTime,
   startTimeColor,
   endTimeColor,
-  isScheduledTimeTBD,
-  hasEndTime,
   canEdit,
   multiSelectMode,
   onEditWorkTime,

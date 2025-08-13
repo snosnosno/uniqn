@@ -4,7 +4,7 @@ import { writeBatch, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 
-import Modal, { ModalFooter } from '../components/ui/Modal';
+import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/BulkAddParticipantsModal';
 import CSVUploadButton from '../components/CSVUploadButton';
 import { useParticipants, Participant } from '../hooks/useParticipants';

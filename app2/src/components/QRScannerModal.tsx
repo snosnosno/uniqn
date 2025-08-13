@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import QrScanner from 'react-qr-scanner';
 
-import Modal, { ModalFooter } from './ui/Modal';
+import Modal from './ui/Modal';
 
 interface QRScannerModalProps {
   isOpen: boolean;

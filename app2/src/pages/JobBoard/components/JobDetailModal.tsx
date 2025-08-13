@@ -1,5 +1,5 @@
 import React from 'react';
-import Modal, { ModalFooter } from '../../../components/ui/Modal';
+import Modal from '../../../components/ui/Modal';
 import JobPostingDetailContent from '../../../components/jobPosting/JobPostingDetailContent';
 import { JobPosting } from '../../../types/jobPosting';
 

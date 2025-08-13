@@ -214,7 +214,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 {...(staff.role && { role: staff.role })}
                 {...(staff.assignedRole && { assignedRole: staff.assignedRole })}
                 {...(staff.assignedDate && { date: staff.assignedDate })}
-                {...(formattedDate && { formattedDate })}
                 {...(showDate && { showDate })}
                 {...(multiSelectMode && { multiSelectMode })}
                 {...(onShowProfile && { onShowProfile })}
@@ -226,8 +225,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                 displayEndTime={memoizedTimeData.displayEndTime}
                 startTimeColor={memoizedTimeData.startTimeColor}
                 endTimeColor={memoizedTimeData.endTimeColor}
-                isScheduledTimeTBD={memoizedTimeData.isScheduledTimeTBD}
-                hasEndTime={memoizedTimeData.hasEndTime}
                 canEdit={canEdit}
                 multiSelectMode={multiSelectMode}
                 onEditWorkTime={onEditWorkTime}

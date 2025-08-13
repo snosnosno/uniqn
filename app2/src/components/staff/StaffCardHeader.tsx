@@ -5,7 +5,6 @@ interface StaffCardHeaderProps {
   role?: string;
   assignedRole?: string;
   date?: string;
-  formattedDate?: string;
   showDate?: boolean;
   multiSelectMode?: boolean;
   onShowProfile?: (staffId: string) => void;
@@ -17,7 +16,6 @@ const StaffCardHeader: React.FC<StaffCardHeaderProps> = React.memo(({
   role,
   assignedRole,
   date,
-  formattedDate,
   showDate = false,
   multiSelectMode = false,
   onShowProfile,

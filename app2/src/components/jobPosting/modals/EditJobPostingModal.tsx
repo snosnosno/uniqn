@@ -3,7 +3,7 @@ import { useJobPostingForm } from '../../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../../hooks/useDateUtils';
 import { useTemplateManager } from '../../../hooks/useTemplateManager';
 import { LOCATIONS } from '../../../utils/jobPosting/jobPostingHelpers';
-import Modal, { ModalFooter } from '../../ui/Modal';
+import Modal from '../../ui/Modal';
 import Button from '../../common/Button';
 import { Input } from '../../common/Input';
 import { Select } from '../../common/Select';

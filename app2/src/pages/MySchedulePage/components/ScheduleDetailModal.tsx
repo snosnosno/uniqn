@@ -11,7 +11,7 @@ import {
   FaTimesCircle,
   FaTrash
 } from '../../../components/Icons/ReactIconsReplacement';
-import Modal, { ModalFooter } from '../../../components/ui/Modal';
+import Modal from '../../../components/ui/Modal';
 import { ScheduleEvent } from '../../../types/schedule';
 
 interface ScheduleDetailModalProps {
