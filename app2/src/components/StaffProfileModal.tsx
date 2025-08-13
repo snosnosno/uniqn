@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from './Icons/ReactIconsReplacement';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import Modal from './Modal';
+import Modal, { ModalFooter } from './ui/Modal';
 import { StaffData } from '../hooks/useStaffManagement';
 
 interface StaffProfileModalProps {
@@ -213,9 +213,27 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     return role ? (roleMap[role] || role) : '역할 미정';
   };
 
+  const footerButtons = (
+    <ModalFooter>
+      <button
+        onClick={onClose}
+        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium"
+      >
+        닫기
+      </button>
+    </ModalFooter>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="스태프 프로필">
-      <div className="p-6 space-y-6">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="스태프 프로필"
+      size="lg"
+      footer={footerButtons}
+      aria-label="스태프 프로필"
+    >
+      <div className="space-y-6">
         {loading && (
           <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -351,15 +369,6 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           </div>
         </div>
 
-        {/* 액션 버튼들 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium"
-          >
-            닫기
-          </button>
-        </div>
       </div>
     </Modal>
   );

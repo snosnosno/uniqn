@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Table } from '../hooks/useTables';
 import { Participant } from '../hooks/useParticipants';
 
-import Modal from './Modal';
+import Modal from './ui/Modal';
 import { Seat } from './Seat';
 
 interface TableDetailModalProps {
@@ -116,7 +116,14 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
   const emptySeatCount = totalSeats - filledSeats;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title=""
+      size="xl"
+      showCloseButton={true}
+      aria-label="테이블 세부정보"
+    >
       <DndContext 
         onDragEnd={handleDragEnd}
         collisionDetection={pointerWithin}

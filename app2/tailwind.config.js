@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const { colors } = require('./src/styles/tokens/colors');
+
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}"
@@ -6,59 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary 색상 - 청색 계열
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          DEFAULT: '#3b82f6',
-          light: '#60a5fa',
-          dark: '#1e40af',
-        },
-        // Secondary 색상 - 초록색 계열
-        secondary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
-          DEFAULT: '#22c55e',
-          light: '#4ade80',
-          dark: '#15803d',
-        },
-        // Semantic 색상
-        success: {
-          light: '#86efac',
-          DEFAULT: '#22c55e',
-          dark: '#15803d',
-        },
-        warning: {
-          light: '#fde047',
-          DEFAULT: '#eab308',
-          dark: '#a16207',
-        },
-        error: {
-          light: '#fca5a5',
-          DEFAULT: '#ef4444',
-          dark: '#b91c1c',
-        },
-        info: {
-          light: '#93c5fd',
-          DEFAULT: '#3b82f6',
-          dark: '#1e40af',
-        },
+        // Primary 색상 - 청색 계열 (디자인 토큰 통합)
+        primary: colors.primary,
+        // Secondary 색상 - 초록색 계열 (디자인 토큰 통합)
+        secondary: colors.secondary,
+        // Semantic 색상 (디자인 토큰 통합)
+        success: colors.success,
+        warning: colors.warning,
+        error: colors.error,
+        info: colors.info,
+        // 중성 색상 (디자인 토큰 통합)
+        gray: colors.gray,
+        // 배경 색상 (디자인 토큰 통합)
+        background: colors.background,
+        // 텍스트 색상 (디자인 토큰 통합)
+        text: colors.text,
+        // 보더 색상 (디자인 토큰 통합)
+        border: colors.border,
+        // 출석 상태 색상 (디자인 토큰 통합)
+        attendance: colors.attendance,
+        // 시간대별 색상 (디자인 토큰 통합)
+        timeSlot: colors.timeSlot,
       },
       fontFamily: {
         sans: [

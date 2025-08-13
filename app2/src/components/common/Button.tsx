@@ -29,11 +29,11 @@ const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'btn font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const variantClasses = {
-    primary: 'btn-primary focus:ring-primary',
-    secondary: 'btn-secondary focus:ring-secondary',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    primary: 'btn-primary focus:ring-primary-500',
+    secondary: 'btn-secondary focus:ring-secondary-500',
+    danger: 'btn-danger focus:ring-error',
     ghost: 'btn-ghost focus:ring-gray-400',
-    link: 'btn-link focus:ring-blue-400'
+    link: 'btn-link focus:ring-info'
   };
 
   const sizeClasses = {

@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 
-import Modal from './Modal';
+import Modal, { ModalFooter } from './ui/Modal';
 
 interface Staff {
   id: string;
@@ -114,9 +114,36 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
     }
   };
 
+  const footerButtons = (
+    <ModalFooter>
+      <button
+        type="button"
+        onClick={onClose}
+        className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+      >
+        {t('common.cancel')}
+      </button>
+      <button
+        type="submit"
+        form="edit-user-form"
+        disabled={isSubmitting}
+        className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+      >
+        {isSubmitting ? t('common.saving') : t('common.save')}
+      </button>
+    </ModalFooter>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('editUserModal.title')}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={t('editUserModal.title')}
+      size="xl"
+      footer={footerButtons}
+      aria-label={t('editUserModal.title')}
+    >
+      <form id="edit-user-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('editUserModal.labelName')}</label>
@@ -248,23 +275,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
           </div>
         </div>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <div className="flex justify-end space-x-4 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            {isSubmitting ? t('common.saving') : t('common.save')}
-          </button>
-        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
     </Modal>
   );

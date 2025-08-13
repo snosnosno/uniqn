@@ -38,35 +38,35 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
     switch (status) {
       case 'not_started':
         return {
-          icon: <ClockIcon className={`${iconSize} text-gray-500`} />,
+          icon: <ClockIcon className={`${iconSize} text-attendance-notStarted-text`} />,
           text: t('attendance.status.notStarted', '출근 전'),
-          bgColor: 'bg-gray-100',
-          textColor: 'text-gray-700',
-          borderColor: 'border-gray-300'
+          bgColor: 'bg-attendance-notStarted-bg',
+          textColor: 'text-attendance-notStarted-text',
+          borderColor: 'border-attendance-notStarted-border'
         };
       case 'checked_in':
         return {
-          icon: <CheckCircleIcon className={`${iconSize} text-green-500`} />,
+          icon: <CheckCircleIcon className={`${iconSize} text-attendance-checkedIn-text`} />,
           text: t('attendance.status.checkedIn', '출근'),
-          bgColor: 'bg-green-100',
-          textColor: 'text-green-700',
-          borderColor: 'border-green-300'
+          bgColor: 'bg-attendance-checkedIn-bg',
+          textColor: 'text-attendance-checkedIn-text',
+          borderColor: 'border-attendance-checkedIn-border'
         };
       case 'checked_out':
         return {
-          icon: <CheckCircleIcon className={`${iconSize} text-blue-500`} />,
+          icon: <CheckCircleIcon className={`${iconSize} text-attendance-checkedOut-text`} />,
           text: t('attendance.status.checkedOut', '퇴근'),
-          bgColor: 'bg-blue-100',
-          textColor: 'text-blue-700',
-          borderColor: 'border-blue-300'
+          bgColor: 'bg-attendance-checkedOut-bg',
+          textColor: 'text-attendance-checkedOut-text',
+          borderColor: 'border-attendance-checkedOut-border'
         };
       default:
         return {
-          icon: <ExclamationTriangleIcon className={`${iconSize} text-yellow-500`} />,
+          icon: <ExclamationTriangleIcon className={`${iconSize} text-warning`} />,
           text: t('attendance.status.unknown', '알 수 없음'),
-          bgColor: 'bg-yellow-100',
-          textColor: 'text-yellow-700',
-          borderColor: 'border-yellow-300'
+          bgColor: 'bg-warning-light/20',
+          textColor: 'text-warning-dark',
+          borderColor: 'border-warning'
         };
     }
   };

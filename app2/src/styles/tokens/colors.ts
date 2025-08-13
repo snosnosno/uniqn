@@ -198,3 +198,6 @@ export const cssVariables = {
 
 export type ColorToken = typeof colors;
 export type ColorKey = keyof ColorToken;
+
+// CommonJS export for Tailwind config
+module.exports = { colors };

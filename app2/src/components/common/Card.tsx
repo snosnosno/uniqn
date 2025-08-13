@@ -26,11 +26,11 @@ const Card: React.FC<CardProps> = ({
   loading = false,
   ...props
 }) => {
-  const baseClasses = 'card bg-base-100 transition-all duration-200';
+  const baseClasses = 'card bg-background-primary transition-all duration-200';
   
   const variantClasses = {
     default: 'shadow-sm',
-    bordered: 'border border-base-300',
+    bordered: 'border border-border',
     elevated: 'shadow-lg'
   };
 
@@ -56,10 +56,10 @@ const Card: React.FC<CardProps> = ({
     <div className={classes} onClick={onClick} {...props}>
       {(title || subtitle || headerActions) ? <div className="card-header flex items-center justify-between p-4 pb-2">
           <div className="flex-1">
-            {title ? <h3 className="card-title text-lg font-semibold text-base-content">
+            {title ? <h3 className="card-title text-lg font-semibold text-text-primary">
                 {title}
               </h3> : null}
-            {subtitle ? <p className="text-sm text-base-content/70 mt-1">
+            {subtitle ? <p className="text-sm text-text-secondary mt-1">
                 {subtitle}
               </p> : null}
           </div>
@@ -78,7 +78,7 @@ const Card: React.FC<CardProps> = ({
         )}
       </div>
       
-      {footer ? <div className="card-footer p-4 pt-2 border-t border-base-300">
+      {footer ? <div className="card-footer p-4 pt-2 border-t border-border-light">
           {footer}
         </div> : null}
     </div>

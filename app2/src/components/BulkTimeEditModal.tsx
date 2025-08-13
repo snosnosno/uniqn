@@ -7,7 +7,7 @@ import { doc, Timestamp, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
-import Modal from './Modal';
+import Modal, { ModalFooter } from './ui/Modal';
 
 interface SelectedStaff {
   id: string;
@@ -303,11 +303,44 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     }
   }, [isOpen]);
 
+  const footerButtons = (
+    <ModalFooter>
+      <button
+        onClick={onClose}
+        disabled={isUpdating}
+        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <TimesIcon className="w-4 h-4 mr-2" />
+        취소
+      </button>
+      <button
+        onClick={handleBulkUpdate}
+        disabled={isUpdating || selectedStaff.length === 0}
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all"
+      >
+        {isUpdating ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+            <span>처리 중...</span>
+          </>
+        ) : (
+          <>
+            <SaveIcon className="w-4 h-4 mr-2" />
+            <span>{selectedStaff.length}명 일괄 수정</span>
+          </>
+        )}
+      </button>
+    </ModalFooter>
+  );
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="일괄 수정"
+      size="lg"
+      footer={footerButtons}
+      aria-label="일괄 수정"
     >
       <div className="space-y-6">
         {/* 선택된 스태프 정보 */}
@@ -521,34 +554,6 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           </div>
         )}
 
-        {/* 버튼 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t">
-          <button
-            onClick={onClose}
-            disabled={isUpdating}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <TimesIcon className="w-4 h-4 mr-2" />
-            취소
-          </button>
-          <button
-            onClick={handleBulkUpdate}
-            disabled={isUpdating || selectedStaff.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all"
-          >
-            {isUpdating ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                <span>처리 중...</span>
-              </>
-            ) : (
-              <>
-                <SaveIcon className="w-4 h-4 mr-2" />
-                <span>{selectedStaff.length}명 일괄 수정</span>
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </Modal>
   );

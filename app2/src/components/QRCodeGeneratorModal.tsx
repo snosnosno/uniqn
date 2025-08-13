@@ -6,7 +6,7 @@ import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../utils/logger';
 
-import Modal from './Modal';
+import Modal, { ModalFooter } from './ui/Modal';
 
 interface QRCodeGeneratorModalProps {
   isOpen: boolean;
@@ -97,13 +97,38 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
   const modalTitle = title || t('attendance.actions.generateQR');
   const modalDescription = description || t('eventDetail.qrModalDescription');
 
+  const footerButtons = (
+    <ModalFooter>
+      {qrCodeValue && (
+        <button
+          onClick={() => {
+            setQrCodeValue(null);
+            setIsGenerating(false);
+          }}
+          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          새로 생성
+        </button>
+      )}
+      <button
+        onClick={handleClose}
+        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+      >
+        {t('common.cancel')}
+      </button>
+    </ModalFooter>
+  );
+
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={handleClose} 
       title={modalTitle}
+      size="md"
+      footer={footerButtons}
+      aria-label={modalTitle}
     >
-      <div className="p-6 flex flex-col items-center">
+      <div className="flex flex-col items-center">
         <p className="mb-6 text-center text-gray-600">{modalDescription}</p>
         
         {!qrCodeValue && !isGenerating && (
@@ -134,23 +159,6 @@ const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
             </p>
           </div> : null}
         
-        <div className="flex justify-end space-x-3 w-full">
-          {qrCodeValue ? <button
-              onClick={() => {
-                setQrCodeValue(null);
-                setIsGenerating(false);
-              }}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              새로 생성
-            </button> : null}
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            {t('common.cancel')}
-          </button>
-        </div>
       </div>
     </Modal>
   );

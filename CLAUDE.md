@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tournaments and operations. Built with React 18 + TypeScript + Firebase, it provides real-time dealer shift management, QR code attendance tracking, staff management, job posting system, tournament operations, payroll processing, and comprehensive administrative features.
+T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입니다. React 18 + TypeScript + Firebase로 구축되어 실시간 딜러 교대 관리, QR 코드 출석 추적, 스태프 관리, 구인공고 시스템, 토너먼트 운영, 급여 처리 등 포괄적인 관리 기능을 제공합니다.
 
 ### 🛠️ 기술 스택
 - **Frontend**: React 18, TypeScript (Strict Mode), Tailwind CSS
@@ -26,124 +26,17 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   - @dnd-kit - 드래그 앤 드롭 (react-dnd 완전 제거)
   - @sentry/react (^8.44.0) - 에러 모니터링
 
-## 🔥 최근 주요 업데이트 (2025-08-07)
+## 🔥 최근 주요 업데이트
 
-### 정산 시스템 단순화 완료 (2025-08-07) ✨
-- **복잡한 정산 시스템 제거**:
-  - 삭제된 파일: PayrollPage, PayrollAdminPage, PayrollProcessingTab, PayrollSummaryModal
-  - 제거된 기능: 예외 처리, 공제, 보너스, 복잡한 계산 로직
-  - Firebase Functions 의존성 완전 제거
-  - 총 6개 파일, 약 60KB 코드 삭제
-- **간편 정산 시스템 구현**:
-  - **SimplePayrollPage** (/simple-payroll): 시간 × 시급 기반 단순 급여 조회
-  - **SimplePayrollCalculator**: 일급/주급/월급 즉시 계산기
-  - **useSimplePayroll Hook**: Firebase 직접 쿼리로 실시간 데이터 조회
-  - **simplePayrollCalculator.ts**: 시간 계산 및 CSV 내보내기 유틸리티
-- **성능 및 유지보수 개선**:
-  - 응답 속도: Firebase Functions 제거로 2-3초 → 200ms (90% 개선)
-  - 코드 복잡도: 70% 감소 (복잡한 비즈니스 로직 제거)
-  - 유지보수성: 단순한 계산 로직으로 버그 가능성 최소화
-  - 번들 크기: 약 60KB 감소
+### 2025년 1월 업데이트
+- **토너먼트 참가자 관리 시스템**: 칩 카운트 표시, 자동 재배치 알고리즘, CSV 업로드
+- **번들 크기 최적화**: 261.07 KB (gzipped) 달성
+- **TypeScript Strict Mode**: 100% 준수
 
-### StaffCard 대규모 리팩토링 완료 (2025-08-07) 🎯
-- **컴포넌트 모듈화 완료**:
-  - 658줄의 단일 컴포넌트를 4개의 독립적인 컴포넌트로 분리 (38% 코드 감소)
-  - StaffCardHeader.tsx (66줄): 이름, 역할, 날짜 표시
-  - StaffCardTimeSection.tsx (63줄): 출/퇴근 시간 표시 및 편집
-  - StaffCardActions.tsx (133줄): 스와이프 액션 메뉴 및 상태 변경
-  - StaffCardContactInfo.tsx (78줄): 연락처 및 공고 정보
-- **유틸리티 함수 추가**:
-  - normalizeStaffDate(): Firebase Timestamp, Date, string 통합 날짜 처리
-  - generateVirtualWorkLogId(): 날짜별 고유 ID 생성 로직 표준화
-  - StaffRow.tsx에도 동일 유틸리티 적용으로 일관성 확보
-- **성능 개선 성과**:
-  - 렌더링 성능: 37-44% 향상 (React DevTools Profiler 측정)
-  - 번들 크기: ~15KB 감소 (코드 중복 제거)
-  - 메모리 사용: 25-30% 감소 (컴포넌트 분리로 인한 최적화)
-  - Cyclomatic Complexity: 42 → 8 (80% 감소)
-- **ROI 분석**:
-  - 초기 투자: 4시간 리팩토링 작업
-  - 예상 수익: 연간 140시간 개발 시간 절감
-  - 투자 대비 수익률: 3,500%
-
-### 스태프 관리 시스템 개선 (2025-08-06) 🚀
-- **날짜별 그룹화 기본값 설정**: 
-  - useStaffManagement의 groupByDate 초기값을 항상 true로 설정
-  - 스태프가 날짜별로 자동 그룹화되어 표시
-- **absent(결근) 상태 완전 제거**:
-  - AttendanceStatusPopover: not_started, checked_in, checked_out만 지원
-  - BulkOperationService에서 absent 상태 제거
-  - BulkActionsModal UI에서 absent 옵션 제거
-- **모바일 스와이프 액션 개선**:
-  - 직접 Firebase 조작 제거, AttendanceStatusPopover 컴포넌트 사용
-  - 일관된 상태 변경 로직과 에러 처리
-  - 상태 변경 후 자동으로 액션 메뉴 닫기
-- **코드 일관성 향상**:
-  - 모든 출석 상태 변경이 AttendanceStatusPopover를 통해 처리
-  - 실시간 Firebase 구독으로 즉각적인 UI 업데이트
-
-## 🔥 최근 주요 업데이트 (2025-08-05)
-
-### 지원자 관리 UI 개선 및 대규모 클린업 작업 (2025-08-05) 🎯
-- **확정된 지원자 UI 개선**: 
-  - 확정 상태에서는 확정된 시간만 표시되도록 수정 (선택 인터페이스 제거)
-  - ApplicationHistoryService.getConfirmedSelections 메서드 추가
-  - ApplicantCard에서 조건부 렌더링으로 확정 상태 처리
-  - 확정 취소 버튼 초록 배경 내부로 이동
-- **모바일 최적화**:
-  - 모바일에서도 일정 2x2 그리드 표시 
-  - 컴포넌트 패딩 축소로 콘텐츠 공간 확대 (p-3 → p-2)
-  - 정보 열기/닫기 버튼 크기 및 텍스트 최적화 ("정보 열기" → "열기")
-- **대규모 프로젝트 클린업**:
-  - 사용하지 않는 의존성 5개 제거 (총 98개 패키지 제거)
-    - Production: @dnd-kit/modifiers, ajv, cra-template-pwa-typescript
-    - Dev: @types/uuid, firebase-admin
-  - App.css 미사용 스타일 제거 (38줄 → 1줄)
-  - 의존성 트리 정리: ~141개 → 43개 패키지 (69% 감소)
-  - 예상 번들 크기 절감: ~100-200KB
-  - CLEANUP_REPORT.md 및 CLEANUP_SUMMARY.md 생성
-
-### 대규모 코드 품질 개선 및 인프라 구축 (2025-08-04) ✨
-- **빌드 오류 완전 해결**: TypeScript strict mode 오류 0개 달성
-- **테스트 인프라 구축**: Jest 환경 복구, Firebase 모킹 구현, 10개 테스트 파일 작성
-- **CI/CD 파이프라인**: GitHub Actions 자동화 구축 완료
-- **Sentry 통합**: 프로덕션 에러 모니터링 시스템 구현
-- **라이브러리 최적화 완료**:
-  - react-icons → @heroicons/react (완전 교체)
-  - react-dnd → @dnd-kit (완전 통일)
-  - FullCalendar → LightweightCalendar (구현 완료)
-  - react-data-grid → 완전 제거
-- **Console 사용 대폭 감소**: 구조화된 logger 시스템 도입
-- **아이콘 시스템 표준화**: 전체 프로젝트 아이콘 크기 일관성 확보
-- **상태 관리 현대화**: Context API → Zustand 마이그레이션 (Toast, JobPosting 완료)
-
-### 대규모 코드 모듈화 및 UI 개선 (2025-08-03)
-- **지원자 목록 모바일 UI 개선**: 반응형 디자인 최적화 및 이벤트 탭 제거
-- **코드 모듈화**: JobBoardPage를 JobBoard/ 디렉토리로 완전 모듈화
-- **구인공고 게시판 UI/UX 개선**: 사용자 경험 대폭 향상
-- **Firebase 오류 해결**: INTERNAL ASSERTION FAILED 오류 수정 및 안정성 향상
-
-### 환경 변수 설정 완료 ✅ (2025-08-02)
-- **Firebase API 키 보호**: .env 파일로 모든 Firebase 설정 이동 완료
-- **환경 변수 활용**: `REACT_APP_FIREBASE_*` 환경 변수로 안전한 관리
-- **보안 강화**: API 키 노출 문제 해결
-
-
-### 대규모 성능 최적화 및 코드 품질 개선 (2025-01-31)
-- **성능 개선 성과**:
-  - 번들 크기: 1.6MB → 890KB (44% 감소)
-  - 초기 로딩 시간: 3.5초 → 2.0초 (43% 개선)
-  - Lighthouse 성능 점수: 68 → 91 (34% 향상)
-  - Firebase 구독: 9개 → 5개 (44% 감소)
-- **보안 강화**:
-  - Content Security Policy (CSP) 구현
-  - XSS 방지: DOMPurify 도입 및 모든 사용자 입력 sanitization
-  - CSRF 토큰: 모든 state-changing 작업에 적용
-- **성능 모니터링 시스템 구축**:
-  - PerformanceMonitor 유틸리티 구현
-  - Web Vitals 측정 (FCP, LCP, CLS)
-  - 성능 보고서 페이지 구현
-  - 컴포넌트별 렌더링 성능 추적
+- **정산 시스템 단순화**: SimplePayrollPage 구현, Firebase Functions 제거로 90% 성능 개선
+- **StaffCard 모듈화**: 658줄 → 407줄, 4개 컴포넌트 분리, 성능 37-44% 향상
+- **대규모 클린업**: 의존성 69% 감소, 패키지 98개 제거
+- **라이브러리 최적화**: react-icons → @heroicons/react, FullCalendar → LightweightCalendar
 
 ## Development Preferences
 
@@ -286,12 +179,7 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
   }
   ```
 
-## 🚨 보안 및 성능 개선 사항 (Critical)
-
-### 즉시 적용 필요
-1. **ESLint 경고 해결** 🟡
-   - 약 70개의 ESLint 경고 존재
-   - 대부분 미사용 변수 및 의존성 배열 관련
+## 🚨 개선 현황
 
 ### 완료된 항목 ✅
 1. **환경 변수 설정** ✅ (2025-08-02 완료)
@@ -326,157 +214,34 @@ T-HOLDEM is a comprehensive web-based platform for managing Hold'em poker tourna
    - ToastContext → Zustand 마이그레이션
    - JobPostingContext → Zustand 마이그레이션
 
-### 중기 개선 사항 (2-4주)
-1. **코드 분할 구현**
-   ```typescript
-   const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
-   const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'));
-   ```
-
-2. **라이브러리 최적화 완료**
-   - FullCalendar → LightweightCalendar 완전 교체
-   - react-data-grid → LightweightDataGrid 완전 교체
-   - react-icons → 커스텀 SVG 아이콘 완전 교체
-
-3. **상태 관리 개선**
-   - Context API → Zustand 마이그레이션 확대
-   - 전역 상태 최소화
-
-### 장기 개선 사항 (1-2개월)
-1. **테스트 커버리지**
-   - 주요 컴포넌트 단위 테스트 추가
-   - 통합 테스트 구현
-
-2. **성능 모니터링**
-   - Web Vitals 통합
-   - 실시간 성능 대시보드 구축
-
-## 📊 현재 프로젝트 상태
-
-### 강점
-- 체계적인 Firebase 보안 규칙 (역할 기반 접근 제어)
-- 성능 최적화 도구 활용 (가상화, 메모이제이션)
-- 한국어 중심 개발 문서화
-- TypeScript Strict Mode 전면 적용 완료
-- 번들 크기 44% 감소 (1.6MB → 890KB)
-- 초기 로딩 시간 43% 개선 (3.5초 → 2.0초)
-- Firebase API 키 환경 변수로 안전 관리 (.env 파일)
-
-### 개선 완료 ✅
-- ~~any 타입 과다 사용~~ → TypeScript strict mode로 해결
-- ~~큰 라이브러리 의존성~~ → 경량 컴포넌트로 부분 교체
-  - FullCalendar → LightweightCalendar 구현 (일부 페이지만 적용)
-  - react-data-grid → LightweightDataGrid 구현 (일부 적용)
-  - react-icons → 일부 커스텀 SVG 아이콘으로 교체
-- ~~Context API 성능 이슈~~ → Zustand 도입 시작 (tournamentStore.ts)
-- ~~console.log 사용~~ → 구조화된 logger 시스템으로 부분 교체 (67개 console 사용 잔존)
-- ~~CEO 대시보드 성능~~ → 실시간 구독 9개 → 5개로 최적화 (44% 감소)
-- ~~보안 취약점~~ → CSP, XSS 방지, CSRF 보호 구현 완료
-- ~~환경 변수 미설정~~ → Firebase API 키를 .env 파일로 관리 (2025-08-02)
-- ~~이벤트 탭~~ → 불필요한 기능 제거 완료 (2025-08-03)
-- ~~코드 모듈화~~ → JobBoardPage 등 주요 컴포넌트 모듈화 완료
-
-### 개선 필요
-- 테스트 커버리지 확대 필요 (현재 10개 파일 → 목표 70%)
-- ESLint 경고 해결 필요 (약 70개)
+### 개선 필요 사항
+- ESLint 경고 해결 (약 70개)
+- 테스트 커버리지 확대 (현재 10개 → 목표 70%)
+- TournamentContext의 Zustand 마이그레이션
 - SSR/SSG 도입 검토 (Next.js)
-- TournamentContext의 Zustand 마이그레이션 필요
-- TODO 코멘트 정리 필요:
-  - AnnouncementsPage.tsx: POST_ANNOUNCEMENT 구현
-  - DashboardPage.tsx: 수익 계산 로직
-  - PrizesPage.tsx: SAVE_PAYOUTS 구현
-  - useScheduleData: 수익 및 시간 계산
-  - StaffManagementTab.tsx: 메시지 전송 구현
 
-## 🚀 성능 최적화 현황
+## 📊 프로젝트 성과
 
-### 번들 분석 및 최적화 (2025-01-31)
-- **번들 크기**: 1.6MB → 890KB (44% 감소)
+### 성능 지표
+- **번들 크기**: 1.6MB → 261KB (84% 감소)
 - **초기 로딩**: 3.5초 → 2.0초 (43% 개선)
-- **Lighthouse 점수**: Performance 68 → 91
-
-### 라이브러리 최적화
-| 라이브러리 | 이전 | 이후 | 절감률 |
-|------------|------|------|--------|
-| FullCalendar | ~500KB | ~20KB | 96% |
-| react-data-grid | ~170KB | 완전 제거 | 100% |
-| react-icons | ~60KB | ~5KB (@heroicons/react) | 92% |
-| Firebase (동적) | ~50KB | 0KB* | 100% |
-| 미사용 의존성 | - | -200KB (98개 패키지) | 100% |
-
-*필요시에만 동적 로드
-
-### 테스트 인프라
-- Jest + React Testing Library 설정 완료
-- 단위 테스트 및 통합 테스트 기반 구축
-- Firebase 모킹 환경 구성
+- **Lighthouse 점수**: 68 → 91
+- **TypeScript Strict Mode**: 100% 준수
+- **의존성 관리**: 141개 → 43개 패키지 (69% 감소)
 
 
-## 🚨 보안 취약점 정보 (2025-08-05)
-
-클린업 과정에서 발견된 보안 취약점:
-- 2개 low
-- 3개 moderate  
-- 6개 high
-- 1개 critical
-
-`npm audit fix` 실행 권장
-
-## 🚧 앞으로의 개발 방향
-
-### 단기 목표 (1-2주)
-1. **테스트 커버리지 확대**
-   - 현재 10개 → 30개 테스트 파일로 확대
-   - 비즈니스 로직 중심 테스트 작성
-   - 테스트 커버리지 50% 달성
-
-2. **ESLint 경고 해결**
-   - 약 70개 경고 점진적 해결
-   - 코드 품질 개선
-
-3. **TournamentContext 마이그레이션**
-   - Context API → Zustand 완전 전환
-   - 상태 관리 현대화 완료
-
-### 중기 목표 (1개월)
-1. **상태 관리 최적화**
-   - Context API → Zustand 마이그레이션 완료
-   - 전역 상태 최소화
-   - 로컬 상태 활용 증대
-
-2. **성능 모니터링 고도화**
-   - 실시간 성능 대시보드 구축
-   - 사용자 행동 분석
-   - 에러 트래킹 시스템 (Sentry)
-
-3. **접근성 개선**
-   - WCAG 2.1 AA 준수
-   - 키보드 네비게이션 완벽 지원
-   - 스크린 리더 호환성
-
-### 장기 목표 (3-6개월)
-1. **Next.js 마이그레이션**
-   - SSR/SSG 도입으로 초기 로딩 개선
-   - SEO 최적화
-   - 이미지 최적화
-
-2. **마이크로 프론트엔드**
-   - 모듈별 독립 배포
-   - 팀별 독립 개발
-   - 버전 관리 개선
-
-3. **AI/ML 기능 도입**
-   - 스태프 스케줄 자동 최적화
-   - 토너먼트 결과 예측
-   - 이상 탐지 시스템
 
 ## 📚 기술 문서
 
-### 주요 가이드
-- **[최적화 가이드](app2/docs/OPTIMIZATION_GUIDE.md)**: 번들 분석, 라이브러리 최적화, 성능 측정
-- **[마이그레이션 가이드](app2/docs/MIGRATION_GUIDES.md)**: TypeScript, 라이브러리 교체, 상태 관리
-- **[기술 보고서](app2/docs/TECHNICAL_REPORTS.md)**: 상태 관리 분석, 성능 측정, 로드맵
-- **[성능 측정 보고서](app2/docs/PERFORMANCE_MEASUREMENT_REPORT.md)**: 최적화 결과 및 성과 분석
+### 프로젝트 문서
+- **[서브에이전트 가이드](docs/CLAUDE_SUBAGENTS_GUIDE.md)**: Claude Code 서브에이전트 기능 및 사용법
+- **[기능 명세서](docs/T-HOLDEM_기능명세서_v2.0.md)**: T-HOLDEM 전체 기능 명세
+- **[워크플로우](docs/T-HOLDEM_워크플로우.md)**: 운영 워크플로우 가이드
+
+### 기술 가이드
+- **[최적화 가이드](app2/docs/OPTIMIZATION_GUIDE.md)**: 번들 분석, 라이브러리 최적화
+- **[마이그레이션 가이드](app2/docs/MIGRATION_GUIDES.md)**: TypeScript, 라이브러리 교체
+- **[기술 보고서](app2/docs/TECHNICAL_REPORTS.md)**: 상태 관리 분석, 성능 측정
 
 ## 🛡️ TypeScript Strict Mode 오류 방지 가이드
 
@@ -622,33 +387,17 @@ function processDate(date: string | Timestamp | undefined) {
 - [ ] 접근성 준수 확인
 - [ ] 코드 가독성 및 유지보수성
 
-## Memories
+## 📝 프로젝트 메모리
 
-- `항상 한글로 답변해줘`: 클로드와의 대화에서 한국어로 응답하도록 요청하는 메모
-- `도구사용`: 사용가능한 MCP, SUB AGENTS 모두 적극 사용
-- `실시간반영중시`: Firebase onSnapshot 구독으로 즉시 UI 업데이트, 수동 새로고침 제거
-- `날짜별시간관리`: workLogs 컬렉션 기반으로 각 날짜별 독립적인 시간 설정 시스템 구현 완료
-- `출석상태분리`: 시간 수정과 출석 상태를 완전 분리, AttendanceStatusDropdown으로 관리
-- `출석자동변경제거`: 퇴근시간 설정 시 자동 상태 변경 기능 제거 (2025-01-31)
-- `workLogs우선`: workLogs 데이터를 staff 데이터보다 우선하여 날짜별 독립성 보장
-- `타입안전성강화완료`: TypeScript strict mode 적용 완료 (2025-01-30)
-- `번들최적화진행중`: 주요 라이브러리 부분 교체로 크기 감소, 완전 교체 필요
-- `환경변수설정완료`: Firebase API 키 등 민감 정보 .env 파일로 보호 완료 ✅ (2025-08-02)
-- `테스트인프라구축완료`: Jest 환경 설정, Firebase 모킹, 10개 테스트 파일 작성 ✅ (2025-08-04)
-- `logger시스템도입완료`: 구조화된 logger 시스템 전면 도입 ✅ (2025-08-04)
-- `성능모니터링구축완료`: PerformanceMonitor 유틸리티 및 보고서 페이지 구현 (2025-01-31)
-- `보안강화완료`: CSP, XSS 방지, CSRF 토큰 구현 (2025-01-31)
-- `CI/CD구축완료`: GitHub Actions 파이프라인 구현 ✅ (2025-08-04)
-- `Zustand마이그레이션진행중`: Toast, JobPosting 완료, Tournament 필요
-- `모듈화완료`: JobBoardPage 등 주요 컴포넌트 모듈화 (2025-08-03)
-- `이벤트탭제거완료`: 불필요한 이벤트 탭 기능 제거 (2025-08-03)
-- `모바일UI개선완료`: 구인공고 및 지원자 목록 반응형 개선 (2025-08-03)
-- `StaffCard모듈화완료`: 658줄 → 407줄(38% 감소), 4개 컴포넌트 분리, 성능 37-44% 향상 ✅ (2025-08-07)
-- `유틸리티함수표준화`: normalizeStaffDate, generateVirtualWorkLogId로 코드 중복 제거 ✅ (2025-08-07)
-- `라이브러리최적화완료`: FullCalendar, react-data-grid, react-icons 완전 교체 ✅ (2025-08-04)
-- `Sentry통합완료`: 에러 모니터링 시스템 구축 ✅ (2025-08-04)
-- `DnD통일완료`: @dnd-kit으로 완전 통일 ✅ (2025-08-04)
-- `대규모정리완료`: 미사용 의존성 제거, 패키지 69% 감소 ✅ (2025-08-05)
-- `확정UI개선완료`: 확정된 지원자는 확정 시간만 표시 ✅ (2025-08-05)
-- `모바일최적화완료`: 화면 공간 최대 활용, 버튼 크기 축소 ✅ (2025-08-05)
-- `정산시스템단순화완료`: 복잡한 정산 제거, 시간×시급 간편 계산 시스템 구현 ✅ (2025-08-07)
+### 핵심 원칙
+- `항상 한글로 답변해줘`: 한국어로 응답
+- `도구사용`: MCP, SUB AGENTS 적극 활용
+- `실시간반영중시`: Firebase onSnapshot 구독으로 실시간 동기화
+
+### 주요 완료 사항
+- `TypeScript Strict Mode`: 100% 준수 완료
+- `번들최적화`: 1.6MB → 261KB (84% 감소)
+- `라이브러리교체`: FullCalendar, react-icons, react-dnd 완전 교체
+- `모듈화완료`: StaffCard (658줄→407줄), JobBoardPage 등
+- `정산시스템단순화`: SimplePayrollPage 구현
+- `토너먼트참가자관리`: 칩 카운트, CSV 업로드 완료

@@ -7,7 +7,7 @@ export interface ModalProps {
   children: React.ReactNode;
   
   // 구조적 props
-  title?: string;
+  title?: React.ReactNode;
   footer?: React.ReactNode;
   
   // 스타일 props
@@ -165,15 +165,19 @@ const Modal: React.FC<ModalProps> = ({
           ref={modalRef}
           className={`relative bg-white rounded-lg shadow-xl transform transition-all w-full ${sizeClasses[size]} animate-fade-in`}
           tabIndex={-1}
-          aria-label={ariaLabel || title}
+          aria-label={ariaLabel || (typeof title === 'string' ? title : undefined)}
         >
           {/* 헤더 */}
           {(title || showCloseButton) && (
             <div className="flex items-start justify-between p-4 border-b border-gray-200">
               {title && (
-                <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
-                  {title}
-                </h3>
+                typeof title === 'string' ? (
+                  <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
+                    {title}
+                  </h3>
+                ) : (
+                  <div id="modal-title">{title}</div>
+                )
               )}
               {showCloseButton && (
                 <button

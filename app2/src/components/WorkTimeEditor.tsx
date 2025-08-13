@@ -10,7 +10,7 @@ import { parseToDate } from '../utils/jobPosting/dateUtils';
 import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
 
-import Modal from './Modal';
+import Modal, { ModalFooter } from './ui/Modal';
 // import { WorkLog } from '../hooks/useShiftSchedule';
 
 // WorkTimeEditor에서 사용할 WorkLog 타입 (Firebase에서 가져온 실제 데이터 또는 가상 데이터)

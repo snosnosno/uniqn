@@ -56,22 +56,22 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       value: 'not_started',
       label: t('attendance.status.notStarted', '출근 전'),
       icon: <FaClock className="w-5 h-5" />,
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-100'
+      color: 'text-attendance-notStarted-text',
+      bgColor: 'bg-attendance-notStarted-bg'
     },
     {
       value: 'checked_in',
       label: t('attendance.status.checkedIn', '출근'),
       icon: <FaCheckCircle className="w-5 h-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      color: 'text-attendance-checkedIn-text',
+      bgColor: 'bg-attendance-checkedIn-bg'
     },
     {
       value: 'checked_out',
       label: t('attendance.status.checkedOut', '퇴근'),
       icon: <FaCheckCircle className="w-5 h-5" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100'
+      color: 'text-attendance-checkedOut-text',
+      bgColor: 'bg-attendance-checkedOut-bg'
     }
   ];
 
@@ -399,7 +399,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       {isOpen && (
         <div
           ref={popoverRef}
-          className="fixed z-40 bg-white rounded-xl shadow-2xl border border-gray-300 p-2"
+          className="fixed z-40 bg-background-primary rounded-xl shadow-2xl border border-border-DEFAULT p-2"
           style={{
             top: `${popoverPosition.top}px`,
             left: `${popoverPosition.left}px`,
@@ -408,7 +408,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         >
           {/* 화살표 */}
           <div 
-            className="absolute w-3 h-3 bg-white border-t border-l border-gray-200 transform rotate-45"
+            className="absolute w-3 h-3 bg-background-primary border-t border-l border-border-light transform rotate-45"
             style={{
               top: popoverPosition.top > buttonRef.current!.getBoundingClientRect().bottom ? '-6px' : 'auto',
               bottom: popoverPosition.top < buttonRef.current!.getBoundingClientRect().bottom ? '-6px' : 'auto',
@@ -427,19 +427,19 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150
                   ${option.value === currentStatus 
                     ? `${option.bgColor} ${option.color} font-medium` 
-                    : 'hover:bg-gray-50 text-gray-700'
+                    : 'hover:bg-background-hover text-text-secondary'
                   }
                 `}
               >
-                <div className={option.value === currentStatus ? option.color : 'text-gray-400'}>
+                <div className={option.value === currentStatus ? option.color : 'text-text-disabled'}>
                   {option.icon}
                 </div>
                 <span className="flex-grow text-left">{option.label}</span>
                 {option.value === currentStatus && (
                   <div className={`w-2 h-2 rounded-full ${
-                    option.value === 'checked_in' ? 'bg-green-500' :
-                    option.value === 'checked_out' ? 'bg-blue-500' :
-                    'bg-gray-500'
+                    option.value === 'checked_in' ? 'bg-success' :
+                    option.value === 'checked_out' ? 'bg-info' :
+                    'bg-text-tertiary'
                   }`} />
                 )}
               </button>
@@ -452,7 +452,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       {isUpdating && (
         <div className="fixed inset-0 bg-black bg-opacity-10 z-30 flex items-center justify-center">
           <div className="bg-white rounded-lg p-4 shadow-lg">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         </div>
       )}

@@ -6,7 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 
 import AuthLayout from '../components/AuthLayout';
 import FormField from '../components/FormField';
-import Modal from '../components/Modal';
+import Modal, { ModalFooter } from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 

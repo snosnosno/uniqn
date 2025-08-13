@@ -9,6 +9,7 @@ import SignUp from './pages/SignUp';
 
 import FirebaseErrorBoundary from './components/FirebaseErrorBoundary';
 import ErrorBoundary from './components/ErrorBoundary';
+import EnhancedErrorBoundary from './components/EnhancedErrorBoundary';
 import { Layout } from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import RoleBasedRoute from './components/RoleBasedRoute';
