@@ -188,7 +188,6 @@ export const HeaderMenu: React.FC = () => {
                   {(role === 'admin' || role === 'manager') && (
                     <>
                       <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/payroll" label={t('nav.processPayroll', 'Process Payroll')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
                       <hr className="my-2 border-t border-gray-200" />
                       <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />

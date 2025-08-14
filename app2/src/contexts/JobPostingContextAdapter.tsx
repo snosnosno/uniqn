@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useJobPostingStore } from '../stores/jobPostingStore';
 import { useAuth } from './AuthContext';
+import { useJobPostingWorkLogs } from '../hooks/useUnifiedWorkLogs';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 
-// 기존 컨텍스트 타입 유지
+// 기존 컨텍스트 타입 유지 + workLogs 추가
 interface JobPostingContextType {
   jobPosting: any | null;
   loading: boolean;
@@ -12,6 +14,10 @@ interface JobPostingContextType {
   staff: any[];
   refreshApplicants: () => Promise<void>;
   refreshStaff: () => Promise<void>;
+  // WorkLogs 관련 추가
+  workLogs: UnifiedWorkLog[];
+  workLogsLoading: boolean;
+  workLogsError: Error | null;
 }
 
 const JobPostingContext = createContext<JobPostingContextType | undefined>(undefined);
@@ -26,14 +32,25 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   const { currentUser } = useAuth();
   const store = useJobPostingStore();
   
+  // WorkLogs를 한 곳에서만 구독
+  const { 
+    workLogs, 
+    loading: workLogsLoading, 
+    error: workLogsError 
+  } = useJobPostingWorkLogs(jobPostingId);
+  
   // jobPostingId 변경 시 store 업데이트
   useEffect(() => {
     store.setJobPostingId(jobPostingId);
-    
+  }, [jobPostingId]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // 컴포넌트 언마운트 시에만 cleanup 호출
+  useEffect(() => {
     return () => {
       store.cleanup();
     };
-  }, [jobPostingId]); // store는 안정적인 참조이므로 의존성에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 빈 배열로 언마운트 시에만 실행
   
   // 지원자와 스태프 데이터 구독
   useEffect(() => {
@@ -41,7 +58,7 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
       store.refreshApplicants();
       store.refreshStaff();
     }
-  }, [jobPostingId, currentUser]); // store는 안정적인 참조이므로 의존성에서 제외
+  }, [jobPostingId, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
   
   const value: JobPostingContextType = {
     jobPosting: store.jobPosting,
@@ -52,6 +69,10 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     staff: store.staff,
     refreshApplicants: store.refreshApplicants,
     refreshStaff: store.refreshStaff,
+    // WorkLogs 데이터 추가
+    workLogs: workLogs || [],
+    workLogsLoading: workLogsLoading || false,
+    workLogsError: workLogsError || null,
   };
   
   return (

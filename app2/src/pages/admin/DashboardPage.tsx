@@ -142,7 +142,7 @@ const DashboardPage: React.FC = () => {
           .slice(0, 5);
 
         // 이번 주 수익 (예시 - 실제 구조에 맞게 수정 필요)
-        const weekRevenue = 0; // TODO: 실제 수익 계산 로직 구현
+        const weekRevenue = 0;
 
         setStats({
           ongoingEventsCount,

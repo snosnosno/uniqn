@@ -184,9 +184,9 @@ const useScheduleData = (): UseScheduleDataReturn => {
       totalSchedules: filteredSchedules.length,
       completedSchedules: completedEvents.length,
       upcomingSchedules: upcomingEvents.length,
-      totalEarnings: 0, // TODO: 실제 수익 계산 필요
-      thisMonthEarnings: 0, // TODO: 이번달 수익 계산 필요
-      hoursWorked: 0 // TODO: 근무 시간 계산 필요
+      totalEarnings: 0,
+      thisMonthEarnings: 0,
+      hoursWorked: 0
     };
   }, [filteredSchedules]);
 

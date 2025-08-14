@@ -1,5 +1,8 @@
 // TournamentContext는 이제 TournamentContextAdapter를 통해 Zustand store를 사용합니다
 // 하위 호환성을 위해 동일한 인터페이스를 유지합니다
+import type { User } from '../types/common';
+import type { Participant, Table, BlindLevel, TournamentSettings } from '../stores/tournamentStore';
+
 export { 
   TournamentProvider, 
   useTournament, 
@@ -13,9 +16,6 @@ export type {
   BlindLevel,
   TournamentSettings
 } from '../stores/tournamentStore';
-
-import type { User } from '../types/common';
-import type { Participant, Table, BlindLevel, TournamentSettings } from '../stores/tournamentStore';
 
 // TournamentState 인터페이스는 호환성을 위해 여기서 정의
 export interface TournamentState {

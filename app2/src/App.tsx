@@ -39,7 +39,6 @@ const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
 const MySchedulePage = lazy(() => import('./pages/MySchedulePage'));
 const ParticipantLivePage = lazy(() => import('./pages/ParticipantLivePage'));
 const ParticipantsPage = lazy(() => import('./pages/ParticipantsPage'));
-const SimplePayrollPage = lazy(() => import('./pages/SimplePayrollPage'));
 const PrizesPage = lazy(() => import('./pages/PrizesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
@@ -104,8 +103,6 @@ const App: React.FC = () => {
                       <Route index element={<HomeRedirect />} />
                       <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
                       <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
-                      <Route path="simple-payroll" element={<Suspense fallback={<LoadingSpinner />}><SimplePayrollPage /></Suspense>} />
-                      <Route path="simple-payroll/:userId" element={<Suspense fallback={<LoadingSpinner />}><SimplePayrollPage /></Suspense>} />
                       
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />

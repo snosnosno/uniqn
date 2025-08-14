@@ -3,10 +3,6 @@
  * 모든 디자인 시스템 토큰을 한 곳에서 관리
  */
 
-export * from './colors';
-export * from './typography';
-export * from './spacing';
-
 import { colors, cssVariables as colorVars } from './colors';
 import { typography, typographyCssVariables, fontFamily, fontSize, fontWeight, lineHeight, letterSpacing, textClasses } from './typography';
 import { 
@@ -23,6 +19,10 @@ import {
   zIndex,
   spacingCssVariables 
 } from './spacing';
+
+export * from './colors';
+export * from './typography';
+export * from './spacing';
 
 // 통합 디자인 토큰 객체
 export const tokens = {

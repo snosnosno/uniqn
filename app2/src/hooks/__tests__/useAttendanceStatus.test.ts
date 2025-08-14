@@ -4,7 +4,7 @@ import type { AttendanceStatus } from '../../types/schedule';
 
 // Firebase 모킹 - jest.mock 내부에서 정의
 jest.mock('../../firebase', () => {
-  const mockFirestore = {
+  const mockFirestore: any = {
     collection: jest.fn((path) => mockFirestore),
     doc: jest.fn(() => mockFirestore),
     where: jest.fn(() => mockFirestore),
@@ -121,39 +121,40 @@ describe('useAttendanceStatus', () => {
   });
 
   test('initializes with loading state', () => {
-    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
+    const { result } = renderHook(() => useAttendanceStatus({ eventId: 'event-1' }));
 
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.attendanceData).toBeNull();
+    expect(result.current.loading).toBe(true);
+    expect(result.current.attendanceRecords).toEqual([]);
     expect(result.current.error).toBeNull();
   });
 
   test('loads attendance data successfully', async () => {
-    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
+    const { result } = renderHook(() => useAttendanceStatus({ eventId: 'event-1' }));
 
     // 초기 로딩 상태
-    expect(result.current.isLoading).toBe(true);
+    expect(result.current.loading).toBe(true);
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.loading).toBe(false);
     });
 
     // 모킹된 데이터가 빈 배열이므로 null이 예상됨
-    expect(result.current.attendanceData).toBeNull();
+    expect(result.current.attendanceRecords).toEqual([]);
     expect(result.current.error).toBeNull();
   });
 
   test('updates attendance status', async () => {
-    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
+    const { result } = renderHook(() => useAttendanceStatus({ eventId: 'event-1' }));
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.loading).toBe(false);
     });
 
     const newStatus: AttendanceStatus = 'checked_out';
     
     act(() => {
-      result.current.updateAttendanceStatus(newStatus);
+      // updateAttendanceStatus 메서드가 없으므로 applyOptimisticUpdate 테스트로 변경
+      result.current.applyOptimisticUpdate('worklog-1', newStatus);
     });
 
     // updateDoc이 호출되었는지 확인
@@ -171,14 +172,14 @@ describe('useAttendanceStatus', () => {
       return jest.fn();
     });
 
-    const { result } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
+    const { result } = renderHook(() => useAttendanceStatus({ eventId: 'event-1' }));
 
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.loading).toBe(false);
     });
 
     expect(result.current.error).toBe('Firebase error');
-    expect(result.current.attendanceData).toBeNull();
+    expect(result.current.attendanceRecords).toEqual([]);
   });
 
   test('cleans up subscriptions on unmount', () => {
@@ -186,7 +187,7 @@ describe('useAttendanceStatus', () => {
     const { safeOnSnapshot } = require('../../utils/firebaseConnectionManager');
     safeOnSnapshot.mockReturnValue(unsubscribeMock);
 
-    const { unmount } = renderHook(() => useAttendanceStatus(mockStaffId, mockDate));
+    const { unmount } = renderHook(() => useAttendanceStatus({ eventId: 'event-1' }));
 
     unmount();
 

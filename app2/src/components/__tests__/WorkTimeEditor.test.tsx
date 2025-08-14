@@ -77,7 +77,7 @@ describe('WorkTimeEditor', () => {
   };
 
   const mockOnUpdate = jest.fn();
-  const mockOnCancel = jest.fn();
+  const mockOnClose = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -88,7 +88,7 @@ describe('WorkTimeEditor', () => {
       <WorkTimeEditor
         workLog={mockWorkLog}
         isOpen={true}
-        onCancel={mockOnCancel}
+        onClose={mockOnClose}
         onUpdate={mockOnUpdate}
       />
     );
@@ -105,7 +105,7 @@ describe('WorkTimeEditor', () => {
       <WorkTimeEditor
         workLog={mockWorkLog}
         isOpen={true}
-        onCancel={mockOnCancel}
+        onClose={mockOnClose}
         onUpdate={mockOnUpdate}
       />
     );
@@ -125,13 +125,13 @@ describe('WorkTimeEditor', () => {
 
   test('creates new work log if not exists', async () => {
     const user = userEvent.setup();
-    const workLogWithoutId = { ...mockWorkLog, id: undefined };
+    const workLogWithoutId: any = { ...mockWorkLog, id: undefined };
 
     render(
       <WorkTimeEditor
         workLog={workLogWithoutId}
         isOpen={true}
-        onCancel={mockOnCancel}
+        onClose={mockOnClose}
         onUpdate={mockOnUpdate}
       />
     );
@@ -152,7 +152,7 @@ describe('WorkTimeEditor', () => {
       <WorkTimeEditor
         workLog={mockWorkLog}
         isOpen={true}
-        onCancel={mockOnCancel}
+        onClose={mockOnClose}
         onUpdate={mockOnUpdate}
       />
     );
@@ -160,7 +160,7 @@ describe('WorkTimeEditor', () => {
     const cancelButton = screen.getByText(/취소/i);
     await user.click(cancelButton);
 
-    expect(mockOnCancel).toHaveBeenCalled();
+    expect(mockOnClose).toHaveBeenCalled();
   });
 
   test('validates time format', async () => {
@@ -170,7 +170,7 @@ describe('WorkTimeEditor', () => {
       <WorkTimeEditor
         workLog={mockWorkLog}
         isOpen={true}
-        onCancel={mockOnCancel}
+        onClose={mockOnClose}
         onUpdate={mockOnUpdate}
       />
     );
@@ -193,7 +193,7 @@ describe('WorkTimeEditor', () => {
       <WorkTimeEditor
         workLog={mockWorkLog}
         isOpen={true}
-        onCancel={mockOnCancel}
+        onClose={mockOnClose}
         onUpdate={mockOnUpdate}
       />
     );

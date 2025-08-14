@@ -7,6 +7,7 @@ import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } fro
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { getTodayString, convertToDateString } from '../utils/jobPosting/dateUtils';
 import { generateVirtualWorkLogId, normalizeStaffDate } from '../utils/workLogUtils';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 
 interface StaffRowProps {
   staff: StaffData;
@@ -20,7 +21,7 @@ interface StaffRowProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean; // 수정 권한 여부
-  getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
   applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
   multiSelectMode?: boolean; // 선택 모드 활성화 여부
   isSelected?: boolean; // 현재 행이 선택되었는지
@@ -32,7 +33,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   onEditWorkTime,
   onDeleteStaff,
   getStaffAttendanceStatus,
-  attendanceRecords,
   formatTimeDisplay,
   getTimeSlotColor,
   showDate = false,
@@ -118,12 +118,19 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     if (workLog?.scheduledStartTime) {
       try {
         // Timestamp를 시간 문자열로 변환
-        const timeDate = workLog.scheduledStartTime.toDate ? workLog.scheduledStartTime.toDate() : new Date(workLog.scheduledStartTime);
-        scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        let timeDate: Date;
+        if (typeof workLog.scheduledStartTime === 'string') {
+          // 문자열인 경우 그대로 사용
+          scheduledStartTime = workLog.scheduledStartTime;
+        } else if (workLog.scheduledStartTime && typeof workLog.scheduledStartTime === 'object' && 'toDate' in workLog.scheduledStartTime) {
+          // Timestamp인 경우
+          timeDate = workLog.scheduledStartTime.toDate();
+          scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
       } catch (error) {
         // 변환 실패시 staff의 assignedTime 사용
       }
@@ -133,12 +140,18 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     let scheduledEndTime = null;
     if (workLog?.scheduledEndTime) {
       try {
-        const timeDate = workLog.scheduledEndTime.toDate ? workLog.scheduledEndTime.toDate() : new Date(workLog.scheduledEndTime);
-        scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        if (typeof workLog.scheduledEndTime === 'string') {
+          // 문자열인 경우 그대로 사용
+          scheduledEndTime = workLog.scheduledEndTime;
+        } else if (workLog.scheduledEndTime && typeof workLog.scheduledEndTime === 'object' && 'toDate' in workLog.scheduledEndTime) {
+          // Timestamp인 경우
+          const timeDate = workLog.scheduledEndTime.toDate();
+          scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
       } catch (error) {
         // 변환 실패시 fallback
       }

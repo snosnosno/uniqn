@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -32,12 +32,12 @@ const Toast: React.FC<ToastProps> = ({
   const [isExiting, setIsExiting] = useState(false);
   const [progress, setProgress] = useState(100);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsExiting(true);
     setTimeout(() => {
       onClose(id);
     }, 300);
-  };
+  }, [id, onClose]);
 
   useEffect(() => {
     if (duration > 0) {

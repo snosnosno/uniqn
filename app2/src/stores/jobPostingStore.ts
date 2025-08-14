@@ -46,10 +46,22 @@ export const useJobPostingStore = create<JobPostingState>()(
         
         // 액션
         setJobPostingId: (id) => {
-          const { cleanup } = get();
-          cleanup(); // 이전 구독 정리
+          const state = get();
           
-          set({ jobPostingId: id, loading: true, error: null });
+          // 같은 ID면 무시
+          if (state.jobPostingId === id) return;
+          
+          // 이전 구독만 해제 (상태는 초기화하지 않음)
+          Object.values(state.unsubscribers).forEach(unsubscribe => {
+            if (unsubscribe) unsubscribe();
+          });
+          
+          set({ 
+            jobPostingId: id, 
+            loading: true, 
+            error: null,
+            unsubscribers: {} 
+          });
           
           if (!id) {
             set({ loading: false });
@@ -186,14 +198,16 @@ export const useJobPostingStore = create<JobPostingState>()(
         },
         
         cleanup: () => {
-          const { unsubscribers } = get();
+          const state = get();
           
           // 모든 구독 해제
-          Object.values(unsubscribers).forEach(unsubscribe => {
+          Object.values(state.unsubscribers).forEach(unsubscribe => {
             if (unsubscribe) unsubscribe();
           });
           
+          // 상태 초기화 (store를 완전히 리셋)
           set({
+            jobPostingId: null,
             jobPosting: null,
             applicants: [],
             staff: [],

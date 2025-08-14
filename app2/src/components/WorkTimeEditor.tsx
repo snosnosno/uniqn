@@ -9,9 +9,10 @@ import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
 import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
+import { prepareWorkLogForCreate, prepareWorkLogForUpdate } from '../utils/workLogMapper';
+import { WorkLogCreateInput } from '../types/unified/workLog';
 
 import Modal from './ui/Modal';
-// import { WorkLog } from '../hooks/useShiftSchedule';
 
 // WorkTimeEditor에서 사용할 WorkLog 타입 (Firebase에서 가져온 실제 데이터 또는 가상 데이터)
 interface WorkLogWithTimestamp {
@@ -217,31 +218,28 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           }
         }
         
-        await setDoc(workLogRef, {
-          eventId: workLog.eventId,
-          dealerId: workLog.staffId,
-          dealerName: 'Unknown',
-          type: 'schedule',
+        // 통합 시스템 사용
+        const staffId = workLog.staffId || (workLog as any).dealerId || '';
+        const createInput: WorkLogCreateInput = {
+          staffId: staffId,
+          eventId: workLog.eventId || '',
+          staffName: (workLog as any).staffName || (workLog as any).dealerName || 'Unknown',
           date: workLog.date,
+          type: 'schedule',
           scheduledStartTime: scheduledStartTimestamp,
           scheduledEndTime: scheduledEndTimestamp,
-          // actualStartTime과 actualEndTime은 설정하지 않음 (출석 상태와 독립적으로 관리)
-          totalWorkMinutes: 0,
-          totalBreakMinutes: 0,
-          tableAssignments: [],
-          status: 'scheduled', // 시간 수정은 상태에 영향 없음
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
-        });
-      } else {
-        // 기존 WorkLog 업데이트
-        const workLogRef = doc(db, 'workLogs', workLog.id);
-        const updateData: any = {
-          scheduledStartTime: newStartTime, // 예정 시작 시간만 수정
-          scheduledEndTime: newEndTime, // 예정 종료 시간만 수정
-          // actualStartTime과 actualEndTime은 수정하지 않음 (출석 상태와 독립적으로 관리)
-          updatedAt: Timestamp.now()
+          status: 'scheduled'
         };
+        
+        const workLogData = prepareWorkLogForCreate(createInput);
+        await setDoc(workLogRef, workLogData);
+      } else {
+        // 기존 WorkLog 업데이트 - 통합 시스템 사용
+        const workLogRef = doc(db, 'workLogs', workLog.id);
+        const updateData = prepareWorkLogForUpdate({
+          scheduledStartTime: newStartTime,
+          scheduledEndTime: newEndTime
+        });
         
         await updateDoc(workLogRef, updateData);
       }

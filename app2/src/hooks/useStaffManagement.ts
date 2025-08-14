@@ -7,7 +7,7 @@ import { useJobPostingContext } from '../contexts/JobPostingContextAdapter';
 import { useToast } from '../hooks/useToast';
 import { db } from '../firebase';
 import { formatDate } from '../utils/jobPosting/dateUtils';
-import type { WorkLog } from '../types/common';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 import { logger } from '../utils/logger';
 
 // 업무 역할 정의
@@ -69,7 +69,7 @@ interface UseStaffManagementReturn {
   groupedStaffData: GroupedStaffData;
   availableDates: string[];
   availableRoles: string[];
-  workLogsData: WorkLog[];
+  workLogsData: UnifiedWorkLog[];
   
   // 상태
   loading: boolean;
@@ -93,7 +93,7 @@ interface UseStaffManagementReturn {
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   getStaffCountByDate: (date: string) => number;
-  getStaffWorkLog: (staffId: string, date: string) => WorkLog | null;
+  getStaffWorkLog: (staffId: string, date: string) => UnifiedWorkLog | null;
 }
 
 export const useStaffManagement = (
@@ -107,7 +107,7 @@ export const useStaffManagement = (
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
-  const { staff: _staff } = useJobPostingContext();
+  const { staff: _staff, workLogs, workLogsLoading } = useJobPostingContext();
   
   // 기본 상태
   const [staffData, setStaffData] = useState<StaffData[]>([]);
@@ -115,8 +115,8 @@ export const useStaffManagement = (
   const [error, setError] = useState<string | null>(null);
   
   // workLogs 상태 추가
-  const [workLogsData, setWorkLogsData] = useState<WorkLog[]>([]);
-  const [workLogsMap, setWorkLogsMap] = useState<Record<string, WorkLog>>({});
+  const [workLogsData, setWorkLogsData] = useState<UnifiedWorkLog[]>([]);
+  const [workLogsMap, setWorkLogsMap] = useState<Record<string, UnifiedWorkLog>>({});
   
   // 필터 상태
   const [filters, setFilters] = useState<StaffFilters>({
@@ -241,62 +241,27 @@ export const useStaffManagement = (
     return () => {
       unsubscribe();
     };
-  }, [currentUser, jobPostingId, groupByDate]); // t는 안정적인 참조이므로 제외
+  }, [currentUser, jobPostingId]); // groupByDate는 데이터 구독에 영향을 주지 않으므로 제외
 
-  // workLogs 데이터 실시간 구독 추가
+  // workLogs 데이터 처리 (이제 context에서 가져옴)
   useEffect(() => {
-    if (!currentUser || !jobPostingId) {
-      return;
+    if (workLogs) {
+      setWorkLogsData(workLogs);
+      
+      // workLogs를 맵 형태로도 저장 (빠른 조회를 위해)
+      const workLogsMapData: Record<string, UnifiedWorkLog> = {};
+      workLogs.forEach(workLog => {
+        // 통합 시스템에서는 staffId를 사용
+        const staffId = workLog.staffId;
+        const date = workLog.date;
+        if (staffId && date) {
+          const key = `${staffId}_${date}`;
+          workLogsMapData[key] = workLog;
+        }
+      });
+      setWorkLogsMap(workLogsMapData);
     }
-
-
-    // workLogs 실시간 구독 설정
-    const workLogsQuery = query(
-      collection(db, 'workLogs'), 
-      where('eventId', '==', jobPostingId)
-    );
-
-    const unsubscribe = onSnapshot(
-      workLogsQuery,
-      (snapshot) => {
-        
-        const workLogsList = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            staffId: data.staffId || data.dealerId || '',
-            date: data.date || '',
-            ...data
-          } as WorkLog;
-        });
-        
-        setWorkLogsData(workLogsList);
-        
-        // workLogs를 맵 형태로도 저장 (빠른 조회를 위해)
-        const workLogsMapData: Record<string, WorkLog> = {};
-        workLogsList.forEach(workLog => {
-          const dealerId = workLog.dealerId; // staffId가 아니라 dealerId 사용
-          const date = workLog.date;
-          if (dealerId && date) {
-            const key = `${dealerId}_${date}`;
-            workLogsMapData[key] = workLog;
-          }
-        });
-        setWorkLogsMap(workLogsMapData);
-        
-        // workLogs 변경 시 강제 리렌더링은 불필요 - workLogsMap 변경으로 자동 리렌더링됨
-        
-      },
-      (error) => {
-        logger.error('workLogs 데이터 실시간 구독 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement' });
-      }
-    );
-
-    // 클린업 함수
-    return () => {
-      unsubscribe();
-    };
-  }, [currentUser, jobPostingId]);
+  }, [workLogs]);
 
   // localStorage에서 확장 상태 복원
   useEffect(() => {
@@ -527,7 +492,7 @@ export const useStaffManagement = (
     workLogsData,
     
     // 상태
-    loading,
+    loading: loading || workLogsLoading,
     error,
     
     // 필터 상태

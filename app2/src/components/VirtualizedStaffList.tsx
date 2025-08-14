@@ -3,7 +3,7 @@ import { FixedSizeList as List } from 'react-window';
 
 import { StaffData } from '../hooks/useStaffManagement';
 import { AttendanceRecord } from '../hooks/useAttendanceStatus';
-import { WorkLog } from '../types/common';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 import StaffCard from './StaffCard';
 
 interface VirtualizedStaffListProps {
@@ -23,7 +23,7 @@ interface VirtualizedStaffListProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null;
+  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
 }
 
 interface ItemData {
@@ -41,7 +41,7 @@ interface ItemData {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null;
+  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
 }
 
 // 메모이제이션된 리스트 아이템 컴포넌트

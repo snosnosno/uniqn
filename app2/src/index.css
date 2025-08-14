@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pretendard 폰트 임포트 */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+/* Pretendard 폰트 - CSP 문제로 시스템 폰트 사용 */
+/* 로컬에 Pretendard가 설치되어 있으면 사용, 없으면 시스템 폰트 사용 */
 
 /* CSS 변수 정의 - 디자인 토큰 */
 :root {
@@ -38,7 +38,7 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   
   /* 폰트 변수 */
-  --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --font-sans: 'Pretendard', 'Pretendard Variable', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   --font-mono: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
   
   /* 타이포그래피 변수 */

@@ -150,7 +150,9 @@ describe('StaffCard', () => {
     // 모든 버튼을 찾고 액션 버튼 찾기 (마지막 버튼이 액션 버튼일 가능성이 높음)
     const buttons = screen.getAllByRole('button');
     const actionButton = buttons[buttons.length - 1]; // 마지막 버튼
-    fireEvent.click(actionButton);
+    if (actionButton) {
+      fireEvent.click(actionButton);
+    }
     
     // 액션 메뉴가 나타나는지 확인 (스와이프 액션 텍스트로 확인)
     expect(screen.getByText('스와이프 액션')).toBeInTheDocument();
@@ -193,8 +195,8 @@ describe('StaffCard', () => {
   test('handles staff without contact information', () => {
     const staffWithoutContact = {
       ...mockStaff,
-      phone: undefined,
-      email: undefined
+      phone: '',
+      email: ''
     };
 
     render(<StaffCard {...mockProps} staff={staffWithoutContact} />);
@@ -220,7 +222,7 @@ describe('StaffCard', () => {
   });
 
   test('does not show swipe indicator when onSelect is not provided', () => {
-    render(<StaffCard {...mockProps} onSelect={undefined} />);
+    render(<StaffCard {...mockProps} onSelect={undefined as any} />);
     
     expect(screen.queryByText('← 액션 • 선택 →')).not.toBeInTheDocument();
   });

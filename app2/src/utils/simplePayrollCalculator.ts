@@ -173,3 +173,87 @@ export function generateCSVData(payrollData: SimplePayrollData[]): string {
   
   return csvContent;
 }
+
+/**
+ * 근무 시간 계산 (WorkLog 기반)
+ */
+export function calculateWorkHours(workLog: WorkLog): number {
+  const startTime = workLog.actualStartTime || workLog.scheduledStartTime;
+  const endTime = workLog.actualEndTime || workLog.scheduledEndTime;
+  
+  const minutes = calculateWorkMinutes(startTime, endTime);
+  return minutesToHours(minutes);
+}
+
+/**
+ * 시급 기반 급여 계산
+ */
+export function calculateHourlyPay(workLog: WorkLog, hourlyRate: number): number {
+  const hours = calculateWorkHours(workLog);
+  return Math.floor(hours * hourlyRate);
+}
+
+/**
+ * 일급 기반 급여 계산 (고정)
+ */
+export function calculateDailyPayFixed(workLog: WorkLog, dailyRate: number): number {
+  // 출근 여부만 확인 (completed 또는 actualEndTime이 있으면 일급 지급)
+  if (workLog.status === 'completed' || workLog.actualEndTime) {
+    return dailyRate;
+  }
+  return 0;
+}
+
+/**
+ * 월급 기반 급여 계산 (일할 계산)
+ */
+export function calculateMonthlyPay(
+  workLogs: WorkLog[], 
+  monthlyRate: number,
+  totalDaysInMonth: number
+): number {
+  // 실제 근무한 일수 계산
+  const workedDays = workLogs.filter(log => 
+    log.status === 'completed' || log.actualEndTime
+  ).length;
+  
+  // 일할 계산 (월급 / 전체일수 * 근무일수)
+  return Math.floor((monthlyRate / totalDaysInMonth) * workedDays);
+}
+
+/**
+ * 기타/사용자 정의 급여 계산
+ */
+export function calculateCustomPay(workLog: WorkLog, customAmount: number): number {
+  // 프로젝트 기반 고정 금액 또는 사용자 정의 로직
+  if (workLog.status === 'completed' || workLog.actualEndTime) {
+    return customAmount;
+  }
+  return 0;
+}
+
+/**
+ * 초과 근무 수당 계산
+ */
+export function calculateOvertimePay(
+  workLog: WorkLog, 
+  standardHours: number = 8,
+  overtimeRate: number = 1.5
+): number {
+  const totalHours = calculateWorkHours(workLog);
+  
+  if (totalHours > standardHours) {
+    const overtimeHours = totalHours - standardHours;
+    const hourlyRate = DEFAULT_HOURLY_RATES?.['default'] ?? 15000;
+    return Math.floor(overtimeHours * hourlyRate * overtimeRate);
+  }
+  
+  return 0;
+}
+
+/**
+ * 월의 전체 일수 계산
+ */
+export function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}

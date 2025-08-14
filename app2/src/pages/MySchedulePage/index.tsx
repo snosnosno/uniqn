@@ -20,9 +20,10 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useScheduleData } from '../../hooks/useScheduleData';
 import { CalendarView, ScheduleEvent, ATTENDANCE_STATUS_COLORS } from '../../types/schedule';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
+import { prepareWorkLogForCreate, prepareWorkLogForUpdate } from '../../utils/workLogMapper';
+import { WorkLogCreateInput } from '../../types/unified/workLog';
 
 // 스타일 임포트
-import './MySchedulePage.css';
 
 // 컴포넌트 임포트
 import ScheduleCalendar from './components/ScheduleCalendar';
@@ -148,39 +149,33 @@ const MySchedulePage: React.FC = () => {
       if (!workLogId && schedule.sourceCollection === 'applications') {
         logger.debug('🏗️ 확정된 지원서에 대한 workLog 자동 생성:', { component: 'index', data: schedule.eventName });
         
-        // 새 workLog 문서 생성
-        const newWorkLogRef = doc(collection(db, 'workLogs'));
-        await setDoc(newWorkLogRef, {
-          // 기본 정보
-          dealerId: currentUser?.uid,
-          staffId: currentUser?.uid, // dealerId와 동일
-          
-          // 일정 정보
+        // 통합 시스템을 사용한 workLog 생성
+        const workLogInput: WorkLogCreateInput = {
+          staffId: currentUser?.uid || '',
           eventId: schedule.eventId,
-          eventName: schedule.eventName,
-          postId: schedule.eventId, // applications의 postId
-          postTitle: schedule.eventName,
-          
-          // 날짜 및 시간
-          date: Timestamp.fromDate(new Date(schedule.date + 'T00:00:00')),
+          staffName: currentUser?.displayName || currentUser?.email || 'Unknown',
+          date: schedule.date, // YYYY-MM-DD 형식
+          type: 'schedule',
           scheduledStartTime: schedule.startTime,
           scheduledEndTime: schedule.endTime,
-          
-          // 위치 및 역할
-          location: schedule.location || '',
           role: schedule.role || '딜러',
-          
-          // 상태 및 타임스탬프
-          status: 'checked_in',
+          status: 'in_progress' // checked_in 대신 in_progress 사용
+        };
+        
+        const workLogData = prepareWorkLogForCreate(workLogInput);
+        
+        // 추가 필드 설정
+        const finalWorkLogData = {
+          ...workLogData,
           actualStartTime: Timestamp.now(),
-          
-          // 연결 정보
-          applicationId: schedule.applicationId,
-          
-          // 메타데이터
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
-        });
+          location: schedule.location || '',
+          eventName: schedule.eventName,
+          postTitle: schedule.eventName,
+          applicationId: schedule.applicationId
+        };
+        
+        const newWorkLogRef = doc(collection(db, 'workLogs'));
+        await setDoc(newWorkLogRef, finalWorkLogData);
         
         workLogId = newWorkLogRef.id;
         logger.debug('✅ workLog 자동 생성 완료:', { component: 'index', data: workLogId });
@@ -188,12 +183,12 @@ const MySchedulePage: React.FC = () => {
       } else if (!workLogId) {
         throw new Error('워크로그 정보를 찾을 수 없습니다.');
       } else {
-        // 기존 workLog 업데이트
-        await updateDoc(doc(db, 'workLogs', workLogId), {
+        // 기존 workLog 업데이트 - 통합 시스템 사용
+        const updateData = prepareWorkLogForUpdate({
           actualStartTime: Timestamp.now(),
-          status: 'checked_in',
-          updatedAt: Timestamp.now()
+          status: 'in_progress' // checked_in 대신 in_progress 사용
         });
+        await updateDoc(doc(db, 'workLogs', workLogId), updateData);
       }
 
       showSuccess(`${schedule.eventName} 출근 처리가 완료되었습니다.`);
@@ -212,12 +207,12 @@ const MySchedulePage: React.FC = () => {
         throw new Error('스케줄 정보를 찾을 수 없습니다.');
       }
 
-      // workLogs 업데이트
-      await updateDoc(doc(db, 'workLogs', schedule.workLogId), {
+      // workLogs 업데이트 - 통합 시스템 사용
+      const updateData = prepareWorkLogForUpdate({
         actualEndTime: Timestamp.now(),
-        status: 'checked_out',
-        updatedAt: Timestamp.now()
+        status: 'completed' // checked_out 대신 completed 사용
       });
+      await updateDoc(doc(db, 'workLogs', schedule.workLogId), updateData);
 
       showSuccess('퇴근 처리되었습니다.');
       logger.debug('✅ 퇴근 처리 완료:', { component: 'index', data: scheduleId });

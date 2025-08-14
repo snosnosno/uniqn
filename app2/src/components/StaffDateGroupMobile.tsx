@@ -3,6 +3,7 @@ import React from 'react';
 import { logger } from '../utils/logger';
 import { StaffData } from '../hooks/useStaffManagement';
 import StaffCard from './StaffCard';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 
 interface StaffDateGroupMobileProps {
   date: string;
@@ -20,7 +21,7 @@ interface StaffDateGroupMobileProps {
   multiSelectMode?: boolean;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
-  getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
 }
 
 const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({

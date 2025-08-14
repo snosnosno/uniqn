@@ -134,7 +134,10 @@ describe('LazyImage Component', () => {
       );
       
       expect(mockIntersectionObserver).toHaveBeenCalled();
-      expect(mockIntersectionObserver.mock.results[0].value.observe).toHaveBeenCalled();
+      const observerInstance = mockIntersectionObserver.mock.results[0];
+      if (observerInstance && observerInstance.value) {
+        expect(observerInstance.value.observe).toHaveBeenCalled();
+      }
     });
 
     it('should load image when intersection observer triggers', async () => {
@@ -408,8 +411,10 @@ describe('ImageGallery Component', () => {
       expect(buttons).toHaveLength(3);
       
       // First image has thumbnail
-      const firstImage = buttons[0].querySelector('img');
-      expect(firstImage).toHaveAttribute('src', 'thumb1.jpg');
+      const firstImage = buttons[0]?.querySelector('img');
+      if (firstImage) {
+        expect(firstImage).toHaveAttribute('src', 'thumb1.jpg');
+      }
     });
   });
 

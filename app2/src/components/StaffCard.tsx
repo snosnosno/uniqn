@@ -4,10 +4,11 @@ import { logger } from '../utils/logger';
 
 import { useHapticFeedback } from '../hooks/useHapticFeedback';
 import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
-import { useCachedFormatDate, useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
+import { useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { StaffData } from '../hooks/useStaffManagement';
 import AttendanceStatusPopover from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 
 // BaseCard 및 하위 컴포넌트들 import
 import BaseCard, { CardHeader, CardBody, CardFooter } from './ui/BaseCard';
@@ -30,7 +31,7 @@ interface StaffCardProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
   multiSelectMode?: boolean;
 }
 
@@ -57,7 +58,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   
   const { lightImpact, mediumImpact, selectionFeedback } = useHapticFeedback();
 
-  const formattedDate = useCachedFormatDate(staff.assignedDate);
   useCachedTimeDisplay(staff.assignedTime, formatTimeDisplay);
   useCachedTimeSlotColor(staff.assignedTime, getTimeSlotColor);
 
@@ -115,12 +115,18 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     let scheduledStartTime = staff.assignedTime;
     if (workLog?.scheduledStartTime) {
       try {
-        const timeDate = workLog.scheduledStartTime.toDate ? workLog.scheduledStartTime.toDate() : new Date(workLog.scheduledStartTime);
-        scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        if (typeof workLog.scheduledStartTime === 'string') {
+          // 문자열인 경우 그대로 사용
+          scheduledStartTime = workLog.scheduledStartTime;
+        } else if (workLog.scheduledStartTime && typeof workLog.scheduledStartTime === 'object' && 'toDate' in workLog.scheduledStartTime) {
+          // Timestamp인 경우
+          const timeDate = workLog.scheduledStartTime.toDate();
+          scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
       } catch (error) {
         // Fallback to staff time
       }
@@ -129,12 +135,18 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     let scheduledEndTime = null;
     if (workLog?.scheduledEndTime) {
       try {
-        const timeDate = workLog.scheduledEndTime.toDate ? workLog.scheduledEndTime.toDate() : new Date(workLog.scheduledEndTime);
-        scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        if (typeof workLog.scheduledEndTime === 'string') {
+          // 문자열인 경우 그대로 사용
+          scheduledEndTime = workLog.scheduledEndTime;
+        } else if (workLog.scheduledEndTime && typeof workLog.scheduledEndTime === 'object' && 'toDate' in workLog.scheduledEndTime) {
+          // Timestamp인 경우
+          const timeDate = workLog.scheduledEndTime.toDate();
+          scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
       } catch (error) {
         // Fallback
       }

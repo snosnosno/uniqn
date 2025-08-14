@@ -68,7 +68,6 @@ export const useSimplePayroll = ({
       // 스태프별 시급 정보 가져오기 (선택사항)
       const staffRates = new Map<string, number>();
       
-      // TODO: staff 컬렉션에서 직무별 시급 정보를 가져올 수 있음
       // 현재는 기본값 사용
       workLogs.forEach(log => {
         if (!staffRates.has(log.dealerId)) {

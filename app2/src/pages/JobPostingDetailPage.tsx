@@ -8,6 +8,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import ApplicantListTab from '../components/tabs/ApplicantListTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
+import PayrollManagementTab from '../components/tabs/PayrollManagementTab';
 // JobPostingCard import removed - not used
 import JobPostingDetailContent from '../components/jobPosting/JobPostingDetailContent';
 import { JobPostingProvider } from '../contexts/JobPostingContextAdapter';
@@ -16,7 +17,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { JobPosting } from '../types/jobPosting';
 
 
-type TabType = 'applicants' | 'staff' | 'shifts';
+type TabType = 'applicants' | 'staff' | 'shifts' | 'payroll';
 
 interface TabConfig {
   id: TabType;
@@ -47,6 +48,12 @@ const allTabs: TabConfig[] = [
     label: '시프트', 
     component: ShiftManagementTab,
     allowedRoles: ['admin', 'manager']
+  },
+  { 
+    id: 'payroll', 
+    label: '정산', 
+    component: PayrollManagementTab,
+    allowedRoles: ['admin', 'manager', 'staff']
   },
 ];
 
@@ -343,15 +350,6 @@ const JobPostingDetailPageContent: React.FC = () => {
                 {tab.label}
               </button>
             ))}
-            {/* 간편 정산 링크 추가 (admin, manager만 표시) */}
-            {permissions && (permissions.role === 'admin' || permissions.role === 'manager') && (
-              <button
-                onClick={() => navigate('/simple-payroll')}
-                className="py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              >
-                간편 정산 →
-              </button>
-            )}
           </nav>
         </div>
       </div>

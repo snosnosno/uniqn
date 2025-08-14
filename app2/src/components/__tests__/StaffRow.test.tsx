@@ -156,11 +156,11 @@ describe('StaffRow', () => {
   test('스태프 정보가 없을 때 기본값이 표시되어야 함', () => {
     const incompleteStaff: StaffData = {
       ...mockStaff,
-      name: undefined,
-      assignedRole: undefined,
-      assignedTime: undefined,
-      phone: undefined,
-      email: undefined
+      name: '',
+      assignedRole: '',
+      assignedTime: '',
+      phone: '',
+      email: ''
     };
 
     render(<StaffRow {...defaultProps} staff={incompleteStaff} />);
@@ -193,9 +193,13 @@ describe('StaffRow', () => {
 
   test('workLog 데이터가 있을 때 우선 표시되어야 함', () => {
     defaultProps.getStaffWorkLog.mockReturnValue({
+      id: 'worklog-1',
+      staffId: 'staff-1',
+      eventId: 'event-1',
+      date: '2024-03-20',
       scheduledStartTime: '10:00',
       scheduledEndTime: '19:00'
-    });
+    } as any);
 
     render(<StaffRow {...defaultProps} />);
 

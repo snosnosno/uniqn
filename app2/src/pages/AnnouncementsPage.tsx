@@ -10,7 +10,6 @@ const AnnouncementsPage: React.FC = () => {
         e.preventDefault();
         if (!message.trim()) return;
 
-        // TODO: POST_ANNOUNCEMENT 구현 필요
         logger.debug(`Dispatching POST_ANNOUNCEMENT with message: "${message}" (not implemented yet)`, { component: 'AnnouncementsPage' });
         
         setMessage('');

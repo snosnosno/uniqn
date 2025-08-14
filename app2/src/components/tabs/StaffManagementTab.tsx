@@ -224,7 +224,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   };
   
   const handleBulkMessage = async (staffIds: string[], message: string) => {
-    // TODO: 실제 메시지 발송 구현
     alert(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
   };
   

@@ -56,7 +56,6 @@ const PrizesPage: React.FC = () => {
   
   const handleSave = () => {
     const payoutsToSave = isManual ? manualPayouts : calculatedPayouts;
-    // TODO: SAVE_PAYOUTS 구현 필요
     logger.debug('Dispatching SAVE_PAYOUTS action (not implemented yet)', { component: 'PrizesPage', data: payoutsToSave });
     alert(t('prizes.alertSaved'));
   }

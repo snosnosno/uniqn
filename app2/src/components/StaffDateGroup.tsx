@@ -2,6 +2,7 @@ import React from 'react';
 
 import { StaffData } from '../hooks/useStaffManagement';
 import StaffRow from './StaffRow';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 
 interface StaffDateGroupProps {
   date: string;
@@ -17,7 +18,7 @@ interface StaffDateGroupProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => any | null;
+  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
   applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
   multiSelectMode?: boolean;
   selectedStaff?: Set<string>;

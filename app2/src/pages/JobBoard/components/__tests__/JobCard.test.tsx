@@ -31,13 +31,12 @@ describe('JobCard Component', () => {
     id: '1',
     title: '주말 토너먼트 딜러 모집',
     description: '경험 많은 딜러를 모집합니다',
-    startDate: new Date('2024-01-20'),
-    endDate: new Date('2024-01-21'),
+    startDate: '2024-01-20',
+    endDate: '2024-01-21',
     status: 'open',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: { seconds: Date.now() / 1000, nanoseconds: 0, toDate: () => new Date(), toMillis: () => Date.now(), isEqual: () => false, toJSON: () => '' } as any,
+    updatedAt: { seconds: Date.now() / 1000, nanoseconds: 0, toDate: () => new Date(), toMillis: () => Date.now(), isEqual: () => false, toJSON: () => '' } as any,
     createdBy: 'admin',
-    updatedBy: 'admin',
     location: '강남점',
     type: 'application',
     salaryType: 'daily',
@@ -208,8 +207,8 @@ describe('JobCard Component', () => {
   test('handles Firebase timestamp format', () => {
     const postWithTimestamp = {
       ...mockPost,
-      startDate: { toDate: () => new Date('2024-01-20') },
-      endDate: { toDate: () => new Date('2024-01-21') },
+      startDate: '2024-01-20',
+      endDate: '2024-01-21',
     };
     
     render(<JobCard {...defaultProps} post={postWithTimestamp} />);
@@ -221,8 +220,8 @@ describe('JobCard Component', () => {
   test('handles seconds timestamp format', () => {
     const postWithSeconds = {
       ...mockPost,
-      startDate: { seconds: new Date('2024-01-20').getTime() / 1000 },
-      endDate: { seconds: new Date('2024-01-21').getTime() / 1000 },
+      startDate: '2024-01-20',
+      endDate: '2024-01-21',
     };
     
     render(<JobCard {...defaultProps} post={postWithSeconds} />);
@@ -234,8 +233,8 @@ describe('JobCard Component', () => {
   test('shows 미정 for missing dates', () => {
     const postWithoutDates = {
       ...mockPost,
-      startDate: null,
-      endDate: null,
+      startDate: '',
+      endDate: '',
     };
     
     render(<JobCard {...defaultProps} post={postWithoutDates} />);
