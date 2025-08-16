@@ -16,6 +16,7 @@ import {
 } from '../../components/Icons/ReactIconsReplacement';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
+import { formatTime } from '../../utils/dateUtils';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useScheduleData } from '../../hooks/useScheduleData';
 import { CalendarView, ScheduleEvent, ATTENDANCE_STATUS_COLORS } from '../../types/schedule';
@@ -43,20 +44,7 @@ const MySchedulePage: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // 시간 포맷팅 함수
-  const formatTime = (timestamp: any) => {
-    if (!timestamp) return '미정';
-    try {
-      const date = timestamp.toDate();
-      return date.toLocaleTimeString('ko-KR', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
-    } catch (error) {
-      return '미정';
-    }
-  };
+  // formatTime은 이미 utils/dateUtils에서 import됨
 
   // 상태 아이콘 렌더링
   const renderStatusIcon = (event: ScheduleEvent) => {
@@ -523,7 +511,7 @@ const MySchedulePage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <FaClock className="text-gray-400 w-3 h-3" />
                         <span>
-                          {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                          {formatTime(schedule.startTime, { defaultValue: '미정' })} - {formatTime(schedule.endTime, { defaultValue: '미정' })}
                         </span>
                       </div>
 

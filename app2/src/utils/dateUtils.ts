@@ -299,3 +299,134 @@ export function parseShortDateFormat(dateStr: string): string {
   }
   return dateStr;
 }
+
+/**
+ * 통합된 시간 포맷팅 함수 - 모든 컴포넌트에서 사용
+ * Firebase Timestamp, Date, string, number 등 모든 타입 지원
+ */
+export function formatTime(
+  timestamp: TimestampInput | number, 
+  options: {
+    defaultValue?: string;
+    format?: 'HH:MM' | 'korean' | 'full';
+    timezone?: string;
+  } = {}
+): string {
+  const { defaultValue = '', format = 'HH:MM', timezone = 'Asia/Seoul' } = options;
+  
+  if (!timestamp) return defaultValue;
+  
+  try {
+    let date: Date;
+    
+    // Firebase Timestamp 객체인 경우
+    if (timestamp instanceof Timestamp) {
+      date = timestamp.toDate();
+    }
+    // Timestamp-like 객체인 경우 (toDate 메서드가 있는 객체)
+    else if (timestamp && typeof timestamp === 'object' && 'toDate' in timestamp && typeof timestamp.toDate === 'function') {
+      date = timestamp.toDate();
+    }
+    // seconds 속성이 있는 객체인 경우
+    else if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
+      const seconds = timestamp.seconds;
+      date = new Date(seconds * 1000);
+    }
+    // Date 객체인 경우
+    else if (timestamp instanceof Date) {
+      date = timestamp;
+    }
+    // 숫자인 경우 (milliseconds)
+    else if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    }
+    // 문자열인 경우
+    else if (typeof timestamp === 'string') {
+      // 이미 HH:MM 형식인 경우 그대로 반환 (format에 따라 변환)
+      if (/^\d{1,2}:\d{2}$/.test(timestamp)) {
+        if (format === 'korean') {
+          const parts = timestamp.split(':');
+          const hours = parts[0] || '0';
+          const minutes = parts[1] || '00';
+          const h = parseInt(hours);
+          const ampm = h >= 12 ? '오후' : '오전';
+          const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+          return `${ampm} ${displayHour}:${minutes}`;
+        }
+        return timestamp;
+      }
+      
+      // Timestamp 문자열 형식 처리
+      if (timestamp.startsWith('Timestamp(')) {
+        const match = timestamp.match(/seconds=(\d+)/);
+        if (match && match[1]) {
+          const seconds = parseInt(match[1], 10);
+          date = new Date(seconds * 1000);
+        } else {
+          return defaultValue;
+        }
+      } else {
+        date = new Date(timestamp);
+      }
+    }
+    else {
+      return defaultValue;
+    }
+
+    // 날짜가 유효한지 확인
+    if (!date || isNaN(date.getTime())) {
+      logger.warn('유효하지 않은 날짜:', { component: 'dateUtils', data: timestamp });
+      return defaultValue;
+    }
+
+    // 포맷에 따라 반환
+    switch (format) {
+      case 'korean':
+        return date.toLocaleTimeString('ko-KR', {
+          timeZone: timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      
+      case 'full':
+        return date.toLocaleString('ko-KR', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      
+      case 'HH:MM':
+      default:
+        return date.toLocaleTimeString('ko-KR', {
+          timeZone: timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+    }
+  } catch (error) {
+    logger.error('시간 포맷팅 오류:', error instanceof Error ? error : new Error(String(error)), { 
+      component: 'dateUtils', 
+      data: { timestamp, format } 
+    });
+    return defaultValue;
+  }
+}
+
+/**
+ * Timestamp를 입력 필드용 HH:MM 형식으로 변환
+ */
+export function formatTimeForInput(timestamp: TimestampInput): string {
+  return formatTime(timestamp, { defaultValue: '', format: 'HH:MM' });
+}
+
+/**
+ * Timestamp를 한국어 시간 형식으로 변환 (오전/오후 포함)
+ */
+export function formatTimeKorean(timestamp: TimestampInput): string {
+  return formatTime(timestamp, { defaultValue: '미정', format: 'korean' });
+}

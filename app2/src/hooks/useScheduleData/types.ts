@@ -26,6 +26,7 @@ export interface ApplicationData {
   confirmedRole?: string;
   assignedDate?: any;
   assignedDates?: any[];
+  /** @deprecated - workLog의 scheduledStartTime/scheduledEndTime 사용 권장. 하위 호환성을 위해 유지 */
   assignedTime?: string;
   assignedTimes?: string[];
   confirmedTime?: string;

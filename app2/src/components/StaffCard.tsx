@@ -112,6 +112,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
+    // @deprecated: assignedTime 사용, workLog.scheduledStartTime 우선
     let scheduledStartTime = staff.assignedTime;
     if (workLog?.scheduledStartTime) {
       try {
@@ -160,7 +161,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정'
     };
-  }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
+  }, [staff.id, staff.assignedTime /* @deprecated */, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
   
 
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
@@ -350,7 +351,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   const shouldMemoize = (
     prevProps.staff.id === nextProps.staff.id &&
     prevProps.staff.name === nextProps.staff.name &&
-    prevProps.staff.assignedTime === nextProps.staff.assignedTime &&
+    prevProps.staff.assignedTime === nextProps.staff.assignedTime /* @deprecated */ &&
     prevProps.staff.assignedDate === nextProps.staff.assignedDate &&
     prevProps.staff.assignedRole === nextProps.staff.assignedRole &&
     prevProps.staff.role === nextProps.staff.role &&

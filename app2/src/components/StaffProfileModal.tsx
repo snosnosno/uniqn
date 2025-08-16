@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { logger } from '../utils/logger';
+import { formatTime } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
 import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from './Icons/ReactIconsReplacement';
 import { doc, getDoc } from 'firebase/firestore';
@@ -105,33 +106,13 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     const workLogScheduledStart = attendanceRecord?.workLog?.scheduledStartTime || workLogRecord?.workLog?.scheduledStartTime;
     const workLogScheduledEnd = attendanceRecord?.workLog?.scheduledEndTime || workLogRecord?.workLog?.scheduledEndTime;
     
-    // 시간 포맷팅
-    const formatTime = (timeValue: any) => {
-      if (!timeValue) return null;
-      
-      try {
-        if (timeValue.toDate) {
-          // Firestore Timestamp
-          return timeValue.toDate().toLocaleTimeString('ko-KR', { 
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          });
-        } else if (typeof timeValue === 'string') {
-          return timeValue;
-        }
-        return null;
-      } catch (error) {
-        logger.error('시간 포맷팅 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffProfileModal' });
-        return null;
-      }
-    };
+    // formatTime은 이미 utils/dateUtils에서 import됨
     
     return {
-      scheduledStart: formatTime(workLogScheduledStart) || staff.assignedTime || '미정',
-      scheduledEnd: formatTime(workLogScheduledEnd) || '미정',
-      actualStart: formatTime(actualStartTime),
-      actualEnd: formatTime(actualEndTime)
+      scheduledStart: formatTime(workLogScheduledStart, { defaultValue: '' }) || staff.assignedTime || '미정',
+      scheduledEnd: formatTime(workLogScheduledEnd, { defaultValue: '미정' }),
+      actualStart: formatTime(actualStartTime, { defaultValue: '' }),
+      actualEnd: formatTime(actualEndTime, { defaultValue: '' })
     };
   };
 

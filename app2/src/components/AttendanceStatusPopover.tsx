@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
 import { calculateMinutes } from '../utils/timeUtils';
+import { formatTime } from '../utils/dateUtils';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
@@ -76,50 +77,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   ];
 
   const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0]!;
-  
-  // 시간 포맷팅 함수
-  const formatTime = (timestamp: Timestamp | Date | string | number | null | undefined): string => {
-    if (!timestamp) return '';
-    
-    try {
-      let date: Date;
-      
-      // Timestamp 객체인 경우
-      if (timestamp && typeof (timestamp as any).toDate === 'function') {
-        date = (timestamp as any).toDate();
-      }
-      // Date 객체인 경우
-      else if (timestamp instanceof Date) {
-        date = timestamp;
-      }
-      // 숫자인 경우 (milliseconds)
-      else if (typeof timestamp === 'number') {
-        date = new Date(timestamp);
-      }
-      // 문자열인 경우
-      else if (typeof timestamp === 'string') {
-        date = new Date(timestamp);
-      }
-      else {
-        return '';
-      }
-      
-      // 유효한 날짜인지 확인
-      if (isNaN(date.getTime())) {
-        return '';
-      }
-      
-      // HH:MM 형식으로 반환
-      return date.toLocaleTimeString('ko-KR', { 
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      // 시간 포맷팅 오류
-      return '';
-    }
-  };
 
   // 팝오버 위치 계산
   useEffect(() => {

@@ -101,6 +101,7 @@ const VirtualizedTableRow: React.FC<{
     const actualStartTime = exceptionRecord?.workLog?.actualStartTime || 
                            attendanceRecord?.actualStartTime || 
                            attendanceRecord?.checkInTime;
+    // @deprecated: assignedTime 사용, 추후 workLog.scheduledStartTime 우선 사용
     const scheduledStartTime = staff.assignedTime;
     
     // 출근시간 결정: 실제 시간이 있으면 실제 시간, 없으면 예정 시간
@@ -120,7 +121,7 @@ const VirtualizedTableRow: React.FC<{
       hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
-  }, [staff?.id, staff?.assignedTime, staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
+  }, [staff?.id, staff?.assignedTime /* @deprecated */, staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
   
   if (!staff) {
     return <div style={style} />;

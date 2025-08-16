@@ -1,5 +1,6 @@
 import React from 'react';
 import { getTodayString } from '../../../utils/jobPosting/dateUtils';
+import { formatTime } from '../../../utils/dateUtils';
 import { 
   FaCalendarAlt, 
   FaClock, 
@@ -46,20 +47,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     });
   };
 
-  // 시간 포맷팅
-  const formatTime = (timestamp: any) => {
-    if (!timestamp) return '미정';
-    try {
-      const date = timestamp.toDate();
-      return date.toLocaleTimeString('ko-KR', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
-    } catch (error) {
-      return '미정';
-    }
-  };
+  // formatTime은 이미 utils/dateUtils에서 import됨
 
   // 근무 시간 계산
   const calculateDuration = (start: any, end: any) => {
@@ -163,7 +151,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             <div className="flex-1">
               <p className="text-sm text-gray-500">근무 시간</p>
               <p className="font-medium">
-                {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                {formatTime(schedule.startTime, { defaultValue: '미정' })} - {formatTime(schedule.endTime, { defaultValue: '미정' })}
                 {calculateDuration(schedule.startTime, schedule.endTime) && (
                   <span className="text-sm text-gray-500 ml-2">
                     ({calculateDuration(schedule.startTime, schedule.endTime)})
@@ -175,7 +163,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 <div className="mt-2">
                   <p className="text-sm text-gray-500">실제 근무</p>
                   <p className="font-medium text-green-600">
-                    {formatTime(schedule.actualStartTime)} - {formatTime(schedule.actualEndTime)}
+                    {formatTime(schedule.actualStartTime, { defaultValue: '미정' })} - {formatTime(schedule.actualEndTime, { defaultValue: '미정' })}
                     {calculateDuration(schedule.actualStartTime, schedule.actualEndTime) && (
                       <span className="text-sm ml-2">
                         ({calculateDuration(schedule.actualStartTime, schedule.actualEndTime)})

@@ -114,6 +114,43 @@ export const generateWorkLogId = (eventId: string, staffId: string, date: string
 };
 
 /**
+ * assignedTime 문자열을 파싱하여 시작/종료 시간으로 분리
+ * @param assignedTime "HH:mm" 또는 "HH:mm-HH:mm" 형식의 문자열
+ * @returns {startTime, endTime} 객체
+ */
+export const parseAssignedTime = (assignedTime: string): { startTime: string | null; endTime: string | null } => {
+  if (!assignedTime || assignedTime === '미정') {
+    return { startTime: null, endTime: null };
+  }
+
+  try {
+    // "HH:mm-HH:mm" 형식 처리 (시간 범위)
+    if (assignedTime.includes('-')) {
+      const timeParts = assignedTime.split('-').map(t => t.trim());
+      const startTime = timeParts[0];
+      const endTime = timeParts[1];
+      
+      // 시간 형식 검증
+      const timeRegex = /^\d{1,2}:\d{2}$/;
+      if (startTime && endTime && timeRegex.test(startTime) && timeRegex.test(endTime)) {
+        return { startTime, endTime };
+      }
+    } else {
+      // "HH:mm" 형식 처리 (단일 시간)
+      const trimmedTime = assignedTime.trim();
+      const timeRegex = /^\d{1,2}:\d{2}$/;
+      if (timeRegex.test(trimmedTime)) {
+        return { startTime: trimmedTime, endTime: null };
+      }
+    }
+  } catch (error) {
+    // 파싱 오류 시 null 반환
+  }
+
+  return { startTime: null, endTime: null };
+};
+
+/**
  * 시간 문자열을 Timestamp로 변환
  */
 export const convertTimeToTimestamp = (timeString: string, baseDate: string): Timestamp | null => {
@@ -143,6 +180,32 @@ export const convertTimeToTimestamp = (timeString: string, baseDate: string): Ti
 };
 
 /**
+ * assignedTime을 사용하여 scheduledStartTime과 scheduledEndTime을 생성
+ * @param assignedTime "HH:mm" 또는 "HH:mm-HH:mm" 형식의 문자열
+ * @param baseDate 기준 날짜
+ * @returns {scheduledStartTime, scheduledEndTime} Timestamp 객체들
+ */
+export const convertAssignedTimeToScheduled = (
+  assignedTime: string, 
+  baseDate: string
+): { scheduledStartTime: Timestamp | null; scheduledEndTime: Timestamp | null } => {
+  const { startTime, endTime } = parseAssignedTime(assignedTime);
+  
+  const scheduledStartTime = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
+  let scheduledEndTime = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
+  
+  // 종료 시간이 시작 시간보다 이른 경우 다음날로 조정
+  if (scheduledStartTime && scheduledEndTime && startTime && endTime) {
+    const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(baseDate) || new Date());
+    if (adjustedEndTime) {
+      scheduledEndTime = adjustedEndTime;
+    }
+  }
+  
+  return { scheduledStartTime, scheduledEndTime };
+};
+
+/**
  * 가상 WorkLog 생성 (DB에 저장되지 않은 임시 객체)
  */
 export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
@@ -163,8 +226,15 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
   
   // assignedTime이 있고 scheduledStartTime이 없는 경우 변환
   let startTime = scheduledStartTime;
+  let endTime = scheduledEndTime;
+  
   if (!startTime && assignedTime && assignedTime !== '미정') {
-    startTime = convertTimeToTimestamp(assignedTime, date);
+    const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } = 
+      convertAssignedTimeToScheduled(assignedTime, date);
+    startTime = convertedStart;
+    if (!endTime) {
+      endTime = convertedEnd;
+    }
   }
 
   return {
@@ -175,7 +245,7 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     dealerName: staffName,
     date,
     scheduledStartTime: startTime || null,
-    scheduledEndTime: scheduledEndTime || null,
+    scheduledEndTime: endTime || null,
     actualStartTime: actualStartTime || null,
     actualEndTime: actualEndTime || null,
     status,

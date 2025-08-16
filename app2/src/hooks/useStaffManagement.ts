@@ -42,6 +42,7 @@ interface StaffData {
   postingTitle: string;
   assignedEvents?: string[]; // 스태프가 등록된 모든 공고 ID 배열
   assignedRole?: string;     // 지원자에서 확정된 역할
+  /** @deprecated - workLog의 scheduledStartTime/scheduledEndTime 사용 권장. 하위 호환성을 위해 유지 */
   assignedTime?: string;     // 지원자에서 확정된 시간
   assignedDate?: string;     // 할당된 날짜 (yyyy-MM-dd 형식)
 }

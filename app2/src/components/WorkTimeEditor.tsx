@@ -1,5 +1,6 @@
 import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { logger } from '../utils/logger';
+import { formatTimeForInput } from '../utils/dateUtils';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SaveIcon, TimesIcon, EditIcon } from './Icons';
@@ -56,19 +57,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // 시간 형식 변환 함수
-  const formatTimeForInput = (timestamp: Timestamp | Date | null) => {
-    if (!timestamp) return '';
-    
-    // Date 객체인 경우 직접 사용
-    const date = timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
-    
-    return date.toLocaleTimeString('en-US', { 
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // formatTimeForInput은 이미 utils/dateUtils에서 import됨
 
   // 시간 문자열을 Timestamp로 변환 (다음날 계산 지원)
   const parseTimeString = (timeString: string, baseDate: Date, isEndTime = false, startTimeString = '') => {

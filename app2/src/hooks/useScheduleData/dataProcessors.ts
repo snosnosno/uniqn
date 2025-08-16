@@ -8,6 +8,7 @@ import {
   extractDateFromFields 
 } from '../../utils/scheduleUtils';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
+import { parseAssignedTime, convertTimeToTimestamp } from '../../utils/workLogUtils';
 import { getRoleForApplicationStatus } from './roleUtils';
 import { ApplicationData, WorkLogData, JobPostingData } from './types';
 
@@ -66,16 +67,18 @@ export const processApplicationData = async (
       }
     }
     
-    // 시간 파싱
-    const timeData = parseTimeString(data.assignedTime || '', baseDate);
+    // assignedTime 파싱 (하위 호환성 유지)
+    const { startTime, endTime } = parseAssignedTime(data.assignedTime || '');
+    const startTimestamp = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
+    const endTimestamp = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
     
     // 기본 스케줄 이벤트 생성
     const baseEvent: ScheduleEvent = {
       id: docId,
       type: 'applied' as const,
       date: baseDate,
-      startTime: timeData.startTime,
-      endTime: timeData.endTime,
+      startTime: startTimestamp,
+      endTime: endTimestamp,
       eventId: data.postId || '',
       eventName: data.postTitle || '제목 없음',
       location: jobPostingData?.location || '',
@@ -127,15 +130,17 @@ export const processApplicationData = async (
       if (convertedDates.length > 0) {
         convertedDates.forEach((date, index) => {
           const timeStr = data.assignedTimes?.[index] || data.assignedTime || '';
-          const timeData = parseTimeString(timeStr, date);
+          const { startTime, endTime } = parseAssignedTime(timeStr);
+          const startTimestamp = startTime ? convertTimeToTimestamp(startTime, date) : null;
+          const endTimestamp = endTime ? convertTimeToTimestamp(endTime, date) : null;
           
           const event: ScheduleEvent = {
             ...baseEvent,
             id: `${docId}_${index}`,
             date: date,
             role: getRoleForApplicationStatus(data, date),
-            startTime: timeData.startTime,
-            endTime: timeData.endTime
+            startTime: startTimestamp,
+            endTime: endTimestamp
           };
           events.push(event);
         });

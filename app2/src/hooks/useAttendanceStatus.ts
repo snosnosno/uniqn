@@ -3,6 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
 import { AttendanceStatus } from '../components/AttendanceStatusCard';
+import { formatTime } from '../utils/dateUtils';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
 
@@ -143,53 +144,18 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       // logger.debug 제거 - 성능 최적화
     }
 
-    // Timestamp를 시간 문자열로 변환하는 함수
+    // formatTime 함수를 사용하여 시간 문자열 변환 (이미 import됨)
     const formatTimeFromTimestamp = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | Date | string | null | undefined): string | undefined => {
       if (!timestamp) return undefined;
       
-      try {
-        let date: Date;
-        
-        // Timestamp 객체인 경우
-        if (timestamp && typeof timestamp === 'object' && 'toDate' in timestamp && typeof timestamp.toDate === 'function') {
-          date = timestamp.toDate();
-        }
-        // Date 객체인 경우
-        else if (timestamp instanceof Date) {
-          date = timestamp;
-        }
-        // 문자열인 경우 (이미 HH:MM 형식이거나 ISO 문자열)
-        else if (typeof timestamp === 'string') {
-          if (timestamp.includes(':') && timestamp.length <= 8) {
-            // 이미 HH:MM 또는 HH:MM:SS 형식
-            return timestamp.substring(0, 5);
-          } else {
-            // ISO 문자열 등
-            date = new Date(timestamp);
-          }
-        }
-        // 숫자인 경우 (milliseconds)
-        else if (typeof timestamp === 'number') {
-          date = new Date(timestamp);
-        }
-        else {
-          return undefined;
-        }
-        
-        // Date 객체에서 HH:MM 형식으로 변환
-        if (date && !isNaN(date.getTime())) {
-          return date.toLocaleTimeString('ko-KR', { 
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        }
-        
-        return undefined;
-      } catch (error) {
-        logger.error('시간 포맷 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useAttendanceStatus' });
-        return undefined;
+      // 문자열인 경우 이미 HH:MM 형식이면 그대로 반환
+      if (typeof timestamp === 'string' && timestamp.includes(':') && timestamp.length <= 8) {
+        return timestamp.substring(0, 5);
       }
+      
+      // 통합된 formatTime 함수 사용
+      const formatted = formatTime(timestamp, { defaultValue: '' });
+      return formatted || undefined;
     };
 
     // staffId 우선, dealerId는 하위 호환성을 위해 fallback
