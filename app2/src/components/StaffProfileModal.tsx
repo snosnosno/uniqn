@@ -97,8 +97,9 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
   // 출근/퇴근 시간 계산
   const getWorkTimes = () => {
-    const actualStartTime = attendanceRecord?.checkInTime || workLogRecord?.workLog?.actualStartTime;
-    const actualEndTime = attendanceRecord?.checkOutTime || workLogRecord?.workLog?.actualEndTime;
+    // actualStartTime/actualEndTime 우선, checkInTime/checkOutTime fallback
+    const actualStartTime = workLogRecord?.workLog?.actualStartTime || attendanceRecord?.actualStartTime || attendanceRecord?.checkInTime;
+    const actualEndTime = workLogRecord?.workLog?.actualEndTime || attendanceRecord?.actualEndTime || attendanceRecord?.checkOutTime;
     
     // workLogs의 예정 시간
     const workLogScheduledStart = attendanceRecord?.workLog?.scheduledStartTime || workLogRecord?.workLog?.scheduledStartTime;

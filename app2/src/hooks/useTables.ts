@@ -15,7 +15,8 @@ export interface Table {
   status?: 'open' | 'closed' | 'standby';
   borderColor?: string;
   position?: { x: number; y: number };
-  assignedDealerId?: string | null;
+  assignedStaffId?: string | null;
+  assignedDealerId?: string | null; // @deprecated - assignedStaffId 사용 권장. 하위 호환성을 위해 유지
 }
 
 export interface BalancingResult {

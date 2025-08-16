@@ -30,14 +30,12 @@ const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage')
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
 const AttendancePage = lazy(() => import('./pages/AttendancePage'));
 const AvailableTimesPage = lazy(() => import('./pages/AvailableTimesPage'));
-const BlindsPage = lazy(() => import('./pages/BlindsPage'));
 const HistoryDetailPage = lazy(() => import('./pages/HistoryDetailPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
 const JobPostingAdminPage = lazy(() => import('./pages/JobPostingAdminPage'));
 const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
 const MySchedulePage = lazy(() => import('./pages/MySchedulePage'));
-const ParticipantLivePage = lazy(() => import('./pages/ParticipantLivePage'));
 const ParticipantsPage = lazy(() => import('./pages/ParticipantsPage'));
 const PrizesPage = lazy(() => import('./pages/PrizesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -95,7 +93,6 @@ const App: React.FC = () => {
                 <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/live/:tournamentId" element={<Suspense fallback={<LoadingSpinner />}><ParticipantLivePage /></Suspense>} />
                   
                   {/* Authenticated Routes */}
                   <Route element={<PrivateRoute />}>
@@ -117,7 +114,6 @@ const App: React.FC = () => {
                         <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
                         <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
                         <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
-                        <Route path="blinds" element={<Suspense fallback={<LoadingSpinner />}><BlindsPage /></Suspense>} />
                         <Route path="prizes" element={<Suspense fallback={<LoadingSpinner />}><PrizesPage /></Suspense>} />
                         <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
                         <Route path="history" element={<Suspense fallback={<LoadingSpinner />}><HistoryPage /></Suspense>} />

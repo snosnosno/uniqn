@@ -24,7 +24,7 @@ export interface Staff extends FirebaseDocument {
 // WorkLog 타입
 export interface WorkLog extends FirebaseDocument {
   staffId: string;
-  dealerId?: string; // 호환성을 위해 유지
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   date: string;
   scheduledStartTime?: string;
   scheduledEndTime?: string;
@@ -37,10 +37,14 @@ export interface WorkLog extends FirebaseDocument {
 // 출석 기록 타입
 export interface AttendanceRecord extends FirebaseDocument {
   staffId: string;
-  dealerId?: string; // 호환성을 위해 유지
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   date: string;
   status: 'not_started' | 'checked_in' | 'checked_out';
+  actualStartTime?: Timestamp | Date;
+  actualEndTime?: Timestamp | Date;
+  /** @deprecated - actualStartTime 사용 권장. 하위 호환성을 위해 유지 */
   checkInTime?: Timestamp | Date;
+  /** @deprecated - actualEndTime 사용 권장. 하위 호환성을 위해 유지 */
   checkOutTime?: Timestamp | Date;
   qrCodeId?: string;
   notes?: string;
@@ -63,7 +67,8 @@ export interface Table extends FirebaseDocument {
   number: number;
   seats: number;
   participants: Participant[];
-  dealerId?: string;
+  staffId?: string;
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   status: 'active' | 'inactive' | 'break';
 }
 

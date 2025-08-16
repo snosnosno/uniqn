@@ -15,12 +15,14 @@ export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 export interface AttendanceRecord {
   id: string;
   staffId: string;
-  dealerId?: string; // 기존 호환성을 위해 optional
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   date: string; // YYYY-MM-DD 형식
   status: AttendanceStatus;
   actualStartTime?: Timestamp | null;
   actualEndTime?: Timestamp | null;
+  /** @deprecated - actualStartTime 사용 권장. 하위 호환성을 위해 유지 */
   checkInTime?: Timestamp | null;
+  /** @deprecated - actualEndTime 사용 권장. 하위 호환성을 위해 유지 */
   checkOutTime?: Timestamp | null;
   qrCode?: string;
   isManualEntry?: boolean;
@@ -35,7 +37,7 @@ export interface AttendanceRecord {
 export interface WorkLog {
   id: string;
   staffId: string;
-  dealerId?: string; // 기존 호환성을 위해 optional
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   date: string; // YYYY-MM-DD 형식
   scheduledStartTime?: Timestamp | null;
   scheduledEndTime?: Timestamp | null;
@@ -90,7 +92,7 @@ export interface BulkTimeEditData {
 export interface QRCodeData {
   type: 'attendance';
   staffId: string;
-  dealerId?: string;
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   timestamp: number;
   action: 'check_in' | 'check_out';
 }

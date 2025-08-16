@@ -45,6 +45,10 @@ export interface WorkLogData {
   scheduledEndTime?: string;
   actualStartTime?: string;
   actualEndTime?: string;
+  /** @deprecated - actualStartTime 사용 권장. 하위 호환성을 위해 유지 */
+  checkInTime?: string;
+  /** @deprecated - actualEndTime 사용 권장. 하위 호환성을 위해 유지 */
+  checkOutTime?: string;
   hoursWorked?: number;
   overtimeHours?: number;
   earlyLeaveHours?: number;

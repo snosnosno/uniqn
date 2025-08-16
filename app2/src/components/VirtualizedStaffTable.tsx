@@ -97,17 +97,19 @@ const VirtualizedTableRow: React.FC<{
       };
     }
 
-    // 실제 출근시간 우선, 없으면 예정시간
-    const actualStartTime = attendanceRecord?.checkInTime || 
-                           exceptionRecord?.workLog?.actualStartTime;
+    // actualStartTime/actualEndTime 우선, checkInTime/checkOutTime fallback
+    const actualStartTime = exceptionRecord?.workLog?.actualStartTime || 
+                           attendanceRecord?.actualStartTime || 
+                           attendanceRecord?.checkInTime;
     const scheduledStartTime = staff.assignedTime;
     
     // 출근시간 결정: 실제 시간이 있으면 실제 시간, 없으면 예정 시간
     const startTime = actualStartTime || scheduledStartTime;
     
     // 퇴근시간
-    const endTime = attendanceRecord?.checkOutTime || 
-                   exceptionRecord?.workLog?.actualEndTime;
+    const endTime = exceptionRecord?.workLog?.actualEndTime || 
+                   attendanceRecord?.actualEndTime || 
+                   attendanceRecord?.checkOutTime;
     
     return {
       displayStartTime: formatTimeDisplay(startTime),

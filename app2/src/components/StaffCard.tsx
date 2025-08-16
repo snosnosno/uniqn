@@ -367,11 +367,13 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   
   const prevAttendanceRecords = prevProps.attendanceRecords.filter(r => 
     r.staffId === prevProps.staff.id || 
-    r.workLog?.dealerId === prevProps.staff.id
+    r.workLog?.staffId === prevProps.staff.id ||
+    r.workLog?.dealerId === prevProps.staff.id // @deprecated - 하위 호환성을 위해 유지
   );
   const nextAttendanceRecords = nextProps.attendanceRecords.filter(r => 
     r.staffId === nextProps.staff.id || 
-    r.workLog?.dealerId === nextProps.staff.id
+    r.workLog?.staffId === nextProps.staff.id ||
+    r.workLog?.dealerId === nextProps.staff.id // @deprecated - 하위 호환성을 위해 유지
   );
   
   if (prevAttendanceRecords.length !== nextAttendanceRecords.length) {

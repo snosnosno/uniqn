@@ -204,7 +204,8 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             if (staff.workLogId?.startsWith('virtual_') || !staff.workLogId) {
               const newWorkLogData = {
                 eventId: eventId,
-                dealerId: staff.id,
+                staffId: staff.id,
+                dealerId: staff.id, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
                 dealerName: staff.name,
                 date: dateString,
                 scheduledStartTime: updateData.scheduledStartTime || null,
@@ -231,7 +232,8 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             if (staff.workLogId?.startsWith('virtual_') || !staff.workLogId) {
               const newWorkLogData = {
                 eventId: eventId,
-                dealerId: staff.id,
+                staffId: staff.id,
+                dealerId: staff.id, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
                 dealerName: staff.name,
                 date: dateString,
                 scheduledStartTime: null,

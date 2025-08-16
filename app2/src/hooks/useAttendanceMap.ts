@@ -4,7 +4,8 @@ import { logger } from '../utils/logger';
 interface AttendanceRecord {
   staffId: string;
   workLog?: {
-    dealerId?: string;
+    staffId?: string;
+    dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
     date?: string;
     [key: string]: any;
   };
@@ -35,7 +36,14 @@ export const useAttendanceMap = (
       const key = `${record.staffId}_${record.workLog.date}`;
       map.set(key, record);
       
-      // dealerId가 다른 경우 추가 키 생성
+      // 하위 호환성을 위해 dealerId로도 접근 가능하도록 추가 키 생성
+      const workLogStaffId = record.workLog.staffId || record.workLog.dealerId;
+      if (workLogStaffId && workLogStaffId !== record.staffId) {
+        const workLogKey = `${workLogStaffId}_${record.workLog.date}`;
+        map.set(workLogKey, record);
+      }
+      
+      // @deprecated dealerId 호환성 유지
       if (record.workLog.dealerId && record.workLog.dealerId !== record.staffId) {
         const dealerKey = `${record.workLog.dealerId}_${record.workLog.date}`;
         map.set(dealerKey, record);

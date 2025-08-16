@@ -135,7 +135,9 @@ export const useCEODashboardOptimized = () => {
 
       ratingsSnapshot.forEach((doc) => {
         const data = doc.data();
-        const dealerId = data.dealerId;
+        // staffId 우선, dealerId는 하위 호환성을 위해 fallback
+        const staffId = data.staffId || data.dealerId;
+        const dealerId = staffId; // 레거시 변수명 유지용
         
         if (!dealerRatings.has(dealerId)) {
           dealerRatings.set(dealerId, { totalRating: 0, count: 0 });
@@ -158,9 +160,17 @@ export const useCEODashboardOptimized = () => {
 
       // 딜러 정보 조회
       for (const dealer of sortedDealers) {
-        const staffDoc = await getDocs(
-          query(collection(db, 'staff'), where('dealerId', '==', dealer.id), limit(1))
+        // staffId 우선 검색, dealerId fallback
+        let staffDoc = await getDocs(
+          query(collection(db, 'staff'), where('id', '==', dealer.id), limit(1))
         );
+        
+        // staffId로 찾지 못한 경우 dealerId로 재검색 (하위 호환성)
+        if (staffDoc.empty) {
+          staffDoc = await getDocs(
+            query(collection(db, 'staff'), where('dealerId', '==', dealer.id), limit(1))
+          );
+        }
 
         if (!staffDoc.empty && staffDoc.docs[0]) {
           const staffData = staffDoc.docs[0].data();

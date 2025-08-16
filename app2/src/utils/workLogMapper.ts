@@ -8,8 +8,8 @@ import { logger } from './logger';
 
 /**
  * 레거시 WorkLog 데이터를 통합 형식으로 변환
- * dealerId, userId → staffId
- * jobPostingId → eventId
+ * @deprecated dealerId, userId → staffId (우선순위: staffId > dealerId > userId)
+ * @deprecated jobPostingId → eventId
  */
 export function normalizeWorkLog(data: any): UnifiedWorkLog {
   try {
@@ -17,7 +17,7 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
     const normalized: UnifiedWorkLog = {
       id: data.id || '',
       
-      // staffId 통합 (우선순위: staffId > dealerId > userId)
+      // staffId 통합 - staffId를 우선 사용, 하위 호환성을 위해 dealerId/userId fallback
       staffId: data.staffId || data.dealerId || data.userId || '',
       
       // eventId 통합 (우선순위: eventId > jobPostingId)
@@ -31,11 +31,11 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       date: data.date || '',
       type: data.type || 'manual',
       
-      // 시간 정보 (그대로 유지)
+      // 시간 정보 - actualStartTime/actualEndTime 우선, checkInTime/checkOutTime fallback
       scheduledStartTime: data.scheduledStartTime || null,
       scheduledEndTime: data.scheduledEndTime || null,
-      actualStartTime: data.actualStartTime || null,
-      actualEndTime: data.actualEndTime || null,
+      actualStartTime: data.actualStartTime || data.checkInTime || null,
+      actualEndTime: data.actualEndTime || data.checkOutTime || null,
       
       // 근무 정보
       totalWorkMinutes: data.totalWorkMinutes || 0,
@@ -53,7 +53,7 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       notes: data.notes || '',
       createdAt: data.createdAt || Timestamp.now(),
       updatedAt: data.updatedAt || Timestamp.now(),
-      createdBy: data.createdBy || data.staffId || data.dealerId || ''
+      createdBy: data.createdBy || data.staffId || data.dealerId || '' // staffId 우선, dealerId는 fallback
     };
     
     return normalized;
@@ -78,8 +78,8 @@ export function normalizeWorkLogs(dataArray: any[]): UnifiedWorkLog[] {
 export function toLegacyFormat(workLog: UnifiedWorkLog): LegacyWorkLog {
   return {
     ...workLog,
-    dealerId: workLog.staffId,
-    userId: workLog.staffId,
+    dealerId: workLog.staffId, // @deprecated - 하위 호환성을 위해 유지
+    userId: workLog.staffId, // @deprecated - 하위 호환성을 위해 유지
     dealerName: workLog.staffName,
     jobPostingId: workLog.eventId
   };
@@ -99,9 +99,9 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
     date: input.date,
     type: input.type || 'manual',
     
-    // 레거시 호환 필드 (하위 호환성)
-    dealerId: input.staffId,
-    userId: input.staffId,
+    // 레거시 호환 필드 - 하위 호환성을 위해 유지
+    dealerId: input.staffId, // @deprecated - staffId 사용 권장
+    userId: input.staffId, // @deprecated - staffId 사용 권장
     dealerName: input.staffName,
     
     // 시간 정보
@@ -109,6 +109,9 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
     scheduledEndTime: input.scheduledEndTime || null,
     actualStartTime: null,
     actualEndTime: null,
+    // 하위 호환성을 위한 필드
+    checkInTime: null,
+    checkOutTime: null,
     
     // 초기값
     totalWorkMinutes: 0,
@@ -137,10 +140,10 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
     updatedAt: Timestamp.now()
   };
   
-  // staffId 변경 시 레거시 필드도 업데이트
+  // staffId 변경 시 레거시 필드도 업데이트 - 하위 호환성 유지
   if (updates.staffId) {
-    prepared.dealerId = updates.staffId;
-    prepared.userId = updates.staffId;
+    prepared.dealerId = updates.staffId; // @deprecated
+    prepared.userId = updates.staffId; // @deprecated
   }
   
   // staffName 변경 시 레거시 필드도 업데이트
@@ -153,6 +156,14 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
     prepared.jobPostingId = updates.eventId;
   }
   
+  // actualStartTime/actualEndTime 변경 시 하위 호환성 필드도 업데이트
+  if (updates.actualStartTime !== undefined) {
+    prepared.checkInTime = updates.actualStartTime;
+  }
+  if (updates.actualEndTime !== undefined) {
+    prepared.checkOutTime = updates.actualEndTime;
+  }
+  
   return prepared;
 }
 
@@ -161,9 +172,9 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
  * 레거시 필드만 있는 경우 true 반환
  */
 export function needsMigration(data: any): boolean {
-  // 통합 필드가 없고 레거시 필드만 있는 경우
+  // 통합 필드가 없고 레거시 필드만 있는 경우 - 단계적 마이그레이션 대상
   const hasLegacyOnly = (
-    (!data.staffId && (data.dealerId || data.userId)) ||
+    (!data.staffId && (data.dealerId || data.userId)) || // @deprecated 필드들의 마이그레이션 필요
     (!data.eventId && data.jobPostingId) ||
     (!data.staffName && data.dealerName)
   );
@@ -177,9 +188,9 @@ export function needsMigration(data: any): boolean {
 export function validateWorkLog(data: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // 필수 필드 체크
+  // 필수 필드 체크 - staffId 우선, 하위 호환성을 위해 dealerId/userId fallback
   if (!data.staffId && !data.dealerId && !data.userId) {
-    errors.push('스태프 ID가 없습니다');
+    errors.push('스태프 ID가 없습니다 (staffId 우선, dealerId/userId fallback)');
   }
   
   if (!data.eventId && !data.jobPostingId) {

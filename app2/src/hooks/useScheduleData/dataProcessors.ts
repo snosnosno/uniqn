@@ -163,8 +163,12 @@ export const processWorkLogData = (
   docId: string,
   data: WorkLogData
 ): ScheduleEvent => {
+  // actualStartTime/actualEndTime 우선, checkInTime/checkOutTime fallback
+  const actualStart = data.actualStartTime || data.checkInTime || '';
+  const actualEnd = data.actualEndTime || data.checkOutTime || '';
+  
   const timeData = parseTimeString(
-    `${data.scheduledStartTime || data.actualStartTime || ''}-${data.scheduledEndTime || data.actualEndTime || ''}`,
+    `${data.scheduledStartTime || actualStart || ''}-${data.scheduledEndTime || actualEnd || ''}`,
     data.date
   );
   
@@ -174,8 +178,8 @@ export const processWorkLogData = (
     date: data.date,
     startTime: timeData.startTime,
     endTime: timeData.endTime,
-    actualStartTime: data.actualStartTime ? timeData.startTime : null,
-    actualEndTime: data.actualEndTime ? timeData.endTime : null,
+    actualStartTime: actualStart ? timeData.startTime : null,
+    actualEndTime: actualEnd ? timeData.endTime : null,
     eventId: '',  // workLogs에는 eventId가 없음
     eventName: '근무',  // 기본값
     location: '',  // workLogs에는 location이 없음

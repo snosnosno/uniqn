@@ -8,7 +8,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import ApplicantListTab from '../components/tabs/ApplicantListTab';
 import ShiftManagementTab from '../components/tabs/ShiftManagementTab';
 import StaffManagementTab from '../components/tabs/StaffManagementTab';
-import PayrollManagementTab from '../components/tabs/PayrollManagementTab';
+import EnhancedPayrollTab from '../components/tabs/EnhancedPayrollTab';
 // JobPostingCard import removed - not used
 import JobPostingDetailContent from '../components/jobPosting/JobPostingDetailContent';
 import { JobPostingProvider } from '../contexts/JobPostingContextAdapter';
@@ -52,7 +52,7 @@ const allTabs: TabConfig[] = [
   { 
     id: 'payroll', 
     label: '정산', 
-    component: PayrollManagementTab,
+    component: EnhancedPayrollTab,
     allowedRoles: ['admin', 'manager', 'staff']
   },
 ];

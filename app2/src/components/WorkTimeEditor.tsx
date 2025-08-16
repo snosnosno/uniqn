@@ -19,7 +19,7 @@ interface WorkLogWithTimestamp {
   id: string;
   eventId: string;
   staffId: string;
-  dealerId?: string; // dealerId 추가 (선택적 속성)
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   date: string;
   scheduledStartTime: Timestamp | Date | null;
   scheduledEndTime: Timestamp | Date | null;

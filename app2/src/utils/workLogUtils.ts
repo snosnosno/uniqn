@@ -171,7 +171,7 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     id: `virtual_${workLogId}`,
     eventId,
     staffId,
-    dealerId: staffId, // 호환성을 위해 둘 다 포함
+    dealerId: staffId, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
     dealerName: staffName,
     date,
     scheduledStartTime: startTime || null,
@@ -202,7 +202,8 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
 
   return {
     eventId,
-    dealerId: staffId, // Firebase 컬렉션과의 호환성
+    staffId,
+    dealerId: staffId, // @deprecated - staffId 사용 권장. Firebase 컬렉션과의 하위 호환성을 위해 유지
     dealerName: staffName,
     date,
     scheduledStartTime: scheduledStartTime || null,
@@ -217,12 +218,13 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
 
 /**
  * staffId와 dealerId 매칭 확인
+ * @deprecated dealerId 필드는 단계적으로 제거 예정. staffId 우선 사용
  */
 export const isStaffIdMatch = (recordStaffId: string, targetStaffId: string): boolean => {
   // 정확한 매치
   if (recordStaffId === targetStaffId) return true;
   
-  // dealerId 형식 매치 (staffId_숫자 패턴 제거)
+  // staffId 패턴 매치 (staffId_숫자 패턴 제거)
   const cleanRecordId = recordStaffId.replace(/_\d+$/, '');
   const cleanTargetId = targetStaffId.replace(/_\d+$/, '');
   
@@ -239,7 +241,9 @@ export const findStaffWorkLog = (
 ): any | undefined => {
   return attendanceRecords.find(record => {
     const staffMatch = isStaffIdMatch(record.staffId, staffId) ||
-                      record.workLog?.dealerId === staffId ||
+                      record.workLog?.staffId === staffId ||
+                      isStaffIdMatch(record.workLog?.staffId || '', staffId) ||
+                      record.workLog?.dealerId === staffId || // @deprecated - 하위 호환성을 위해 유지
                       isStaffIdMatch(record.workLog?.dealerId || '', staffId);
     
     const dateMatch = record.workLog?.date === date;

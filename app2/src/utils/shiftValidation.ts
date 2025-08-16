@@ -17,7 +17,8 @@ export interface ValidationViolation {
   type: 'table_conflict' | 'continuous_work' | 'insufficient_rest' | 'schedule_gap';
   severity: 'error' | 'warning' | 'info';
   message: string;
-  dealerId: string;
+  staffId: string;
+  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   timeSlot: string;
   suggestedFix?: string;
 }
@@ -109,12 +110,13 @@ export const validateTableConflicts = (
     // 중복 배정 검사
     Object.entries(tableAssignments).forEach(([tableId, dealerIds]) => {
       if (dealerIds.length > 1) {
-        dealerIds.forEach(dealerId => {
+        dealerIds.forEach(staffId => {
           violations.push({
             type: 'table_conflict',
             severity: 'error',
             message: `${timeSlot}에 ${tableId} 테이블이 중복 배정되었습니다 (${dealerIds.length}명 배정됨)`,
-            dealerId,
+            staffId,
+            dealerId: staffId, // @deprecated - 하위 호환성을 위해 유지
             timeSlot,
             suggestedFix: `다른 테이블로 변경하거나 대기/휴식 상태로 변경하세요`
           });
@@ -171,7 +173,8 @@ export const validateContinuousWork = (
           type: 'continuous_work',
           severity: 'warning',
           message: `${continuousStart}부터 ${timeSlot}까지 ${Math.round(continuousMinutes / 60)}시간 연속 근무입니다 (제한: ${settings.maxContinuousHours}시간)`,
-          dealerId: dealer.id,
+          staffId: dealer.id,
+          dealerId: dealer.id, // @deprecated - 하위 호환성을 위해 유지
           timeSlot: continuousStart,
           suggestedFix: `중간에 휴식 시간을 추가하세요`
         });
@@ -215,7 +218,8 @@ export const validateRestTime = (
             type: 'insufficient_rest',
             severity: 'warning',
             message: `${lastWorkTime}과 ${timeSlot} 사이 휴식 시간이 부족합니다 (${restMinutes}분, 최소: ${settings.minRestMinutes}분)`,
-            dealerId: dealer.id,
+            staffId: dealer.id,
+            dealerId: dealer.id, // @deprecated - 하위 호환성을 위해 유지
             timeSlot,
             suggestedFix: `중간에 충분한 휴식 시간을 추가하세요`
           });
@@ -257,7 +261,8 @@ export const validateScheduleGaps = (
             type: 'schedule_gap',
             severity: 'info',
             message: `${gapStart}과 ${timeSlot} 사이에 ${Math.round(gapMinutes / 60)}시간 공백이 있습니다`,
-            dealerId: dealer.id,
+            staffId: dealer.id,
+            dealerId: dealer.id, // @deprecated - 하위 호환성을 위해 유지
             timeSlot: gapStart
           });
         }
