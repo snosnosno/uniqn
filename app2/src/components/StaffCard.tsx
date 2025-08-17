@@ -348,6 +348,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
+  // 기본 속성 비교
   const shouldMemoize = (
     prevProps.staff.id === nextProps.staff.id &&
     prevProps.staff.name === nextProps.staff.name &&
@@ -359,21 +360,35 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     prevProps.staff.email === nextProps.staff.email &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.showDate === nextProps.showDate &&
-    prevProps.attendanceRecords.length === nextProps.attendanceRecords.length
+    prevProps.canEdit === nextProps.canEdit &&
+    prevProps.multiSelectMode === nextProps.multiSelectMode
   );
   
   if (!shouldMemoize) {
     return false;
   }
   
+  // workLog 변경 감지 추가
+  const dateString = prevProps.staff.assignedDate || '';
+  const prevWorkLog = prevProps.getStaffWorkLog ? prevProps.getStaffWorkLog(prevProps.staff.id, dateString) : null;
+  const nextWorkLog = nextProps.getStaffWorkLog ? nextProps.getStaffWorkLog(nextProps.staff.id, dateString) : null;
+  
+  // workLog의 주요 시간 필드 변경 체크
+  if (prevWorkLog?.scheduledStartTime !== nextWorkLog?.scheduledStartTime ||
+      prevWorkLog?.scheduledEndTime !== nextWorkLog?.scheduledEndTime ||
+      prevWorkLog?.actualStartTime !== nextWorkLog?.actualStartTime ||
+      prevWorkLog?.actualEndTime !== nextWorkLog?.actualEndTime ||
+      prevWorkLog?.status !== nextWorkLog?.status) {
+    return false;
+  }
+  
+  // attendanceRecords 비교
   const prevAttendanceRecords = prevProps.attendanceRecords.filter(r => 
     r.staffId === prevProps.staff.id || 
-    r.workLog?.staffId === prevProps.staff.id ||
     r.workLog?.staffId === prevProps.staff.id
   );
   const nextAttendanceRecords = nextProps.attendanceRecords.filter(r => 
     r.staffId === nextProps.staff.id || 
-    r.workLog?.staffId === nextProps.staff.id ||
     r.workLog?.staffId === nextProps.staff.id
   );
   
@@ -385,9 +400,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     const prev = prevAttendanceRecords[i];
     const next = nextAttendanceRecords[i];
     
-    if (prev.status !== next.status || 
-        prev.workLogId !== next.workLogId ||
-        JSON.stringify(prev.workLog?.updatedAt) !== JSON.stringify(next.workLog?.updatedAt)) {
+    if (prev?.status !== next?.status || 
+        prev?.workLogId !== next?.workLogId ||
+        JSON.stringify(prev?.workLog?.updatedAt) !== JSON.stringify(next?.workLog?.updatedAt)) {
       return false;
     }
   }

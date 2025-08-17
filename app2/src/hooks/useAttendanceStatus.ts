@@ -30,21 +30,45 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Optimistic update를 위한 로컬 업데이트 상태
-  const [_localUpdates, setLocalUpdates] = useState<Map<string, AttendanceStatus>>(new Map());
+  const [localUpdates, setLocalUpdates] = useState<Map<string, AttendanceStatus>>(new Map());
 
   // 현재 날짜를 기본값으로 사용 (로컬 타임존 기준)
   const currentDate = date || getTodayString();
   const currentEventId = eventId || 'default-event';
 
+  // Optimistic update 함수 추가
+  const applyOptimisticUpdate = (workLogId: string, newStatus: AttendanceStatus) => {
+    setLocalUpdates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(workLogId, newStatus);
+      return newMap;
+    });
+    
+    // 즉시 attendanceRecords 업데이트
+    setAttendanceRecords(prev => {
+      return prev.map(record => {
+        if (record.workLogId === workLogId) {
+          return { ...record, status: newStatus };
+        }
+        return record;
+      });
+    });
+    
+    logger.info('Optimistic update 적용', { 
+      component: 'useAttendanceStatus',
+      data: { workLogId, newStatus }
+    });
+  };
+
   useEffect(() => {
-    if (!currentEventId || !currentDate) {
+    if (!currentEventId) {
       setLoading(false);
       return () => {};
     }
 
     try {
       // workLogs 컬렉션에서 해당 이벤트의 기록들을 실시간으로 구독
-      // 날짜 필터를 제거하고 eventId만으로 필터링하여 모든 workLogs를 가져옴
+      // 날짜 필터링을 옵션으로 추가
       
       // safeOnSnapshot을 사용하여 안전한 리스너 설정
       const unsubscribe = safeOnSnapshot<WorkLog>(
@@ -54,26 +78,43 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
             const records: AttendanceRecord[] = [];
             
             // eventId로 필터링 - 현재 eventId와 일치하는 것만
-            const filteredWorkLogs = workLogs.filter(workLog => 
+            let filteredWorkLogs = workLogs.filter(workLog => 
               workLog.eventId === currentEventId
             );
             
-            // logger.debug 제거 - 성능 최적화
+            // 날짜 필터링 (옵션)
+            if (date) {
+              filteredWorkLogs = filteredWorkLogs.filter(workLog =>
+                workLog.date === date
+              );
+            }
             
             // workLogs 처리
             filteredWorkLogs.forEach((workLog) => {
+              // localUpdates에 있는 경우 해당 상태 사용
+              const localStatus = workLog.id ? localUpdates.get(workLog.id) : undefined;
               const attendanceRecord = calculateAttendanceStatus(workLog);
+              
+              if (localStatus) {
+                attendanceRecord.status = localStatus;
+              }
+              
               records.push(attendanceRecord);
             });
 
             // 이전 상태와 비교하여 변경사항 감지
             const prevRecordsMap = new Map(attendanceRecords.map(r => [r.workLogId, r.status]));
-            const _changedRecords = records.filter(r => {
+            const changedRecords = records.filter(r => {
               const prevStatus = prevRecordsMap.get(r.workLogId);
               return prevStatus && prevStatus !== r.status;
             });
 
-            // logger.debug 제거 - 성능 최적화 (매번 호출되므로 성능 저하 원인)
+            if (changedRecords.length > 0) {
+              logger.info('출석 상태 변경 감지', { 
+                component: 'useAttendanceStatus',
+                data: { changedCount: changedRecords.length }
+              });
+            }
 
             // 항상 새로운 배열로 설정하여 React가 변경을 감지하도록 함
             setAttendanceRecords([...records]);
@@ -99,7 +140,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       setLoading(false);
       return () => {};
     }
-  }, [currentEventId, currentDate]);
+  }, [currentEventId, currentDate, localUpdates]);
 
   // WorkLog 데이터로부터 출석 상태를 계산하는 함수
   const calculateAttendanceStatus = (workLog: WorkLog): AttendanceRecord => {
@@ -168,32 +209,9 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     };
   };
 
-  // Optimistic update를 위한 함수
-  const applyOptimisticUpdate = (workLogId: string, newStatus: AttendanceStatus) => {
-    // logger.debug 제거 - 성능 최적화
-    
-    // 로컬 업데이트 맵에 추가
-    setLocalUpdates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(workLogId, newStatus);
-      return newMap;
-    });
-    
-    // 즉시 attendanceRecords 업데이트
-    setAttendanceRecords(prev => {
-      return prev.map(record => {
-        if (record.workLogId === workLogId) {
-          // logger.debug 제거 - 성능 최적화
-          return {
-            ...record,
-            status: newStatus
-          };
-        }
-        return record;
-      });
-    });
-    
-    // 3초 후 로컬 업데이트 제거 (Firebase 업데이트가 반영될 시간)
+  // applyOptimisticUpdate 함수는 이미 위에 정의되어 있으므로 중복 제거
+  // 3초 후 로컬 업데이트 제거 기능 추가
+  const _clearOptimisticUpdate = (workLogId: string) => {
     setTimeout(() => {
       setLocalUpdates(prev => {
         const newMap = new Map(prev);

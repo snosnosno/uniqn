@@ -70,7 +70,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   });
   
   // AttendanceRecords를 Map으로 변환하여 O(1) 검색
-  const { getStaffAttendance } = useAttendanceMap(attendanceRecords);
+  const { getStaffAttendance: _getStaffAttendance } = useAttendanceMap(attendanceRecords);
   
   // 모달 상태
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -119,7 +119,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
 
   // 출퇴근 시간 수정 핸들러 (다중 날짜 지원)
-  const handleEditWorkTime = (staffId: string, timeType?: 'start' | 'end', targetDate?: string) => {
+  const handleEditWorkTime = useCallback((staffId: string, timeType?: 'start' | 'end', targetDate?: string) => {
     // 권한 체크
     if (!canEdit) {
       showError('이 공고를 수정할 권한이 없습니다.');
@@ -135,11 +135,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     // 대상 날짜 결정: 파라미터로 받은 날짜 또는 스태프의 assignedDate 또는 오늘 날짜
     const workDate = targetDate || staff.assignedDate || getTodayString();
     
-    // 해당 날짜의 workLog 찾기 (Map 사용으로 O(1) 검색)
-    const workLog = getStaffAttendance(staffId, workDate);
+    // 해당 날짜의 workLog 찾기 - getStaffWorkLog 사용
+    const existingWorkLog = getStaffWorkLog ? getStaffWorkLog(staffId, workDate) : null;
     
-    if (workLog && workLog.workLog) {
-      setSelectedWorkLog(workLog.workLog);
+    if (existingWorkLog) {
+      setSelectedWorkLog(existingWorkLog);
       setCurrentTimeType(timeType);
       setIsWorkTimeEditorOpen(true);
     } else {
@@ -156,13 +156,25 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       setCurrentTimeType(timeType);
       setIsWorkTimeEditorOpen(true);
     }
-  };
+  }, [canEdit, staffData, jobPosting?.id, getStaffWorkLog, showError]);
   
-  const handleWorkTimeUpdate = async () => {
-    // 실시간 구독으로 자동 업데이트되므로 별도 새로고침 불필요
-    // useStaffManagement와 useAttendanceStatus 모두 실시간 구독 중
-    // 성공 메시지는 WorkTimeEditor 내부에서 처리
-  };
+  // WorkTimeEditor의 onUpdate 콜백 처리
+  const handleWorkTimeUpdate = useCallback((updatedWorkLog: any) => {
+    // workLog가 업데이트되면 자동으로 Firebase 구독이 감지하여 UI 업데이트
+    // 추가로 필요한 처리가 있다면 여기서 수행
+    logger.info('WorkTimeEditor에서 시간 업데이트 완료', { 
+      component: 'StaffManagementTab',
+      data: { 
+        workLogId: updatedWorkLog.id,
+        staffId: updatedWorkLog.staffId
+      }
+    });
+    
+    // 모달 닫기
+    setIsWorkTimeEditorOpen(false);
+    setSelectedWorkLog(null);
+    setCurrentTimeType(undefined);
+  }, []);
   
 
   // 필터링된 데이터 계산 (메모이제이션 최적화)

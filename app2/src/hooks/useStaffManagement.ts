@@ -261,6 +261,18 @@ export const useStaffManagement = (
         }
       });
       setWorkLogsMap(workLogsMapData);
+      
+      // workLogs 변경 시 staffData 강제 리렌더링
+      // React가 변경을 감지하도록 새 배열 생성
+      setStaffData(prevData => {
+        // 데이터가 동일해도 새 배열 참조를 생성하여 리렌더링 유도
+        return [...prevData];
+      });
+      
+      logger.info('workLogs 업데이트 감지 - staffData 리렌더링 트리거', { 
+        component: 'useStaffManagement',
+        data: { workLogsCount: workLogs.length }
+      });
     }
   }, [workLogs]);
 

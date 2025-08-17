@@ -156,7 +156,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   const handleUpdateTime = async () => {
     
     if (!workLog) {
-      // workLog가 없습니다
+      showError('작업 로그 정보가 없습니다.');
       return;
     }
     
@@ -184,28 +184,16 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         newEndTime
       } });
       
-      // 시작 시간과 종료 시간이 모두 없는 경우 스태프의 assignedTime을 '미정'로 설정
-      
       // 가상 WorkLog인지 확인 (ID가 'virtual_'로 시작하는 경우)
       const isVirtual = workLog.id.startsWith('virtual_');
+      
+      let finalWorkLogId = workLog.id;
       
       if (isVirtual) {
         // 가상 WorkLog의 경우 새로운 문서 생성
         const realWorkLogId = `${workLog.eventId}_${workLog.staffId}_${workLog.date}`;
+        finalWorkLogId = realWorkLogId;
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
-        
-        // 통합된 시간 처리: 입력된 시간을 scheduledStartTime으로 사용
-        let scheduledStartTimestamp = newStartTime;
-        let scheduledEndTimestamp = null;
-        
-        if (workLog.scheduledEndTime) {
-          try {
-            const scheduledEndDate = toDate(workLog.scheduledEndTime);
-            scheduledEndTimestamp = Timestamp.fromDate(scheduledEndDate);
-          } catch (error) {
-            logger.error('Error converting scheduledEndTime:', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
-          }
-        }
         
         // 통합 시스템 사용
         const staffId = workLog.staffId || (workLog as any).dealerId || '';
@@ -215,13 +203,19 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           staffName: (workLog as any).staffName || (workLog as any).dealerName || 'Unknown',
           date: workLog.date,
           type: 'schedule',
-          scheduledStartTime: scheduledStartTimestamp,
-          scheduledEndTime: scheduledEndTimestamp,
+          scheduledStartTime: newStartTime,
+          scheduledEndTime: newEndTime,
           status: 'scheduled'
         };
         
         const workLogData = prepareWorkLogForCreate(createInput);
         await setDoc(workLogRef, workLogData);
+        
+        logger.info('가상 WorkLog를 실제 문서로 생성 완료', { component: 'WorkTimeEditor', data: { 
+          id: realWorkLogId, 
+          startTime: startTime || '미정',
+          endTime: endTime || '미정' 
+        } });
       } else {
         // 기존 WorkLog 업데이트 - 통합 시스템 사용
         const workLogRef = doc(db, 'workLogs', workLog.id);
@@ -231,28 +225,42 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         });
         
         await updateDoc(workLogRef, updateData);
+        
+        logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
+          id: workLog.id, 
+          startTime: startTime || '미정',
+          endTime: endTime || '미정' 
+        } });
       }
       
-      // 날짜별 시간 관리를 위해 staff 컬렉션 업데이트 제거
-      // workLogs 컬렉션만 업데이트하고, 화면 표시는 workLogs 데이터 우선 사용
-      // workLogs 컬렉션만 업데이트 (날짜별 개별 시간 관리)
-      
-      // 업데이트된 데이터로 콜백 호출
+      // 업데이트된 데이터로 콜백 호출 - 더 강화된 업데이트 객체
       if (onUpdate) {
         const updatedWorkLog = {
           ...workLog,
+          id: finalWorkLogId, // 가상 ID를 실제 ID로 변경
           scheduledStartTime: newStartTime,
           scheduledEndTime: newEndTime,
           updatedAt: Timestamp.now()
         };
         onUpdate(updatedWorkLog);
+        
+        // 업데이트 성공 로그
+        logger.info('WorkTimeEditor onUpdate 콜백 호출 완료', { 
+          component: 'WorkTimeEditor', 
+          data: { 
+            staffId: workLog.staffId,
+            date: workLog.date,
+            newStartTime: startTime || '미정',
+            newEndTime: endTime || '미정'
+          } 
+        });
       }
       
-      showSuccess(t('attendance.messages.timeUpdated'));
+      showSuccess('시간이 성공적으로 업데이트되었습니다.');
       onClose();
     } catch (error) {
-      logger.error('Error updating work time:', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
-      showError(t('attendance.messages.updateError'));
+      logger.error('시간 업데이트 중 오류 발생', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
+      showError('시간 업데이트 중 오류가 발생했습니다.');
     } finally {
       setIsUpdating(false);
     }
