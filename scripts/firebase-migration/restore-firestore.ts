@@ -21,8 +21,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 
-// 환경 변수 로드
-dotenv.config();
+// 환경 변수 로드 (app2/.env 파일에서)
+dotenv.config({ path: path.resolve(__dirname, '../../app2/.env') });
 
 // Firebase 설정
 const firebaseConfig = {

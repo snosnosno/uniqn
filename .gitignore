@@ -80,6 +80,9 @@ __pycache__/
 # Firebase service account key
 # IMPORTANT: This file should not be committed to Git.
 /scripts/t-holdem-firebase-adminsdk-v4p2h-17b0754402.json
+firebase-service-account.json
+*-service-account.json
+/scripts/*-service-account.json
 
 # Windows-specific files
 nul

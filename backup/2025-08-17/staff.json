@@ -1,0 +1,54 @@
+[
+  {
+    "id": "tURgdOBmtYfO5Bgzm8NyGKGtbL12_0",
+    "data": {
+      "userId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "name": "김승호",
+      "email": "admin@test.com",
+      "phone": "010-9800-9039",
+      "userRole": "staff",
+      "jobRole": [
+        "Floor"
+      ],
+      "role": "Floor",
+      "assignedEvents": [
+        "OBkptD6d3IxAgRUAxhT5"
+      ],
+      "assignedRole": "floor",
+      "assignedTime": "미정",
+      "assignedDate": "2025-08-17",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T11:34:57.129Z"
+      },
+      "managerId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "postingId": "OBkptD6d3IxAgRUAxhT5"
+    }
+  },
+  {
+    "id": "tURgdOBmtYfO5Bgzm8NyGKGtbL12_1",
+    "data": {
+      "userId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "name": "김승호",
+      "email": "admin@test.com",
+      "phone": "010-9800-9039",
+      "userRole": "staff",
+      "jobRole": [
+        "Dealer"
+      ],
+      "role": "Dealer",
+      "assignedEvents": [
+        "OBkptD6d3IxAgRUAxhT5"
+      ],
+      "assignedRole": "dealer",
+      "assignedTime": "09:00",
+      "assignedDate": "2025-08-16",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T11:34:57.241Z"
+      },
+      "managerId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "postingId": "OBkptD6d3IxAgRUAxhT5"
+    }
+  }
+]

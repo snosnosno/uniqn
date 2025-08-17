@@ -1,7 +1,7 @@
 /**
- * Firebase 필드 마이그레이션 스크립트
+ * Firebase 필드 마이그레이션 스크립트 (Admin SDK 버전)
  * 
- * 이 스크립트는 Firebase Firestore의 데이터를 최신 필드 구조로 마이그레이션합니다.
+ * 이 스크립트는 Firebase Admin SDK를 사용하여 Firestore의 데이터를 최신 필드 구조로 마이그레이션합니다.
  * 
  * 주요 마이그레이션:
  * 1. dealerId → staffId
@@ -9,23 +9,13 @@
  * 3. assignedTime → scheduledStartTime/scheduledEndTime
  * 
  * 실행 방법:
- * npm run migrate:fields [--dry-run] [--batch-size=500]
+ * npm run migrate:admin [--dry-run] [--batch-size=500]
  */
 
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  updateDoc, 
-  doc, 
-  writeBatch,
-  Timestamp,
-  DocumentData,
-  QueryDocumentSnapshot
-} from 'firebase/firestore';
-import * as dotenv from 'dotenv';
+import * as admin from 'firebase-admin';
+import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
 
 // 환경 변수 로드 (app2/.env 파일에서)
 dotenv.config({ path: path.resolve(__dirname, '../../app2/.env') });
@@ -49,20 +39,24 @@ function parseAssignedTime(assignedTime: string): { startTime: string | null; en
   return { startTime: null, endTime: null };
 }
 
-// Firebase 설정
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
-};
+// Firebase Admin 초기화
+// 서비스 계정 키 파일 경로
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || 
+  path.resolve(__dirname, '../t-holdem-firebase-adminsdk-v4p2h-17b0754402.json');
 
-// Firebase 초기화
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+if (!fs.existsSync(serviceAccountPath)) {
+  console.error(`❌ Service account key file not found at: ${serviceAccountPath}`);
+  process.exit(1);
+}
+
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf-8'));
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  projectId: serviceAccount.project_id
+});
+
+const db = admin.firestore();
 
 // 명령줄 인자 파싱
 const args = process.argv.slice(2);
@@ -92,10 +86,10 @@ const log = {
 async function migrateWorkLogs() {
   log.info('Starting workLogs migration...');
   
-  const workLogsRef = collection(db, 'workLogs');
-  const snapshot = await getDocs(workLogsRef);
+  const workLogsRef = db.collection('workLogs');
+  const snapshot = await workLogsRef.get();
   
-  let batch = writeBatch(db);
+  let batch = db.batch();
   let batchCount = 0;
   let totalUpdated = 0;
   
@@ -132,11 +126,11 @@ async function migrateWorkLogs() {
       if (parsed.startTime) {
         const date = data.date || new Date().toISOString().split('T')[0];
         const startDateTime = new Date(`${date}T${parsed.startTime}`);
-        updates.scheduledStartTime = Timestamp.fromDate(startDateTime);
+        updates.scheduledStartTime = admin.firestore.Timestamp.fromDate(startDateTime);
         
         if (parsed.endTime) {
           const endDateTime = new Date(`${date}T${parsed.endTime}`);
-          updates.scheduledEndTime = Timestamp.fromDate(endDateTime);
+          updates.scheduledEndTime = admin.firestore.Timestamp.fromDate(endDateTime);
         }
         needsUpdate = true;
         log.info(`  - Migrating assignedTime → scheduled times for doc ${docSnap.id}`);
@@ -147,7 +141,7 @@ async function migrateWorkLogs() {
       if (isDryRun) {
         log.info(`  [DRY RUN] Would update doc ${docSnap.id} with:`, updates);
       } else {
-        batch.update(doc(db, 'workLogs', docSnap.id), updates);
+        batch.update(workLogsRef.doc(docSnap.id), updates);
         batchCount++;
         totalUpdated++;
         
@@ -155,7 +149,7 @@ async function migrateWorkLogs() {
         if (batchCount >= BATCH_SIZE) {
           await batch.commit();
           log.success(`Committed batch of ${batchCount} updates`);
-          batch = writeBatch(db);
+          batch = db.batch();
           batchCount = 0;
         }
       }
@@ -177,10 +171,10 @@ async function migrateWorkLogs() {
 async function migrateAttendanceRecords() {
   log.info('Starting attendanceRecords migration...');
   
-  const attendanceRef = collection(db, 'attendanceRecords');
-  const snapshot = await getDocs(attendanceRef);
+  const attendanceRef = db.collection('attendanceRecords');
+  const snapshot = await attendanceRef.get();
   
-  let batch = writeBatch(db);
+  let batch = db.batch();
   let batchCount = 0;
   let totalUpdated = 0;
   
@@ -214,14 +208,14 @@ async function migrateAttendanceRecords() {
       if (isDryRun) {
         log.info(`  [DRY RUN] Would update doc ${docSnap.id} with:`, updates);
       } else {
-        batch.update(doc(db, 'attendanceRecords', docSnap.id), updates);
+        batch.update(attendanceRef.doc(docSnap.id), updates);
         batchCount++;
         totalUpdated++;
         
         if (batchCount >= BATCH_SIZE) {
           await batch.commit();
           log.success(`Committed batch of ${batchCount} updates`);
-          batch = writeBatch(db);
+          batch = db.batch();
           batchCount = 0;
         }
       }
@@ -242,10 +236,10 @@ async function migrateAttendanceRecords() {
 async function migrateStaff() {
   log.info('Starting staff migration...');
   
-  const staffRef = collection(db, 'staff');
-  const snapshot = await getDocs(staffRef);
+  const staffRef = db.collection('staff');
+  const snapshot = await staffRef.get();
   
-  let batch = writeBatch(db);
+  let batch = db.batch();
   let batchCount = 0;
   let totalUpdated = 0;
   
@@ -265,14 +259,14 @@ async function migrateStaff() {
       if (isDryRun) {
         log.info(`  [DRY RUN] Would update doc ${docSnap.id} with:`, updates);
       } else {
-        batch.update(doc(db, 'staff', docSnap.id), updates);
+        batch.update(staffRef.doc(docSnap.id), updates);
         batchCount++;
         totalUpdated++;
         
         if (batchCount >= BATCH_SIZE) {
           await batch.commit();
           log.success(`Committed batch of ${batchCount} updates`);
-          batch = writeBatch(db);
+          batch = db.batch();
           batchCount = 0;
         }
       }
@@ -296,8 +290,8 @@ async function printStatistics() {
   const collections = ['workLogs', 'attendanceRecords', 'staff'];
   
   for (const collName of collections) {
-    const collRef = collection(db, collName);
-    const snapshot = await getDocs(collRef);
+    const collRef = db.collection(collName);
+    const snapshot = await collRef.get();
     
     let oldFieldCount = 0;
     let newFieldCount = 0;
@@ -332,7 +326,8 @@ async function printStatistics() {
 async function main() {
   try {
     log.info('='.repeat(50));
-    log.info('Firebase Field Migration Script');
+    log.info('Firebase Field Migration Script (Admin SDK)');
+    log.info(`Project: ${serviceAccount.project_id}`);
     log.info(`Mode: ${isDryRun ? 'DRY RUN' : 'LIVE'}`);
     log.info(`Batch Size: ${BATCH_SIZE}`);
     log.info('='.repeat(50));
@@ -361,6 +356,9 @@ async function main() {
       log.warn('This was a DRY RUN. No actual changes were made.');
       log.info('To perform the actual migration, run without --dry-run flag.');
     }
+    
+    // Admin SDK 정리
+    await admin.app().delete();
     
   } catch (error) {
     log.error('Migration failed:', error);

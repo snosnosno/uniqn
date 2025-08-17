@@ -1,0 +1,647 @@
+[
+  {
+    "id": "175536345502925dbve6uu",
+    "data": {
+      "name": "장민형",
+      "phone": "",
+      "chips": 351000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.029Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550301590ygxtz",
+    "data": {
+      "name": "배아훈",
+      "phone": "",
+      "chips": 174000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550303c5yaxcp3",
+    "data": {
+      "name": "이상민",
+      "phone": "",
+      "chips": 109000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550303tso0ygw7",
+    "data": {
+      "name": "이종선",
+      "phone": "",
+      "chips": 187000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550305uiu2s8m1",
+    "data": {
+      "name": "곽선호",
+      "phone": "",
+      "chips": 353000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550306ntlsp1a6",
+    "data": {
+      "name": "김익준",
+      "phone": "",
+      "chips": 267000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030af7w9w16z",
+    "data": {
+      "name": "남재준",
+      "phone": "",
+      "chips": 48000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030corjlhs87",
+    "data": {
+      "name": "유기표",
+      "phone": "",
+      "chips": 140000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030eadoiut1l",
+    "data": {
+      "name": "강성철",
+      "phone": "",
+      "chips": 118000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030fzbyhx2dy",
+    "data": {
+      "name": "김재완",
+      "phone": "",
+      "chips": 136000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030grxwv5opi",
+    "data": {
+      "name": "반재현",
+      "phone": "",
+      "chips": 135000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030h4liroa49",
+    "data": {
+      "name": "권형민",
+      "phone": "",
+      "chips": 274000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030kg56vxrn5",
+    "data": {
+      "name": "최성근",
+      "phone": "",
+      "chips": 201000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030p05tagzcg",
+    "data": {
+      "name": "정미애",
+      "phone": "",
+      "chips": 286000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030p66ac9rin",
+    "data": {
+      "name": "강희관",
+      "phone": "",
+      "chips": 86000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030sznmuvhj0",
+    "data": {
+      "name": "강왕훈",
+      "phone": "",
+      "chips": 25000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030wixo5ypph",
+    "data": {
+      "name": "나종원",
+      "phone": "",
+      "chips": 121000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455030ygn7651s6",
+    "data": {
+      "name": "이준성",
+      "phone": "",
+      "chips": 212000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.030Z"
+      }
+    }
+  },
+  {
+    "id": "175536345503131vqsg2f0",
+    "data": {
+      "name": "조성환",
+      "phone": "",
+      "chips": 63000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550315jxlvugvc",
+    "data": {
+      "name": "박예림",
+      "phone": "",
+      "chips": 135000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550318i2t8351t",
+    "data": {
+      "name": "한명환",
+      "phone": "",
+      "chips": 384000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "175536345503199p45hsld",
+    "data": {
+      "name": "이정",
+      "phone": "",
+      "chips": 145000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031asr0m1fci",
+    "data": {
+      "name": "어수학",
+      "phone": "",
+      "chips": 235000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031cstq08q8u",
+    "data": {
+      "name": "허성욱",
+      "phone": "",
+      "chips": 73000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031fhkskxdtv",
+    "data": {
+      "name": "양수범",
+      "phone": "",
+      "chips": 245000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031j9oi1hnlg",
+    "data": {
+      "name": "김태현",
+      "phone": "",
+      "chips": 206000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031j9xncr7cd",
+    "data": {
+      "name": "박두영",
+      "phone": "",
+      "chips": 453000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031lprzb7jli",
+    "data": {
+      "name": "현경훈",
+      "phone": "",
+      "chips": 254000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031lv48pb78h",
+    "data": {
+      "name": "권민수",
+      "phone": "",
+      "chips": 99000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031mf692uxp5",
+    "data": {
+      "name": "김동곤",
+      "phone": "",
+      "chips": 257000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031n4ct69shd",
+    "data": {
+      "name": "윤성주",
+      "phone": "",
+      "chips": 80000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031oksyiyd7z",
+    "data": {
+      "name": "이청운",
+      "phone": "",
+      "chips": 400000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031q6c8yqhh6",
+    "data": {
+      "name": "곽상+H18:I31",
+      "phone": "",
+      "chips": 7000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031rnzo26htu",
+    "data": {
+      "name": "김성권",
+      "phone": "",
+      "chips": 265000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031tms2nzwoz",
+    "data": {
+      "name": "김현중",
+      "phone": "",
+      "chips": 83000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031wgsmo9d0j",
+    "data": {
+      "name": "이재민",
+      "phone": "",
+      "chips": 534000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031xoody102p",
+    "data": {
+      "name": "허태진",
+      "phone": "",
+      "chips": 227000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031xssvaq74f",
+    "data": {
+      "name": "공동호",
+      "phone": "",
+      "chips": 46000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455031z2f44y7go",
+    "data": {
+      "name": "박정호",
+      "phone": "",
+      "chips": 55000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.031Z"
+      }
+    }
+  },
+  {
+    "id": "17553634550328ffnaeeh7",
+    "data": {
+      "name": "김도영",
+      "phone": "",
+      "chips": 498000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.032Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455032b36t3atf7",
+    "data": {
+      "name": "유재덕",
+      "phone": "",
+      "chips": 15000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.032Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455032ev3t273kc",
+    "data": {
+      "name": "이국재",
+      "phone": "",
+      "chips": 93000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.032Z"
+      }
+    }
+  },
+  {
+    "id": "1755363455032sjnkzwg6z",
+    "data": {
+      "name": "문장호",
+      "phone": "",
+      "chips": 196000,
+      "status": "active",
+      "playerIdentifier": "",
+      "participationMethod": "",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T16:57:35.032Z"
+      }
+    }
+  }
+]

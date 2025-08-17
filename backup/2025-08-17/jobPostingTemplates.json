@@ -1,0 +1,120 @@
+[
+  {
+    "id": "GAtzqV57WjCPz1Ado0hw",
+    "data": {
+      "name": "ksop11",
+      "description": "",
+      "templateData": {
+        "title": "ksop",
+        "type": "application",
+        "timeSlots": [
+          {
+            "roles": [
+              {
+                "name": "dealer",
+                "count": 1
+              }
+            ],
+            "time": "09:00",
+            "tentativeDescription": "",
+            "isTimeToBeAnnounced": false
+          }
+        ],
+        "dateSpecificRequirements": [
+          {
+            "date": "2025-08-03",
+            "timeSlots": [
+              {
+                "roles": [
+                  {
+                    "count": 1,
+                    "name": "dealer"
+                  }
+                ],
+                "tentativeDescription": "내맘이다",
+                "time": "미정",
+                "isTimeToBeAnnounced": true
+              },
+              {
+                "roles": [
+                  {
+                    "count": 1,
+                    "name": "dealer"
+                  }
+                ],
+                "time": "09:00",
+                "isTimeToBeAnnounced": false,
+                "tentativeDescription": ""
+              }
+            ]
+          },
+          {
+            "timeSlots": [
+              {
+                "isTimeToBeAnnounced": true,
+                "roles": [
+                  {
+                    "count": 1,
+                    "name": "dealer"
+                  },
+                  {
+                    "name": "floor",
+                    "count": 2
+                  }
+                ],
+                "time": "미정",
+                "tentativeDescription": ""
+              }
+            ],
+            "date": "2025-08-04"
+          }
+        ],
+        "usesDifferentDailyRequirements": true,
+        "description": "상세한설명",
+        "location": "서울",
+        "district": "강남구",
+        "detailedAddress": "뉴스톤",
+        "salaryType": "hourly",
+        "salaryAmount": "20000",
+        "benefits": {
+          "guaranteedHours": "6",
+          "clothing": "셔츠",
+          "meal": "미제공",
+          "transportation": "1",
+          "mealAllowance": "1",
+          "accommodation": "미제공"
+        },
+        "preQuestions": [
+          {
+            "required": false,
+            "question": "22",
+            "type": "select",
+            "options": [
+              "3",
+              "2"
+            ],
+            "id": "1754154045483"
+          },
+          {
+            "type": "text",
+            "question": "33",
+            "options": [],
+            "id": "1754154058844",
+            "required": false
+          }
+        ],
+        "usesPreQuestions": true
+      },
+      "createdBy": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-02T17:11:39.370Z"
+      },
+      "lastUsedAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T11:34:21.151Z"
+      },
+      "usageCount": 29
+    }
+  }
+]

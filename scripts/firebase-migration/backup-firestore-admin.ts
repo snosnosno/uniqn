@@ -1,20 +1,14 @@
 /**
- * Firebase Firestore 백업 스크립트
+ * Firebase Firestore 백업 스크립트 (Admin SDK 버전)
  * 
- * 이 스크립트는 Firestore의 모든 데이터를 JSON 파일로 백업합니다.
- * 마이그레이션 전 필수로 실행해야 합니다.
+ * 이 스크립트는 Firebase Admin SDK를 사용하여 Firestore의 모든 데이터를 JSON 파일로 백업합니다.
+ * 서비스 계정 키 파일이 필요합니다.
  * 
  * 실행 방법:
- * npm run backup:firestore [--collections=staff,workLogs] [--output=./backup]
+ * npm run backup:admin [--collections=staff,workLogs] [--output=./backup]
  */
 
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  getDocs,
-  DocumentData
-} from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -22,20 +16,29 @@ import * as dotenv from 'dotenv';
 // 환경 변수 로드 (app2/.env 파일에서)
 dotenv.config({ path: path.resolve(__dirname, '../../app2/.env') });
 
-// Firebase 설정
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
-};
+// Firebase Admin 초기화
+// 서비스 계정 키 파일 경로
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || 
+  path.resolve(__dirname, '../t-holdem-firebase-adminsdk-v4p2h-17b0754402.json');
 
-// Firebase 초기화
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+if (!fs.existsSync(serviceAccountPath)) {
+  console.error(`❌ Service account key file not found at: ${serviceAccountPath}`);
+  console.error('Please download the service account key from Firebase Console:');
+  console.error('1. Go to Project Settings > Service Accounts');
+  console.error('2. Click "Generate new private key"');
+  console.error('3. Save the file as firebase-service-account.json in the project root');
+  console.error('4. Add to .gitignore to prevent committing sensitive data');
+  process.exit(1);
+}
+
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf-8'));
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  projectId: serviceAccount.project_id
+});
+
+const db = admin.firestore();
 
 // 명령줄 인자 파싱
 const args = process.argv.slice(2);
@@ -85,50 +88,54 @@ const log = {
 /**
  * Timestamp를 문자열로 변환
  */
-function serializeData(data: DocumentData): any {
-  const serialized: any = {};
-  
-  for (const [key, value] of Object.entries(data)) {
-    if (value === null || value === undefined) {
-      serialized[key] = value;
-    } else if (value.toDate && typeof value.toDate === 'function') {
-      // Firestore Timestamp
-      serialized[key] = {
-        _type: 'timestamp',
-        value: value.toDate().toISOString()
-      };
-    } else if (value instanceof Date) {
-      // JavaScript Date
-      serialized[key] = {
-        _type: 'date',
-        value: value.toISOString()
-      };
-    } else if (Array.isArray(value)) {
-      // 배열
-      serialized[key] = value.map(item => 
-        typeof item === 'object' ? serializeData(item) : item
-      );
-    } else if (typeof value === 'object') {
-      // 중첩된 객체
-      serialized[key] = serializeData(value);
-    } else {
-      // 기본 타입
-      serialized[key] = value;
-    }
+function serializeData(data: any): any {
+  if (data === null || data === undefined) {
+    return data;
   }
   
-  return serialized;
+  if (data._seconds !== undefined && data._nanoseconds !== undefined) {
+    // Firestore Timestamp
+    return {
+      _type: 'timestamp',
+      value: new Date(data._seconds * 1000 + data._nanoseconds / 1000000).toISOString()
+    };
+  }
+  
+  if (data instanceof Date) {
+    // JavaScript Date
+    return {
+      _type: 'date',
+      value: data.toISOString()
+    };
+  }
+  
+  if (Array.isArray(data)) {
+    // 배열
+    return data.map(item => serializeData(item));
+  }
+  
+  if (typeof data === 'object') {
+    // 중첩된 객체
+    const serialized: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      serialized[key] = serializeData(value);
+    }
+    return serialized;
+  }
+  
+  // 기본 타입
+  return data;
 }
 
 /**
  * 컬렉션 백업
  */
-async function backupCollection(collectionName: string): Promise<void> {
+async function backupCollection(collectionName: string): Promise<number> {
   try {
     log.info(`Backing up collection: ${collectionName}`);
     
-    const collRef = collection(db, collectionName);
-    const snapshot = await getDocs(collRef);
+    const collRef = db.collection(collectionName);
+    const snapshot = await collRef.get();
     
     const documents: any[] = [];
     
@@ -154,6 +161,7 @@ async function backupCollection(collectionName: string): Promise<void> {
     );
     
     log.success(`Backed up ${documents.length} documents from ${collectionName} to ${filePath}`);
+    return documents.length;
     
   } catch (error) {
     log.error(`Failed to backup ${collectionName}:`, error);
@@ -167,7 +175,7 @@ async function backupCollection(collectionName: string): Promise<void> {
 function createBackupMetadata(results: any): void {
   const metadata = {
     timestamp: new Date().toISOString(),
-    projectId: firebaseConfig.projectId,
+    projectId: serviceAccount.project_id,
     collections: results,
     totalDocuments: Object.values(results).reduce((sum: number, count: any) => sum + count, 0)
   };
@@ -188,7 +196,8 @@ function createBackupMetadata(results: any): void {
 async function main() {
   try {
     log.info('='.repeat(50));
-    log.info('Firebase Firestore Backup Script');
+    log.info('Firebase Firestore Backup Script (Admin SDK)');
+    log.info(`Project: ${serviceAccount.project_id}`);
     log.info(`Output Directory: ${OUTPUT_DIR}`);
     log.info(`Collections to backup: ${COLLECTIONS.join(', ')}`);
     log.info('='.repeat(50));
@@ -198,13 +207,8 @@ async function main() {
     // 각 컬렉션 백업
     for (const collectionName of COLLECTIONS) {
       try {
-        await backupCollection(collectionName);
-        
-        // 백업된 문서 수 기록
-        const filePath = path.join(OUTPUT_DIR, `${collectionName}.json`);
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        results[collectionName] = data.length;
-        
+        const docCount = await backupCollection(collectionName);
+        results[collectionName] = docCount;
       } catch (error) {
         log.warn(`Skipping ${collectionName} due to error`);
         results[collectionName] = 0;
@@ -223,6 +227,9 @@ async function main() {
     }
     
     log.info(`\nBackup saved to: ${OUTPUT_DIR}`);
+    
+    // Admin SDK 정리
+    await admin.app().delete();
     
   } catch (error) {
     log.error('Backup failed:', error);

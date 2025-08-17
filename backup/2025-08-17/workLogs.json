@@ -1,0 +1,31 @@
+[
+  {
+    "id": "OBkptD6d3IxAgRUAxhT5_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2025-08-16",
+    "data": {
+      "eventId": "OBkptD6d3IxAgRUAxhT5",
+      "dealerId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+      "dealerName": "김승호",
+      "date": "2025-08-16",
+      "status": "checked_in",
+      "actualStartTime": null,
+      "actualEndTime": null,
+      "createdAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T11:35:55.507Z"
+      },
+      "scheduledEndTime": {
+        "_type": "timestamp",
+        "value": "2025-08-16T09:00:00.000Z"
+      },
+      "scheduledStartTime": {
+        "_type": "timestamp",
+        "value": "2025-08-16T01:00:00.000Z"
+      },
+      "updatedAt": {
+        "_type": "timestamp",
+        "value": "2025-08-16T11:36:22.564Z"
+      }
+    }
+  }
+]
