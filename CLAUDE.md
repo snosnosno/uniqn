@@ -30,9 +30,10 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
 
 ### 2025년 1월 업데이트
 - **토너먼트 참가자 관리 시스템**: 칩 카운트 표시, 자동 재배치 알고리즘, CSV 업로드
-- **번들 크기 최적화**: 261.07 KB (gzipped) 달성
+- **번들 크기 최적화**: 273KB (gzipped) 달성 - 84% 감소
 - **TypeScript Strict Mode**: 100% 준수
-
+- **Deprecated 필드 제거**: dealerId, checkInTime, checkOutTime 완전 제거 (2025-01-17)
+- **사용하지 않는 기능 제거**: AnnouncementsPage, HistoryPage 완전 삭제 (2025-01-17)
 - **정산 시스템 단순화**: SimplePayrollPage 구현, Firebase Functions 제거로 90% 성능 개선
 - **StaffCard 모듈화**: 658줄 → 407줄, 4개 컴포넌트 분리, 성능 37-44% 향상
 - **대규모 클린업**: 의존성 69% 감소, 패키지 98개 제거
@@ -71,23 +72,29 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
 
 ### 주요 디렉토리 구조
 ```
-- app2/src/              # 메인 애플리케이션 소스
-  - components/          # 재사용 가능한 컴포넌트
-    - applicants/        # 지원자 관련 모듈화된 컴포넌트
-    - common/            # 공통 UI 컴포넌트
-    - jobPosting/        # 구인공고 관련 컴포넌트
-    - staff/             # 스태프 관련 모듈화된 컴포넌트 (2025-08-07 추가)
-      - StaffCardHeader.tsx      # 66줄 - 헤더 정보 표시
-      - StaffCardTimeSection.tsx # 63줄 - 시간 관리 UI
-      - StaffCardActions.tsx     # 133줄 - 액션 메뉴 및 상태 변경
-      - StaffCardContactInfo.tsx # 78줄 - 연락처 정보
-  - pages/              
-    - JobBoard/          # 모듈화된 구인공고 페이지
-  - stores/             # Zustand 스토어
-- SHRIMP/               # 태스크 관리 시스템
-- claude_set/           # SuperClaude 설정
-- scripts/              # 유틸리티 스크립트
+T-HOLDEM/
+├── app2/src/              # 메인 애플리케이션 소스
+│   ├── components/        # 재사용 가능한 컴포넌트
+│   │   ├── applicants/    # 지원자 관련 모듈화된 컴포넌트
+│   │   ├── common/        # 공통 UI 컴포넌트
+│   │   ├── jobPosting/    # 구인공고 관련 컴포넌트
+│   │   ├── staff/         # 스태프 관련 모듈화된 컴포넌트 (2025-01-07)
+│   │   │   ├── StaffCardHeader.tsx      # 66줄 - 헤더 정보 표시
+│   │   │   ├── StaffCardTimeSection.tsx # 63줄 - 시간 관리 UI
+│   │   │   ├── StaffCardActions.tsx     # 133줄 - 액션 메뉴 및 상태 변경
+│   │   │   └── StaffCardContactInfo.tsx # 78줄 - 연락처 정보
+│   │   └── payroll/       # 급여 관련 컴포넌트 (2025-01-17)
+│   ├── pages/              
+│   │   └── JobBoard/      # 모듈화된 구인공고 페이지
+│   └── stores/            # Zustand 스토어 (3개)
+├── docs/                  # 프로젝트 문서
+│   └── PROJECT_STRUCTURE.md # 상세 구조도
+├── SHRIMP/               # 태스크 관리 시스템
+├── claude_set/           # SuperClaude 설정
+└── scripts/              # 유틸리티 스크립트
 ```
+
+> 📌 상세한 구조는 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) 참조
 
 ### Firebase Collections 구조
 ```
@@ -214,6 +221,12 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
    - ToastContext → Zustand 마이그레이션
    - JobPostingContext → Zustand 마이그레이션
 
+8. **사용하지 않는 기능 제거** ✅ (2025-01-17 완료)
+   - AnnouncementsPage 완전 삭제 (공지사항 기능)
+   - HistoryPage 및 HistoryDetailPage 삭제 (기록 페이지)
+   - 관련 아이콘 및 의존성 제거
+   - 번들 크기 272.8KB 유지
+
 ### 개선 필요 사항
 - ESLint 경고 해결 (약 70개)
 - 테스트 커버리지 확대 (현재 10개 → 목표 70%)
@@ -223,7 +236,7 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
 ## 📊 프로젝트 성과
 
 ### 성능 지표
-- **번들 크기**: 1.6MB → 261KB (84% 감소)
+- **번들 크기**: 1.6MB → 272.8KB (84% 감소)
 - **초기 로딩**: 3.5초 → 2.0초 (43% 개선)
 - **Lighthouse 점수**: 68 → 91
 - **TypeScript Strict Mode**: 100% 준수
@@ -235,8 +248,9 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
 
 ### 프로젝트 문서
 - **[서브에이전트 가이드](docs/CLAUDE_SUBAGENTS_GUIDE.md)**: Claude Code 서브에이전트 기능 및 사용법
-- **[기능 명세서](docs/T-HOLDEM_기능명세서_v2.0.md)**: T-HOLDEM 전체 기능 명세
+- **[기능 명세서](docs/T-HOLDEM_기능명세서.md)**: T-HOLDEM 전체 기능 명세
 - **[워크플로우](docs/T-HOLDEM_워크플로우.md)**: 운영 워크플로우 가이드
+- **[프로젝트 구조](docs/PROJECT_STRUCTURE.md)**: 상세 디렉토리 구조
 
 ### 기술 가이드
 - **[최적화 가이드](app2/docs/OPTIMIZATION_GUIDE.md)**: 번들 분석, 라이브러리 최적화

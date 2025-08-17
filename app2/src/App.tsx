@@ -19,6 +19,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
+import { initializePerformance } from './utils/firebasePerformance';
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
@@ -27,11 +28,8 @@ const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 
 // Lazy load main pages
-const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
 const AttendancePage = lazy(() => import('./pages/AttendancePage'));
 const AvailableTimesPage = lazy(() => import('./pages/AvailableTimesPage'));
-const HistoryDetailPage = lazy(() => import('./pages/HistoryDetailPage'));
-const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
 const JobPostingAdminPage = lazy(() => import('./pages/JobPostingAdminPage'));
 const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
@@ -67,6 +65,9 @@ const App: React.FC = () => {
   // Firebase 자동 복구 활성화 및 성능 모니터링
   React.useEffect(() => {
     firebaseConnectionManager.enableAutoRecovery();
+    
+    // Firebase Performance 초기화
+    initializePerformance();
     
     // 성능 모니터링 시작
     performanceMonitor.measureWebVitals();
@@ -115,9 +116,6 @@ const App: React.FC = () => {
                         <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
                         <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
                         <Route path="prizes" element={<Suspense fallback={<LoadingSpinner />}><PrizesPage /></Suspense>} />
-                        <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
-                        <Route path="history" element={<Suspense fallback={<LoadingSpinner />}><HistoryPage /></Suspense>} />
-                        <Route path="history/:logId" element={<Suspense fallback={<LoadingSpinner />}><HistoryDetailPage /></Suspense>} />
                       </Route>
 
                       {/* Job Posting Management - Admin, Manager, Staff with permission */}

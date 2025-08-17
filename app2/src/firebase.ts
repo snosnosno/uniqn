@@ -21,6 +21,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+export { app }; // Export app for Firebase Performance
 export const auth = getAuth(app);
 export const db = getFirestore(app); // Export db as a named export
 

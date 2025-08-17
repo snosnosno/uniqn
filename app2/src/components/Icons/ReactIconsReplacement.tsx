@@ -29,9 +29,7 @@ import {
   IdentificationIcon,
   StarIcon,
   UserIcon,
-  ClockIcon as HistoryIcon,
   PresentationChartLineIcon,
-  MegaphoneIcon,
   UserCircleIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
@@ -99,9 +97,7 @@ export const FaEnvelope = createIconWrapper(EnvelopeIcon);
 export const FaIdCard = createIconWrapper(IdentificationIcon);
 export const FaStar = createIconWrapper(StarIcon);
 export const FaUser = createIconWrapper(UserIcon);
-export const FaHistory = createIconWrapper(HistoryIcon);
 export const FaTachometerAlt = createIconWrapper(PresentationChartLineIcon);
-export const FaBullhorn = createIconWrapper(MegaphoneIcon);
 export const FaUserCircle = createIconWrapper(UserCircleIcon);
 export const FaFileInvoice = createIconWrapper(DocumentTextIcon);
 export const FaClipboardList = createIconWrapper(ClipboardDocumentListIcon);

@@ -437,8 +437,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       // staffId 매칭
       const isStaffMatch = r.staffId === staffId || 
                           r.staffId === actualStaffId ||
-                          r.workLog?.dealerId === staffId ||
-                          r.workLog?.dealerId === actualStaffId;
+                          r.workLog?.staffId === staffId ||
+                          r.workLog?.staffId === actualStaffId;
       
       // 날짜 매칭
       const isDateMatch = r.workLog?.date === date;

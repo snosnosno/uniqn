@@ -112,7 +112,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
-    // @deprecated: assignedTime 사용, workLog.scheduledStartTime 우선
+    // workLog.scheduledStartTime을 우선 사용, assignedTime은 fallback
     let scheduledStartTime = staff.assignedTime;
     if (workLog?.scheduledStartTime) {
       try {
@@ -161,7 +161,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정'
     };
-  }, [staff.id, staff.assignedTime /* @deprecated */, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
+  }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
   
 
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
@@ -351,7 +351,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   const shouldMemoize = (
     prevProps.staff.id === nextProps.staff.id &&
     prevProps.staff.name === nextProps.staff.name &&
-    prevProps.staff.assignedTime === nextProps.staff.assignedTime /* @deprecated */ &&
+    prevProps.staff.assignedTime === nextProps.staff.assignedTime &&
     prevProps.staff.assignedDate === nextProps.staff.assignedDate &&
     prevProps.staff.assignedRole === nextProps.staff.assignedRole &&
     prevProps.staff.role === nextProps.staff.role &&
@@ -369,12 +369,12 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   const prevAttendanceRecords = prevProps.attendanceRecords.filter(r => 
     r.staffId === prevProps.staff.id || 
     r.workLog?.staffId === prevProps.staff.id ||
-    r.workLog?.dealerId === prevProps.staff.id // @deprecated - 하위 호환성을 위해 유지
+    r.workLog?.staffId === prevProps.staff.id
   );
   const nextAttendanceRecords = nextProps.attendanceRecords.filter(r => 
     r.staffId === nextProps.staff.id || 
     r.workLog?.staffId === nextProps.staff.id ||
-    r.workLog?.dealerId === nextProps.staff.id // @deprecated - 하위 호환성을 위해 유지
+    r.workLog?.staffId === nextProps.staff.id
   );
   
   if (prevAttendanceRecords.length !== nextAttendanceRecords.length) {

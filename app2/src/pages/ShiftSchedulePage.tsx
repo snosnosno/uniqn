@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
-import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaHistory } from '../components/Icons/ReactIconsReplacement';
+import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle } from '../components/Icons/ReactIconsReplacement';
 
 import ShiftGridComponent from '../components/ShiftGridComponent';
 import TimeIntervalSelector from '../components/TimeIntervalSelector';
@@ -396,7 +396,7 @@ const ShiftSchedulePage: React.FC = () => {
                   workLogsGenerated ? 'btn-outline' : 'btn-secondary'
                 } ${isGeneratingWorkLogs ? 'loading' : ''}`}
               >
-                <FaHistory className="w-3 h-3 sm:w-4 sm:h-4" />
+                <FaClock className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">
                   {isGeneratingWorkLogs ? t('shiftSchedule.generating') : 
                    workLogsGenerated ? t('shiftSchedule.regenerateWorkLogs') : t('shiftSchedule.generateWorkLogs')}
@@ -436,7 +436,7 @@ const ShiftSchedulePage: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center gap-2 text-orange-600">
-                <FaHistory className="w-4 h-4" />
+                <FaClock className="w-4 h-4" />
                 <span className="text-sm font-medium">{t('shiftSchedule.workLogsNotGenerated')}</span>
               </div>
             )}

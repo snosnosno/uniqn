@@ -34,23 +34,8 @@ export interface AttendanceRecord {
   /** 출석 기록 고유 ID */
   id: string;
   
-  /** 스태프 ID (표준 필드) */
+  /** 스태프 ID */
   staffId: string;
-  
-  /** 
-   * @deprecated dealerId는 staffId로 대체되었습니다. 
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 staffId를 사용하세요.
-   * 
-   * 마이그레이션 가이드:
-   * ```typescript
-   * // ❌ 기존 방식
-   * const staffId = record.dealerId;
-   * 
-   * // ✅ 권장 방식
-   * const staffId = record.staffId || record.dealerId;
-   * ```
-   */
-  dealerId?: string;
   
   /** 출석 날짜 (YYYY-MM-DD 형식) */
   date: string;
@@ -58,41 +43,11 @@ export interface AttendanceRecord {
   /** 출석 상태 */
   status: AttendanceStatus;
   
-  /** 실제 출근 시간 (표준 필드) */
+  /** 실제 출근 시간 */
   actualStartTime?: Timestamp | null;
   
-  /** 실제 퇴근 시간 (표준 필드) */
+  /** 실제 퇴근 시간 */
   actualEndTime?: Timestamp | null;
-  
-  /** 
-   * @deprecated checkInTime은 actualStartTime으로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 actualStartTime을 사용하세요.
-   * 
-   * 마이그레이션 가이드:
-   * ```typescript
-   * // ❌ 기존 방식
-   * const startTime = record.checkInTime;
-   * 
-   * // ✅ 권장 방식
-   * const startTime = record.actualStartTime || record.checkInTime;
-   * ```
-   */
-  checkInTime?: Timestamp | null;
-  
-  /** 
-   * @deprecated checkOutTime은 actualEndTime으로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 actualEndTime을 사용하세요.
-   * 
-   * 마이그레이션 가이드:
-   * ```typescript
-   * // ❌ 기존 방식
-   * const endTime = record.checkOutTime;
-   * 
-   * // ✅ 권장 방식
-   * const endTime = record.actualEndTime || record.checkOutTime;
-   * ```
-   */
-  checkOutTime?: Timestamp | null;
   
   /** QR 코드 정보 */
   qrCode?: string;
@@ -127,23 +82,8 @@ export interface WorkLog {
   /** 근무 일지 고유 ID */
   id: string;
   
-  /** 스태프 ID (표준 필드) */
+  /** 스태프 ID */
   staffId: string;
-  
-  /** 
-   * @deprecated dealerId는 staffId로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 staffId를 사용하세요.
-   * 
-   * 마이그레이션 가이드:
-   * ```typescript
-   * // ❌ 기존 방식
-   * const staffId = workLog.dealerId;
-   * 
-   * // ✅ 권장 방식
-   * const staffId = workLog.staffId || workLog.dealerId;
-   * ```
-   */
-  dealerId?: string;
   
   /** 근무 날짜 (YYYY-MM-DD 형식) */
   date: string;
@@ -224,14 +164,8 @@ export interface QRCodeData {
   /** QR 코드 타입 (현재는 출석만 지원) */
   type: 'attendance';
   
-  /** 스태프 ID (표준 필드) */
+  /** 스태프 ID */
   staffId: string;
-  
-  /** 
-   * @deprecated dealerId는 staffId로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, QR 코드 스캔 시 자동으로 staffId로 변환됩니다.
-   */
-  dealerId?: string;
   
   /** QR 코드 생성 시점의 타임스탬프 */
   timestamp: number;

@@ -15,10 +15,6 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   actualStartTime?: string | undefined;
   actualEndTime?: string | undefined;
-  /** @deprecated - actualStartTime 사용 권장. 하위 호환성을 위해 유지 */
-  checkInTime?: string | undefined;
-  /** @deprecated - actualEndTime 사용 권장. 하위 호환성을 위해 유지 */
-  checkOutTime?: string | undefined;
   scheduledStartTime?: string | undefined;
   scheduledEndTime?: string | undefined;
   workLog?: WorkLog;
@@ -158,8 +154,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       return formatted || undefined;
     };
 
-    // staffId 우선, dealerId는 하위 호환성을 위해 fallback
-    const staffId = workLog.staffId || workLog.dealerId;
+    const staffId = workLog.staffId;
 
     return {
       staffId: staffId || '',
@@ -167,9 +162,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       status,
       ...(formatTimeFromTimestamp(workLog.actualStartTime) && { actualStartTime: formatTimeFromTimestamp(workLog.actualStartTime) }),
       ...(formatTimeFromTimestamp(workLog.actualEndTime) && { actualEndTime: formatTimeFromTimestamp(workLog.actualEndTime) }),
-      // 하위 호환성을 위한 fallback
-      ...(formatTimeFromTimestamp(workLog.actualStartTime) && { checkInTime: formatTimeFromTimestamp(workLog.actualStartTime) }),
-      ...(formatTimeFromTimestamp(workLog.actualEndTime) && { checkOutTime: formatTimeFromTimestamp(workLog.actualEndTime) }),
       ...(formatTimeFromTimestamp(workLog.scheduledStartTime) && { scheduledStartTime: formatTimeFromTimestamp(workLog.scheduledStartTime) }),
       ...(formatTimeFromTimestamp(workLog.scheduledEndTime) && { scheduledEndTime: formatTimeFromTimestamp(workLog.scheduledEndTime) }),
       workLog
@@ -238,8 +230,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           // logger.debug 제거 - 성능 최적화
           
           const matchedRecord = attendanceRecords.find(record => {
-            // staffId 우선, dealerId는 하위 호환성을 위해 fallback
-            const recordStaffId = record.staffId || record.workLog?.staffId || record.workLog?.dealerId;
+            const recordStaffId = record.staffId || record.workLog?.staffId;
             const isStaffMatch = recordStaffId === staffId;
             const isDateMatch = record.workLog?.date === date;
             const isMatch = isStaffMatch && isDateMatch;

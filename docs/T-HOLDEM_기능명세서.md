@@ -2,8 +2,8 @@
 
 ## 📋 문서 개요
 
-**문서 버전**: 2.0  
-**작성일**: 2025-01-08  
+**문서 버전**: 2.1  
+**작성일**: 2025-01-17  
 **문서 목적**: T-HOLDEM 플랫폼의 모든 기능에 대한 상세한 기술적 명세와 구현 가이드
 
 ---
@@ -182,8 +182,8 @@ interface QRCheckIn {
 
 interface WorkLog {
   id: string;
-  dealerId: string;  // staffId와 호환
-  dealerName: string;
+  staffId: string;
+  staffName: string;
   date: string;  // YYYY-MM-DD
   eventId?: string;
   scheduledStartTime?: string;
@@ -414,7 +414,7 @@ const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
 - 사이드 이펙트 프리 모듈
 
 // 결과
-- 번들 크기: 890KB (44% 감소)
+- 번들 크기: 273KB (84% 감소)
 - 초기 로딩: 2.0초
 ```
 
@@ -671,6 +671,7 @@ firebaseConnectionManager.handleConnectionError();
 // exactOptionalPropertyTypes 오류
 // 해결: 조건부 스프레드 연산자 사용
 {...(value && { prop: value })}
+// 또는 타입 가드 사용
 ```
 
 #### 14.3 성능 문제
@@ -690,15 +691,48 @@ firebaseConnectionManager.handleConnectionError();
 ```
 app2/src/
 ├── components/       # 재사용 컴포넌트
-│   ├── common/      # 공통 UI
+│   ├── common/      # 공통 UI (Badge, Button, Card, Input)
 │   ├── jobPosting/  # 구인공고 관련
-│   └── tabs/        # 탭 컴포넌트
-├── contexts/        # Context API
+│   │   └── modals/  # 모달 컴포넌트
+│   ├── staff/       # 스태프 관련 모듈화된 컴포넌트
+│   │   ├── StaffCardHeader.tsx      # 헤더 (66줄)
+│   │   ├── StaffCardTimeSection.tsx # 시간 관리 (63줄)
+│   │   ├── StaffCardActions.tsx     # 액션 메뉴 (133줄)
+│   │   └── StaffCardContactInfo.tsx # 연락처 (78줄)
+│   ├── payroll/     # 급여 관련 컴포넌트
+│   │   ├── AllowanceEditModal.tsx
+│   │   └── BulkAllowancePanel.tsx
+│   ├── applicants/  # 지원자 관련
+│   │   └── ApplicantListTab/
+│   ├── tabs/        # 탭 컴포넌트
+│   │   ├── EnhancedPayrollTab.tsx
+│   │   └── StaffManagementTab.tsx
+│   └── ui/          # UI 기본 컴포넌트
+├── contexts/        # Context API (Auth, Tournament)
 ├── hooks/           # Custom Hooks
+│   ├── useStaffManagement.ts
+│   ├── useAttendanceStatus.ts
+│   ├── useEnhancedPayroll.ts
+│   └── usePermissions.ts
 ├── pages/           # 페이지 컴포넌트
+│   ├── JobBoardPage.tsx
+│   ├── AttendancePage.tsx
+│   ├── admin/       # 관리자 페이지
+│   └── JobBoard/    # 모듈화된 구인게시판
 ├── stores/          # Zustand 스토어
+│   ├── toastStore.ts
+│   ├── jobPostingStore.ts
+│   └── tournamentStore.ts
 ├── types/           # TypeScript 타입
+│   ├── attendance.ts
+│   ├── payroll.ts
+│   └── unified/workLog.ts
 └── utils/           # 유틸리티 함수
+    ├── logger.ts
+    ├── performanceMonitor.ts
+    ├── dateUtils.ts
+    ├── workLogUtils.ts
+    └── security/
 ```
 
 ### B. 명명 규칙

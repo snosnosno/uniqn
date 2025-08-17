@@ -3,8 +3,8 @@ import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
-    FaTrophy, FaBullhorn, FaUserCircle, FaFileInvoice, FaClipboardList, FaQrcode,
-    FaSignOutAlt, FaUserCheck, FaHistory, FaCalendarAlt
+    FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList, FaQrcode,
+    FaSignOutAlt, FaUserCheck, FaCalendarAlt
 } from './Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -192,8 +192,6 @@ export const HeaderMenu: React.FC = () => {
                       <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/announcements" label={t('nav.announcements', 'Announcements')} Icon={FaBullhorn} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/history" label="기록/히스토리" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}
 

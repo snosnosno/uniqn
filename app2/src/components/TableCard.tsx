@@ -11,7 +11,7 @@ interface TableCardProps {
   table: Table;
   onTableClick: () => void;
   isMobile: boolean;
-  getDealerName: (staffId: string | null) => string; // dealerId → staffId 변경
+  getDealerName: (staffId: string | null) => string;
   participants?: Participant[];
 }
 
@@ -113,7 +113,7 @@ const TableCard: React.FC<TableCardProps> = ({
       {/* Dealer Info */}
       <div className="w-full text-center mb-3">
         <p className="text-sm text-gray-500">
-          {t('tableCard.dealer')} {getDealerName(table.assignedStaffId || table.assignedDealerId || null)}
+          {t('tableCard.dealer')} {getDealerName(table.assignedStaffId || null)}
         </p>
       </div>
 

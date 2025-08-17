@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaHistory } from '../Icons/ReactIconsReplacement';
+import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog } from '../Icons/ReactIconsReplacement';
 
 // import { useAuth } from '../../contexts/AuthContext';
 import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
@@ -88,7 +88,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
               className="btn btn-outline btn-sm flex items-center gap-2"
               disabled
             >
-              <FaHistory className="w-4 h-4" />
+              <FaClock className="w-4 h-4" />
               {t('shiftSchedule.generateWorkLogs', '근무기록 생성')}
             </button>
             <button 

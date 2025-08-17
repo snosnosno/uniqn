@@ -2,8 +2,8 @@
 
 ## 📋 문서 개요
 
-**문서 버전**: 2.0  
-**작성일**: 2025-01-08  
+**문서 버전**: 2.1  
+**작성일**: 2025-01-17  
 **문서 목적**: T-HOLDEM 플랫폼의 주요 비즈니스 프로세스와 시스템 흐름을 시각화
 
 ---
@@ -191,8 +191,8 @@ graph LR
 ```
 workLogs Collection (날짜별 독립 관리)
 ├── Document ID: auto-generated
-│   ├── dealerId: string (staffId와 호환)
-│   ├── dealerName: string
+│   ├── staffId: string
+│   ├── staffName: string
 │   ├── date: string (YYYY-MM-DD)
 │   ├── eventId?: string
 │   ├── scheduledStartTime?: string

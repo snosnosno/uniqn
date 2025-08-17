@@ -8,8 +8,8 @@
  * @author T-HOLDEM Development Team
  * 
  * 주요 표준화 사항:
- * - staffId (표준) ← dealerId (deprecated)
- * - scheduledStartTime/EndTime (표준) ← assignedTime (deprecated)
+ * - staffId (표준)
+ * - scheduledStartTime/EndTime (표준)
  * - 모든 Firebase 문서는 FirebaseDocument를 상속받습니다.
  */
 import { Timestamp } from 'firebase/firestore';
