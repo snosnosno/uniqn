@@ -6,6 +6,7 @@ import { generateWorkLogId, createWorkLogData } from '../utils/workLogUtils';
 interface StaffInfo {
   id: string;
   name: string;
+  role?: string;  // 역할 추가
   assignedDate?: string;
   workLogId?: string;
 }
@@ -56,6 +57,7 @@ export class BulkOperationService {
               eventId,
               staffId: staff.id,
               staffName: staff.name,
+              ...(staff.role && { role: staff.role }),  // 역할이 있는 경우만 포함
               date: dateString as string,
               scheduledStartTime: startTime,
               scheduledEndTime: endTime
@@ -125,6 +127,7 @@ export class BulkOperationService {
               eventId,
               staffId: staff.id,
               staffName: staff.name,
+              ...(staff.role && { role: staff.role }),  // 역할이 있는 경우만 포함
               date: dateString as string,
               status
             });

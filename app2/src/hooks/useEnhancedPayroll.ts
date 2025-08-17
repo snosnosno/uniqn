@@ -125,14 +125,139 @@ export const useEnhancedPayroll = ({
   const processedPayrollData = useMemo((): EnhancedPayrollCalculation[] => {
     const defaultAllowances = getDefaultAllowances();
     
-    return confirmedStaff.map(staff => {
+    console.log('=== EnhancedPayroll 데이터 처리 시작 ===');
+    console.log('confirmedStaff:', confirmedStaff);
+    console.log('filteredWorkLogs 개수:', filteredWorkLogs.length);
+    
+    // staffId + role 조합으로 그룹화
+    const staffRoleMap = new Map<string, {
+      staffId: string;
+      staffName: string;
+      role: string;
+      workLogs: UnifiedWorkLog[];
+    }>();
+    
+    // confirmedStaff에서 같은 사람의 다른 역할 확인
+    const staffRoleCount: Record<string, Set<string>> = {};
+    confirmedStaff.forEach(staff => {
+      if (!staffRoleCount[staff.userId]) {
+        staffRoleCount[staff.userId] = new Set();
+      }
+      const roleSet = staffRoleCount[staff.userId];
+      if (roleSet) {
+        roleSet.add(staff.role);
+      }
+    });
+    
+    console.log('=== 스태프별 역할 분포 ===');
+    Object.entries(staffRoleCount).forEach(([userId, roles]) => {
+      console.log(`StaffId: ${userId}, 역할들: ${Array.from(roles).join(', ')}`);
+    });
+    
+    // confirmedStaff 기반으로 역할별 workLog 생성
+    // (실제 workLog에 역할 정보가 없을 수 있으므로)
+    const roleBasedWorkLogs: UnifiedWorkLog[] = [];
+    
+    confirmedStaff.forEach(staff => {
+      // 해당 스태프의 모든 workLog 찾기
       const staffWorkLogs = filteredWorkLogs.filter(log => log.staffId === staff.userId);
       
+      staffWorkLogs.forEach(log => {
+        // workLog에 이미 role이 있으면 그대로 사용
+        if ((log as any).role) {
+          roleBasedWorkLogs.push(log);
+        } else {
+          // role이 없으면 staff의 role을 추가한 새 객체 생성
+          roleBasedWorkLogs.push({
+            ...log,
+            role: staff.role
+          } as UnifiedWorkLog);
+        }
+      });
+    });
+    
+    console.log(`원본 workLogs: ${filteredWorkLogs.length}개, 역할 기반 workLogs: ${roleBasedWorkLogs.length}개`);
+    
+    // 역할 기반 workLogs를 staffId + role로 그룹화
+    roleBasedWorkLogs.forEach((log, index) => {
+      // workLog에 role이 있으면 우선 사용
+      let role = (log as any).role;
+      let staffName = (log as any).staffName || '';
+      
+      // workLog에 role이 없으면 confirmedStaff에서 찾기
+      if (!role) {
+        // 날짜가 일치하는 staff 찾기 (같은 사람이 다른 날짜/역할로 등록될 수 있음)
+        const matchingStaff = confirmedStaff.find(s => 
+          s.userId === log.staffId && 
+          (!s.date || s.date === log.date)
+        );
+        
+        if (matchingStaff) {
+          role = matchingStaff.role;
+          staffName = matchingStaff.name;
+        } else {
+          // 날짜 무관하게 첫 번째 매칭 찾기
+          const anyStaff = confirmedStaff.find(s => s.userId === log.staffId);
+          if (anyStaff) {
+            role = anyStaff.role;
+            staffName = anyStaff.name;
+          } else {
+            console.log(`WorkLog ${index}: 매칭되는 staff 없음 (staffId: ${log.staffId})`);
+            return;
+          }
+        }
+      }
+      
+      // confirmedStaff에서 이름 가져오기 (role은 workLog에서 왔을 수 있으므로)
+      if (!staffName) {
+        const staff = confirmedStaff.find(s => s.userId === log.staffId);
+        if (staff) {
+          staffName = staff.name;
+        }
+      }
+      
+      const key = `${log.staffId}_${role}`;
+      
+      // 디버그 로그
+      console.log(`WorkLog ${index}:`, {
+        date: log.date,
+        staffId: log.staffId,
+        staffName: staffName,
+        workLogRole: (log as any).role,
+        finalRole: role,
+        key: key
+      });
+      
+      if (!staffRoleMap.has(key)) {
+        staffRoleMap.set(key, {
+          staffId: log.staffId,
+          staffName: staffName,
+          role: role,
+          workLogs: []
+        });
+      }
+      
+      const entry = staffRoleMap.get(key);
+      if (entry) {
+        entry.workLogs.push(log);
+      }
+    });
+    
+    console.log('=== 그룹화 결과 ===');
+    console.log('staffRoleMap 크기:', staffRoleMap.size);
+    staffRoleMap.forEach((value, key) => {
+      console.log(`Key: ${key}, WorkLogs 개수: ${value.workLogs.length}, Role: ${value.role}`);
+    });
+    
+    // 각 staffId + role 조합에 대해 EnhancedPayrollCalculation 생성
+    const results: EnhancedPayrollCalculation[] = [];
+    
+    staffRoleMap.forEach((data, key) => {
       // 근무 정보 계산
       let totalHours = 0;
       let totalDays = 0;
       
-      staffWorkLogs.forEach(log => {
+      data.workLogs.forEach(log => {
         if (log.status === 'completed' || log.actualEndTime) {
           totalDays++;
           totalHours += calculateHours(log);
@@ -140,11 +265,11 @@ export const useEnhancedPayroll = ({
       });
       
       // 급여 정보 가져오기
-      const { salaryType, salaryAmount } = getSalaryInfo(staff.role);
+      const { salaryType, salaryAmount } = getSalaryInfo(data.role);
       
       // 기본급 계산
       const basePay = calculateBasePay(
-        staffWorkLogs,
+        data.workLogs,
         salaryType,
         salaryAmount,
         totalHours,
@@ -152,7 +277,8 @@ export const useEnhancedPayroll = ({
       );
       
       // 수당 정보 (개별 오버라이드가 있으면 사용, 없으면 기본값)
-      const allowances = staffAllowanceOverrides[staff.userId] || defaultAllowances;
+      // key를 사용하여 역할별로 다른 수당 설정 가능
+      const allowances = staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId] || defaultAllowances;
       
       // 수당 합계
       const allowanceTotal = 
@@ -166,10 +292,10 @@ export const useEnhancedPayroll = ({
       const totalAmount = basePay + allowanceTotal;
       
       const result: EnhancedPayrollCalculation = {
-        staffId: staff.userId,
-        staffName: staff.name,
-        role: staff.role,
-        workLogs: staffWorkLogs as any[], // 타입 호환성
+        staffId: data.staffId,
+        staffName: data.staffName,
+        role: data.role,
+        workLogs: data.workLogs, // 타입 변환 제거
         totalHours: Math.round(totalHours * 100) / 100,
         totalDays,
         salaryType: salaryType as any,
@@ -184,7 +310,14 @@ export const useEnhancedPayroll = ({
         }
       };
       
-      return result;
+      results.push(result);
+    });
+    
+    // 이름과 역할로 정렬
+    return results.sort((a, b) => {
+      const nameCompare = a.staffName.localeCompare(b.staffName);
+      if (nameCompare !== 0) return nameCompare;
+      return a.role.localeCompare(b.role);
     });
   }, [
     confirmedStaff,
@@ -266,35 +399,41 @@ export const useEnhancedPayroll = ({
     if (selectedStaffIds.length === processedPayrollData.length) {
       setSelectedStaffIds([]);
     } else {
-      setSelectedStaffIds(processedPayrollData.map(d => d.staffId));
+      setSelectedStaffIds(processedPayrollData.map(d => `${d.staffId}_${d.role}`));
     }
   }, [selectedStaffIds, processedPayrollData]);
 
   // 일괄 수당 적용
   const applyBulkAllowances = useCallback((settings: BulkAllowanceSettings) => {
-    let targetStaffIds: string[] = [];
+    let targetKeys: string[] = [];
     
     switch(settings.applyTo) {
       case 'all':
-        targetStaffIds = processedPayrollData.map(d => d.staffId);
+        targetKeys = processedPayrollData.map(d => `${d.staffId}_${d.role}`);
         break;
       case 'selected':
-        targetStaffIds = selectedStaffIds;
+        targetKeys = selectedStaffIds;
         break;
       case 'byRole':
-        targetStaffIds = processedPayrollData
+        targetKeys = processedPayrollData
           .filter(d => settings.targetRoles?.includes(d.role))
-          .map(d => d.staffId);
+          .map(d => `${d.staffId}_${d.role}`);
         break;
     }
     
     const newOverrides: Record<string, EnhancedPayrollCalculation['allowances']> = {};
     
-    targetStaffIds.forEach(staffId => {
-      const currentStaff = processedPayrollData.find(d => d.staffId === staffId);
+    targetKeys.forEach(key => {
+      const parts = key.split('_');
+      if (parts.length < 2) return;
+      
+      const staffId = parts[0];
+      const role = parts.slice(1).join('_'); // role 이름에 underscore가 있을 수 있음
+      
+      const currentStaff = processedPayrollData.find(d => d.staffId === staffId && d.role === role);
       if (!currentStaff) return;
       
-      const currentAllowances = staffAllowanceOverrides[staffId] || currentStaff.allowances;
+      const currentAllowances = staffAllowanceOverrides[key] || (staffId ? staffAllowanceOverrides[staffId] : undefined) || currentStaff.allowances;
       
       const newAllowances: EnhancedPayrollCalculation['allowances'] = {
         meal: settings.allowances.meal?.enabled ? settings.allowances.meal.amount : currentAllowances.meal,
@@ -310,7 +449,7 @@ export const useEnhancedPayroll = ({
         newAllowances.otherDescription = otherDesc;
       }
       
-      newOverrides[staffId] = newAllowances;
+      newOverrides[key] = newAllowances;
     });
     
     setStaffAllowanceOverrides(prev => ({
@@ -321,12 +460,12 @@ export const useEnhancedPayroll = ({
 
   // 개별 수당 수정
   const updateStaffAllowances = useCallback((
-    staffId: string, 
+    key: string, // staffId_role 형식
     allowances: EnhancedPayrollCalculation['allowances']
   ) => {
     setStaffAllowanceOverrides(prev => ({
       ...prev,
-      [staffId]: allowances
+      [key]: allowances
     }));
   }, []);
 

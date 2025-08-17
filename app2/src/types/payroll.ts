@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { WorkLog } from '../hooks/useShiftSchedule';
+import { UnifiedWorkLog } from './unified/workLog';
 
 /**
  * 급여 계산 결과 타입
@@ -43,8 +44,8 @@ export interface EnhancedPayrollCalculation {
   role: string;
   phone?: string;
   
-  // 근무 정보 (자동 계산)
-  workLogs: WorkLog[];
+  // 근무 정보 (자동 계산) - UnifiedWorkLog 타입 사용
+  workLogs: UnifiedWorkLog[];
   totalHours: number;       // 총 근무시간
   totalDays: number;        // 총 근무일수
   overtimeHours?: number;   // 초과 근무시간

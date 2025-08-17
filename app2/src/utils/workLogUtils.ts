@@ -97,6 +97,7 @@ interface CreateWorkLogParams {
   eventId: string;
   staffId: string;
   staffName: string;
+  role?: string;  // 역할 추가
   date: string;
   assignedTime?: string | null;
   scheduledStartTime?: Timestamp | null;
@@ -213,6 +214,7 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     eventId,
     staffId,
     staffName,
+    role,
     date,
     assignedTime,
     scheduledStartTime,
@@ -243,6 +245,7 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     staffId,
     dealerId: staffId, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
     dealerName: staffName,
+    role,  // 역할 추가
     date,
     scheduledStartTime: startTime || null,
     scheduledEndTime: endTime || null,
@@ -262,6 +265,7 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
     eventId,
     staffId,
     staffName,
+    role,
     date,
     scheduledStartTime,
     scheduledEndTime,
@@ -275,6 +279,7 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
     staffId,
     dealerId: staffId, // @deprecated - staffId 사용 권장. Firebase 컬렉션과의 하위 호환성을 위해 유지
     dealerName: staffName,
+    ...(role && { role }),  // 역할이 있는 경우만 포함
     date,
     scheduledStartTime: scheduledStartTime || null,
     scheduledEndTime: scheduledEndTime || null,

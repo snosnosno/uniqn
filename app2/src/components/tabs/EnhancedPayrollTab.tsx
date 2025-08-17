@@ -5,7 +5,7 @@ import { useEnhancedPayroll } from '../../hooks/useEnhancedPayroll';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
-import AllowanceEditModal from '../payroll/AllowanceEditModal';
+import DetailEditModal from '../payroll/DetailEditModal';
 import { EnhancedPayrollCalculation } from '../../types/payroll';
 
 interface EnhancedPayrollTabProps {
@@ -71,6 +71,11 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
 
   // 수당 편집 모달 열기
   const openEditModal = useCallback((staff: EnhancedPayrollCalculation) => {
+    // 디버깅: 전달되는 staff 데이터 확인
+    console.log('EnhancedPayrollTab - openEditModal staff:', staff);
+    if (staff.workLogs && staff.workLogs.length > 0) {
+      console.log('EnhancedPayrollTab - 첫 번째 workLog:', staff.workLogs[0]);
+    }
     setEditingStaff(staff);
     setIsEditModalOpen(true);
   }, []);
@@ -82,8 +87,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   }, []);
 
   // 수당 저장 핸들러
-  const handleSaveAllowances = useCallback((staffId: string, allowances: EnhancedPayrollCalculation['allowances']) => {
-    updateStaffAllowances(staffId, allowances);
+  const handleSaveAllowances = useCallback((staff: EnhancedPayrollCalculation, allowances: EnhancedPayrollCalculation['allowances']) => {
+    const key = `${staff.staffId}_${staff.role}`;
+    updateStaffAllowances(key, allowances);
   }, [updateStaffAllowances]);
 
   // 수당 상세 툴팁 생성
@@ -275,15 +281,15 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
               <tbody className="bg-white divide-y divide-gray-200">
                 {payrollData.map((data) => (
                   <tr 
-                    key={data.staffId} 
+                    key={`${data.staffId}_${data.role}`} 
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => openEditModal(data)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
-                        checked={selectedStaffIds.includes(data.staffId)}
-                        onChange={() => toggleStaffSelection(data.staffId)}
+                        checked={selectedStaffIds.includes(`${data.staffId}_${data.role}`)}
+                        onChange={() => toggleStaffSelection(`${data.staffId}_${data.role}`)}
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
                     </td>
@@ -343,8 +349,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         )}
       </div>
 
-      {/* 수당 편집 모달 */}
-      <AllowanceEditModal
+      {/* 상세 편집 모달 */}
+      <DetailEditModal
         isOpen={isEditModalOpen}
         onClose={closeEditModal}
         staff={editingStaff}
