@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 
@@ -446,13 +446,36 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               
               
               {/* 급여 */}
-              {post.salaryType && post.salaryAmount && (
-                <div className={getInfoItemClasses()}>
-                  <span className="flex items-center">
-                    <span className="mr-2">💰</span>
-                    <span className="break-words">{formatSalaryDisplay(post.salaryType, post.salaryAmount)}</span>
+              {post.useRoleSalary && post.roleSalaries ? (
+                <div className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}>
+                  <span className="flex items-start">
+                    <span className="mr-2 mt-0.5">💰</span>
+                    <div className="break-words">
+                      <span className="font-medium text-gray-700">역할별 급여</span>
+                      <div className="mt-1 space-y-0.5">
+                        {Object.entries(post.roleSalaries).slice(0, 3).map(([role, salary]) => (
+                          <div key={role} className="text-xs text-gray-600">
+                            • {formatRoleSalaryDisplay(role, salary)}
+                          </div>
+                        ))}
+                        {Object.keys(post.roleSalaries).length > 3 && (
+                          <div className="text-xs text-gray-400">
+                            외 {Object.keys(post.roleSalaries).length - 3}개 역할
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </span>
                 </div>
+              ) : (
+                post.salaryType && post.salaryAmount && (
+                  <div className={getInfoItemClasses()}>
+                    <span className="flex items-center">
+                      <span className="mr-2">💰</span>
+                      <span className="break-words">{formatSalaryDisplay(post.salaryType, post.salaryAmount)}</span>
+                    </span>
+                  </div>
+                )
               )}
               
               {/* 복리후생 */}

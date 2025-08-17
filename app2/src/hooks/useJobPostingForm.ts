@@ -2,14 +2,15 @@ import { useState, useCallback } from 'react';
 // Removed unused type imports
 import { 
   createInitialFormData, 
-  createNewPreQuestion
+  createNewPreQuestion,
+  PREDEFINED_ROLES
 } from '../utils/jobPosting/jobPostingHelpers';
 import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils';
 
-import { JobPosting } from '../types/jobPosting';
+import { JobPosting, JobPostingFormData } from '../types/jobPosting';
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
-  const [formData, setFormData] = useState(() => 
+  const [formData, setFormData] = useState<any>(() => 
     initialData ? initialData : createInitialFormData()
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,7 +18,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   // 기본 폼 핸들러
   const handleFormChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
   }, []);
 
   // 시간대 관련 핸들러들
@@ -155,7 +156,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   // 급여 관련 핸들러들
-  const handleSalaryTypeChange = useCallback((salaryType: 'hourly' | 'daily' | 'monthly' | 'other') => {
+  const handleSalaryTypeChange = useCallback((salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other') => {
     setFormData((prev: any) => ({ ...prev, salaryType }));
   }, []);
 
@@ -182,6 +183,126 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
       benefits: {
         ...prev.benefits,
         [benefitType]: value
+      }
+    }));
+  }, []);
+
+  // 역할별 급여 관련 핸들러들
+  const handleRoleSalaryToggle = useCallback((enabled: boolean) => {
+    setFormData((prev: any) => {
+      if (enabled) {
+        // 활성화 시 기본 역할 3개 추가 (딜러, 플로어, 서빙)
+        const defaultRoles = {
+          'dealer': { 
+            salaryType: 'hourly' as const, 
+            salaryAmount: '20000' 
+          },
+          'floor': { 
+            salaryType: 'hourly' as const, 
+            salaryAmount: '20000' 
+          },
+          'serving': { 
+            salaryType: 'hourly' as const, 
+            salaryAmount: '20000' 
+          }
+        };
+        return { 
+          ...prev, 
+          useRoleSalary: true, 
+          roleSalaries: prev.roleSalaries || defaultRoles 
+        };
+      } else {
+        return { ...prev, useRoleSalary: false };
+      }
+    });
+  }, []);
+
+  const handleAddRoleToSalary = useCallback(() => {
+    setFormData((prev: any) => {
+      const existingRoles = Object.keys(prev.roleSalaries || {});
+      const availableRoles = PREDEFINED_ROLES.filter(r => !existingRoles.includes(r));
+      
+      if (availableRoles.length === 0) {
+        alert('모든 역할이 이미 추가되었습니다.');
+        return prev;
+      }
+      
+      const newRole = availableRoles[0] as string;
+      return {
+        ...prev,
+        roleSalaries: {
+          ...prev.roleSalaries,
+          [newRole]: { 
+            salaryType: 'hourly' as const, 
+            salaryAmount: '20000' 
+          }
+        }
+      };
+    });
+  }, []);
+
+  const handleRemoveRoleFromSalary = useCallback((role: string) => {
+    setFormData((prev: any) => {
+      const { [role]: removed, ...rest } = prev.roleSalaries || {};
+      return {
+        ...prev,
+        roleSalaries: rest
+      };
+    });
+  }, []);
+
+  const handleRoleChange = useCallback((oldRole: string, newRole: string) => {
+    setFormData((prev: any) => {
+      const { [oldRole]: oldSalary, ...rest } = prev.roleSalaries || {};
+      return {
+        ...prev,
+        roleSalaries: {
+          ...rest,
+          [newRole]: oldSalary || { salaryType: 'hourly', salaryAmount: '20000' }
+        }
+      };
+    });
+  }, []);
+
+  const handleRoleSalaryTypeChange = useCallback((role: string, salaryType: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      roleSalaries: {
+        ...prev.roleSalaries,
+        [role]: {
+          ...prev.roleSalaries?.[role],
+          salaryType,
+          // 협의인 경우 금액 초기화
+          salaryAmount: salaryType === 'negotiable' ? '' : prev.roleSalaries?.[role]?.salaryAmount || '20000'
+        }
+      }
+    }));
+  }, []);
+
+  const handleRoleSalaryAmountChange = useCallback((role: string, salaryAmount: string) => {
+    // 숫자만 입력 가능하도록 필터링
+    const numericValue = salaryAmount.replace(/[^0-9]/g, '');
+    setFormData((prev: any) => ({
+      ...prev,
+      roleSalaries: {
+        ...prev.roleSalaries,
+        [role]: {
+          ...prev.roleSalaries?.[role],
+          salaryAmount: numericValue
+        }
+      }
+    }));
+  }, []);
+
+  const handleCustomRoleNameChange = useCallback((role: string, customName: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      roleSalaries: {
+        ...prev.roleSalaries,
+        [role]: {
+          ...prev.roleSalaries?.[role],
+          customRoleName: customName
+        }
       }
     }));
   }, []);
@@ -236,5 +357,14 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     // 복리후생 핸들러
     handleBenefitToggle,
     handleBenefitChange,
+    
+    // 역할별 급여 핸들러
+    handleRoleSalaryToggle,
+    handleAddRoleToSalary,
+    handleRemoveRoleFromSalary,
+    handleRoleChange,
+    handleRoleSalaryTypeChange,
+    handleRoleSalaryAmountChange,
+    handleCustomRoleNameChange,
   };
 };

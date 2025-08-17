@@ -22,9 +22,17 @@ export interface JobPostingFormData {
   dateSpecificRequirements: DateSpecificRequirement[];
   preQuestions?: PreQuestion[];
   requiredRoles?: string[];
-  salaryType?: 'hourly' | 'daily' | 'monthly' | 'other'; // 급여 유형
+  salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'; // 급여 유형 (협의 추가)
   salaryAmount?: string;    // 급여 금액
   benefits?: Benefits;       // 복리후생 정보
+  useRoleSalary?: boolean;  // 역할별 급여 사용 여부
+  roleSalaries?: {          // 역할별 급여 정보
+    [role: string]: {
+      salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
+      salaryAmount: string;
+      customRoleName?: string;  // 기타 선택 시 직접 입력한 역할명
+    }
+  };
 }
 
 /**
@@ -57,11 +65,21 @@ export interface JobPosting {
   statusChangedBy?: string;
   
   // 급여 정보 필드
-  salaryType?: 'hourly' | 'daily' | 'monthly' | 'other';
+  salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
   salaryAmount?: string;
   
   // 복리후생 정보
   benefits?: Benefits;
+  
+  // 역할별 급여 정보
+  useRoleSalary?: boolean;
+  roleSalaries?: {
+    [role: string]: {
+      salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
+      salaryAmount: string;
+      customRoleName?: string;
+    }
+  };
   
   // 자동 관리 기능 플래그
   autoManageStatus?: boolean; // 자동 상태 관리 활성화 여부

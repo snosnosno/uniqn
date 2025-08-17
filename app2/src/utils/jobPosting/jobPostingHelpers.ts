@@ -80,7 +80,10 @@ export const templateToFormData = (template: JobPostingTemplate) => {
     salaryType: templateData.salaryType,
     salaryAmount: templateData.salaryAmount || '',
     benefits: templateData.benefits || {},
-    usesPreQuestions: templateData.usesPreQuestions || false
+    usesPreQuestions: templateData.usesPreQuestions || false,
+    // 역할별 급여 정보도 템플릿에서 가져오기
+    useRoleSalary: templateData.useRoleSalary || false,
+    roleSalaries: templateData.roleSalaries || {}
   };
 };
 
@@ -126,7 +129,10 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
     ...(formData.district && { district: formData.district }),
     ...(formData.salaryType && { salaryType: formData.salaryType }),
     ...(formData.salaryAmount && { salaryAmount: formData.salaryAmount }),
-    ...(formData.benefits && Object.keys(formData.benefits).length > 0 && { benefits: formData.benefits })
+    ...(formData.benefits && Object.keys(formData.benefits).length > 0 && { benefits: formData.benefits }),
+    // 역할별 급여 정보 추가
+    ...(formData.useRoleSalary && { useRoleSalary: formData.useRoleSalary }),
+    ...(formData.roleSalaries && Object.keys(formData.roleSalaries).length > 0 && { roleSalaries: formData.roleSalaries })
   };
 
   logger.debug('🚀 Firebase 저장용 최종 데이터:', { component: 'jobPostingHelpers', data: result });
@@ -168,7 +174,9 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     requiredRoles: data.requiredRoles,
     salaryType: data.salaryType,
     salaryAmount: data.salaryAmount,
-    benefits: data.benefits
+    benefits: data.benefits,
+    useRoleSalary: data.useRoleSalary,
+    roleSalaries: data.roleSalaries
   } as JobPostingFormData;
 };
 
@@ -280,6 +288,7 @@ export const getSalaryTypeDisplayName = (type: string): string => {
     hourly: '시급',
     daily: '일급',
     monthly: '월급',
+    negotiable: '협의',
     other: '기타'
   };
   
@@ -290,7 +299,13 @@ export const getSalaryTypeDisplayName = (type: string): string => {
  * 급여 정보를 포맷팅하여 표시
  */
 export const formatSalaryDisplay = (salaryType?: string, salaryAmount?: string | number): string => {
-  if (!salaryType || !salaryAmount) return '';
+  if (!salaryType) return '';
+  
+  if (salaryType === 'negotiable') {
+    return '급여 협의';
+  }
+  
+  if (!salaryAmount) return getSalaryTypeDisplayName(salaryType);
   
   const typeName = getSalaryTypeDisplayName(salaryType);
   const amount = String(salaryAmount);
@@ -302,6 +317,42 @@ export const formatSalaryDisplay = (salaryType?: string, salaryAmount?: string |
   // 숫자에 천 단위 콤마 추가
   const formattedAmount = amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${typeName} ${formattedAmount}원`;
+};
+
+/**
+ * 역할별 급여 표시 (커스텀 역할명 지원)
+ */
+export const formatRoleSalaryDisplay = (
+  role: string, 
+  salary: { salaryType: string; salaryAmount: string; customRoleName?: string }
+): string => {
+  const roleName = role === 'other' && salary.customRoleName 
+    ? salary.customRoleName 
+    : getRoleDisplayName(role);
+  
+  const salaryText = formatSalaryDisplay(salary.salaryType, salary.salaryAmount);
+  return `${roleName}: ${salaryText}`;
+};
+
+/**
+ * 역할별 급여 목록 표시
+ */
+export const formatRoleSalariesDisplay = (roleSalaries?: Record<string, any>): string => {
+  if (!roleSalaries || Object.keys(roleSalaries).length === 0) return '';
+  
+  return Object.entries(roleSalaries)
+    .map(([role, salary]) => formatRoleSalaryDisplay(role, salary))
+    .join(' | ');
+};
+
+/**
+ * 특정 역할의 급여 가져오기
+ */
+export const getRoleSalary = (roleSalaries?: Record<string, any>, role?: string): string => {
+  if (!roleSalaries || !role) return '';
+  const salary = roleSalaries[role];
+  if (!salary) return '';
+  return formatSalaryDisplay(salary.salaryType, salary.salaryAmount);
 };
 
 /**

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, formatRoleSalaryDisplay, getRoleDisplayName, getSalaryTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 
 interface JobPostingDetailContentProps {
@@ -68,14 +68,57 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
               <span>{jobPosting.detailedAddress}</span>
             </p>
           )}
-          {jobPosting.salaryType && jobPosting.salaryAmount && (
-            <p className="flex items-center">
-              <span className="font-medium w-20">급여:</span>
-              <span>💰 {formatSalaryDisplay(jobPosting.salaryType, jobPosting.salaryAmount)}</span>
-            </p>
+          {/* 급여 정보 */}
+          {jobPosting.useRoleSalary && jobPosting.roleSalaries ? (
+            <div className="mt-2">
+              <span className="font-medium">급여:</span>
+              <span className="ml-2 text-xs text-gray-600">(역할별 급여)</span>
+            </div>
+          ) : (
+            jobPosting.salaryType && jobPosting.salaryAmount && (
+              <p className="flex items-center">
+                <span className="font-medium w-20">급여:</span>
+                <span>💰 {formatSalaryDisplay(jobPosting.salaryType, jobPosting.salaryAmount)}</span>
+              </p>
+            )
           )}
         </div>
       </div>
+
+      {/* 역할별 급여 */}
+      {jobPosting.useRoleSalary && jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0 && (
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-3">💰 역할별 급여</h4>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left pb-2 font-medium text-gray-700">역할</th>
+                  <th className="text-left pb-2 font-medium text-gray-700">급여 유형</th>
+                  <th className="text-left pb-2 font-medium text-gray-700">급여 금액</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(jobPosting.roleSalaries).map(([role, salary]) => (
+                  <tr key={role} className="border-b border-gray-100">
+                    <td className="py-2">
+                      {role === 'other' && salary.customRoleName 
+                        ? salary.customRoleName 
+                        : getRoleDisplayName(role)}
+                    </td>
+                    <td className="py-2">{getSalaryTypeDisplayName(salary.salaryType)}</td>
+                    <td className="py-2">
+                      {salary.salaryType === 'negotiable' 
+                        ? '협의' 
+                        : `${salary.salaryAmount?.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}원`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 복리후생 */}
       {jobPosting.benefits && Object.keys(jobPosting.benefits).length > 0 && (

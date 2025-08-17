@@ -2,7 +2,7 @@ import React from 'react';
 import { useJobPostingForm } from '../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
-import { LOCATIONS } from '../../utils/jobPosting/jobPostingHelpers';
+import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import Button from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
@@ -45,7 +45,14 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     handleSalaryTypeChange,
     handleSalaryAmountChange,
     handleBenefitToggle,
-    handleBenefitChange
+    handleBenefitChange,
+    handleRoleSalaryToggle,
+    handleAddRoleToSalary,
+    handleRemoveRoleFromSalary,
+    handleRoleChange,
+    handleRoleSalaryTypeChange,
+    handleRoleSalaryAmountChange,
+    handleCustomRoleNameChange
   } = useJobPostingForm();
 
   const {
@@ -198,41 +205,169 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         </div>
 
         {/* 급여 정보 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              급여 유형 <span className="text-red-500">*</span>
-            </label>
-            <Select
-              name="salaryType"
-              value={formData.salaryType || ''}
-              onChange={(value) => handleSalaryTypeChange(value as 'hourly' | 'daily' | 'monthly' | 'other')}
-              options={[
-                { value: '', label: '선택하세요' },
-                { value: 'hourly', label: '시급' },
-                { value: 'daily', label: '일급' },
-                { value: 'monthly', label: '월급' },
-                { value: 'other', label: '기타' }
-              ]}
-              required
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="useRoleSalary"
+              checked={formData.useRoleSalary || false}
+              onChange={(e) => handleRoleSalaryToggle(e.target.checked)}
+              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               disabled={isSubmitting}
             />
+            <label htmlFor="useRoleSalary" className="ml-2 text-sm font-medium text-gray-700">
+              역할별 급여 설정
+            </label>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              급여 금액 <span className="text-red-500">*</span>
-            </label>
-            <Input
-              type="text"
-              name="salaryAmount"
-              value={formData.salaryAmount || ''}
-              onChange={(e) => handleSalaryAmountChange(e.target.value)}
-              placeholder="급여 금액을 입력하세요"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+          {formData.useRoleSalary ? (
+            <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+              <div className="text-sm text-gray-600 mb-2">
+                각 역할별로 급여를 설정하세요. 기본값: 시급 20,000원
+              </div>
+              
+              {/* 역할별 급여 목록 */}
+              {Object.entries(formData.roleSalaries || {}).map(([role, salary]: [string, any]) => (
+                <div key={role} className="grid grid-cols-12 gap-2 items-center">
+                  {/* 역할 선택 - 기타일 때만 특별 처리 */}
+                  {role === 'other' ? (
+                    <>
+                      <div className="col-span-2">
+                        <Select
+                          value={role}
+                          onChange={(value) => handleRoleChange(role, value)}
+                          options={PREDEFINED_ROLES.map(r => ({
+                            value: r,
+                            label: getRoleDisplayName(r)
+                          }))}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <Input
+                          type="text"
+                          value={salary.customRoleName || ''}
+                          onChange={(e) => handleCustomRoleNameChange(role, e.target.value)}
+                          placeholder="역할명을 입력하세요"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-4">
+                      <Select
+                        value={role}
+                        onChange={(value) => handleRoleChange(role, value)}
+                        options={PREDEFINED_ROLES.map(r => ({
+                            value: r,
+                            label: getRoleDisplayName(r)
+                        }))}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  )}
+
+                  {/* 급여 유형 */}
+                  <div className={role === 'other' ? "col-span-2" : "col-span-3"}>
+                    <Select
+                      value={salary.salaryType}
+                      onChange={(value) => handleRoleSalaryTypeChange(role, value)}
+                      options={[
+                        { value: 'hourly', label: '시급' },
+                        { value: 'daily', label: '일급' },
+                        { value: 'monthly', label: '월급' },
+                        { value: 'negotiable', label: '협의' },
+                        { value: 'other', label: '기타' }
+                      ]}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  {/* 급여 금액 */}
+                  <div className="col-span-3">
+                    {salary.salaryType === 'negotiable' ? (
+                      <div className="text-gray-500 text-sm py-2">급여 협의</div>
+                    ) : (
+                      <Input
+                        type="text"
+                        value={salary.salaryAmount}
+                        onChange={(e) => handleRoleSalaryAmountChange(role, e.target.value)}
+                        placeholder="급여 금액"
+                        disabled={isSubmitting || salary.salaryType === 'negotiable'}
+                      />
+                    )}
+                  </div>
+
+                  {/* 삭제 버튼 */}
+                  <div className="col-span-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveRoleFromSalary(role)}
+                      disabled={isSubmitting}
+                    >
+                      삭제
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {/* 역할 추가 버튼 */}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAddRoleToSalary}
+                disabled={isSubmitting}
+              >
+                + 역할 추가
+              </Button>
+            </div>
+          ) : (
+            // 기존 통합 급여 입력
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  급여 유형 <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  name="salaryType"
+                  value={formData.salaryType || ''}
+                  onChange={(value) => handleSalaryTypeChange(value as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other')}
+                  options={[
+                    { value: '', label: '선택하세요' },
+                    { value: 'hourly', label: '시급' },
+                    { value: 'daily', label: '일급' },
+                    { value: 'monthly', label: '월급' },
+                    { value: 'negotiable', label: '협의' },
+                    { value: 'other', label: '기타' }
+                  ]}
+                  required={!formData.useRoleSalary}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  급여 금액 <span className="text-red-500">*</span>
+                </label>
+                {formData.salaryType === 'negotiable' ? (
+                  <div className="text-gray-500 text-sm py-2">급여 협의</div>
+                ) : (
+                  <Input
+                    type="text"
+                    name="salaryAmount"
+                    value={formData.salaryAmount || ''}
+                    onChange={(e) => handleSalaryAmountChange(e.target.value)}
+                    placeholder="급여 금액을 입력하세요"
+                    required={!formData.useRoleSalary && formData.salaryType !== 'negotiable'}
+                    disabled={isSubmitting || formData.salaryType === 'negotiable'}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 복리후생 */}

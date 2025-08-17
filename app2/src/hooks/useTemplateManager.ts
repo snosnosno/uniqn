@@ -55,6 +55,9 @@ export const useTemplateManager = () => {
           benefits: formData.benefits,
           preQuestions: formData.preQuestions,
           usesPreQuestions: formData.usesPreQuestions,
+          // 역할별 급여 정보 추가
+          useRoleSalary: formData.useRoleSalary,
+          roleSalaries: formData.roleSalaries,
         },
         createdBy: currentUser.uid,
         createdAt: new Date(),
