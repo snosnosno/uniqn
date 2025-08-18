@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useStaffManagement, StaffData } from '../../hooks/useStaffManagement';
@@ -76,7 +78,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isWorkTimeEditorOpen, setIsWorkTimeEditorOpen] = useState(false);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
-  const [currentTimeType, setCurrentTimeType] = useState<'start' | 'end' | undefined>(undefined);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffData | null>(null);
   
@@ -119,7 +120,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
 
   // 출퇴근 시간 수정 핸들러 (다중 날짜 지원)
-  const handleEditWorkTime = useCallback((staffId: string, timeType?: 'start' | 'end', targetDate?: string) => {
+  const handleEditWorkTime = useCallback(async (staffId: string, timeType?: 'start' | 'end', targetDate?: string) => {
     // 권한 체크
     if (!canEdit) {
       showError('이 공고를 수정할 권한이 없습니다.');
@@ -135,28 +136,74 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     // 대상 날짜 결정: 파라미터로 받은 날짜 또는 스태프의 assignedDate 또는 오늘 날짜
     const workDate = targetDate || staff.assignedDate || getTodayString();
     
-    // 해당 날짜의 workLog 찾기 - getStaffWorkLog 사용
-    const existingWorkLog = getStaffWorkLog ? getStaffWorkLog(staffId, workDate) : null;
+    // staffId에서 실제 ID 추출 (날짜 부분 제거)
+    const actualStaffId = staffId.replace(/_\d{4}-\d{2}-\d{2}$/, '');
     
-    if (existingWorkLog) {
-      setSelectedWorkLog(existingWorkLog);
-      setCurrentTimeType(timeType);
-      setIsWorkTimeEditorOpen(true);
-    } else {
-      // 해당 날짜의 가상 WorkLog 생성 (유틸리티 함수 사용)
+    // Firebase에서 직접 최신 workLog 가져오기
+    const workLogId = `${jobPosting?.id || 'default-event'}_${actualStaffId}_${workDate}`;
+    const workLogRef = doc(db, 'workLogs', workLogId);
+    
+    try {
+      const docSnap = await getDoc(workLogRef);
+      
+      if (docSnap.exists()) {
+        // 실제 workLog가 있는 경우
+        const data = docSnap.data();
+        // Firebase 데이터를 먼저 spread하고, 필수 필드만 오버라이드
+        const workLogData = {
+          ...data,  // 모든 Firebase 데이터 포함 (Timestamp 객체 포함)
+          id: workLogId,
+          eventId: data.eventId || jobPosting?.id,
+          staffId: data.staffId || actualStaffId,
+          dealerId: data.dealerId || actualStaffId,
+          date: workDate,
+          staffName: staff.name || data.staffName || '이름 미정',
+          dealerName: staff.name || data.dealerName || '이름 미정'
+        };
+        logger.info('WorkLog 데이터 가져오기 성공', { 
+          component: 'StaffManagementTab',
+          data: { 
+            workLogId,
+            hasScheduledStartTime: !!data.scheduledStartTime,
+            hasScheduledEndTime: !!data.scheduledEndTime,
+            scheduledStartTimeType: data.scheduledStartTime ? typeof data.scheduledStartTime : 'null',
+            scheduledEndTimeType: data.scheduledEndTime ? typeof data.scheduledEndTime : 'null'
+          }
+        });
+        setSelectedWorkLog(workLogData);
+        setIsWorkTimeEditorOpen(true);
+      } else {
+        // 해당 날짜의 가상 WorkLog 생성 (유틸리티 함수 사용)
+        const virtualWorkLog = createVirtualWorkLog({
+          eventId: jobPosting?.id || 'default-event',
+          staffId: actualStaffId,
+          staffName: staff.name || '이름 미정',
+          date: workDate,
+          assignedTime: staff.assignedTime || null
+        });
+        
+        setSelectedWorkLog(virtualWorkLog);
+        setIsWorkTimeEditorOpen(true);
+      }
+    } catch (error) {
+      logger.error('WorkLog 가져오기 실패', error instanceof Error ? error : new Error(String(error)), { 
+        component: 'StaffManagementTab',
+        data: { staffId, workDate }
+      });
+      
+      // 오류 발생 시 가상 WorkLog 생성
       const virtualWorkLog = createVirtualWorkLog({
         eventId: jobPosting?.id || 'default-event',
-        staffId: staffId,
+        staffId: actualStaffId,
         staffName: staff.name || '이름 미정',
         date: workDate,
         assignedTime: staff.assignedTime || null
       });
       
       setSelectedWorkLog(virtualWorkLog);
-      setCurrentTimeType(timeType);
       setIsWorkTimeEditorOpen(true);
     }
-  }, [canEdit, staffData, jobPosting?.id, getStaffWorkLog, showError]);
+  }, [canEdit, staffData, jobPosting?.id, showError]);
   
   // WorkTimeEditor의 onUpdate 콜백 처리
   const handleWorkTimeUpdate = useCallback((updatedWorkLog: any) => {
@@ -170,10 +217,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       }
     });
     
-    // 모달 닫기
-    setIsWorkTimeEditorOpen(false);
-    setSelectedWorkLog(null);
-    setCurrentTimeType(undefined);
+    // 업데이트된 데이터로 selectedWorkLog 갱신 (모달은 열어둠)
+    setSelectedWorkLog(updatedWorkLog);
   }, []);
   
 
@@ -739,11 +784,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         isOpen={isWorkTimeEditorOpen}
         onClose={() => {
           setIsWorkTimeEditorOpen(false);
-          setCurrentTimeType(undefined);
+          setSelectedWorkLog(null); // 모달 닫을 때만 초기화
         }}
         workLog={selectedWorkLog}
         onUpdate={handleWorkTimeUpdate}
-        {...(currentTimeType && { timeType: currentTimeType })}
       />
 
 

@@ -26,6 +26,7 @@ const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
 const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
+const MigrationPage = lazy(() => import('./pages/admin/MigrationPage'));
 
 // Lazy load main pages
 const AttendancePage = lazy(() => import('./pages/AttendancePage'));
@@ -130,6 +131,7 @@ const App: React.FC = () => {
                           <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                           <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
                           <Route path="performance" element={<Suspense fallback={<LoadingSpinner />}><PerformanceReport /></Suspense>} />
+                          <Route path="migration" element={<Suspense fallback={<LoadingSpinner />}><MigrationPage /></Suspense>} />
                       </Route>
                     </Route>
                   </Route>

@@ -165,18 +165,8 @@ service cloud.firestore {
       );
     }
 
-    // --- Staff Collection ---
-    match /staff/{staffId} {
-      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == staffId);
-      allow create, update: if hasValidRole() && 
-        request.resource.data.keys().hasAll(['userId', 'name', 'userRole', 'jobRole', 'assignedEvents']) &&
-        request.resource.data.userRole in ['staff'] &&
-        request.resource.data.userId is string &&
-        request.resource.data.name is string &&
-        request.resource.data.jobRole is list &&
-        request.resource.data.assignedEvents is list;
-      allow delete: if isPrivileged();
-    }
+    // --- Staff Collection --- [DEPRECATED - Use /persons collection instead]
+    // Removed - All staff operations should use /persons collection with type='staff' or 'both'
 
     // --- Work Logs Collection ---
     match /workLogs/{workLogId} {
@@ -255,6 +245,39 @@ service cloud.firestore {
       allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.dealerId);
       allow create, update: if isSignedIn() && hasValidRole();
       allow delete: if isPrivileged();
+    }
+    
+    // --- Persons Collection (통합 인원 관리) ---
+    match /persons/{personId} {
+      // 모든 로그인 사용자 읽기 가능
+      allow read: if isSignedIn();
+      // 관리자만 생성/수정/삭제 가능
+      allow create, update, delete: if isPrivileged();
+    }
+    
+    // --- Applicants Collection --- [DEPRECATED - Use /persons collection instead]
+    // Removed - All applicant operations should use /persons collection with type='applicant' or 'both'
+    
+    // --- Work Sessions Collection (다중 세션 지원) ---
+    match /workSessions/{sessionId} {
+      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.personId);
+      allow create, update: if isSignedIn() && hasValidRole();
+      allow delete: if isPrivileged();
+    }
+    
+    // --- Migration Backups Collection ---
+    match /migration_backups/{backupId} {
+      // 관리자만 접근 가능
+      allow read, write: if request.auth.token.role == 'admin';
+    }
+    
+    // --- Backup Collections (와일드카드 패턴) ---
+    // staff_backup_YYYY-MM-DD 형식의 모든 백업 컬렉션
+    match /{backupCollection}/{documentId} {
+      allow read, write: if request.auth.token.role == 'admin' && 
+        (backupCollection.matches('staff_backup_.*') || 
+         backupCollection.matches('applicants_backup_.*') ||
+         backupCollection.matches('persons_backup_.*'));
     }
     
     // Fallback rule: deny all other access

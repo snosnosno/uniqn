@@ -166,9 +166,10 @@ export const useJobPostingStore = create<JobPostingState>()(
         },
         
         refreshStaff: async () => {
-          // 스태프 데이터 실시간 구독 설정
+          // persons 컬렉션에서 스태프 데이터 실시간 구독 설정
           const staffQuery = query(
-            collection(db, 'staff'),
+            collection(db, 'persons'),
+            where('type', 'in', ['staff', 'both']),
             orderBy('name')
           );
           

@@ -202,6 +202,7 @@ export const HeaderMenu: React.FC = () => {
                       <NavItem to="/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/admin/migration" label="데이터 마이그레이션" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}
                 </>

@@ -418,9 +418,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         data: applicantId 
       });
       
-      // 해당 지원자와 관련된 모든 스태프 문서 찾기
+      // persons 컬렉션에서 해당 지원자와 관련된 모든 문서 찾기
       const staffQuery = query(
-        collection(db, 'staff'), 
+        collection(db, 'persons'), 
         where('userId', '==', applicantId),
         where('postingId', '==', postingId)
       );
@@ -437,7 +437,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           component: 'useApplicantActions', 
           data: staffDoc.id 
         });
-        return deleteDoc(doc(db, 'staff', staffDoc.id));
+        return deleteDoc(doc(db, 'persons', staffDoc.id));
       });
       
       await Promise.all(deletePromises);

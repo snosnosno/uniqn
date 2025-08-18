@@ -129,48 +129,77 @@ export const promoteToStaff = async (
     return;
   }
 
-  const staffRef = doc(db, 'staff', documentId);
+  // persons 컬렉션 사용
+  const staffRef = doc(db, 'persons', documentId);
   
   try {
-    logger.debug('🔍 Checking existing staff document for:', { component: 'firebase', data: userId });
+    logger.debug('🔍 Checking existing person document for:', { component: 'firebase', data: userId });
     const staffSnap = await getDoc(staffRef);
     if (!staffSnap.exists()) {
-      logger.debug('🎆 Creating new staff document', { component: 'firebase' });
+      logger.debug('🎆 Creating new person document as staff', { component: 'firebase' });
       await setDoc(staffRef, {
+        // Person 타입 필드
+        type: 'staff',
+        
+        // 기본 정보
         userId,
         name: userName,
         email: email || '',
         phone: phone || '',
+        
+        // 역할 정보
         userRole: 'staff',
         jobRole: [jobRole],
         role: jobRole, // 호환성을 위해 단일 role 필드도 설정
+        
+        // 할당 정보
         assignedEvents: [postingId],
         assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
         assignedTime: assignedTime || '', // 지원자에서 확정된 시간
         assignedDate: assignedDate || '', // 지원자에서 확정된 날짜
+        
+        // 메타데이터
         createdAt: new Date(),
         managerId,
         postingId,
+        isActive: true
       });
-      logger.debug(`✅ New staff document created for user: ${userName} (${userId}) with role: ${jobRole}`, { component: 'firebase' });
+      logger.debug(`✅ New person document created as staff for user: ${userName} (${userId}) with role: ${jobRole}`, { component: 'firebase' });
       } else {
-      logger.debug('🔄 Updating existing staff document', { component: 'firebase' });
-      // Update existing staff document with new job role and event assignment
+      logger.debug('🔄 Updating existing person document', { component: 'firebase' });
+      
+      // 기존 문서가 applicant 타입이면 both로 변경
+      const existingData = staffSnap.data();
+      const newType = existingData.type === 'applicant' ? 'both' : existingData.type;
+      
+      // Update existing person document with new job role and event assignment
       await updateDoc(staffRef, {
+        // Type 업데이트
+        type: newType,
+        
+        // 기본 정보
         userId,
         name: userName,
         email: email || '',
         phone: phone || '',
+        
+        // 역할 정보
+        userRole: 'staff',
         jobRole: arrayUnion(jobRole),
         role: jobRole, // 가장 최근 역할로 업데이트
+        
+        // 할당 정보
         assignedEvents: arrayUnion(postingId),
         assignedRole: assignedRole || jobRole, // 지원자에서 확정된 역할
         assignedTime: assignedTime || '', // 지원자에서 확정된 시간
         assignedDate: assignedDate || '', // 지원자에서 확정된 날짜
+        
+        // 메타데이터
         postingId, // 최신 공고 ID로 업데이트
-        managerId // 관리자 ID도 업데이트
+        managerId, // 관리자 ID도 업데이트
+        isActive: true
       });
-      logger.debug(`Staff document updated for user: ${userName} (${userId}). Added role: ${jobRole} for posting: ${postingId}`, { component: 'firebase' });
+      logger.debug(`Person document updated as staff for user: ${userName} (${userId}). Added role: ${jobRole} for posting: ${postingId}`, { component: 'firebase' });
     }
   } catch (error) {
     logger.error(`Failed to promote user ${userName} (${userId}) to staff:`, error instanceof Error ? error : new Error(String(error)), { component: 'firebase' });

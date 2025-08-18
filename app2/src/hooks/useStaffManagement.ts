@@ -148,9 +148,10 @@ export const useStaffManagement = (
     setError(null);
 
 
-    // 실시간 구독 설정
+    // 실시간 구독 설정 - persons 컬렉션 사용
     const staffQuery = query(
-      collection(db, 'staff'), 
+      collection(db, 'persons'), 
+      where('type', 'in', ['staff', 'both']),
       where('managerId', '==', currentUser.uid),
       where('postingId', '==', jobPostingId)
     );
@@ -326,16 +327,16 @@ export const useStaffManagement = (
     return 'bg-gray-100 text-gray-700'; // 심야/새벽
   }, []);
 
-  // 메모이제이션된 스태프 삭제
+  // 메모이제이션된 스태프 삭제 - persons 컬렉션 사용
   const deleteStaff = useCallback(async (staffId: string): Promise<void> => {
     if (!window.confirm(t('staffManagement.deleteConfirm'))) {
       return;
     }
     
     try {
-      // Firebase에서 삭제
-      const staffDocRef = doc(db, 'staff', staffId);
-      await deleteDoc(staffDocRef);
+      // Firebase에서 삭제 - persons 컬렉션 사용
+      const personDocRef = doc(db, 'persons', staffId);
+      await deleteDoc(personDocRef);
       
       // 로컬 상태에서 삭제
       setStaffData(prevData => prevData.filter(staff => staff.id !== staffId));

@@ -69,17 +69,18 @@ const DashboardPage: React.FC = () => {
           logger.warn('events 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
         }
 
-        // 전체 딜러 수
+        // 전체 딜러 수 - persons 컬렉션 사용
         try {
           const dealersQuery = query(
-            collection(db, 'staff'),
+            collection(db, 'persons'),
+            where('type', 'in', ['staff', 'both']),
             where('role', '==', 'dealer'),
             where('isActive', '==', true)
           );
           dealersSnapshot = await getDocs(dealersQuery);
           totalDealersCount = dealersSnapshot.size;
         } catch (err) {
-          logger.warn('staff 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+          logger.warn('persons 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
         }
 
         // 오늘 체크인한 딜러 수

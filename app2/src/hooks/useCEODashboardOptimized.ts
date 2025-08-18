@@ -158,17 +158,27 @@ export const useCEODashboardOptimized = () => {
         .sort((a, b) => b.averageRating - a.averageRating)
         .slice(0, 5);
 
-      // 딜러 정보 조회
+      // 딜러 정보 조회 - persons 컬렉션 사용
       for (const dealer of sortedDealers) {
-        // staffId 우선 검색, dealerId fallback
+        // persons 컬렉션에서 staff 타입 검색
         let staffDoc = await getDocs(
-          query(collection(db, 'staff'), where('id', '==', dealer.id), limit(1))
+          query(
+            collection(db, 'persons'), 
+            where('type', 'in', ['staff', 'both']),
+            where('id', '==', dealer.id), 
+            limit(1)
+          )
         );
         
-        // staffId로 찾지 못한 경우 dealerId로 재검색 (하위 호환성)
+        // id로 찾지 못한 경우 dealerId로 재검색 (하위 호환성)
         if (staffDoc.empty) {
           staffDoc = await getDocs(
-            query(collection(db, 'staff'), where('dealerId', '==', dealer.id), limit(1))
+            query(
+              collection(db, 'persons'),
+              where('type', 'in', ['staff', 'both']),
+              where('dealerId', '==', dealer.id),
+              limit(1)
+            )
           );
         }
 
@@ -382,8 +392,11 @@ export const useCEODashboardOptimized = () => {
         });
         unsubscribers.push(payrollUnsubscribe);
 
-        // 구독 4: 스태프 + 사용자 통합 쿼리
-        const staffQuery = collection(db, 'staff');
+        // 구독 4: 스태프 + 사용자 통합 쿼리 - persons 컬렉션 사용
+        const staffQuery = query(
+          collection(db, 'persons'),
+          where('type', 'in', ['staff', 'both'])
+        );
         const staffUnsubscribe = onSnapshot(staffQuery, async (snapshot) => {
           const totalStaff = snapshot.size;
           let activeCount = 0;

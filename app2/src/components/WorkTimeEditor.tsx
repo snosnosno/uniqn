@@ -1,4 +1,4 @@
-import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { formatTimeForInput } from '../utils/dateUtils';
 import React, { useState, useEffect } from 'react';
@@ -35,15 +35,13 @@ interface WorkTimeEditorProps {
   onClose: () => void;
   workLog: WorkLogWithTimestamp | null;
   onUpdate?: (updatedWorkLog: WorkLogWithTimestamp) => void;
-  timeType?: 'start' | 'end'; // 편집할 시간 타입
 }
 
 const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   isOpen,
   onClose,
   workLog,
-  onUpdate,
-  timeType
+  onUpdate
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -56,6 +54,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   const [endTime, setEndTime] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // formatTimeForInput은 이미 utils/dateUtils에서 import됨
 
@@ -219,27 +218,52 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       } else {
         // 기존 WorkLog 업데이트 - 통합 시스템 사용
         const workLogRef = doc(db, 'workLogs', workLog.id);
-        const updateData = prepareWorkLogForUpdate({
-          scheduledStartTime: newStartTime,
-          scheduledEndTime: newEndTime
-        });
         
-        await updateDoc(workLogRef, updateData);
+        // 기존 값을 유지하면서 업데이트할 데이터 준비
+        // 변경된 값만 업데이트하도록 수정
+        const updatePayload: any = {};
         
-        logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
-          id: workLog.id, 
-          startTime: startTime || '미정',
-          endTime: endTime || '미정' 
-        } });
+        // startTime이 변경된 경우에만 업데이트
+        if (startTime === '') {
+          // 빈 문자열은 명시적으로 "미정"으로 설정
+          updatePayload.scheduledStartTime = null;
+        } else if (startTime && startTime.trim() !== '') {
+          // 새로운 값이 있으면 업데이트
+          updatePayload.scheduledStartTime = newStartTime;
+        }
+        // startTime이 undefined이거나 변경되지 않았으면 updatePayload에 추가하지 않음
+        
+        // endTime이 변경된 경우에만 업데이트
+        if (endTime === '') {
+          // 빈 문자열은 명시적으로 "미정"으로 설정
+          updatePayload.scheduledEndTime = null;
+        } else if (endTime && endTime.trim() !== '') {
+          // 새로운 값이 있으면 업데이트
+          updatePayload.scheduledEndTime = newEndTime;
+        }
+        // endTime이 undefined이거나 변경되지 않았으면 updatePayload에 추가하지 않음
+        
+        // updatePayload에 값이 있는 경우에만 업데이트 수행
+        if (Object.keys(updatePayload).length > 0) {
+          const updateData = prepareWorkLogForUpdate(updatePayload);
+          await updateDoc(workLogRef, updateData);
+          
+          logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
+            id: workLog.id, 
+            startTime: startTime || '미정',
+            endTime: endTime || '미정' 
+          } });
+        }
       }
       
-      // 업데이트된 데이터로 콜백 호출 - 더 강화된 업데이트 객체
+      // 업데이트된 데이터로 콜백 호출 - 변경된 값만 반영
       if (onUpdate) {
         const updatedWorkLog = {
           ...workLog,
           id: finalWorkLogId, // 가상 ID를 실제 ID로 변경
-          scheduledStartTime: newStartTime,
-          scheduledEndTime: newEndTime,
+          // 변경된 값만 업데이트, 변경되지 않은 값은 기존 값 유지
+          scheduledStartTime: startTime === '' ? null : (startTime && startTime.trim() !== '' ? newStartTime : workLog.scheduledStartTime),
+          scheduledEndTime: endTime === '' ? null : (endTime && endTime.trim() !== '' ? newEndTime : workLog.scheduledEndTime),
           updatedAt: Timestamp.now()
         };
         onUpdate(updatedWorkLog);
@@ -256,8 +280,34 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         });
       }
       
+      // 저장 후 Firebase에서 최신 데이터 다시 가져오기
+      const workLogRef = doc(db, 'workLogs', finalWorkLogId);
+      const docSnap = await getDoc(workLogRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // UI 업데이트
+        const actualStartTimeString = formatTimeForInput(data.actualStartTime);
+        const scheduledStartTimeString = formatTimeForInput(data.scheduledStartTime);
+        const startTimeString = actualStartTimeString || scheduledStartTimeString;
+        
+        const scheduledEndTimeString = formatTimeForInput(data.scheduledEndTime);
+        const endTimeString = scheduledEndTimeString;
+        
+        setStartTime(startTimeString);
+        setEndTime(endTimeString);
+        
+        const startParts = parseTime(startTimeString);
+        setStartHour(startParts.hour);
+        setStartMinute(startParts.minute);
+        
+        const endParts = parseTime(endTimeString);
+        setEndHour(endParts.hour);
+        setEndMinute(endParts.minute);
+      }
+      
       showSuccess('시간이 성공적으로 업데이트되었습니다.');
-      onClose();
     } catch (error) {
       logger.error('시간 업데이트 중 오류 발생', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
       showError('시간 업데이트 중 오류가 발생했습니다.');
@@ -266,42 +316,40 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     }
   };
 
+
   // 모달이 열릴 때 기존 시간 값 설정
   useEffect(() => {
-    if (isOpen && workLog) {
-      // 실제시간이 있으면 실제시간 우선, 없으면 예정시간 사용
-      const actualStartTimeString = formatTimeForInput(workLog.actualStartTime);
-      const scheduledStartTimeString = formatTimeForInput(workLog.scheduledStartTime);
-      const startTimeString = actualStartTimeString || scheduledStartTimeString;
-      
-      // 퇴근시간은 예정시간(scheduledEndTime)만 사용
-      const scheduledEndTimeString = formatTimeForInput(workLog.scheduledEndTime);
-      const endTimeString = scheduledEndTimeString; // 실제시간 제외
-      
-      setStartTime(startTimeString);
-      setEndTime(endTimeString);
-      
-      // 분리된 시간 상태 초기화
-      const startParts = parseTime(startTimeString);
-      setStartHour(startParts.hour);
-      setStartMinute(startParts.minute);
-      
-      const endParts = parseTime(endTimeString);
-      setEndHour(endParts.hour);
-      setEndMinute(endParts.minute);
-      
-      setValidationErrors([]);
+    if (!isOpen || !workLog) {
+      return;
     }
-  }, [isOpen, workLog]);
+    
+    // 실제시간이 있으면 실제시간 우선, 없으면 예정시간 사용
+    const actualStartTimeString = formatTimeForInput(workLog.actualStartTime);
+    const scheduledStartTimeString = formatTimeForInput(workLog.scheduledStartTime);
+    const startTimeString = actualStartTimeString || scheduledStartTimeString;
+    
+    // 퇴근시간은 예정시간(scheduledEndTime)만 사용
+    const scheduledEndTimeString = formatTimeForInput(workLog.scheduledEndTime);
+    const endTimeString = scheduledEndTimeString;
+    
+    setStartTime(startTimeString);
+    setEndTime(endTimeString);
+    
+    const startParts = parseTime(startTimeString);
+    setStartHour(startParts.hour);
+    setStartMinute(startParts.minute);
+    
+    const endParts = parseTime(endTimeString);
+    setEndHour(endParts.hour);
+    setEndMinute(endParts.minute);
+    
+    setValidationErrors([]);
+    setHasChanges(false); // 초기 로드시 변경사항 없음
+  }, [isOpen, workLog]); // workLog가 변경될 때마다 실행
 
-  // timeType에 따른 모달 제목 생성
+  // 모달 제목 - 통합 편집 모드
   const getModalTitle = () => {
-    if (timeType === 'start') {
-      return '출근 시간 수정';
-    } else if (timeType === 'end') {
-      return '퇴근 시간 수정';
-    }
-    return t('attendance.editWorkTime');
+    return '근무 시간 수정';
   };
 
   // 시간과 분 옵션 생성
@@ -354,17 +402,21 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   const [endHour, setEndHour] = useState('');
   const [endMinute, setEndMinute] = useState('');
 
-  // 시간 업데이트 핸들러
+  // 시간 업데이트 핸들러 - UI만 업데이트
   const handleStartTimeChange = (hour: string, minute: string) => {
     setStartHour(hour);
     setStartMinute(minute);
-    setStartTime(combineTime(hour, minute));
+    const newTime = combineTime(hour, minute);
+    setStartTime(newTime);
+    setHasChanges(true); // 변경사항 표시
   };
 
   const handleEndTimeChange = (hour: string, minute: string) => {
     setEndHour(hour);
     setEndMinute(minute);
-    setEndTime(combineTime(hour, minute));
+    const newTime = combineTime(hour, minute);
+    setEndTime(newTime);
+    setHasChanges(true); // 변경사항 표시
   };
 
 
@@ -427,28 +479,22 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="font-semibold text-lg mb-3 flex items-center">
             <EditIcon className="w-5 h-5 mr-2 text-blue-600" />
-            시간 설정
+            근무 시간 설정
           </h3>
           <p className="text-sm text-gray-600 mb-3">
-            시간을 입력하지 않으면 '미정'로 표시됩니다.
+            출근/퇴근 시간을 자유롭게 수정할 수 있습니다. 시간을 입력하지 않으면 '미정'로 표시됩니다.
           </p>
           <div className="grid grid-cols-2 gap-4">
-            <div className={timeType === 'start' ? 'ring-2 ring-blue-500 rounded-lg p-2 -m-2' : ''}>
-              <label className={`block text-sm font-medium mb-1 ${timeType === 'start' ? 'text-blue-700 font-semibold' : 'text-gray-700'}`}>
-                시작 시간
-                {timeType === 'start' && <span className="ml-1 text-blue-600">← 편집 중</span>}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                출근 시간
               </label>
               <div className="space-y-2">
                 <div className="flex space-x-2">
                   <select
                     value={startHour}
                     onChange={(e) => handleStartTimeChange(e.target.value, startMinute)}
-                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
-                      timeType === 'start' 
-                        ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' 
-                        : 'border-gray-300'
-                    }`}
-                    autoFocus={timeType === 'start'}
+                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">시</option>
                     {hourOptions.map((option) => (
@@ -460,11 +506,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   <select
                     value={startMinute}
                     onChange={(e) => handleStartTimeChange(startHour, e.target.value)}
-                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
-                      timeType === 'start' 
-                        ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' 
-                        : 'border-gray-300'
-                    }`}
+                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">분</option>
                     {minuteOptions.map((option) => (
@@ -474,13 +516,14 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                     ))}
                   </select>
                 </div>
-                {/* 시작시간이 이미 설정되어 있고, end 타입이 아닌 경우에만 지우기 버튼 표시 */}
-                {startTime && timeType !== 'end' && (
+                {/* 시작시간 지우기 버튼 - 항상 표시 */}
+                {startTime && (
                   <button
                     onClick={() => {
                       setStartHour('');
                       setStartMinute('');
                       setStartTime('');
+                      setHasChanges(true);
                     }}
                     className="w-full px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
                     title="시작시간 지우기 (미정로 되돌리기)"
@@ -490,23 +533,17 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                 )}
               </div>
             </div>
-            <div className={timeType === 'end' ? 'ring-2 ring-green-500 rounded-lg p-2 -m-2' : ''}>
-              <label className={`block text-sm font-medium mb-1 ${timeType === 'end' ? 'text-green-700 font-semibold' : 'text-gray-700'}`}>
-                종료 시간
-                <span className="text-gray-500 text-xs">(선택사항)</span>
-                {timeType === 'end' && <span className="ml-1 text-green-600">← 편집 중</span>}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                퇴근 시간
+                <span className="text-gray-500 text-xs ml-1">(선택사항)</span>
               </label>
               <div className="space-y-2">
                 <div className="flex space-x-2">
                   <select
                     value={endHour}
                     onChange={(e) => handleEndTimeChange(e.target.value, endMinute)}
-                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
-                      timeType === 'end' 
-                        ? 'border-green-500 focus:ring-green-500 focus:border-green-500' 
-                        : 'border-gray-300'
-                    }`}
-                    autoFocus={timeType === 'end'}
+                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
                   >
                     <option value="">시</option>
                     {hourOptions.map((option) => (
@@ -518,11 +555,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   <select
                     value={endMinute}
                     onChange={(e) => handleEndTimeChange(endHour, e.target.value)}
-                    className={`flex-1 px-3 py-2 border rounded-md font-mono text-lg ${
-                      timeType === 'end' 
-                        ? 'border-green-500 focus:ring-green-500 focus:border-green-500' 
-                        : 'border-gray-300'
-                    }`}
+                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
                   >
                     <option value="">분</option>
                     {minuteOptions.map((option) => (
@@ -537,6 +570,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                     setEndHour('');
                     setEndMinute('');
                     setEndTime('');
+                    setHasChanges(true);
                   }}
                   className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                   title="종료시간을 미정으로 설정"
@@ -547,6 +581,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
             </div>
           </div>
         </div>
+
 
         {/* 근무 시간 요약 */}
         <div className="bg-yellow-50 p-4 rounded-lg">
@@ -614,22 +649,48 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         )}
 
         {/* 버튼 */}
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-between">
           <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
           >
             <TimesIcon className="w-4 h-4 mr-2" />
-            {t('common.cancel')}
+            닫기
           </button>
-          <button
-            onClick={handleUpdateTime}
-            disabled={isUpdating}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
-          >
-            <SaveIcon className="w-4 h-4 mr-2" />
-            {isUpdating ? t('common.updating') : t('common.save')}
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={async () => {
+                await handleUpdateTime();
+                setHasChanges(false);
+                // 변경사항이 있었으면 모달 닫기
+                if (hasChanges) {
+                  onClose();
+                }
+                // 변경사항이 없으면 모달 유지
+              }}
+              disabled={isUpdating}
+              className={`px-4 py-2 text-white rounded-md disabled:opacity-50 flex items-center font-medium transition-all ${
+                hasChanges 
+                  ? 'bg-green-600 hover:bg-green-700 ring-2 ring-green-400 ring-opacity-50' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              <SaveIcon className="w-4 h-4 mr-2" />
+              {isUpdating ? '저장 중...' : hasChanges ? '변경사항 저장' : '저장'}
+            </button>
+            {!hasChanges && (
+              <button
+                onClick={async () => {
+                  await handleUpdateTime();
+                  onClose();
+                }}
+                disabled={isUpdating}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center font-medium"
+              >
+                저장 후 닫기
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </Modal>

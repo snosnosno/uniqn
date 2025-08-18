@@ -108,6 +108,29 @@ export * from './simplePayroll';
 export * from './permissions';
 
 // ============================================================================
+// 통합된 Person 타입 (NEW)
+// ============================================================================
+
+// Person 타입 시스템 (staff + applicants 통합)
+export type {
+  Person,
+  Staff as UnifiedStaff,
+  Applicant as UnifiedApplicant,
+  PersonCreateInput,
+  PersonUpdateInput
+} from './unified/person';
+
+export {
+  isStaff as isUnifiedStaff,
+  isApplicant as isUnifiedApplicant,
+  isBoth,
+  personToStaff,
+  personToApplicant,
+  getPersonId,
+  getDealerId
+} from './unified/person';
+
+// ============================================================================
 // 표준화된 타입 사용 가이드
 // ============================================================================
 

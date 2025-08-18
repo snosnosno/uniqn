@@ -1,4 +1,4 @@
-import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore';
@@ -28,8 +28,11 @@ const ShiftSchedulePage: React.FC = () => {
   // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)
   const [selectedEventId] = useState<string>('default-event');
   
-  // 기존 스태프 데이터 가져오기
-  const staffQuery = useMemo(() => query(collection(db, 'staff')), []);
+  // persons 컬렉션에서 스태프 데이터 가져오기 (staff와 both 타입만)
+  const staffQuery = useMemo(() => query(
+    collection(db, 'persons'),
+    where('type', 'in', ['staff', 'both'])
+  ), []);
   
   const [staffSnap, staffLoading] = useCollection(staffQuery);
   const { tables, loading: tablesLoading } = useTables();

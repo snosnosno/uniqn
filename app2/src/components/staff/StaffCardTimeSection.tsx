@@ -7,7 +7,7 @@ interface StaffCardTimeSectionProps {
   endTimeColor: string;
   canEdit: boolean;
   multiSelectMode: boolean;
-  onEditWorkTime: (staffId: string, type: 'start' | 'end') => void;
+  onEditWorkTime: (staffId: string, type?: 'start' | 'end') => void;
   staffId: string;
 }
 
@@ -31,14 +31,14 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
         onClick={(e) => {
           e.stopPropagation();
           if (isStartTimeEditable) {
-            onEditWorkTime(staffId, 'start');
+            onEditWorkTime(staffId); // 통합 모달로 타입 전달 제거
           }
         }}
         disabled={!isStartTimeEditable}
         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${startTimeColor} ${
           isStartTimeEditable ? 'hover:opacity-80 cursor-pointer' : 'opacity-50 cursor-not-allowed'
         } transition-opacity whitespace-nowrap`}
-        title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "예정 출근시간 수정"}
+        title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "근무 시간 수정"}
       >
         <span>출근: {displayStartTime}</span>
       </button>
@@ -47,14 +47,14 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
         onClick={(e) => {
           e.stopPropagation();
           if (isEndTimeEditable) {
-            onEditWorkTime(staffId, 'end');
+            onEditWorkTime(staffId); // 통합 모달로 타입 전달 제거
           }
         }}
         disabled={!isEndTimeEditable}
         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${endTimeColor} ${
           isEndTimeEditable ? 'hover:opacity-80 cursor-pointer' : 'opacity-50 cursor-not-allowed'
         } transition-opacity whitespace-nowrap`}
-        title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "예정 퇴근시간 수정"}
+        title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "근무 시간 수정"}
       >
         <span>퇴근: {displayEndTime}</span>
       </button>
