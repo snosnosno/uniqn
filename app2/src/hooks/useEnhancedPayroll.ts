@@ -125,9 +125,7 @@ export const useEnhancedPayroll = ({
   const processedPayrollData = useMemo((): EnhancedPayrollCalculation[] => {
     const defaultAllowances = getDefaultAllowances();
     
-    console.log('=== EnhancedPayroll 데이터 처리 시작 ===');
-    console.log('confirmedStaff:', confirmedStaff);
-    console.log('filteredWorkLogs 개수:', filteredWorkLogs.length);
+    // EnhancedPayroll 데이터 처리 시작
     
     // staffId + role 조합으로 그룹화
     const staffRoleMap = new Map<string, {
@@ -149,10 +147,7 @@ export const useEnhancedPayroll = ({
       }
     });
     
-    console.log('=== 스태프별 역할 분포 ===');
-    Object.entries(staffRoleCount).forEach(([userId, roles]) => {
-      console.log(`StaffId: ${userId}, 역할들: ${Array.from(roles).join(', ')}`);
-    });
+    // 스태프별 역할 분포 처리 완료
     
     // confirmedStaff 기반으로 역할별 workLog 생성
     // (실제 workLog에 역할 정보가 없을 수 있으므로)
@@ -176,7 +171,7 @@ export const useEnhancedPayroll = ({
       });
     });
     
-    console.log(`원본 workLogs: ${filteredWorkLogs.length}개, 역할 기반 workLogs: ${roleBasedWorkLogs.length}개`);
+    // 역할 기반 workLogs 생성 완료
     
     // 역할 기반 workLogs를 staffId + role로 그룹화
     roleBasedWorkLogs.forEach((log, index) => {
@@ -202,7 +197,7 @@ export const useEnhancedPayroll = ({
             role = anyStaff.role;
             staffName = anyStaff.name;
           } else {
-            console.log(`WorkLog ${index}: 매칭되는 staff 없음 (staffId: ${log.staffId})`);
+            // WorkLog 매칭 staff 없음
             return;
           }
         }
@@ -218,15 +213,7 @@ export const useEnhancedPayroll = ({
       
       const key = `${log.staffId}_${role}`;
       
-      // 디버그 로그
-      console.log(`WorkLog ${index}:`, {
-        date: log.date,
-        staffId: log.staffId,
-        staffName: staffName,
-        workLogRole: (log as any).role,
-        finalRole: role,
-        key: key
-      });
+      // WorkLog 처리
       
       if (!staffRoleMap.has(key)) {
         staffRoleMap.set(key, {
@@ -243,11 +230,7 @@ export const useEnhancedPayroll = ({
       }
     });
     
-    console.log('=== 그룹화 결과 ===');
-    console.log('staffRoleMap 크기:', staffRoleMap.size);
-    staffRoleMap.forEach((value, key) => {
-      console.log(`Key: ${key}, WorkLogs 개수: ${value.workLogs.length}, Role: ${value.role}`);
-    });
+    // 그룹화 결과 처리 완료
     
     // 각 staffId + role 조합에 대해 EnhancedPayrollCalculation 생성
     const results: EnhancedPayrollCalculation[] = [];

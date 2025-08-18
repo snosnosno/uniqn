@@ -135,23 +135,22 @@ export const useCEODashboardOptimized = () => {
 
       ratingsSnapshot.forEach((doc) => {
         const data = doc.data();
-        // staffId 우선, dealerId는 하위 호환성을 위해 fallback
-        const staffId = data.staffId || data.dealerId;
-        const dealerId = staffId; // 레거시 변수명 유지용
+        // staffId만 사용 (레거시 dealerId 제거)
+        const staffId = data.staffId || data.dealerId; // dealerId는 하위 호환성을 위해 임시 유지
         
-        if (!dealerRatings.has(dealerId)) {
-          dealerRatings.set(dealerId, { totalRating: 0, count: 0 });
+        if (!dealerRatings.has(staffId)) {
+          dealerRatings.set(staffId, { totalRating: 0, count: 0 });
         }
         
-        const current = dealerRatings.get(dealerId)!;
+        const current = dealerRatings.get(staffId)!;
         current.totalRating += data.rating;
         current.count += 1;
       });
 
       // 평균 평점 계산
       const sortedDealers = Array.from(dealerRatings.entries())
-        .map(([dealerId, ratings]) => ({
-          id: dealerId,
+        .map(([staffId, ratings]) => ({
+          id: staffId,
           averageRating: ratings.totalRating / ratings.count,
           ratingCount: ratings.count
         }))
@@ -170,17 +169,7 @@ export const useCEODashboardOptimized = () => {
           )
         );
         
-        // id로 찾지 못한 경우 dealerId로 재검색 (하위 호환성)
-        if (staffDoc.empty) {
-          staffDoc = await getDocs(
-            query(
-              collection(db, 'persons'),
-              where('type', 'in', ['staff', 'both']),
-              where('dealerId', '==', dealer.id),
-              limit(1)
-            )
-          );
-        }
+        // id로 찾지 못한 경우 (레거시 dealerId 검색 제거)
 
         if (!staffDoc.empty && staffDoc.docs[0]) {
           const staffData = staffDoc.docs[0].data();

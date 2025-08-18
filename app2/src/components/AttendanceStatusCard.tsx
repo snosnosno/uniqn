@@ -6,16 +6,16 @@ export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 interface AttendanceStatusCardProps {
   status: AttendanceStatus;
-  checkInTime?: string | undefined;
-  checkOutTime?: string | undefined;
+  actualStartTime?: string | undefined;
+  actualEndTime?: string | undefined;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
   status,
-  checkInTime,
-  checkOutTime,
+  actualStartTime,
+  actualEndTime,
   size = 'md',
   className = ''
 }) => {
@@ -91,10 +91,10 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
       {config.icon}
       <div className="flex flex-col">
         <span className="font-medium">{config.text}</span>
-        {size !== 'sm' && (checkInTime || checkOutTime) ? <div className="text-xs opacity-75">
-            {checkInTime ? <span>{t('attendance.checkIn', '출근')}: {checkInTime}</span> : null}
-            {checkInTime && checkOutTime ? <span className="mx-1">|</span> : null}
-            {checkOutTime ? <span>{t('attendance.checkOut', '퇴근')}: {checkOutTime}</span> : null}
+        {size !== 'sm' && (actualStartTime || actualEndTime) ? <div className="text-xs opacity-75">
+            {actualStartTime ? <span>{t('attendance.checkIn', '출근')}: {actualStartTime}</span> : null}
+            {actualStartTime && actualEndTime ? <span className="mx-1">|</span> : null}
+            {actualEndTime ? <span>{t('attendance.checkOut', '퇴근')}: {actualEndTime}</span> : null}
           </div> : null}
       </div>
     </div>

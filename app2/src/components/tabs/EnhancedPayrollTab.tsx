@@ -72,9 +72,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   // 수당 편집 모달 열기
   const openEditModal = useCallback((staff: EnhancedPayrollCalculation) => {
     // 디버깅: 전달되는 staff 데이터 확인
-    console.log('EnhancedPayrollTab - openEditModal staff:', staff);
+    logger.debug('EnhancedPayrollTab - openEditModal staff', { component: 'EnhancedPayrollTab', data: staff });
     if (staff.workLogs && staff.workLogs.length > 0) {
-      console.log('EnhancedPayrollTab - 첫 번째 workLog:', staff.workLogs[0]);
+      logger.debug('EnhancedPayrollTab - 첫 번째 workLog', { component: 'EnhancedPayrollTab', data: staff.workLogs[0] });
     }
     setEditingStaff(staff);
     setIsEditModalOpen(true);

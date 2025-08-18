@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { EnhancedPayrollCalculation, AllowanceType } from '../../types/payroll';
 import { formatCurrency } from '../../i18n-helpers';
+import { logger } from '../../utils/logger';
 
 interface DetailEditModalProps {
   isOpen: boolean;
@@ -29,18 +30,18 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   useEffect(() => {
     if (staff) {
       // 디버깅을 위한 로그
-      console.log('DetailEditModal - staff 데이터:', staff);
+      logger.debug('DetailEditModal - staff 데이터', { component: 'DetailEditModal', data: staff });
       if (staff.workLogs && staff.workLogs.length > 0) {
         const firstLog = staff.workLogs[0];
-        console.log('DetailEditModal - workLogs 샘플:', firstLog);
+        logger.debug('DetailEditModal - workLogs 샘플', { component: 'DetailEditModal', data: firstLog });
         if (firstLog) {
-          console.log('DetailEditModal - workLog 필드들:', {
+          logger.debug('DetailEditModal - workLog 필드들', { component: 'DetailEditModal', data: {
             actualStartTime: firstLog.actualStartTime,
             actualEndTime: firstLog.actualEndTime,
             scheduledStartTime: firstLog.scheduledStartTime,
             scheduledEndTime: firstLog.scheduledEndTime,
             status: firstLog.status
-          });
+          }});
         }
       }
       
@@ -82,8 +83,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     if (!staff || !staff.workLogs || staff.workLogs.length === 0) return [];
     
     // 디버그 로그
-    console.log('DetailEditModal - workLogs 원본 데이터:', staff.workLogs);
-    console.log('DetailEditModal - 첫 번째 workLog 상세:', staff.workLogs[0]);
+    logger.debug('DetailEditModal - workLogs 원본 데이터', { component: 'DetailEditModal', data: staff.workLogs });
+    logger.debug('DetailEditModal - 첫 번째 workLog 상세', { component: 'DetailEditModal', data: staff.workLogs[0] });
     
     try {
       // workLogs를 날짜별로 정렬
@@ -157,7 +158,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                 return `${String(timeValue.getHours()).padStart(2, '0')}:${String(timeValue.getMinutes()).padStart(2, '0')}`;
               }
             } catch (error) {
-              console.error('시간 파싱 오류:', error);
+              logger.error('시간 파싱 오류', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
             }
             
             return '미정';
@@ -180,7 +181,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             endTime = parseTime(log.scheduledEndTime);
           }
           
-          console.log('DetailEditModal - WorkLog 시간 파싱:', {
+          logger.debug('DetailEditModal - WorkLog 시간 파싱', { component: 'DetailEditModal', data: {
             date: log.date,
             hasActualTimes,
             actualStart: log.actualStartTime,
@@ -189,7 +190,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             scheduledEnd: log.scheduledEndTime,
             parsedStart: startTime,
             parsedEnd: endTime
-          });
+          }});
           
           // 근무시간 계산
           let workHours = '계산중';
@@ -242,7 +243,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             role
           };
         } catch (error) {
-          console.error('Error processing work log:', error);
+          logger.error('Error processing work log', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
           return {
             date: '오류',
             day: '',
@@ -254,7 +255,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
         }
       });
     } catch (error) {
-      console.error('Error processing work history:', error);
+      logger.error('Error processing work history', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
       return [];
     }
   }, [staff]);

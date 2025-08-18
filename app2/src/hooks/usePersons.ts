@@ -11,7 +11,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Person, isStaff, isApplicant } from '../types/unified/person';
-import { personToLegacyStaff, personToLegacyApplicant } from '../utils/compatibilityAdapter';
 import { logger } from '../utils/logger';
 
 /**
@@ -128,13 +127,30 @@ export function usePersons(filter?: {
   const getAsStaff = () => {
     return persons
       .filter(isStaff)
-      .map(personToLegacyStaff);
+      .map(person => ({
+        ...person,
+        // 레거시 스태프 형식으로 매핑
+        id: person.id,
+        name: person.name,
+        phone: person.phone,
+        role: person.role || '',
+        isActive: person.isActive || false
+      }));
   };
 
   const getAsApplicants = () => {
     return persons
       .filter(isApplicant)
-      .map(personToLegacyApplicant);
+      .map(person => ({
+        ...person,
+        // 레거시 지원자 형식으로 매핑
+        id: person.id,
+        name: person.name,
+        phone: person.phone,
+        role: person.role || '',
+        availableDates: person.availableDates || [],
+        availableRoles: person.availableRoles || []
+      }));
   };
 
   return {
@@ -199,8 +215,23 @@ export function usePerson(personId: string | undefined) {
     loading,
     error,
     // 하위 호환성
-    asStaff: person && isStaff(person) ? personToLegacyStaff(person) : null,
-    asApplicant: person && isApplicant(person) ? personToLegacyApplicant(person) : null
+    asStaff: person && isStaff(person) ? {
+      ...person,
+      id: person.id,
+      name: person.name,
+      phone: person.phone,
+      role: person.role || '',
+      isActive: person.isActive || false
+    } : null,
+    asApplicant: person && isApplicant(person) ? {
+      ...person,
+      id: person.id,
+      name: person.name,
+      phone: person.phone,
+      role: person.role || '',
+      availableDates: person.availableDates || [],
+      availableRoles: person.availableRoles || []
+    } : null
   };
 }
 
