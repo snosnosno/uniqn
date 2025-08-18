@@ -211,7 +211,7 @@ export interface WorkLogSortOption {
  * ```typescript
  * if (isUnifiedWorkLog(data)) {
  *   // data는 UnifiedWorkLog 타입으로 안전하게 사용 가능
- *   console.log(data.staffId, data.eventId);
+ *   logger.info('WorkLog 데이터', { staffId: data.staffId, eventId: data.eventId });
  * }
  * ```
  */
@@ -254,7 +254,7 @@ export const isLegacyWorkLog = (data: any): data is LegacyWorkLog => {
  * ```typescript
  * const validation = validateWorkLog(data);
  * if (!validation.isValid) {
- *   console.error('유효하지 않은 WorkLog:', validation.errors);
+ *   logger.error('유효하지 않은 WorkLog', validation.errors);
  * }
  * ```
  */

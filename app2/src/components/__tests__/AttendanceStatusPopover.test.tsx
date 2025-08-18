@@ -1,9 +1,9 @@
 import React from 'react';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AttendanceStatusPopover from '../AttendanceStatusPopover';
 import { customRender as render } from '../../__tests__/setup/test-utils';
-import { updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { updateDoc, Timestamp } from 'firebase/firestore';
 
 // Firebase 함수 모킹
 jest.mock('firebase/firestore', () => ({

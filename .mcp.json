@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-mcp-config.json",
+  "mcpServers": {
+    "mcp-installer": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@anaisbetts/mcp-installer"
+      ],
+      "env": {}
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "shrimp-task-manager": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:\\mcp-shrimp-task-manager\\dist\\index.js"
+      ],
+      "env": {
+        "DATA_DIR": "C:\\Users\\user\\Desktop\\T-HOLDEM\\SHRIMP",
+        "TEMPLATES_USE": "templates_en",
+        "ENABLE_GUI": "true"
+      }
+    }
+  }
+}
