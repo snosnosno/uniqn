@@ -194,3 +194,42 @@ export interface PayrollStatus {
   paymentMethod?: 'cash' | 'bank' | 'other';
   notes?: string;
 }
+
+/**
+ * 역할별 급여 설정 타입
+ */
+export interface RoleSalaryConfig {
+  [role: string]: {
+    salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
+    salaryAmount: number;
+    customRoleName?: string; // 기타 선택 시 직접 입력한 역할명
+  };
+}
+
+/**
+ * 일괄 급여 변경 타입
+ */
+export interface BulkSalaryUpdate {
+  targetStaffIds: string[];
+  salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
+  salaryAmount: number;
+  applyToRole?: string; // 특정 역할에만 적용하는 경우
+  previewMode?: boolean; // 미리보기 모드인지 여부
+}
+
+/**
+ * 일괄 급여 편집 결과
+ */
+export interface BulkSalaryEditResult {
+  affectedStaff: Array<{
+    staffId: string;
+    staffName: string;
+    role: string;
+    beforeSalary: { type: string; amount: number };
+    afterSalary: { type: string; amount: number };
+    amountDifference: number;
+  }>;
+  totalAmountDifference: number;
+  successCount: number;
+  failCount: number;
+}

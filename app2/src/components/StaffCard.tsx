@@ -112,8 +112,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
-    // workLog.scheduledStartTime을 우선 사용, assignedTime은 fallback
-    let scheduledStartTime = staff.assignedTime;
+    // workLog.scheduledStartTime을 우선 사용, assignedTime/timeSlot은 fallback
+    let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot;
     if (workLog?.scheduledStartTime) {
       try {
         if (typeof workLog.scheduledStartTime === 'string') {

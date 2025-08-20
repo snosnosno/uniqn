@@ -114,7 +114,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
     // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
-    let scheduledStartTime = staff.assignedTime;
+    // staff.assignedTime이 없으면 staff.timeSlot 사용
+    let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot;
     if (workLog?.scheduledStartTime) {
       try {
         // Timestamp를 시간 문자열로 변환

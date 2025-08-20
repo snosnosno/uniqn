@@ -6,6 +6,8 @@ import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
 import DetailEditModal from '../payroll/DetailEditModal';
+import RoleSalarySettings from '../payroll/RoleSalarySettings';
+import BulkSalaryEditModal from '../payroll/BulkSalaryEditModal';
 import { EnhancedPayrollCalculation } from '../../types/payroll';
 
 interface EnhancedPayrollTabProps {
@@ -15,15 +17,12 @@ interface EnhancedPayrollTabProps {
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) => {
   const { i18n } = useTranslation();
   
-  // 날짜 범위 상태
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  });
+  // 날짜 범위는 전체 기간으로 고정
 
-  // 수당 편집 모달 상태
+  // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isBulkSalaryModalOpen, setIsBulkSalaryModalOpen] = useState(false);
 
   // 정산 데이터 조회
   const {
@@ -37,26 +36,17 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     applyBulkAllowances,
     updateStaffAllowances,
     exportToCSV,
-    availableRoles
+    availableRoles,
+    updateRoleSalarySettings,
+    handleBulkSalaryEdit,
+    roleSalaryOverrides
   } = useEnhancedPayroll({
     ...(jobPosting?.id && { jobPostingId: jobPosting.id }),
     ...(jobPosting && { jobPosting }),
-    confirmedStaff: jobPosting?.confirmedStaff || [],
-    ...(dateRange.start && { startDate: dateRange.start }),
-    ...(dateRange.end && { endDate: dateRange.end })
+    confirmedStaff: jobPosting?.confirmedStaff || []
+    // 날짜 필터 제거 - 전체 기간 자동 계산
   });
 
-  // 날짜 변경 핸들러
-  const handleDateChange = useCallback((type: 'start' | 'end', value: string) => {
-    setDateRange(prev => ({
-      ...prev,
-      [type]: value
-    }));
-    
-    logger.info(`정산 기간 변경: ${type} = ${value}`, {
-      component: 'EnhancedPayrollTab'
-    });
-  }, []);
 
   // 급여 유형 한글 변환
   const getSalaryTypeLabel = useCallback((type: string) => {
@@ -72,9 +62,34 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   // 수당 편집 모달 열기
   const openEditModal = useCallback((staff: EnhancedPayrollCalculation) => {
     // 디버깅: 전달되는 staff 데이터 확인
-    logger.debug('EnhancedPayrollTab - openEditModal staff', { component: 'EnhancedPayrollTab', data: staff });
+    logger.debug('EnhancedPayrollTab - openEditModal staff', { 
+      component: 'EnhancedPayrollTab', 
+      data: {
+        staffId: staff.staffId,
+        staffName: staff.staffName,
+        role: staff.role,
+        totalHours: staff.totalHours,
+        workLogsCount: staff.workLogs?.length || 0
+      }
+    });
+    
     if (staff.workLogs && staff.workLogs.length > 0) {
-      logger.debug('EnhancedPayrollTab - 첫 번째 workLog', { component: 'EnhancedPayrollTab', data: staff.workLogs[0] });
+      const firstLog = staff.workLogs[0];
+      if (firstLog) {
+        logger.debug('EnhancedPayrollTab - 첫 번째 workLog 상세', { 
+          component: 'EnhancedPayrollTab', 
+          data: {
+            id: firstLog.id,
+            date: firstLog.date,
+            scheduledStartTime: firstLog.scheduledStartTime ? 'set' : 'null',
+            scheduledEndTime: firstLog.scheduledEndTime ? 'set' : 'null',
+            actualStartTime: firstLog.actualStartTime ? 'set' : 'null',
+            actualEndTime: firstLog.actualEndTime ? 'set' : 'null',
+            assignedTime: (firstLog as any).assignedTime || 'none',
+            isVirtual: (firstLog as any).isVirtual || false
+          }
+        });
+      }
     }
     setEditingStaff(staff);
     setIsEditModalOpen(true);
@@ -171,55 +186,28 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         </div>
       </div>
 
-      {/* 기간 선택 */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              시작일
-            </label>
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => handleDateChange('start', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              종료일
-            </label>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => handleDateChange('end', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* 요약 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">총 인원</h3>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalStaff}명</p>
+      {/* 요약 카드 - 간소화된 버전 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-gray-500 mb-2">총 인원</h3>
+          <p className="text-3xl font-bold text-gray-900">{summary.totalStaff}명</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">총 근무일수</h3>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalDays}일</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">총 근무시간</h3>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalHours.toFixed(1)}시간</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">총 지급액</h3>
-          <p className="text-2xl font-bold text-indigo-600">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-gray-500 mb-2">총 지급액</h3>
+          <p className="text-3xl font-bold text-indigo-600">
             {formatCurrency(summary.totalAmount, i18n.language === 'ko' ? 'KRW' : 'USD', i18n.language)}
           </p>
         </div>
       </div>
+
+      {/* 역할별 급여 설정 */}
+      <RoleSalarySettings
+        roles={availableRoles}
+        jobPosting={jobPosting}
+        onUpdate={updateRoleSalarySettings}
+        className="mb-6"
+      />
 
       {/* 일괄 수당 적용 패널 */}
       <BulkAllowancePanel
@@ -232,11 +220,21 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900">📋 상세 내역</h3>
-          {selectedStaffIds.length > 0 && (
-            <span className="text-sm text-gray-500">
-              {selectedStaffIds.length}명 선택됨
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {selectedStaffIds.length > 0 && (
+              <>
+                <button
+                  onClick={() => setIsBulkSalaryModalOpen(true)}
+                  className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors"
+                >
+                  급여 일괄편집
+                </button>
+                <span className="text-sm text-gray-500">
+                  {selectedStaffIds.length}명 선택됨
+                </span>
+              </>
+            )}
+          </div>
         </div>
         
         {payrollData.length > 0 ? (
@@ -355,6 +353,15 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         onClose={closeEditModal}
         staff={editingStaff}
         onSave={handleSaveAllowances}
+      />
+
+      {/* 일괄 급여 편집 모달 */}
+      <BulkSalaryEditModal
+        isOpen={isBulkSalaryModalOpen}
+        selectedStaff={payrollData.filter(data => selectedStaffIds.includes(`${data.staffId}_${data.role}`))}
+        availableRoles={availableRoles}
+        onApply={handleBulkSalaryEdit}
+        onClose={() => setIsBulkSalaryModalOpen(false)}
       />
     </div>
   );

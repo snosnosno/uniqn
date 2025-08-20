@@ -194,31 +194,69 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
 
 /**
  * 시간 계산 유틸리티
+ * 정산 목적으로 scheduledStartTime/scheduledEndTime (예정시간)을 우선시
+ * actualStartTime/actualEndTime는 출퇴근 기록용
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  const start = workLog.actualStartTime || workLog.scheduledStartTime;
-  const end = workLog.actualEndTime || workLog.scheduledEndTime;
+  // 정산탭에서는 스태프탭에서 설정한 예정시간을 우선 사용
+  const start = workLog.scheduledStartTime || workLog.actualStartTime;
+  const end = workLog.scheduledEndTime || workLog.actualEndTime;
   
   if (!start || !end) return 0;
   
   try {
-    // Timestamp를 Date로 변환
-    const startDate = start instanceof Timestamp ? start.toDate() :
-                      typeof start === 'string' ? new Date(`2000-01-01T${start}`) :
-                      start;
-                      
-    const endDate = end instanceof Timestamp ? end.toDate() :
-                    typeof end === 'string' ? new Date(`2000-01-01T${end}`) :
-                    end;
+    // Timestamp를 Date로 변환 - 더 안전한 체크
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
     
-    if (startDate && endDate) {
-      const diffMs = endDate.getTime() - startDate.getTime();
+    // start 처리
+    if (start && typeof start === 'object' && 'toDate' in start && typeof start.toDate === 'function') {
+      // Firebase Timestamp
+      startDate = start.toDate();
+    } else if (start && typeof start === 'object' && 'seconds' in start) {
+      // Timestamp-like object
+      startDate = new Date((start as any).seconds * 1000);
+    } else if (typeof start === 'string') {
+      // 시간 문자열 (HH:mm 형식)
+      startDate = new Date(`2000-01-01T${start}`);
+    } else if ((start as any) instanceof Date) {
+      startDate = start as Date;
+    }
+    
+    // end 처리
+    if (end && typeof end === 'object' && 'toDate' in end && typeof end.toDate === 'function') {
+      // Firebase Timestamp
+      endDate = end.toDate();
+    } else if (end && typeof end === 'object' && 'seconds' in end) {
+      // Timestamp-like object
+      endDate = new Date((end as any).seconds * 1000);
+    } else if (typeof end === 'string') {
+      // 시간 문자열 (HH:mm 형식)
+      endDate = new Date(`2000-01-01T${end}`);
+    } else if ((end as any) instanceof Date) {
+      endDate = end as Date;
+    }
+    
+    if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+      let diffMs = endDate.getTime() - startDate.getTime();
+      
+      // 종료 시간이 시작 시간보다 이른 경우 (다음날로 간주)
+      if (diffMs < 0) {
+        // 24시간을 더함
+        diffMs += 24 * 60 * 60 * 1000;
+      }
+      
       const hours = diffMs / (1000 * 60 * 60);
       return Math.round(hours * 100) / 100; // 소수점 2자리
     }
   } catch (error) {
     logger.error('근무시간 계산 실패', error as Error, {
-      component: 'workLogMapper'
+      component: 'workLogMapper',
+      data: {
+        workLogId: workLog.id,
+        scheduledStartTime: workLog.scheduledStartTime ? 'exists' : 'null',
+        scheduledEndTime: workLog.scheduledEndTime ? 'exists' : 'null'
+      }
     });
   }
   

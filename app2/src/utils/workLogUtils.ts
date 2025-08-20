@@ -187,17 +187,42 @@ export const convertTimeToTimestamp = (timeString: string, baseDate: string): Ti
  * @returns {scheduledStartTime, scheduledEndTime} Timestamp 객체들
  */
 export const convertAssignedTimeToScheduled = (
-  assignedTime: string, 
-  baseDate: string
+  assignedTime: string | null | undefined, 
+  baseDate: string | null | undefined
 ): { scheduledStartTime: Timestamp | null; scheduledEndTime: Timestamp | null } => {
-  const { startTime, endTime } = parseAssignedTime(assignedTime);
+  // 디버깅 로그 추가
+  console.log('[convertAssignedTimeToScheduled] Input:', {
+    assignedTime,
+    assignedTimeType: typeof assignedTime,
+    baseDate,
+    baseDateType: typeof baseDate
+  });
   
-  const scheduledStartTime = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
-  let scheduledEndTime = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
+  // 입력값 검증
+  if (!assignedTime || assignedTime === '미정') {
+    console.log('[convertAssignedTimeToScheduled] Returning null - no assignedTime or 미정');
+    return { scheduledStartTime: null, scheduledEndTime: null };
+  }
+  
+  // baseDate가 없으면 오늘 날짜 사용
+  const validBaseDate = baseDate || new Date().toISOString().split('T')[0];
+  
+  const { startTime, endTime } = parseAssignedTime(assignedTime);
+  console.log('[convertAssignedTimeToScheduled] Parsed times:', { startTime, endTime });
+  
+  const scheduledStartTime = startTime && validBaseDate ? convertTimeToTimestamp(startTime, validBaseDate) : null;
+  let scheduledEndTime = endTime && validBaseDate ? convertTimeToTimestamp(endTime, validBaseDate) : null;
+  
+  console.log('[convertAssignedTimeToScheduled] Converted to Timestamp:', {
+    scheduledStartTime: scheduledStartTime ? 'Timestamp object' : 'null',
+    scheduledEndTime: scheduledEndTime ? 'Timestamp object' : 'null',
+    startTimeSeconds: scheduledStartTime ? (scheduledStartTime as any).seconds : 'N/A',
+    endTimeSeconds: scheduledEndTime ? (scheduledEndTime as any).seconds : 'N/A'
+  });
   
   // 종료 시간이 시작 시간보다 이른 경우 다음날로 조정
   if (scheduledStartTime && scheduledEndTime && startTime && endTime) {
-    const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(baseDate) || new Date());
+    const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(validBaseDate) || new Date());
     if (adjustedEndTime) {
       scheduledEndTime = adjustedEndTime;
     }
@@ -223,6 +248,17 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     actualEndTime,
     status = 'not_started'
   } = params;
+  
+  // 디버깅: 입력 파라미터 상세 로그
+  console.log('[createVirtualWorkLog] Creating virtual WorkLog:', {
+    staffId,
+    staffName,
+    date,
+    assignedTime,
+    assignedTimeType: typeof assignedTime,
+    scheduledStartTime: scheduledStartTime ? 'provided' : 'null',
+    scheduledEndTime: scheduledEndTime ? 'provided' : 'null'
+  });
 
   const workLogId = generateWorkLogId(eventId, staffId, date);
   
@@ -233,11 +269,21 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
   if (!startTime && assignedTime && assignedTime !== '미정') {
     const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } = 
       convertAssignedTimeToScheduled(assignedTime, date);
+    console.log('[createVirtualWorkLog] Converted from assignedTime:', {
+      assignedTime,
+      convertedStart: convertedStart ? 'Timestamp object' : 'null',
+      convertedEnd: convertedEnd ? 'Timestamp object' : 'null'
+    });
     startTime = convertedStart;
     if (!endTime) {
       endTime = convertedEnd;
     }
   }
+  
+  console.log('[createVirtualWorkLog] Final times:', {
+    startTime: startTime ? 'set' : 'null',
+    endTime: endTime ? 'set' : 'null'
+  });
 
   return {
     id: `virtual_${workLogId}`,
@@ -252,7 +298,10 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     actualStartTime: actualStartTime || null,
     actualEndTime: actualEndTime || null,
     status,
-    isVirtual: true // 가상 workLog 표시
+    // 가상 WorkLog 표시자 - Firebase에 저장되지 않은 임시 객체
+    isVirtual: true,
+    // 원본 assignedTime 보존 (디버깅 및 fallback용)
+    assignedTime: assignedTime || null
   };
 };
 

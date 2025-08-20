@@ -171,6 +171,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       const baseDate = toDate(workLog.scheduledStartTime || new Date());
       logger.debug('handleUpdateTime - baseDate:', { component: 'WorkTimeEditor', data: baseDate });
       
+      // 화면에 표시된 시간을 그대로 저장 (사용자가 수정하지 않아도)
       const newStartTime = startTime && startTime.trim() !== '' ? 
         parseTimeString(startTime, baseDate, false) : null;
       const newEndTime = endTime && endTime.trim() !== '' ? 
@@ -196,14 +197,73 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         
         // 통합 시스템 사용
         const staffId = workLog.staffId || (workLog as any).dealerId || '';
+        
+        // 가상 WorkLog 저장 시 시간 값 우선순위:
+        // 1. UI에 표시된 값 (startTime/endTime) - 이미 스태프탭에서 설정된 값
+        // 2. 새로 파싱된 값 (newStartTime/newEndTime) 
+        // 3. workLog의 기존 scheduledTime 값
+        let finalStartTime = newStartTime;
+        let finalEndTime = newEndTime;
+        
+        // 중요: UI에 표시된 값이 있으면 무조건 사용 (스태프탭 설정 우선)
+        if (!finalStartTime && startTime && startTime.trim() !== '') {
+          // startTime이 있으면 이를 파싱해서 사용
+          finalStartTime = parseTimeString(startTime, baseDate, false);
+          logger.debug('Using UI startTime for virtual WorkLog', { 
+            component: 'WorkTimeEditor', 
+            data: { startTime, finalStartTime } 
+          });
+        }
+        
+        if (!finalEndTime && endTime && endTime.trim() !== '') {
+          // endTime이 있으면 이를 파싱해서 사용
+          finalEndTime = parseTimeString(endTime, baseDate, true, startTime);
+          logger.debug('Using UI endTime for virtual WorkLog', { 
+            component: 'WorkTimeEditor', 
+            data: { endTime, finalEndTime } 
+          });
+        }
+        
+        // 그래도 없으면 workLog의 기존 값 사용
+        if (!finalStartTime && workLog.scheduledStartTime) {
+          finalStartTime = workLog.scheduledStartTime instanceof Date ? 
+            Timestamp.fromDate(workLog.scheduledStartTime) : 
+            workLog.scheduledStartTime;
+          logger.debug('Using existing scheduledStartTime', { 
+            component: 'WorkTimeEditor', 
+            data: { scheduledStartTime: workLog.scheduledStartTime } 
+          });
+        }
+        
+        if (!finalEndTime && workLog.scheduledEndTime) {
+          finalEndTime = workLog.scheduledEndTime instanceof Date ? 
+            Timestamp.fromDate(workLog.scheduledEndTime) : 
+            workLog.scheduledEndTime;
+          logger.debug('Using existing scheduledEndTime', { 
+            component: 'WorkTimeEditor', 
+            data: { scheduledEndTime: workLog.scheduledEndTime } 
+          });
+        }
+        
+        // 최종 저장 데이터 로깅
+        logger.info('Virtual WorkLog final times', { 
+          component: 'WorkTimeEditor', 
+          data: {
+            startTime: startTime || 'empty',
+            endTime: endTime || 'empty',
+            finalStartTime: finalStartTime ? 'set' : 'null',
+            finalEndTime: finalEndTime ? 'set' : 'null'
+          }
+        });
+        
         const createInput: WorkLogCreateInput = {
           staffId: staffId,
           eventId: workLog.eventId || '',
           staffName: (workLog as any).staffName || (workLog as any).dealerName || 'Unknown',
           date: workLog.date,
           type: 'schedule',
-          scheduledStartTime: newStartTime,
-          scheduledEndTime: newEndTime,
+          scheduledStartTime: finalStartTime,
+          scheduledEndTime: finalEndTime,
           status: 'scheduled'
         };
         
@@ -223,23 +283,27 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         // 변경된 값만 업데이트하도록 수정
         const updatePayload: any = {};
         
-        // startTime이 변경된 경우에만 업데이트
+        // startTime 처리 - 변경된 경우만 업데이트
         if (startTime === '') {
           // 빈 문자열은 명시적으로 "미정"으로 설정
           updatePayload.scheduledStartTime = null;
         } else if (startTime && startTime.trim() !== '') {
           // 새로운 값이 있으면 업데이트
           updatePayload.scheduledStartTime = newStartTime;
+        } else if (startTime === undefined && workLog.scheduledStartTime) {
+          // 초기값이 없지만 기존 값이 있으면 유지 (업데이트 안 함)
         }
         // startTime이 undefined이거나 변경되지 않았으면 updatePayload에 추가하지 않음
         
-        // endTime이 변경된 경우에만 업데이트
+        // endTime 처리 - 변경된 경우만 업데이트
         if (endTime === '') {
           // 빈 문자열은 명시적으로 "미정"으로 설정
           updatePayload.scheduledEndTime = null;
         } else if (endTime && endTime.trim() !== '') {
           // 새로운 값이 있으면 업데이트
           updatePayload.scheduledEndTime = newEndTime;
+        } else if (endTime === undefined && workLog.scheduledEndTime) {
+          // 초기값이 없지만 기존 값이 있으면 유지 (업데이트 안 함)
         }
         // endTime이 undefined이거나 변경되지 않았으면 updatePayload에 추가하지 않음
         
@@ -287,10 +351,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       if (docSnap.exists()) {
         const data = docSnap.data();
         
-        // UI 업데이트
+        // UI 업데이트 - 정산 목적으로 예정시간 우선 표시
         const actualStartTimeString = formatTimeForInput(data.actualStartTime);
         const scheduledStartTimeString = formatTimeForInput(data.scheduledStartTime);
-        const startTimeString = actualStartTimeString || scheduledStartTimeString;
+        const startTimeString = scheduledStartTimeString || actualStartTimeString;
         
         const scheduledEndTimeString = formatTimeForInput(data.scheduledEndTime);
         const endTimeString = scheduledEndTimeString;
@@ -323,10 +387,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       return;
     }
     
-    // 실제시간이 있으면 실제시간 우선, 없으면 예정시간 사용
+    // 정산 목적으로 예정시간 우선, 없으면 실제시간 사용
     const actualStartTimeString = formatTimeForInput(workLog.actualStartTime);
     const scheduledStartTimeString = formatTimeForInput(workLog.scheduledStartTime);
-    const startTimeString = actualStartTimeString || scheduledStartTimeString;
+    const startTimeString = scheduledStartTimeString || actualStartTimeString;
     
     // 퇴근시간은 예정시간(scheduledEndTime)만 사용
     const scheduledEndTimeString = formatTimeForInput(workLog.scheduledEndTime);

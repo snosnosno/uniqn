@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { doc, getDoc, onSnapshot, collection, query, where, orderBy, Unsubscribe } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, orderBy, Unsubscribe, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { JobPosting } from '../types/jobPosting';
 import { Applicant } from '../types/applicant';
 import { Staff } from '../types/common';
+import { ConfirmedStaff } from '../types/jobPosting/base';
 import { logger } from '../utils/logger';
 
 interface JobPostingState {
@@ -72,10 +73,68 @@ export const useJobPostingStore = create<JobPostingState>()(
           const jobPostingRef = doc(db, 'jobPostings', id);
           const unsubscribeJobPosting = onSnapshot(
             jobPostingRef,
-            (doc) => {
-              if (doc.exists()) {
+            async (docSnapshot) => {
+              if (docSnapshot.exists()) {
+                const data = docSnapshot.data();
+                const jobPostingData = { id: docSnapshot.id, ...data } as JobPosting;
+                
+                // confirmedStaff가 이미 문서에 배열로 있는지 확인
+                if (data.confirmedStaff && Array.isArray(data.confirmedStaff)) {
+                  logger.debug('confirmedStaff가 문서 필드로 존재', {
+                    component: 'jobPostingStore',
+                    data: {
+                      jobPostingId: id,
+                      confirmedStaffCount: data.confirmedStaff.length,
+                      confirmedStaff: data.confirmedStaff
+                    }
+                  });
+                  // 이미 jobPostingData에 포함되어 있음
+                } else {
+                  // 서브컬렉션으로 시도 (실패할 가능성 있음)
+                  try {
+                    const confirmedStaffRef = collection(db, 'jobPostings', id, 'confirmedStaff');
+                    const confirmedStaffSnapshot = await getDocs(confirmedStaffRef);
+                    
+                    if (!confirmedStaffSnapshot.empty) {
+                      const confirmedStaffList: ConfirmedStaff[] = confirmedStaffSnapshot.docs.map(doc => ({
+                        ...doc.data()
+                      } as ConfirmedStaff));
+                      
+                      jobPostingData.confirmedStaff = confirmedStaffList;
+                      
+                      logger.debug('confirmedStaff 서브컬렉션에서 로드', {
+                        component: 'jobPostingStore',
+                        data: {
+                          jobPostingId: id,
+                          confirmedStaffCount: confirmedStaffList.length
+                        }
+                      });
+                    } else {
+                      // 서브컬렉션이 비어있거나 없음
+                      jobPostingData.confirmedStaff = [];
+                      logger.debug('confirmedStaff가 없음', {
+                        component: 'jobPostingStore',
+                        data: { jobPostingId: id }
+                      });
+                    }
+                  } catch (error) {
+                    // 권한 오류 등으로 서브컬렉션 접근 실패
+                    logger.warn('confirmedStaff 서브컬렉션 접근 실패, 필드 데이터 사용', {
+                      component: 'jobPostingStore',
+                      data: { 
+                        jobPostingId: id,
+                        error: error instanceof Error ? error.message : String(error)
+                      }
+                    });
+                    // 필드에 없으면 빈 배열
+                    if (!jobPostingData.confirmedStaff) {
+                      jobPostingData.confirmedStaff = [];
+                    }
+                  }
+                }
+                
                 set({ 
-                  jobPosting: { id: doc.id, ...doc.data() } as JobPosting,
+                  jobPosting: jobPostingData,
                   error: null,
                   loading: false
                 });
@@ -114,8 +173,57 @@ export const useJobPostingStore = create<JobPostingState>()(
             const docSnap = await getDoc(jobPostingRef);
             
             if (docSnap.exists()) {
+              const data = docSnap.data();
+              const jobPostingData = { id: docSnap.id, ...data } as JobPosting;
+              
+              // confirmedStaff가 이미 문서에 배열로 있는지 확인
+              if (data.confirmedStaff && Array.isArray(data.confirmedStaff)) {
+                logger.debug('refreshJobPosting - confirmedStaff가 문서 필드로 존재', {
+                  component: 'jobPostingStore',
+                  data: {
+                    jobPostingId,
+                    confirmedStaffCount: data.confirmedStaff.length
+                  }
+                });
+              } else {
+                // 서브컬렉션 시도
+                try {
+                  const confirmedStaffRef = collection(db, 'jobPostings', jobPostingId, 'confirmedStaff');
+                  const confirmedStaffSnapshot = await getDocs(confirmedStaffRef);
+                  
+                  if (!confirmedStaffSnapshot.empty) {
+                    const confirmedStaffList: ConfirmedStaff[] = confirmedStaffSnapshot.docs.map(doc => ({
+                      ...doc.data()
+                    } as ConfirmedStaff));
+                    
+                    jobPostingData.confirmedStaff = confirmedStaffList;
+                    
+                    logger.debug('refreshJobPosting - confirmedStaff 서브컬렉션에서 로드', {
+                      component: 'jobPostingStore',
+                      data: {
+                        jobPostingId,
+                        confirmedStaffCount: confirmedStaffList.length
+                      }
+                    });
+                  } else {
+                    jobPostingData.confirmedStaff = [];
+                  }
+                } catch (error) {
+                  logger.warn('refreshJobPosting - confirmedStaff 접근 실패', {
+                    component: 'jobPostingStore',
+                    data: { 
+                      jobPostingId,
+                      error: error instanceof Error ? error.message : String(error)
+                    }
+                  });
+                  if (!jobPostingData.confirmedStaff) {
+                    jobPostingData.confirmedStaff = [];
+                  }
+                }
+              }
+              
               set({ 
-                jobPosting: { id: docSnap.id, ...docSnap.data() } as JobPosting,
+                jobPosting: jobPostingData,
                 error: null
               });
             } else {

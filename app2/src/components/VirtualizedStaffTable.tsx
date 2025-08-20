@@ -104,8 +104,8 @@ const VirtualizedTableRow: React.FC<{
     // @deprecated: assignedTime 사용, 추후 workLog.scheduledStartTime 우선 사용
     const scheduledStartTime = staff.assignedTime;
     
-    // 출근시간 결정: 실제 시간이 있으면 실제 시간, 없으면 예정 시간
-    const startTime = actualStartTime || scheduledStartTime;
+    // 출근시간 결정: 정산 목적으로 예정 시간 우선, 없으면 실제 시간
+    const startTime = scheduledStartTime || actualStartTime;
     
     // 퇴근시간
     const endTime = exceptionRecord?.workLog?.actualEndTime || 

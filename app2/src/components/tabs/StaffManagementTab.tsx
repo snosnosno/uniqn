@@ -14,6 +14,7 @@ import { useToast } from '../../hooks/useToast';
 import { useStaffSelection } from '../../hooks/useStaffSelection';
 import { useAttendanceMap } from '../../hooks/useAttendanceMap';
 import { createVirtualWorkLog } from '../../utils/workLogUtils';
+import { fixConfirmedStaffTimeSlots } from '../../utils/fixConfirmedStaffTimeSlots';
 import { BulkOperationService } from '../../services/BulkOperationService';
 import BulkActionsModal from '../BulkActionsModal';
 import BulkTimeEditModal from '../BulkTimeEditModal';
@@ -100,6 +101,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
   const [isBulkTimeEditOpen, setIsBulkTimeEditOpen] = useState(false);
+  const [isFixingTimeSlots, setIsFixingTimeSlots] = useState(false);
   
   // 성능 모니터링 상태 (개발 환경에서만)
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -173,13 +175,29 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         setSelectedWorkLog(workLogData);
         setIsWorkTimeEditorOpen(true);
       } else {
+        // staff.assignedTime이 없으면 timeSlot 사용
+        const timeValue = staff.assignedTime || (staff as any).timeSlot || null;
+        
+        // 디버깅: staff의 시간 값 확인
+        logger.info('가상 WorkLog 생성 시도', { 
+          component: 'StaffManagementTab',
+          data: {
+            staffId: actualStaffId,
+            staffName: staff.name,
+            assignedTime: staff.assignedTime,
+            timeSlot: (staff as any).timeSlot,
+            timeValue,
+            workDate
+          }
+        });
+        
         // 해당 날짜의 가상 WorkLog 생성 (유틸리티 함수 사용)
         const virtualWorkLog = createVirtualWorkLog({
           eventId: jobPosting?.id || 'default-event',
           staffId: actualStaffId,
           staffName: staff.name || '이름 미정',
           date: workDate,
-          assignedTime: staff.assignedTime || null
+          assignedTime: timeValue
         });
         
         setSelectedWorkLog(virtualWorkLog);
@@ -192,12 +210,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       });
       
       // 오류 발생 시 가상 WorkLog 생성
+      const timeValue = staff.assignedTime || (staff as any).timeSlot || null;
       const virtualWorkLog = createVirtualWorkLog({
         eventId: jobPosting?.id || 'default-event',
         staffId: actualStaffId,
         staffName: staff.name || '이름 미정',
         date: workDate,
-        assignedTime: staff.assignedTime || null
+        assignedTime: timeValue
       });
       
       setSelectedWorkLog(virtualWorkLog);
@@ -333,6 +352,38 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     }
   };
 
+  // confirmedStaff의 잘못된 timeSlot 수정
+  const handleFixTimeSlots = async () => {
+    if (!jobPosting?.id) {
+      showError('공고 ID를 찾을 수 없습니다.');
+      return;
+    }
+    
+    setIsFixingTimeSlots(true);
+    try {
+      const result = await fixConfirmedStaffTimeSlots(jobPosting.id);
+      
+      if (result.success) {
+        showSuccess(`${result.updatedCount}명의 스태프 시간 데이터가 수정되었습니다.`);
+        // JobPosting 데이터 새로고침
+        if (window.location.reload) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      } else {
+        showError(result.error || '시간 데이터 수정에 실패했습니다.');
+      }
+    } catch (error) {
+      logger.error('Time slots 수정 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'StaffManagementTab'
+      });
+      showError('시간 데이터 수정 중 오류가 발생했습니다.');
+    } finally {
+      setIsFixingTimeSlots(false);
+    }
+  };
+
   // Early return if no job posting data
   if (!jobPosting) {
     return (
@@ -436,6 +487,14 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   )}
                 </>
               )}
+              <button
+                onClick={handleFixTimeSlots}
+                disabled={isFixingTimeSlots}
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                title="잘못된 시간 데이터를 수정합니다"
+              >
+                {isFixingTimeSlots ? '수정 중...' : '시간 데이터 수정'}
+              </button>
               <button
                 onClick={() => setIsQrModalOpen(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
