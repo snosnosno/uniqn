@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting } from '../../types/jobPosting';
 import { useEnhancedPayroll } from '../../hooks/useEnhancedPayroll';
+import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
@@ -39,12 +40,32 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     availableRoles,
     updateRoleSalarySettings,
     handleBulkSalaryEdit,
-    roleSalaryOverrides
+    roleSalaryOverrides: _roleSalaryOverrides
   } = useEnhancedPayroll({
     ...(jobPosting?.id && { jobPostingId: jobPosting.id }),
     ...(jobPosting && { jobPosting }),
     confirmedStaff: jobPosting?.confirmedStaff || []
     // 날짜 필터 제거 - 전체 기간 자동 계산
+  });
+
+  // Context에서 새로고침 함수 가져오기
+  const { refreshStaff, refreshWorkLogs } = useJobPostingContext();
+
+  // ✅ 정산 데이터 디버깅 로그 추가
+  console.log('📊 EnhancedPayrollTab - payrollData received:', {
+    payrollDataLength: payrollData.length,
+    payrollData: payrollData.map(data => ({
+      staffName: data.staffName,
+      role: data.role,
+      totalHours: data.totalHours,
+      totalDays: data.totalDays,
+      workLogs: data.workLogs.map(log => ({
+        id: log.id,
+        date: log.date,
+        hoursWorked: log.hoursWorked
+      }))
+    })),
+    summary
   });
 
 
@@ -171,7 +192,17 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         <h2 className="text-xl font-bold text-gray-900">정산 관리</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              console.log('🔄 자동 불러오기 버튼 클릭 - refreshStaff & refreshWorkLogs 호출');
+              refreshStaff();
+              // refreshWorkLogs 즉시 호출
+              refreshWorkLogs();
+              // 500ms 후 다시 호출하여 동기화 보장
+              setTimeout(() => {
+                console.log('🔄 추가 동기화를 위한 refreshWorkLogs 재호출');
+                refreshWorkLogs();
+              }, 500);
+            }}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
             자동 불러오기

@@ -157,6 +157,26 @@ export function useUnifiedWorkLogs(
               ...doc.data()
             }));
             
+            // 8/21 dealer 데이터 디버깅 (공고 날짜)
+            const debugLog: any = rawData.find((log: any) => 
+              log.id?.includes('tURgdOBmtYfO5Bgzm8NyGKGtbL12') && 
+              log.date === '2025-08-21' &&
+              log.role === 'dealer'
+            );
+            if (debugLog) {
+              console.log('🔥 Firebase 원본 데이터 (8/21 dealer - 공고 날짜):', {
+                id: debugLog.id,
+                date: debugLog.date,
+                role: debugLog.role,
+                scheduledStartTime: debugLog.scheduledStartTime,
+                scheduledEndTime: debugLog.scheduledEndTime,
+                startTimeSeconds: debugLog.scheduledStartTime?.seconds,
+                endTimeSeconds: debugLog.scheduledEndTime?.seconds,
+                startTimeToDate: debugLog.scheduledStartTime?.toDate?.(),
+                endTimeToDate: debugLog.scheduledEndTime?.toDate?.()
+              });
+            }
+            
             // 자동 정규화
             const normalized = autoNormalize 
               ? normalizeWorkLogs(rawData)

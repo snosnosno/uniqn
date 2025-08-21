@@ -10,6 +10,7 @@ import { useVirtualization } from '../../hooks/useVirtualization';
 import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import { useAuth } from '../../contexts/AuthContext';
+import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 import { useToast } from '../../hooks/useToast';
 import { useStaffSelection } from '../../hooks/useStaffSelection';
 import { useAttendanceMap } from '../../hooks/useAttendanceMap';
@@ -40,6 +41,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const { t } = useTranslation();
   const { isMobile, isTablet } = useResponsive();
   const { currentUser } = useAuth();
+  const { refreshWorkLogs } = useJobPostingContext();
   const { showError, showSuccess } = useToast();
   
   // 커스텀 훅 사용
@@ -238,7 +240,18 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     // 업데이트된 데이터로 selectedWorkLog 갱신 (모달은 열어둠)
     setSelectedWorkLog(updatedWorkLog);
-  }, []);
+    
+    // 중요: WorkLogs 데이터를 강제로 새로고침하여 정산 탭에 즉시 반영
+    logger.info('🔄 WorkLogs 데이터 강제 새로고침 시작', { 
+      component: 'StaffManagementTab',
+      data: { 
+        workLogId: updatedWorkLog.id,
+        staffId: updatedWorkLog.staffId,
+        date: updatedWorkLog.date
+      }
+    });
+    refreshWorkLogs();
+  }, [refreshWorkLogs]);
   
 
   // 필터링된 데이터 계산 (메모이제이션 최적화)

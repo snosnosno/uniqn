@@ -3,6 +3,9 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { EnhancedPayrollCalculation, AllowanceType } from '../../types/payroll';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
+import { useUnifiedWorkLogs } from '../../hooks/useUnifiedWorkLogs';
+import { useJobPostingStore } from '../../stores/jobPostingStore';
+import { calculateWorkHours } from '../../utils/workLogMapper';
 
 interface DetailEditModalProps {
   isOpen: boolean;
@@ -29,6 +32,14 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   // 탭 상태 관리
   const [activeTab, setActiveTab] = useState<'basic' | 'work' | 'calculation'>('basic');
 
+  // 실시간 WorkLog 데이터 조회
+  const { jobPostingId } = useJobPostingStore();
+  const { workLogs: realTimeWorkLogs } = useUnifiedWorkLogs({ 
+    filter: { eventId: jobPostingId || '' },
+    realtime: true,
+    autoNormalize: true
+  });
+
   // 탭 정의
   const tabs = [
     { id: 'basic' as const, name: '기본정보', icon: '👤' },
@@ -50,13 +61,32 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     }
   }, [staff]);
 
-  // 날짜별 근무 내역 계산
+  // 날짜별 근무 내역 계산 - 실시간 WorkLog 데이터 사용
   const workHistory = useMemo(() => {
-    if (!staff || !staff.workLogs || staff.workLogs.length === 0) return [];
+    if (!staff) return [];
+    
+    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링
+    const staffWorkLogs = realTimeWorkLogs.filter(log => 
+      log.staffId === staff.staffId && 
+      log.role === staff.role
+    );
+    
+    logger.debug('DetailEditModal - 실시간 WorkLog 필터링', {
+      component: 'DetailEditModal',
+      data: {
+        staffId: staff.staffId,
+        role: staff.role,
+        totalWorkLogs: realTimeWorkLogs.length,
+        filteredWorkLogs: staffWorkLogs.length,
+        workLogIds: staffWorkLogs.map(log => log.id)
+      }
+    });
+    
+    if (staffWorkLogs.length === 0) return [];
     
     try {
-      // workLogs를 날짜별로 정렬
-      const sortedLogs = [...staff.workLogs].sort((a, b) => {
+      // 실시간 WorkLogs를 날짜별로 정렬
+      const sortedLogs = [...staffWorkLogs].sort((a, b) => {
         const getDateValue = (date: any) => {
           if (!date) return 0;
           try {
@@ -145,25 +175,34 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             }
           }
           
-          // 근무 시간 계산
+          // 근무 시간 계산 - calculateWorkHours 함수 사용
           let workHours = 0;
-          if (startTime !== '미정' && endTime !== '미정') {
-            const parseTimeToMinutes = (timeStr: string): number => {
-              const parts = timeStr.split(':').map(Number);
-              const hours = parts[0] || 0;
-              const minutes = parts[1] || 0;
-              return hours * 60 + minutes;
-            };
-            
-            const startMinutes = parseTimeToMinutes(startTime);
-            const endMinutes = parseTimeToMinutes(endTime);
-            
-            let totalMinutes = endMinutes - startMinutes;
-            if (totalMinutes < 0) {
-              totalMinutes += 24 * 60;
+          try {
+            workHours = calculateWorkHours(log);
+          } catch (error) {
+            logger.error('근무 시간 계산 오류', error instanceof Error ? error : new Error(String(error)), { 
+              component: 'DetailEditModal',
+              data: { logId: log.id }
+            });
+            // 백업 계산 로직
+            if (startTime !== '미정' && endTime !== '미정') {
+              const parseTimeToMinutes = (timeStr: string): number => {
+                const parts = timeStr.split(':').map(Number);
+                const hours = parts[0] || 0;
+                const minutes = parts[1] || 0;
+                return hours * 60 + minutes;
+              };
+              
+              const startMinutes = parseTimeToMinutes(startTime);
+              const endMinutes = parseTimeToMinutes(endTime);
+              
+              let totalMinutes = endMinutes - startMinutes;
+              if (totalMinutes < 0) {
+                totalMinutes += 24 * 60;
+              }
+              
+              workHours = totalMinutes / 60;
             }
-            
-            workHours = totalMinutes / 60;
           }
           
           return {
@@ -192,7 +231,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
       logger.error('근무 내역 전체 파싱 오류', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
       return [];
     }
-  }, [staff]);
+  }, [staff, realTimeWorkLogs]);
 
   const handleAmountChange = useCallback((type: AllowanceType, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -359,59 +398,74 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-4">📅 근무 내역</h4>
               {workHistory.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          날짜
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          시작시간
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          종료시간
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          근무시간
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          상태
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {workHistory.map((history, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                            <div className="flex items-center gap-2">
-                              <span>{history.date}</span>
-                              <span className="text-xs text-gray-500">({history.dayName})</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {history.startTime}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {history.endTime}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                            {history.workHours}시간
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              history.status === '출석' ? 'bg-green-100 text-green-800' :
-                              history.status === '지각' ? 'bg-yellow-100 text-yellow-800' :
-                              history.status === '결석' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {history.status}
-                            </span>
-                          </td>
+                <div className="space-y-4">
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            날짜
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            시작시간
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            종료시간
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            근무시간
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            상태
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {workHistory.map((history, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <div className="flex items-center gap-2">
+                                <span>{history.date}</span>
+                                <span className="text-xs text-gray-500">({history.dayName})</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              {history.startTime}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              {history.endTime}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                              {history.workHours}시간
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                history.status === '출석' ? 'bg-green-100 text-green-800' :
+                                history.status === '지각' ? 'bg-yellow-100 text-yellow-800' :
+                                history.status === '결석' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {history.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* 총 근무시간 합계 */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">총 근무시간</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      총 {workHistory.length}일 근무
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">

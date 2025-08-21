@@ -13,11 +13,12 @@ interface JobPostingContextType {
   applicants: any[];
   staff: any[];
   refreshApplicants: () => Promise<void>;
-  refreshStaff: () => Promise<void>;
+  refreshStaff: () => void;
   // WorkLogs 관련 추가
   workLogs: UnifiedWorkLog[];
   workLogsLoading: boolean;
   workLogsError: Error | null;
+  refreshWorkLogs: () => void;
 }
 
 const JobPostingContext = createContext<JobPostingContextType | undefined>(undefined);
@@ -36,7 +37,8 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   const { 
     workLogs, 
     loading: workLogsLoading, 
-    error: workLogsError 
+    error: workLogsError,
+    refetch: refreshWorkLogs 
   } = useJobPostingWorkLogs(jobPostingId);
   
   // jobPostingId 변경 시 store 업데이트
@@ -68,11 +70,16 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     applicants: store.applicants,
     staff: store.staff,
     refreshApplicants: store.refreshApplicants,
-    refreshStaff: store.refreshStaff,
+    refreshStaff: () => {
+      // 스태프 데이터와 WorkLogs 데이터를 함께 새로고침
+      store.refreshStaff();
+      refreshWorkLogs();
+    },
     // WorkLogs 데이터 추가
     workLogs: workLogs || [],
     workLogsLoading: workLogsLoading || false,
     workLogsError: workLogsError || null,
+    refreshWorkLogs,
   };
   
   return (

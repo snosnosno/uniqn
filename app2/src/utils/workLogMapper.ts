@@ -202,40 +202,197 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
   const start = workLog.scheduledStartTime || workLog.actualStartTime;
   const end = workLog.scheduledEndTime || workLog.actualEndTime;
   
-  if (!start || !end) return 0;
+  console.log('🔥 CALCULATE WORK HOURS DEBUG:', {
+    workLogId: workLog.id,
+    staffId: workLog.staffId,
+    date: workLog.date,
+    role: workLog.role,
+    scheduledStartTimeRaw: workLog.scheduledStartTime,
+    scheduledEndTimeRaw: workLog.scheduledEndTime,
+    scheduledStartType: workLog.scheduledStartTime ? typeof workLog.scheduledStartTime : 'null',
+    scheduledEndType: workLog.scheduledEndTime ? typeof workLog.scheduledEndTime : 'null',
+    startUsed: start ? 'exists' : 'null',
+    endUsed: end ? 'exists' : 'null',
+    startSeconds: (start && typeof start === 'object' && 'seconds' in start) ? start.seconds : 'N/A',
+    endSeconds: (end && typeof end === 'object' && 'seconds' in end) ? end.seconds : 'N/A',
+    startToDate: (start && typeof start === 'object' && 'toDate' in start && typeof start.toDate === 'function') ? start.toDate().toLocaleString('ko-KR') : 'N/A',
+    endToDate: (end && typeof end === 'object' && 'toDate' in end && typeof end.toDate === 'function') ? end.toDate().toLocaleString('ko-KR') : 'N/A'
+  });
+  
+  logger.debug('calculateWorkHours - 입력 데이터 상세', {
+    component: 'workLogMapper',
+    data: {
+      workLogId: workLog.id,
+      staffId: workLog.staffId,
+      date: workLog.date,
+      hasScheduledStart: !!workLog.scheduledStartTime,
+      hasScheduledEnd: !!workLog.scheduledEndTime,
+      hasActualStart: !!workLog.actualStartTime,
+      hasActualEnd: !!workLog.actualEndTime,
+      startUsed: start ? 'exists' : 'null',
+      endUsed: end ? 'exists' : 'null',
+      startType: start ? typeof start : 'null',
+      endType: end ? typeof end : 'null',
+      scheduledStartTimeRaw: workLog.scheduledStartTime,
+      scheduledEndTimeRaw: workLog.scheduledEndTime,
+      // Timestamp 상세 정보 추가
+      startRaw: start,
+      endRaw: end,
+      startSeconds: (start && typeof start === 'object' && 'seconds' in start) ? start.seconds : 'N/A',
+      endSeconds: (end && typeof end === 'object' && 'seconds' in end) ? end.seconds : 'N/A'
+    }
+  });
+  
+  if (!start || !end) {
+    logger.warn('calculateWorkHours - 시작 또는 종료 시간이 없음', {
+      component: 'workLogMapper',
+      data: {
+        workLogId: workLog.id,
+        staffId: workLog.staffId,
+        date: workLog.date,
+        startExists: !!start,
+        endExists: !!end
+      }
+    });
+    return 0;
+  }
   
   try {
     // Timestamp를 Date로 변환 - 더 안전한 체크
     let startDate: Date | null = null;
     let endDate: Date | null = null;
     
-    // start 처리
+    // start 처리 - Firebase Timestamp 먼저 확인
     if (start && typeof start === 'object' && 'toDate' in start && typeof start.toDate === 'function') {
-      // Firebase Timestamp
-      startDate = start.toDate();
-    } else if (start && typeof start === 'object' && 'seconds' in start) {
-      // Timestamp-like object
-      startDate = new Date((start as any).seconds * 1000);
+      // Firebase Timestamp - KST 시간대 처리
+      try {
+        const tempDate = start.toDate();
+        // Firebase는 UTC로 저장하므로 KST로 변환 (+9시간)
+        // 하지만 toDate()가 이미 로컬 시간으로 변환하므로 getHours()는 KST 반환
+        const hours = tempDate.getHours();
+        const minutes = tempDate.getMinutes();
+        
+        // 디버깅: UTC와 KST 시간 모두 로그
+        console.log('🕐 Start Time Debug:', {
+          utcHours: tempDate.getUTCHours(),
+          utcMinutes: tempDate.getUTCMinutes(),
+          localHours: hours,
+          localMinutes: minutes,
+          isoString: tempDate.toISOString(),
+          localString: tempDate.toLocaleString('ko-KR')
+        });
+        
+        startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+        console.log('✅ Firebase Timestamp로 startDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
+      } catch (error) {
+        console.error('❌ Firebase Timestamp 변환 실패:', error);
+      }
+    } else if (start && typeof start === 'object' && 'seconds' in start && typeof (start as any).seconds === 'number') {
+      // Timestamp-like object with seconds
+      try {
+        const tempDate = new Date((start as any).seconds * 1000);
+        const hours = tempDate.getHours();
+        const minutes = tempDate.getMinutes();
+        
+        console.log('🕐 Start Time Debug (seconds):', {
+          utcHours: tempDate.getUTCHours(),
+          utcMinutes: tempDate.getUTCMinutes(),
+          localHours: hours,
+          localMinutes: minutes
+        });
+        
+        startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+        console.log('✅ seconds로 startDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
+      } catch (error) {
+        console.error('❌ seconds 변환 실패:', error);
+      }
     } else if (typeof start === 'string') {
       // 시간 문자열 (HH:mm 형식)
-      startDate = new Date(`2000-01-01T${start}`);
-    } else if ((start as any) instanceof Date) {
-      startDate = start as Date;
+      try {
+        const [hours, minutes] = start.split(':').map(Number);
+        startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+        console.log('✅ 문자열로 startDate 변환 성공:', start);
+      } catch (error) {
+        console.error('❌ 문자열 변환 실패:', error);
+      }
+    } else if (start instanceof Date) {
+      const hours = start.getHours();
+      const minutes = start.getMinutes();
+      startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+      console.log('✅ Date 객체 변환 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
+    } else {
+      console.error('❌ start 타입을 인식할 수 없음:', typeof start, start);
     }
     
-    // end 처리
+    // end 처리 - Firebase Timestamp 먼저 확인
     if (end && typeof end === 'object' && 'toDate' in end && typeof end.toDate === 'function') {
-      // Firebase Timestamp
-      endDate = end.toDate();
-    } else if (end && typeof end === 'object' && 'seconds' in end) {
-      // Timestamp-like object
-      endDate = new Date((end as any).seconds * 1000);
+      // Firebase Timestamp - KST 시간대 처리
+      try {
+        const tempDate = end.toDate();
+        // Firebase는 UTC로 저장하므로 KST로 변환 (+9시간)
+        // 하지만 toDate()가 이미 로컬 시간으로 변환하므로 getHours()는 KST 반환
+        const hours = tempDate.getHours();
+        const minutes = tempDate.getMinutes();
+        
+        // 디버깅: UTC와 KST 시간 모두 로그
+        console.log('🕐 End Time Debug:', {
+          utcHours: tempDate.getUTCHours(),
+          utcMinutes: tempDate.getUTCMinutes(),
+          localHours: hours,
+          localMinutes: minutes,
+          isoString: tempDate.toISOString(),
+          localString: tempDate.toLocaleString('ko-KR')
+        });
+        
+        // 종료 시간이 시작 시간보다 이른 경우를 위해 날짜 조정
+        endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+        console.log('✅ Firebase Timestamp로 endDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
+      } catch (error) {
+        console.error('❌ Firebase Timestamp 변환 실패:', error);
+      }
+    } else if (end && typeof end === 'object' && 'seconds' in end && typeof (end as any).seconds === 'number') {
+      // Timestamp-like object with seconds
+      try {
+        const tempDate = new Date((end as any).seconds * 1000);
+        const hours = tempDate.getHours();
+        const minutes = tempDate.getMinutes();
+        
+        console.log('🕐 End Time Debug (seconds):', {
+          utcHours: tempDate.getUTCHours(),
+          utcMinutes: tempDate.getUTCMinutes(),
+          localHours: hours,
+          localMinutes: minutes
+        });
+        
+        endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+        console.log('✅ seconds로 endDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
+      } catch (error) {
+        console.error('❌ seconds 변환 실패:', error);
+      }
     } else if (typeof end === 'string') {
       // 시간 문자열 (HH:mm 형식)
-      endDate = new Date(`2000-01-01T${end}`);
-    } else if ((end as any) instanceof Date) {
-      endDate = end as Date;
+      try {
+        const [hours, minutes] = end.split(':').map(Number);
+        endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+        console.log('✅ 문자열로 endDate 변환 성공:', end);
+      } catch (error) {
+        console.error('❌ 문자열 변환 실패:', error);
+      }
+    } else if (end instanceof Date) {
+      const hours = end.getHours();
+      const minutes = end.getMinutes();
+      endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
+      console.log('✅ Date 객체 변환 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
+    } else {
+      console.error('❌ end 타입을 인식할 수 없음:', typeof end, end);
     }
+    
+    console.log('🎯 최종 변환 결과:', {
+      startDate: startDate ? startDate.toISOString() : 'null',
+      endDate: endDate ? endDate.toISOString() : 'null',
+      startValid: startDate && !isNaN(startDate.getTime()),
+      endValid: endDate && !isNaN(endDate.getTime())
+    });
     
     if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
       let diffMs = endDate.getTime() - startDate.getTime();
@@ -244,12 +401,60 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
       if (diffMs < 0) {
         // 24시간을 더함
         diffMs += 24 * 60 * 60 * 1000;
+        console.log('🌙 다음날 근무로 처리, 24시간 추가');
       }
       
       const hours = diffMs / (1000 * 60 * 60);
-      return Math.round(hours * 100) / 100; // 소수점 2자리
+      const finalHours = Math.round(hours * 100) / 100; // 소수점 2자리
+      
+      console.log('🎉 시간 계산 완료:', {
+        diffMs,
+        rawHours: hours,
+        finalHours,
+        workLogId: workLog.id
+      });
+      
+      logger.debug('calculateWorkHours - 최종 계산 결과', {
+        component: 'workLogMapper',
+        data: {
+          workLogId: workLog.id,
+          staffId: workLog.staffId,
+          date: workLog.date,
+          startDateString: startDate ? startDate.toISOString() : 'null',
+          endDateString: endDate ? endDate.toISOString() : 'null',
+          diffMs,
+          rawHours: hours,
+          finalHours
+        }
+      });
+      
+      // ✅ 정상적으로 계산된 경우 반환
+      console.log('✅ calculateWorkHours SUCCESS - returning:', finalHours);
+      return finalHours;
+    } else {
+      console.error('❌ Date 변환 실패 - 세부 진단:', {
+        startDate,
+        endDate,
+        startExists: !!startDate,
+        endExists: !!endDate,
+        startIsDate: startDate instanceof Date,
+        endIsDate: endDate instanceof Date,
+        startValid: startDate ? !isNaN(startDate.getTime()) : false,
+        endValid: endDate ? !isNaN(endDate.getTime()) : false,
+        startGetTime: startDate ? startDate.getTime() : 'N/A',
+        endGetTime: endDate ? endDate.getTime() : 'N/A'
+      });
+      
+      // 추가 디버깅: 원본 데이터 재확인
+      console.error('❌ 원본 Timestamp 재확인:', {
+        originalScheduledStartTime: workLog.scheduledStartTime,
+        originalScheduledEndTime: workLog.scheduledEndTime,
+        originalScheduledStartType: workLog.scheduledStartTime ? typeof workLog.scheduledStartTime : 'null',
+        originalScheduledEndType: workLog.scheduledEndTime ? typeof workLog.scheduledEndTime : 'null'
+      });
     }
   } catch (error) {
+    console.error('❌ calculateWorkHours 전체 에러:', error);
     logger.error('근무시간 계산 실패', error as Error, {
       component: 'workLogMapper',
       data: {
@@ -260,6 +465,7 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
     });
   }
   
+  console.log('💥 최종적으로 0시간 반환됨');
   return 0;
 }
 

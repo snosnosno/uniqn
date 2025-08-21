@@ -77,19 +77,41 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         return null;
       }
       
-      // baseDate가 유효한지 확인
+      // 항상 workLog.date를 우선 사용 (공고에 등록된 날짜)
       let validBaseDate = baseDate;
-      if (!baseDate || isNaN(baseDate.getTime())) {
-        // Invalid baseDate, using current date
+      if (workLog && workLog.date) {
+        // YYYY-MM-DD 형식의 date를 파싱 (공고에 등록된 날짜 사용)
+        const dateParts = workLog.date.split('-').map(Number);
+        const year = dateParts[0] || new Date().getFullYear();
+        const month = dateParts[1] || new Date().getMonth() + 1;
+        const day = dateParts[2] || new Date().getDate();
+        validBaseDate = new Date(year, month - 1, day); // month는 0부터 시작
+        console.log('📅 Using workLog.date (공고 등록 날짜):', {
+          workLogDate: workLog.date,
+          parsedDate: validBaseDate.toISOString(),
+          localDate: validBaseDate.toLocaleString('ko-KR')
+        });
+      } else if (!baseDate || isNaN(baseDate.getTime())) {
+        // workLog.date가 없을 때만 현재 날짜 사용
         validBaseDate = new Date();
+        console.log('⚠️ No workLog.date, using current date');
       }
       
-      // 새로운 Date 객체 생성 시 연, 월, 일을 명시적으로 설정
-      const date = new Date();
-      date.setFullYear(validBaseDate.getFullYear());
-      date.setMonth(validBaseDate.getMonth());
-      date.setDate(validBaseDate.getDate());
-      date.setHours(hours, minutes, 0, 0);
+      // 새로운 Date 객체 생성 - workLog.date 기반으로 정확한 날짜 설정
+      const date = new Date(validBaseDate.getFullYear(), validBaseDate.getMonth(), validBaseDate.getDate(), hours, minutes, 0, 0);
+      
+      console.log('🔧 parseTimeString Debug:', {
+        inputTime: timeString,
+        parsedHours: hours,
+        parsedMinutes: minutes,
+        workLogDate: workLog?.date || 'N/A',
+        baseDate: validBaseDate.toISOString(),
+        createdDate: date.toISOString(),
+        localString: date.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+        utcHours: date.getUTCHours(),
+        utcMinutes: date.getUTCMinutes(),
+        isEndTime
+      });
       
       // 종료 시간이고 시작 시간이 있는 경우, 다음날 여부 판단
       if (isEndTime && startTimeString) {
@@ -168,8 +190,21 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     
     setIsUpdating(true);
     try {
-      const baseDate = toDate(workLog.scheduledStartTime || new Date());
-      logger.debug('handleUpdateTime - baseDate:', { component: 'WorkTimeEditor', data: baseDate });
+      // workLog.date를 기반으로 baseDate 설정 (공고에 등록된 날짜 사용)
+      let baseDate: Date;
+      if (workLog.date) {
+        const [year, month, day] = workLog.date.split('-').map(Number);
+        baseDate = new Date(year || new Date().getFullYear(), (month || 1) - 1, day || 1);
+      } else {
+        baseDate = toDate(workLog.scheduledStartTime || new Date());
+      }
+      logger.debug('handleUpdateTime - baseDate from workLog.date:', { 
+        component: 'WorkTimeEditor', 
+        data: {
+          workLogDate: workLog.date,
+          baseDate: baseDate.toISOString()
+        }
+      });
       
       // 화면에 표시된 시간을 그대로 저장 (사용자가 수정하지 않아도)
       const newStartTime = startTime && startTime.trim() !== '' ? 
@@ -309,7 +344,25 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         
         // updatePayload에 값이 있는 경우에만 업데이트 수행
         if (Object.keys(updatePayload).length > 0) {
+          // Firebase에 전달되는 실제 데이터 로깅
+          console.log('🔥 Firebase에 저장될 updatePayload:', {
+            scheduledStartTime: updatePayload.scheduledStartTime,
+            scheduledEndTime: updatePayload.scheduledEndTime,
+            startTimeSeconds: updatePayload.scheduledStartTime?.seconds,
+            endTimeSeconds: updatePayload.scheduledEndTime?.seconds,
+            startTimeDate: updatePayload.scheduledStartTime?.toDate?.(),
+            endTimeDate: updatePayload.scheduledEndTime?.toDate?.()
+          });
+          
           const updateData = prepareWorkLogForUpdate(updatePayload);
+          
+          console.log('🔥 prepareWorkLogForUpdate 후 데이터:', {
+            scheduledStartTime: updateData.scheduledStartTime,
+            scheduledEndTime: updateData.scheduledEndTime,
+            startTimeSeconds: updateData.scheduledStartTime?.seconds,
+            endTimeSeconds: updateData.scheduledEndTime?.seconds
+          });
+          
           await updateDoc(workLogRef, updateData);
           
           logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
@@ -351,6 +404,16 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       if (docSnap.exists()) {
         const data = docSnap.data();
         
+        console.log('🔥 Firebase에서 다시 가져온 데이터:', {
+          id: finalWorkLogId,
+          scheduledStartTime: data.scheduledStartTime,
+          scheduledEndTime: data.scheduledEndTime,
+          startTimeSeconds: data.scheduledStartTime?.seconds,
+          endTimeSeconds: data.scheduledEndTime?.seconds,
+          startTimeDate: data.scheduledStartTime?.toDate?.(),
+          endTimeDate: data.scheduledEndTime?.toDate?.()
+        });
+        
         // UI 업데이트 - 정산 목적으로 예정시간 우선 표시
         const actualStartTimeString = formatTimeForInput(data.actualStartTime);
         const scheduledStartTimeString = formatTimeForInput(data.scheduledStartTime);
@@ -372,6 +435,32 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       }
       
       showSuccess('시간이 성공적으로 업데이트되었습니다.');
+      
+      // 동기화를 위한 짧은 지연 후 onUpdate 다시 호출
+      // Firebase 저장이 완료되었으므로 Context 갱신 트리거
+      setTimeout(() => {
+        logger.info('🔄 동기화를 위한 추가 onUpdate 호출', { 
+          component: 'WorkTimeEditor', 
+          data: { 
+            workLogId: finalWorkLogId,
+            scheduledStartTime: startTime || '미정',
+            scheduledEndTime: endTime || '미정'
+          } 
+        });
+        
+        // onUpdate를 다시 호출하여 Context 갱신 보장
+        if (onUpdate) {
+          const syncWorkLog = {
+            ...workLog,
+            id: finalWorkLogId,
+            scheduledStartTime: startTime === '' ? null : (startTime && startTime.trim() !== '' ? newStartTime : workLog.scheduledStartTime),
+            scheduledEndTime: endTime === '' ? null : (endTime && endTime.trim() !== '' ? newEndTime : workLog.scheduledEndTime),
+            updatedAt: Timestamp.now()
+          };
+          onUpdate(syncWorkLog);
+        }
+      }, 500); // 500ms 지연으로 Firebase 저장 완료 보장
+      
     } catch (error) {
       logger.error('시간 업데이트 중 오류 발생', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
       showError('시간 업데이트 중 오류가 발생했습니다.');
