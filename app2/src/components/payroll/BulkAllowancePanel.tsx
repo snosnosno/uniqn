@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { BulkAllowanceSettings, AllowanceType } from '../../types/payroll';
 
 interface BulkAllowancePanelProps {
@@ -12,6 +13,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
   onApply,
   selectedStaffCount = 0
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [applyTo, setApplyTo] = useState<'all' | 'selected' | 'byRole'>('all');
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [allowances, setAllowances] = useState({
@@ -88,10 +90,31 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
   }, [allowances]);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">💰 수당 일괄 적용</h3>
-      
-      {/* 적용 대상 선택 */}
+    <div className="bg-white rounded-lg shadow">
+      {/* 헤더 (클릭 가능) */}
+      <div 
+        className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-gray-900">💰 수당 일괄 적용</h3>
+          {getTotalAllowances() > 0 && (
+            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full">
+              {getTotalAllowances().toLocaleString()}원
+            </span>
+          )}
+        </div>
+        {isExpanded ? (
+          <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+        ) : (
+          <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+        )}
+      </div>
+
+      {/* 내용 (접기/펼치기) */}
+      {isExpanded && (
+        <div className="px-6 pb-6 border-t border-gray-200">
+          {/* 적용 대상 선택 */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">적용 대상</label>
         <div className="flex gap-2">
@@ -303,6 +326,8 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
           적용하기
         </button>
       </div>
+        </div>
+      )}
     </div>
   );
 };

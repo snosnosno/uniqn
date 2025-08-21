@@ -865,3 +865,10 @@ export const useEnhancedPayroll = ({
     roleSalaryOverrides
   };
 };
+
+// TODO(human): 역할별 정산 분리 검증 함수
+// 한 스태프가 여러 역할을 가진 경우 각 역할마다 별도의 EnhancedPayrollCalculation이 생성되는지 검증
+// 예시 데이터: staffId 'staff1'이 'dealer'와 'manager' 두 역할을 가진 경우
+// 결과 배열에 두 개의 서로 다른 객체가 있어야 함: 
+// - { staffId: 'staff1', role: 'dealer', ... }
+// - { staffId: 'staff1', role: 'manager', ... }

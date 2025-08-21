@@ -173,7 +173,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             endTime,
             workHours: workHours.toFixed(1),
             status: log.status || '미정',
-            isActual: log.scheduledStartTime ? true : false, // 스케줄 설정 여부
             rawLog: log
           };
         } catch (error) {
@@ -185,7 +184,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             endTime: '오류',
             workHours: '0.0',
             status: '오류',
-            isActual: false,
             rawLog: log
           };
         }
@@ -393,15 +391,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             {history.startTime}
-                            {history.isActual && (
-                              <span className="ml-1 text-xs text-green-600">✓</span>
-                            )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             {history.endTime}
-                            {history.isActual && (
-                              <span className="ml-1 text-xs text-green-600">✓</span>
-                            )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
                             {history.workHours}시간
@@ -428,12 +420,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                 </div>
               )}
               
-              {workHistory.length > 0 && (
-                <div className="mt-4 text-xs text-gray-500 flex items-center gap-1">
-                  <span className="text-green-600">✓</span>
-                  <span>실제 출퇴근 시간 기록</span>
-                </div>
-              )}
             </div>
           )}
 
