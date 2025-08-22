@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 import { ConfirmedStaff } from '../types/jobPosting/base';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, RoleSalaryConfig, BulkSalaryUpdate, BulkSalaryEditResult } from '../types/payroll';
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
@@ -1114,10 +1116,45 @@ export const useEnhancedPayroll = ({
     return Array.from(new Set(processedPayrollData.map(d => d.role)));
   }, [processedPayrollData]);
 
-  // 역할별 급여 설정 업데이트
-  const updateRoleSalarySettings = useCallback((roleSalaries: RoleSalaryConfig) => {
+  // 역할별 급여 설정 업데이트 - Firestore에 저장
+  const updateRoleSalarySettings = useCallback(async (roleSalaries: RoleSalaryConfig) => {
     setRoleSalaryOverrides(roleSalaries);
-  }, []);
+    
+    // Firestore에 역할별 급여 설정 저장
+    if (jobPostingId) {
+      try {
+        const jobPostingRef = doc(db, 'jobPostings', jobPostingId);
+        
+        // RoleSalaryConfig를 JobPosting의 roleSalaries 형식으로 변환
+        const roleSalariesForDB: { [role: string]: { salaryType: string; salaryAmount: string; customRoleName?: string } } = {};
+        
+        Object.entries(roleSalaries).forEach(([role, config]) => {
+          roleSalariesForDB[role] = {
+            salaryType: config.salaryType,
+            salaryAmount: config.salaryAmount.toString(),
+            ...(config.customRoleName && { customRoleName: config.customRoleName })
+          };
+        });
+        
+        await updateDoc(jobPostingRef, {
+          useRoleSalary: true,
+          roleSalaries: roleSalariesForDB,
+          updatedAt: serverTimestamp()
+        });
+        
+        logger.info('역할별 급여 설정 Firestore 저장 완료', {
+          component: 'useEnhancedPayroll',
+          operation: 'updateRoleSalarySettings',
+          data: { jobPostingId, roles: Object.keys(roleSalaries) }
+        });
+      } catch (error) {
+        logger.error('역할별 급여 설정 저장 실패', error as Error, {
+          component: 'useEnhancedPayroll',
+          operation: 'updateRoleSalarySettings'
+        });
+      }
+    }
+  }, [jobPostingId]);
 
   // 일괄 급여 편집 처리
   const handleBulkSalaryEdit = useCallback(async (update: BulkSalaryUpdate): Promise<BulkSalaryEditResult> => {

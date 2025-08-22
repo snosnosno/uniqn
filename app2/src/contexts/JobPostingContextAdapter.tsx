@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useJobPostingStore } from '../stores/jobPostingStore';
 import { useAuth } from './AuthContext';
-import { useJobPostingWorkLogs } from '../hooks/useUnifiedWorkLogs';
+import { useUnifiedWorkLogs } from '../hooks/useUnifiedWorkLogs';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 
 // 기존 컨텍스트 타입 유지 + workLogs 추가
@@ -33,13 +33,17 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   const { currentUser } = useAuth();
   const store = useJobPostingStore();
   
-  // WorkLogs를 한 곳에서만 구독
+  // WorkLogs를 한 곳에서만 구독 - useUnifiedWorkLogs 사용
   const { 
     workLogs, 
     loading: workLogsLoading, 
     error: workLogsError,
     refetch: refreshWorkLogs 
-  } = useJobPostingWorkLogs(jobPostingId);
+  } = useUnifiedWorkLogs({
+    filter: { eventId: jobPostingId },
+    realtime: true,  // 실시간 동기화 활성화
+    autoNormalize: true
+  });
   
   // jobPostingId 변경 시 store 업데이트
   useEffect(() => {

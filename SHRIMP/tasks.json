@@ -1,241 +1,193 @@
 {
   "tasks": [
     {
-      "id": "af2f27d6-47eb-425b-93f3-0cd6425e2614",
-      "name": "디자인 토큰 시스템 구축",
-      "description": "색상, 타이포그래피, 간격, 그림자 등 디자인 기본 요소를 토큰화하여 일관된 디자인 시스템 기반 마련. Tailwind 설정 확장 및 커스텀 CSS 변수 정의",
-      "notes": "기존 Tailwind 클래스와 호환성 유지하면서 점진적 마이그레이션 가능하도록 구현",
+      "id": "2dfedb33-d8e2-4d0b-b8bd-2008404fb88f",
+      "name": "WorkLog 시간 데이터 파싱 로직 통일",
+      "description": "scheduledStartTime/scheduledEndTime Timestamp 객체 파싱 로직을 통일하여 모든 컴포넌트에서 일관된 시간 데이터 처리",
+      "notes": "Firestore Timestamp 객체와 string 형식 모두 처리 가능하도록 구현",
       "status": "pending",
       "dependencies": [],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
+      "createdAt": "2025-08-22T09:46:26.332Z",
+      "updatedAt": "2025-08-22T09:46:26.332Z",
       "relatedFiles": [
         {
-          "path": "app2/tailwind.config.js",
+          "path": "app2/src/utils/workLogMapper.ts",
           "type": "TO_MODIFY",
-          "description": "디자인 토큰 통합"
+          "description": "calculateWorkHours 함수 개선"
         },
         {
-          "path": "app2/src/index.css",
+          "path": "app2/src/components/payroll/DetailEditModal.tsx",
           "type": "TO_MODIFY",
-          "description": "CSS 변수 추가"
+          "description": "시간 파싱 로직 개선"
         },
         {
-          "path": "app2/src/styles/tokens/",
-          "type": "CREATE",
-          "description": "토큰 정의 파일들"
+          "path": "app2/src/utils/timeUtils.ts",
+          "type": "TO_MODIFY",
+          "description": "시간 유틸리티 함수 추가"
         }
       ],
-      "implementationGuide": "1. src/styles/tokens/ 디렉토리 생성\n2. colors.ts: primary, secondary, semantic colors (success, warning, error, info) 정의\n3. typography.ts: 8단계 타이포그래피 시스템 (h1-h6, body, caption)\n4. spacing.ts: 4px 기반 그리드 (4, 8, 12, 16, 24, 32, 48, 64px)\n5. tailwind.config.js 업데이트하여 토큰 통합",
-      "verificationCriteria": "1. 모든 색상이 WCAG 2.1 AA 대비 기준 충족\n2. 타이포그래피 계층 구조 명확성\n3. 기존 컴포넌트와 호환성 확인",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
+      "implementationGuide": "1. workLogMapper.ts의 calculateWorkHours 함수 개선\n2. Timestamp 객체를 Date로 변환하는 유틸리티 함수 생성\n3. DetailEditModal의 parseTime 함수 개선\n4. 모든 시간 표시 형식을 HH:mm으로 통일",
+      "verificationCriteria": "모든 컴포넌트에서 Timestamp 객체가 올바르게 파싱되어 시간이 정확히 표시되는지 확인",
+      "analysisResult": "스태프탭, 정산탭, 정산모달 간의 완벽한 데이터 동기화를 구현하여 모든 정보가 실시간으로 일치하도록 보장"
     },
     {
-      "id": "b2d173b8-29a0-45b5-981c-4f1ae27ea1f8",
-      "name": "공통 컴포넌트 라이브러리 구축",
-      "description": "Button, Input, Card, Modal 등 30개 이상의 재사용 가능한 기본 컴포넌트 표준화. 각 컴포넌트는 3-5개 변형(variant) 포함, 접근성 기본 적용",
-      "notes": "기존 컴포넌트 점진적 교체, Storybook 문서화 고려",
+      "id": "137cc52e-2511-4e13-a44e-cdbc94f5d765",
+      "name": "통합 데이터 컨텍스트 강화",
+      "description": "JobPostingContext에서 WorkLog 데이터를 중앙 집중 관리하여 모든 컴포넌트가 동일한 데이터 소스 사용",
+      "notes": "onSnapshot을 통한 실시간 동기화 유지",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "af2f27d6-47eb-425b-93f3-0cd6425e2614"
+          "taskId": "2dfedb33-d8e2-4d0b-b8bd-2008404fb88f"
         }
       ],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
+      "createdAt": "2025-08-22T09:46:26.332Z",
+      "updatedAt": "2025-08-22T09:46:26.332Z",
       "relatedFiles": [
         {
-          "path": "app2/src/components/common/Button.tsx",
+          "path": "app2/src/contexts/JobPostingContextAdapter.tsx",
           "type": "TO_MODIFY",
-          "description": "확장 및 표준화"
+          "description": "WorkLog 구독 강화"
         },
         {
-          "path": "app2/src/components/ui/",
-          "type": "CREATE",
-          "description": "새로운 공통 컴포넌트"
-        },
-        {
-          "path": "app2/src/components/StaffCard.tsx",
-          "type": "REFERENCE",
-          "description": "리팩토링 참고"
+          "path": "app2/src/hooks/useStaffWorkData.ts",
+          "type": "TO_MODIFY",
+          "description": "Context 데이터 우선 사용"
         }
       ],
-      "implementationGuide": "1. src/components/ui/ 디렉토리 구조화\n2. Button.tsx 리팩토링: size (xs, sm, md, lg, xl), variant (primary, secondary, danger, ghost, link) 확장\n3. Input.tsx: 텍스트, 숫자, 날짜, 선택 등 다양한 타입 지원\n4. Card.tsx: 헤더, 바디, 푸터 슬롯 패턴 적용\n5. Modal.tsx: 포커스 트랩, ESC 키 지원, 배경 클릭 닫기\n6. 각 컴포넌트에 ARIA 속성, 키보드 네비게이션 구현",
-      "verificationCriteria": "1. 모든 컴포넌트 TypeScript strict mode 통과\n2. 접근성 테스트 통과 (키보드, 스크린리더)\n3. 3개 이상 실제 페이지에서 적용 테스트",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
+      "implementationGuide": "1. JobPostingContextAdapter에 workLogs 실시간 구독 강화\n2. useStaffWorkData 훅이 Context의 workLogs 우선 사용\n3. refreshWorkLogs 함수 개선으로 즉시 동기화\n4. 데이터 변경시 모든 구독 컴포넌트에 자동 전파",
+      "verificationCriteria": "스태프탭에서 시간 변경시 정산탭과 정산모달에 즉시 반영되는지 확인",
+      "analysisResult": "스태프탭, 정산탭, 정산모달 간의 완벽한 데이터 동기화를 구현하여 모든 정보가 실시간으로 일치하도록 보장"
     },
     {
-      "id": "590cdfb5-eb16-4212-8cac-c21e4a7b9910",
-      "name": "모바일 네비게이션 시스템 구현",
-      "description": "모바일 하단 탭바, 태블릿 햄버거 메뉴, 데스크톱 사이드바 구현. 반응형 브레이크포인트별 최적화, 제스처 지원",
-      "notes": "React Router와 통합, 현재 라우트 하이라이트, 뒤로가기 제스처 지원",
+      "id": "7b602a0e-c709-40fd-b1a6-646cc6fe10dd",
+      "name": "역할별 급여 설정 실시간 동기화",
+      "description": "역할별 급여 설정을 Firestore에 저장하고 실시간으로 동기화하여 모든 탭에서 일관된 급여 정보 표시",
+      "notes": "기존 hourlyWages 필드와 호환성 유지",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "b2d173b8-29a0-45b5-981c-4f1ae27ea1f8"
+          "taskId": "137cc52e-2511-4e13-a44e-cdbc94f5d765"
         }
       ],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
+      "createdAt": "2025-08-22T09:46:26.332Z",
+      "updatedAt": "2025-08-22T09:46:26.332Z",
       "relatedFiles": [
         {
-          "path": "app2/src/App.tsx",
+          "path": "app2/src/components/payroll/RoleSalarySettings.tsx",
           "type": "TO_MODIFY",
-          "description": "네비게이션 통합"
+          "description": "Firestore 업데이트 추가"
         },
         {
-          "path": "app2/src/components/navigation/",
-          "type": "CREATE",
-          "description": "네비게이션 컴포넌트"
+          "path": "app2/src/hooks/useStaffWorkData.ts",
+          "type": "TO_MODIFY",
+          "description": "역할별 급여 실시간 반영"
         }
       ],
-      "implementationGuide": "1. src/components/navigation/ 디렉토리 생성\n2. BottomTabBar.tsx: 모바일 전용 하단 네비게이션 (5개 주요 메뉴)\n3. MobileMenu.tsx: 햄버거 메뉴 + 슬라이드 드로어\n4. ResponsiveNav.tsx: 화면 크기별 적절한 네비게이션 렌더링\n5. useMediaQuery 훅으로 반응형 처리\n6. 스와이프 제스처로 메뉴 열기/닫기",
-      "verificationCriteria": "1. 모든 브레이크포인트에서 원활한 전환\n2. 터치 타겟 44x44px 이상\n3. 스와이프 제스처 자연스러운 동작",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
+      "implementationGuide": "1. jobPosting 문서에 roleSalaries 필드 업데이트 로직 구현\n2. RoleSalarySettings 컴포넌트에서 Firestore 직접 업데이트\n3. useStaffWorkData의 getSalaryInfo 함수가 최신 정보 반환\n4. 역할 변경시 급여 자동 재계산",
+      "verificationCriteria": "정산탭에서 역할별 급여 설정 변경시 모든 스태프의 급여가 자동 재계산되는지 확인",
+      "analysisResult": "스태프탭, 정산탭, 정산모달 간의 완벽한 데이터 동기화를 구현하여 모든 정보가 실시간으로 일치하도록 보장"
     },
     {
-      "id": "be53e46d-d377-4b3e-ac60-2ccf71be2b53",
-      "name": "타이포그래피 및 가독성 개선",
-      "description": "전체 프로젝트의 text-xs 과다 사용 문제 해결. 모바일 최소 14px, 데스크톱 최소 16px 보장. 줄 간격, 문단 간격 최적화",
-      "notes": "점진적 마이그레이션, 페이지별 순차 적용",
+      "id": "f29d1656-dd30-49d0-afe0-d8fb3b812575",
+      "name": "수당 정보 영구 저장 구현",
+      "description": "수당 정보를 staff 컬렉션에 저장하여 세션 간 데이터 유지 및 실시간 동기화",
+      "notes": "allowances 객체 구조: {meal, transportation, accommodation, bonus, other, otherDescription}",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "af2f27d6-47eb-425b-93f3-0cd6425e2614"
+          "taskId": "137cc52e-2511-4e13-a44e-cdbc94f5d765"
         }
       ],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
+      "createdAt": "2025-08-22T09:46:26.332Z",
+      "updatedAt": "2025-08-22T09:46:26.332Z",
       "relatedFiles": [
         {
-          "path": "app2/src/**/*.tsx",
+          "path": "app2/src/components/payroll/DetailEditModal.tsx",
           "type": "TO_MODIFY",
-          "description": "타이포그래피 업데이트"
+          "description": "수당 저장 로직 추가"
         },
         {
-          "path": "app2/src/index.css",
+          "path": "app2/src/components/payroll/BulkAllowancePanel.tsx",
           "type": "TO_MODIFY",
-          "description": "기본 폰트 크기 조정"
+          "description": "일괄 적용 저장"
+        },
+        {
+          "path": "app2/src/hooks/useStaffWorkData.ts",
+          "type": "TO_MODIFY",
+          "description": "저장된 수당 로드"
         }
       ],
-      "implementationGuide": "1. 전역 검색으로 text-xs 사용처 파악\n2. 모바일: text-sm (14px), 데스크톱: text-base (16px) 기본값\n3. 제목: text-lg ~ text-3xl 계층 구조\n4. line-height 1.5 ~ 1.8 적용\n5. 문단 간격 mb-4 표준화\n6. 한글 폰트 최적화 (Pretendard, Spoqa Han Sans 고려)",
-      "verificationCriteria": "1. 모바일에서 14px 이상 텍스트 크기\n2. 줄 간격으로 가독성 향상 확인\n3. 실제 디바이스 테스트",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
+      "implementationGuide": "1. staff 문서에 allowances 필드 추가\n2. DetailEditModal의 handleSave에서 Firestore 업데이트\n3. BulkAllowancePanel에서 일괄 수당 적용시 Firestore 업데이트\n4. useStaffWorkData에서 저장된 수당 정보 로드",
+      "verificationCriteria": "수당 설정 후 페이지 새로고침해도 수당 정보가 유지되는지 확인",
+      "analysisResult": "스태프탭, 정산탭, 정산모달 간의 완벽한 데이터 동기화를 구현하여 모든 정보가 실시간으로 일치하도록 보장"
     },
     {
-      "id": "ca8a1771-9860-4649-be5b-7a8378b87471",
-      "name": "카드 컴포넌트 통합 및 표준화",
-      "description": "StaffCard, JobCard, ApplicantCard 등 중복된 카드 레이아웃 통합. 공통 Card 컴포넌트 기반으로 리팩토링",
-      "notes": "기존 기능 100% 유지, 점진적 마이그레이션",
+      "id": "2487a41d-9fd6-4834-baf8-ef9ce01360c5",
+      "name": "정산탭 편집 기능 완전 활성화",
+      "description": "정산탭에서 역할별 급여 설정, 수당 일괄 적용, 급여 계산 수정 등 모든 편집 기능 활성화",
+      "notes": "권한 체크: jobPosting.createdBy === currentUser.uid",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "b2d173b8-29a0-45b5-981c-4f1ae27ea1f8"
+          "taskId": "7b602a0e-c709-40fd-b1a6-646cc6fe10dd"
+        },
+        {
+          "taskId": "f29d1656-dd30-49d0-afe0-d8fb3b812575"
         }
       ],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
+      "createdAt": "2025-08-22T09:46:26.332Z",
+      "updatedAt": "2025-08-22T09:46:26.332Z",
       "relatedFiles": [
         {
-          "path": "app2/src/components/StaffCard.tsx",
+          "path": "app2/src/components/tabs/EnhancedPayrollTab.tsx",
           "type": "TO_MODIFY",
-          "description": "BaseCard 활용"
+          "description": "편집 기능 활성화"
         },
         {
-          "path": "app2/src/components/common/JobPostingCard.tsx",
+          "path": "app2/src/components/payroll/BulkSalaryEditModal.tsx",
           "type": "TO_MODIFY",
-          "description": "통합"
-        },
-        {
-          "path": "app2/src/components/applicants/ApplicantCard.tsx",
-          "type": "TO_MODIFY",
-          "description": "표준화"
+          "description": "일괄 급여 수정 구현"
         }
       ],
-      "implementationGuide": "1. BaseCard 컴포넌트 생성 (헤더, 바디, 푸터, 액션 슬롯)\n2. StaffCard를 BaseCard 활용하여 리팩토링\n3. JobPostingCard를 BaseCard 기반으로 재구현\n4. ApplicantCard 통합\n5. 공통 스타일 (그림자, 보더, 패딩) 표준화\n6. 호버, 선택, 확장 상태 일관성",
-      "verificationCriteria": "1. 모든 카드 일관된 스타일\n2. 코드 중복 50% 이상 감소\n3. 기존 기능 완벽 동작",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
+      "implementationGuide": "1. EnhancedPayrollTab에 편집 권한 체크 추가\n2. 역할별 급여 설정 UI 활성화 및 동작 구현\n3. 수당 일괄 적용 패널 완전 구현\n4. 개별 스태프 급여 수정 모달 연결",
+      "verificationCriteria": "정산탭에서 모든 편집 기능이 정상 동작하고 변경사항이 즉시 반영되는지 확인",
+      "analysisResult": "스태프탭, 정산탭, 정산모달 간의 완벽한 데이터 동기화를 구현하여 모든 정보가 실시간으로 일치하도록 보장"
     },
     {
-      "id": "bc30e636-4e7f-404c-81b7-e211c1ad8253",
-      "name": "접근성 (WCAG 2.1 AA) 구현",
-      "description": "색상 대비 4.5:1 이상, 키보드 네비게이션, 스크린 리더 지원, ARIA 레이블 전체 적용",
-      "notes": "axe DevTools로 검증, 실제 스크린리더 테스트 필요",
+      "id": "9a13057a-f57e-4708-8973-4011b43a792c",
+      "name": "스태프탭-정산탭 데이터 일치성 검증",
+      "description": "스태프탭의 출근/퇴근 시간, 역할, 출석 상태가 정산탭과 정산모달에 정확히 동기화되는지 검증",
+      "notes": "개발자 도구 콘솔에서 데이터 동기화 로그 확인",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "b2d173b8-29a0-45b5-981c-4f1ae27ea1f8"
+          "taskId": "2dfedb33-d8e2-4d0b-b8bd-2008404fb88f"
         },
         {
-          "taskId": "be53e46d-d377-4b3e-ac60-2ccf71be2b53"
-        }
-      ],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/App.tsx",
-          "type": "TO_MODIFY",
-          "description": "스킵 링크 추가"
+          "taskId": "137cc52e-2511-4e13-a44e-cdbc94f5d765"
         },
         {
-          "path": "app2/src/components/**/*.tsx",
-          "type": "TO_MODIFY",
-          "description": "ARIA 속성 추가"
+          "taskId": "2487a41d-9fd6-4834-baf8-ef9ce01360c5"
         }
       ],
-      "implementationGuide": "1. 색상 대비 검사 도구로 전체 스캔\n2. 저대비 요소 색상 조정 (특히 회색 텍스트)\n3. 모든 인터랙티브 요소에 tabindex 적절히 설정\n4. 포커스 스타일 명확하게 (ring-2 ring-blue-500)\n5. ARIA 레이블, role, aria-live 속성 추가\n6. 스킵 네비게이션 링크 구현",
-      "verificationCriteria": "1. WCAG 2.1 AA 자동 테스트 통과\n2. 키보드만으로 모든 기능 사용 가능\n3. 스크린리더 테스트 통과",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
-    },
-    {
-      "id": "d3896304-520b-4d0e-b01b-0dad798a1e9b",
-      "name": "로딩 상태 및 피드백 시스템 개선",
-      "description": "일관된 로딩 인디케이터, 스켈레톤 스크린, 에러 메시지, 성공/실패 토스트 표준화",
-      "notes": "Zustand toast store 활용, 한국어 메시지 최적화",
-      "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "b2d173b8-29a0-45b5-981c-4f1ae27ea1f8"
-        }
-      ],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
+      "createdAt": "2025-08-22T09:46:26.332Z",
+      "updatedAt": "2025-08-22T09:46:26.332Z",
       "relatedFiles": [
         {
-          "path": "app2/src/stores/toastStore.ts",
+          "path": "app2/src/components/tabs/StaffManagementTab.tsx",
           "type": "TO_MODIFY",
-          "description": "토스트 개선"
+          "description": "데이터 동기화 검증 로그"
         },
         {
-          "path": "app2/src/components/ui/Loading.tsx",
-          "type": "CREATE",
-          "description": "로딩 컴포넌트"
+          "path": "app2/src/components/tabs/EnhancedPayrollTab.tsx",
+          "type": "TO_MODIFY",
+          "description": "데이터 일치성 확인"
         }
       ],
-      "implementationGuide": "1. LoadingSpinner 컴포넌트 표준화 (크기, 색상 변형)\n2. SkeletonLoader 구현 (카드, 리스트, 테이블용)\n3. ErrorBoundary 강화 (사용자 친화적 에러 화면)\n4. Toast 시스템 개선 (위치, 애니메이션, 자동 닫기)\n5. 폼 검증 메시지 일관성\n6. 비동기 작업 진행 표시",
-      "verificationCriteria": "1. 모든 비동기 작업 로딩 표시\n2. 에러 발생 시 명확한 안내\n3. 3초 이내 피드백 제공",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
-    },
-    {
-      "id": "1ea42ed0-4d5c-480f-8602-b5fe4fd2a2f4",
-      "name": "이미지 최적화 및 레이지 로딩",
-      "description": "WebP 포맷 지원, srcset 반응형 이미지, 레이지 로딩, 플레이스홀더 구현",
-      "notes": "Firebase Storage와 통합, 프로필 이미지 우선 적용",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-08-08T02:45:48.964Z",
-      "updatedAt": "2025-08-08T02:45:48.964Z",
-      "relatedFiles": [
-        {
-          "path": "app2/src/components/ui/Image.tsx",
-          "type": "CREATE",
-          "description": "최적화된 이미지 컴포넌트"
-        }
-      ],
-      "implementationGuide": "1. Image 컴포넌트 생성 (레이지 로딩 내장)\n2. IntersectionObserver로 뷰포트 감지\n3. 블러 플레이스홀더 또는 스켈레톤 표시\n4. srcset으로 디바이스별 최적 이미지\n5. WebP 포맷 우선, fallback JPEG/PNG\n6. 이미지 CDN 고려 (Cloudinary, ImageKit)",
-      "verificationCriteria": "1. 이미지 로딩 50% 이상 개선\n2. 레이지 로딩 정상 작동\n3. 다양한 네트워크 환경 테스트",
-      "analysisResult": "T-HOLDEM 플랫폼의 포괄적인 UI/UX 리디자인 - 디자인 시스템 구축, 모바일 최적화, 접근성 강화, 성능 개선을 통한 사용자 경험 대폭 향상. Firebase 실시간 동기화 100% 보존, TypeScript strict mode 준수, 기존 기능 완벽 유지"
+      "implementationGuide": "1. StaffManagementTab의 시간 수정이 WorkLog에 정확히 저장되는지 확인\n2. 정산탭에서 동일한 WorkLog 데이터를 조회하는지 검증\n3. 출석 상태(출근/지각/결석)가 정산 계산에 반영되는지 확인\n4. 콘솔 로그로 데이터 흐름 추적",
+      "verificationCriteria": "스태프탭의 모든 정보가 정산탭과 정산모달에 100% 일치하는지 확인",
+      "analysisResult": "스태프탭, 정산탭, 정산모달 간의 완벽한 데이터 동기화를 구현하여 모든 정보가 실시간으로 일치하도록 보장"
     }
   ]
 }

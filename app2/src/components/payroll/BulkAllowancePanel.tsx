@@ -69,11 +69,11 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
       applyTo,
       ...(applyTo === 'byRole' && { targetRoles: selectedRoles }),
       allowances: {
-        ...(allowances.meal.enabled && { meal: allowances.meal }),
-        ...(allowances.transportation.enabled && { transportation: allowances.transportation }),
-        ...(allowances.accommodation.enabled && { accommodation: allowances.accommodation }),
-        ...(allowances.bonus.enabled && { bonus: allowances.bonus }),
-        ...(allowances.other.enabled && { other: allowances.other })
+        meal: allowances.meal,
+        transportation: allowances.transportation,
+        accommodation: allowances.accommodation,
+        bonus: allowances.bonus,
+        other: allowances.other
       }
     };
     onApply(settings);
@@ -320,7 +320,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
         </div>
         <button
           onClick={handleApply}
-          disabled={getTotalAllowances() === 0 || (applyTo === 'byRole' && selectedRoles.length === 0)}
+          disabled={applyTo === 'byRole' && selectedRoles.length === 0}
           className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           적용하기

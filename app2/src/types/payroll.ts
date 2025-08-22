@@ -3,6 +3,19 @@ import { WorkLog } from '../hooks/useShiftSchedule';
 import { UnifiedWorkLog } from './unified/workLog';
 
 /**
+ * 역할별 급여 정보
+ */
+export interface RolePayrollInfo {
+  role: string;
+  workLogs: UnifiedWorkLog[];
+  totalHours: number;
+  totalDays: number;
+  salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
+  salaryAmount: number;
+  basePay: number;
+}
+
+/**
  * 급여 계산 결과 타입
  */
 export interface PayrollCalculation {
@@ -41,7 +54,8 @@ export interface EnhancedPayrollCalculation {
   // 기본 정보
   staffId: string;
   staffName: string;
-  role: string;
+  role: string;  // 기존 호환성 유지 (주요 역할)
+  roles?: string[];  // 모든 역할 배열
   phone?: string;
   
   // 근무 정보 (자동 계산) - UnifiedWorkLog 타입 사용
@@ -68,6 +82,10 @@ export interface EnhancedPayrollCalculation {
   basePay: number;         // 기본급 (시간/일수 × 기본급여)
   allowanceTotal: number;  // 수당 합계
   totalAmount: number;     // 총 지급액
+  
+  // 역할별 급여 정보 (다중 역할 지원)
+  rolePayrollInfo?: Map<string, RolePayrollInfo>;
+  totalBasePay?: number;   // 모든 역할 기본급 합계
   
   // 메타 정보
   period: {

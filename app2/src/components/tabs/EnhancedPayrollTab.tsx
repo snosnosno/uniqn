@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting } from '../../types/jobPosting';
-import { useEnhancedPayroll } from '../../hooks/useEnhancedPayroll';
+import { useStaffWorkData } from '../../hooks/useStaffWorkData';
 import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
@@ -17,17 +17,16 @@ interface EnhancedPayrollTabProps {
 
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) => {
   const { i18n } = useTranslation();
+  const { refreshStaff, refreshWorkLogs } = useJobPostingContext();
   
-  // 날짜 범위는 전체 기간으로 고정
-
   // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBulkSalaryModalOpen, setIsBulkSalaryModalOpen] = useState(false);
 
-  // 정산 데이터 조회
+  // 통합 훅 사용 - 모든 데이터와 로직이 여기에 통합됨
   const {
-    payrollData,
+    staffWorkData,
     summary,
     loading,
     error,
@@ -39,35 +38,20 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     exportToCSV,
     availableRoles,
     updateRoleSalarySettings,
-    handleBulkSalaryEdit,
-    roleSalaryOverrides: _roleSalaryOverrides
-  } = useEnhancedPayroll({
-    ...(jobPosting?.id && { jobPostingId: jobPosting.id }),
-    ...(jobPosting && { jobPosting }),
-    confirmedStaff: jobPosting?.confirmedStaff || []
-    // 날짜 필터 제거 - 전체 기간 자동 계산
+    getSalaryInfo
+  } = useStaffWorkData({
+    jobPostingId: jobPosting?.id
   });
 
-  // Context에서 새로고침 함수 가져오기
-  const { refreshStaff, refreshWorkLogs } = useJobPostingContext();
-
-  // ✅ 정산 데이터 디버깅 로그 추가
-  console.log('📊 EnhancedPayrollTab - payrollData received:', {
-    payrollDataLength: payrollData.length,
-    payrollData: payrollData.map(data => ({
-      staffName: data.staffName,
-      role: data.role,
-      totalHours: data.totalHours,
-      totalDays: data.totalDays,
-      workLogs: data.workLogs.map(log => ({
-        id: log.id,
-        date: log.date,
-        hoursWorked: log.hoursWorked
-      }))
-    })),
-    summary
+  // 디버깅 로그
+  logger.debug('EnhancedPayrollTab - 렌더링', {
+    component: 'EnhancedPayrollTab',
+    data: {
+      staffWorkDataCount: staffWorkData.length,
+      summary,
+      availableRoles
+    }
   });
-
 
   // 급여 유형 한글 변환
   const getSalaryTypeLabel = useCallback((type: string) => {
@@ -81,38 +65,17 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   }, []);
 
   // 수당 편집 모달 열기
-  const openEditModal = useCallback((staff: EnhancedPayrollCalculation) => {
-    // 디버깅: 전달되는 staff 데이터 확인
-    logger.debug('EnhancedPayrollTab - openEditModal staff', { 
+  const openEditModal = useCallback((data: any) => {
+    logger.debug('EnhancedPayrollTab - 수당 편집 모달 열기', { 
       component: 'EnhancedPayrollTab', 
       data: {
-        staffId: staff.staffId,
-        staffName: staff.staffName,
-        role: staff.role,
-        totalHours: staff.totalHours,
-        workLogsCount: staff.workLogs?.length || 0
+        uniqueKey: data.uniqueKey,
+        staffName: data.staffName,
+        role: data.role
       }
     });
     
-    if (staff.workLogs && staff.workLogs.length > 0) {
-      const firstLog = staff.workLogs[0];
-      if (firstLog) {
-        logger.debug('EnhancedPayrollTab - 첫 번째 workLog 상세', { 
-          component: 'EnhancedPayrollTab', 
-          data: {
-            id: firstLog.id,
-            date: firstLog.date,
-            scheduledStartTime: firstLog.scheduledStartTime ? 'set' : 'null',
-            scheduledEndTime: firstLog.scheduledEndTime ? 'set' : 'null',
-            actualStartTime: firstLog.actualStartTime ? 'set' : 'null',
-            actualEndTime: firstLog.actualEndTime ? 'set' : 'null',
-            assignedTime: (firstLog as any).assignedTime || 'none',
-            isVirtual: (firstLog as any).isVirtual || false
-          }
-        });
-      }
-    }
-    setEditingStaff(staff);
+    setEditingStaff(data);
     setIsEditModalOpen(true);
   }, []);
 
@@ -122,30 +85,53 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     setIsEditModalOpen(false);
   }, []);
 
-  // 수당 저장 핸들러
+  // 수당 저장
   const handleSaveAllowances = useCallback((staff: EnhancedPayrollCalculation, allowances: EnhancedPayrollCalculation['allowances']) => {
-    const key = `${staff.staffId}_${staff.role}`;
-    updateStaffAllowances(key, allowances);
-  }, [updateStaffAllowances]);
+    logger.debug('EnhancedPayrollTab - 수당 저장', {
+      component: 'EnhancedPayrollTab',
+      data: {
+        staffId: staff.staffId,
+        uniqueKey: (staff as any).uniqueKey,
+        allowances
+      }
+    });
+    
+    // uniqueKey를 사용하여 업데이트 (이제 staffId만 사용)
+    const uniqueKey = (staff as any).uniqueKey || staff.staffId;
+    updateStaffAllowances(uniqueKey, allowances);
+    closeEditModal();
+  }, [updateStaffAllowances, closeEditModal]);
 
-  // 수당 상세 툴팁 생성
-  const getAllowanceDetails = useCallback((data: EnhancedPayrollCalculation) => {
-    const details = [];
-    if (data.allowances.meal > 0) details.push(`식비: ${data.allowances.meal.toLocaleString()}원`);
-    if (data.allowances.transportation > 0) details.push(`교통비: ${data.allowances.transportation.toLocaleString()}원`);
-    if (data.allowances.accommodation > 0) details.push(`숙소비: ${data.allowances.accommodation.toLocaleString()}원`);
-    if (data.allowances.bonus > 0) details.push(`보너스: ${data.allowances.bonus.toLocaleString()}원`);
-    if (data.allowances.other > 0) {
-      const desc = data.allowances.otherDescription ? ` (${data.allowances.otherDescription})` : '';
-      details.push(`기타${desc}: ${data.allowances.other.toLocaleString()}원`);
+  // 일괄 급여 수정 핸들러
+  const handleBulkSalaryEdit = useCallback((updates: any) => {
+    logger.debug('EnhancedPayrollTab - 일괄 급여 수정', {
+      component: 'EnhancedPayrollTab',
+      data: updates
+    });
+    
+    // 역할별 급여 설정 업데이트
+    const roleSalaryConfig: any = {};
+    if (updates.role && updates.salaryType && updates.salaryAmount) {
+      roleSalaryConfig[updates.role] = {
+        salaryType: updates.salaryType,
+        salaryAmount: updates.salaryAmount
+      };
+      updateRoleSalarySettings(roleSalaryConfig);
     }
-    return details.join('\n');
-  }, []);
+    
+    setIsBulkSalaryModalOpen(false);
+  }, [updateRoleSalarySettings]);
 
-  // 전체 선택 상태 확인
-  const isAllSelected = useMemo(() => {
-    return payrollData.length > 0 && selectedStaffIds.length === payrollData.length;
-  }, [payrollData, selectedStaffIds]);
+  // 자동 불러오기 핸들러
+  const handleRefresh = useCallback(() => {
+    logger.info('정산 데이터 새로고침 시작', { component: 'EnhancedPayrollTab' });
+    refreshStaff();
+    refreshWorkLogs();
+    // 추가 동기화를 위한 재호출
+    setTimeout(() => {
+      refreshWorkLogs();
+    }, 500);
+  }, [refreshStaff, refreshWorkLogs]);
 
   // 확정된 스태프가 없는 경우
   if (!jobPosting?.confirmedStaff || jobPosting.confirmedStaff.length === 0) {
@@ -192,17 +178,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         <h2 className="text-xl font-bold text-gray-900">정산 관리</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => {
-              console.log('🔄 자동 불러오기 버튼 클릭 - refreshStaff & refreshWorkLogs 호출');
-              refreshStaff();
-              // refreshWorkLogs 즉시 호출
-              refreshWorkLogs();
-              // 500ms 후 다시 호출하여 동기화 보장
-              setTimeout(() => {
-                console.log('🔄 추가 동기화를 위한 refreshWorkLogs 재호출');
-                refreshWorkLogs();
-              }, 500);
-            }}
+            onClick={handleRefresh}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
             자동 불러오기
@@ -210,15 +186,14 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
           <button
             onClick={exportToCSV}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            disabled={payrollData.length === 0}
+            disabled={staffWorkData.length === 0}
           >
             CSV 내보내기
           </button>
         </div>
       </div>
 
-
-      {/* 요약 카드 - 간소화된 버전 */}
+      {/* 요약 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm font-medium text-gray-500 mb-2">총 인원</h3>
@@ -247,153 +222,157 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         selectedStaffCount={selectedStaffIds.length}
       />
 
-      {/* 스태프별 상세 내역 */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b flex justify-between items-center">
+      {/* 상세 내역 테이블 */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900">📋 상세 내역</h3>
-          <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={toggleSelectAll}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              {selectedStaffIds.length === staffWorkData.length ? '전체 해제' : '전체 선택'}
+            </button>
             {selectedStaffIds.length > 0 && (
-              <>
-                <button
-                  onClick={() => setIsBulkSalaryModalOpen(true)}
-                  className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors"
-                >
-                  급여 일괄편집
-                </button>
-                <span className="text-sm text-gray-500">
-                  {selectedStaffIds.length}명 선택됨
-                </span>
-              </>
+              <button
+                onClick={() => setIsBulkSalaryModalOpen(true)}
+                className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+              >
+                선택 항목 급여 수정
+              </button>
             )}
           </div>
         </div>
-        
-        {payrollData.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  선택
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  이름
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  역할
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  근무일수
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  근무시간
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  급여유형
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  기본급
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  수당
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  총 지급액
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {staffWorkData.length === 0 ? (
                 <tr>
-                  <th className="px-6 py-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    스태프
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    역할
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    근무일수
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    근무시간
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    급여유형
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    기본급여
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    수당
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    총액
-                  </th>
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                    정산 데이터가 없습니다.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {payrollData.map((data) => (
-                  <tr 
-                    key={`${data.staffId}_${data.role}`} 
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => openEditModal(data)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedStaffIds.includes(`${data.staffId}_${data.role}`)}
-                        onChange={() => toggleStaffSelection(`${data.staffId}_${data.role}`)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{data.staffName}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{data.role}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900">{data.totalDays}일</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900">{data.totalHours.toFixed(1)}시간</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {getSalaryTypeLabel(data.salaryType)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm text-gray-900">
-                        {formatCurrency(data.basePay, i18n.language === 'ko' ? 'KRW' : 'USD', i18n.language)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div 
-                        className="text-sm text-gray-900"
-                        title={getAllowanceDetails(data)}
-                      >
-                        {data.allowanceTotal > 0 
-                          ? formatCurrency(data.allowanceTotal, i18n.language === 'ko' ? 'KRW' : 'USD', i18n.language)
-                          : '-'
+              ) : (
+                staffWorkData.map((data) => {
+                  const uniqueKey = (data as any).uniqueKey || data.staffId;
+                  const isSelected = selectedStaffIds.includes(uniqueKey);
+                  const roles = (data as any).roles || [data.role];
+                  
+                  return (
+                    <tr 
+                      key={uniqueKey} 
+                      className={`${isSelected ? 'bg-indigo-50' : ''} hover:bg-gray-50 cursor-pointer transition-colors`}
+                      onClick={(e) => {
+                        // 체크박스 클릭은 제외
+                        const target = e.target as HTMLInputElement;
+                        if (!target.type || target.type !== 'checkbox') {
+                          openEditModal(data);
                         }
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-medium text-indigo-600">
-                        {formatCurrency(data.totalAmount, i18n.language === 'ko' ? 'KRW' : 'USD', i18n.language)}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-6 text-center">
-            <div className="text-gray-400 text-6xl mb-4">💰</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              정산 내역이 없습니다
-            </h3>
-            <p className="text-gray-500">
-              선택한 기간에 근무 기록이 없습니다.
-            </p>
-          </div>
-        )}
+                      }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleStaffSelection(uniqueKey)}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {data.staffName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          {roles.join(', ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {data.totalDays}일
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {data.totalHours.toFixed(1)}시간
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {getSalaryTypeLabel(data.salaryType)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(data.basePay, 'KRW', 'ko')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(data.allowanceTotal, 'KRW', 'ko')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {formatCurrency(data.totalAmount, 'KRW', 'ko')}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* 상세 편집 모달 */}
-      <DetailEditModal
-        isOpen={isEditModalOpen}
-        onClose={closeEditModal}
-        staff={editingStaff}
-        onSave={handleSaveAllowances}
-      />
+      {/* 수당 편집 모달 */}
+      {isEditModalOpen && editingStaff && (
+        <DetailEditModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          staff={editingStaff}
+          onSave={handleSaveAllowances}
+        />
+      )}
 
       {/* 일괄 급여 편집 모달 */}
-      <BulkSalaryEditModal
-        isOpen={isBulkSalaryModalOpen}
-        selectedStaff={payrollData.filter(data => selectedStaffIds.includes(`${data.staffId}_${data.role}`))}
-        availableRoles={availableRoles}
-        onApply={handleBulkSalaryEdit}
-        onClose={() => setIsBulkSalaryModalOpen(false)}
-      />
+      {isBulkSalaryModalOpen && (
+        <BulkSalaryEditModal
+          isOpen={isBulkSalaryModalOpen}
+          onClose={() => setIsBulkSalaryModalOpen(false)}
+          availableRoles={availableRoles}
+          selectedStaff={staffWorkData.filter(data => selectedStaffIds.includes((data as any).uniqueKey))}
+          onApply={async (update) => {
+            handleBulkSalaryEdit(update);
+            return { 
+              affectedStaff: [],
+              totalAmountDifference: 0,
+              successCount: selectedStaffIds.length,
+              failCount: 0
+            };
+          }}
+        />
+      )}
     </div>
   );
 };

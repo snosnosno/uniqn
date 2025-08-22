@@ -208,19 +208,6 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
                     </div>
                   </div>
                 </div>
-
-                {/* 예상 급여 미리보기 */}
-                <div className="mt-3 p-2 bg-white rounded border">
-                  <div className="text-xs text-gray-500">
-                    {getSalaryTypeLabel(salaryConfig[role]?.salaryType || 'hourly')} 기준
-                  </div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {formatCurrency(salaryConfig[role]?.salaryAmount || 0, 'KRW', 'ko')}
-                    {salaryConfig[role]?.salaryType === 'hourly' && '/시간'}
-                    {salaryConfig[role]?.salaryType === 'daily' && '/일'}
-                    {salaryConfig[role]?.salaryType === 'monthly' && '/월'}
-                  </div>
-                </div>
               </div>
             ))}
           </div>
