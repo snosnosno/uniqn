@@ -136,7 +136,7 @@ export const useCEODashboardOptimized = () => {
       ratingsSnapshot.forEach((doc) => {
         const data = doc.data();
         // staffId만 사용 (레거시 dealerId 제거)
-        const staffId = data.staffId || data.dealerId; // dealerId는 하위 호환성을 위해 임시 유지
+        const staffId = data.staffId;
         
         if (!dealerRatings.has(staffId)) {
           dealerRatings.set(staffId, { totalRating: 0, count: 0 });

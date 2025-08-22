@@ -149,26 +149,26 @@ const ShiftSchedulePage: React.FC = () => {
     setSelectedDate(newDate);
   };
   
-  // 딜러 추가 핸들러
-  const handleAddDealer = async (dealerId: string, dealerName: string) => {
+  // 스태프 추가 핸들러
+  const handleAddStaff = async (staffId: string, staffName: string) => {
     if (!schedule) return;
     
     try {
-      await addDealer(dealerId, dealerName, schedule.startTime);
+      await addDealer(staffId, staffName, schedule.startTime);
     } catch (error) {
       logger.error('Error adding dealer:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
     }
   };
   
-  // 딜러 제거 핸들러 (스케줄에서 모든 할당 제거)
-  const handleRemoveDealer = async (dealerId: string) => {
+  // 스태프 제거 핸들러 (스케줄에서 모든 할당 제거)
+  const handleRemoveStaff = async (staffId: string) => {
     if (!schedule) return;
     
     try {
       const scheduleId = `${selectedEventId}_${selectedDate}`;
       const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
       await updateDoc(scheduleRef, {
-        [`scheduleData.${dealerId}`]: deleteField(),
+        [`scheduleData.${staffId}`]: deleteField(),
         updatedAt: serverTimestamp()
       });
     } catch (error) {
@@ -201,10 +201,10 @@ const ShiftSchedulePage: React.FC = () => {
     }
   };
   
-  // 사용자 확인 모달 (딜러 제거용)
-  const confirmRemoveDealer = (dealerId: string, dealerName: string) => {
-    if (window.confirm(t('shiftSchedule.confirmRemoveDealer', { dealerName }))) {
-      handleRemoveDealer(dealerId);
+  // 사용자 확인 모달 (스태프 제거용)
+  const confirmRemoveStaff = (staffId: string, staffName: string) => {
+    if (window.confirm(t('shiftSchedule.confirmRemoveDealer', { dealerName: staffName }))) {
+      handleRemoveStaff(staffId);
     }
   };
   
@@ -521,15 +521,15 @@ const ShiftSchedulePage: React.FC = () => {
                   <div key={dealer.id} className="flex items-center bg-blue-50 p-3 rounded-lg shadow-sm">
                     <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center mr-3">
                       <span className="text-sm font-semibold text-blue-700">
-                        {dealer.dealerName.charAt(0)}
+                        {dealer.staffName.charAt(0)}
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{dealer.dealerName}</p>
+                      <p className="font-semibold text-gray-800">{dealer.staffName}</p>
                       <p className="text-sm text-gray-500">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
                     </div>
                     <button 
-                      onClick={() => confirmRemoveDealer(dealer.id, dealer.dealerName)}
+                      onClick={() => confirmRemoveStaff(dealer.id, dealer.staffName)}
                       className="btn btn-sm btn-outline btn-error"
                       title={t('shiftSchedule.removeFromSchedule')}
                     >
@@ -559,7 +559,7 @@ const ShiftSchedulePage: React.FC = () => {
                     <p className="text-sm text-gray-500">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
                   </div>
                   {schedule ? <button 
-                      onClick={() => handleAddDealer(dealer.id, dealer.name)}
+                      onClick={() => handleAddStaff(dealer.id, dealer.name)}
                       className="btn btn-sm btn-outline btn-success"
                     >
                       <FaPlus className="w-3 h-3 mr-1" />

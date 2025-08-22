@@ -79,7 +79,7 @@ const TablesPage: React.FC = () => {
         return p ? p.name : t('tables.participantUnknown');
     };
 
-    const getDealerName = (_dealerId: string | null): string => {
+    const getStaffName = (_staffId: string | null): string => {
         return t('tables.dealerNotApplicable');
     };
 
@@ -213,7 +213,7 @@ const TablesPage: React.FC = () => {
                                 table={table}
                                 onTableClick={() => setDetailModalTable(table)}
                                 isMobile={isMobile}
-                                getDealerName={getDealerName}
+                                getDealerName={(staffId) => staffId || '미정'}
                                 participants={participants}
                             />
                         ))}

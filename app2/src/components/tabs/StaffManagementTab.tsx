@@ -157,10 +157,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           id: workLogId,
           eventId: data.eventId || jobPosting?.id,
           staffId: data.staffId || actualStaffId,
-          dealerId: data.dealerId || actualStaffId,
           date: workDate,
-          staffName: staff.name || data.staffName || '이름 미정',
-          dealerName: staff.name || data.dealerName || '이름 미정'
+          staffName: staff.name || data.staffName || '이름 미정'
         };
         logger.info('WorkLog 데이터 가져오기 성공', { 
           component: 'StaffManagementTab',
@@ -861,8 +859,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             const workLogRecord = attendanceRecords.find(r => {
               // staffId가 일치하고
               const staffIdMatch = r.staffId === staff.id || 
-                                  r.workLog?.dealerId === staff.id ||
-                                  r.workLog?.dealerId === staff.id.replace(/_\d+$/, '');
+                                  r.workLog?.staffId === staff.id;
               // 날짜가 일치하는 경우
               const dateMatch = r.workLog?.date === dateString;
               return staffIdMatch && dateMatch;

@@ -25,7 +25,7 @@ export interface ValidationViolation {
 
 export interface DealerSchedule {
   id: string;
-  dealerName: string;
+  staffName: string;
   startTime: string;
   assignments: { [timeSlot: string]: string };
 }
@@ -116,7 +116,6 @@ export const validateTableConflicts = (
             severity: 'error',
             message: `${timeSlot}에 ${tableId} 테이블이 중복 배정되었습니다 (${dealerIds.length}명 배정됨)`,
             staffId,
-            dealerId: staffId, // @deprecated - 하위 호환성을 위해 유지
             timeSlot,
             suggestedFix: `다른 테이블로 변경하거나 대기/휴식 상태로 변경하세요`
           });

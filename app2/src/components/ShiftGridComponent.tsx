@@ -5,7 +5,7 @@ import { ValidationResult } from '../utils/shiftValidation';
 interface ShiftGridComponentProps {
   dealers: Array<{
     id: string;
-    dealerName: string;
+    staffName: string;
     startTime: string;
     assignments: { [timeSlot: string]: string };
   }>;
@@ -16,7 +16,7 @@ interface ShiftGridComponentProps {
     tableNumber: number;
     status?: 'open' | 'closed' | 'standby';
   }>;
-  onCellChange: (dealerId: string, timeSlot: string, value: string) => void;
+  onCellChange: (staffId: string, timeSlot: string, value: string) => void;
   validationResult?: ValidationResult | null;
   readonly?: boolean;
   height?: number;

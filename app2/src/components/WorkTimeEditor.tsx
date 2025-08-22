@@ -1,6 +1,5 @@
 import { doc, updateDoc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { logger } from '../utils/logger';
-import { formatTimeForInput } from '../utils/dateUtils';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SaveIcon, TimesIcon, EditIcon } from './Icons';
@@ -10,7 +9,7 @@ import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
 import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
-import { prepareWorkLogForCreate, prepareWorkLogForUpdate } from '../utils/workLogMapper';
+import { prepareWorkLogForCreate, prepareWorkLogForUpdate, parseTimeToString, parseTimeToTimestamp } from '../utils/workLogMapper';
 import { WorkLogCreateInput } from '../types/unified/workLog';
 
 import Modal from './ui/Modal';
@@ -58,95 +57,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
   // formatTimeForInput은 이미 utils/dateUtils에서 import됨
 
-  // 시간 문자열을 Timestamp로 변환 (다음날 계산 지원)
-  const parseTimeString = (timeString: string, baseDate: Date, isEndTime = false, startTimeString = '') => {
-    if (!timeString) return null;
-    
-    try {
-      const timeParts = timeString.split(':').map(Number);
-      if (timeParts.length !== 2) {
-        // Invalid time string format
-        return null;
-      }
-      
-      const [hours, minutes] = timeParts;
-      
-      // 유효하지 않은 시간 값 검사
-      if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        // Invalid time string
-        return null;
-      }
-      
-      // 항상 workLog.date를 우선 사용 (공고에 등록된 날짜)
-      let validBaseDate = baseDate;
-      if (workLog && workLog.date) {
-        // YYYY-MM-DD 형식의 date를 파싱 (공고에 등록된 날짜 사용)
-        const dateParts = workLog.date.split('-').map(Number);
-        const year = dateParts[0] || new Date().getFullYear();
-        const month = dateParts[1] || new Date().getMonth() + 1;
-        const day = dateParts[2] || new Date().getDate();
-        validBaseDate = new Date(year, month - 1, day); // month는 0부터 시작
-        console.log('📅 Using workLog.date (공고 등록 날짜):', {
-          workLogDate: workLog.date,
-          parsedDate: validBaseDate.toISOString(),
-          localDate: validBaseDate.toLocaleString('ko-KR')
-        });
-      } else if (!baseDate || isNaN(baseDate.getTime())) {
-        // workLog.date가 없을 때만 현재 날짜 사용
-        validBaseDate = new Date();
-        console.log('⚠️ No workLog.date, using current date');
-      }
-      
-      // 새로운 Date 객체 생성 - workLog.date 기반으로 정확한 날짜 설정
-      const date = new Date(validBaseDate.getFullYear(), validBaseDate.getMonth(), validBaseDate.getDate(), hours, minutes, 0, 0);
-      
-      console.log('🔧 parseTimeString Debug:', {
-        inputTime: timeString,
-        parsedHours: hours,
-        parsedMinutes: minutes,
-        workLogDate: workLog?.date || 'N/A',
-        baseDate: validBaseDate.toISOString(),
-        createdDate: date.toISOString(),
-        localString: date.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
-        utcHours: date.getUTCHours(),
-        utcMinutes: date.getUTCMinutes(),
-        isEndTime
-      });
-      
-      // 종료 시간이고 시작 시간이 있는 경우, 다음날 여부 판단
-      if (isEndTime && startTimeString) {
-        const startTimeParts = startTimeString.split(':');
-        if (startTimeParts.length === 2 && startTimeParts[0]) {
-          const startHour = parseInt(startTimeParts[0]);
-          const endHour = hours;
-          
-          // 종료 시간이 시작 시간보다 이른 경우 다음날로 설정
-          if (endHour < startHour) {
-            date.setDate(date.getDate() + 1);
-          }
-        }
-      }
-      
-      // 날짜가 유효한지 확인
-      if (isNaN(date.getTime())) {
-        // Invalid date created
-        return null;
-      }
-      
-      // 날짜가 유효한 범위 내에 있는지 확인 (1970~2038)
-      const year = date.getFullYear();
-      if (year < 1970 || year > 2038) {
-        // Date out of valid range
-        return null;
-      }
-      
-      return Timestamp.fromDate(date);
-    } catch (error) {
-      // Error parsing time string
-      return null;
-    }
-  };
-
   // Timestamp 또는 Date를 Date로 변환하는 헬퍼 함수
   const toDate = (timestamp: Timestamp | Date | any | null): Date => {
     if (!timestamp) return new Date();
@@ -191,26 +101,19 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     setIsUpdating(true);
     try {
       // workLog.date를 기반으로 baseDate 설정 (공고에 등록된 날짜 사용)
-      let baseDate: Date;
-      if (workLog.date) {
-        const [year, month, day] = workLog.date.split('-').map(Number);
-        baseDate = new Date(year || new Date().getFullYear(), (month || 1) - 1, day || 1);
-      } else {
-        baseDate = toDate(workLog.scheduledStartTime || new Date());
-      }
-      logger.debug('handleUpdateTime - baseDate from workLog.date:', { 
+      // workLog.date를 사용하여 시간 파싱
+      logger.debug('handleUpdateTime - using workLog date:', { 
         component: 'WorkTimeEditor', 
         data: {
-          workLogDate: workLog.date,
-          baseDate: baseDate.toISOString()
+          workLogDate: workLog.date
         }
       });
       
       // 화면에 표시된 시간을 그대로 저장 (사용자가 수정하지 않아도)
       const newStartTime = startTime && startTime.trim() !== '' ? 
-        parseTimeString(startTime, baseDate, false) : null;
+        parseTimeToTimestamp(startTime, workLog.date) : null;
       const newEndTime = endTime && endTime.trim() !== '' ? 
-        parseTimeString(endTime, baseDate, true, startTime) : null;
+        parseTimeToTimestamp(endTime, workLog.date) : null;
       
       logger.debug('handleUpdateTime - parsed times:', { component: 'WorkTimeEditor', data: {
         startTime,
@@ -243,7 +146,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         // 중요: UI에 표시된 값이 있으면 무조건 사용 (스태프탭 설정 우선)
         if (!finalStartTime && startTime && startTime.trim() !== '') {
           // startTime이 있으면 이를 파싱해서 사용
-          finalStartTime = parseTimeString(startTime, baseDate, false);
+          finalStartTime = parseTimeToTimestamp(startTime, workLog.date);
           logger.debug('Using UI startTime for virtual WorkLog', { 
             component: 'WorkTimeEditor', 
             data: { startTime, finalStartTime } 
@@ -252,7 +155,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         
         if (!finalEndTime && endTime && endTime.trim() !== '') {
           // endTime이 있으면 이를 파싱해서 사용
-          finalEndTime = parseTimeString(endTime, baseDate, true, startTime);
+          finalEndTime = parseTimeToTimestamp(endTime, workLog.date);
           logger.debug('Using UI endTime for virtual WorkLog', { 
             component: 'WorkTimeEditor', 
             data: { endTime, finalEndTime } 
@@ -294,8 +197,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         const createInput: WorkLogCreateInput = {
           staffId: staffId,
           eventId: workLog.eventId || '',
-          staffName: (workLog as any).staffName || (workLog as any).dealerName || 'Unknown',
+          staffName: '',  // prepareWorkLogForCreate에서 처리
           date: workLog.date,
+          role: 'dealer',  // role 필드 필수 추가
           type: 'schedule',
           scheduledStartTime: finalStartTime,
           scheduledEndTime: finalEndTime,
@@ -415,12 +319,12 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         });
         
         // UI 업데이트 - 정산 목적으로 예정시간 우선 표시
-        const actualStartTimeString = formatTimeForInput(data.actualStartTime);
-        const scheduledStartTimeString = formatTimeForInput(data.scheduledStartTime);
-        const startTimeString = scheduledStartTimeString || actualStartTimeString;
+        const actualStartTimeString = parseTimeToString(data.actualStartTime);
+        const scheduledStartTimeString = parseTimeToString(data.scheduledStartTime);
+        const startTimeString = scheduledStartTimeString || actualStartTimeString || '';
         
-        const scheduledEndTimeString = formatTimeForInput(data.scheduledEndTime);
-        const endTimeString = scheduledEndTimeString;
+        const scheduledEndTimeString = parseTimeToString(data.scheduledEndTime);
+        const endTimeString = scheduledEndTimeString || '';
         
         setStartTime(startTimeString);
         setEndTime(endTimeString);
@@ -477,13 +381,14 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     }
     
     // 정산 목적으로 예정시간 우선, 없으면 실제시간 사용
-    const actualStartTimeString = formatTimeForInput(workLog.actualStartTime);
-    const scheduledStartTimeString = formatTimeForInput(workLog.scheduledStartTime);
-    const startTimeString = scheduledStartTimeString || actualStartTimeString;
+    // 표준화된 parseTimeToString 사용
+    const actualStartTimeString = parseTimeToString(workLog.actualStartTime);
+    const scheduledStartTimeString = parseTimeToString(workLog.scheduledStartTime);
+    const startTimeString = scheduledStartTimeString || actualStartTimeString || '';
     
     // 퇴근시간은 예정시간(scheduledEndTime)만 사용
-    const scheduledEndTimeString = formatTimeForInput(workLog.scheduledEndTime);
-    const endTimeString = scheduledEndTimeString;
+    const scheduledEndTimeString = parseTimeToString(workLog.scheduledEndTime);
+    const endTimeString = scheduledEndTimeString || '';
     
     setStartTime(startTimeString);
     setEndTime(endTimeString);
@@ -748,8 +653,8 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                 if (endTime) {
                   // 시작/종료 시간 모두 있는 경우
                   const baseDate = toDate(workLog.scheduledStartTime || new Date());
-                  const parsedStartTime = parseTimeString(startTime, baseDate, false);
-                  const parsedEndTime = parseTimeString(endTime, baseDate, true, startTime);
+                  const parsedStartTime = parseTimeToTimestamp(startTime, workLog?.date || '');
+                  const parsedEndTime = parseTimeToTimestamp(endTime, workLog?.date || '');
                   const minutes = calculateMinutes(parsedStartTime, parsedEndTime);
                   
                   const startHour = parseInt(startTime.split(':')[0] || '0');

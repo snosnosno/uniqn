@@ -36,17 +36,11 @@ export const useAttendanceMap = (
       const key = `${record.staffId}_${record.workLog.date}`;
       map.set(key, record);
       
-      // 하위 호환성을 위해 dealerId로도 접근 가능하도록 추가 키 생성
-      const workLogStaffId = record.workLog.staffId || record.workLog.dealerId;
+      // 하위 호환성을 위해 추가 키 생성 (이제 staffId 통합)
+      const workLogStaffId = record.workLog.staffId;
       if (workLogStaffId && workLogStaffId !== record.staffId) {
         const workLogKey = `${workLogStaffId}_${record.workLog.date}`;
         map.set(workLogKey, record);
-      }
-      
-      // @deprecated dealerId 호환성 유지
-      if (record.workLog.dealerId && record.workLog.dealerId !== record.staffId) {
-        const dealerKey = `${record.workLog.dealerId}_${record.workLog.date}`;
-        map.set(dealerKey, record);
       }
     });
     

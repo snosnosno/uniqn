@@ -205,8 +205,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               const newWorkLogData = {
                 eventId: eventId,
                 staffId: staff.id,
-                dealerId: staff.id, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
-                dealerName: staff.name,
+                staffName: staff.name,
                 date: dateString,
                 scheduledStartTime: updateData.scheduledStartTime || null,
                 scheduledEndTime: updateData.scheduledEndTime || null,
@@ -233,8 +232,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               const newWorkLogData = {
                 eventId: eventId,
                 staffId: staff.id,
-                dealerId: staff.id, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
-                dealerName: staff.name,
+                staffName: staff.name,
                 date: dateString,
                 scheduledStartTime: null,
                 scheduledEndTime: null,

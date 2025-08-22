@@ -289,8 +289,7 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     id: `virtual_${workLogId}`,
     eventId,
     staffId,
-    dealerId: staffId, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
-    dealerName: staffName,
+    staffName: staffName,
     role,  // 역할 추가
     date,
     scheduledStartTime: startTime || null,
@@ -326,8 +325,7 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
   return {
     eventId,
     staffId,
-    dealerId: staffId, // @deprecated - staffId 사용 권장. Firebase 컬렉션과의 하위 호환성을 위해 유지
-    dealerName: staffName,
+    staffName: staffName,
     ...(role && { role }),  // 역할이 있는 경우만 포함
     date,
     scheduledStartTime: scheduledStartTime || null,

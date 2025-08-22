@@ -7,9 +7,86 @@ import {
 import { logger } from './logger';
 
 /**
+ * Firebase Timestamp를 HH:mm 형식 문자열로 변환
+ * 모든 시간 데이터 변환에 사용되는 통합 함수
+ */
+export function parseTimeToString(timeValue: any): string | null {
+  if (!timeValue) return null;
+  
+  try {
+    let date: Date;
+    
+    // Firebase Timestamp 처리
+    if (typeof timeValue === 'object' && 'toDate' in timeValue && typeof timeValue.toDate === 'function') {
+      date = timeValue.toDate();
+    }
+    // seconds 속성을 가진 객체 처리
+    else if (typeof timeValue === 'object' && 'seconds' in timeValue) {
+      date = new Date(timeValue.seconds * 1000);
+    }
+    // Date 객체 처리
+    else if (timeValue instanceof Date) {
+      date = timeValue;
+    }
+    // ISO 문자열 처리
+    else if (typeof timeValue === 'string') {
+      // 이미 HH:mm 형식인 경우
+      if (/^\d{1,2}:\d{2}$/.test(timeValue)) {
+        return timeValue;
+      }
+      // ISO 문자열 파싱
+      date = new Date(timeValue);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+    }
+    else {
+      return null;
+    }
+    
+    // HH:mm 형식으로 반환
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  } catch (error) {
+    logger.error('시간 파싱 오류', error as Error, {
+      component: 'workLogMapper',
+      data: { timeValue }
+    });
+    return null;
+  }
+}
+
+/**
+ * HH:mm 문자열을 Firebase Timestamp로 변환
+ */
+export function parseTimeToTimestamp(timeStr: string, baseDate: string): Timestamp | null {
+  if (!timeStr || !baseDate) return null;
+  
+  try {
+    const timeParts = timeStr.split(':').map(Number);
+    if (timeParts.length !== 2) return null;
+    const [hours, minutes] = timeParts;
+    if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes)) return null;
+    
+    const [year, month, day] = baseDate.split('-').map(Number);
+    if (!year || !month || !day) return null;
+    const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    
+    if (isNaN(date.getTime())) return null;
+    
+    return Timestamp.fromDate(date);
+  } catch (error) {
+    logger.error('Timestamp 변환 오류', error as Error, {
+      component: 'workLogMapper',
+      data: { timeStr, baseDate }
+    });
+    return null;
+  }
+}
+
+/**
  * 레거시 WorkLog 데이터를 통합 형식으로 변환
- * @deprecated dealerId, userId → staffId (우선순위: staffId > dealerId > userId)
- * @deprecated jobPostingId → eventId
  */
 export function normalizeWorkLog(data: any): UnifiedWorkLog {
   try {
@@ -17,10 +94,8 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
     const normalized: UnifiedWorkLog = {
       id: data.id || '',
       
-      // staffId 통합
-      staffId: data.staffId || '',
-      
-      // eventId 통합 (우선순위: eventId > jobPostingId)
+      // 통합 필드 (레거시 호환)
+      staffId: data.staffId || data.dealerId || '',
       eventId: data.eventId || data.jobPostingId || '',
       
       // 스태프 정보 통합
@@ -73,36 +148,54 @@ export function normalizeWorkLogs(dataArray: any[]): UnifiedWorkLog[] {
 }
 
 /**
- * 통합 WorkLog를 레거시 형식으로 변환
- * @deprecated 이 함수는 더 이상 사용되지 않습니다
- */
-export function toLegacyFormat(workLog: UnifiedWorkLog): LegacyWorkLog {
-  return {
-    ...workLog,
-    dealerName: workLog.staffName,
-    jobPostingId: workLog.eventId
-  };
-}
-
-/**
- * WorkLog 생성 데이터 준비
+ * WorkLog 생성 데이터 준비 - 표준화된 필드만 사용
+ * 필수 필드 검증 포함
  */
 export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
+  // 필수 필드 검증
+  if (!input.staffId) {
+    throw new Error('staffId는 필수입니다');
+  }
+  if (!input.eventId) {
+    throw new Error('eventId는 필수입니다');
+  }
+  if (!input.date) {
+    throw new Error('date는 필수입니다');
+  }
+  if (!input.role) {
+    throw new Error('role은 필수입니다');
+  }
+  
   const now = Timestamp.now();
   
+  // 시간 데이터 표준화 - Timestamp로 통일
+  let scheduledStartTime = input.scheduledStartTime;
+  let scheduledEndTime = input.scheduledEndTime;
+  
+  // 문자열로 들어온 경우 Timestamp로 변환
+  if (typeof scheduledStartTime === 'string') {
+    scheduledStartTime = parseTimeToTimestamp(scheduledStartTime, input.date);
+  }
+  if (typeof scheduledEndTime === 'string') {
+    scheduledEndTime = parseTimeToTimestamp(scheduledEndTime, input.date);
+  }
+  
   return {
-    // 통합 필드
+    // 필수 필드
     staffId: input.staffId,
     eventId: input.eventId,
     staffName: input.staffName,
     date: input.date,
+    role: input.role,
     type: input.type || 'manual',
     
+    // 레거시 호환성 (곧 제거 예정)
+    jobPostingId: input.eventId,
     dealerName: input.staffName,
     
-    // 시간 정보
-    scheduledStartTime: input.scheduledStartTime || null,
-    scheduledEndTime: input.scheduledEndTime || null,
+    // 시간 정보 (Timestamp로 통일)
+    scheduledStartTime: scheduledStartTime || null,
+    scheduledEndTime: scheduledEndTime || null,
     actualStartTime: null,
     actualEndTime: null,
     
@@ -116,11 +209,11 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
     status: input.status || 'scheduled',
     
     // 메타데이터
-    role: input.role || '',
     tableAssignments: [],
     notes: '',
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
+    createdBy: input.staffId
   };
 }
 
@@ -133,52 +226,46 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
     updatedAt: Timestamp.now()
   };
   
+  // 시간 데이터 표준화
+  if (typeof prepared.scheduledStartTime === 'string' && updates.date) {
+    prepared.scheduledStartTime = parseTimeToTimestamp(prepared.scheduledStartTime, updates.date);
+  }
+  if (typeof prepared.scheduledEndTime === 'string' && updates.date) {
+    prepared.scheduledEndTime = parseTimeToTimestamp(prepared.scheduledEndTime, updates.date);
+  }
   
-  // staffName 변경 시 레거시 필드도 업데이트
+  // 레거시 호환성 (곧 제거 예정)
   if (updates.staffName) {
     prepared.dealerName = updates.staffName;
   }
-  
-  // eventId 변경 시 레거시 필드도 업데이트
   if (updates.eventId) {
     prepared.jobPostingId = updates.eventId;
   }
-  
   
   return prepared;
 }
 
 /**
- * 필드명 마이그레이션 체크
- * 레거시 필드만 있는 경우 true 반환
- */
-export function needsMigration(data: any): boolean {
-  // 통합 필드가 없고 레거시 필드만 있는 경우
-  const hasLegacyOnly = (
-    (!data.eventId && data.jobPostingId) ||
-    (!data.staffName && data.dealerName)
-  );
-  
-  return hasLegacyOnly;
-}
-
-/**
- * WorkLog 데이터 검증
+ * WorkLog 데이터 검증 - 엄격한 검증
  */
 export function validateWorkLog(data: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
   // 필수 필드 체크
   if (!data.staffId) {
-    errors.push('스태프 ID가 없습니다');
+    errors.push('staffId가 없습니다');
   }
   
-  if (!data.eventId && !data.jobPostingId) {
-    errors.push('이벤트/공고 ID가 없습니다');
+  if (!data.eventId) {
+    errors.push('eventId가 없습니다');
   }
   
   if (!data.date) {
-    errors.push('날짜가 없습니다');
+    errors.push('date가 없습니다');
+  }
+  
+  if (!data.role) {
+    errors.push('role이 없습니다');
   }
   
   // 날짜 형식 체크
@@ -193,280 +280,39 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
 }
 
 /**
- * 시간 계산 유틸리티
- * 정산 목적으로 scheduledStartTime/scheduledEndTime (예정시간)을 우선시
- * actualStartTime/actualEndTime는 출퇴근 기록용
+ * 근무 시간 계산 - 간소화된 버전
+ * scheduledStartTime/scheduledEndTime 우선 사용
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  // 정산탭에서는 스태프탭에서 설정한 예정시간을 우선 사용
-  const start = workLog.scheduledStartTime || workLog.actualStartTime;
-  const end = workLog.scheduledEndTime || workLog.actualEndTime;
+  // 예정 시간 우선 사용 (정산 기준)
+  const startTime = parseTimeToString(workLog.scheduledStartTime || workLog.actualStartTime);
+  const endTime = parseTimeToString(workLog.scheduledEndTime || workLog.actualEndTime);
   
-  console.log('🔥 CALCULATE WORK HOURS DEBUG:', {
-    workLogId: workLog.id,
-    staffId: workLog.staffId,
-    date: workLog.date,
-    role: workLog.role,
-    scheduledStartTimeRaw: workLog.scheduledStartTime,
-    scheduledEndTimeRaw: workLog.scheduledEndTime,
-    scheduledStartType: workLog.scheduledStartTime ? typeof workLog.scheduledStartTime : 'null',
-    scheduledEndType: workLog.scheduledEndTime ? typeof workLog.scheduledEndTime : 'null',
-    startUsed: start ? 'exists' : 'null',
-    endUsed: end ? 'exists' : 'null',
-    startSeconds: (start && typeof start === 'object' && 'seconds' in start) ? start.seconds : 'N/A',
-    endSeconds: (end && typeof end === 'object' && 'seconds' in end) ? end.seconds : 'N/A',
-    startToDate: (start && typeof start === 'object' && 'toDate' in start && typeof start.toDate === 'function') ? start.toDate().toLocaleString('ko-KR') : 'N/A',
-    endToDate: (end && typeof end === 'object' && 'toDate' in end && typeof end.toDate === 'function') ? end.toDate().toLocaleString('ko-KR') : 'N/A'
-  });
-  
-  logger.debug('calculateWorkHours - 입력 데이터 상세', {
-    component: 'workLogMapper',
-    data: {
-      workLogId: workLog.id,
-      staffId: workLog.staffId,
-      date: workLog.date,
-      hasScheduledStart: !!workLog.scheduledStartTime,
-      hasScheduledEnd: !!workLog.scheduledEndTime,
-      hasActualStart: !!workLog.actualStartTime,
-      hasActualEnd: !!workLog.actualEndTime,
-      startUsed: start ? 'exists' : 'null',
-      endUsed: end ? 'exists' : 'null',
-      startType: start ? typeof start : 'null',
-      endType: end ? typeof end : 'null',
-      scheduledStartTimeRaw: workLog.scheduledStartTime,
-      scheduledEndTimeRaw: workLog.scheduledEndTime,
-      // Timestamp 상세 정보 추가
-      startRaw: start,
-      endRaw: end,
-      startSeconds: (start && typeof start === 'object' && 'seconds' in start) ? start.seconds : 'N/A',
-      endSeconds: (end && typeof end === 'object' && 'seconds' in end) ? end.seconds : 'N/A'
-    }
-  });
-  
-  if (!start || !end) {
-    logger.warn('calculateWorkHours - 시작 또는 종료 시간이 없음', {
-      component: 'workLogMapper',
-      data: {
-        workLogId: workLog.id,
-        staffId: workLog.staffId,
-        date: workLog.date,
-        startExists: !!start,
-        endExists: !!end
-      }
-    });
+  if (!startTime || !endTime) {
     return 0;
   }
   
   try {
-    // Timestamp를 Date로 변환 - 더 안전한 체크
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
     
-    // start 처리 - Firebase Timestamp 먼저 확인
-    if (start && typeof start === 'object' && 'toDate' in start && typeof start.toDate === 'function') {
-      // Firebase Timestamp - KST 시간대 처리
-      try {
-        const tempDate = start.toDate();
-        // Firebase는 UTC로 저장하므로 KST로 변환 (+9시간)
-        // 하지만 toDate()가 이미 로컬 시간으로 변환하므로 getHours()는 KST 반환
-        const hours = tempDate.getHours();
-        const minutes = tempDate.getMinutes();
-        
-        // 디버깅: UTC와 KST 시간 모두 로그
-        console.log('🕐 Start Time Debug:', {
-          utcHours: tempDate.getUTCHours(),
-          utcMinutes: tempDate.getUTCMinutes(),
-          localHours: hours,
-          localMinutes: minutes,
-          isoString: tempDate.toISOString(),
-          localString: tempDate.toLocaleString('ko-KR')
-        });
-        
-        startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-        console.log('✅ Firebase Timestamp로 startDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
-      } catch (error) {
-        console.error('❌ Firebase Timestamp 변환 실패:', error);
-      }
-    } else if (start && typeof start === 'object' && 'seconds' in start && typeof (start as any).seconds === 'number') {
-      // Timestamp-like object with seconds
-      try {
-        const tempDate = new Date((start as any).seconds * 1000);
-        const hours = tempDate.getHours();
-        const minutes = tempDate.getMinutes();
-        
-        console.log('🕐 Start Time Debug (seconds):', {
-          utcHours: tempDate.getUTCHours(),
-          utcMinutes: tempDate.getUTCMinutes(),
-          localHours: hours,
-          localMinutes: minutes
-        });
-        
-        startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-        console.log('✅ seconds로 startDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
-      } catch (error) {
-        console.error('❌ seconds 변환 실패:', error);
-      }
-    } else if (typeof start === 'string') {
-      // 시간 문자열 (HH:mm 형식)
-      try {
-        const [hours, minutes] = start.split(':').map(Number);
-        startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-        console.log('✅ 문자열로 startDate 변환 성공:', start);
-      } catch (error) {
-        console.error('❌ 문자열 변환 실패:', error);
-      }
-    } else if (start instanceof Date) {
-      const hours = start.getHours();
-      const minutes = start.getMinutes();
-      startDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-      console.log('✅ Date 객체 변환 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
-    } else {
-      console.error('❌ start 타입을 인식할 수 없음:', typeof start, start);
+    let startTotalMinutes = (startHours || 0) * 60 + (startMinutes || 0);
+    let endTotalMinutes = (endHours || 0) * 60 + (endMinutes || 0);
+    
+    // 종료 시간이 시작 시간보다 이른 경우 (다음날)
+    if (endTotalMinutes < startTotalMinutes) {
+      endTotalMinutes += 24 * 60;
     }
     
-    // end 처리 - Firebase Timestamp 먼저 확인
-    if (end && typeof end === 'object' && 'toDate' in end && typeof end.toDate === 'function') {
-      // Firebase Timestamp - KST 시간대 처리
-      try {
-        const tempDate = end.toDate();
-        // Firebase는 UTC로 저장하므로 KST로 변환 (+9시간)
-        // 하지만 toDate()가 이미 로컬 시간으로 변환하므로 getHours()는 KST 반환
-        const hours = tempDate.getHours();
-        const minutes = tempDate.getMinutes();
-        
-        // 디버깅: UTC와 KST 시간 모두 로그
-        console.log('🕐 End Time Debug:', {
-          utcHours: tempDate.getUTCHours(),
-          utcMinutes: tempDate.getUTCMinutes(),
-          localHours: hours,
-          localMinutes: minutes,
-          isoString: tempDate.toISOString(),
-          localString: tempDate.toLocaleString('ko-KR')
-        });
-        
-        // 종료 시간이 시작 시간보다 이른 경우를 위해 날짜 조정
-        endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-        console.log('✅ Firebase Timestamp로 endDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
-      } catch (error) {
-        console.error('❌ Firebase Timestamp 변환 실패:', error);
-      }
-    } else if (end && typeof end === 'object' && 'seconds' in end && typeof (end as any).seconds === 'number') {
-      // Timestamp-like object with seconds
-      try {
-        const tempDate = new Date((end as any).seconds * 1000);
-        const hours = tempDate.getHours();
-        const minutes = tempDate.getMinutes();
-        
-        console.log('🕐 End Time Debug (seconds):', {
-          utcHours: tempDate.getUTCHours(),
-          utcMinutes: tempDate.getUTCMinutes(),
-          localHours: hours,
-          localMinutes: minutes
-        });
-        
-        endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-        console.log('✅ seconds로 endDate 변환 성공 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
-      } catch (error) {
-        console.error('❌ seconds 변환 실패:', error);
-      }
-    } else if (typeof end === 'string') {
-      // 시간 문자열 (HH:mm 형식)
-      try {
-        const [hours, minutes] = end.split(':').map(Number);
-        endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-        console.log('✅ 문자열로 endDate 변환 성공:', end);
-      } catch (error) {
-        console.error('❌ 문자열 변환 실패:', error);
-      }
-    } else if (end instanceof Date) {
-      const hours = end.getHours();
-      const minutes = end.getMinutes();
-      endDate = new Date(2000, 0, 1, hours, minutes, 0, 0);
-      console.log('✅ Date 객체 변환 (KST):', `${hours}:${minutes.toString().padStart(2, '0')}`);
-    } else {
-      console.error('❌ end 타입을 인식할 수 없음:', typeof end, end);
-    }
-    
-    console.log('🎯 최종 변환 결과:', {
-      startDate: startDate ? startDate.toISOString() : 'null',
-      endDate: endDate ? endDate.toISOString() : 'null',
-      startValid: startDate && !isNaN(startDate.getTime()),
-      endValid: endDate && !isNaN(endDate.getTime())
-    });
-    
-    if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-      let diffMs = endDate.getTime() - startDate.getTime();
-      
-      // 종료 시간이 시작 시간보다 이른 경우 (다음날로 간주)
-      if (diffMs < 0) {
-        // 24시간을 더함
-        diffMs += 24 * 60 * 60 * 1000;
-        console.log('🌙 다음날 근무로 처리, 24시간 추가');
-      }
-      
-      const hours = diffMs / (1000 * 60 * 60);
-      const finalHours = Math.round(hours * 100) / 100; // 소수점 2자리
-      
-      console.log('🎉 시간 계산 완료:', {
-        diffMs,
-        rawHours: hours,
-        finalHours,
-        workLogId: workLog.id
-      });
-      
-      logger.debug('calculateWorkHours - 최종 계산 결과', {
-        component: 'workLogMapper',
-        data: {
-          workLogId: workLog.id,
-          staffId: workLog.staffId,
-          date: workLog.date,
-          startDateString: startDate ? startDate.toISOString() : 'null',
-          endDateString: endDate ? endDate.toISOString() : 'null',
-          diffMs,
-          rawHours: hours,
-          finalHours
-        }
-      });
-      
-      // ✅ 정상적으로 계산된 경우 반환
-      console.log('✅ calculateWorkHours SUCCESS - returning:', finalHours);
-      return finalHours;
-    } else {
-      console.error('❌ Date 변환 실패 - 세부 진단:', {
-        startDate,
-        endDate,
-        startExists: !!startDate,
-        endExists: !!endDate,
-        startIsDate: startDate instanceof Date,
-        endIsDate: endDate instanceof Date,
-        startValid: startDate ? !isNaN(startDate.getTime()) : false,
-        endValid: endDate ? !isNaN(endDate.getTime()) : false,
-        startGetTime: startDate ? startDate.getTime() : 'N/A',
-        endGetTime: endDate ? endDate.getTime() : 'N/A'
-      });
-      
-      // 추가 디버깅: 원본 데이터 재확인
-      console.error('❌ 원본 Timestamp 재확인:', {
-        originalScheduledStartTime: workLog.scheduledStartTime,
-        originalScheduledEndTime: workLog.scheduledEndTime,
-        originalScheduledStartType: workLog.scheduledStartTime ? typeof workLog.scheduledStartTime : 'null',
-        originalScheduledEndType: workLog.scheduledEndTime ? typeof workLog.scheduledEndTime : 'null'
-      });
-    }
+    const totalMinutes = endTotalMinutes - startTotalMinutes;
+    return Math.round((totalMinutes / 60) * 100) / 100; // 소수점 2자리
   } catch (error) {
-    console.error('❌ calculateWorkHours 전체 에러:', error);
     logger.error('근무시간 계산 실패', error as Error, {
       component: 'workLogMapper',
-      data: {
-        workLogId: workLog.id,
-        scheduledStartTime: workLog.scheduledStartTime ? 'exists' : 'null',
-        scheduledEndTime: workLog.scheduledEndTime ? 'exists' : 'null'
-      }
+      data: { workLogId: workLog.id }
     });
+    return 0;
   }
-  
-  console.log('💥 최종적으로 0시간 반환됨');
-  return 0;
 }
 
 /**
@@ -498,4 +344,31 @@ export function filterWorkLogs(
   }
   
   return filtered;
+}
+
+/**
+ * 필드명 마이그레이션 체크
+ * @deprecated 레거시 호환성을 위해 유지, 곧 제거 예정
+ */
+export function needsMigration(data: any): boolean {
+  // 신규 필드가 없고 레거시 필드만 있는 경우
+  const hasLegacyOnly = (
+    (!data.eventId && data.jobPostingId) ||
+    (!data.staffId && data.dealerId) ||
+    (!data.staffName && data.dealerName)
+  );
+  
+  return hasLegacyOnly;
+}
+
+/**
+ * 통합 WorkLog를 레거시 형식으로 변환
+ * @deprecated 레거시 호환성을 위해 유지, 곧 제거 예정
+ */
+export function toLegacyFormat(workLog: UnifiedWorkLog): LegacyWorkLog {
+  return {
+    ...workLog,
+    dealerName: workLog.staffName,
+    jobPostingId: workLog.eventId
+  };
 }

@@ -16,8 +16,8 @@ export interface ShiftSchedule {
   startTime: string; // HH:MM 형식
   endTime: string; // HH:MM 형식
   scheduleData: {
-    [staffId: string]: { // staffId를 우선 사용, dealerId는 하위 호환성을 위해 유지
-      dealerName: string; // @deprecated - staffName 사용 권장
+    [staffId: string]: { // staffId를 표준으로 사용
+      staffName: string;
       startTime: string; // 개인별 출근시간
       assignments: { [timeSlot: string]: string }; // "Table1" | "Table2" | "휴식" | "대기"
     }
@@ -42,8 +42,7 @@ export interface WorkLog {
   eventId: string;
   date: string; // YYYY-MM-DD
   staffId: string;
-  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
-  dealerName: string;
+  staffName: string;
   type: 'schedule' | 'qr'; // 스케줄 기반 vs QR 실제 기록
   scheduledStartTime: string; // 스케줄상 출근시간
   scheduledEndTime: string; // 스케줄상 퇴근시간
@@ -159,8 +158,8 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
   // 딜러 추가
   const addDealer = useCallback(async (
-    staffId: string, // dealerId 대신 staffId 사용
-    dealerName: string,
+    staffId: string,
+    staffName: string,
     startTime: string = '09:00'
   ) => {
     if (!scheduleId) return;
@@ -168,7 +167,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
     try {
       const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
       const dealerData = {
-        dealerName,
+        staffName,
         startTime,
         assignments: {},
       };
@@ -254,7 +253,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
     const dealerSchedules: DealerSchedule[] = dealers.map(dealer => ({
       id: dealer.id,
-      dealerName: dealer.dealerName,
+      staffName: dealer.staffName,
       startTime: dealer.startTime,
       assignments: dealer.assignments,
     }));
@@ -275,7 +274,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
     const dealerSchedules: DealerSchedule[] = dealers.map(dealer => ({
       id: dealer.id,
-      dealerName: dealer.dealerName,
+      staffName: dealer.staffName,
       startTime: dealer.startTime,
       assignments: dealer.assignments,
     }));
@@ -300,8 +299,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
       // 각 딜러별로 근무기록 생성
       for (const dealer of dealers) {
-        const { id: staffId, dealerName, startTime: dealerStartTime, assignments } = dealer;
-        const dealerId = staffId; // 레거시 호환성을 위해 dealerId 변수 유지
+        const { id: staffId, staffName, startTime: dealerStartTime, assignments } = dealer;
         
         // 시간 슬롯별 할당 데이터 분석
         let totalWorkMinutes = 0;
@@ -336,8 +334,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
           eventId,
           date,
           staffId,
-          dealerId, // @deprecated - 하위 호환성을 위해 유지
-          dealerName,
+          staffName,
           type: 'schedule',
           scheduledStartTime,
           scheduledEndTime,

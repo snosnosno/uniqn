@@ -10,7 +10,7 @@ import { ValidationResult, ValidationViolation } from '../../utils/shiftValidati
 
 interface GridRow {
   id: string;
-  dealerName: string;
+  staffName: string;
   startTime: string;
   [timeSlot: string]: string;
 }
@@ -18,7 +18,7 @@ interface GridRow {
 interface LightweightDataGridProps {
   dealers: Array<{
     id: string;
-    dealerName: string;
+    staffName: string;
     startTime: string;
     assignments: { [timeSlot: string]: string };
   }>;
@@ -29,7 +29,7 @@ interface LightweightDataGridProps {
     tableNumber: number;
     status?: 'open' | 'closed' | 'standby';
   }>;
-  onCellChange: (dealerId: string, timeSlot: string, value: string) => void;
+  onCellChange: (staffId: string, timeSlot: string, value: string) => void;
   validationResult?: ValidationResult | null;
   readonly?: boolean;
   height?: number;
@@ -38,7 +38,7 @@ interface LightweightDataGridProps {
 // 검증 결과에 따른 셀 스타일 결정
 const getCellStyle = (
   value: string,
-  dealerId: string,
+  staffId: string,
   timeSlot: string,
   validationResult?: ValidationResult | null
 ): string => {
@@ -53,12 +53,12 @@ const getCellStyle = (
   // 검증 오류가 있는 경우 경고 스타일 추가
   if (validationResult?.violations) {
     const hasError = validationResult.violations.some(
-      violation => violation.dealerId === dealerId && 
+      violation => violation.dealerId === staffId && 
                   violation.timeSlot === timeSlot && 
                   violation.severity === 'error'
     );
     const hasWarning = validationResult.violations.some(
-      violation => violation.dealerId === dealerId && 
+      violation => violation.dealerId === staffId && 
                   violation.timeSlot === timeSlot && 
                   violation.severity === 'warning'
     );
@@ -83,11 +83,11 @@ const getCellIcon = (value: string) => {
 // 검증 위반 사항 툴팁 컴포넌트
 const ValidationTooltip: React.FC<{
   violations: ValidationViolation[];
-  dealerId: string;
+  staffId: string;
   timeSlot: string;
-}> = ({ violations, dealerId, timeSlot }) => {
+}> = ({ violations, staffId, timeSlot }) => {
   const relevantViolations = violations.filter(
-    v => v.dealerId === dealerId && v.timeSlot === timeSlot
+    v => v.dealerId === staffId && v.timeSlot === timeSlot
   );
 
   if (relevantViolations.length === 0) return null;
@@ -181,7 +181,7 @@ const TableCell: React.FC<{
   _readonly: boolean | undefined;
   tables: any[];
   onCellClick: () => void;
-  onCellChange: (dealerId: string, timeSlot: string, value: string) => void;
+  onCellChange: (staffId: string, timeSlot: string, value: string) => void;
   setEditingCell: (cell: { rowId: string; columnId: string } | null) => void;
 }> = ({ 
   value, 
@@ -229,7 +229,7 @@ const TableCell: React.FC<{
       {showTooltip && hasViolations && validationResult?.violations && (
         <ValidationTooltip 
           violations={validationResult.violations}
-          dealerId={rowId}
+          staffId={rowId}
           timeSlot={timeSlot}
         />
       )}
@@ -308,7 +308,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
     return dealers.map(dealer => {
       const row: GridRow = {
         id: dealer.id,
-        dealerName: dealer.dealerName,
+        staffName: dealer.staffName,
         startTime: dealer.startTime,
       };
       
@@ -333,7 +333,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
           <div className="flex items-center gap-2 px-2 py-1">
             <UserIcon className="w-3 h-3 text-gray-600" />
             <div>
-              <div className="text-sm font-medium text-gray-800">{row.original.dealerName}</div>
+              <div className="text-sm font-medium text-gray-800">{row.original.staffName}</div>
               <div className="text-xs text-gray-500">출근: {row.original.startTime}</div>
             </div>
           </div>

@@ -199,8 +199,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         const newWorkLogData = {
           eventId: eventId || 'default-event',
           staffId: actualStaffId,
-          dealerId: actualStaffId, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
-          dealerName: staffName || 'Unknown',
+          staffName: staffName || 'Unknown',
           date: date,
           status: newStatus,
           scheduledStartTime: null as Timestamp | null,
@@ -284,8 +283,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
             const newWorkLogData = {
               eventId: extractedEventId,
               staffId: extractedStaffId,
-              dealerId: extractedStaffId, // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
-              dealerName: staffName || 'Unknown',
+              staffName: staffName || 'Unknown',
               date: extractedDate,
               status: newStatus,
               scheduledStartTime: null as Timestamp | null,
