@@ -201,7 +201,7 @@ const JobBoardPage = () => {
             onClose={() => setIsPreQuestionModalOpen(false)}
             onComplete={handlePreQuestionComplete}
             questions={selectedPost.preQuestions}
-            jobPostingId={selectedPost.id}
+            eventId={selectedPost.id}
             {...(preQuestionAnswers.get(selectedPost.id) && {
               existingAnswers: preQuestionAnswers.get(selectedPost.id)
             })}

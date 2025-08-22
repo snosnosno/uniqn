@@ -84,8 +84,7 @@ export interface Staff extends FirebaseDocument {
  * WorkLog 타입 (공통 버전)
  * @description 기본 WorkLog 타입입니다. 더 자세한 기능은 types/attendance.ts 또는 types/unified/workLog.ts를 참조하세요.
  * 
- * 필드 우선순위:
- * - staffId (표준) → dealerId (fallback)
+ * 표준 필드: staffId 사용
  * 
  * @see types/attendance.ts - 출석 관련 확장 WorkLog
  * @see types/unified/workLog.ts - 통합 WorkLog (권장)
@@ -94,11 +93,6 @@ export interface WorkLog extends FirebaseDocument {
   /** 스태프 ID (표준 필드) */
   staffId: string;
   
-  /** 
-   * @deprecated dealerId는 staffId로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 staffId를 사용하세요.
-   */
-  dealerId?: string;
   
   /** 근무 날짜 (YYYY-MM-DD 형식) */
   date: string;
@@ -126,8 +120,7 @@ export interface WorkLog extends FirebaseDocument {
  * 출석 기록 타입 (공통 버전)
  * @description 기본 AttendanceRecord 타입입니다. 더 자세한 기능은 types/attendance.ts를 참조하세요.
  * 
- * 필드 우선순위:
- * - staffId (표준) → dealerId (fallback)
+ * 표준 필드: staffId 사용
  * - actualStartTime/EndTime (표준) → checkInTime/checkOutTime (fallback)
  * 
  * @see types/attendance.ts - 완전한 AttendanceRecord 정의
@@ -136,11 +129,6 @@ export interface AttendanceRecord extends FirebaseDocument {
   /** 스태프 ID (표준 필드) */
   staffId: string;
   
-  /** 
-   * @deprecated dealerId는 staffId로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 staffId를 사용하세요.
-   */
-  dealerId?: string;
   
   /** 출석 날짜 (YYYY-MM-DD 형식) */
   date: string;
@@ -189,8 +177,7 @@ export interface Participant extends FirebaseDocument {
  * 테이블 타입
  * @description 토너먼트 테이블 정보를 저장합니다.
  * 
- * 필드 우선순위:
- * - staffId (표준) → dealerId (fallback)
+ * 표준 필드: staffId 사용
  */
 export interface Table extends FirebaseDocument {
   /** 테이블 번호 */
@@ -205,11 +192,6 @@ export interface Table extends FirebaseDocument {
   /** 담당 스태프 ID (표준 필드) */
   staffId?: string;
   
-  /** 
-   * @deprecated dealerId는 staffId로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 staffId를 사용하세요.
-   */
-  dealerId?: string;
   
   /** 테이블 상태 */
   status: 'active' | 'inactive' | 'break';
@@ -289,13 +271,13 @@ export interface User extends FirebaseDocument {
  * 
  * 주요 표준화 원칙:
  * 1. 모든 Firebase 문서는 FirebaseDocument를 상속받습니다.
- * 2. staffId를 표준 식별자로 사용합니다 (dealerId는 deprecated).
+ * 2. staffId를 표준 식별자로 사용합니다.
  * 3. 시간 관련 필드는 명확한 의미를 가집니다 (scheduled, actual 구분).
  * 4. 모든 필드는 명확한 JSDoc 주석을 가집니다.
  * 
  * 필드 매핑 규칙:
- * - staffId (표준) ← dealerId (deprecated)
- * - scheduledStartTime/EndTime (표준) ← assignedTime (deprecated)
+ * - staffId (표준 필드)
+ * - scheduledStartTime/EndTime (표준 시간 필드)
  * - actualStartTime/EndTime (표준) ← checkInTime/checkOutTime (deprecated)
  * 
  * 사용 예시:
@@ -323,8 +305,8 @@ export interface User extends FirebaseDocument {
  *   updatedAt: Timestamp.now()
  * };
  * 
- * // 호환성을 위한 fallback 처리
- * const staffId = workLog.staffId || workLog.dealerId;
+ * // staffId 사용 예시
+ * const staffId = workLog.staffId;
  * ```
  * 
  * 타입 확장 가이드:

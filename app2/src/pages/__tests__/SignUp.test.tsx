@@ -141,12 +141,13 @@ describe('SignUp Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('signUp.errorMessage')).toBeInTheDocument();
-      expect(logger.error).toHaveBeenCalledWith(
-        'Registration error:',
-        error,
-        { component: 'SignUp' }
-      );
     });
+    
+    expect(logger.error).toHaveBeenCalledWith(
+      'Registration error:',
+      error,
+      { component: 'SignUp' }
+    );
   });
 
   test('handles Google sign-in', async () => {
@@ -158,8 +159,9 @@ describe('SignUp Component', () => {
 
     await waitFor(() => {
       expect(mockSignInWithGoogle).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
+    
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   test('handles Google sign-in error', async () => {
@@ -172,12 +174,13 @@ describe('SignUp Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('googleSignIn.error')).toBeInTheDocument();
-      expect(logger.error).toHaveBeenCalledWith(
-        'Google Sign-In Error:',
-        error,
-        { component: 'SignUp' }
-      );
     });
+    
+    expect(logger.error).toHaveBeenCalledWith(
+      'Google Sign-In Error:',
+      error,
+      { component: 'SignUp' }
+    );
   });
 
   test('role selection works correctly', () => {

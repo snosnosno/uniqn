@@ -78,9 +78,10 @@ describe('AttendanceStatusPopover', () => {
 
     await waitFor(() => {
       expect(updateDoc).toHaveBeenCalled();
-      expect(defaultProps.onStatusChange).toHaveBeenCalledWith('checked_in');
-      expect(defaultProps.applyOptimisticUpdate).toHaveBeenCalledWith('work-log-1', 'checked_in');
     });
+    
+    expect(defaultProps.onStatusChange).toHaveBeenCalledWith('checked_in');
+    expect(defaultProps.applyOptimisticUpdate).toHaveBeenCalledWith('work-log-1', 'checked_in');
   });
 
   test('출근 상태로 변경 시 actualStartTime이 설정되어야 함', async () => {

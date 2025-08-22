@@ -19,7 +19,6 @@ interface WorkLogWithTimestamp {
   id: string;
   eventId: string;
   staffId: string;
-  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   date: string;
   scheduledStartTime: Timestamp | Date | null;
   scheduledEndTime: Timestamp | Date | null;
@@ -134,7 +133,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         
         // 통합 시스템 사용
-        const staffId = workLog.staffId || (workLog as any).dealerId || '';
+        const staffId = workLog.staffId || '';
         
         // 가상 WorkLog 저장 시 시간 값 우선순위:
         // 1. UI에 표시된 값 (startTime/endTime) - 이미 스태프탭에서 설정된 값
@@ -248,24 +247,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         
         // updatePayload에 값이 있는 경우에만 업데이트 수행
         if (Object.keys(updatePayload).length > 0) {
-          // Firebase에 전달되는 실제 데이터 로깅
-          console.log('🔥 Firebase에 저장될 updatePayload:', {
-            scheduledStartTime: updatePayload.scheduledStartTime,
-            scheduledEndTime: updatePayload.scheduledEndTime,
-            startTimeSeconds: updatePayload.scheduledStartTime?.seconds,
-            endTimeSeconds: updatePayload.scheduledEndTime?.seconds,
-            startTimeDate: updatePayload.scheduledStartTime?.toDate?.(),
-            endTimeDate: updatePayload.scheduledEndTime?.toDate?.()
-          });
-          
           const updateData = prepareWorkLogForUpdate(updatePayload);
-          
-          console.log('🔥 prepareWorkLogForUpdate 후 데이터:', {
-            scheduledStartTime: updateData.scheduledStartTime,
-            scheduledEndTime: updateData.scheduledEndTime,
-            startTimeSeconds: updateData.scheduledStartTime?.seconds,
-            endTimeSeconds: updateData.scheduledEndTime?.seconds
-          });
           
           await updateDoc(workLogRef, updateData);
           
@@ -307,16 +289,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
       if (docSnap.exists()) {
         const data = docSnap.data();
-        
-        console.log('🔥 Firebase에서 다시 가져온 데이터:', {
-          id: finalWorkLogId,
-          scheduledStartTime: data.scheduledStartTime,
-          scheduledEndTime: data.scheduledEndTime,
-          startTimeSeconds: data.scheduledStartTime?.seconds,
-          endTimeSeconds: data.scheduledEndTime?.seconds,
-          startTimeDate: data.scheduledStartTime?.toDate?.(),
-          endTimeDate: data.scheduledEndTime?.toDate?.()
-        });
         
         // UI 업데이트 - 정산 목적으로 예정시간 우선 표시
         const actualStartTimeString = parseTimeToString(data.actualStartTime);

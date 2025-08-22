@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, formatRoleSalaryDisplay, getRoleDisplayName, getSalaryTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, getRoleDisplayName, getSalaryTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 
 interface JobPostingDetailContentProps {

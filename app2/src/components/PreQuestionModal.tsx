@@ -11,7 +11,7 @@ interface PreQuestionModalProps {
   onClose: () => void;
   onComplete: (answers: PreQuestionAnswer[]) => void;
   questions: PreQuestion[];
-  jobPostingId?: string;
+  eventId?: string;
   existingAnswers?: PreQuestionAnswer[] | undefined;
 }
 
@@ -20,7 +20,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   onClose,
   onComplete,
   questions,
-  jobPostingId,
+  eventId,
   existingAnswers
 }) => {
   const { t } = useTranslation();
@@ -32,8 +32,8 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   
   // localStorage 키 생성
   const getStorageKey = useCallback(() => {
-    return `preQuestionAnswers_${jobPostingId || 'default'}`;
-  }, [jobPostingId]);
+    return `preQuestionAnswers_${eventId || 'default'}`;
+  }, [eventId]);
 
   // 초기화 시 기존 답변 또는 localStorage에서 답변 복원
   useEffect(() => {
@@ -58,14 +58,14 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
         }
       }
     }
-  }, [isOpen, questions, jobPostingId, existingAnswers, getStorageKey]);
+  }, [isOpen, questions, eventId, existingAnswers, getStorageKey]);
 
   // 답변 변경 시 localStorage에 자동 저장
   useEffect(() => {
     if (Object.keys(answers).length > 0) {
       localStorage.setItem(getStorageKey(), JSON.stringify(answers));
     }
-  }, [answers, jobPostingId, getStorageKey]); // getStorageKey 추가
+  }, [answers, eventId, getStorageKey]); // getStorageKey 추가
 
   // 답변 업데이트 핸들러
   const handleAnswerChange = (questionId: string, value: string) => {

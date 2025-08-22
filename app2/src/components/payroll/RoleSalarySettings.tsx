@@ -2,7 +2,6 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { JobPosting } from '../../types/jobPosting';
 import { RoleSalaryConfig } from '../../types/payroll';
-import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 
 interface RoleSalarySettingsProps {

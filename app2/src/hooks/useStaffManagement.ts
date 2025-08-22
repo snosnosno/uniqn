@@ -60,7 +60,7 @@ interface GroupedStaffData {
 }
 
 interface UseStaffManagementOptions {
-  jobPostingId?: string;
+  eventId?: string;
   enableFiltering?: boolean;
 }
 
@@ -101,7 +101,7 @@ export const useStaffManagement = (
   options: UseStaffManagementOptions = {}
 ): UseStaffManagementReturn => {
   const { 
-    jobPostingId, 
+    eventId, 
     enableFiltering = true 
   } = options;
   
@@ -139,7 +139,7 @@ export const useStaffManagement = (
   
   // 스태프 데이터 실시간 구독
   useEffect(() => {
-    if (!currentUser || !jobPostingId) {
+    if (!currentUser || !eventId) {
       setLoading(false);
       return;
     }
@@ -153,7 +153,7 @@ export const useStaffManagement = (
       collection(db, 'persons'), 
       where('type', 'in', ['staff', 'both']),
       where('managerId', '==', currentUser.uid),
-      where('postingId', '==', jobPostingId)
+      where('postingId', '==', eventId)
     );
 
     const unsubscribe = onSnapshot(
@@ -243,7 +243,7 @@ export const useStaffManagement = (
     return () => {
       unsubscribe();
     };
-  }, [currentUser, jobPostingId]); // groupByDate는 데이터 구독에 영향을 주지 않으므로 제외
+  }, [currentUser, eventId]); // groupByDate는 데이터 구독에 영향을 주지 않으므로 제외
 
   // workLogs 데이터 처리 (이제 context에서 가져옴)
   useEffect(() => {
@@ -279,8 +279,8 @@ export const useStaffManagement = (
 
   // localStorage에서 확장 상태 복원
   useEffect(() => {
-    if (jobPostingId) {
-      const savedExpanded = localStorage.getItem(`staffManagement-${jobPostingId}-expandedDates`);
+    if (eventId) {
+      const savedExpanded = localStorage.getItem(`staffManagement-${eventId}-expandedDates`);
       if (savedExpanded) {
         try {
           const expandedArray = JSON.parse(savedExpanded);
@@ -290,7 +290,7 @@ export const useStaffManagement = (
         }
       }
     }
-  }, [jobPostingId]);
+  }, [eventId]);
 
   // 메모이제이션된 날짜별 그룹화 토글
   const toggleDateExpansion = useCallback((date: string) => {
@@ -303,10 +303,10 @@ export const useStaffManagement = (
     setExpandedDates(newExpandedDates);
     
     // localStorage에 상태 저장
-    if (jobPostingId) {
-      localStorage.setItem(`staffManagement-${jobPostingId}-expandedDates`, JSON.stringify(Array.from(newExpandedDates)));
+    if (eventId) {
+      localStorage.setItem(`staffManagement-${eventId}-expandedDates`, JSON.stringify(Array.from(newExpandedDates)));
     }
-  }, [expandedDates, jobPostingId]);
+  }, [expandedDates, eventId]);
   
   // 메모이제이션된 시간 정보 포맷팅
   const formatTimeDisplay = useCallback((time: string | undefined): string => {

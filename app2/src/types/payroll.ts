@@ -182,7 +182,7 @@ export interface PayrollSummary {
  * 정산 필터 옵션
  */
 export interface PayrollFilters {
-  jobPostingId?: string;
+  eventId?: string;
   startDate?: string;
   endDate?: string;
   staffIds?: string[];

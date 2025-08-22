@@ -15,7 +15,7 @@ export interface Applicant {
   assignedDate?: string; // yyyy-MM-dd format - 확정된 스태프 할당 날짜
   createdAt: Timestamp; // Firebase Timestamp
   status: 'pending' | 'confirmed' | 'rejected';
-  jobPostingId: string;
+  eventId: string;
   additionalInfo?: string;
   
   // 다중 선택 지원을 위한 새로운 필드들 (하위 호환성을 위해 선택적)

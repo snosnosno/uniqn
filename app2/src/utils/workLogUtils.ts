@@ -190,17 +190,9 @@ export const convertAssignedTimeToScheduled = (
   assignedTime: string | null | undefined, 
   baseDate: string | null | undefined
 ): { scheduledStartTime: Timestamp | null; scheduledEndTime: Timestamp | null } => {
-  // 디버깅 로그 추가
-  console.log('[convertAssignedTimeToScheduled] Input:', {
-    assignedTime,
-    assignedTimeType: typeof assignedTime,
-    baseDate,
-    baseDateType: typeof baseDate
-  });
   
   // 입력값 검증
   if (!assignedTime || assignedTime === '미정') {
-    console.log('[convertAssignedTimeToScheduled] Returning null - no assignedTime or 미정');
     return { scheduledStartTime: null, scheduledEndTime: null };
   }
   
@@ -208,17 +200,10 @@ export const convertAssignedTimeToScheduled = (
   const validBaseDate = baseDate || new Date().toISOString().split('T')[0];
   
   const { startTime, endTime } = parseAssignedTime(assignedTime);
-  console.log('[convertAssignedTimeToScheduled] Parsed times:', { startTime, endTime });
   
   const scheduledStartTime = startTime && validBaseDate ? convertTimeToTimestamp(startTime, validBaseDate) : null;
   let scheduledEndTime = endTime && validBaseDate ? convertTimeToTimestamp(endTime, validBaseDate) : null;
   
-  console.log('[convertAssignedTimeToScheduled] Converted to Timestamp:', {
-    scheduledStartTime: scheduledStartTime ? 'Timestamp object' : 'null',
-    scheduledEndTime: scheduledEndTime ? 'Timestamp object' : 'null',
-    startTimeSeconds: scheduledStartTime ? (scheduledStartTime as any).seconds : 'N/A',
-    endTimeSeconds: scheduledEndTime ? (scheduledEndTime as any).seconds : 'N/A'
-  });
   
   // 종료 시간이 시작 시간보다 이른 경우 다음날로 조정
   if (scheduledStartTime && scheduledEndTime && startTime && endTime) {
@@ -249,16 +234,6 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
     status = 'not_started'
   } = params;
   
-  // 디버깅: 입력 파라미터 상세 로그
-  console.log('[createVirtualWorkLog] Creating virtual WorkLog:', {
-    staffId,
-    staffName,
-    date,
-    assignedTime,
-    assignedTimeType: typeof assignedTime,
-    scheduledStartTime: scheduledStartTime ? 'provided' : 'null',
-    scheduledEndTime: scheduledEndTime ? 'provided' : 'null'
-  });
 
   const workLogId = generateWorkLogId(eventId, staffId, date);
   
@@ -269,21 +244,11 @@ export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
   if (!startTime && assignedTime && assignedTime !== '미정') {
     const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } = 
       convertAssignedTimeToScheduled(assignedTime, date);
-    console.log('[createVirtualWorkLog] Converted from assignedTime:', {
-      assignedTime,
-      convertedStart: convertedStart ? 'Timestamp object' : 'null',
-      convertedEnd: convertedEnd ? 'Timestamp object' : 'null'
-    });
     startTime = convertedStart;
     if (!endTime) {
       endTime = convertedEnd;
     }
   }
-  
-  console.log('[createVirtualWorkLog] Final times:', {
-    startTime: startTime ? 'set' : 'null',
-    endTime: endTime ? 'set' : 'null'
-  });
 
   return {
     id: `virtual_${workLogId}`,

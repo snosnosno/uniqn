@@ -21,7 +21,6 @@ export interface Table {
   tableNumber: number;
   players: Participant[];
   staffId?: string;
-  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
 }
 
 export interface BlindLevel {

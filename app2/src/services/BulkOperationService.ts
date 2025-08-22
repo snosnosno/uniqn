@@ -1,7 +1,7 @@
 import { writeBatch, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
-import { generateWorkLogId, createWorkLogData } from '../utils/workLogUtils';
+import { createWorkLogId, createWorkLog, SimpleWorkLogInput } from '../utils/workLogSimplified';
 
 interface StaffInfo {
   id: string;
@@ -37,7 +37,7 @@ export class BulkOperationService {
       for (const staff of staffList) {
         try {
           const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
-          const workLogId = staff.workLogId || generateWorkLogId(eventId, staff.id, dateString as string);
+          const workLogId = staff.workLogId || createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 
           const updateData: any = {
@@ -53,15 +53,28 @@ export class BulkOperationService {
 
           // workLog가 없는 경우 새로 생성
           if (!staff.workLogId || staff.workLogId.startsWith('virtual_')) {
-            const newWorkLogData = createWorkLogData({
+            // 시간을 HH:mm 형식으로 변환
+            let timeSlot: string | null = null;
+            if (startTime && endTime) {
+              const startHours = startTime.toDate().getHours();
+              const startMinutes = startTime.toDate().getMinutes();
+              const endHours = endTime.toDate().getHours();
+              const endMinutes = endTime.toDate().getMinutes();
+              const startStr = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
+              const endStr = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+              timeSlot = `${startStr}-${endStr}`;
+            }
+            
+            const workLogInput: SimpleWorkLogInput = {
               eventId,
               staffId: staff.id,
               staffName: staff.name,
-              ...(staff.role && { role: staff.role }),  // 역할이 있는 경우만 포함
+              role: staff.role || '',
               date: dateString as string,
-              scheduledStartTime: startTime,
-              scheduledEndTime: endTime
-            });
+              timeSlot
+            };
+            
+            const newWorkLogData = createWorkLog(workLogInput);
             batch.set(workLogRef, newWorkLogData);
           } else {
             batch.update(workLogRef, updateData);
@@ -113,7 +126,7 @@ export class BulkOperationService {
       for (const staff of staffList) {
         try {
           const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
-          const workLogId = generateWorkLogId(eventId, staff.id, dateString as string);
+          const workLogId = createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 
           const updateData: any = {
@@ -123,14 +136,16 @@ export class BulkOperationService {
 
           // workLog가 없는 경우 새로 생성
           if (!staff.workLogId || staff.workLogId.startsWith('virtual_')) {
-            const newWorkLogData = createWorkLogData({
+            const workLogInput: SimpleWorkLogInput = {
               eventId,
               staffId: staff.id,
               staffName: staff.name,
-              ...(staff.role && { role: staff.role }),  // 역할이 있는 경우만 포함
+              role: staff.role || '',
               date: dateString as string,
-              status
-            });
+              status: status as 'scheduled' | 'checked_in' | 'completed' | 'absent'
+            };
+            
+            const newWorkLogData = createWorkLog(workLogInput);
             batch.set(workLogRef, newWorkLogData);
           } else {
             batch.update(workLogRef, updateData);

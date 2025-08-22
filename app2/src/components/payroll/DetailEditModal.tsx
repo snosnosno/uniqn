@@ -33,9 +33,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   const [activeTab, setActiveTab] = useState<'basic' | 'work' | 'calculation'>('basic');
 
   // 실시간 WorkLog 데이터 조회
-  const { jobPostingId } = useJobPostingStore();
+  const { eventId } = useJobPostingStore();
   const { workLogs: realTimeWorkLogs } = useUnifiedWorkLogs({ 
-    filter: { eventId: jobPostingId || '' },
+    filter: { eventId: eventId || '' },
     realtime: true,
     autoNormalize: true
   });

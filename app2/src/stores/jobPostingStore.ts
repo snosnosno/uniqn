@@ -10,7 +10,7 @@ import { logger } from '../utils/logger';
 
 interface JobPostingState {
   // 상태
-  jobPostingId: string | null;
+  eventId: string | null;
   jobPosting: JobPosting | null;
   loading: boolean;
   error: string | null;
@@ -25,7 +25,7 @@ interface JobPostingState {
   };
   
   // 액션
-  setJobPostingId: (id: string | null) => void;
+  setEventId: (id: string | null) => void;
   refreshJobPosting: () => Promise<void>;
   refreshApplicants: () => Promise<void>;
   refreshStaff: () => Promise<void>;
@@ -37,7 +37,7 @@ export const useJobPostingStore = create<JobPostingState>()(
     subscribeWithSelector(
       (set, get) => ({
         // 초기 상태
-        jobPostingId: null,
+        eventId: null,
         jobPosting: null,
         loading: true,
         error: null,
@@ -46,11 +46,11 @@ export const useJobPostingStore = create<JobPostingState>()(
         unsubscribers: {},
         
         // 액션
-        setJobPostingId: (id) => {
+        setEventId: (id) => {
           const state = get();
           
           // 같은 ID면 무시
-          if (state.jobPostingId === id) return;
+          if (state.eventId === id) return;
           
           // 이전 구독만 해제 (상태는 초기화하지 않음)
           Object.values(state.unsubscribers).forEach(unsubscribe => {
@@ -58,7 +58,7 @@ export const useJobPostingStore = create<JobPostingState>()(
           });
           
           set({ 
-            jobPostingId: id, 
+            eventId: id, 
             loading: true, 
             error: null,
             unsubscribers: {} 
@@ -83,7 +83,7 @@ export const useJobPostingStore = create<JobPostingState>()(
                   logger.debug('confirmedStaff가 문서 필드로 존재', {
                     component: 'jobPostingStore',
                     data: {
-                      jobPostingId: id,
+                      eventId: id,
                       confirmedStaffCount: data.confirmedStaff.length,
                       confirmedStaff: data.confirmedStaff
                     }
@@ -105,7 +105,7 @@ export const useJobPostingStore = create<JobPostingState>()(
                       logger.debug('confirmedStaff 서브컬렉션에서 로드', {
                         component: 'jobPostingStore',
                         data: {
-                          jobPostingId: id,
+                          eventId: id,
                           confirmedStaffCount: confirmedStaffList.length
                         }
                       });
@@ -114,7 +114,7 @@ export const useJobPostingStore = create<JobPostingState>()(
                       jobPostingData.confirmedStaff = [];
                       logger.debug('confirmedStaff가 없음', {
                         component: 'jobPostingStore',
-                        data: { jobPostingId: id }
+                        data: { eventId: id }
                       });
                     }
                   } catch (error) {
@@ -122,7 +122,7 @@ export const useJobPostingStore = create<JobPostingState>()(
                     logger.warn('confirmedStaff 서브컬렉션 접근 실패, 필드 데이터 사용', {
                       component: 'jobPostingStore',
                       data: { 
-                        jobPostingId: id,
+                        eventId: id,
                         error: error instanceof Error ? error.message : String(error)
                       }
                     });
@@ -165,11 +165,11 @@ export const useJobPostingStore = create<JobPostingState>()(
         },
         
         refreshJobPosting: async () => {
-          const { jobPostingId } = get();
-          if (!jobPostingId) return;
+          const { eventId } = get();
+          if (!eventId) return;
           
           try {
-            const jobPostingRef = doc(db, 'jobPostings', jobPostingId);
+            const jobPostingRef = doc(db, 'jobPostings', eventId);
             const docSnap = await getDoc(jobPostingRef);
             
             if (docSnap.exists()) {
@@ -181,14 +181,14 @@ export const useJobPostingStore = create<JobPostingState>()(
                 logger.debug('refreshJobPosting - confirmedStaff가 문서 필드로 존재', {
                   component: 'jobPostingStore',
                   data: {
-                    jobPostingId,
+                    eventId,
                     confirmedStaffCount: data.confirmedStaff.length
                   }
                 });
               } else {
                 // 서브컬렉션 시도
                 try {
-                  const confirmedStaffRef = collection(db, 'jobPostings', jobPostingId, 'confirmedStaff');
+                  const confirmedStaffRef = collection(db, 'jobPostings', eventId, 'confirmedStaff');
                   const confirmedStaffSnapshot = await getDocs(confirmedStaffRef);
                   
                   if (!confirmedStaffSnapshot.empty) {
@@ -201,7 +201,7 @@ export const useJobPostingStore = create<JobPostingState>()(
                     logger.debug('refreshJobPosting - confirmedStaff 서브컬렉션에서 로드', {
                       component: 'jobPostingStore',
                       data: {
-                        jobPostingId,
+                        eventId,
                         confirmedStaffCount: confirmedStaffList.length
                       }
                     });
@@ -212,7 +212,7 @@ export const useJobPostingStore = create<JobPostingState>()(
                   logger.warn('refreshJobPosting - confirmedStaff 접근 실패', {
                     component: 'jobPostingStore',
                     data: { 
-                      jobPostingId,
+                      eventId,
                       error: error instanceof Error ? error.message : String(error)
                     }
                   });
@@ -238,13 +238,13 @@ export const useJobPostingStore = create<JobPostingState>()(
         },
         
         refreshApplicants: async () => {
-          const { jobPostingId } = get();
-          if (!jobPostingId) return;
+          const { eventId } = get();
+          if (!eventId) return;
           
           // 지원자 데이터 실시간 구독 설정
           const applicantsQuery = query(
             collection(db, 'applications'),
-            where('postId', '==', jobPostingId),
+            where('postId', '==', eventId),
             orderBy('createdAt', 'desc')
           );
           
@@ -316,7 +316,7 @@ export const useJobPostingStore = create<JobPostingState>()(
           
           // 상태 초기화 (store를 완전히 리셋)
           set({
-            jobPostingId: null,
+            eventId: null,
             jobPosting: null,
             applicants: [],
             staff: [],

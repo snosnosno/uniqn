@@ -1,9 +1,9 @@
 import React from 'react';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkTimeEditor from '../WorkTimeEditor';
 import { render } from '../../test-utils/test-utils';
-import { updateDoc, setDoc, getDocs, Timestamp } from 'firebase/firestore';
+import { updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 // Firebase 함수 모킹
 jest.mock('firebase/firestore', () => ({
@@ -119,8 +119,9 @@ describe('WorkTimeEditor', () => {
 
     await waitFor(() => {
       expect(updateDoc).toHaveBeenCalled();
-      expect(mockOnUpdate).toHaveBeenCalled();
     });
+    
+    expect(mockOnUpdate).toHaveBeenCalled();
   });
 
   test('creates new work log if not exists', async () => {
@@ -141,8 +142,9 @@ describe('WorkTimeEditor', () => {
 
     await waitFor(() => {
       expect(setDoc).toHaveBeenCalled();
-      expect(mockOnUpdate).toHaveBeenCalled();
     });
+    
+    expect(mockOnUpdate).toHaveBeenCalled();
   });
 
   test('cancels editing', async () => {

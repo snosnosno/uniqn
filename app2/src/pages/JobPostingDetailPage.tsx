@@ -377,7 +377,7 @@ const JobPostingDetailPage: React.FC = () => {
   }
 
   return (
-    <JobPostingProvider jobPostingId={id}>
+    <JobPostingProvider eventId={id}>
       <JobPostingDetailPageContent />
     </JobPostingProvider>
   );

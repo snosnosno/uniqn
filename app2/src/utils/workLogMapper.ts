@@ -1,7 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { 
   UnifiedWorkLog, 
-  LegacyWorkLog, 
   WorkLogCreateInput
 } from '../types/unified/workLog';
 import { logger } from './logger';
@@ -94,13 +93,13 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
     const normalized: UnifiedWorkLog = {
       id: data.id || '',
       
-      // 통합 필드 (레거시 호환)
-      staffId: data.staffId || data.dealerId || '',
-      eventId: data.eventId || data.jobPostingId || '',
+      // 통합 필드
+      staffId: data.staffId || '',
+      eventId: data.eventId || '',
       
-      // 스태프 정보 통합
-      staffName: data.staffName || data.dealerName || data.name || '',
-      role: data.role || data.jobRole || '',
+      // 스태프 정보
+      staffName: data.staffName || data.name || '',
+      role: data.role || '',
       
       // 날짜 정보
       date: data.date || '',
@@ -189,10 +188,6 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
     role: input.role,
     type: input.type || 'manual',
     
-    // 레거시 호환성 (곧 제거 예정)
-    jobPostingId: input.eventId,
-    dealerName: input.staffName,
-    
     // 시간 정보 (Timestamp로 통일)
     scheduledStartTime: scheduledStartTime || null,
     scheduledEndTime: scheduledEndTime || null,
@@ -232,14 +227,6 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
   }
   if (typeof prepared.scheduledEndTime === 'string' && updates.date) {
     prepared.scheduledEndTime = parseTimeToTimestamp(prepared.scheduledEndTime, updates.date);
-  }
-  
-  // 레거시 호환성 (곧 제거 예정)
-  if (updates.staffName) {
-    prepared.dealerName = updates.staffName;
-  }
-  if (updates.eventId) {
-    prepared.jobPostingId = updates.eventId;
   }
   
   return prepared;
@@ -346,29 +333,3 @@ export function filterWorkLogs(
   return filtered;
 }
 
-/**
- * 필드명 마이그레이션 체크
- * @deprecated 레거시 호환성을 위해 유지, 곧 제거 예정
- */
-export function needsMigration(data: any): boolean {
-  // 신규 필드가 없고 레거시 필드만 있는 경우
-  const hasLegacyOnly = (
-    (!data.eventId && data.jobPostingId) ||
-    (!data.staffId && data.dealerId) ||
-    (!data.staffName && data.dealerName)
-  );
-  
-  return hasLegacyOnly;
-}
-
-/**
- * 통합 WorkLog를 레거시 형식으로 변환
- * @deprecated 레거시 호환성을 위해 유지, 곧 제거 예정
- */
-export function toLegacyFormat(workLog: UnifiedWorkLog): LegacyWorkLog {
-  return {
-    ...workLog,
-    dealerName: workLog.staffName,
-    jobPostingId: workLog.eventId
-  };
-}

@@ -114,14 +114,12 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
  * 스태프용 공고 관리 접근 권한 확인 컴포넌트
  */
 interface JobPostingAccessGuardProps {
-  jobPostingId?: string;
   requireManagement?: boolean; // 지원자 관리 권한까지 필요한지
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
 
 export const JobPostingAccessGuard: React.FC<JobPostingAccessGuardProps> = ({
-  jobPostingId,
   requireManagement = false,
   children,
   fallback

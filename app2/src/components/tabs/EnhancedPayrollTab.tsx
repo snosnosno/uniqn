@@ -40,7 +40,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     updateRoleSalarySettings,
     getSalaryInfo
   } = useStaffWorkData({
-    jobPostingId: jobPosting?.id
+    eventId: jobPosting?.id
   });
 
   // 디버깅 로그

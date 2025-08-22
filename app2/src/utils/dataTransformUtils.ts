@@ -5,7 +5,7 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { logger } from './logger';
-import { COLLECTIONS, DEFAULT_VALUES, TIME_REGEX } from '../constants';
+import { DEFAULT_VALUES, TIME_REGEX } from '../constants';
 
 /**
  * WorkLog와 Staff 데이터를 병합하는 통합 함수

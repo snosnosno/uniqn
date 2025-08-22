@@ -53,12 +53,12 @@ const getCellStyle = (
   // 검증 오류가 있는 경우 경고 스타일 추가
   if (validationResult?.violations) {
     const hasError = validationResult.violations.some(
-      violation => violation.dealerId === staffId && 
+      violation => violation.staffId === staffId && 
                   violation.timeSlot === timeSlot && 
                   violation.severity === 'error'
     );
     const hasWarning = validationResult.violations.some(
-      violation => violation.dealerId === staffId && 
+      violation => violation.staffId === staffId && 
                   violation.timeSlot === timeSlot && 
                   violation.severity === 'warning'
     );
@@ -87,7 +87,7 @@ const ValidationTooltip: React.FC<{
   timeSlot: string;
 }> = ({ violations, staffId, timeSlot }) => {
   const relevantViolations = violations.filter(
-    v => v.dealerId === staffId && v.timeSlot === timeSlot
+    v => v.staffId === staffId && v.timeSlot === timeSlot
   );
 
   if (relevantViolations.length === 0) return null;
@@ -353,7 +353,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
         const style = getCellStyle(value, row.id, timeSlot, validationResult);
         
         const hasViolations = validationResult?.violations?.some(
-          v => v.dealerId === row.id && v.timeSlot === timeSlot
+          v => v.staffId === row.id && v.timeSlot === timeSlot
         ) || false;
 
         const handleCellClick = () => {

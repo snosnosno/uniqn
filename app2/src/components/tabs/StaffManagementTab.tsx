@@ -14,7 +14,7 @@ import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 import { useToast } from '../../hooks/useToast';
 import { useStaffSelection } from '../../hooks/useStaffSelection';
 import { useAttendanceMap } from '../../hooks/useAttendanceMap';
-import { createVirtualWorkLog } from '../../utils/workLogUtils';
+import { createVirtualWorkLog } from '../../utils/workLogSimplified';
 import { BulkOperationService } from '../../services/BulkOperationService';
 import BulkActionsModal from '../BulkActionsModal';
 import BulkTimeEditModal from '../BulkTimeEditModal';
@@ -60,7 +60,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     getTimeSlotColor,
     getStaffWorkLog
   } = useStaffManagement({
-    jobPostingId: jobPosting?.id,
+    eventId: jobPosting?.id,
     enableFiltering: true
   });
 
@@ -190,13 +190,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         });
         
         // 해당 날짜의 가상 WorkLog 생성 (유틸리티 함수 사용)
-        const virtualWorkLog = createVirtualWorkLog({
-          eventId: jobPosting?.id || 'default-event',
-          staffId: actualStaffId,
-          staffName: staff.name || '이름 미정',
-          date: workDate,
-          assignedTime: timeValue
-        });
+        const virtualWorkLog = createVirtualWorkLog(
+          actualStaffId,
+          workDate,
+          jobPosting?.id
+        );
         
         setSelectedWorkLog(virtualWorkLog);
         setIsWorkTimeEditorOpen(true);
@@ -208,14 +206,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       });
       
       // 오류 발생 시 가상 WorkLog 생성
-      const timeValue = staff.assignedTime || (staff as any).timeSlot || null;
-      const virtualWorkLog = createVirtualWorkLog({
-        eventId: jobPosting?.id || 'default-event',
-        staffId: actualStaffId,
-        staffName: staff.name || '이름 미정',
-        date: workDate,
-        assignedTime: timeValue
-      });
+      const virtualWorkLog = createVirtualWorkLog(
+        actualStaffId,
+        workDate,
+        jobPosting?.id
+      );
       
       setSelectedWorkLog(virtualWorkLog);
       setIsWorkTimeEditorOpen(true);

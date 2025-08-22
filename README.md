@@ -7,7 +7,7 @@
 - **프로젝트 ID**: tholdem-ebc18
 - **배포 URL**: https://tholdem-ebc18.web.app
 - **상태**: Production Ready 🚀
-- **버전**: 2.0.0
+- **버전**: 2.1.0
 
 ## ✨ 주요 기능
 
@@ -15,21 +15,25 @@
 - 참가자 관리 (CSV 업로드, 칩 카운트)
 - 테이블 자동 배치 알고리즘
 - 실시간 칩 추적 및 블라인드 관리
+- 드래그 앤 드롭 테이블 재배치
 
 ### 👥 스태프 관리
 - QR 코드 출퇴근 시스템
 - 실시간 출석 상태 관리
 - 교대 스케줄 및 급여 자동 계산
+- 역할별 급여 설정 (시급/일급/월급)
 
 ### 📢 구인공고 시스템
-- 역할별 시급 설정
-- 지원자 관리
+- 다중 역할 및 시간대 지원
+- 지원자 통합 관리
 - 확정 스태프 자동 연동
+- 사전 질문 시스템
 
 ### 📊 관리자 대시보드
 - 실시간 운영 현황
 - 통계 분석 및 리포트
 - 성능 모니터링 (Web Vitals)
+- 급여 정산 시스템
 
 ## 🛠️ 기술 스택
 
@@ -50,96 +54,112 @@
   - Performance (모니터링)
 
 ### 개발 도구
-- **Jest** + React Testing Library
-- **Sentry** (에러 추적)
-- **GitHub Actions** (CI/CD)
+- **Sentry** (에러 모니터링)
+- **Jest** + **React Testing Library** (테스팅)
+- **ESLint** + **Prettier** (코드 품질)
 
-## 🚀 빠른 시작
+## 🚀 시작하기
 
+### 필수 요구사항
+- Node.js 18.0.0 이상
+- npm 9.0.0 이상
+- Firebase CLI 13.0.0 이상
+
+### 설치
 ```bash
-# 1. 저장소 클론
-git clone https://github.com/your-username/T-HOLDEM.git
-cd T-HOLDEM
-
-# 2. 의존성 설치
+# 의존성 설치
 cd app2
 npm install
 
-# 3. 환경 변수 설정 (.env 파일)
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-
-# 4. 개발 서버 실행
-npm start
-
-# 5. 빌드 및 배포
-npm run build
-npm run deploy:all
+# Firebase CLI 설치 (전역)
+npm install -g firebase-tools
 ```
 
-## 📊 성능 지표
+### 개발 서버 실행
+```bash
+# 개발 서버 시작
+npm start
 
-| 지표 | 현재 | 개선율 |
-|------|------|--------|
-| **번들 크기** | 272.8KB | 83% ↓ |
-| **초기 로딩** | 2.0초 | 43% ↓ |
-| **Lighthouse** | 91점 | 34% ↑ |
-| **TypeScript** | 100% | ✅ |
-| **의존성** | 43개 | 69% ↓ |
+# Firebase 에뮬레이터와 함께 실행
+npm run dev
+```
+
+### 빌드 및 배포
+```bash
+# 프로덕션 빌드
+npm run build
+
+# Firebase 배포
+npm run deploy:all
+```
 
 ## 📁 프로젝트 구조
 
 ```
 T-HOLDEM/
-├── app2/                   # React 애플리케이션
+├── app2/                 # React 애플리케이션
 │   ├── src/
-│   │   ├── components/    # UI 컴포넌트
-│   │   ├── pages/        # 페이지 컴포넌트
-│   │   ├── hooks/        # 커스텀 훅
-│   │   ├── stores/       # Zustand 스토어
-│   │   ├── types/        # TypeScript 타입
-│   │   └── utils/        # 유틸리티
-│   └── public/           # 정적 파일
-├── docs/                 # 프로젝트 문서
-├── scripts/              # 스크립트
-│   └── firebase-migration/  # 마이그레이션
-├── functions/            # Firebase Functions
-└── SHRIMP/              # 태스크 관리
+│   │   ├── components/   # UI 컴포넌트
+│   │   ├── hooks/       # 커스텀 React 훅
+│   │   ├── pages/       # 페이지 컴포넌트
+│   │   ├── stores/      # Zustand 스토어
+│   │   ├── types/       # TypeScript 타입 정의
+│   │   └── utils/       # 유틸리티 함수
+│   └── public/          # 정적 파일
+├── functions/           # Firebase Functions
+├── docs/               # 프로젝트 문서
+└── scripts/            # 유틸리티 스크립트
 ```
 
-## 📚 주요 문서
+## 📊 현재 상태
 
-- [개발 가이드](./CLAUDE.md) - Claude Code 가이드
-- [프로젝트 구조](./docs/PROJECT_STRUCTURE.md) - 상세 구조
-- [기능 명세서](./docs/T-HOLDEM_기능명세서.md) - 전체 기능
-- [Firebase 구조](./docs/FIREBASE_DATA_FLOW.md) - 데이터 흐름
-- [기술 문서](./docs/TECHNICAL_DOCUMENTATION.md) - 기술 상세
+| 항목 | 상태 | 설명 |
+|------|------|------|
+| 빌드 | ✅ | Production 빌드 성공 |
+| TypeScript | ✅ | 컴파일 에러 0개 |
+| 번들 크기 | ✅ | 273KB (gzipped) |
+| 테스트 | ⚠️ | 커버리지 ~10% |
+| ESLint | ⚠️ | 9개 에러 (테스트 파일) |
 
-## 🔄 최근 업데이트 (2025-01-18)
+## 🔒 환경 변수
 
-### 완료된 작업
-- ✅ Firebase 마이그레이션 (dealerId → staffId)
-- ✅ 번들 크기 최적화 (1.6MB → 272.8KB)
-- ✅ TypeScript Strict Mode 100% 준수
-- ✅ 레거시 코드 제거
-- ✅ 구인공고 역할별 시급 기능 추가
+`.env` 파일 생성:
+```env
+REACT_APP_FIREBASE_API_KEY=your-api-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-auth-domain
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your-storage-bucket
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+REACT_APP_FIREBASE_APP_ID=your-app-id
+```
 
-### 진행 중인 작업
-- 🔄 ESLint 경고 해결 (약 70개)
-- 🔄 테스트 커버리지 확대 (10% → 70%)
-- 🔄 모바일 반응형 UI 개선
+## 📝 주요 스크립트
 
-## 🤝 기여
+| 명령어 | 설명 |
+|--------|------|
+| `npm start` | 개발 서버 시작 |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run test` | 테스트 실행 |
+| `npm run lint` | ESLint 실행 |
+| `npm run type-check` | TypeScript 타입 체크 |
+| `npm run deploy:all` | Firebase 전체 배포 |
 
-PR과 이슈는 언제나 환영합니다!
+## 🤝 기여하기
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 라이선스
 
-MIT License
+이 프로젝트는 MIT 라이선스를 따릅니다.
+
+## 📞 연락처
+
+프로젝트 관련 문의사항은 이슈 트래커를 이용해주세요.
 
 ---
 
-**최종 업데이트**: 2025년 1월 18일  
-**버전**: 2.0.0  
-**문의**: [이메일 주소]
+*마지막 업데이트: 2025년 1월 29일*

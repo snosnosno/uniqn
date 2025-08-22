@@ -12,12 +12,12 @@
  * - 레거시 필드와의 호환성 보장
  * - 타입 안전성 및 유효성 검사 포함
  * 
- * 표준화된 필드 매핑:
- * - staffId (표준) ← dealerId, userId (deprecated)
- * - eventId (표준) ← jobPostingId (deprecated)
- * - staffName (표준) ← dealerName (deprecated)
- * - scheduledStartTime/EndTime (표준) ← assignedTime (deprecated)
- * - actualStartTime/EndTime (표준) ← checkInTime/checkOutTime (deprecated)
+ * 표준 필드:
+ * - staffId: 스태프 식별자
+ * - eventId: 이벤트 식별자
+ * - staffName: 스태프 이름
+ * - scheduledStartTime/EndTime: 예정 근무 시간
+ * - actualStartTime/EndTime: 실제 근무 시간
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -26,12 +26,12 @@ import { Timestamp } from 'firebase/firestore';
  * 통합 WorkLog 인터페이스
  * @description 모든 WorkLog 관련 데이터의 표준 형식입니다. 새로운 개발에서는 이 타입을 우선 사용하세요.
  * 
- * 필드 우선순위:
- * - staffId (표준) → dealerId/userId (fallback)
- * - eventId (표준) → jobPostingId (fallback)
- * - staffName (표준) → dealerName (fallback)
- * - scheduledStartTime/EndTime (표준) → assignedTime (fallback)
- * - actualStartTime/EndTime (표준) → checkInTime/checkOutTime (fallback)
+ * 표준 필드:
+ * - staffId: 스태프 식별자
+ * - eventId: 이벤트 식별자
+ * - staffName: 스태프 이름
+ * - scheduledStartTime/EndTime: 예정 근무 시간
+ * - actualStartTime/EndTime: 실제 근무 시간
  * 
  * @example
  * ```typescript
@@ -52,10 +52,10 @@ export interface UnifiedWorkLog {
   /** 근무 로그 고유 ID */
   id: string;
   
-  /** 스태프 ID (표준 필드명, dealerId/userId 대체) */
+  /** 스태프 ID */
   staffId: string;
   
-  /** 이벤트 ID (jobPostingId와 동일한 의미) */
+  /** 이벤트 ID */
   eventId: string;
   
   // 스태프 정보
@@ -122,39 +122,16 @@ export interface UnifiedWorkLog {
 
 /**
  * 레거시 호환성을 위한 타입
- * @description 기존 코드와의 호환성을 유지하기 위한 확장 타입입니다.
+ * @description 표준 WorkLog 사용 가이드입니다.
  * 
- * 마이그레이션 가이드:
+ * 사용 예시:
  * ```typescript
- * // ❌ 기존 방식
- * const staffId = workLog.dealerId || workLog.userId;
- * const eventId = workLog.jobPostingId;
- * const name = workLog.dealerName;
- * 
- * // ✅ 권장 방식 (LegacyWorkLog 사용 시)
- * const staffId = workLog.staffId || workLog.dealerId || workLog.userId;
- * const eventId = workLog.eventId || workLog.jobPostingId;
- * const name = workLog.staffName || workLog.dealerName;
- * 
- * // ✅ 최적 방식 (UnifiedWorkLog 직접 사용)
+ * // ✅ 표준 필드 사용
  * const staffId = workLog.staffId;
  * const eventId = workLog.eventId;
  * const name = workLog.staffName;
  * ```
  */
-export type LegacyWorkLog = UnifiedWorkLog & {
-  /** @deprecated dealerId는 staffId로 대체되었습니다. staffId를 사용하세요. */
-  dealerId?: string;
-  
-  /** @deprecated userId는 staffId로 대체되었습니다. staffId를 사용하세요. */
-  userId?: string;
-  
-  /** @deprecated dealerName은 staffName으로 대체되었습니다. staffName을 사용하세요. */
-  dealerName?: string;
-  
-  /** @deprecated jobPostingId는 eventId로 대체되었습니다. eventId를 사용하세요. */
-  jobPostingId?: string;
-};
 
 /**
  * WorkLog 생성 시 필수 필드
@@ -223,27 +200,6 @@ export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
     typeof data.staffName === 'string';
 };
 
-/**
- * LegacyWorkLog 타입 가드
- * @param data 확인할 데이터
- * @returns LegacyWorkLog 타입인지 여부 (deprecated 필드를 포함하는 경우)
- * 
- * @example
- * ```typescript
- * if (isLegacyWorkLog(data)) {
- *   // 레거시 필드가 있는 데이터 처리
- *   const staffId = data.staffId || data.dealerId || data.userId;
- * }
- * ```
- */
-export const isLegacyWorkLog = (data: any): data is LegacyWorkLog => {
-  return data && (
-    'dealerId' in data || 
-    'userId' in data || 
-    'dealerName' in data ||
-    'jobPostingId' in data
-  );
-};
 
 /**
  * WorkLog 데이터 유효성 검사
@@ -270,16 +226,16 @@ export const validateWorkLog = (data: any): { isValid: boolean; errors: string[]
     errors.push('id는 필수 문자열 필드입니다.');
   }
   
-  if (!data.staffId && !data.dealerId && !data.userId) {
-    errors.push('staffId(또는 dealerId/userId)는 필수 필드입니다.');
+  if (!data.staffId) {
+    errors.push('staffId는 필수 필드입니다.');
   }
   
-  if (!data.eventId && !data.jobPostingId) {
-    errors.push('eventId(또는 jobPostingId)는 필수 필드입니다.');
+  if (!data.eventId) {
+    errors.push('eventId는 필수 필드입니다.');
   }
   
-  if (!data.staffName && !data.dealerName) {
-    errors.push('staffName(또는 dealerName)은 필수 필드입니다.');
+  if (!data.staffName) {
+    errors.push('staffName은 필수 필드입니다.');
   }
   
   if (!data.date || typeof data.date !== 'string') {

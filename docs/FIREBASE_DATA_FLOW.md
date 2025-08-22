@@ -1,224 +1,229 @@
-# Firebase 데이터 구조 및 흐름도
+# Firebase 데이터 구조 및 흐름
 
-## 📊 Firebase Collections 구조
+## 📊 데이터 모델 개요
 
-### 1. 핵심 컬렉션
+T-HOLDEM은 Firebase Firestore를 사용하여 실시간 데이터 동기화를 구현합니다.
 
-```
-Firebase Firestore
-├── 📁 jobPostings (구인공고)
-│   ├── id: string
-│   ├── title: string (공고 제목)
-│   ├── location: string (근무지)
-│   ├── eventDate: Timestamp (행사 날짜)
-│   ├── requiredRoles: string[] (필요 역할)
-│   ├── hourlyWages: Record<string, number> (역할별 시급)
-│   ├── confirmedStaff: ConfirmedStaff[] (확정 스태프)
-│   ├── applicants: string[] (지원자 ID 목록)
-│   └── status: 'active' | 'closed' | 'cancelled'
-│
-├── 📁 staff (스태프 기본 정보)
-│   ├── id: string (= staffId)
-│   ├── name: string
-│   ├── phone: string
-│   ├── role: string (기본 역할)
-│   ├── email?: string
-│   └── createdAt: Timestamp
-│
-├── 📁 workLogs (근무 기록)
-│   ├── id: string
-│   ├── staffId: string (스태프 참조)
-│   ├── eventId: string (구인공고 참조)
-│   ├── date: string (YYYY-MM-DD)
-│   ├── scheduledStartTime?: string
-│   ├── scheduledEndTime?: string
-│   ├── actualStartTime?: string
-│   ├── actualEndTime?: string
-│   └── status: 'scheduled' | 'working' | 'completed'
-│
-├── 📁 attendanceRecords (출석 기록)
-│   ├── id: string
-│   ├── staffId: string
-│   ├── eventId: string
-│   ├── date: string
-│   ├── status: 'not_started' | 'checked_in' | 'checked_out'
-│   ├── checkInTime?: Timestamp
-│   └── checkOutTime?: Timestamp
-│
-├── 📁 applications (지원서)
-│   ├── id: string
-│   ├── jobPostingId: string (구인공고 참조)
-│   ├── applicantId: string (지원자 참조)
-│   ├── status: 'pending' | 'accepted' | 'rejected'
-│   ├── appliedAt: Timestamp
-│   └── notes?: string
-│
-└── 📁 applicants (지원자 정보)
-    ├── id: string
-    ├── name: string
-    ├── phone: string
-    ├── email?: string
-    ├── availableRoles: string[]
-    └── applicationHistory: string[] (지원 이력)
+## 🗂️ 컬렉션 구조
+
+### 1. staff (스태프)
+```typescript
+interface Staff {
+  id: string;              // 문서 ID
+  userId: string;          // Firebase Auth UID
+  name: string;            // 스태프 이름
+  email: string;           // 이메일
+  phone: string;           // 전화번호
+  role: string;            // 역할 (dealer, manager, etc.)
+  createdAt: Timestamp;    // 생성 시간
+  updatedAt: Timestamp;    // 수정 시간
+}
 ```
 
-## 🔄 데이터 흐름도
+### 2. workLogs (근무 기록)
+```typescript
+interface WorkLog {
+  id: string;              // 문서 ID
+  staffId: string;         // 스태프 ID (표준 필드)
+  eventId: string;         // 이벤트 ID (표준 필드)
+  date: string;            // 근무 날짜 (YYYY-MM-DD)
+  scheduledStartTime: Timestamp;  // 예정 시작 시간
+  scheduledEndTime: Timestamp;    // 예정 종료 시간
+  actualStartTime?: Timestamp;    // 실제 시작 시간
+  actualEndTime?: Timestamp;      // 실제 종료 시간
+  status: 'not_started' | 'checked_in' | 'checked_out';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
 
-### 1. 구인공고 생성 및 지원 프로세스
+### 3. attendanceRecords (출석 기록)
+```typescript
+interface AttendanceRecord {
+  id: string;              // 문서 ID
+  staffId: string;         // 스태프 ID (표준 필드)
+  eventId: string;         // 이벤트 ID
+  checkInTime?: Timestamp; // 체크인 시간
+  checkOutTime?: Timestamp;// 체크아웃 시간
+  status: 'present' | 'absent' | 'late';
+  createdAt: Timestamp;
+}
+```
+
+### 4. jobPostings (구인공고)
+```typescript
+interface JobPosting {
+  id: string;              // 문서 ID
+  title: string;           // 공고 제목
+  location: string;        // 장소
+  startDate: string;       // 시작일
+  endDate: string;         // 종료일
+  roles: RoleRequirement[]; // 역할별 요구사항
+  status: 'draft' | 'published' | 'closed';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+### 5. applications (지원서)
+```typescript
+interface Application {
+  id: string;              // 문서 ID
+  eventId: string;         // 이벤트 ID (표준 필드)
+  applicantId: string;     // 지원자 ID
+  role: string;            // 지원 역할
+  timeSlot: string;        // 지원 시간대
+  status: 'pending' | 'confirmed' | 'rejected';
+  createdAt: Timestamp;
+}
+```
+
+### 6. tournaments (토너먼트)
+```typescript
+interface Tournament {
+  id: string;              // 문서 ID
+  title: string;           // 토너먼트 명
+  date: string;            // 날짜
+  status: 'upcoming' | 'ongoing' | 'completed';
+  blindLevel: number;      // 블라인드 레벨
+  participants: number;    // 참가자 수
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+## 🔄 데이터 흐름
+
+### 1. 실시간 구독 패턴
+```typescript
+// ✅ 올바른 패턴: onSnapshot 사용
+const unsubscribe = onSnapshot(
+  query(collection(db, 'workLogs'), 
+    where('eventId', '==', eventId)
+  ),
+  (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setWorkLogs(data);
+  }
+);
+
+// ❌ 잘못된 패턴: getDocs 사용
+const snapshot = await getDocs(query(...));
+```
+
+### 2. 데이터 업데이트 플로우
 
 ```mermaid
 graph TD
-    A[구인공고 생성] -->|jobPostings 컬렉션| B[공고 게시]
-    B --> C[지원자 조회]
-    C -->|applicants 컬렉션| D[지원서 제출]
-    D -->|applications 컬렉션| E[지원 상태 관리]
-    E --> F{채용 결정}
-    F -->|승인| G[confirmedStaff 업데이트]
-    F -->|거절| H[상태 업데이트]
-    G -->|staff 컬렉션| I[스태프 등록/업데이트]
-    I -->|workLogs 생성| J[근무 스케줄 생성]
+    A[User Action] --> B[Update Firestore]
+    B --> C[onSnapshot Triggered]
+    C --> D[Update Local State]
+    D --> E[Re-render UI]
+    E --> F[User Sees Update]
 ```
 
-### 2. 출근/퇴근 관리 흐름
+### 3. 통합 데이터 처리
 
-```mermaid
-graph LR
-    A[QR 코드 스캔] --> B[attendanceRecords 조회/생성]
-    B --> C{출석 상태}
-    C -->|not_started| D[출근 처리]
-    C -->|checked_in| E[퇴근 처리]
-    D -->|workLogs 업데이트| F[actualStartTime 기록]
-    E -->|workLogs 업데이트| G[actualEndTime 기록]
-    F --> H[실시간 동기화]
-    G --> H
-```
-
-### 3. 급여 정산 프로세스
-
-```mermaid
-graph TD
-    A[정산 기간 선택] --> B[workLogs 조회]
-    B --> C[근무 시간 계산]
-    C --> D[jobPostings 조회]
-    D -->|hourlyWages| E[시급 정보 확인]
-    E --> F[급여 계산]
-    F --> G[정산 리포트 생성]
-    G --> H[승인/수정]
-    H --> I[최종 확정]
-```
-
-## 🔗 주요 데이터 관계
-
-### 1. 1:N 관계
-- **jobPostings → applications**: 하나의 공고에 여러 지원서
-- **staff → workLogs**: 한 스태프의 여러 근무 기록
-- **staff → attendanceRecords**: 한 스태프의 여러 출석 기록
-- **applicants → applications**: 한 지원자의 여러 지원서
-
-### 2. N:N 관계 (중간 테이블 사용)
-- **jobPostings ↔ staff**: confirmedStaff 배열로 관리
-- **jobPostings ↔ applicants**: applications 컬렉션으로 연결
-
-### 3. 참조 관계
-- **workLogs.staffId** → staff.id
-- **workLogs.eventId** → jobPostings.id
-- **attendanceRecords.staffId** → staff.id
-- **applications.jobPostingId** → jobPostings.id
-- **applications.applicantId** → applicants.id
-
-## 🔥 실시간 동기화 구현
-
-### Firebase onSnapshot 구독 위치
 ```typescript
-// 1. 구인공고 실시간 구독
-useJobPostings() {
-  onSnapshot(collection(db, 'jobPostings'), (snapshot) => {
-    // 공고 목록 실시간 업데이트
-  });
-}
-
-// 2. 스태프 및 근무 기록 구독
-useStaffManagement() {
-  // staff 컬렉션 구독
-  onSnapshot(collection(db, 'staff'), ...);
-  
-  // workLogs 컬렉션 구독
-  onSnapshot(
-    query(collection(db, 'workLogs'), 
-    where('date', '==', selectedDate)),
-    ...
-  );
-}
-
-// 3. 출석 상태 구독
-useAttendanceStatus() {
-  onSnapshot(
-    query(collection(db, 'attendanceRecords'),
-    where('date', '==', selectedDate)),
-    ...
-  );
-}
+// WorkLog와 Staff 데이터 통합
+const enrichedWorkLogs = workLogs.map(log => ({
+  ...log,
+  staffName: staff.find(s => s.id === log.staffId)?.name,
+  // 표준 필드만 사용
+}));
 ```
 
-## 📝 데이터 우선순위 규칙
-
-### 시간 데이터 표시 우선순위
-1. **workLogs.scheduledStartTime/EndTime** (최우선)
-2. **staff.assignedTime** (폴백)
-3. **'미정'** (기본값)
-
-### 출석 상태 관리
-- **단일 진실 소스**: attendanceRecords.status
-- **독립적 관리**: workLogs와 별도로 관리
-- **실시간 동기화**: onSnapshot으로 즉시 반영
-
-### 스태프 정보 병합
-```typescript
-// workLogs 데이터를 우선으로, staff 데이터를 폴백으로 사용
-const mergedData = {
-  ...staffData,      // 기본 정보
-  ...workLogData,    // 날짜별 정보 (덮어쓰기)
-  attendanceStatus   // 출석 상태
-};
-```
-
-## 🚀 성능 최적화 전략
-
-### 1. 쿼리 최적화
-- 복합 인덱스 활용: `(date, staffId)`, `(eventId, date)`
-- 페이지네이션: 대량 데이터 조회 시 limit/startAfter 사용
-- 필터링: where 절로 필요한 데이터만 조회
-
-### 2. 캐싱 전략
-- React Query: 5분 staleTime, 10분 gcTime
-- 로컬 상태 관리: Zustand로 자주 사용되는 데이터 캐싱
-
-### 3. 실시간 업데이트
-- onSnapshot 구독으로 수동 새로고침 제거
-- 변경된 문서만 업데이트하는 diff 알고리즘
-
-## 🔒 보안 규칙
+## 🔐 보안 규칙
 
 ### Firestore Security Rules
 ```javascript
-// 읽기 권한: 인증된 사용자만
-allow read: if request.auth != null;
-
-// 쓰기 권한: 역할 기반
-allow write: if request.auth != null && 
-  request.auth.token.role in ['admin', 'manager'];
-
-// 자기 정보 수정: 본인만
-allow update: if request.auth.uid == resource.data.userId;
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 인증된 사용자만 읽기 가능
+    match /{document=**} {
+      allow read: if request.auth != null;
+    }
+    
+    // 관리자만 쓰기 가능
+    match /staff/{staffId} {
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // WorkLog는 본인 것만 수정 가능
+    match /workLogs/{workLogId} {
+      allow update: if request.auth != null && 
+        resource.data.staffId == request.auth.uid;
+    }
+  }
+}
 ```
 
-## 📊 데이터 일관성 보장
+## 📈 성능 최적화
 
-### 트랜잭션 사용 케이스
-1. **스태프 확정**: jobPostings.confirmedStaff + staff 생성/업데이트
-2. **출근 처리**: attendanceRecords + workLogs 동시 업데이트
-3. **지원 승인**: applications.status + jobPostings.confirmedStaff
+### 1. 인덱스 설정
+```yaml
+# firestore.indexes.json
+{
+  "indexes": [
+    {
+      "collectionGroup": "workLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "attendanceRecords",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "staffId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}
+```
 
-### 배치 작업
-- 여러 문서 동시 업데이트 시 writeBatch() 사용
-- 실패 시 전체 롤백으로 일관성 유지
+### 2. 쿼리 최적화
+```typescript
+// ✅ 최적화된 쿼리: 필요한 필드만 선택
+const q = query(
+  collection(db, 'workLogs'),
+  where('eventId', '==', eventId),
+  where('date', '==', todayString),
+  limit(50)
+);
+
+// ❌ 비효율적: 전체 컬렉션 로드
+const q = collection(db, 'workLogs');
+```
+
+### 3. 캐싱 전략
+```typescript
+// Firestore 오프라인 지속성 활성화
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    // 여러 탭이 열려있는 경우
+  } else if (err.code === 'unimplemented') {
+    // 브라우저가 지원하지 않는 경우
+  }
+});
+```
+
+## 🚨 주의사항
+
+1. **표준 필드 사용**: `staffId`, `eventId`만 사용 (레거시 필드 금지)
+2. **실시간 구독**: 항상 `onSnapshot` 사용
+3. **에러 처리**: 모든 Firebase 작업에 try-catch 적용
+4. **타입 안전성**: TypeScript 인터페이스 정의 필수
+5. **성능**: 대량 데이터는 페이지네이션 적용
+
+---
+
+*마지막 업데이트: 2025년 1월 29일*

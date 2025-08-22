@@ -56,7 +56,6 @@ export type {
 // 통합 WorkLog 타입 (우선 사용 권장) - 타입과 함수 분리
 export type {
   UnifiedWorkLog,
-  LegacyWorkLog,
   WorkLogCreateInput,
   WorkLogUpdateInput,
   WorkLogFilter,
@@ -67,7 +66,6 @@ export type {
 
 export {
   isUnifiedWorkLog,
-  isLegacyWorkLog,
   validateWorkLog,
   WORKLOG_STATUS,
   WORKLOG_TYPE

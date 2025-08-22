@@ -8,7 +8,7 @@ import { Applicant } from '../types';
 /**
  * 지원자 데이터를 관리하는 Custom Hook
  */
-export const useApplicantData = (jobPostingId?: string) => {
+export const useApplicantData = (eventId?: string) => {
   const { t } = useTranslation();
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
@@ -106,18 +106,18 @@ export const useApplicantData = (jobPostingId?: string) => {
     }
   }, [t]);
 
-  // Load applicants when jobPostingId changes
+  // Load applicants when eventId changes
   useEffect(() => {
-    if (jobPostingId) {
-      loadApplicants(jobPostingId);
+    if (eventId) {
+      loadApplicants(eventId);
     }
-  }, [jobPostingId, loadApplicants]);
+  }, [eventId, loadApplicants]);
 
   const refreshApplicants = useCallback(() => {
-    if (jobPostingId) {
-      loadApplicants(jobPostingId);
+    if (eventId) {
+      loadApplicants(eventId);
     }
-  }, [jobPostingId, loadApplicants]);
+  }, [eventId, loadApplicants]);
 
   return {
     applicants,

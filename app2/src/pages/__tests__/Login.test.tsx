@@ -83,8 +83,9 @@ describe('Login Component', () => {
 
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith('test@example.com', 'password123');
-      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
+    
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   test('handles login error - user disabled', async () => {
@@ -102,8 +103,9 @@ describe('Login Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('adminLogin.approvalPending')).toBeInTheDocument();
-      expect(logger.error).toHaveBeenCalled();
     });
+    
+    expect(logger.error).toHaveBeenCalled();
   });
 
   test('handles generic login error', async () => {
@@ -121,12 +123,13 @@ describe('Login Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('adminLogin.errorMessage')).toBeInTheDocument();
-      expect(logger.error).toHaveBeenCalledWith(
-        'Error occurred',
-        error,
-        { component: 'Login' }
-      );
     });
+    
+    expect(logger.error).toHaveBeenCalledWith(
+      'Error occurred',
+      error,
+      { component: 'Login' }
+    );
   });
 
   test('handles Google sign-in success', async () => {
@@ -138,8 +141,9 @@ describe('Login Component', () => {
 
     await waitFor(() => {
       expect(mockSignInWithGoogle).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
+    
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   test('handles Google sign-in error', async () => {
@@ -152,12 +156,13 @@ describe('Login Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('googleSignIn.error')).toBeInTheDocument();
-      expect(logger.error).toHaveBeenCalledWith(
-        'Google Sign-In Error:',
-        error,
-        { component: 'Login' }
-      );
     });
+    
+    expect(logger.error).toHaveBeenCalledWith(
+      'Google Sign-In Error:',
+      error,
+      { component: 'Login' }
+    );
   });
 
   test('form submission is prevented without data', () => {

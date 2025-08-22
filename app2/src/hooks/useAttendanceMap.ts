@@ -5,7 +5,6 @@ interface AttendanceRecord {
   staffId: string;
   workLog?: {
     staffId?: string;
-    dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
     date?: string;
     [key: string]: any;
   };

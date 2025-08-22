@@ -288,9 +288,21 @@ export function useMultipleCollections<T extends Record<string, any>>(
   const [combinedError, setCombinedError] = useState<Error | null>(null);
 
   // 각 컬렉션에 대한 개별 구독
-  const results = collections.map(({ key, ...options }) =>
-    useFirebaseCollection({ ...options, enabled })
-  );
+  // React Hook 규칙: 조건부나 반복문 내에서 Hook을 호출할 수 없으므로
+  // 최대 컬렉션 수를 고정하고 조건부로 사용
+  const { key: _key1, ...options1 } = collections[0] || { key: '', collectionName: '', collectionPath: '' };
+  const { key: _key2, ...options2 } = collections[1] || { key: '', collectionName: '', collectionPath: '' };
+  const { key: _key3, ...options3 } = collections[2] || { key: '', collectionName: '', collectionPath: '' };
+  const { key: _key4, ...options4 } = collections[3] || { key: '', collectionName: '', collectionPath: '' };
+  const { key: _key5, ...options5 } = collections[4] || { key: '', collectionName: '', collectionPath: '' };
+  
+  const result1 = useFirebaseCollection(collections[0] ? { ...options1, enabled } : { collectionName: '', collectionPath: '', enabled: false });
+  const result2 = useFirebaseCollection(collections[1] ? { ...options2, enabled } : { collectionName: '', collectionPath: '', enabled: false });
+  const result3 = useFirebaseCollection(collections[2] ? { ...options3, enabled } : { collectionName: '', collectionPath: '', enabled: false });
+  const result4 = useFirebaseCollection(collections[3] ? { ...options4, enabled } : { collectionName: '', collectionPath: '', enabled: false });
+  const result5 = useFirebaseCollection(collections[4] ? { ...options5, enabled } : { collectionName: '', collectionPath: '', enabled: false });
+  
+  const results = [result1, result2, result3, result4, result5].slice(0, collections.length);
 
   useEffect(() => {
     const data = {} as T;

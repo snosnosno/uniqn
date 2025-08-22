@@ -15,7 +15,7 @@ interface StaffWorkDataItem extends EnhancedPayrollCalculation {
 }
 
 interface UseStaffWorkDataProps {
-  jobPostingId?: string | undefined;
+  eventId?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
 }
@@ -50,7 +50,7 @@ interface UseStaffWorkDataReturn {
 }
 
 export const useStaffWorkData = ({
-  jobPostingId,
+  eventId,
   startDate,
   endDate
 }: UseStaffWorkDataProps = {}): UseStaffWorkDataReturn => {
@@ -65,46 +65,13 @@ export const useStaffWorkData = ({
     loading: workLogsLoading, 
     error: workLogsError 
   } = useUnifiedWorkLogs({
-    filter: { eventId: jobPostingId || jobPosting?.id },
+    filter: { eventId: eventId || jobPosting?.id },
     realtime: true,
     autoNormalize: true
   });
   
   // WorkLogs 선택 (Context 우선, 없으면 직접 구독)
   const workLogs = contextWorkLogs?.length > 0 ? contextWorkLogs : directWorkLogs;
-  
-  // 🔥 디버깅: WorkLogs 로드 상태 확인
-  console.log('🔥 useStaffWorkData - WorkLogs 상태:', {
-    contextWorkLogsCount: contextWorkLogs?.length || 0,
-    directWorkLogsCount: directWorkLogs?.length || 0,
-    selectedWorkLogsCount: workLogs?.length || 0,
-    jobPostingId: jobPostingId || jobPosting?.id,
-    firstWorkLog: workLogs?.[0] ? {
-      id: workLogs[0].id,
-      staffId: workLogs[0].staffId,
-      date: workLogs[0].date,
-      hasScheduledStart: !!workLogs[0].scheduledStartTime,
-      hasScheduledEnd: !!workLogs[0].scheduledEndTime,
-      scheduledStartTime: workLogs[0].scheduledStartTime,
-      scheduledEndTime: workLogs[0].scheduledEndTime
-    } : null,
-    // 특정 날짜의 dealer 역할 WorkLog 찾기
-    dealerLog0821: workLogs?.find(log => 
-      log.date === '2025-08-21' && 
-      log.role === 'dealer' && 
-      log.staffId?.includes('tURgdOBmtYfO5Bgzm8NyGKGtbL12')
-    ),
-    dealerLog0822: workLogs?.find(log => 
-      log.date === '2025-08-22' && 
-      log.role === 'dealer' && 
-      log.staffId?.includes('tURgdOBmtYfO5Bgzm8NyGKGtbL12')
-    ),
-    dealerLog0823: workLogs?.find(log => 
-      log.date === '2025-08-23' && 
-      log.role === 'dealer' && 
-      log.staffId?.includes('tURgdOBmtYfO5Bgzm8NyGKGtbL12')
-    )
-  });
   
   // 상태 관리
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);

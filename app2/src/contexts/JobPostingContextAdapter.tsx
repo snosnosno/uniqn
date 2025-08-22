@@ -25,11 +25,11 @@ const JobPostingContext = createContext<JobPostingContextType | undefined>(undef
 
 interface JobPostingProviderProps {
   children: ReactNode;
-  jobPostingId: string;
+  eventId: string;
 }
 
 // Zustand store를 Context API로 감싸는 어댑터
-export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children, jobPostingId }) => {
+export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children, eventId }) => {
   const { currentUser } = useAuth();
   const store = useJobPostingStore();
   
@@ -40,15 +40,15 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     error: workLogsError,
     refetch: refreshWorkLogs 
   } = useUnifiedWorkLogs({
-    filter: { eventId: jobPostingId },
+    filter: { eventId: eventId },
     realtime: true,  // 실시간 동기화 활성화
     autoNormalize: true
   });
   
-  // jobPostingId 변경 시 store 업데이트
+  // eventId 변경 시 store 업데이트
   useEffect(() => {
-    store.setJobPostingId(jobPostingId);
-  }, [jobPostingId]); // eslint-disable-line react-hooks/exhaustive-deps
+    store.setEventId(eventId);
+  }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
   
   // 컴포넌트 언마운트 시에만 cleanup 호출
   useEffect(() => {
@@ -60,11 +60,11 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
   
   // 지원자와 스태프 데이터 구독
   useEffect(() => {
-    if (jobPostingId && currentUser) {
+    if (eventId && currentUser) {
       store.refreshApplicants();
       store.refreshStaff();
     }
-  }, [jobPostingId, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [eventId, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
   
   const value: JobPostingContextType = {
     jobPosting: store.jobPosting,

@@ -7,10 +7,9 @@
  * @since 2025-01-01
  * @author T-HOLDEM Development Team
  * 
- * 주요 변경사항:
- * - staffId (표준) ← dealerId (deprecated)
- * - actualStartTime/actualEndTime (표준) ← checkInTime/checkOutTime (deprecated)
- * - 필드 우선순위: 표준 필드 → deprecated 필드 → fallback 값
+ * 주요 표준 필드:
+ * - staffId: 스태프 식별자
+ * - actualStartTime/actualEndTime: 실제 출퇴근 시간
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -25,10 +24,10 @@ export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
  * 출석 기록 인터페이스
  * @description 개별 스태프의 출석 기록을 저장합니다.
  * 
- * 필드 우선순위:
- * - staffId (표준) → dealerId (fallback)
- * - actualStartTime (표준) → checkInTime (fallback)
- * - actualEndTime (표준) → checkOutTime (fallback)
+ * 표준 필드:
+ * - staffId: 스태프 식별자
+ * - actualStartTime: 실제 시작 시간
+ * - actualEndTime: 실제 종료 시간
  */
 export interface AttendanceRecord {
   /** 출석 기록 고유 ID */
@@ -69,10 +68,10 @@ export interface AttendanceRecord {
  * 근무 일지 인터페이스
  * @description 스태프의 개별 근무 기록을 저장합니다.
  * 
- * 필드 우선순위:
- * - staffId (표준) → dealerId (fallback)
- * - scheduledStartTime/EndTime (표준) → assignedTime (fallback, common.ts에서)
- * - actualStartTime/EndTime (표준) → checkInTime/checkOutTime (fallback, AttendanceRecord에서)
+ * 표준 필드:
+ * - staffId: 스태프 식별자
+ * - scheduledStartTime/EndTime: 예정 근무 시간
+ * - actualStartTime/EndTime: 실제 근무 시간
  * 
  * 통합 사용 가이드:
  * - 이 타입은 types/unified/workLog.ts의 UnifiedWorkLog와 호환됩니다.
@@ -229,34 +228,26 @@ export interface AttendanceFilterOptions {
 // ============================================================================
 
 /**
- * 표준화된 필드 매핑 가이드
+ * 표준 필드 사용 가이드
  * 
- * 이 섹션은 T-HOLDEM 프로젝트의 타입 표준화를 위한 마이그레이션 가이드입니다.
+ * T-HOLDEM 프로젝트의 표준 타입 사용 가이드입니다.
  * 
- * 주요 변경사항:
- * 1. staffId (표준) ← dealerId (deprecated)
- * 2. actualStartTime/actualEndTime (표준) ← checkInTime/checkOutTime (deprecated)
- * 3. scheduledStartTime/scheduledEndTime (표준) ← assignedTime (deprecated)
- * 
- * 필드 우선순위:
- * - 표준 필드 → deprecated 필드 → fallback 값 → undefined
+ * 표준 필드:
+ * 1. staffId: 스태프 식별자
+ * 2. actualStartTime/actualEndTime: 실제 출퇴근 시간
+ * 3. scheduledStartTime/scheduledEndTime: 예정 근무 시간
  * 
  * 권장 사용 패턴:
  * ```typescript
- * // ✅ 표준 필드 우선 사용
- * const staffId = record.staffId || record.dealerId;
- * const startTime = record.actualStartTime || record.checkInTime;
- * const endTime = record.actualEndTime || record.checkOutTime;
+ * // ✅ 표준 필드 사용
+ * const staffId = record.staffId;
+ * const startTime = record.actualStartTime;
+ * const endTime = record.actualEndTime;
  * 
  * // ✅ 안전한 타입 체크
  * if (record.actualStartTime) {
  *   // actualStartTime 사용
- * } else if (record.checkInTime) {
- *   // checkInTime fallback 사용
  * }
- * 
- * // ❌ deprecated 필드 직접 사용 지양
- * const staffId = record.dealerId; // 권장하지 않음
  * ```
  * 
  * 타입 안전성 체크:
@@ -266,8 +257,8 @@ export interface AttendanceFilterOptions {
  * const hasActualTime = 'actualStartTime' in record && record.actualStartTime;
  * 
  * // undefined 체크
- * const safeStaffId = record.staffId ?? record.dealerId ?? '';
- * const safeStartTime = record.actualStartTime ?? record.checkInTime ?? null;
+ * const safeStaffId = record.staffId ?? '';
+ * const safeStartTime = record.actualStartTime ?? null;
  * ```
  * 
  * @version 2.0

@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react';
-import { tokens } from '../../styles/tokens';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
