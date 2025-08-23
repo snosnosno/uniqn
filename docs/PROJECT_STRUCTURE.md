@@ -1,7 +1,7 @@
 # 📁 T-HOLDEM 프로젝트 구조
 
-**최종 업데이트**: 2025년 1월 18일  
-**프로젝트 버전**: 2.0.0
+**최종 업데이트**: 2025년 1월 29일  
+**프로젝트 버전**: 2.2.0 (레거시 코드 완전 제거)
 
 ## 🏗️ 전체 디렉토리 구조
 
@@ -218,16 +218,22 @@ scripts/
 | **Testing** | Jest | 29.x | 테스트 프레임워크 |
 | **Monitoring** | Sentry | 8.x | 에러 추적 |
 
-## 🚀 최근 변경사항 (2025-01-17)
+## 🚀 최근 변경사항 (2025-01-29)
 
 ### ✅ 완료된 작업
-- **Deprecated 필드 제거**: `dealerId`, `checkInTime`, `checkOutTime` 완전 제거
-- **컴포넌트 모듈화**: `StaffCard` 4개 컴포넌트로 분리 (658줄 → 407줄)
-- **새 디렉토리 추가**: 
-  - `components/staff/`: 스태프 관련 모듈화 컴포넌트
-  - `components/payroll/`: 급여 관련 컴포넌트
-- **성능 최적화**: 번들 크기 273KB 달성 (84% 감소)
-- **TypeScript Strict Mode**: 100% 준수
+- **레거시 필드 100% 제거** 🎉: 
+  - 모든 `dealerId` → `staffId` 마이그레이션 완료
+  - 모든 `checkInTime/checkOutTime` → `actualStartTime/actualEndTime` 표준화
+  - 모든 `dealerName` → `staffName` 변환 완료
+  - `jobPostingId` → `eventId` 통일
+  - **하위 호환성 코드 완전 제거** (fallback, deprecated 모두 삭제)
+- **타입 안전성 완벽 달성**: TypeScript 컴파일 에러 0개
+- **코드베이스 정리**: 
+  - 15개 이상 파일에서 레거시 코드 제거
+  - 약 100줄의 불필요한 하위 호환성 코드 삭제
+  - `shiftValidation.ts`, `workLogUtils.ts` 등 핵심 유틸리티 정리
+- **빌드 시스템**: Production 빌드 완벽 성공
+- **성능 유지**: 번들 크기 273KB (레거시 제거 후에도 안정적)
 
 ### 🔄 데이터 흐름
 1. **Firebase Firestore** → 실시간 데이터

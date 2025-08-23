@@ -271,9 +271,9 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
  * scheduledStartTime/scheduledEndTime 우선 사용
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  // 예정 시간 우선 사용 (정산 기준)
-  const startTime = parseTimeToString(workLog.scheduledStartTime || workLog.actualStartTime);
-  const endTime = parseTimeToString(workLog.scheduledEndTime || workLog.actualEndTime);
+  // 예정 시간만 사용 (정산 기준)
+  const startTime = parseTimeToString(workLog.scheduledStartTime);
+  const endTime = parseTimeToString(workLog.scheduledEndTime);
   
   if (!startTime || !endTime) {
     return 0;

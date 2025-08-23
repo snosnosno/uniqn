@@ -73,8 +73,8 @@ describe('StaffCard', () => {
     onDeleteStaff: jest.fn(),
     getStaffAttendanceStatus: jest.fn(() => ({
       status: 'present',
-      checkInTime: '09:00',
-      checkOutTime: null
+      actualStartTime: '09:00',
+      actualEndTime: null
     })),
     attendanceRecords: [],
     formatTimeDisplay: jest.fn((time) => time || '시간 미정'),

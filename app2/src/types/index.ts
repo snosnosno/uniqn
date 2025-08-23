@@ -124,8 +124,7 @@ export {
   isBoth,
   personToStaff,
   personToApplicant,
-  getPersonId,
-  getDealerId
+  getPersonId
 } from './unified/person';
 
 // ============================================================================
@@ -158,18 +157,18 @@ export {
 /**
  * 필드 표준화 매핑
  * 
- * 표준 필드 → deprecated 필드:
- * - staffId → dealerId, userId
- * - eventId → jobPostingId
- * - staffName → dealerName
- * - scheduledStartTime/EndTime → assignedTime
- * - actualStartTime/EndTime → checkInTime/checkOutTime
+ * 표준 필드 사용:
+ * - staffId (통합 식별자)
+ * - eventId (이벤트/공고 식별자)
+ * - staffName (이름)
+ * - scheduledStartTime/EndTime (예정 시간)
+ * - actualStartTime/EndTime (실제 시간)
  * 
  * 권장 사용 패턴:
  * ```typescript
- * // ✅ 안전한 필드 접근
- * const staffId = data.staffId || data.dealerId || data.userId;
- * const startTime = data.actualStartTime || data.checkInTime;
+ * // ✅ 표준 필드 사용
+ * const staffId = data.staffId;
+ * const startTime = data.actualStartTime;
  * 
  * // ✅ 타입 가드 사용
  * import { isUnifiedWorkLog, validateWorkLog } from './unified/workLog';

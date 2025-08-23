@@ -905,6 +905,7 @@
     "startTime": "출근시간",
     "allDealersAssigned": "모든 딜러가 스케줄에 추가되었습니다",
     "removeFromSchedule": "스케줄에서 제거",
+    "confirmRemoveStaff": "정말로 {staffName} 스태프를 스케줄에서 제거하시겠습니까?",
     "confirmRemoveDealer": "정말로 {dealerName} 딜러를 스케줄에서 제거하시겠습니까?",
     "validationResults": "스케줄 검증 결과",
     "errors": "개 오류",

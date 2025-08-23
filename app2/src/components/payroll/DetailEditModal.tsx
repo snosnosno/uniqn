@@ -6,6 +6,7 @@ import { logger } from '../../utils/logger';
 import { useUnifiedWorkLogs } from '../../hooks/useUnifiedWorkLogs';
 import { useJobPostingStore } from '../../stores/jobPostingStore';
 import { calculateWorkHours } from '../../utils/workLogMapper';
+import { getStaffIdentifier, matchStaffIdentifier } from '../../utils/staffIdMapper';
 
 interface DetailEditModalProps {
   isOpen: boolean;
@@ -65,20 +66,33 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   const workHistory = useMemo(() => {
     if (!staff) return [];
     
-    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링
+    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링 (staffId/userId 통합, 역할 분리)
+    const staffId = getStaffIdentifier(staff);
     const staffWorkLogs = realTimeWorkLogs.filter(log => 
-      log.staffId === staff.staffId && 
-      log.role === staff.role
+      matchStaffIdentifier(log, [staffId])
+      // role 필터링 제거 - 모든 역할 포함
     );
+    
+    // 역할별 그룹화
+    const workLogsByRole = staffWorkLogs.reduce((acc: Record<string, typeof staffWorkLogs>, log) => {
+      const role = log.role || 'unknown';
+      if (!acc[role]) acc[role] = [];
+      const roleArray = acc[role];
+      if (roleArray) {
+        roleArray.push(log);
+      }
+      return acc;
+    }, {});
     
     logger.debug('DetailEditModal - 실시간 WorkLog 필터링', {
       component: 'DetailEditModal',
       data: {
-        staffId: staff.staffId,
-        role: staff.role,
+        staffId: staffId,
         totalWorkLogs: realTimeWorkLogs.length,
         filteredWorkLogs: staffWorkLogs.length,
-        workLogIds: staffWorkLogs.map(log => log.id)
+        workLogIds: staffWorkLogs.map(log => log.id),
+        roles: Object.keys(workLogsByRole),
+        roleDistribution: Object.entries(workLogsByRole).map(([role, logs]) => ({ role, count: logs.length }))
       }
     });
     
@@ -208,6 +222,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           return {
             date: dateStr,
             dayName,
+            role: log.role || 'unknown',  // 역할 정보 추가
             startTime,
             endTime,
             workHours: workHours.toFixed(1),
@@ -407,6 +422,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                             날짜
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            역할
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             시작시간
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -428,6 +446,11 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                                 <span>{history.date}</span>
                                 <span className="text-xs text-gray-500">({history.dayName})</span>
                               </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100">
+                                {history.role}
+                              </span>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                               {history.startTime}

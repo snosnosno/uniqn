@@ -112,8 +112,8 @@ describe('useAttendanceStatus', () => {
     staffId: mockStaffId,
     date: mockDate,
     status: 'checked_in' as AttendanceStatus,
-    checkInTime: new Date('2024-07-25T09:05:00'),
-    checkOutTime: null
+    actualStartTime: new Date('2024-07-25T09:05:00'),
+    actualEndTime: null
   };
 
   beforeEach(() => {

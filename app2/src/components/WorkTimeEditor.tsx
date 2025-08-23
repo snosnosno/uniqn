@@ -11,6 +11,7 @@ import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
 import { prepareWorkLogForCreate, prepareWorkLogForUpdate, parseTimeToString, parseTimeToTimestamp } from '../utils/workLogMapper';
 import { WorkLogCreateInput } from '../types/unified/workLog';
+import { getStaffIdentifier } from '../utils/staffIdMapper';
 
 import Modal from './ui/Modal';
 
@@ -19,7 +20,9 @@ interface WorkLogWithTimestamp {
   id: string;
   eventId: string;
   staffId: string;
+  staffName?: string;
   date: string;
+  role?: string;
   scheduledStartTime: Timestamp | Date | null;
   scheduledEndTime: Timestamp | Date | null;
   actualStartTime: Timestamp | Date | null;
@@ -194,11 +197,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         });
         
         const createInput: WorkLogCreateInput = {
-          staffId: staffId,
+          staffId: getStaffIdentifier(workLog),
           eventId: workLog.eventId || '',
-          staffName: '',  // prepareWorkLogForCreate에서 처리
+          staffName: workLog.staffName || '',
           date: workLog.date,
-          role: 'dealer',  // role 필드 필수 추가
+          role: workLog.role || 'dealer',  // workLog에서 role 가져오기
           type: 'schedule',
           scheduledStartTime: finalStartTime,
           scheduledEndTime: finalEndTime,

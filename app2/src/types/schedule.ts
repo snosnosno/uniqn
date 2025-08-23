@@ -46,9 +46,9 @@ export type PayrollStatus = 'pending' | 'processing' | 'completed';
  * - applications: 지원한 일정
  * - staff: 기본 스태프 정보 (fallback)
  * 
- * 시간 정보 우선순위:
- * - startTime/endTime (표준) → scheduledStartTime/EndTime (fallback)
- * - actualStartTime/EndTime → checkInTime/checkOutTime (fallback)
+ * 시간 정보:
+ * - startTime/endTime: 예정 시간
+ * - actualStartTime/EndTime: 실제 근무 시간
  * 
  * @example
  * ```typescript

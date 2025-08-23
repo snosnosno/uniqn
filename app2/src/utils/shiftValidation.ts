@@ -18,7 +18,6 @@ export interface ValidationViolation {
   severity: 'error' | 'warning' | 'info';
   message: string;
   staffId: string;
-  dealerId?: string; // @deprecated - staffId 사용 권장. 하위 호환성을 위해 유지
   timeSlot: string;
   suggestedFix?: string;
 }
@@ -173,7 +172,6 @@ export const validateContinuousWork = (
           severity: 'warning',
           message: `${continuousStart}부터 ${timeSlot}까지 ${Math.round(continuousMinutes / 60)}시간 연속 근무입니다 (제한: ${settings.maxContinuousHours}시간)`,
           staffId: dealer.id,
-          dealerId: dealer.id, // @deprecated - 하위 호환성을 위해 유지
           timeSlot: continuousStart,
           suggestedFix: `중간에 휴식 시간을 추가하세요`
         });
@@ -218,7 +216,6 @@ export const validateRestTime = (
             severity: 'warning',
             message: `${lastWorkTime}과 ${timeSlot} 사이 휴식 시간이 부족합니다 (${restMinutes}분, 최소: ${settings.minRestMinutes}분)`,
             staffId: dealer.id,
-            dealerId: dealer.id, // @deprecated - 하위 호환성을 위해 유지
             timeSlot,
             suggestedFix: `중간에 충분한 휴식 시간을 추가하세요`
           });
@@ -261,7 +258,6 @@ export const validateScheduleGaps = (
             severity: 'info',
             message: `${gapStart}과 ${timeSlot} 사이에 ${Math.round(gapMinutes / 60)}시간 공백이 있습니다`,
             staffId: dealer.id,
-            dealerId: dealer.id, // @deprecated - 하위 호환성을 위해 유지
             timeSlot: gapStart
           });
         }

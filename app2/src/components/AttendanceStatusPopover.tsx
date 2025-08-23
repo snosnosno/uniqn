@@ -213,18 +213,13 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         // 출근 상태로 변경 시 actualStartTime 설정
         if (newStatus === 'checked_in') {
           newWorkLogData.actualStartTime = now;
-          // 하위 호환성을 위한 checkInTime 설정
-          (newWorkLogData as any).checkInTime = now;
         }
         // 퇴근 상태로 변경 시 actualEndTime 설정
         if (newStatus === 'checked_out') {
           newWorkLogData.actualEndTime = now;
-          // 하위 호환성을 위한 checkOutTime 설정
-          (newWorkLogData as any).checkOutTime = now;
           // actualStartTime이 없으면 현재 시간으로 설정
           if (!newWorkLogData.actualStartTime) {
             newWorkLogData.actualStartTime = now;
-            (newWorkLogData as any).checkInTime = now;
           }
         }
         
@@ -241,18 +236,13 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         // 출근 상태로 변경 시 actualStartTime 설정
         if (newStatus === 'checked_in') {
           updateData.actualStartTime = now;
-          // 하위 호환성을 위한 checkInTime 설정
-          updateData.checkInTime = now;
         }
         // 퇴근 상태로 변경 시 actualEndTime 설정
         if (newStatus === 'checked_out') {
           updateData.actualEndTime = now;
-          // 하위 호환성을 위한 checkOutTime 설정
-          updateData.checkOutTime = now;
           // actualStartTime이 없으면 현재 시간으로 설정
           if (!actualStartTime) {
             updateData.actualStartTime = now;
-            updateData.checkInTime = now;
           }
         }
 

@@ -861,6 +861,7 @@
     "startTime": "Start Time",
     "allDealersAssigned": "All dealers have been added to the schedule",
     "removeFromSchedule": "Remove from Schedule",
+    "confirmRemoveStaff": "Are you sure you want to remove staff {staffName} from the schedule?",
     "confirmRemoveDealer": "Are you sure you want to remove dealer {dealerName} from the schedule?",
     "validationResults": "Schedule Validation Results",
     "errors": "errors",

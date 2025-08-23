@@ -83,12 +83,12 @@ const DashboardPage: React.FC = () => {
           logger.warn('persons 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
         }
 
-        // 오늘 체크인한 딜러 수
+        // 오늘 체크인한 스태프 수
         try {
           const todayAttendanceQuery = query(
             collection(db, 'attendanceRecords'),
-            where('checkInTime', '>=', todayStart),
-            where('checkInTime', '<', todayEnd)
+            where('actualStartTime', '>=', todayStart),
+            where('actualStartTime', '<', todayEnd)
           );
           const todayAttendanceSnapshot = await getDocs(todayAttendanceQuery);
           todayCheckedInCount = todayAttendanceSnapshot.size;

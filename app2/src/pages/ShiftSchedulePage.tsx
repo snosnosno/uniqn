@@ -203,7 +203,7 @@ const ShiftSchedulePage: React.FC = () => {
   
   // 사용자 확인 모달 (스태프 제거용)
   const confirmRemoveStaff = (staffId: string, staffName: string) => {
-    if (window.confirm(t('shiftSchedule.confirmRemoveDealer', { dealerName: staffName }))) {
+    if (window.confirm(t('shiftSchedule.confirmRemoveStaff', { staffName: staffName }))) {
       handleRemoveStaff(staffId);
     }
   };

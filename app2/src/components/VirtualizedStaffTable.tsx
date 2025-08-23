@@ -97,10 +97,9 @@ const VirtualizedTableRow: React.FC<{
       };
     }
 
-    // actualStartTime/actualEndTime 우선, checkInTime/checkOutTime fallback
+    // actualStartTime/actualEndTime 사용
     const actualStartTime = exceptionRecord?.workLog?.actualStartTime || 
-                           attendanceRecord?.actualStartTime || 
-                           attendanceRecord?.checkInTime;
+                           attendanceRecord?.actualStartTime;
     // @deprecated: assignedTime 사용, 추후 workLog.scheduledStartTime 우선 사용
     const scheduledStartTime = staff.assignedTime;
     
@@ -109,8 +108,7 @@ const VirtualizedTableRow: React.FC<{
     
     // 퇴근시간
     const endTime = exceptionRecord?.workLog?.actualEndTime || 
-                   attendanceRecord?.actualEndTime || 
-                   attendanceRecord?.checkOutTime;
+                   attendanceRecord?.actualEndTime;
     
     return {
       displayStartTime: formatTimeDisplay(startTime),

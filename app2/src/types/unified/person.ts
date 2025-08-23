@@ -150,13 +150,7 @@ export function personToApplicant(person: Person): Applicant | null {
  * 기존 staffId/applicantId를 personId로 통합
  * 하위 호환성을 위한 헬퍼 함수
  */
-export function getPersonId(entity: { id?: string; staffId?: string; applicantId?: string; personId?: string; dealerId?: string }): string | undefined {
+export function getPersonId(entity: { id?: string; staffId?: string; applicantId?: string; personId?: string }): string | undefined {
   return entity.personId || entity.staffId || entity.applicantId || entity.id;
 }
 
-/**
- * dealerId 호환성 지원 (deprecated but working)
- */
-export function getDealerId(entity: { dealerId?: string; staffId?: string; personId?: string }): string | undefined {
-  return entity.dealerId || entity.staffId || entity.personId;
-}

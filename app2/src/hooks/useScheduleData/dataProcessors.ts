@@ -168,9 +168,9 @@ export const processWorkLogData = (
   docId: string,
   data: WorkLogData
 ): ScheduleEvent => {
-  // actualStartTime/actualEndTime 우선, checkInTime/checkOutTime fallback
-  const actualStart = data.actualStartTime || data.checkInTime || '';
-  const actualEnd = data.actualEndTime || data.checkOutTime || '';
+  // actualStartTime/actualEndTime 사용
+  const actualStart = data.actualStartTime || '';
+  const actualEnd = data.actualEndTime || '';
   
   const timeData = parseTimeString(
     `${data.scheduledStartTime || actualStart || ''}-${data.scheduledEndTime || actualEnd || ''}`,

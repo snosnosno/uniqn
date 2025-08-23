@@ -39,8 +39,8 @@ jest.mock('../../hooks/useAttendanceStatus', () => ({
   useAttendanceStatus: jest.fn(() => ({
     getStaffAttendanceStatus: jest.fn(() => ({
       status: 'checked_in',
-      checkInTime: new Date('2024-07-25T09:00:00'),
-      checkOutTime: null
+      actualStartTime: new Date('2024-07-25T09:00:00'),
+      actualEndTime: null
     }))
   }))
 }));

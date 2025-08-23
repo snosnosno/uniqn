@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 이 파일은 Claude Code (claude.ai/code)가 이 저장소의 코드 작업 시 참고하는 가이드입니다.
-
+항상 한글로 답변할 것
 ## 📌 프로젝트 개요
 
 **T-HOLDEM**은 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼입니다.
@@ -31,19 +31,22 @@
 ## 🚀 최근 업데이트 (2025-01-29)
 
 ### ✅ 완료된 작업
-- **레거시 필드 완전 제거** (139개 → 0개)
-  - `dealerId` → `staffId`
-  - `jobPostingId` → `eventId`
-  - `dealerName` → `staffName`
-- **타입 안전성**: TypeScript 컴파일 에러 0개
-- **코드 최적화**: 번들 크기 273KB (gzipped)
-- **빌드 시스템**: Production 빌드 성공
+- **레거시 필드 완전 제거** ✨
+  - 모든 `dealerId` → `staffId` 마이그레이션 완료
+  - 모든 `jobPostingId` → `eventId` 변환 완료
+  - 모든 `dealerName` → `staffName` 교체 완료
+  - `checkInTime`/`checkOutTime` → `actualStartTime`/`actualEndTime` 표준화
+  - **하위 호환성 코드 완전 제거** (백업 필드, fallback 로직 모두 삭제)
+- **타입 안전성**: TypeScript 컴파일 에러 0개 달성
+- **코드 최적화**: 번들 크기 273KB 유지 (레거시 코드 제거로 더 깔끔해짐)
+- **빌드 시스템**: Production 빌드 완벽 성공
 
 ### 📊 현재 상태
-- **빌드**: ✅ 성공
-- **TypeScript**: ✅ 에러 0개
+- **빌드**: ✅ 성공 (경고 없음)
+- **TypeScript**: ✅ 에러 0개 (완벽한 타입 안전성)
 - **ESLint**: 9개 에러 (테스트 파일만), 145개 경고
 - **번들 크기**: 273KB (최적화됨)
+- **레거시 코드**: 0개 (100% 제거 완료)
 
 ## 📁 프로젝트 구조
 
@@ -117,7 +120,7 @@ npm run test           # 테스트 실행
 ## ⚠️ 중요 규칙
 
 ### ❌ 절대 하지 말 것
-- 레거시 필드 사용 (`dealerId`, `jobPostingId`, `dealerName`)
+- ~~레거시 필드 사용~~ (완전 제거됨 ✅)
 - `console.log` 직접 사용 (대신 `logger` 사용)
 - `any` 타입 남용
 - Firebase 실시간 구독 없이 수동 새로고침

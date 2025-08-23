@@ -1,5 +1,8 @@
 # 지원자-스태프-정산 통합 흐름도
 
+**최종 업데이트**: 2025년 1월 29일  
+**버전**: 2.0 (표준 필드 사용)
+
 ## 📊 전체 프로세스 개요
 
 ```mermaid
@@ -49,7 +52,7 @@ graph TD
 // applications 컬렉션
 {
   id: "app-001",
-  eventId: "event-001",  // 표준 필드
+  eventId: "event-001",  // ✅ 표준 필드 (jobPostingId 제거됨)
   applicantId: "user-123",
   name: "홍길동",
   phone: "010-1234-5678",
@@ -88,8 +91,9 @@ async function confirmApplicant(applicationId: string) {
   
   // 3. WorkLog 자동 생성
   await createWorkLog({
-    staffId: staffData.id,  // 표준 필드
-    eventId: applicant.eventId,  // 표준 필드
+    staffId: staffData.id,  // ✅ 표준 필드 (dealerId 제거됨)
+    staffName: staffData.name,  // ✅ 표준 필드 (dealerName 제거됨)
+    eventId: applicant.eventId,  // ✅ 표준 필드 (jobPostingId 제거됨)
     date: applicant.assignedDate,
     scheduledStartTime: parseTime(applicant.timeSlot.split('-')[0]),
     scheduledEndTime: parseTime(applicant.timeSlot.split('-')[1]),
@@ -104,8 +108,9 @@ async function confirmApplicant(applicationId: string) {
 // workLogs 컬렉션
 {
   id: "worklog-001",
-  staffId: "staff-123",  // 표준 필드
-  eventId: "event-001",  // 표준 필드
+  staffId: "staff-123",  // ✅ 표준 필드
+  staffName: "홍길동",   // ✅ 표준 필드
+  eventId: "event-001",  // ✅ 표준 필드
   date: "2025-01-30",
   
   // 예정 시간 (공고에서 가져옴)
@@ -113,8 +118,8 @@ async function confirmApplicant(applicationId: string) {
   scheduledEndTime: Timestamp("2025-01-30T18:00:00"),
   
   // 실제 시간 (출퇴근 시 기록)
-  actualStartTime: null,  // 체크인 시 기록
-  actualEndTime: null,    // 체크아웃 시 기록
+  actualStartTime: null,  // ✅ 체크인 시 기록 (checkInTime 제거됨)
+  actualEndTime: null,    // ✅ 체크아웃 시 기록 (checkOutTime 제거됨)
   
   status: "not_started",  // not_started → checked_in → checked_out
   

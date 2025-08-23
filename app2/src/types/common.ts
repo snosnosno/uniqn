@@ -120,8 +120,7 @@ export interface WorkLog extends FirebaseDocument {
  * 출석 기록 타입 (공통 버전)
  * @description 기본 AttendanceRecord 타입입니다. 더 자세한 기능은 types/attendance.ts를 참조하세요.
  * 
- * 표준 필드: staffId 사용
- * - actualStartTime/EndTime (표준) → checkInTime/checkOutTime (fallback)
+ * 표준 필드: staffId, actualStartTime/EndTime 사용
  * 
  * @see types/attendance.ts - 완전한 AttendanceRecord 정의
  */
@@ -141,18 +140,6 @@ export interface AttendanceRecord extends FirebaseDocument {
   
   /** 실제 퇴근 시간 (표준 필드) */
   actualEndTime?: Timestamp | Date;
-  
-  /** 
-   * @deprecated checkInTime은 actualStartTime으로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 actualStartTime을 사용하세요.
-   */
-  checkInTime?: Timestamp | Date;
-  
-  /** 
-   * @deprecated checkOutTime은 actualEndTime으로 대체되었습니다.
-   * 하위 호환성을 위해 유지되며, 새로운 코드에서는 actualEndTime을 사용하세요.
-   */
-  checkOutTime?: Timestamp | Date;
   
   /** QR 코드 ID */
   qrCodeId?: string;

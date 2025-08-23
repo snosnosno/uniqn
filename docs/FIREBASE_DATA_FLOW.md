@@ -1,8 +1,12 @@
 # Firebase 데이터 구조 및 흐름
 
+**최종 업데이트**: 2025년 1월 29일  
+**버전**: 2.0 (레거시 필드 완전 제거)
+
 ## 📊 데이터 모델 개요
 
-T-HOLDEM은 Firebase Firestore를 사용하여 실시간 데이터 동기화를 구현합니다.
+T-HOLDEM은 Firebase Firestore를 사용하여 실시간 데이터 동기화를 구현합니다.  
+**모든 레거시 필드가 제거되어 표준 필드만 사용합니다.**
 
 ## 🗂️ 컬렉션 구조
 
@@ -24,16 +28,18 @@ interface Staff {
 ```typescript
 interface WorkLog {
   id: string;              // 문서 ID
-  staffId: string;         // 스태프 ID (표준 필드)
-  eventId: string;         // 이벤트 ID (표준 필드)
+  staffId: string;         // 스태프 ID ✅
+  staffName: string;       // 스태프 이름 ✅
+  eventId: string;         // 이벤트 ID ✅
   date: string;            // 근무 날짜 (YYYY-MM-DD)
   scheduledStartTime: Timestamp;  // 예정 시작 시간
   scheduledEndTime: Timestamp;    // 예정 종료 시간
-  actualStartTime?: Timestamp;    // 실제 시작 시간
-  actualEndTime?: Timestamp;      // 실제 종료 시간
+  actualStartTime?: Timestamp;    // 실제 시작 시간 ✅
+  actualEndTime?: Timestamp;      // 실제 종료 시간 ✅
   status: 'not_started' | 'checked_in' | 'checked_out';
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  // ❌ 제거된 필드: dealerId, checkInTime, checkOutTime
 }
 ```
 
@@ -41,12 +47,13 @@ interface WorkLog {
 ```typescript
 interface AttendanceRecord {
   id: string;              // 문서 ID
-  staffId: string;         // 스태프 ID (표준 필드)
-  eventId: string;         // 이벤트 ID
-  checkInTime?: Timestamp; // 체크인 시간
-  checkOutTime?: Timestamp;// 체크아웃 시간
+  staffId: string;         // 스태프 ID ✅
+  eventId: string;         // 이벤트 ID ✅
+  actualStartTime?: Timestamp;    // 실제 시작 시간 ✅
+  actualEndTime?: Timestamp;      // 실제 종료 시간 ✅
   status: 'present' | 'absent' | 'late';
   createdAt: Timestamp;
+  // ❌ 제거된 필드: checkInTime, checkOutTime
 }
 ```
 
@@ -69,12 +76,13 @@ interface JobPosting {
 ```typescript
 interface Application {
   id: string;              // 문서 ID
-  eventId: string;         // 이벤트 ID (표준 필드)
+  eventId: string;         // 이벤트 ID ✅
   applicantId: string;     // 지원자 ID
   role: string;            // 지원 역할
   timeSlot: string;        // 지원 시간대
   status: 'pending' | 'confirmed' | 'rejected';
   createdAt: Timestamp;
+  // ❌ 제거된 필드: jobPostingId
 }
 ```
 

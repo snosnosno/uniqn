@@ -10,6 +10,7 @@ import { calculateWorkHours as calculateHours } from '../utils/workLogMapper';
 import { convertAssignedTimeToScheduled } from '../utils/workLogUtils';
 import { JobPosting } from '../types/jobPosting';
 import { logger } from '../utils/logger';
+import { getStaffIdentifier, matchStaffIdentifier, getUniqueStaffIdentifiers } from '../utils/staffIdMapper';
 
 interface UseEnhancedPayrollProps {
   eventId?: string;
@@ -42,9 +43,9 @@ export const useEnhancedPayroll = ({
     return new Date().toISOString().split('T')[0] || '';
   }, [endDate]);
 
-  // 확정된 스태프의 ID 목록
-  const staffIds = useMemo(() => {
-    return confirmedStaff.map(staff => staff.userId);
+  // 확정된 스태프의 ID 목록 (staffId/userId 통합)
+  const staffIdentifiers = useMemo(() => {
+    return getUniqueStaffIdentifiers(confirmedStaff);
   }, [confirmedStaff]);
 
   // Context에서 WorkLogs 가져오기
@@ -66,7 +67,8 @@ export const useEnhancedPayroll = ({
   const filteredWorkLogs = useMemo(() => {
     if (!workLogs || workLogs.length === 0) return [];
     
-    let filtered = workLogs.filter(log => staffIds.includes(log.staffId));
+    // staffId/userId 통합 필터링
+    let filtered = workLogs.filter(log => matchStaffIdentifier(log, staffIdentifiers));
     
     if (defaultStartDate) {
       filtered = filtered.filter(log => log.date >= defaultStartDate);
@@ -76,7 +78,7 @@ export const useEnhancedPayroll = ({
     }
     
     return filtered;
-  }, [workLogs, staffIds, defaultStartDate, defaultEndDate]);
+  }, [workLogs, staffIdentifiers, defaultStartDate, defaultEndDate]);
 
   // 역할별 급여 정보 가져오기 (개선된 버전)
   const getSalaryInfo = useCallback((role: string) => {
@@ -203,12 +205,14 @@ export const useEnhancedPayroll = ({
     });
     
     confirmedStaff.forEach(staff => {
-      const staffRoleKey = `${staff.userId}_${staff.role}_${staff.date || ''}`;
+      const staffId = getStaffIdentifier(staff);
+      const staffRoleKey = `${staffId}_${staff.role}_${staff.date || ''}`;
       
       logger.debug('Processing confirmedStaff item', {
         component: 'useEnhancedPayroll',
         data: {
           staffRoleKey,
+          staffId,
           userId: staff.userId,
           name: staff.name,
           role: staff.role,
@@ -219,9 +223,9 @@ export const useEnhancedPayroll = ({
         }
       });
       
-      // 해당 스태프의 특정 날짜 workLog 찾기 - confirmedStaff 항목의 날짜와 정확히 매칭
+      // 해당 스태프의 특정 날짜 workLog 찾기 - staffId/userId 통합 매칭
       const staffWorkLogs = filteredWorkLogs.filter(log => 
-        log.staffId === staff.userId && 
+        matchStaffIdentifier(log, [staffId]) && 
         log.date === staff.date  // 날짜 매칭 추가로 정확한 workLog만 가져옴
       );
       
@@ -312,15 +316,15 @@ export const useEnhancedPayroll = ({
         
         // 같은 staffId, 날짜로 실제 workLog가 있는지 확인 (정확한 날짜 매칭)
         const existingWorkLog = workLogs.find(log => 
-          log.staffId === staff.userId && 
+          matchStaffIdentifier(log, [staffId]) && 
           log.date === staff.date &&
-          (log.scheduledStartTime || log.actualStartTime)
+          log.scheduledStartTime
         );
         
         logger.debug('Searching for existing WorkLog', {
           component: 'useEnhancedPayroll',
           data: {
-            staffId: staff.userId,
+            staffId: staffId,
             staffName: staff.name,
             role: staff.role,
             date: staff.date,
@@ -328,10 +332,10 @@ export const useEnhancedPayroll = ({
             foundExisting: !!existingWorkLog,
             existingWorkLogId: existingWorkLog?.id || null,
             totalWorkLogs: workLogs.length,
-            matchingStaffWorkLogs: workLogs.filter(log => log.staffId === staff.userId).map(log => ({
+            matchingStaffWorkLogs: workLogs.filter(log => matchStaffIdentifier(log, [staffId])).map(log => ({
               id: log.id,
               date: log.date,
-              hasTime: !!(log.scheduledStartTime || log.actualStartTime)
+              hasTime: !!log.scheduledStartTime
             }))
           }
         });
@@ -590,21 +594,22 @@ export const useEnhancedPayroll = ({
         component: 'useEnhancedPayroll'
       });
       
-      // confirmedStaff에서 이름 가져오기 (role은 workLog에서 왔을 수 있으므로)
+      // confirmedStaff에서 이름 가져오기 (staffId/userId 통합)
       if (!staffName) {
-        const staff = confirmedStaff.find(s => s.userId === log.staffId);
+        const staff = confirmedStaff.find(s => matchStaffIdentifier(log, [getStaffIdentifier(s)]));
         if (staff) {
           staffName = staff.name;
         }
       }
       
-      const key = `${log.staffId}_${role}`;
+      const logStaffId = getStaffIdentifier(log);
+      const key = `${logStaffId}_${role}`;
       
       // WorkLog 처리
       
       if (!staffRoleMap.has(key)) {
         staffRoleMap.set(key, {
-          staffId: log.staffId,
+          staffId: logStaffId,
           staffName: staffName,
           role: role,
           workLogs: []
@@ -669,9 +674,9 @@ export const useEnhancedPayroll = ({
           });
         }
         
-        // 정산 목적: scheduledEndTime(스태프탭 설정) 또는 actualEndTime(실제 퇴근) 있으면 계산
+        // 정산 목적: scheduledEndTime(스태프탭 설정) 있으면 계산
         // 모든 스케줄된 WorkLog는 시간이 있으면 정산에 포함
-        if (log.scheduledEndTime || log.actualEndTime) {
+        if (log.scheduledEndTime) {
           // 고유한 날짜 추가 (중복 제거)
           uniqueDates.add(log.date);
           

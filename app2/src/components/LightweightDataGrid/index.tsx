@@ -324,9 +324,9 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
   const columns = useMemo<ColumnDef<GridRow>[]>(() => {
     const baseColumns: ColumnDef<GridRow>[] = [
       {
-        id: 'dealerName',
-        accessorKey: 'dealerName',
-        header: '딜러명',
+        id: 'staffName',
+        accessorKey: 'staffName',
+        header: '스태프',
         size: 120,
         enableResizing: false,
         cell: ({ row }) => (

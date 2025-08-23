@@ -304,8 +304,7 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
 };
 
 /**
- * staffId와 dealerId 매칭 확인
- * @deprecated dealerId 필드는 단계적으로 제거 예정. staffId 우선 사용
+ * 출석 기록 찾기
  */
 export const isStaffIdMatch = (recordStaffId: string, targetStaffId: string): boolean => {
   // 정확한 매치
@@ -329,9 +328,7 @@ export const findStaffWorkLog = (
   return attendanceRecords.find(record => {
     const staffMatch = isStaffIdMatch(record.staffId, staffId) ||
                       record.workLog?.staffId === staffId ||
-                      isStaffIdMatch(record.workLog?.staffId || '', staffId) ||
-                      record.workLog?.dealerId === staffId || // @deprecated - 하위 호환성을 위해 유지
-                      isStaffIdMatch(record.workLog?.dealerId || '', staffId);
+                      isStaffIdMatch(record.workLog?.staffId || '', staffId);
     
     const dateMatch = record.workLog?.date === date;
     
