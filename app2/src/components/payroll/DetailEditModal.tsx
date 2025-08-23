@@ -68,50 +68,71 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   const workHistory = useMemo(() => {
     if (!staff) return [];
     
-    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링 (역할별 정확한 필터링)
+    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링 및 병합
     const staffId = getStaffIdentifier(staff);
-    const staffWorkLogs = realTimeWorkLogs.filter(log => {
-      // 1. 스태프 ID 매칭
+    
+    // 1. 스태프의 모든 WorkLog 가져오기 (역할 구분 없이)
+    const allStaffWorkLogs = realTimeWorkLogs.filter(log => {
       const matches = matchStaffIdentifier(log, [staffId]);
-      if (!matches) return false;
-      
-      // 2. 역할 매칭 (정확한 역할만)
-      return log.role === staff.role;
+      return matches;
     });
     
-    // 중복 제거: 같은 날짜의 중복 로그 제거
-    const uniqueLogsMap = new Map<string, any>();
-    staffWorkLogs.forEach(log => {
-      const key = `${log.date}_${log.role}`;
-      // 더 완전한 데이터 우선 (scheduledStartTime과 scheduledEndTime이 있는 것)
-      if (!uniqueLogsMap.has(key) || 
-          (log.scheduledStartTime && log.scheduledEndTime && 
-           log.scheduledStartTime !== '미정' && log.scheduledEndTime !== '미정')) {
-        uniqueLogsMap.set(key, log);
+    // 2. 날짜별로 그룹화하여 스케줄 데이터와 실제 데이터 병합
+    const mergedLogsMap = new Map<string, any>();
+    
+    // 먼저 스케줄 데이터 (type: 'schedule'이고 role이 일치하는 데이터)를 맵에 넣기
+    allStaffWorkLogs.forEach(log => {
+      if (log.role === staff.role && log.type === 'schedule') {
+        const key = `${log.date}_${staff.role}`;
+        mergedLogsMap.set(key, { ...log });
       }
     });
     
-    const uniqueWorkLogs = Array.from(uniqueLogsMap.values());
+    // 실제 출퇴근 데이터를 찾아서 병합
+    allStaffWorkLogs.forEach(log => {
+      // type이 schedule이 아니고 actualStartTime/actualEndTime이 있는 경우 (실제 출퇴근 데이터)
+      if (log.type !== 'schedule' && (log.actualStartTime || log.actualEndTime || (log as any).status === 'checked_out')) {
+        // 해당 날짜의 스케줄 데이터 찾기
+        const scheduleKey = `${log.date}_${staff.role}`;
+        if (mergedLogsMap.has(scheduleKey)) {
+          // 스케줄 데이터가 있는 경우에만 실제 데이터 병합
+          // 이렇게 하면 해당 역할의 스케줄이 있는 날짜만 출퇴근 데이터가 표시됨
+          const scheduleLog = mergedLogsMap.get(scheduleKey);
+          mergedLogsMap.set(scheduleKey, {
+            ...scheduleLog,
+            actualStartTime: log.actualStartTime || scheduleLog.actualStartTime,
+            actualEndTime: log.actualEndTime || scheduleLog.actualEndTime,
+            status: log.status || scheduleLog.status // 실제 상태 우선 (checked_out 등)
+          });
+        }
+        // else 블록 제거: 스케줄 데이터가 없는 날짜의 출퇴근 데이터는 무시
+        // (다른 역할의 출퇴근 데이터일 가능성이 높음)
+      }
+    });
     
-    logger.debug('DetailEditModal - 실시간 WorkLog 필터링', {
+    // 역할이 일치하는 스케줄 데이터만 있고 실제 데이터가 없는 경우도 포함
+    const uniqueWorkLogs = Array.from(mergedLogsMap.values());
+    
+    logger.debug('DetailEditModal - 실시간 WorkLog 병합 결과', {
       component: 'DetailEditModal',
       data: {
         staffId: staffId,
         staffName: staff.staffName,
         staffRole: staff.role,
         totalWorkLogs: realTimeWorkLogs.length,
-        filteredWorkLogs: staffWorkLogs.length,
-        uniqueWorkLogs: uniqueWorkLogs.length,
+        allStaffWorkLogs: allStaffWorkLogs.length,
+        mergedWorkLogs: uniqueWorkLogs.length,
         workLogIds: uniqueWorkLogs.map(log => log.id),
-        workLogDetails: uniqueWorkLogs.map(log => ({
+        mergedDetails: uniqueWorkLogs.map(log => ({
           id: log.id,
-          staffId: log.staffId,
-          staffName: log.staffName,
           date: log.date,
           role: log.role,
-          status: log.status,  // status 필드 추가
+          type: log.type,
+          status: log.status,
           scheduledStartTime: log.scheduledStartTime,
-          scheduledEndTime: log.scheduledEndTime
+          scheduledEndTime: log.scheduledEndTime,
+          actualStartTime: log.actualStartTime,
+          actualEndTime: log.actualEndTime
         }))
       }
     });
