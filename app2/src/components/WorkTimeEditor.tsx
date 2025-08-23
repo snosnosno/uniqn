@@ -23,6 +23,9 @@ interface WorkLogWithTimestamp {
   staffName?: string;
   date: string;
   role?: string;
+  assignedRole?: string;  // 지원자에서 확정된 역할
+  assignedTime?: string;  // 지원자에서 확정된 시간
+  assignedDate?: string;  // 지원자에서 확정된 날짜
   scheduledStartTime: Timestamp | Date | null;
   scheduledEndTime: Timestamp | Date | null;
   actualStartTime: Timestamp | Date | null;
@@ -201,7 +204,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           eventId: workLog.eventId || '',
           staffName: workLog.staffName || '',
           date: workLog.date,
-          role: workLog.role || 'dealer',  // workLog에서 role 가져오기
+          role: workLog.assignedRole || workLog.role || 'dealer',  // assignedRole 우선 사용
           type: 'schedule',
           scheduledStartTime: finalStartTime,
           scheduledEndTime: finalEndTime,

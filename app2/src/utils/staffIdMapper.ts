@@ -15,6 +15,7 @@ export function getStaffIdentifier(staff: any): string {
 /**
  * WorkLog가 특정 스태프 식별자들과 매칭되는지 확인
  * WorkLog의 staffId 또는 userId가 주어진 식별자 목록에 포함되는지 체크
+ * 접미사가 붙은 ID도 체크 (예: "userId_0", "userId_1" 등)
  */
 export function matchStaffIdentifier(log: any, staffIdentifiers: string[]): boolean {
   if (!log || !staffIdentifiers || staffIdentifiers.length === 0) return false;
@@ -22,7 +23,19 @@ export function matchStaffIdentifier(log: any, staffIdentifiers: string[]): bool
   const logId = log.staffId || log.userId || '';
   if (!logId) return false;
   
-  return staffIdentifiers.includes(logId);
+  // 정확한 매칭
+  if (staffIdentifiers.includes(logId)) return true;
+  
+  // 접미사가 붙은 ID 매칭 체크
+  // 예: logId가 "tURgdOBmtYfO5Bgzm8NyGKGtbL12_0" 이고
+  //     staffIdentifiers에 "tURgdOBmtYfO5Bgzm8NyGKGtbL12"가 있는 경우
+  for (const identifier of staffIdentifiers) {
+    if (logId.startsWith(identifier + '_')) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 /**

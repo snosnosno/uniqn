@@ -125,13 +125,26 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   // 자동 불러오기 핸들러
   const handleRefresh = useCallback(() => {
     logger.info('정산 데이터 새로고침 시작', { component: 'EnhancedPayrollTab' });
+    
+    // 디버그: 현재 데이터 상태 확인
+    logger.info('📊 현재 정산 데이터 상태', {
+      component: 'EnhancedPayrollTab',
+      data: {
+        jobPostingId: jobPosting?.id,
+        confirmedStaffCount: jobPosting?.confirmedStaff?.length || 0,
+        staffWorkDataCount: staffWorkData.length,
+        availableRoles,
+        summary
+      }
+    });
+    
     refreshStaff();
     refreshWorkLogs();
     // 추가 동기화를 위한 재호출
     setTimeout(() => {
       refreshWorkLogs();
     }, 500);
-  }, [refreshStaff, refreshWorkLogs]);
+  }, [refreshStaff, refreshWorkLogs, jobPosting, staffWorkData, availableRoles, summary]);
 
   // 확정된 스태프가 없는 경우
   if (!jobPosting?.confirmedStaff || jobPosting.confirmedStaff.length === 0) {
@@ -315,7 +328,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          {roles.join(', ')}
+                          {data.role}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

@@ -5,7 +5,7 @@ import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import { useUnifiedWorkLogs } from '../../hooks/useUnifiedWorkLogs';
 import { useJobPostingStore } from '../../stores/jobPostingStore';
-import { calculateWorkHours } from '../../utils/workLogMapper';
+import { calculateWorkHours, parseTimeToString } from '../../utils/workLogMapper';
 import { getStaffIdentifier, matchStaffIdentifier } from '../../utils/staffIdMapper';
 
 interface DetailEditModalProps {
@@ -62,6 +62,29 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     }
   }, [staff]);
 
+  // 역할 추론 함수 - staffId 접미사를 기반으로 역할 결정
+  const inferRoleFromStaffId = (log: any): string => {
+    if (log.role && log.role !== 'unknown') return log.role;
+    
+    const staffId = log.staffId || log.userId || '';
+    if (!staffId) return 'unknown';
+    
+    // 접미사 패턴 확인
+    const match = staffId.match(/_(\d+)$/);
+    if (!match) return 'floor';  // 접미사가 없으면 floor로 가정
+    
+    const suffix = parseInt(match[1]);
+    
+    // 접미사 기반 역할 매핑
+    // _0, _1, _2 = dealer (첫 3개)
+    // _3, _4, _5 = floor (다음 3개)
+    if (suffix <= 2) return 'dealer';
+    if (suffix <= 5) return 'floor';
+    
+    // 그 외는 floor로 가정
+    return 'floor';
+  };
+
   // 날짜별 근무 내역 계산 - 실시간 WorkLog 데이터 사용
   const workHistory = useMemo(() => {
     if (!staff) return [];
@@ -73,8 +96,14 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
       // role 필터링 제거 - 모든 역할 포함
     );
     
+    // 역할 추론 적용
+    const workLogsWithInferredRoles = staffWorkLogs.map(log => ({
+      ...log,
+      role: inferRoleFromStaffId(log)
+    }));
+    
     // 역할별 그룹화
-    const workLogsByRole = staffWorkLogs.reduce((acc: Record<string, typeof staffWorkLogs>, log) => {
+    const workLogsByRole = workLogsWithInferredRoles.reduce((acc: Record<string, typeof staffWorkLogs>, log) => {
       const role = log.role || 'unknown';
       if (!acc[role]) acc[role] = [];
       const roleArray = acc[role];
@@ -88,9 +117,19 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
       component: 'DetailEditModal',
       data: {
         staffId: staffId,
+        staffName: staff.staffName,
         totalWorkLogs: realTimeWorkLogs.length,
         filteredWorkLogs: staffWorkLogs.length,
         workLogIds: staffWorkLogs.map(log => log.id),
+        workLogDetails: staffWorkLogs.map(log => ({
+          id: log.id,
+          staffId: log.staffId,
+          staffName: log.staffName,
+          date: log.date,
+          role: log.role,
+          scheduledStartTime: log.scheduledStartTime,
+          scheduledEndTime: log.scheduledEndTime
+        })),
         roles: Object.keys(workLogsByRole),
         roleDistribution: Object.entries(workLogsByRole).map(([role, logs]) => ({ role, count: logs.length }))
       }
@@ -144,25 +183,22 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             }
           }
           
-          // 시간 데이터 파싱
+          // 시간 데이터 파싱 - workLogMapper의 함수 사용
           const parseTime = (timeValue: any): string => {
-            if (!timeValue) return '미정';
+            const result = parseTimeToString(timeValue);
             
-            try {
-              if (typeof timeValue === 'object' && 'seconds' in timeValue) {
-                const date = new Date(timeValue.seconds * 1000);
-                return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-              }
-              if (typeof timeValue === 'string') {
-                return timeValue;
-              }
-              if (timeValue instanceof Date) {
-                return `${String(timeValue.getHours()).padStart(2, '0')}:${String(timeValue.getMinutes()).padStart(2, '0')}`;
-              }
-            } catch (error) {
-              logger.error('시간 파싱 오류', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
+            if (result) {
+              logger.debug('DetailEditModal - 시간 파싱 성공', {
+                component: 'DetailEditModal',
+                data: { timeValue, result }
+              });
+              return result;
             }
             
+            logger.debug('DetailEditModal - 시간 파싱 실패', {
+              component: 'DetailEditModal',
+              data: { timeValue }
+            });
             return '미정';
           };
 
@@ -174,18 +210,54 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           // scheduledTime이 있으면 사용
           if (log.scheduledStartTime) {
             startTime = parseTime(log.scheduledStartTime);
+            logger.debug('scheduledStartTime 파싱', {
+              component: 'DetailEditModal',
+              data: { 
+                raw: log.scheduledStartTime,
+                parsed: startTime 
+              }
+            });
           }
           if (log.scheduledEndTime) {
             endTime = parseTime(log.scheduledEndTime);
+            logger.debug('scheduledEndTime 파싱', {
+              component: 'DetailEditModal',
+              data: { 
+                raw: log.scheduledEndTime,
+                parsed: endTime 
+              }
+            });
           }
           
-          // assignedTime이 있으면 변환해서 사용 (백업)
-          if (startTime === '미정' && (log as any).assignedTime) {
+          // timeSlot 필드에서 직접 파싱 (백업)
+          if ((startTime === '미정' || endTime === '미정') && (log as any).timeSlot) {
+            const timeSlot = (log as any).timeSlot;
+            logger.debug('timeSlot 필드 파싱 시도', {
+              component: 'DetailEditModal',
+              data: { timeSlot }
+            });
+            if (timeSlot && timeSlot !== '미정' && timeSlot.includes('-')) {
+              const parts = timeSlot.split('-').map((t: string) => t.trim());
+              if (parts[0] && startTime === '미정') {
+                startTime = parts[0];
+              }
+              if (parts[1] && endTime === '미정') {
+                endTime = parts[1];
+              }
+              logger.debug('timeSlot 파싱 결과', {
+                component: 'DetailEditModal',
+                data: { startTime, endTime }
+              });
+            }
+          }
+          
+          // assignedTime이 있으면 변환해서 사용 (최종 백업)
+          if ((startTime === '미정' || endTime === '미정') && (log as any).assignedTime) {
             const assignedTime = (log as any).assignedTime;
             if (assignedTime && assignedTime.includes('-')) {
               const parts = assignedTime.split('-').map((t: string) => t.trim());
-              if (parts[0]) startTime = parts[0];
-              if (parts[1]) endTime = parts[1];
+              if (parts[0] && startTime === '미정') startTime = parts[0];
+              if (parts[1] && endTime === '미정') endTime = parts[1];
             }
           }
           
@@ -222,7 +294,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           return {
             date: dateStr,
             dayName,
-            role: log.role || 'unknown',  // 역할 정보 추가
+            role: inferRoleFromStaffId(log),  // 역할 정보 추가 (추론 적용)
             startTime,
             endTime,
             workHours: workHours.toFixed(1),
@@ -448,8 +520,16 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                               </div>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100">
-                                {history.role}
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                history.role === 'floor' ? 'bg-purple-100 text-purple-800' :
+                                history.role === 'dealer' ? 'bg-blue-100 text-blue-800' :
+                                history.role === 'manager' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {history.role === 'floor' ? 'floor' :
+                                 history.role === 'dealer' ? 'dealer' :
+                                 history.role === 'manager' ? 'manager' :
+                                 history.role}
                               </span>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -463,12 +543,17 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-center">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                history.status === '출석' ? 'bg-green-100 text-green-800' :
-                                history.status === '지각' ? 'bg-yellow-100 text-yellow-800' :
-                                history.status === '결석' ? 'bg-red-100 text-red-800' :
+                                history.status === 'checked_out' ? 'bg-green-100 text-green-800' :
+                                history.status === 'checked_in' ? 'bg-blue-100 text-blue-800' :
+                                history.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                                history.status === 'absent' ? 'bg-red-100 text-red-800' :
                                 'bg-gray-100 text-gray-800'
                               }`}>
-                                {history.status}
+                                {history.status === 'checked_out' ? '퇴근' :
+                                 history.status === 'checked_in' ? '출근' :
+                                 history.status === 'scheduled' ? '예정' :
+                                 history.status === 'absent' ? '결석' :
+                                 history.status}
                               </span>
                             </td>
                           </tr>

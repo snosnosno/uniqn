@@ -181,8 +181,106 @@ export const useStaffWorkData = ({
     
     // 고유한 스태프들에 대해서만 처리
     uniqueStaffMap.forEach((staff: any) => {
-      // 해당 스태프의 WorkLogs 필터링
-      const staffWorkLogs = filteredWorkLogs.filter(log => log.staffId === staff.userId);
+      // 디버깅: 스태프 정보 확인
+      logger.debug('스태프 처리 시작', {
+        component: 'useStaffWorkData',
+        data: {
+          staffName: staff.name,
+          userId: staff.userId,
+          applicantId: staff.applicantId,
+          role: staff.role,
+          roles: staff.roles
+        }
+      });
+      
+      // 해당 스태프의 WorkLogs 필터링 - 다중 조건으로 매칭
+      const staffWorkLogs = filteredWorkLogs.filter(log => {
+        // 1. 정확한 ID 매칭 (staffId === userId)
+        if (log.staffId === staff.userId) {
+          logger.debug('ID 매칭 성공 (userId)', {
+            component: 'useStaffWorkData',
+            data: { 
+              staffId: log.staffId, 
+              userId: staff.userId,
+              role: log.role
+            }
+          });
+          return true;
+        }
+        
+        // 2. 접미사가 붙은 ID 매칭 (staffId가 userId로 시작하는 경우)
+        // 예: "tURgdOBmtYfO5Bgzm8NyGKGtbL12_0" 은 "tURgdOBmtYfO5Bgzm8NyGKGtbL12"의 역할별 WorkLog
+        if (log.staffId.startsWith(staff.userId + '_')) {
+          logger.debug('ID 매칭 성공 (접미사 포함)', {
+            component: 'useStaffWorkData',
+            data: {
+              staffId: log.staffId,
+              userId: staff.userId,
+              role: log.role,
+              suffix: log.staffId.substring(staff.userId.length)
+            }
+          });
+          return true;
+        }
+        
+        // 3. applicantId 매칭 (userId가 실제로 applicantId인 경우)
+        if (log.staffId === staff.applicantId) {
+          logger.debug('ID 매칭 성공 (applicantId)', {
+            component: 'useStaffWorkData',
+            data: { 
+              staffId: log.staffId, 
+              applicantId: staff.applicantId,
+              role: log.role
+            }
+          });
+          return true;
+        }
+        
+        // 4. applicantId에 접미사가 붙은 경우
+        if (staff.applicantId && log.staffId.startsWith(staff.applicantId + '_')) {
+          logger.debug('ID 매칭 성공 (applicantId 접미사)', {
+            component: 'useStaffWorkData',
+            data: {
+              staffId: log.staffId,
+              applicantId: staff.applicantId,
+              role: log.role
+            }
+          });
+          return true;
+        }
+        
+        // 5. 이름 매칭 (fallback)
+        if (log.staffName === staff.name) {
+          logger.debug('이름 매칭 성공', {
+            component: 'useStaffWorkData',
+            data: { 
+              staffName: log.staffName, 
+              name: staff.name,
+              role: log.role
+            }
+          });
+          return true;
+        }
+        
+        return false;
+      });
+      
+      logger.debug('WorkLogs 필터링 결과', {
+        component: 'useStaffWorkData',
+        data: {
+          staffName: staff.name,
+          matchedLogsCount: staffWorkLogs.length,
+          matchedLogs: staffWorkLogs.map(log => ({
+            id: log.id,
+            staffId: log.staffId,
+            staffName: log.staffName,
+            role: log.role,
+            date: log.date,
+            scheduledStartTime: log.scheduledStartTime,
+            scheduledEndTime: log.scheduledEndTime
+          }))
+        }
+      });
       
       // 역할별로 WorkLogs 그룹화
       const roleWorkLogsMap = new Map<string, UnifiedWorkLog[]>();
@@ -191,45 +289,49 @@ export const useStaffWorkData = ({
       // WorkLog에 역할 정보가 있으면 사용, 없으면 staff의 role 사용
       staffWorkLogs.forEach(log => {
         const role = log.role || staff.role || 'default';
-        rolesSet.add(role);
-        if (!roleWorkLogsMap.has(role)) {
-          roleWorkLogsMap.set(role, []);
+        // unknown이 아닌 실제 역할만 추가
+        if (role && role !== 'unknown' && role !== 'default') {
+          rolesSet.add(role);
+          if (!roleWorkLogsMap.has(role)) {
+            roleWorkLogsMap.set(role, []);
+          }
+          roleWorkLogsMap.get(role)?.push(log);
         }
-        roleWorkLogsMap.get(role)?.push(log);
       });
       
       // 역할이 없는 경우 staff.role로 빈 배열 추가
-      if (roleWorkLogsMap.size === 0 && staff.role) {
+      if (roleWorkLogsMap.size === 0 && staff.role && staff.role !== 'unknown') {
         rolesSet.add(staff.role);
         roleWorkLogsMap.set(staff.role, []);
       }
       
+      // staff의 roles 배열도 확인 (여러 역할을 가진 경우)
+      if (staff.roles && Array.isArray(staff.roles)) {
+        staff.roles.forEach((r: string) => {
+          if (r && r !== 'unknown' && !rolesSet.has(r)) {
+            rolesSet.add(r);
+            if (!roleWorkLogsMap.has(r)) {
+              roleWorkLogsMap.set(r, []);
+            }
+          }
+        });
+      }
+      
       // 모든 역할 배열
       const allRoles = Array.from(rolesSet);
-      const primaryRole = allRoles[0] || 'default';
-      const uniqueKey = staff.userId; // staffId만 사용
       
-      // 역할별 급여 계산
-      const rolePayrollInfo = new Map<string, RolePayrollInfo>();
-      let totalBasePay = 0;
-      let totalHours = 0;
-      const uniqueDates = new Set<string>();
-      const allWorkLogs: UnifiedWorkLog[] = [];
-      
-      // 각 역할별로 급여 계산
-      roleWorkLogsMap.forEach((roleWorkLogs, role) => {
+      // 역할별로 별도의 행 생성
+      allRoles.forEach(role => {
+        const roleWorkLogs = roleWorkLogsMap.get(role) || [];
         let roleHours = 0;
         const roleUniqueDates = new Set<string>();
         
         roleWorkLogs.forEach(log => {
           const hours = calculateWorkHours(log);
           roleHours += hours;
-          totalHours += hours;
           if (log.date) {
             roleUniqueDates.add(log.date);
-            uniqueDates.add(log.date);
           }
-          allWorkLogs.push(log);
         });
         
         const roleDays = roleUniqueDates.size || 0;
@@ -240,78 +342,46 @@ export const useStaffWorkData = ({
         // 역할별 기본급 계산
         const roleBasePay = calculateBasePay(roleWorkLogs, salaryType, salaryAmount, roleHours, roleDays);
         
-        // 역할별 정보 저장
-        rolePayrollInfo.set(role, {
-          role,
-          workLogs: roleWorkLogs,
+        // uniqueKey에 역할 포함하여 구분
+        const uniqueKey = `${staff.userId}_${role}`;
+        
+        // 수당 (오버라이드 또는 기본값)
+        const allowances = staffAllowanceOverrides[uniqueKey] || defaultAllowances;
+        const totalAllowances = Object.entries(allowances).reduce((sum, [key, val]) => {
+          if (key !== 'otherDescription' && typeof val === 'number') {
+            return sum + val;
+          }
+          return sum;
+        }, 0);
+        
+        // 총 급여 (기본급 + 수당)
+        const totalPay = roleBasePay + totalAllowances;
+        
+        // 각 역할별로 별도의 데이터 생성
+        const item: StaffWorkDataItem = {
+          uniqueKey,
+          staffId: staff.userId || staff.applicantId || '',
+          staffName: staff.name || '이름 미정',
+          role,  // 해당 역할
+          roles: allRoles,    // 모든 역할 배열
+          salaryType,
+          baseSalary: salaryAmount,
           totalHours: roleHours,
           totalDays: roleDays,
-          salaryType,
-          salaryAmount,
-          basePay: roleBasePay
-        });
-        
-        totalBasePay += roleBasePay;
-      });
-      
-      const totalDays = uniqueDates.size || 0;
-      
-      // 호환성을 위한 주요 역할 정보 (첫 번째 역할 또는 가장 많은 시간을 일한 역할)
-      let mainRoleInfo = rolePayrollInfo.get(primaryRole);
-      if (!mainRoleInfo && rolePayrollInfo.size > 0) {
-        // 가장 많은 시간을 일한 역할 찾기
-        let maxHours = 0;
-        rolePayrollInfo.forEach((info) => {
-          if (info.totalHours > maxHours) {
-            maxHours = info.totalHours;
-            mainRoleInfo = info;
+          basePay: roleBasePay,
+          allowances,
+          allowanceTotal: totalAllowances,
+          totalAmount: totalPay,
+          workLogs: roleWorkLogs.sort((a, b) => a.date.localeCompare(b.date)),
+          staffData: staff,
+          period: {
+            start: startDate || '',
+            end: endDate || ''
           }
-        });
-      }
-      
-      const { salaryType, salaryAmount } = mainRoleInfo || getSalaryInfo(primaryRole);
-      
-      // 수당 (오버라이드 또는 기본값)
-      const allowances = staffAllowanceOverrides[uniqueKey] || defaultAllowances;
-      const totalAllowances = Object.entries(allowances).reduce((sum, [key, val]) => {
-        if (key !== 'otherDescription' && typeof val === 'number') {
-          return sum + val;
-        }
-        return sum;
-      }, 0);
-      
-      // 총 급여 (역할별 기본급 합계 + 수당)
-      const totalPay = totalBasePay + totalAllowances;
-      
-      // 데이터 생성 (모든 역할 통합)
-      const item: StaffWorkDataItem = {
-        uniqueKey,
-        staffId: staff.userId,
-        staffName: staff.name || '이름 미정',
-        role: primaryRole,  // 기존 호환성 유지
-        roles: allRoles,    // 모든 역할 배열
-        salaryType,
-        baseSalary: salaryAmount,
-        totalHours,
-        totalDays,
-        basePay: totalBasePay,  // 역할별 기본급 합계 사용
-        allowances,
-        allowanceTotal: totalAllowances,
-        totalAmount: totalPay,
-        workLogs: allWorkLogs.sort((a, b) => a.date.localeCompare(b.date)),
-        staffData: staff,
-        period: {
-          start: startDate || '',
-          end: endDate || ''
-        },
-        // 역할별 급여 정보 추가
-        ...(rolePayrollInfo.size > 0 && {
-          rolePayrollInfo: rolePayrollInfo,
-          totalBasePay: totalBasePay
-        })
-      };
-      
-      result.push(item);
+        };
+        
+        result.push(item);
+      });
     });
     
     logger.debug('useStaffWorkData - 데이터 생성 완료', {

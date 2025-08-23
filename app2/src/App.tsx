@@ -21,6 +21,9 @@ import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 
+// Debug utilities
+import './utils/debugFirebaseData';
+
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
 const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));

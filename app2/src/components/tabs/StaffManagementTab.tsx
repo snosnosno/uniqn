@@ -158,7 +158,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           eventId: data.eventId || jobPosting?.id,
           staffId: data.staffId || actualStaffId,
           date: workDate,
-          staffName: staff.name || data.staffName || '이름 미정'
+          staffName: staff.name || data.staffName || '이름 미정',
+          assignedRole: staff.assignedRole || data.assignedRole || '',  // assignedRole 추가
+          role: data.role || staff.role || ''  // role 정보도 보장
         };
         logger.info('WorkLog 데이터 가져오기 성공', { 
           component: 'StaffManagementTab',
@@ -196,7 +198,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           jobPosting?.id
         );
         
-        setSelectedWorkLog(virtualWorkLog);
+        // staff 정보 추가
+        const enrichedVirtualWorkLog = {
+          ...virtualWorkLog,
+          staffName: staff.name || '이름 미정',
+          role: staff.role || '',
+          assignedRole: staff.assignedRole || '',  // 중요: assignedRole 추가
+          assignedTime: staff.assignedTime || '',
+          assignedDate: staff.assignedDate || ''
+        };
+        
+        setSelectedWorkLog(enrichedVirtualWorkLog);
         setIsWorkTimeEditorOpen(true);
       }
     } catch (error) {
@@ -212,7 +224,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         jobPosting?.id
       );
       
-      setSelectedWorkLog(virtualWorkLog);
+      // staff 정보 추가
+      const enrichedVirtualWorkLog = {
+        ...virtualWorkLog,
+        staffName: staff.name || '이름 미정',
+        role: staff.role || '',
+        assignedRole: staff.assignedRole || '',  // 중요: assignedRole 추가
+        assignedTime: staff.assignedTime || '',
+        assignedDate: staff.assignedDate || ''
+      };
+      
+      setSelectedWorkLog(enrichedVirtualWorkLog);
       setIsWorkTimeEditorOpen(true);
     }
   }, [canEdit, staffData, jobPosting?.id, showError]);
