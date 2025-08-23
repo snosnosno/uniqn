@@ -57,16 +57,16 @@ const FocusTrap: React.FC<FocusTrapProps> = ({
       }
     };
 
-    // 마지막 요소에 포커스
-    const focusLastElement = () => {
-      const elements = getFocusableElements();
-      if (elements.length > 0) {
-        const lastElement = elements[elements.length - 1];
-        if (lastElement) {
-          lastElement.focus();
-        }
-      }
-    };
+    // 마지막 요소에 포커스 - 향후 필요시 사용 예정
+    // const focusLastElement = () => {
+    //   const elements = getFocusableElements();
+    //   if (elements.length > 0) {
+    //     const lastElement = elements[elements.length - 1];
+    //     if (lastElement) {
+    //       lastElement.focus();
+    //     }
+    //   }
+    // };
 
     // Tab 키 핸들러
     const handleKeyDown = (e: KeyboardEvent) => {

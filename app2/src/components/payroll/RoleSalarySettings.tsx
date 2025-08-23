@@ -56,16 +56,16 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
 
   const [salaryConfig, setSalaryConfig] = useState<RoleSalaryConfig>(initialSalaryConfig);
 
-  // 급여 유형 한글 라벨
-  const getSalaryTypeLabel = useCallback((type: string) => {
-    const labels: Record<string, string> = {
-      hourly: '시급',
-      daily: '일급',
-      monthly: '월급',
-      other: '기타'
-    };
-    return labels[type] || type;
-  }, []);
+  // 급여 유형 한글 라벨 - 향후 UI에서 사용 예정
+  // const getSalaryTypeLabel = useCallback((type: string) => {
+  //   const labels: Record<string, string> = {
+  //     hourly: '시급',
+  //     daily: '일급',
+  //     monthly: '월급',
+  //     other: '기타'
+  //   };
+  //   return labels[type] || type;
+  // }, []);
 
   // 역할별 급여 변경 핸들러
   const handleSalaryChange = useCallback((

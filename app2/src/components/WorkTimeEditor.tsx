@@ -138,8 +138,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         finalWorkLogId = realWorkLogId;
         const workLogRef = doc(db, 'workLogs', realWorkLogId);
         
-        // 통합 시스템 사용
-        const staffId = workLog.staffId || '';
+        // 통합 시스템 사용 - staffId는 아래에서 사용됨
         
         // 가상 WorkLog 저장 시 시간 값 우선순위:
         // 1. UI에 표시된 값 (startTime/endTime) - 이미 스태프탭에서 설정된 값
@@ -629,7 +628,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
               {startTime ? (() => {
                 if (endTime) {
                   // 시작/종료 시간 모두 있는 경우
-                  const baseDate = toDate(workLog.scheduledStartTime || new Date());
                   const parsedStartTime = parseTimeToTimestamp(startTime, workLog?.date || '');
                   const parsedEndTime = parseTimeToTimestamp(endTime, workLog?.date || '');
                   const minutes = calculateMinutes(parsedStartTime, parsedEndTime);

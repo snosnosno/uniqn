@@ -37,8 +37,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     updateStaffAllowances,
     exportToCSV,
     availableRoles,
-    updateRoleSalarySettings,
-    getSalaryInfo
+    updateRoleSalarySettings
+    // getSalaryInfo // 향후 사용 예정
   } = useStaffWorkData({
     eventId: jobPosting?.id
   });
@@ -301,7 +301,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
                 staffWorkData.map((data) => {
                   const uniqueKey = (data as any).uniqueKey || data.staffId;
                   const isSelected = selectedStaffIds.includes(uniqueKey);
-                  const roles = (data as any).roles || [data.role];
+                  // const roles = (data as any).roles || [data.role]; // 향후 다중 역할 지원용
                   
                   return (
                     <tr 
