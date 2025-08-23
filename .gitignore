@@ -35,6 +35,10 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
+# Firebase Service Account (보안상 중요!)
+serviceAccountKey.json
+**/serviceAccountKey.json
+
 # Git internal files that should not be committed
 FETCH_HEAD
 ORIG_HEAD

@@ -100,11 +100,11 @@ export const useJobBoard = () => {
       if (jobPostings.length === 0) return;
       
       const postIds = jobPostings.map(p => p.id);
-      const q = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', 'in', postIds));
+      const q = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', 'in', postIds));
       const querySnapshot = await getDocs(q);
       const appliedMap = new Map<string, string>();
       querySnapshot.forEach(doc => {
-        appliedMap.set(doc.data().postId, doc.data().status);
+        appliedMap.set(doc.data().eventId || doc.data().postId, doc.data().status);
       });
       setAppliedJobs(appliedMap);
     };
@@ -129,7 +129,7 @@ export const useJobBoard = () => {
           const applicationData = applicationDoc.data();
           
           try {
-            const jobPostingDoc = await getDoc(doc(db, 'jobPostings', applicationData.postId));
+            const jobPostingDoc = await getDoc(doc(db, 'jobPostings', applicationData.eventId || applicationData.postId));
             const jobPostingData = jobPostingDoc.exists() ? jobPostingDoc.data() : null;
             
             return {
@@ -257,7 +257,7 @@ export const useJobBoard = () => {
       const applicationData: any = {
         applicantId: currentUser.uid,
         applicantName: staffDoc.data().name || t('jobBoard.unknownApplicant'),
-        postId: selectedPost.id,
+        eventId: selectedPost.id,  // postId 대신 eventId 사용
         postTitle: selectedPost.title,
         status: 'applied',
         appliedAt: serverTimestamp(),
@@ -311,7 +311,7 @@ export const useJobBoard = () => {
     if (window.confirm(t('jobBoard.alerts.confirmCancel'))) {
       setIsProcessing(postId);
       try {
-        const q = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', '==', postId));
+        const q = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', '==', postId));
         const querySnapshot = await getDocs(q);
         
         const deletePromises: Promise<void>[] = [];

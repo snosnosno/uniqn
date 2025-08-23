@@ -244,7 +244,7 @@ export const useJobPostingStore = create<JobPostingState>()(
           // 지원자 데이터 실시간 구독 설정
           const applicantsQuery = query(
             collection(db, 'applications'),
-            where('postId', '==', eventId),
+            where('eventId', '==', eventId),
             orderBy('createdAt', 'desc')
           );
           

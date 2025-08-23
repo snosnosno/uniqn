@@ -1,14 +1,27 @@
 # Firebase 데이터 구조 및 흐름
 
-**최종 업데이트**: 2025년 1월 29일  
-**버전**: 2.0 (레거시 필드 완전 제거)
+**최종 업데이트**: 2025년 1월 30일  
+**버전**: 4.0 (서브컬렉션 구조 최적화 완료)
 
 ## 📊 데이터 모델 개요
 
 T-HOLDEM은 Firebase Firestore를 사용하여 실시간 데이터 동기화를 구현합니다.  
-**모든 레거시 필드가 제거되어 표준 필드만 사용합니다.**
+**ID 표준화 완료: eventId와 userId로 통일되었습니다.**
 
-## 🗂️ 컬렉션 구조
+## 🗂️ 컬렉션 구조 (v4.0 - 서브컬렉션 기반)
+
+### 📁 새로운 서브컬렉션 구조
+```
+jobPostings/
+├── {eventId}/
+│   ├── info (문서) - 이벤트 기본 정보
+│   ├── staff/ (서브컬렉션)
+│   │   └── {userId}/ - 스태프 정보
+│   └── workLogs/ (서브컬렉션)
+│       └── {workLogId}/ - 근무 기록
+```
+
+## 🗂️ 컬렉션 구조 (레거시 - 참고용)
 
 ### 1. staff (스태프)
 ```typescript
@@ -76,13 +89,13 @@ interface JobPosting {
 ```typescript
 interface Application {
   id: string;              // 문서 ID
-  eventId: string;         // 이벤트 ID ✅
-  applicantId: string;     // 지원자 ID
+  eventId: string;         // 이벤트 ID (표준화 완료) ✅
+  applicantId: string;     // 지원자 ID (userId와 동일)
   role: string;            // 지원 역할
   timeSlot: string;        // 지원 시간대
   status: 'pending' | 'confirmed' | 'rejected';
   createdAt: Timestamp;
-  // ❌ 제거된 필드: jobPostingId
+  // ❌ 제거된 필드: jobPostingId, postId
 }
 ```
 

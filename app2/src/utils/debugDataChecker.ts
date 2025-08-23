@@ -21,7 +21,7 @@ export async function checkFirebaseData(eventId: string): Promise<void> {
     
     const jobPostingSnapshot = await getDocs(jobPostingQuery);
     
-    if (!jobPostingSnapshot.empty) {
+    if (!jobPostingSnapshot.empty && jobPostingSnapshot.docs[0]) {
       const jobPostingDoc = jobPostingSnapshot.docs[0];
       const jobPostingData = jobPostingDoc.data();
       
@@ -96,7 +96,7 @@ export async function checkFirebaseData(eventId: string): Promise<void> {
     });
 
     // 4. ID 매칭 분석
-    if (!jobPostingSnapshot.empty && workLogsSnapshot.size > 0) {
+    if (!jobPostingSnapshot.empty && jobPostingSnapshot.docs[0] && workLogsSnapshot.size > 0) {
       const jobPostingData = jobPostingSnapshot.docs[0].data();
       const confirmedStaff = jobPostingData.confirmedStaff || [];
       const workLogs = workLogsSnapshot.docs.map(doc => doc.data());

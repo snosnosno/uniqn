@@ -6,6 +6,7 @@ import { ConfirmedStaff } from '../types/jobPosting/base';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, RoleSalaryConfig, RolePayrollInfo } from '../types/payroll';
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { calculateWorkHours } from '../utils/workLogMapper';
+import { matchStaffIdentifier } from '../utils/staffIdMapper';
 import { logger } from '../utils/logger';
 
 interface StaffWorkDataItem extends EnhancedPayrollCalculation {
@@ -193,63 +194,30 @@ export const useStaffWorkData = ({
         }
       });
       
-      // 해당 스태프의 WorkLogs 필터링 - 다중 조건으로 매칭
+      // 해당 스태프의 WorkLogs 필터링 - 간소화된 매칭
       const staffWorkLogs = filteredWorkLogs.filter(log => {
-        // 1. 정확한 ID 매칭 (staffId === userId)
-        if (log.staffId === staff.userId) {
-          logger.debug('ID 매칭 성공 (userId)', {
+        // staffIdMapper 유틸리티 사용하여 간소화
+        const staffIdentifiers = [staff.userId];
+        
+        // applicantId가 있고 userId와 다른 경우만 추가
+        if (staff.applicantId && staff.applicantId !== staff.userId) {
+          staffIdentifiers.push(staff.applicantId);
+        }
+        
+        // 1. ID 매칭 (staffIdMapper 활용)
+        if (matchStaffIdentifier(log, staffIdentifiers)) {
+          logger.debug('ID 매칭 성공', {
             component: 'useStaffWorkData',
             data: { 
-              staffId: log.staffId, 
-              userId: staff.userId,
-              role: log.role
-            }
-          });
-          return true;
-        }
-        
-        // 2. 접미사가 붙은 ID 매칭 (staffId가 userId로 시작하는 경우)
-        // 예: "tURgdOBmtYfO5Bgzm8NyGKGtbL12_0" 은 "tURgdOBmtYfO5Bgzm8NyGKGtbL12"의 역할별 WorkLog
-        if (log.staffId.startsWith(staff.userId + '_')) {
-          logger.debug('ID 매칭 성공 (접미사 포함)', {
-            component: 'useStaffWorkData',
-            data: {
               staffId: log.staffId,
-              userId: staff.userId,
-              role: log.role,
-              suffix: log.staffId.substring(staff.userId.length)
-            }
-          });
-          return true;
-        }
-        
-        // 3. applicantId 매칭 (userId가 실제로 applicantId인 경우)
-        if (log.staffId === staff.applicantId) {
-          logger.debug('ID 매칭 성공 (applicantId)', {
-            component: 'useStaffWorkData',
-            data: { 
-              staffId: log.staffId, 
-              applicantId: staff.applicantId,
+              staffIdentifiers,
               role: log.role
             }
           });
           return true;
         }
         
-        // 4. applicantId에 접미사가 붙은 경우
-        if (staff.applicantId && log.staffId.startsWith(staff.applicantId + '_')) {
-          logger.debug('ID 매칭 성공 (applicantId 접미사)', {
-            component: 'useStaffWorkData',
-            data: {
-              staffId: log.staffId,
-              applicantId: staff.applicantId,
-              role: log.role
-            }
-          });
-          return true;
-        }
-        
-        // 5. 이름 매칭 (fallback)
+        // 2. 이름 매칭 (fallback)
         if (log.staffName === staff.name) {
           logger.debug('이름 매칭 성공', {
             component: 'useStaffWorkData',

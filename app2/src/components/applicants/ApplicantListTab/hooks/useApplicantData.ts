@@ -16,7 +16,7 @@ export const useApplicantData = (eventId?: string) => {
   const loadApplicants = useCallback(async (postId: string) => {
     setLoadingApplicants(true);
     try {
-      const q = query(collection(db, 'applications'), where('postId', '==', postId));
+      const q = query(collection(db, 'applications'), where('eventId', '==', postId));
       const querySnapshot = await getDocs(q);
       const fetchedApplicants = querySnapshot.docs.map(doc => {
         const data = doc.data();

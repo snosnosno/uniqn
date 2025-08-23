@@ -227,42 +227,41 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         // 변경된 값만 업데이트하도록 수정
         const updatePayload: any = {};
         
-        // startTime 처리 - 변경된 경우만 업데이트
+        // startTime 처리 - 항상 업데이트 (UI에 표시된 값 그대로 저장)
         if (startTime === '') {
           // 빈 문자열은 명시적으로 "미정"으로 설정
           updatePayload.scheduledStartTime = null;
         } else if (startTime && startTime.trim() !== '') {
           // 새로운 값이 있으면 업데이트
           updatePayload.scheduledStartTime = newStartTime;
-        } else if (startTime === undefined && workLog.scheduledStartTime) {
-          // 초기값이 없지만 기존 값이 있으면 유지 (업데이트 안 함)
+        } else {
+          // startTime이 undefined이거나 null인 경우 null로 설정
+          updatePayload.scheduledStartTime = null;
         }
-        // startTime이 undefined이거나 변경되지 않았으면 updatePayload에 추가하지 않음
         
-        // endTime 처리 - 변경된 경우만 업데이트
+        // endTime 처리 - 항상 업데이트 (UI에 표시된 값 그대로 저장)
         if (endTime === '') {
           // 빈 문자열은 명시적으로 "미정"으로 설정
           updatePayload.scheduledEndTime = null;
         } else if (endTime && endTime.trim() !== '') {
           // 새로운 값이 있으면 업데이트
           updatePayload.scheduledEndTime = newEndTime;
-        } else if (endTime === undefined && workLog.scheduledEndTime) {
-          // 초기값이 없지만 기존 값이 있으면 유지 (업데이트 안 함)
+        } else {
+          // endTime이 undefined이거나 null인 경우 null로 설정
+          updatePayload.scheduledEndTime = null;
         }
-        // endTime이 undefined이거나 변경되지 않았으면 updatePayload에 추가하지 않음
         
-        // updatePayload에 값이 있는 경우에만 업데이트 수행
-        if (Object.keys(updatePayload).length > 0) {
-          const updateData = prepareWorkLogForUpdate(updatePayload);
-          
-          await updateDoc(workLogRef, updateData);
-          
-          logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
-            id: workLog.id, 
-            startTime: startTime || '미정',
-            endTime: endTime || '미정' 
-          } });
-        }
+        // 항상 업데이트 수행 (시간 정보는 중요하므로 항상 저장)
+        const updateData = prepareWorkLogForUpdate(updatePayload);
+        
+        await updateDoc(workLogRef, updateData);
+        
+        logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
+          id: workLog.id, 
+          startTime: startTime || '미정',
+          endTime: endTime || '미정',
+          updatePayload
+        } });
       }
       
       // 업데이트된 데이터로 콜백 호출 - 변경된 값만 반영

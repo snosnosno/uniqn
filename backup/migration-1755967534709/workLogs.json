@@ -1,0 +1,185 @@
+[
+  {
+    "id": "gRvw1ee2rbjgpg4bVrRZ_tURgdOBmtYfO5Bgzm8NyGKGtbL12_0_2025-08-23",
+    "eventId": "gRvw1ee2rbjgpg4bVrRZ",
+    "staffName": "김승호",
+    "date": "2025-08-23",
+    "role": "floor",
+    "type": "schedule",
+    "actualStartTime": null,
+    "actualEndTime": null,
+    "totalWorkMinutes": 0,
+    "totalBreakMinutes": 0,
+    "hoursWorked": 0,
+    "overtime": 0,
+    "status": "scheduled",
+    "tableAssignments": [],
+    "notes": "",
+    "createdAt": {
+      "_seconds": 1755958724,
+      "_nanoseconds": 49000000
+    },
+    "createdBy": "tURgdOBmtYfO5Bgzm8NyGKGtbL12_0",
+    "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+    "scheduledStartTime": {
+      "_seconds": 1755928800,
+      "_nanoseconds": 0
+    },
+    "scheduledEndTime": {
+      "_seconds": 1755946800,
+      "_nanoseconds": 0
+    },
+    "updatedAt": {
+      "_seconds": 1755966799,
+      "_nanoseconds": 1000000
+    }
+  },
+  {
+    "id": "gRvw1ee2rbjgpg4bVrRZ_tURgdOBmtYfO5Bgzm8NyGKGtbL12_1_2025-08-24",
+    "eventId": "gRvw1ee2rbjgpg4bVrRZ",
+    "staffName": "김승호",
+    "date": "2025-08-24",
+    "role": "dealer",
+    "type": "schedule",
+    "scheduledStartTime": {
+      "_seconds": 1756018800,
+      "_nanoseconds": 0
+    },
+    "actualStartTime": null,
+    "actualEndTime": null,
+    "totalWorkMinutes": 0,
+    "totalBreakMinutes": 0,
+    "hoursWorked": 0,
+    "overtime": 0,
+    "status": "scheduled",
+    "tableAssignments": [],
+    "notes": "",
+    "createdAt": {
+      "_seconds": 1755958740,
+      "_nanoseconds": 334000000
+    },
+    "createdBy": "tURgdOBmtYfO5Bgzm8NyGKGtbL12_1",
+    "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+    "scheduledEndTime": {
+      "_seconds": 1756044000,
+      "_nanoseconds": 0
+    },
+    "updatedAt": {
+      "_seconds": 1755966820,
+      "_nanoseconds": 489000000
+    }
+  },
+  {
+    "id": "gRvw1ee2rbjgpg4bVrRZ_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2025-08-23",
+    "eventId": "gRvw1ee2rbjgpg4bVrRZ",
+    "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+    "staffName": "김승호",
+    "date": "2025-08-23",
+    "scheduledStartTime": null,
+    "scheduledEndTime": null,
+    "createdAt": {
+      "_seconds": 1755958726,
+      "_nanoseconds": 349000000
+    },
+    "actualStartTime": {
+      "_seconds": 1755966271,
+      "_nanoseconds": 62000000
+    },
+    "actualEndTime": {
+      "_seconds": 1755966272,
+      "_nanoseconds": 373000000
+    },
+    "status": "checked_out",
+    "updatedAt": {
+      "_seconds": 1755966272,
+      "_nanoseconds": 373000000
+    }
+  },
+  {
+    "id": "gRvw1ee2rbjgpg4bVrRZ_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2025-08-24",
+    "eventId": "gRvw1ee2rbjgpg4bVrRZ",
+    "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+    "staffName": "김승호",
+    "date": "2025-08-24",
+    "scheduledStartTime": null,
+    "scheduledEndTime": null,
+    "createdAt": {
+      "_seconds": 1755958741,
+      "_nanoseconds": 744000000
+    },
+    "actualStartTime": {
+      "_seconds": 1755958742,
+      "_nanoseconds": 680000000
+    },
+    "actualEndTime": {
+      "_seconds": 1755958742,
+      "_nanoseconds": 680000000
+    },
+    "status": "checked_out",
+    "updatedAt": {
+      "_seconds": 1755958742,
+      "_nanoseconds": 680000000
+    }
+  },
+  {
+    "id": "gRvw1ee2rbjgpg4bVrRZ_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2025-08-25",
+    "eventId": "gRvw1ee2rbjgpg4bVrRZ",
+    "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+    "staffName": "김승호",
+    "date": "2025-08-25",
+    "scheduledStartTime": null,
+    "scheduledEndTime": null,
+    "createdAt": {
+      "_seconds": 1755958759,
+      "_nanoseconds": 596000000
+    },
+    "actualStartTime": {
+      "_seconds": 1755958762,
+      "_nanoseconds": 628000000
+    },
+    "actualEndTime": {
+      "_seconds": 1755958763,
+      "_nanoseconds": 604000000
+    },
+    "status": "checked_out",
+    "updatedAt": {
+      "_seconds": 1755958763,
+      "_nanoseconds": 604000000
+    }
+  },
+  {
+    "id": "gRvw1ee2rbjgpg4bVrRZ_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2_2025-08-25",
+    "eventId": "gRvw1ee2rbjgpg4bVrRZ",
+    "staffName": "김승호",
+    "date": "2025-08-25",
+    "role": "dealer",
+    "type": "schedule",
+    "scheduledEndTime": {
+      "_seconds": 1756108800,
+      "_nanoseconds": 0
+    },
+    "actualStartTime": null,
+    "actualEndTime": null,
+    "totalWorkMinutes": 0,
+    "totalBreakMinutes": 0,
+    "hoursWorked": 0,
+    "overtime": 0,
+    "status": "scheduled",
+    "tableAssignments": [],
+    "notes": "",
+    "createdAt": {
+      "_seconds": 1755958755,
+      "_nanoseconds": 141000000
+    },
+    "createdBy": "tURgdOBmtYfO5Bgzm8NyGKGtbL12_2",
+    "staffId": "tURgdOBmtYfO5Bgzm8NyGKGtbL12",
+    "scheduledStartTime": {
+      "_seconds": 1756116000,
+      "_nanoseconds": 0
+    },
+    "updatedAt": {
+      "_seconds": 1755966342,
+      "_nanoseconds": 242000000
+    }
+  }
+]
