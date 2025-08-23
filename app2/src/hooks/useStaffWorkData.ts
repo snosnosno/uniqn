@@ -267,38 +267,45 @@ export const useStaffWorkData = ({
         }
       });
       
-      // 역할이 없는 경우 staff.role로 빈 배열 추가
-      if (roleWorkLogsMap.size === 0 && staff.role && staff.role !== 'unknown') {
-        rolesSet.add(staff.role);
-        roleWorkLogsMap.set(staff.role, []);
-      }
-      
-      // staff의 roles 배열도 확인 (여러 역할을 가진 경우)
-      if (staff.roles && Array.isArray(staff.roles)) {
-        staff.roles.forEach((r: string) => {
-          if (r && r !== 'unknown' && !rolesSet.has(r)) {
-            rolesSet.add(r);
-            if (!roleWorkLogsMap.has(r)) {
-              roleWorkLogsMap.set(r, []);
-            }
-          }
-        });
+      // WorkLog가 없는 경우 스킬 - 실제 근무 기록이 있는 역할만 처리
+      if (roleWorkLogsMap.size === 0) {
+        return; // 다음 스태프로 이동
       }
       
       // 모든 역할 배열
       const allRoles = Array.from(rolesSet);
       
-      // 역할별로 별도의 행 생성
+      // 역할별로 별도의 행 생성 (실제 WorkLog가 있는 역할만)
       allRoles.forEach(role => {
         const roleWorkLogs = roleWorkLogsMap.get(role) || [];
+        
+        // 실제 유효한 WorkLog가 없으면 스킵
+        const validLogs = roleWorkLogs.filter(log => 
+          log.scheduledStartTime && log.scheduledEndTime &&
+          log.scheduledStartTime !== '미정' && log.scheduledEndTime !== '미정' &&
+          log.scheduledStartTime !== '' && log.scheduledEndTime !== ''
+        );
+        
+        if (validLogs.length === 0) {
+          return; // 이 역할 스킵
+        }
         let roleHours = 0;
         const roleUniqueDates = new Set<string>();
         
         roleWorkLogs.forEach(log => {
+          // "미정" 시간 필터링 - 실제 근무 시간이 있는 경우만 처리
+          if (!log.scheduledStartTime || !log.scheduledEndTime ||
+              log.scheduledStartTime === '미정' || log.scheduledEndTime === '미정' ||
+              log.scheduledStartTime === '' || log.scheduledEndTime === '') {
+            return; // 스킵
+          }
+          
           const hours = calculateWorkHours(log);
-          roleHours += hours;
-          if (log.date) {
-            roleUniqueDates.add(log.date);
+          if (hours > 0) { // 실제 근무시간이 있는 경우만
+            roleHours += hours;
+            if (log.date) {
+              roleUniqueDates.add(log.date);
+            }
           }
         });
         

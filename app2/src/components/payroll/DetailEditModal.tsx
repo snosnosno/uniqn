@@ -62,84 +62,65 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     }
   }, [staff]);
 
-  // 역할 추론 함수 - staffId 접미사를 기반으로 역할 결정
-  const inferRoleFromStaffId = (log: any): string => {
-    if (log.role && log.role !== 'unknown') return log.role;
-    
-    const staffId = log.staffId || log.userId || '';
-    if (!staffId) return 'unknown';
-    
-    // 접미사 패턴 확인
-    const match = staffId.match(/_(\d+)$/);
-    if (!match) return 'floor';  // 접미사가 없으면 floor로 가정
-    
-    const suffix = parseInt(match[1]);
-    
-    // 접미사 기반 역할 매핑
-    // _0, _1, _2 = dealer (첫 3개)
-    // _3, _4, _5 = floor (다음 3개)
-    if (suffix <= 2) return 'dealer';
-    if (suffix <= 5) return 'floor';
-    
-    // 그 외는 floor로 가정
-    return 'floor';
-  };
+  // 역할 추론 함수 제거 - 정확한 역할 정보만 사용
 
   // 날짜별 근무 내역 계산 - 실시간 WorkLog 데이터 사용
   const workHistory = useMemo(() => {
     if (!staff) return [];
     
-    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링 (staffId/userId 통합, 역할 분리)
+    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링 (역할별 정확한 필터링)
     const staffId = getStaffIdentifier(staff);
-    const staffWorkLogs = realTimeWorkLogs.filter(log => 
-      matchStaffIdentifier(log, [staffId])
-      // role 필터링 제거 - 모든 역할 포함
-    );
+    const staffWorkLogs = realTimeWorkLogs.filter(log => {
+      // 1. 스태프 ID 매칭
+      const matches = matchStaffIdentifier(log, [staffId]);
+      if (!matches) return false;
+      
+      // 2. 역할 매칭 (정확한 역할만)
+      return log.role === staff.role;
+    });
     
-    // 역할 추론 적용
-    const workLogsWithInferredRoles = staffWorkLogs.map(log => ({
-      ...log,
-      role: inferRoleFromStaffId(log)
-    }));
-    
-    // 역할별 그룹화
-    const workLogsByRole = workLogsWithInferredRoles.reduce((acc: Record<string, typeof staffWorkLogs>, log) => {
-      const role = log.role || 'unknown';
-      if (!acc[role]) acc[role] = [];
-      const roleArray = acc[role];
-      if (roleArray) {
-        roleArray.push(log);
+    // 중복 제거: 같은 날짜의 중복 로그 제거
+    const uniqueLogsMap = new Map<string, any>();
+    staffWorkLogs.forEach(log => {
+      const key = `${log.date}_${log.role}`;
+      // 더 완전한 데이터 우선 (scheduledStartTime과 scheduledEndTime이 있는 것)
+      if (!uniqueLogsMap.has(key) || 
+          (log.scheduledStartTime && log.scheduledEndTime && 
+           log.scheduledStartTime !== '미정' && log.scheduledEndTime !== '미정')) {
+        uniqueLogsMap.set(key, log);
       }
-      return acc;
-    }, {});
+    });
+    
+    const uniqueWorkLogs = Array.from(uniqueLogsMap.values());
     
     logger.debug('DetailEditModal - 실시간 WorkLog 필터링', {
       component: 'DetailEditModal',
       data: {
         staffId: staffId,
         staffName: staff.staffName,
+        staffRole: staff.role,
         totalWorkLogs: realTimeWorkLogs.length,
         filteredWorkLogs: staffWorkLogs.length,
-        workLogIds: staffWorkLogs.map(log => log.id),
-        workLogDetails: staffWorkLogs.map(log => ({
+        uniqueWorkLogs: uniqueWorkLogs.length,
+        workLogIds: uniqueWorkLogs.map(log => log.id),
+        workLogDetails: uniqueWorkLogs.map(log => ({
           id: log.id,
           staffId: log.staffId,
           staffName: log.staffName,
           date: log.date,
           role: log.role,
+          status: log.status,  // status 필드 추가
           scheduledStartTime: log.scheduledStartTime,
           scheduledEndTime: log.scheduledEndTime
-        })),
-        roles: Object.keys(workLogsByRole),
-        roleDistribution: Object.entries(workLogsByRole).map(([role, logs]) => ({ role, count: logs.length }))
+        }))
       }
     });
     
-    if (staffWorkLogs.length === 0) return [];
+    if (uniqueWorkLogs.length === 0) return [];
     
     try {
       // 실시간 WorkLogs를 날짜별로 정렬
-      const sortedLogs = [...staffWorkLogs].sort((a, b) => {
+      const sortedLogs = [...uniqueWorkLogs].sort((a, b) => {
         const getDateValue = (date: any) => {
           if (!date) return 0;
           try {
@@ -294,11 +275,11 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           return {
             date: dateStr,
             dayName,
-            role: inferRoleFromStaffId(log),  // 역할 정보 추가 (추론 적용)
+            role: log.role || staff.role,  // 역할 정보 (정확한 역할 사용)
             startTime,
             endTime,
             workHours: workHours.toFixed(1),
-            status: log.status || '미정',
+            status: log.status || 'scheduled',
             rawLog: log
           };
         } catch (error) {
