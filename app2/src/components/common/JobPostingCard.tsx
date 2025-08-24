@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
-import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
+import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay } from '../../utils/jobPosting/jobPostingHelpers';
+import { calculateDateRange } from '../../utils/jobPosting/migration';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 
@@ -52,8 +53,34 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     return formatDateUtil(date);
   };
 
-  const formattedStartDate = formatDate(post.startDate);
-  const formattedEndDate = formatDate(post.endDate);
+  // 날짜 범위 표시 개선
+  const getDateRangeDisplay = () => {
+    const dates: string[] = [];
+    
+    // 모든 날짜 수집
+    post.dateSpecificRequirements?.forEach(req => {
+      dates.push(convertToDateString(req.date));
+      
+      // multi duration 처리
+      req.timeSlots?.forEach(slot => {
+        if (slot.duration?.type === 'multi' && slot.duration.endDate) {
+          const rangeDates = generateDateRange(
+            convertToDateString(req.date),
+            slot.duration.endDate
+          );
+          // 시작일 제외하고 추가 (중복 방지)
+          rangeDates.slice(1).forEach(d => dates.push(d));
+        }
+      });
+    });
+    
+    // 중복 제거 및 정렬
+    const uniqueDates = Array.from(new Set(dates)).sort();
+    
+    return formatDateRangeDisplay(uniqueDates);
+  };
+  
+  const dateRangeDisplay = getDateRangeDisplay();
 
   // 전체 진행률 계산 (관리자용)
   const getProgressInfo = () => {
@@ -140,11 +167,21 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       
       return (
         <div className="text-sm text-gray-600 mb-3">
-          {displayReqs.map((req: DateSpecificRequirement, index: number) => (
-            <div key={index} className="mb-3">
-              <div className="font-medium text-gray-700 mb-1 flex items-center text-sm">
-                📅 {formatDate(req.date)} 일정
-              </div>
+          {displayReqs.map((req: DateSpecificRequirement, index: number) => {
+            // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+            const firstTimeSlot = req.timeSlots?.[0];
+            const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+            
+            let dateDisplay = formatDate(req.date);
+            if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+              dateDisplay = `${formatDate(req.date)} ~ ${formatDate(firstTimeSlot.duration.endDate)}`;
+            }
+            
+            return (
+              <div key={index} className="mb-3">
+                <div className="font-medium text-gray-700 mb-1 flex items-center text-sm">
+                  📅 {dateDisplay} 일정
+                </div>
               <div className="ml-4 space-y-1">
                 {(req.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
                   <div key={tsIndex} className="mb-2">
@@ -232,7 +269,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       );
     } else {
@@ -253,11 +291,21 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       return (
         <div className="mb-4">
           <div className="space-y-2">
-            {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
-              <div key={dateIndex} className="">
-                <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                  📅 {formatDateUtil(dateReq.date)}
-                </div>
+            {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => {
+              // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+              const firstTimeSlot = dateReq.timeSlots?.[0];
+              const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+              
+              let dateDisplay = formatDateUtil(dateReq.date);
+              if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+                dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
+              }
+              
+              return (
+                <div key={dateIndex} className="">
+                  <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    📅 {dateDisplay}
+                  </div>
                 <div className="space-y-2">
                   {(dateReq.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
                     <div key={`${dateIndex}-${tsIndex}`} className="ml-2 mb-2">
@@ -340,8 +388,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -404,7 +453,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               <div className={getInfoItemClasses()}>
                 <span className="flex items-center">
                   <span className="mr-2">📅</span>
-                  <span className="break-words">{formattedStartDate} ~ {formattedEndDate}</span>
+                  <span className="break-words">{dateRangeDisplay}</span>
                 </span>
               </div>
               

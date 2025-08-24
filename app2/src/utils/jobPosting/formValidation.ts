@@ -80,33 +80,22 @@ export const validateJobPostingForm = (formData: any): string[] => {
     errors.push('지역을 선택해주세요.');
   }
   
-  if (!formData.startDate) {
-    errors.push('시작 날짜를 선택해주세요.');
-  }
-  
-  if (!formData.endDate) {
-    errors.push('종료 날짜를 선택해주세요.');
-  }
-  
-  if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
-    errors.push('시작 날짜는 종료 날짜보다 이전이어야 합니다.');
-  }
+  // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
   
   // 시간대 검증 - 날짜별 요구사항만 사용
-  if (formData.dateSpecificRequirements.length === 0) {
-    errors.push('일자별 요구사항을 추가해주세요.');
+  if (!formData.dateSpecificRequirements || formData.dateSpecificRequirements.length === 0) {
+    errors.push('최소 하나의 날짜별 요구사항을 추가해주세요.');
   }
   
-  // 일자별 요구사항의 날짜가 시작날짜와 종료날짜 범위 내에 있는지 검증
-  formData.dateSpecificRequirements.forEach((requirement: DateSpecificRequirement, index: number) => {
-    if (requirement.date && formData.startDate && formData.endDate) {
-      if (requirement.date < formData.startDate) {
-        errors.push(`일자 ${index + 1}: 날짜가 시작 날짜(${formData.startDate})보다 이전입니다.`);
-      }
-      if (requirement.date > formData.endDate) {
-        errors.push(`일자 ${index + 1}: 날짜가 종료 날짜(${formData.endDate})보다 이후입니다.`);
-      }
+  // 일자별 요구사항 검증
+  const dates = new Set<string>();
+  formData.dateSpecificRequirements?.forEach((requirement: DateSpecificRequirement, index: number) => {
+    // 중복 날짜 검사
+    const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
+    if (dates.has(dateStr)) {
+      errors.push(`일자 ${index + 1}: 중복된 날짜입니다 (${dateStr})`);
     }
+    dates.add(dateStr);
     
     const requirementErrors = validateDateSpecificRequirement(requirement);
     errors.push(...requirementErrors.map(error => `일자 ${index + 1}: ${error}`));

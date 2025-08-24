@@ -139,15 +139,13 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     });
   }, []);
 
-  // 날짜 관련 핸들러들
+  // 날짜 관련 핸들러들 (레거시 호환성을 위해 유지하지만 사용하지 않음)
   const handleStartDateChange = useCallback((value: { year?: string; month?: string; day?: string }) => {
-    const dateString = dropdownValueToDateString(value);
-    setFormData((prev: any) => ({ ...prev, startDate: dateString }));
+    // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
   }, []);
 
   const handleEndDateChange = useCallback((value: { year?: string; month?: string; day?: string }) => {
-    const dateString = dropdownValueToDateString(value);
-    setFormData((prev: any) => ({ ...prev, endDate: dateString }));
+    // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
   }, []);
 
   // 지역 관련 핸들러

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
-import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
+import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
+import { calculateDateRange } from '../../utils/jobPosting/migration';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import BaseCard, { CardHeader, CardBody, CardFooter } from '../ui/BaseCard';
@@ -55,8 +56,34 @@ const JobPostingCardNew: React.FC<JobPostingCardProps> = ({
     return formatDateUtil(date);
   };
 
-  const formattedStartDate = formatDate(post.startDate);
-  const formattedEndDate = formatDate(post.endDate);
+  // 날짜 범위 표시 개선
+  const getDateRangeDisplay = () => {
+    const dates: string[] = [];
+    
+    // 모든 날짜 수집
+    post.dateSpecificRequirements?.forEach(req => {
+      dates.push(convertToDateString(req.date));
+      
+      // multi duration 처리
+      req.timeSlots?.forEach(slot => {
+        if (slot.duration?.type === 'multi' && slot.duration.endDate) {
+          const rangeDates = generateDateRange(
+            convertToDateString(req.date),
+            slot.duration.endDate
+          );
+          // 시작일 제외하고 추가 (중복 방지)
+          rangeDates.slice(1).forEach(d => dates.push(d));
+        }
+      });
+    });
+    
+    // 중복 제거 및 정렬
+    const uniqueDates = Array.from(new Set(dates)).sort();
+    
+    return formatDateRangeDisplay(uniqueDates);
+  };
+  
+  const dateRangeDisplay = getDateRangeDisplay();
 
   // BaseCard variant 결정
   const cardVariant = variant === 'admin-list' ? 'bordered' : variant === 'user-card' ? 'elevated' : 'default';
@@ -73,11 +100,21 @@ const JobPostingCardNew: React.FC<JobPostingCardProps> = ({
     
     return (
       <div className="space-y-2">
-        {displayReqs.map((req: DateSpecificRequirement, index: number) => (
-          <div key={index} className="text-sm">
-            <div className="font-medium text-gray-700 mb-1">
-              📅 {formatDate(req.date)}
-            </div>
+        {displayReqs.map((req: DateSpecificRequirement, index: number) => {
+          // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+          const firstTimeSlot = req.timeSlots?.[0];
+          const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+          
+          let dateDisplay = formatDate(req.date);
+          if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+            dateDisplay = `${formatDate(req.date)} ~ ${formatDate(firstTimeSlot.duration.endDate)}`;
+          }
+          
+          return (
+            <div key={index} className="text-sm">
+              <div className="font-medium text-gray-700 mb-1">
+                📅 {dateDisplay}
+              </div>
             <div className="ml-4 space-y-1">
               {(req.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
                 <div key={tsIndex} className="text-gray-600">
@@ -111,7 +148,8 @@ const JobPostingCardNew: React.FC<JobPostingCardProps> = ({
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
         {!expandTimeSlots && dateReqs.length > 2 && (
           <div className="text-center text-gray-400">
             <span className="bg-gray-100 px-2 py-1 rounded text-xs">
@@ -182,7 +220,7 @@ const JobPostingCardNew: React.FC<JobPostingCardProps> = ({
           {/* 날짜 */}
           <div className="flex items-center text-gray-600">
             <span className="mr-2">📅</span>
-            <span>{formattedStartDate} ~ {formattedEndDate}</span>
+            <span>{dateRangeDisplay}</span>
           </div>
           
           {/* 위치 */}

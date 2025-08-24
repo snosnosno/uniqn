@@ -79,11 +79,21 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           
           {/* 일자별 인원 요구사항 표시 */}
           {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
-            jobPosting.dateSpecificRequirements.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
-              <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
-                <h4 className="text-sm font-semibold text-blue-800 mb-3">
-                  📅 {formatDateUtil(dateReq.date)}
-                </h4>
+            jobPosting.dateSpecificRequirements.map((dateReq: DateSpecificRequirement, dateIndex: number) => {
+              // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+              const firstTimeSlot = dateReq.timeSlots?.[0];
+              const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+              
+              let dateDisplay = formatDateUtil(dateReq.date);
+              if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+                dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
+              }
+              
+              return (
+                <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-3">
+                    📅 {dateDisplay}
+                  </h4>
                 {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                   <div key={tsIndex} className="mb-4 pl-4 border-l-2 border-blue-300">
                     <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -142,8 +152,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                     </div>
                   </div>
                 ))}
-              </div>
-            ))
+                </div>
+              );
+            })
           ) : (
             <div className="text-center py-8 text-gray-500">
               <p>지원 가능한 시간대가 없습니다.</p>

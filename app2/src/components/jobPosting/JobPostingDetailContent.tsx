@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
-import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
+import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
+import { calculateDateRange } from '../../utils/jobPosting/migration';
 import { formatSalaryDisplay, getRoleDisplayName, getSalaryTypeDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 
@@ -34,8 +35,34 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
     return formatDateUtil(date);
   };
 
-  const formattedStartDate = formatDate(jobPosting.startDate);
-  const formattedEndDate = formatDate(jobPosting.endDate);
+  // 날짜 범위 표시 개선
+  const getDateRangeDisplay = () => {
+    const dates: string[] = [];
+    
+    // 모든 날짜 수집
+    jobPosting.dateSpecificRequirements?.forEach(req => {
+      dates.push(convertToDateString(req.date));
+      
+      // multi duration 처리
+      req.timeSlots?.forEach(slot => {
+        if (slot.duration?.type === 'multi' && slot.duration.endDate) {
+          const rangeDates = generateDateRange(
+            convertToDateString(req.date),
+            slot.duration.endDate
+          );
+          // 시작일 제외하고 추가 (중복 방지)
+          rangeDates.slice(1).forEach(d => dates.push(d));
+        }
+      });
+    });
+    
+    // 중복 제거 및 정렬
+    const uniqueDates = Array.from(new Set(dates)).sort();
+    
+    return formatDateRangeDisplay(uniqueDates);
+  };
+  
+  const dateRangeDisplay = getDateRangeDisplay();
 
   return (
     <div className="space-y-6">
@@ -55,7 +82,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         <div className="space-y-2 text-sm">
           <p className="flex items-center">
             <span className="font-medium w-20">기간:</span>
-            <span>📅 {formattedStartDate} ~ {formattedEndDate}</span>
+            <span>📅 {dateRangeDisplay}</span>
           </p>
           <p className="flex items-center">
             <span className="font-medium w-20">지역:</span>
@@ -149,11 +176,21 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         {/* 일자별 인원 요구사항 표시 */}
         {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
           <div className="space-y-4">
-            {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
-              <div key={dateIndex} className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-sm font-medium text-blue-600 mb-2">
-                  📅 {formatDateUtil(dateReq.date)} 일정
-                </div>
+            {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => {
+              // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+              const firstTimeSlot = dateReq.timeSlots?.[0];
+              const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+              
+              let dateDisplay = formatDateUtil(dateReq.date);
+              if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+                dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
+              }
+              
+              return (
+                <div key={dateIndex} className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-blue-600 mb-2">
+                    📅 {dateDisplay} 일정
+                  </div>
                 {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                   <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-4">
                     <div className="flex items-start">
@@ -190,8 +227,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
                     </div>
                   </div>
                 ))}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         ) : (
           /* 날짜별 요구사항이 없는 경우 */

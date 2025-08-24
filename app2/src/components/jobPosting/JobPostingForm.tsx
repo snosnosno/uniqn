@@ -7,7 +7,7 @@ import Button from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import DateDropdownSelector from '../DateDropdownSelector';
-import DateSpecificRequirements from './DateSpecificRequirements';
+import DateSpecificRequirementsNew from './DateSpecificRequirementsNew';
 import PreQuestionManager from './PreQuestionManager';
 import TemplateModal from './modals/TemplateModal';
 import LoadTemplateModal from './modals/LoadTemplateModal';
@@ -532,36 +532,9 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           </div>
         </div>
 
-        {/* 날짜 설정 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              시작일 <span className="text-red-500">*</span>
-            </label>
-            <DateDropdownSelector
-              value={toDropdownValue(typeof formData.startDate === 'string' ? formData.startDate : '')}
-              onChange={handleStartDateChange}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              종료일 <span className="text-red-500">*</span>
-            </label>
-            <DateDropdownSelector
-              value={toDropdownValue(typeof formData.endDate === 'string' ? formData.endDate : '')}
-              onChange={handleEndDateChange}
-              disabled={isSubmitting}
-            />
-          </div>
-        </div>
-
-        {/* 시간대 및 역할 설정 - 항상 날짜별 요구사항 사용 */}
-        <DateSpecificRequirements
+        {/* 날짜별 인원 요구사항 설정 */}
+        <DateSpecificRequirementsNew
           requirements={formData.dateSpecificRequirements || []}
-          startDate={typeof formData.startDate === 'string' ? formData.startDate : ''}
-          endDate={typeof formData.endDate === 'string' ? formData.endDate : ''}
           onRequirementsChange={handleDateSpecificRequirementsChange}
           onDateSpecificTimeSlotChange={handleDateSpecificTimeSlotChange}
           onDateSpecificTimeToBeAnnouncedToggle={handleDateSpecificTimeToBeAnnouncedToggle}

@@ -240,6 +240,66 @@ export const convertToDateString = (dateInput: DateInput): string => {
 };
 
 /**
+ * 날짜 범위 생성 함수
+ * 시작일부터 종료일까지의 모든 날짜 배열 반환
+ */
+export const generateDateRange = (startDate: string, endDate: string): string[] => {
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    dates.push(convertToDateString(date));
+  }
+  
+  return dates;
+};
+
+/**
+ * 날짜 배열을 범위 문자열로 변환
+ * 예: ["2025-08-24", "2025-08-25", "2025-08-26"] → "25-08-24(일) ~ 25-08-26(화)"
+ */
+export const formatDateRangeDisplay = (dates: string[]): string => {
+  if (!dates || dates.length === 0) return '';
+  
+  const sortedDates = [...dates].sort();
+  
+  // 단일 날짜
+  if (sortedDates.length === 1) {
+    return formatDate(sortedDates[0]);
+  }
+  
+  // 연속된 날짜 체크
+  const isConsecutive = sortedDates.every((date, idx) => {
+    if (idx === 0) return true;
+    const prev = sortedDates[idx - 1];
+    if (!prev) return false;
+    const prevDate = new Date(prev);
+    const currDate = new Date(date);
+    const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 3600 * 24);
+    return diffDays === 1;
+  });
+  
+  // 연속된 경우 범위로 표시
+  if (isConsecutive) {
+    const first = formatDate(sortedDates[0]);
+    const last = formatDate(sortedDates[sortedDates.length - 1]);
+    return `${first} ~ ${last}`;
+  }
+  
+  // 비연속 날짜 처리
+  if (sortedDates.length <= 3) {
+    // 3개 이하는 개별 표시
+    return sortedDates.map(d => formatDate(d)).join(', ');
+  } else {
+    // 3개 초과시 축약 표시
+    const first = formatDate(sortedDates[0]);
+    const last = formatDate(sortedDates[sortedDates.length - 1]);
+    return `${first} ~ ${last} (${sortedDates.length}일)`;
+  }
+};
+
+/**
  * DateDropdownSelector용 날짜 문자열을 드롭다운 값으로 변환
  */
 export const dateStringToDropdownValue = (dateString: string): { year?: string; month?: string; day?: string } => {

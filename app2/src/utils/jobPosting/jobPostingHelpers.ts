@@ -116,8 +116,7 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
 
   const result = {
     ...formData,
-    startDate: convertToTimestamp(formData.startDate),
-    endDate: convertToTimestamp(formData.endDate),
+    // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
     createdAt: convertToTimestamp(new Date()),
     updatedAt: convertToTimestamp(new Date()),
     requiredRoles: requiredRolesArray, // 검색을 위한 역할 배열 추가
@@ -163,8 +162,7 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     location: data.location || '',
     detailedAddress: data.detailedAddress,
     district: data.district,
-    startDate: convertDate(data.startDate),
-    endDate: convertDate(data.endDate),
+    // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
     status: data.status || 'open',
     dateSpecificRequirements: (data.dateSpecificRequirements || []).map((req: DateSpecificRequirement) => ({
       ...req,

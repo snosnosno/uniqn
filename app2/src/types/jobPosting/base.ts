@@ -89,23 +89,65 @@ export interface RoleRequirement {
 
 /**
  * 시간대 정보
+ * @description 각 시간대별 근무 정보를 정의합니다.
+ * 당일 종료, 다음날 종료, 여러날 연속 근무 등을 지원합니다.
  */
 export interface TimeSlot {
+  /** 시작 시간 (HH:mm 형식) */
   time: string;
+  
+  /** 역할별 필요 인원 */
   roles: RoleRequirement[];
-  date?: string; // 선택적 필드: yyyy-MM-dd 형식, 특정 날짜에만 적용될 때 사용
+  
+  /** 특정 날짜에만 적용될 때 사용 (yyyy-MM-dd 형식) */
+  date?: string;
   
   // 미정 기능 지원
   isTimeToBeAnnounced?: boolean;
   tentativeDescription?: string; // 미정인 경우 추가 설명 (예: "토너먼트 진행 상황에 따라 결정")
+  
+  // 🆕 종료 시간 및 날짜 설정
+  /** 종료 시간 (HH:mm 형식) */
+  endTime?: string;
+  
+  /** 다른 날짜에 종료되는 경우 종료 날짜 (yyyy-MM-dd 형식) */
+  endDate?: string;
+  
+  /** 당일 전체 운영 여부 (00:00 ~ 23:59) */
+  isFullDay?: boolean;
+  
+  /** 다음날 종료 여부 (자정을 넘는 경우) */
+  endsNextDay?: boolean;
+  
+  /** 기간 설정 (여러 날 연속 근무) */
+  duration?: {
+    /** 단일 날짜 또는 여러 날짜 */
+    type: 'single' | 'multi';
+    /** multi일 때 종료 날짜 */
+    endDate?: string;
+  };
 }
 
 /**
  * 날짜별 요구사항
+ * @description 각 날짜별 인원 요구사항과 시간대 정보를 정의합니다.
  */
 export interface DateSpecificRequirement {
-  date: string | Timestamp | { seconds: number }; // yyyy-MM-dd 형식 또는 Firebase Timestamp
+  /** 날짜 (yyyy-MM-dd 형식 또는 Firebase Timestamp) */
+  date: string | Timestamp | { seconds: number };
+  
+  /** 해당 날짜의 시간대별 요구사항 */
   timeSlots: TimeSlot[];
+  
+  // 🆕 표시용 메타데이터
+  /** 메인 행사 날짜 여부 */
+  isMainDate?: boolean;
+  
+  /** 표시 순서 (정렬용) */
+  displayOrder?: number;
+  
+  /** 날짜 설명 (예: "Day 1", "예선전") */
+  description?: string;
 }
 
 /**

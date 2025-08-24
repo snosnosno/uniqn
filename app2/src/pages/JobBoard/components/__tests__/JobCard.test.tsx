@@ -31,8 +31,7 @@ describe('JobCard Component', () => {
     id: '1',
     title: '주말 토너먼트 딜러 모집',
     description: '경험 많은 딜러를 모집합니다',
-    startDate: '2024-01-20',
-    endDate: '2024-01-21',
+    // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
     status: 'open',
     createdAt: { seconds: Date.now() / 1000, nanoseconds: 0, toDate: () => new Date(), toMillis: () => Date.now(), isEqual: () => false, toJSON: () => '' } as any,
     updatedAt: { seconds: Date.now() / 1000, nanoseconds: 0, toDate: () => new Date(), toMillis: () => Date.now(), isEqual: () => false, toJSON: () => '' } as any,
@@ -204,42 +203,81 @@ describe('JobCard Component', () => {
     expect(screen.getByText(/2명/)).toBeInTheDocument();
   });
 
-  test('handles Firebase timestamp format', () => {
-    const postWithTimestamp = {
+  test('shows date range for consecutive dates', () => {
+    const postWithConsecutiveDates = {
       ...mockPost,
-      startDate: '2024-01-20',
-      endDate: '2024-01-21',
+      dateSpecificRequirements: [
+        {
+          date: '2024-01-20',
+          timeSlots: [
+            {
+              time: '18:00 - 02:00',
+              roles: [{ name: 'dealer', count: 10 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+          ],
+        },
+        {
+          date: '2024-01-21',
+          timeSlots: [
+            {
+              time: '18:00 - 02:00',
+              roles: [{ name: 'dealer', count: 10 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+          ],
+        },
+        {
+          date: '2024-01-22',
+          timeSlots: [
+            {
+              time: '18:00 - 02:00',
+              roles: [{ name: 'dealer', count: 10 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+          ],
+        },
+      ],
     };
     
-    render(<JobCard {...defaultProps} post={postWithTimestamp} />);
+    render(<JobCard {...defaultProps} post={postWithConsecutiveDates} />);
     
-    expect(screen.getByText(/2024.*1.*20/)).toBeInTheDocument();
-    expect(screen.getByText(/2024.*1.*21/)).toBeInTheDocument();
+    // 연속된 날짜는 범위로 표시되어야 함
+    expect(screen.getByText(/2024.*1.*20.*~.*2024.*1.*22/)).toBeInTheDocument();
   });
 
-  test('handles seconds timestamp format', () => {
-    const postWithSeconds = {
+  test('shows individual dates for non-consecutive dates', () => {
+    const postWithNonConsecutiveDates = {
       ...mockPost,
-      startDate: '2024-01-20',
-      endDate: '2024-01-21',
+      dateSpecificRequirements: [
+        {
+          date: '2024-01-20',
+          timeSlots: [
+            {
+              time: '18:00 - 02:00',
+              roles: [{ name: 'dealer', count: 10 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+          ],
+        },
+        {
+          date: '2024-01-25',
+          timeSlots: [
+            {
+              time: '18:00 - 02:00',
+              roles: [{ name: 'dealer', count: 10 }],
+              isTimeToBeAnnounced: false,
+            } as TimeSlot,
+          ],
+        },
+      ],
     };
     
-    render(<JobCard {...defaultProps} post={postWithSeconds} />);
+    render(<JobCard {...defaultProps} post={postWithNonConsecutiveDates} />);
     
+    // 비연속 날짜는 개별적으로 표시되어야 함
     expect(screen.getByText(/2024.*1.*20/)).toBeInTheDocument();
-    expect(screen.getByText(/2024.*1.*21/)).toBeInTheDocument();
-  });
-
-  test('shows 미정 for missing dates', () => {
-    const postWithoutDates = {
-      ...mockPost,
-      startDate: '',
-      endDate: '',
-    };
-    
-    render(<JobCard {...defaultProps} post={postWithoutDates} />);
-    
-    expect(screen.getAllByText('미정')).toHaveLength(2);
+    expect(screen.getByText(/2024.*1.*25/)).toBeInTheDocument();
   });
 
   test('shows fixed recruitment type', () => {

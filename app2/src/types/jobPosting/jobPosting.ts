@@ -16,8 +16,7 @@ export interface JobPostingFormData {
   location: string;
   detailedAddress?: string;
   district?: string;       // 시/군/구
-  startDate: string;
-  endDate: string;
+  // startDate와 endDate 제거 - dateSpecificRequirements로 대체
   status: 'open' | 'closed';
   dateSpecificRequirements: DateSpecificRequirement[];
   preQuestions?: PreQuestion[];
@@ -46,8 +45,7 @@ export interface JobPosting {
   location: string;
   district?: string;
   detailedAddress?: string;
-  startDate: Timestamp | string;
-  endDate: Timestamp | string;
+  // startDate와 endDate 제거 - dateSpecificRequirements로 대체
   dateSpecificRequirements: DateSpecificRequirement[];
   requiredRoles?: string[];
   createdAt: Timestamp;
