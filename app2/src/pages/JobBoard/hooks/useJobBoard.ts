@@ -22,6 +22,10 @@ export interface Assignment {
   timeSlot: string;
   role: string;
   date?: string | any;
+  duration?: {
+    type: 'single' | 'multi';
+    endDate?: string;
+  };
 }
 
 /**
@@ -246,6 +250,7 @@ export const useJobBoard = () => {
       const assignedRoles = selectedAssignments.map(item => item.role);
       const assignedTimes = selectedAssignments.map(item => item.timeSlot);
       const assignedDates = selectedAssignments.map(item => item.date).filter(Boolean);
+      const assignedDurations = selectedAssignments.map(item => item.duration || null);
       
       // 기존 호환성을 위해 첫 번째 선택값 사용
       const firstSelection = selectedAssignments[0];
@@ -285,6 +290,11 @@ export const useJobBoard = () => {
       
       if (assignedDates.length > 0) {
         applicationData.assignedDates = assignedDates;
+      }
+      
+      // duration 정보 저장
+      if (assignedDurations.length > 0 && assignedDurations.some(d => d !== null)) {
+        applicationData.assignedDurations = assignedDurations;
       }
       
       await addDoc(collection(db, 'applications'), applicationData);

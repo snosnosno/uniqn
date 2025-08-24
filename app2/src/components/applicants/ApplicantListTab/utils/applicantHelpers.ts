@@ -101,11 +101,13 @@ export const getApplicantSelections = (applicant: Applicant) => {
         const roleValue = originalData.roles[i] ?? '';
         const timeValue = originalData.times[i] ?? '';
         const dateValue = convertDateToString(originalData.dates[i]);
+        const duration = (applicant as any).assignedDurations?.[i] || undefined;
         
         selections.push({
           role: roleValue,
           time: timeValue,
-          date: dateValue
+          date: dateValue,
+          ...(duration && { duration })
         });
       }
       
@@ -143,10 +145,12 @@ export const getApplicantSelections = (applicant: Applicant) => {
       const dateValue = convertDateToString(datesArray[i]);  // 안전한 날짜 변환
       
       // ✅ 모든 데이터 보존 (빈 값 포함) - 원본 지원 상태 완전 복원
+      const duration = (applicant as any).assignedDurations?.[i] || undefined;
       selections.push({
         role: roleValue,
         time: timeValue,
-        date: dateValue
+        date: dateValue,
+        ...(duration && { duration })
       });
     }
     

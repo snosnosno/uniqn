@@ -22,6 +22,10 @@ export interface Applicant {
   assignedRoles?: string[];   // 선택한 역할들
   assignedTimes?: string[];   // 선택한 시간들
   assignedDates?: string[];   // 선택한 날짜들
+  assignedDurations?: Array<{  // 각 선택에 대한 duration 정보
+    type: 'single' | 'multi';
+    endDate?: string;
+  } | null>;
   
   // 사전질문 답변
   preQuestionAnswers?: Array<{
@@ -40,6 +44,10 @@ export interface Assignment {
   timeSlot: string;
   role: string;
   date: string;
+  duration?: {
+    type: 'single' | 'multi';
+    endDate?: string;
+  };
 }
 
 export type SelectedAssignments = { [key: string]: Assignment[] };

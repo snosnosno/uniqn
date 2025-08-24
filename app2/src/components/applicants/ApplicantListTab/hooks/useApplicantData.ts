@@ -63,7 +63,9 @@ export const useApplicantData = (eventId?: string) => {
           // 다중 선택 필드도 매핑
           assignedRoles: data.assignedRoles || (data.assignedRole ? [data.assignedRole] : data.role ? [data.role] : []),
           assignedTimes: data.assignedTimes || (data.assignedTime ? [data.assignedTime] : data.timeSlot ? [data.timeSlot] : []),
-          assignedDates: data.assignedDates || (dateString ? [dateString] : data.date ? [data.date] : [])
+          assignedDates: data.assignedDates || (dateString ? [dateString] : data.date ? [data.date] : []),
+          // duration 정보도 매핑
+          assignedDurations: data.assignedDurations || []
         } as Applicant;
       });
       

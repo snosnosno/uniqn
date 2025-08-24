@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
 import { getApplicantSelections, formatDateDisplay } from './utils/applicantHelpers';
+import { groupConsecutiveDates, formatDateGroup } from '../../../utils/jobPosting/dateUtils';
 
 interface ApplicantCardProps {
   applicant: Applicant;
@@ -123,26 +124,59 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
               {(() => {
                 const confirmedSelections = getApplicantSelections(applicant);
                 if (confirmedSelections.length > 0) {
+                  // 날짜별로 그룹화하여 표시
+                  const groupedByDate = confirmedSelections.reduce((acc, selection) => {
+                    const dateKey = selection.date || 'no-date';
+                    if (!acc[dateKey]) {
+                      acc[dateKey] = [];
+                    }
+                    acc[dateKey].push(selection);
+                    return acc;
+                  }, {} as Record<string, typeof confirmedSelections>);
+                  
+                  const sortedDates = Object.keys(groupedByDate).sort().filter(d => d !== 'no-date');
+                  
+                  // 연속된 날짜를 그룹화
+                  const dateGroups = groupConsecutiveDates(sortedDates);
+                  
                   return (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                        {confirmedSelections.map((selection, index) => {
-                          const confirmedSafeDateString = selection.date || '';
+                      <div className="space-y-3 mb-4">
+                        {dateGroups.map((dateGroup, groupIndex) => {
+                          // 각 그룹의 시간대와 역할 수집
+                          const groupSelections = dateGroup.flatMap(date => groupedByDate[date] || []);
+                          const uniqueTimeSlots = Array.from(new Set(groupSelections.map(s => s.time)));
+                          
                           return (
-                            <div key={index} className="flex items-center gap-2 text-sm bg-white p-2 rounded border">
-                              {confirmedSafeDateString ? 
+                            <div key={groupIndex} className="bg-white p-3 rounded border">
+                              <div className="mb-2">
                                 <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md">
-                                  📅 {formatDateDisplay(confirmedSafeDateString)}
-                                </span> : null
-                              }
-                              <div className="flex items-center gap-1">
-                                <span className={`font-medium ${selection.time ? 'text-gray-700' : 'text-red-500'}`}>
-                                  {selection.time || '미정'}
+                                  📅 {formatDateGroup(dateGroup)}
                                 </span>
-                                <span className="text-gray-500">-</span>
-                                <span className="font-medium text-gray-800">
-                                  {t(`jobPostingAdmin.create.${selection.role}`) || selection.role}
-                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                {uniqueTimeSlots.map(time => {
+                                  // 해당 시간대의 모든 역할 수집
+                                  const timeSelections = groupSelections.filter(s => s.time === time);
+                                  const uniqueRoles = Array.from(new Set(timeSelections.map(s => s.role)));
+                                  
+                                  return (
+                                    <div key={time} className="flex items-center gap-2 text-sm">
+                                      <span className={`font-medium ${time !== '미정' ? 'text-gray-700' : 'text-red-500'}`}>
+                                        {time}
+                                      </span>
+                                      <span className="text-gray-500">-</span>
+                                      <span className="font-medium text-gray-800">
+                                        {uniqueRoles.map((role, idx) => (
+                                          <span key={idx}>
+                                            {idx > 0 && ', '}
+                                            {t(`jobPostingAdmin.create.${role}`) || role}
+                                          </span>
+                                        ))}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );

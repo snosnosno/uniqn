@@ -300,6 +300,70 @@ export const formatDateRangeDisplay = (dates: string[]): string => {
 };
 
 /**
+ * 날짜 배열을 연속된 그룹으로 나누기
+ * 예: ["2025-08-24", "2025-08-25", "2025-08-27"] → [["2025-08-24", "2025-08-25"], ["2025-08-27"]]
+ */
+export const groupConsecutiveDates = (dates: string[]): string[][] => {
+  if (!dates || dates.length === 0) return [];
+  
+  const sortedDates = [...dates].sort();
+  const groups: string[][] = [];
+  const firstDate = sortedDates[0];
+  if (!firstDate) return [];
+  
+  let currentGroup: string[] = [firstDate];
+  
+  for (let i = 1; i < sortedDates.length; i++) {
+    const prevDateStr = sortedDates[i - 1];
+    const currDateStr = sortedDates[i];
+    
+    if (!prevDateStr || !currDateStr) continue;
+    
+    const prevDate = new Date(prevDateStr);
+    const currDate = new Date(currDateStr);
+    const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 3600 * 24);
+    
+    if (diffDays === 1) {
+      // 연속된 날짜면 현재 그룹에 추가
+      currentGroup.push(currDateStr);
+    } else {
+      // 연속되지 않으면 새 그룹 시작
+      groups.push(currentGroup);
+      currentGroup = [currDateStr];
+    }
+  }
+  
+  // 마지막 그룹 추가
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup);
+  }
+  
+  return groups;
+};
+
+/**
+ * 날짜 그룹을 포맷된 문자열로 변환
+ * 단일 날짜는 그대로, 연속된 날짜는 범위로 표시
+ */
+export const formatDateGroup = (dates: string[]): string => {
+  if (!dates || dates.length === 0) return '';
+  
+  const firstDate = dates[0];
+  if (!firstDate) return '';
+  
+  if (dates.length === 1) {
+    return formatDate(firstDate);
+  }
+  
+  const lastDate = dates[dates.length - 1];
+  if (!lastDate) return formatDate(firstDate);
+  
+  const first = formatDate(firstDate);
+  const last = formatDate(lastDate);
+  return `${first} ~ ${last}`;
+};
+
+/**
  * DateDropdownSelector용 날짜 문자열을 드롭다운 값으로 변환
  */
 export const dateStringToDropdownValue = (dateString: string): { year?: string; month?: string; day?: string } => {

@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '../../../types/jobPosting';
-import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
+import { formatDate as formatDateUtil, generateDateRange, formatDateRangeDisplay } from '../../../utils/jobPosting/dateUtils';
 
 interface Assignment {
   timeSlot: string;
   role: string;
   date?: string | any;
+  duration?: {
+    type: 'single' | 'multi';
+    endDate?: string;
+  };
 }
 
 interface ApplyModalProps {
@@ -37,6 +41,12 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  // 모달이 열릴 때 자동 선택 기능 제거 (각 날짜별 요구사항을 독립적으로 처리)
+  useEffect(() => {
+    // duration 기반 날짜 확장 로직 제거
+    // 이제 각 DateSpecificRequirement는 독립적인 날짜를 나타냄
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // 선택된 항목인지 확인
@@ -55,19 +65,73 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           {t('jobBoard.applyModal.title', { postTitle: jobPosting.title })}
         </h3>
         
-        {/* 선택된 항목들 미리보기 */}
+        {/* 선택된 항목들 미리보기 - 날짜별로 그룹화 */}
         {selectedAssignments.length > 0 && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
             <h4 className="text-sm font-medium text-green-800 mb-2">
               선택된 항목 ({selectedAssignments.length}개):
             </h4>
-            <div className="space-y-1">
-              {selectedAssignments.map((assignment, index) => (
-                <div key={index} className="text-xs text-green-700">
-                  {assignment.date ? `📅 ${formatDateUtil(assignment.date)} - ` : ''}
-                  ⏰ {assignment.timeSlot} - 👤 {t(`jobPostingAdmin.create.${assignment.role}`, assignment.role)}
-                </div>
-              ))}
+            <div className="space-y-2">
+              {(() => {
+                // 날짜별로 그룹화
+                const groupedByDate = selectedAssignments.reduce((acc, assignment) => {
+                  const dateKey = assignment.date || 'no-date';
+                  if (!acc[dateKey]) {
+                    acc[dateKey] = [];
+                  }
+                  acc[dateKey]!.push(assignment);
+                  return acc;
+                }, {} as Record<string, typeof selectedAssignments>);
+                
+                // 날짜 순서대로 정렬
+                const sortedDates = Object.keys(groupedByDate).sort().filter(d => d !== 'no-date');
+                
+                // 연속된 날짜를 범위로 표시
+                const dateRangeDisplay = sortedDates.length > 1 ? 
+                  formatDateRangeDisplay(sortedDates) : 
+                  (sortedDates[0] ? formatDateUtil(sortedDates[0]) : '');
+                
+                return (
+                  <div className="text-xs text-green-700">
+                    {dateRangeDisplay && (
+                      <div className="font-medium mb-2 text-sm">
+                        📅 {dateRangeDisplay}
+                      </div>
+                    )}
+                    {sortedDates.map(dateKey => (
+                      <div key={dateKey} className="mb-2">
+                        <div className="font-medium text-green-600 mb-1 pl-3">
+                          {formatDateUtil(dateKey)}
+                        </div>
+                        <div className="ml-6 space-y-0.5">
+                          {(() => {
+                            // 시간대별로 다시 그룹화
+                            const groupedByTime = groupedByDate[dateKey]!.reduce((acc, assignment) => {
+                              if (!acc[assignment.timeSlot]) {
+                                acc[assignment.timeSlot] = [];
+                              }
+                              acc[assignment.timeSlot]!.push(assignment);
+                              return acc;
+                            }, {} as Record<string, typeof selectedAssignments>);
+                            
+                            return Object.entries(groupedByTime).map(([timeSlot, assignments]) => (
+                              <div key={`${dateKey}-${timeSlot}`}>
+                                ⏰ {timeSlot} - 
+                                {assignments.map((a, idx) => (
+                                  <span key={idx}>
+                                    {idx > 0 && ', '}
+                                    {t(`jobPostingAdmin.create.${a.role}`, a.role)}
+                                  </span>
+                                ))}
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -85,11 +149,127 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
               
               let dateDisplay = formatDateUtil(dateReq.date);
-              if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
-                dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
+              let expandedDates: string[] = [];
+              
+              if (hasMultiDuration && firstTimeSlot && firstTimeSlot.duration && firstTimeSlot.duration.endDate) {
+                const endDate = firstTimeSlot.duration.endDate;
+                dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(endDate)}`;
+                // 다중 날짜인 경우 날짜 범위를 확장하여 각 날짜별로 선택 가능하게 함
+                let startDate = '';
+                
+                if (typeof dateReq.date === 'string') {
+                  startDate = dateReq.date;
+                } else if (dateReq.date) {
+                  try {
+                    // Timestamp 객체 처리
+                    if ((dateReq.date as any).toDate) {
+                      const date = (dateReq.date as any).toDate();
+                      startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    } else if ((dateReq.date as any).seconds) {
+                      const date = new Date((dateReq.date as any).seconds * 1000);
+                      startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    }
+                  } catch (error) {
+                    console.error('Date conversion error:', error);
+                  }
+                }
+                
+                if (startDate && endDate) {
+                  expandedDates = generateDateRange(startDate, endDate);
+                }
               }
               
-              return (
+              // 다중 날짜인 경우 확장된 날짜별로 표시
+              if (expandedDates.length > 0) {
+                return (
+                  <div key={dateIndex} className="mb-6">
+                    <div className="mb-2 p-3 bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                        📅 {dateDisplay}
+                      </h4>
+                      <p className="text-xs text-blue-600">
+                        여러 날짜가 자동으로 선택되었습니다. 필요시 개별 날짜를 해제할 수 있습니다.
+                      </p>
+                    </div>
+                    <div className="pl-4 border-l-4 border-blue-300">
+                      {expandedDates.map((expandedDate, expandedIndex) => (
+                        <div key={`${dateIndex}-${expandedIndex}`} className="mb-3">
+                          <h5 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                            <span className="bg-white px-2 py-1 rounded-md shadow-sm border border-gray-200">
+                              📆 {formatDateUtil(expandedDate)}
+                            </span>
+                          </h5>
+                          {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                          <div key={tsIndex} className="mb-3 pl-3 border-l-2 border-blue-300">
+                            <div className="text-xs font-medium text-gray-700 mb-1 flex items-center">
+                              ⏰ {ts.isTimeToBeAnnounced ? (
+                                <span className="text-orange-600">
+                                  미정
+                                  {ts.tentativeDescription && (
+                                    <span className="text-gray-600 font-normal ml-2">
+                                      ({ts.tentativeDescription})
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                ts.time
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                                const assignment: Assignment = { 
+                                  timeSlot: ts.time, 
+                                  role: r.name, 
+                                  date: expandedDate,
+                                  ...(ts.duration && { duration: ts.duration })
+                                };
+                                const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
+                                  staff.timeSlot === ts.time && 
+                                  staff.role === r.name && 
+                                  staff.date === expandedDate
+                                ).length || 0;
+                                const isFull = confirmedCount >= r.count;
+                                const isSelected = isAssignmentSelected(assignment);
+                                
+                                return (
+                                  <label 
+                                    key={roleIndex} 
+                                    className={`flex items-center p-1.5 rounded cursor-pointer text-xs ${
+                                      isFull ? 'bg-gray-100 cursor-not-allowed' : 
+                                      isSelected ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      disabled={isFull}
+                                      onChange={(e) => onAssignmentChange(assignment, e.target.checked)}
+                                      className="h-3 w-3 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                                    />
+                                    <span className={`ml-2 ${
+                                      isFull ? 'text-gray-400' : 'text-gray-700'
+                                    }`}>
+                                      👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
+                                      <span className={`ml-1 ${
+                                        isFull ? 'text-red-500 font-medium' : 'text-gray-500'
+                                      }`}>
+                                        ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
+                                      </span>
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              } else {
+                // 단일 날짜인 경우 기존 로직 유지
+                return (
                 <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
                   <h4 className="text-sm font-semibold text-blue-800 mb-3">
                     📅 {dateDisplay}
@@ -154,6 +334,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                 ))}
                 </div>
               );
+              }
             })
           ) : (
             <div className="text-center py-8 text-gray-500">

@@ -149,27 +149,37 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   };
 
 
-  // 날짜별 종료일 설정
+  // 날짜별 종료일 설정 - 다중 날짜 선택 시 개별 요구사항 생성
   const handleDurationTypeChange = (requirementIndex: number, type: 'single' | 'multi') => {
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     
     if (requirement) {
-      requirement.timeSlots.forEach(slot => {
-        slot.duration = { type };
-        if (type === 'multi') {
-          // 기본값으로 다음날을 종료일로 설정
-          const startDate = new Date(getDateString(requirement.date));
-          startDate.setDate(startDate.getDate() + 1);
-          slot.duration.endDate = convertToDateString(startDate);
-        }
-      });
+      if (type === 'single') {
+        // 단일 날짜: duration 정보만 업데이트
+        requirement.timeSlots.forEach(slot => {
+          slot.duration = { type: 'single' };
+          delete slot.duration?.endDate;
+        });
+      } else {
+        // 다중 날짜: 기본값으로 다음날을 종료일로 설정 (UI 표시용)
+        const startDate = new Date(getDateString(requirement.date));
+        startDate.setDate(startDate.getDate() + 1);
+        const defaultEndDate = convertToDateString(startDate);
+        
+        requirement.timeSlots.forEach(slot => {
+          slot.duration = { 
+            type: 'multi',
+            endDate: defaultEndDate
+          };
+        });
+      }
     }
     
     onRequirementsChange(newRequirements);
   };
   
-  // 날짜별 종료일 변경 (중복 체크 포함)
+  // 날짜별 종료일 변경 - 실제로 새로운 날짜 요구사항들을 생성
   const handleDurationEndDateChange = (requirementIndex: number, endDate: string) => {
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
@@ -182,12 +192,13 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       const start = new Date(startDateStr);
       const end = new Date(endDate);
       
-      // 날짜 범위 생성 (시작일 제외)
-      for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-        const dateStr = convertToDateString(date);
-        if (dateStr !== startDateStr) {
-          dates.push(dateStr);
-        }
+      // 날짜 범위 생성 (시작일은 이미 있으므로 제외)
+      const currentDate = new Date(start);
+      currentDate.setDate(currentDate.getDate() + 1); // 다음날부터 시작
+      
+      while (currentDate <= end) {
+        dates.push(convertToDateString(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
       }
       
       // 기존 날짜들과 중복 체크
@@ -202,14 +213,32 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         return;
       }
       
+      // duration 정보 업데이트 (UI 표시용)
       requirement.timeSlots.forEach(slot => {
         if (slot.duration?.type === 'multi') {
           slot.duration.endDate = endDate;
         }
       });
+      
+      // 새로운 날짜 요구사항들 생성
+      const newDateRequirements = dates.map(date => {
+        // 기존 요구사항의 시간대와 역할 정보 복사
+        const newReq = createNewDateSpecificRequirement(date);
+        newReq.timeSlots = requirement.timeSlots.map(slot => ({
+          ...slot,
+          duration: { type: 'single' }, // 각 날짜는 단일로 설정
+          roles: slot.roles.map(role => ({ ...role })) // 역할 정보 복사
+        }));
+        return newReq;
+      });
+      
+      // 새로운 요구사항들을 배열에 추가하고 날짜순 정렬
+      const allRequirements = [...newRequirements, ...newDateRequirements].sort((a, b) => 
+        getDateString(a.date).localeCompare(getDateString(b.date))
+      );
+      
+      onRequirementsChange(allRequirements);
     }
-    
-    onRequirementsChange(newRequirements);
   };
 
   // 시간대 제거
