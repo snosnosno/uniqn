@@ -135,7 +135,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     // 날짜별 요구사항 표시
     const dateReqs = post.dateSpecificRequirements || [];
     if (dateReqs.length > 0) {
-      const displayReqs = expandTimeSlots ? dateReqs : dateReqs.slice(0, 2);
+      // 모든 날짜를 표시하도록 변경 (expandTimeSlots 조건 제거)
+      const displayReqs = dateReqs;
       
       return (
         <div className="text-sm text-gray-600 mb-3">
@@ -232,13 +233,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               </div>
             </div>
           ))}
-          {!expandTimeSlots && dateReqs.length > 2 && (
-            <div className="text-center text-gray-400 py-1">
-              <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                ... 외 {dateReqs.length - 2}개 날짜
-              </span>
-            </div>
-          )}
         </div>
       );
     } else {
@@ -258,10 +252,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     if ((post.dateSpecificRequirements || []).length > 0) {
       return (
         <div className="mb-4">
-          <div className="font-medium text-gray-700 mb-2 flex items-center text-sm">
-            <span className="mr-2">📋</span>
-            <span>모집 일정</span>
-          </div>
           <div className="space-y-2">
             {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => (
               <div key={dateIndex} className="">
