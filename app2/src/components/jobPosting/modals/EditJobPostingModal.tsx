@@ -121,7 +121,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               onClick={openTemplateModal}
               disabled={isUpdating}
             >
-              템플릿으로 저장
+              템플릿 저장
             </Button>
           </div>
         </div>

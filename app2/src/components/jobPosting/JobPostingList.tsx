@@ -32,38 +32,51 @@ const JobPostingList: React.FC<JobPostingListProps> = React.memo(({
     }
   };
 
-  // 관리자 액션 버튼 렌더링
-  const renderAdminActions = (post: JobPosting) => (
-    <>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => onNavigateToDetail(post.id)}
-      >
-        관리
-      </Button>
-      {currentUser?.uid === post.createdBy && (
-        <>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onEdit(post)}
-          >
-            수정
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => handleDelete(post.id, post.title)}
-            loading={isDeleting === post.id}
-            disabled={isDeleting === post.id}
-          >
-            {isDeleting === post.id ? '삭제 중...' : '삭제'}
-          </Button>
-        </>
-      )}
-    </>
-  );
+  // 관리자 액션 버튼 렌더링 - 카드 너비에 맞게 균등 배치
+  const renderAdminActions = (post: JobPosting) => {
+    const isOwner = currentUser?.uid === post.createdBy;
+    
+    return (
+      <>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => onNavigateToDetail(post.id)}
+          className="w-full text-xs sm:text-sm px-3 py-1.5 min-h-[32px] hover:shadow-sm transition-shadow"
+        >
+          관리
+        </Button>
+        {isOwner ? (
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onEdit(post)}
+              className="w-full text-xs sm:text-sm px-3 py-1.5 min-h-[32px] hover:shadow-sm transition-shadow"
+            >
+              수정
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => handleDelete(post.id, post.title)}
+              loading={isDeleting === post.id}
+              disabled={isDeleting === post.id}
+              className="w-full text-xs sm:text-sm px-3 py-1.5 min-h-[32px] hover:shadow-sm transition-shadow"
+            >
+              {isDeleting === post.id ? '삭제 중...' : '삭제'}
+            </Button>
+          </>
+        ) : (
+          // 빈 공간을 채우기 위한 빈 div들
+          <>
+            <div></div>
+            <div></div>
+          </>
+        )}
+      </>
+    );
+  };
 
   if (loading) {
     return (

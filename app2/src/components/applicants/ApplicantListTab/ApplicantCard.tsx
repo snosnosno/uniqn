@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
 import { getApplicantSelections, formatDateDisplay } from './utils/applicantHelpers';
-import { groupConsecutiveDates, formatDateGroup } from '../../../utils/jobPosting/dateUtils';
+import { formatDate } from '../../../utils/jobPosting/dateUtils';
 
 interface ApplicantCardProps {
   applicant: Applicant;
@@ -136,47 +136,73 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
                   
                   const sortedDates = Object.keys(groupedByDate).sort().filter(d => d !== 'no-date');
                   
-                  // 연속된 날짜를 그룹화
-                  const dateGroups = groupConsecutiveDates(sortedDates);
+                  // 시간대와 역할이 같은 연속된 날짜만 그룹화
+                  type ScheduleGroup = {
+                    dates: string[];
+                    time: string;
+                    role: string;
+                  };
+                  
+                  const scheduleGroups: ScheduleGroup[] = [];
+                  
+                  // 각 날짜의 시간대-역할 조합을 추적
+                  sortedDates.forEach(date => {
+                    const selections = groupedByDate[date] || [];
+                    
+                    selections.forEach((selection: any) => {
+                      const { time, role } = selection;
+                      
+                      // 마지막 그룹이 같은 시간대와 역할을 가지고 있고, 날짜가 연속적인지 확인
+                      const lastGroup = scheduleGroups[scheduleGroups.length - 1];
+                      
+                      if (lastGroup && 
+                          lastGroup.time === time && 
+                          lastGroup.role === role) {
+                        // 마지막 날짜와 현재 날짜가 연속적인지 확인
+                        const lastDate = lastGroup.dates[lastGroup.dates.length - 1];
+                        if (lastDate) {
+                          const lastDateObj = new Date(lastDate);
+                          const currentDateObj = new Date(date);
+                          const diffDays = (currentDateObj.getTime() - lastDateObj.getTime()) / (1000 * 3600 * 24);
+                          
+                          if (diffDays === 1) {
+                            // 연속된 날짜면 현재 그룹에 추가
+                            lastGroup.dates.push(date);
+                            return;
+                          }
+                        }
+                      }
+                      
+                      // 새로운 그룹 생성
+                      scheduleGroups.push({
+                        dates: [date],
+                        time,
+                        role
+                      });
+                    });
+                  });
                   
                   return (
                     <>
                       <div className="space-y-3 mb-4">
-                        {dateGroups.map((dateGroup, groupIndex) => {
-                          // 각 그룹의 시간대와 역할 수집
-                          const groupSelections = dateGroup.flatMap(date => groupedByDate[date] || []);
-                          const uniqueTimeSlots = Array.from(new Set(groupSelections.map(s => s.time)));
-                          
+                        {scheduleGroups.map((group, groupIndex) => {
                           return (
                             <div key={groupIndex} className="bg-white p-3 rounded border">
                               <div className="mb-2">
                                 <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md">
-                                  📅 {formatDateGroup(dateGroup)}
+                                  📅 {group.dates.length === 1 
+                                    ? formatDate(group.dates[0]) 
+                                    : `${formatDate(group.dates[0])} ~ ${formatDate(group.dates[group.dates.length - 1])}`}
                                 </span>
                               </div>
-                              <div className="space-y-1">
-                                {uniqueTimeSlots.map(time => {
-                                  // 해당 시간대의 모든 역할 수집
-                                  const timeSelections = groupSelections.filter(s => s.time === time);
-                                  const uniqueRoles = Array.from(new Set(timeSelections.map(s => s.role)));
-                                  
-                                  return (
-                                    <div key={time} className="flex items-center gap-2 text-sm">
-                                      <span className={`font-medium ${time !== '미정' ? 'text-gray-700' : 'text-red-500'}`}>
-                                        {time}
-                                      </span>
-                                      <span className="text-gray-500">-</span>
-                                      <span className="font-medium text-gray-800">
-                                        {uniqueRoles.map((role, idx) => (
-                                          <span key={idx}>
-                                            {idx > 0 && ', '}
-                                            {t(`jobPostingAdmin.create.${role}`) || role}
-                                          </span>
-                                        ))}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className={`font-medium ${group.time !== '미정' ? 'text-gray-700' : 'text-red-500'}`}>
+                                  {group.time}
+                                </span>
+                                <span className="text-gray-500">-</span>
+                                <span className="font-medium text-gray-800">
+                                  {t(`jobPostingAdmin.create.${group.role}`) || group.role}
+                                </span>
                               </div>
                             </div>
                           );

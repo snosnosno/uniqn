@@ -170,7 +170,8 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
       ...prev,
       benefits: {
         ...prev.benefits,
-        [benefitType]: checked ? '' : undefined
+        // 식사의 경우 체크 시 자동으로 "제공" 입력
+        [benefitType]: checked ? (benefitType === 'meal' ? '제공' : '') : undefined
       }
     }));
   }, []);

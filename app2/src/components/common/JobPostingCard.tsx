@@ -462,13 +462,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 <span className="flex items-center">
                   <span className="mr-2">📍</span>
                   <span className="break-words">
+                    {/* 지역(시/군/구) 상세주소 형식으로 표시 */}
                     {post.location}
-                    {post.detailedAddress && (
-                      <span className="text-gray-400 ml-1">({post.detailedAddress})</span>
-                    )}
-                    {post.district && (
-                      <span className="text-gray-400 ml-1">{post.district}</span>
-                    )}
+                    {post.district && `(${post.district})`}
+                    {post.detailedAddress && ` ${post.detailedAddress}`}
                   </span>
                 </span>
               </div>
@@ -562,9 +559,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             {renderExtra && renderExtra(post)}
           </div>
 
-          {/* 액션 버튼 영역 */}
-          {renderActions && (
-            <div className={variant === 'admin-list' ? 'flex flex-col space-y-2 ml-4' : ''}>
+          {/* 액션 버튼 영역 - admin-list가 아닌 경우만 여기에 표시 */}
+          {renderActions && variant !== 'admin-list' && (
+            <div className="">
               {renderActions(post)}
             </div>
           )}
@@ -577,6 +574,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             {post.updatedAt && (
               <span>수정: {formatDateDisplay(post.updatedAt)}</span>
             )}
+          </div>
+        )}
+
+        {/* 관리자용 액션 버튼 - 카드 하단에 균등 배치 */}
+        {renderActions && variant === 'admin-list' && (
+          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-200">
+            {renderActions(post)}
           </div>
         )}
       </div>

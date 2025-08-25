@@ -284,7 +284,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         <h4 className="text-sm font-medium text-gray-700">
           일자별 인원 요구사항
           <span className="text-xs text-gray-500 ml-2">
-            (날짜를 자유롭게 추가하세요)
+            (날짜를 추가하세요)
           </span>
         </h4>
         <div className="flex items-center space-x-2">
@@ -338,7 +338,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-semibold text-gray-700">📅</span>
+                  <span className="text-sm font-semibold text-gray-700"></span>
                   <DateDropdownSelector
                     value={toDropdownValue(dateStr)}
                     onChange={(value) => handleDateChange(requirementIndex, value)}
@@ -454,8 +454,8 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           onChange={(e) =>
                             onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
-                          placeholder="예: 토너먼트 진행 상황에 따라 결정"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="예시 : 추후공지"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
                         />
                       </div>
                     ) : (
@@ -543,10 +543,14 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                               <input
                                 type="number"
                                 min="1"
-                                value={role.count}
-                                onChange={(e) =>
-                                  onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', parseInt(e.target.value) || 1)
-                                }
+                                value={role.count || ''}
+                                onChange={(e) => {
+                                  const newValue = e.target.value;
+                                  const numValue = newValue === '' ? 0 : parseInt(newValue, 10);
+                                  if (!isNaN(numValue)) {
+                                    onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
+                                  }
+                                }}
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>

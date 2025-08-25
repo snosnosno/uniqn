@@ -117,7 +117,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             size="sm"
             onClick={openTemplateModal}
           >
-            템플릿으로 저장
+            템플릿 저장
           </Button>
         </div>
       </div>
@@ -554,7 +554,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               disabled={isSubmitting}
             />
             <label htmlFor="usesPreQuestions" className="text-sm text-gray-700">
-              사전질문 사용(지원하기 전 설문조사)
+              사전질문 사용(추가 질문)
             </label>
           </div>
 
@@ -579,10 +579,10 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           <textarea
             name="description"
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder:text-xs"
             value={formData.description}
             onChange={handleFormChange}
-            placeholder="공고에 대한 상세한 설명을 입력하세요"
+            placeholder="추가 설명을 입력하세요&#10;예시 : 경력 1년이상,TDA숙지자 등등"
             disabled={isSubmitting}
           />
         </div>
@@ -603,7 +603,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             onClick={openTemplateModal}
             disabled={isSubmitting}
           >
-            템플릿으로 저장
+            템플릿 저장
           </Button>
           <Button
             type="submit"

@@ -8,6 +8,7 @@ import { useInfiniteJobPostings } from '../../../hooks/useJobPostings';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 import { logger } from '../../../utils/logger';
 import { JobPosting, PreQuestionAnswer } from '../../../types/jobPosting';
+import { sortJobPostingsByPriority } from '../../../utils/jobPosting/sortingUtils';
 
 export interface JobFilters {
   location: string;
@@ -82,11 +83,26 @@ export const useJobBoard = () => {
     fetchNextPage
   } = useInfiniteJobPostings(filters);
   
-  // Flatten the infinite query data
+  // Flatten and sort the infinite query data
   const jobPostings = useMemo(() => {
     const result = infiniteData?.pages.flatMap((page: any) => page.jobs) || [];
-    logger.debug('📋 JobBoardPage - 최종 공고 목록:', { component: 'JobBoardPage', data: result });
-    return result;
+    
+    // 오늘 날짜 기준 우선순위 정렬 적용
+    const sortedResult = sortJobPostingsByPriority(result);
+    
+    logger.debug('📋 JobBoardPage - 정렬된 공고 목록:', { 
+      component: 'JobBoardPage', 
+      data: {
+        total: sortedResult.length,
+        top5: sortedResult.slice(0, 5).map(p => ({ 
+          id: p.id, 
+          title: p.title,
+          dates: p.dateSpecificRequirements?.length || 0
+        }))
+      }
+    });
+    
+    return sortedResult;
   }, [infiniteData]);
   
   // Infinite scroll hook

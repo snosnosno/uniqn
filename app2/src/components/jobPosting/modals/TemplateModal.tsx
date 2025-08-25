@@ -40,7 +40,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="템플릿으로 저장">
+    <Modal isOpen={isOpen} onClose={onClose} title="템플릿 저장">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -92,9 +92,21 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
         return null;
       }
 
-      // 4-1. 이미 포맷된 문자열인지 확인 (yy-MM-dd(요일) 형식)
-      const alreadyFormattedPattern = /^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/;
-      if (alreadyFormattedPattern.test(trimmed)) {
+      // 4-1. 이미 포맷된 문자열인지 확인 (한글 형식 또는 기존 형식)
+      // "8월 25일 (월)" 형식 체크
+      const koreanFormattedPattern = /^(\d{1,2})월\s+(\d{1,2})일\s+\([일월화수목금토]\)$/;
+      const koreanMatch = trimmed.match(koreanFormattedPattern);
+      if (koreanMatch && koreanMatch[1] && koreanMatch[2]) {
+        const month = parseInt(koreanMatch[1]) - 1; // 0-based month
+        const day = parseInt(koreanMatch[2]);
+        const currentYear = new Date().getFullYear();
+        const date = new Date(currentYear, month, day);
+        return isNaN(date.getTime()) ? null : date;
+      }
+      
+      // 기존 yy-MM-dd(요일) 형식 체크 (하위 호환성)
+      const oldFormattedPattern = /^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/;
+      if (oldFormattedPattern.test(trimmed)) {
         // 포맷된 문자열에서 날짜 추출
         const datePart = trimmed.split('(')[0];
         if (datePart) {
@@ -155,7 +167,7 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
 };
 
 /**
- * 다양한 날짜 형식을 yy-MM-dd(요일) 형식으로 포맷팅
+ * 다양한 날짜 형식을 "8월 25일 (월)" 형식으로 포맷팅
  * 캐싱 시스템을 통한 성능 최적화 적용
  */
 export const formatDate = (dateInput: DateInput): string => {
@@ -184,16 +196,15 @@ export const formatDate = (dateInput: DateInput): string => {
       return errorResult;
     }
 
-    // yy-MM-dd(요일) 형식으로 포맷팅
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
+    // "8월 25일 (월)" 형식으로 포맷팅
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
     
     const dayOfWeekIndex = date.getDay();
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const dayOfWeek = dayNames[dayOfWeekIndex] || '?';
     
-    const formattedResult = `${year}-${month}-${day}(${dayOfWeek})`;
+    const formattedResult = `${month}월 ${day}일 (${dayOfWeek})`;
     addToCache(cacheKey, formattedResult);
     return formattedResult;
   } catch (error) {

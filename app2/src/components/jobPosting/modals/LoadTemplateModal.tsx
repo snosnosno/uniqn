@@ -54,7 +54,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           <EmptyState
             icon="📂"
             title="저장된 템플릿이 없습니다."
-            description='공고를 작성한 후 "템플릿으로 저장" 버튼을 눌러보세요.'
+            description='공고를 작성한 후 "템플릿 저장" 버튼을 눌러보세요.'
           />
         ) : (
           <div className="max-h-96 overflow-y-auto">
