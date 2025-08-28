@@ -62,14 +62,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
   // formatTimeForInput은 이미 utils/dateUtils에서 import됨
 
-  // Timestamp 또는 Date를 Date로 변환하는 헬퍼 함수
-  const toDate = (timestamp: Timestamp | Date | any | null): Date => {
-    if (!timestamp) return new Date();
-    
-    const parsedDate = parseToDate(timestamp);
-    return parsedDate || new Date(); // parseToDate가 null을 반환하면 현재 날짜 사용
-  };
-
   // 유효성 검사
   const validateTimes = () => {
     const errors: string[] = [];

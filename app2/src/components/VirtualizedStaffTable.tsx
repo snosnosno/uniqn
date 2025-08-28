@@ -119,7 +119,7 @@ const VirtualizedTableRow: React.FC<{
       hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
-  }, [staff?.id, staff?.assignedTime /* @deprecated */, staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
+  }, [staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
   
   if (!staff) {
     return <div style={style} />;

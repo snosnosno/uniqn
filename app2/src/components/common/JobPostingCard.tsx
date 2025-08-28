@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay } from '../../utils/jobPosting/jobPostingHelpers';
-import { calculateDateRange } from '../../utils/jobPosting/migration';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 
@@ -14,7 +13,6 @@ export interface JobPostingCardProps {
   renderExtra?: (post: JobPosting) => React.ReactNode;
   showStatus?: boolean;
   showApplicationCount?: boolean;
-  expandTimeSlots?: boolean;
   className?: string;
 }
 
@@ -29,7 +27,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   renderExtra,
   showStatus = true,
   showApplicationCount = false,
-  expandTimeSlots = false,
   className = ''
 }) => {
   const { t } = useTranslation();

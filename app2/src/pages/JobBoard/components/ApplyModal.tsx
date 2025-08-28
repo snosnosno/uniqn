@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '../../../types/jobPosting';
 import { formatDate as formatDateUtil, generateDateRange, formatDateRangeDisplay } from '../../../utils/jobPosting/dateUtils';
+import { logger } from '../../../utils/logger';
 
 interface Assignment {
   timeSlot: string;
@@ -40,11 +41,99 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
   hasPreQuestions
 }) => {
   const { t } = useTranslation();
+  const autoSelectionProcessedRef = useRef(false);
 
-  // 모달이 열릴 때 자동 선택 기능 제거 (각 날짜별 요구사항을 독립적으로 처리)
+  // 모달이 열릴 때 다중 날짜 자동 선택
   useEffect(() => {
-    // duration 기반 날짜 확장 로직 제거
-    // 이제 각 DateSpecificRequirement는 독립적인 날짜를 나타냄
+    if (!isOpen || !jobPosting.dateSpecificRequirements) return;
+    
+    // 이미 처리되었으면 스킵
+    if (autoSelectionProcessedRef.current) return;
+    
+    const autoSelectedAssignments: Assignment[] = [];
+    
+    jobPosting.dateSpecificRequirements.forEach((dateReq: DateSpecificRequirement) => {
+      // 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+      const firstTimeSlot = dateReq.timeSlots?.[0];
+      const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+      
+      if (hasMultiDuration && firstTimeSlot && firstTimeSlot.duration && firstTimeSlot.duration.endDate) {
+        const endDate = firstTimeSlot.duration.endDate;
+        let startDate = '';
+        
+        // 날짜 문자열 추출
+        if (typeof dateReq.date === 'string') {
+          startDate = dateReq.date;
+        } else if (dateReq.date) {
+          try {
+            if ((dateReq.date as any).toDate) {
+              const date = (dateReq.date as any).toDate();
+              startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            } else if ((dateReq.date as any).seconds) {
+              const date = new Date((dateReq.date as any).seconds * 1000);
+              startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            }
+          } catch (error) {
+            logger.error('Date conversion error:', error as Error);
+          }
+        }
+        
+        // 날짜 범위 생성 및 자동 선택
+        if (startDate && endDate) {
+          const expandedDates = generateDateRange(startDate, endDate);
+          
+          // 각 날짜에 대해 모든 timeSlot과 role을 자동 선택
+          expandedDates.forEach(expandedDate => {
+            dateReq.timeSlots.forEach((ts: TimeSlot) => {
+              ts.roles.forEach((role: RoleRequirement) => {
+                // 이미 마감된 항목은 제외
+                const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
+                  staff.timeSlot === ts.time && 
+                  staff.role === role.name && 
+                  staff.date === expandedDate
+                ).length || 0;
+                
+                if (confirmedCount < role.count) {
+                  autoSelectedAssignments.push({
+                    timeSlot: ts.time,
+                    role: role.name,
+                    date: expandedDate,
+                    ...(ts.duration && { duration: ts.duration })
+                  });
+                }
+              });
+            });
+          });
+        }
+      }
+    });
+    
+    // 자동 선택된 항목이 있으면 설정
+    if (autoSelectedAssignments.length > 0) {
+      // 처리 완료 표시
+      autoSelectionProcessedRef.current = true;
+      
+      // 각 항목을 개별적으로 추가 (이미 선택된 항목은 체크)
+      autoSelectedAssignments.forEach(assignment => {
+        // 이미 선택된 항목인지 확인
+        const isAlreadySelected = selectedAssignments.some(selected => 
+          selected.timeSlot === assignment.timeSlot && 
+          selected.role === assignment.role && 
+          selected.date === assignment.date
+        );
+        
+        if (!isAlreadySelected) {
+          onAssignmentChange(assignment, true);
+        }
+      });
+    }
+  }, [isOpen, jobPosting.dateSpecificRequirements, jobPosting.confirmedStaff, onAssignmentChange, selectedAssignments]);
+  
+  // 모달이 닫힐 때 플래그 리셋
+  useEffect(() => {
+    if (!isOpen) {
+      autoSelectionProcessedRef.current = false;
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -170,7 +259,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                       startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                     }
                   } catch (error) {
-                    console.error('Date conversion error:', error);
+                    logger.error('Date conversion error:', error as Error);
                   }
                 }
                 
