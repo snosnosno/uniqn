@@ -129,7 +129,8 @@ export const useStaffManagement = (
   
   // 그룹화 상태
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
-  const [groupByDate, setGroupByDate] = useState(true); // 항상 true로 시작
+  const groupByDate = true; // 항상 날짜별 그룹화 사용
+  const setGroupByDate = (_value: boolean) => {}; // 호환성을 위한 no-op 함수
   
   // 수동 새로고침 함수 (필요시에만 사용)
   const refreshStaffData = useCallback(async () => {

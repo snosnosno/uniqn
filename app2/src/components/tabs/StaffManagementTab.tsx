@@ -21,12 +21,8 @@ import BulkTimeEditModal from '../BulkTimeEditModal';
 import PerformanceMonitor from '../PerformanceMonitor';
 import PerformanceDashboard from '../PerformanceDashboard';
 import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
-import StaffCard from '../StaffCard';
 import StaffDateGroup from '../StaffDateGroup';
 import StaffDateGroupMobile from '../StaffDateGroupMobile';
-import StaffRow from '../StaffRow';
-import VirtualizedStaffList from '../VirtualizedStaffList';
-import VirtualizedStaffTable from '../VirtualizedStaffTable';
 import WorkTimeEditor from '../WorkTimeEditor';
 import StaffProfileModal from '../StaffProfileModal';
 import MobileSelectionBar from '../MobileSelectionBar';
@@ -52,8 +48,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     filters,
     setFilters,
     expandedDates,
-    groupByDate,
-    setGroupByDate,
     deleteStaff,
     toggleDateExpansion,
     formatTimeDisplay,
@@ -306,12 +300,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     toggleMultiSelectMode();
   }, [toggleMultiSelectMode]);
 
-  // 고정된 props 값들 메모이제이션
-  const constantProps = useMemo(() => ({
-    showDate: true,
-    canEdit: !!canEdit,
-    eventId: jobPosting?.id || 'default-event'
-  }), [canEdit, jobPosting?.id]);
   
   const handleBulkActions = () => {
     setIsBulkActionsOpen(true);
@@ -415,20 +403,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
           
-          {/* 데스크톱에서만 검색 기능과 날짜별 그룹화 토글을 오른쪽 상단에 표시 */}
+          {/* 데스크톱에서만 검색 기능을 오른쪽 상단에 표시 */}
           {!isMobile && !isTablet && (
             <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={groupByDate}
-                    onChange={(e) => setGroupByDate(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">날짜별 그룹화</span>
-                </label>
-              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -502,18 +479,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         {/* 모바일에서 추가 컨트롤 */}
         {(isMobile || isTablet) && (
           <div className="mb-4 space-y-3">
-            {/* 검색 및 날짜별 그룹화 */}
+            {/* 검색 */}
             <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={groupByDate}
-                    onChange={(e) => setGroupByDate(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">날짜별 그룹화</span>
-                </label>
+                <span className="text-sm text-gray-600">
+                  총 {staffData.length}명
+                  {filteredStaffCount !== staffData.length && ` (${filteredStaffCount}명 필터됨)`}
+                </span>
                 <button
                   onClick={() => setIsQrModalOpen(true)}
                   className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
@@ -599,10 +571,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         ) : (
           <div className="space-y-4">
             {(isMobile || isTablet) ? (
-              // 모바일/태블릿 카드 레이아웃
-              groupByDate ? (
-                // 모바일 날짜별 그룹화 보기
-                groupedStaffData.sortedDates.map((date) => {
+              // 모바일/태블릿 카드 레이아웃 - 날짜별 그룹화
+              groupedStaffData.sortedDates.map((date) => {
                   const staffForDate = groupedStaffData.grouped[date];
                   const isExpanded = expandedDates.has(date);
                   
@@ -628,58 +598,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       eventId={jobPosting?.id}
                       getStaffWorkLog={getStaffWorkLog}
                     />
-                  );
-                })
-              ) : (
-                // 모바일 단일 카드 리스트 (가상화 적용)
-                mobileVirtualization.shouldVirtualize ? (
-                  <VirtualizedStaffList
-                    staffList={flattenedStaffData}
-                    onEditWorkTime={handleEditWorkTime}
-                    onDeleteStaff={deleteStaff}
-                    getStaffAttendanceStatus={getStaffAttendanceStatus}
-                    attendanceRecords={attendanceRecords}
-                    formatTimeDisplay={formatTimeDisplay}
-                    getTimeSlotColor={getTimeSlotColor}
-                    showDate={true}
-                    multiSelectMode={multiSelectMode}
-                    selectedStaff={selectedStaff}
-                    onStaffSelect={handleStaffSelect}
-                    height={mobileVirtualization.height}
-                    itemHeight={mobileVirtualization.itemHeight}
-                    onShowProfile={handleShowProfile}
-                    eventId={jobPosting?.id}
-                    canEdit={!!canEdit}
-                    getStaffWorkLog={getStaffWorkLog}
-                  />
-                ) : (
-                  <div className="space-y-3">
-                    {flattenedStaffData.map((staff) => (
-                      <StaffCard
-                        key={staff.id}
-                        staff={staff}
-                        onEditWorkTime={handleEditWorkTime}
-                        onDeleteStaff={deleteStaff}
-                        getStaffAttendanceStatus={getStaffAttendanceStatus}
-                        attendanceRecords={attendanceRecords}
-                        formatTimeDisplay={formatTimeDisplay}
-                        getTimeSlotColor={getTimeSlotColor}
-                        {...constantProps}
-                        isSelected={multiSelectMode && selectedStaff.has(staff.id)}
-                        multiSelectMode={multiSelectMode}
-                        {...(multiSelectMode && { onSelect: handleStaffSelect })}
-                        onShowProfile={handleShowProfile}
-                        getStaffWorkLog={getStaffWorkLog}
-                      />
-                    ))}
-                  </div>
-                )
-              )
+                );
+              })
             ) : (
-              // 데스크톱 테이블 레이아웃
-              groupByDate ? (
-                // 데스크톱 날짜별 그룹화 보기
-                groupedStaffData.sortedDates.map((date) => {
+              // 데스크톱 테이블 레이아웃 - 날짜별 그룹화
+              groupedStaffData.sortedDates.map((date) => {
                   const staffForDate = groupedStaffData.grouped[date];
                   const isExpanded = expandedDates.has(date);
                   
@@ -707,104 +630,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       selectedStaff={selectedStaff}
                       onStaffSelect={handleStaffSelect}
                     />
-                  );
-                })
-              ) : (
-                // 데스크톱 단일 테이블 보기 (가상화 적용)
-                desktopVirtualization.shouldVirtualize ? (
-                  <VirtualizedStaffTable
-                    staffList={flattenedStaffData}
-                    onEditWorkTime={handleEditWorkTime}
-                    onDeleteStaff={deleteStaff}
-                    getStaffAttendanceStatus={getStaffAttendanceStatus}
-                    attendanceRecords={attendanceRecords}
-                    formatTimeDisplay={formatTimeDisplay}
-                    getTimeSlotColor={getTimeSlotColor}
-                    showDate={true}
-                    height={desktopVirtualization.height}
-                    rowHeight={desktopVirtualization.itemHeight}
-                    eventId={jobPosting?.id}
-                    canEdit={!!canEdit}
-                  />
-                ) : (
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            {multiSelectMode && (
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                <button
-                                  onClick={() => {
-                                    if (isAllSelected(flattenedStaffData.map(s => s.id))) {
-                                      deselectAll();
-                                    } else {
-                                      selectAll(flattenedStaffData.map(s => s.id));
-                                    }
-                                  }}
-                                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors select-all-button"
-                                  aria-label="전체 선택/해제"
-                                >
-                                  {isAllSelected(flattenedStaffData.map(s => s.id)) ? '전체 해제' : '전체 선택'}
-                                </button>
-                              </th>
-                            )}
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              출근
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              퇴근
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              이름
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              역할
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              연락처
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              출석
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              작업
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {flattenedStaffData.map((staff) => (
-                            <tr
-                              key={staff.id}
-                              className={`${selectedStaff.has(staff.id) ? 'staff-row-selected' : ''} ${multiSelectMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-                              onClick={() => multiSelectMode && handleStaffSelect(staff.id)}
-                            >
-                              <StaffRow
-                                staff={staff}
-                                onEditWorkTime={handleEditWorkTime}
-                                onDeleteStaff={deleteStaff}
-                                getStaffAttendanceStatus={getStaffAttendanceStatus}
-                                attendanceRecords={attendanceRecords}
-                                formatTimeDisplay={formatTimeDisplay}
-                                getTimeSlotColor={getTimeSlotColor}
-                                showDate={true}
-                                onShowProfile={handleShowProfile}
-                                eventId={jobPosting?.id}
-                                canEdit={!!canEdit}
-                                getStaffWorkLog={getStaffWorkLog}
-                                applyOptimisticUpdate={applyOptimisticUpdate}
-                                multiSelectMode={multiSelectMode}
-                                isSelected={selectedStaff.has(staff.id)}
-                                onSelect={handleStaffSelect}
-                              />
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )
-              )
+                );
+              })
             )}
           </div>
         )}
