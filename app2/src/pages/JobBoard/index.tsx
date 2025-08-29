@@ -61,7 +61,7 @@ const JobBoardPage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4">
+      <div className="container">
         <h1 className="text-2xl font-bold mb-4">{t('jobBoard.title')}</h1>
         <JobPostingSkeleton count={5} />
       </div>
@@ -70,7 +70,7 @@ const JobBoardPage = () => {
 
   return (
     <JobBoardErrorBoundary>
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4">
+      <div className="container">
         <h1 className="text-2xl font-bold mb-4">{t('jobBoard.title')}</h1>
         
         {/* 탭 네비게이션 */}

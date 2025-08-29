@@ -73,10 +73,10 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
     setCurrentDate(prev => addMonths(prev, 1));
   };
 
-  // 오늘 날짜로 이동
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
+  // 오늘 날짜로 이동 (제거됨)
+  // const handleToday = () => {
+  //   setCurrentDate(new Date());
+  // };
 
   // 날짜 클릭 핸들러
   const handleDateCellClick = (date: Date) => {
@@ -231,18 +231,21 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
           >
             <ChevronRightIcon className="w-5 h-5" />
           </button>
+          {/* 오늘 버튼 제거됨
           <button
             onClick={handleToday}
             className="px-3 py-1 text-sm font-medium hover:bg-gray-100 rounded-lg transition-colors"
           >
             오늘
           </button>
+          */}
         </div>
         
         <h2 className="text-xl font-bold">
           {format(currentDate, 'yyyy년 M월', { locale: ko })}
         </h2>
         
+        {/* 월간 뷰만 사용 - 주간/일간 뷰 제거됨
         <div className="flex space-x-2">
           <button
             onClick={() => {
@@ -257,33 +260,8 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
           >
             월
           </button>
-          <button
-            onClick={() => {
-              setSelectedView('timeGridWeek');
-              onViewChange('timeGridWeek');
-            }}
-            className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-              selectedView === 'timeGridWeek' 
-                ? 'bg-blue-600 text-white' 
-                : 'hover:bg-gray-100'
-            }`}
-          >
-            주
-          </button>
-          <button
-            onClick={() => {
-              setSelectedView('timeGridDay');
-              onViewChange('timeGridDay');
-            }}
-            className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-              selectedView === 'timeGridDay' 
-                ? 'bg-blue-600 text-white' 
-                : 'hover:bg-gray-100'
-            }`}
-          >
-            일
-          </button>
         </div>
+        */}
       </div>
       
       {/* 캘린더 콘텐츠 */}

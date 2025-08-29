@@ -59,6 +59,34 @@ module.exports = {
         '128': '32rem',  // 512px
         '144': '36rem',  // 576px
       },
+      screens: {
+        'xs': '375px',   // 작은 모바일
+        'sm': '640px',   // 일반 모바일  
+        'md': '768px',   // 태블릿
+        'lg': '1024px',  // 데스크톱
+        'xl': '1280px',  // 큰 데스크톱
+        '2xl': '1536px', // 매우 큰 화면
+      },
+      container: {
+        center: true,
+        padding: {
+          DEFAULT: '0.75rem', // 12px - 모바일 기본 패딩 축소
+          xs: '0.75rem',      // 12px
+          sm: '1rem',         // 16px
+          md: '1.5rem',       // 24px
+          lg: '2rem',         // 32px
+          xl: '3rem',         // 48px
+          '2xl': '4rem',      // 64px
+        },
+        screens: {
+          xs: '100%',
+          sm: '100%', 
+          md: '100%',
+          lg: '1024px',
+          xl: '1280px',
+          '2xl': '1536px',
+        }
+      },
       minHeight: {
         'touch': '44px', // WCAG 터치 타겟 최소 크기
       },

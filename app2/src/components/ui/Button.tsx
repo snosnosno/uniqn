@@ -85,13 +85,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     ],
   };
 
-  // 크기 스타일
+  // 크기 스타일 (반응형 패딩 적용)
   const sizeClasses = {
     xs: 'px-2 py-1 text-xs min-h-[36px] gap-1',
-    sm: 'px-3 py-1.5 text-sm min-h-[40px] gap-1.5',
-    md: 'px-4 py-2 text-sm md:text-base min-h-[44px] gap-2',
-    lg: 'px-6 py-3 text-lg min-h-[48px] gap-2',
-    xl: 'px-8 py-4 text-xl min-h-[52px] gap-3',
+    sm: 'px-2 sm:px-3 py-1.5 text-sm min-h-[40px] gap-1.5',
+    md: 'px-3 sm:px-4 py-2 text-sm md:text-base min-h-[44px] gap-2',
+    lg: 'px-4 sm:px-6 py-2 sm:py-3 text-lg min-h-[48px] gap-2',
+    xl: 'px-6 sm:px-8 py-3 sm:py-4 text-xl min-h-[52px] gap-3',
   };
 
   // 너비 스타일

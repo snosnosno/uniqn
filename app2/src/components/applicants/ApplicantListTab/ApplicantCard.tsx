@@ -17,7 +17,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
   const { t } = useTranslation();
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
       {/* 2x2 그리드 레이아웃 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         

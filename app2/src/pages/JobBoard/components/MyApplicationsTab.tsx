@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
+import { formatDate as formatDateUtil, convertToDateString, generateDateRange, formatDateRangeDisplay } from '../../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayGroups } from '../../../utils/jobPosting/jobPostingHelpers';
 
 interface FirebaseTimestamp {
@@ -37,11 +37,14 @@ interface Application {
     location: string;
     district?: string;
     detailedAddress?: string;
-    startDate: DateValue;
-    endDate: DateValue;
+    startDate?: DateValue;
+    endDate?: DateValue;
+    dateSpecificRequirements?: any[];
     salaryType?: string;
     salaryAmount?: number;
     benefits?: Record<string, unknown>;
+    useRoleSalary?: boolean;
+    roleSalaries?: Record<string, any>;
   } | null;
 }
 
@@ -134,10 +137,36 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
                 {application.jobPosting.district && ` ${application.jobPosting.district}`}
                 {application.jobPosting.detailedAddress && ` - ${application.jobPosting.detailedAddress}`}
               </p>
-              <p>📅 {formatDateUtil(application.jobPosting.startDate)} ~ {formatDateUtil(application.jobPosting.endDate)}</p>
+              <p>📅 {(() => {
+                // JobPostingCard와 동일한 로직 사용
+                const dates: string[] = [];
+                application.jobPosting?.dateSpecificRequirements?.forEach((req: any) => {
+                  dates.push(convertToDateString(req.date));
+                  req.timeSlots?.forEach((slot: any) => {
+                    if (slot.duration?.type === 'multi' && slot.duration.endDate) {
+                      const rangeDates = generateDateRange(
+                        convertToDateString(req.date),
+                        slot.duration.endDate
+                      );
+                      rangeDates.slice(1).forEach((d: string) => dates.push(d));
+                    }
+                  });
+                });
+                const uniqueDates = Array.from(new Set(dates)).sort();
+                return formatDateRangeDisplay(uniqueDates);
+              })()}</p>
               
-              {/* 급여 정보 추가 */}
-              {application.jobPosting.salaryType && application.jobPosting.salaryAmount && (
+              {/* 역할별 급여 또는 통합 급여 표시 */}
+              {application.jobPosting.useRoleSalary && application.jobPosting.roleSalaries ? (
+                <div>
+                  <p className="font-medium">💰 역할별 급여</p>
+                  {Object.entries(application.jobPosting.roleSalaries).map(([role, salary]: [string, any]) => (
+                    <p key={role} className="ml-3 text-sm">
+                      • {t(`jobPostingAdmin.create.${role}`) || role}: {formatSalaryDisplay(salary.salaryType, salary.salaryAmount)}
+                    </p>
+                  ))}
+                </div>
+              ) : application.jobPosting.salaryType && application.jobPosting.salaryAmount && (
                 <p>💰 {formatSalaryDisplay(application.jobPosting.salaryType, application.jobPosting.salaryAmount)}</p>
               )}
               
@@ -161,15 +190,60 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
             {application.assignedRoles && application.assignedTimes ? (
               <div className="space-y-2">
                 {application.assignedTimes.map((time: string, index: number) => (
-                  <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      {application.assignedDates && application.assignedDates[index] && (
-                        <span className="text-blue-600 font-medium">
-                          📅 {formatDateUtil(application.assignedDates[index] as DateValue)} | 
-                        </span>
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                        {/* 날짜 - 모바일에서 첫 줄 */}
+                        {application.assignedDates && application.assignedDates[index] && (
+                          <div className="text-blue-600 font-medium">
+                            📅 {formatDateUtil(application.assignedDates[index] as DateValue)}
+                          </div>
+                        )}
+                        {/* 시간과 역할 - 모바일에서 둘째 줄 */}
+                        <div className="flex items-center space-x-2 text-gray-700">
+                          <span>
+                            ⏰ {(() => {
+                              if (!time) return '';
+                              if (typeof time === 'string') return time;
+                              if (typeof time === 'object' && 'seconds' in time) {
+                                return formatDateUtil(time as FirebaseTimestamp);
+                              }
+                              return String(time);
+                            })()}
+                          </span>
+                          {application.assignedRoles && application.assignedRoles[index] && (
+                            <span className="text-gray-600">
+                              - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRoles[index]}`) || application.assignedRoles[index])}
+                            </span>
+                          )}
+                          {application.status === 'confirmed' && (
+                            <span className="ml-2 text-green-600 text-sm font-medium sm:hidden">확정됨</span>
+                          )}
+                        </div>
+                      </div>
+                      {application.status === 'confirmed' && (
+                        <span className="hidden sm:block text-green-600 text-sm font-medium">확정됨</span>
                       )}
-                      <span className="text-gray-700">
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* 단일 선택 지원 정보 표시 (하위 호환성) */
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                    {/* 날짜 - 모바일에서 첫 줄 */}
+                    {application.assignedDate && (
+                      <div className="text-blue-600 font-medium">
+                        📅 {formatDateUtil(application.assignedDate)}
+                      </div>
+                    )}
+                    {/* 시간과 역할 - 모바일에서 둘째 줄 */}
+                    <div className="flex items-center space-x-2 text-gray-700">
+                      <span>
                         ⏰ {(() => {
+                          const time = application.assignedTime;
                           if (!time) return '';
                           if (typeof time === 'string') return time;
                           if (typeof time === 'object' && 'seconds' in time) {
@@ -178,47 +252,20 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
                           return String(time);
                         })()}
                       </span>
-                      {application.assignedRoles && application.assignedRoles[index] && (
-                        <span className="ml-2 text-gray-600">
-                          - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRoles[index]}`) || application.assignedRoles[index])}
+                      {application.assignedRole && (
+                        <span className="text-gray-600">
+                          - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRole}`) || application.assignedRole)}
                         </span>
                       )}
+                      {application.status === 'confirmed' && (
+                        <span className="ml-2 text-green-600 text-sm font-medium sm:hidden">확정됨</span>
+                      )}
                     </div>
-                    {application.status === 'confirmed' && (
-                      <span className="ml-2 text-green-600 text-sm font-medium">확정됨</span>
-                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              /* 단일 선택 지원 정보 표시 (하위 호환성) */
-              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  {application.assignedDate && (
-                    <span className="text-blue-600 font-medium">
-                      📅 {formatDateUtil(application.assignedDate)} | 
-                    </span>
-                  )}
-                  <span className="text-gray-700">
-                    ⏰ {(() => {
-                      const time = application.assignedTime;
-                      if (!time) return '';
-                      if (typeof time === 'string') return time;
-                      if (typeof time === 'object' && 'seconds' in time) {
-                        return formatDateUtil(time as FirebaseTimestamp);
-                      }
-                      return String(time);
-                    })()}
-                  </span>
-                  {application.assignedRole && (
-                    <span className="ml-2 text-gray-600">
-                      - 👤 {String(t(`jobPostingAdmin.create.${application.assignedRole}`) || application.assignedRole)}
-                    </span>
+                  {application.status === 'confirmed' && (
+                    <span className="hidden sm:block text-green-600 text-sm font-medium">확정됨</span>
                   )}
                 </div>
-                {application.status === 'confirmed' && (
-                  <span className="ml-2 text-green-600 text-sm font-medium">확정됨</span>
-                )}
               </div>
             )}
 

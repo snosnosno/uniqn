@@ -201,7 +201,7 @@ const JobPostingDetailPageContent: React.FC = () => {
   // 공고 접근 권한이 없는 경우 처리
   if (!loading && jobPosting && !hasJobPostingAccess) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h2 className="text-xl font-bold text-red-800 mb-2">접근 권한 없음</h2>
           <p className="text-red-600 mb-4">
@@ -221,7 +221,7 @@ const JobPostingDetailPageContent: React.FC = () => {
   // 탭 접근 권한이 없는 경우 처리
   if (!loading && hasJobPostingAccess && availableTabs.length === 0) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <h2 className="text-xl font-bold text-yellow-800 mb-2">관리 기능 제한</h2>
           <p className="text-yellow-600 mb-4">
@@ -240,7 +240,7 @@ const JobPostingDetailPageContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container">
         <div className="flex justify-center items-center min-h-96">
           <div className="text-lg">로딩 중...</div>
         </div>
@@ -250,7 +250,7 @@ const JobPostingDetailPageContent: React.FC = () => {
 
   if (error || !jobPosting) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h2 className="text-xl font-bold text-red-800 mb-2">오류 발생</h2>
           <p className="text-red-600 mb-4">{error || '공고를 찾을 수 없습니다.'}</p>
@@ -266,7 +266,7 @@ const JobPostingDetailPageContent: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-2 sm:p-4">
+    <div className="container">
       {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -367,7 +367,7 @@ const JobPostingDetailPage: React.FC = () => {
 
   if (!id) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h2 className="text-xl font-bold text-red-800 mb-2">오류 발생</h2>
           <p className="text-red-600 mb-4">공고 ID가 필요합니다.</p>

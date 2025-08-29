@@ -176,7 +176,7 @@ const ProfilePage = () => {
     const canViewPayroll = (isOwnProfile && isDealer) || isAdmin;
 
     return (
-        <div className="container mx-auto p-4 md:p-8">
+        <div className="container">
             <div className="max-w-4xl mx-auto">
                 {/* Profile Section */}
                 <div className="bg-white p-6 rounded-lg shadow-lg mb-8">

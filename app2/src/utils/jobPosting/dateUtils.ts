@@ -22,7 +22,9 @@ const addToCache = (key: string, value: string) => {
   if (formatDateCache.size >= maxCacheSize) {
     // 가장 오래된 항목 제거 (FIFO)
     const firstKey = formatDateCache.keys().next().value;
-    formatDateCache.delete(firstKey);
+    if (firstKey) {
+      formatDateCache.delete(firstKey);
+    }
   }
   formatDateCache.set(key, value);
 };

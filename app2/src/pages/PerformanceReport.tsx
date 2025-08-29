@@ -82,7 +82,7 @@ const PerformanceReport: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container">
       <h1 className="text-3xl font-bold mb-8">성능 최적화 보고서</h1>
 
       {/* 최적화 요약 */}

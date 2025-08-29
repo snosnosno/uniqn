@@ -5,7 +5,6 @@ import { ApplicationHistoryService } from '../../services/ApplicationHistoryServ
 import { 
   FaCalendarAlt, 
   FaSync,
-  FaCamera,
   FaList,
   FaClock,
   FaMapMarkerAlt,
@@ -31,7 +30,6 @@ import ScheduleCalendar from './components/ScheduleCalendar';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
 import ScheduleFilters from './components/ScheduleFilters';
 import ScheduleStats from './components/ScheduleStats';
-import QRScannerModal from '../../components/QRScannerModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Firebase 함수
@@ -71,8 +69,6 @@ const MySchedulePage: React.FC = () => {
   // 모달 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
-  const [pendingCheckInSchedule, setPendingCheckInSchedule] = useState<ScheduleEvent | null>(null);
   
   // 데이터 가져오기
   const {
@@ -115,77 +111,7 @@ const MySchedulePage: React.FC = () => {
     setIsDetailModalOpen(true);
   };
 
-  // 출근하기 버튼 클릭 (QR 스캐너 열기)
-  const handleCheckInClick = (scheduleId: string) => {
-    const schedule = schedules.find(s => s.id === scheduleId);
-    if (!schedule) {
-      showError('일정 정보를 찾을 수 없습니다.');
-      return;
-    }
-    
-    setPendingCheckInSchedule(schedule);
-    setIsQRScannerOpen(true);
-    logger.debug('🔍 QR 스캐너 열기 - 출근 대기:', { component: 'index', data: scheduleId });
-  };
 
-  // 실제 출근 처리 (QR 스캔 완료 후 실행)
-  const processCheckIn = async (schedule: ScheduleEvent) => {
-    try {
-      let workLogId = schedule.workLogId;
-      
-      // 🔥 workLogId가 없는 경우 자동 생성 (applications → workLogs 변환)
-      if (!workLogId && schedule.sourceCollection === 'applications') {
-        logger.debug('🏗️ 확정된 지원서에 대한 workLog 자동 생성:', { component: 'index', data: schedule.eventName });
-        
-        // 통합 시스템을 사용한 workLog 생성
-        const workLogInput: WorkLogCreateInput = {
-          staffId: currentUser?.uid || '',
-          eventId: schedule.eventId,
-          staffName: currentUser?.displayName || currentUser?.email || 'Unknown',
-          date: schedule.date, // YYYY-MM-DD 형식
-          type: 'schedule',
-          scheduledStartTime: schedule.startTime,
-          scheduledEndTime: schedule.endTime,
-          role: schedule.role || '딜러',
-          status: 'in_progress' // checked_in 대신 in_progress 사용
-        };
-        
-        const workLogData = prepareWorkLogForCreate(workLogInput);
-        
-        // 추가 필드 설정
-        const finalWorkLogData = {
-          ...workLogData,
-          actualStartTime: Timestamp.now(),
-          location: schedule.location || '',
-          eventName: schedule.eventName,
-          postTitle: schedule.eventName,
-          applicationId: schedule.applicationId
-        };
-        
-        const newWorkLogRef = doc(collection(db, 'workLogs'));
-        await setDoc(newWorkLogRef, finalWorkLogData);
-        
-        workLogId = newWorkLogRef.id;
-        logger.debug('✅ workLog 자동 생성 완료:', { component: 'index', data: workLogId });
-        
-      } else if (!workLogId) {
-        throw new Error('워크로그 정보를 찾을 수 없습니다.');
-      } else {
-        // 기존 workLog 업데이트 - 통합 시스템 사용
-        const updateData = prepareWorkLogForUpdate({
-          actualStartTime: Timestamp.now(),
-          status: 'in_progress' // checked_in 대신 in_progress 사용
-        });
-        await updateDoc(doc(db, 'workLogs', workLogId), updateData);
-      }
-
-      showSuccess(`${schedule.eventName} 출근 처리가 완료되었습니다.`);
-      logger.debug('✅ 출근 처리 완료:', { component: 'index', data: schedule.id });
-    } catch (error) {
-      logger.error('❌ 출근 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
-      showError('출근 처리 중 오류가 발생했습니다.');
-    }
-  };
 
   // 퇴근 처리
   const handleCheckOut = async (scheduleId: string) => {
@@ -210,34 +136,6 @@ const MySchedulePage: React.FC = () => {
     }
   };
 
-  // QR 스캔 완료 핸들러
-  const handleQRScanComplete = async (data: string) => {
-    try {
-      logger.debug('🔍 QR 스캔 데이터:', { component: 'index', data: data });
-      
-      if (!pendingCheckInSchedule) {
-        showError('출근 처리할 일정이 없습니다.');
-        setIsQRScannerOpen(false);
-        return;
-      }
-
-      // QR 스캔 성공 - 출근 처리 실행
-      await processCheckIn(pendingCheckInSchedule);
-      
-      // 상태 초기화
-      setIsQRScannerOpen(false);
-      setPendingCheckInSchedule(null);
-      
-      logger.debug('✅ QR 인증 및 출근 처리 완료', { component: 'index' });
-    } catch (error) {
-      logger.error('❌ QR 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
-      showError('QR 코드 처리 중 오류가 발생했습니다.');
-      
-      // 에러 시에도 상태 초기화
-      setIsQRScannerOpen(false);
-      setPendingCheckInSchedule(null);
-    }
-  };
 
   // 지원 취소 (ApplicationHistory 서비스 연동)
   const handleCancelApplication = async (scheduleId: string) => {
@@ -381,7 +279,7 @@ const MySchedulePage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container max-w-7xl">
       {/* 헤더 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -419,16 +317,6 @@ const MySchedulePage: React.FC = () => {
               </div>
             )}
             
-            {/* QR 스캔 버튼 (모바일) */}
-            {isMobile && (
-              <button
-                onClick={() => setIsQRScannerOpen(true)}
-                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                title="QR 출퇴근"
-              >
-                <FaCamera className="w-5 h-5" />
-              </button>
-            )}
             
             {/* 새로고침 버튼 */}
             <button
@@ -531,17 +419,6 @@ const MySchedulePage: React.FC = () => {
                     {/* 오늘 일정인 경우 출퇴근 버튼 */}
                     {isToday && schedule.type === 'confirmed' && (
                       <div className="flex gap-2 mt-3">
-                        {schedule.status === 'not_started' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCheckInClick(schedule.id);
-                            }}
-                            className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
-                          >
-                            출근하기
-                          </button>
-                        )}
                         {schedule.status === 'checked_in' && (
                           <button
                             onClick={(e) => {
@@ -579,32 +456,12 @@ const MySchedulePage: React.FC = () => {
           setSelectedSchedule(null);
         }}
         schedule={selectedSchedule}
-        onCheckIn={handleCheckInClick}
+        onCheckIn={() => {}}
         onCheckOut={handleCheckOut}
         onCancel={handleCancelApplication}
         onDelete={handleDeleteSchedule}
       />
 
-      {/* QR 스캐너 모달 */}
-      {isQRScannerOpen && (
-        <QRScannerModal
-          isOpen={isQRScannerOpen}
-          onClose={() => {
-            setIsQRScannerOpen(false);
-            setPendingCheckInSchedule(null);
-            logger.debug('🔍 QR 스캐너 취소됨', { component: 'index' });
-          }}
-          onScan={(data) => {
-            if (data) {
-              handleQRScanComplete(data);
-            }
-          }}
-          onError={(error) => {
-            logger.error('❌ QR 스캔 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
-            showError('QR 코드 스캔 중 오류가 발생했습니다. 다시 시도해주세요.');
-          }}
-        />
-      )}
     </div>
   );
 };

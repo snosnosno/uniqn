@@ -69,7 +69,7 @@ const TournamentDashboard = () => {
     );
 
     return (
-        <div className="container mx-auto p-4 text-gray-800">
+        <div className="container text-gray-800">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">{t('tournamentDashboard.title')}</h1>
 
             {process.env.NODE_ENV === 'development' && (

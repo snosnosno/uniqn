@@ -283,9 +283,6 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       <div className="flex justify-between items-center">
         <h4 className="text-sm font-medium text-gray-700">
           일자별 인원 요구사항
-          <span className="text-xs text-gray-500 ml-2">
-            (날짜를 추가하세요)
-          </span>
         </h4>
         <div className="flex items-center space-x-2">
           {showDatePicker ? (
@@ -343,14 +340,6 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                     value={toDropdownValue(dateStr)}
                     onChange={(value) => handleDateChange(requirementIndex, value)}
                   />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => addTimeSlotToDate(requirementIndex)}
-                  >
-                    시간대 추가
-                  </Button>
                 </div>
                 {requirements.length > 1 && (
                   <button
@@ -364,44 +353,55 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                 )}
               </div>
               
-              {/* 날짜별 기간 설정 */}
-              <div className="flex items-center space-x-4 mt-2">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id={`single-${requirementIndex}`}
-                    name={`duration-${requirementIndex}`}
-                    checked={requirement.timeSlots[0]?.duration?.type !== 'multi'}
-                    onChange={() => handleDurationTypeChange(requirementIndex, 'single')}
-                    className="text-blue-600 focus:ring-blue-500"
+              {/* 여러 날 선택 시 종료일 표시 */}
+              {requirement.timeSlots[0]?.duration?.type === 'multi' && (
+                <div className="flex items-center space-x-2 mt-2 ml-6">
+                  <span className="text-sm text-gray-600">~</span>
+                  <DateDropdownSelector
+                    value={toDropdownValue(requirement.timeSlots[0]?.duration?.endDate || dateStr)}
+                    onChange={(value) => handleDurationEndDateChange(requirementIndex, fromDropdownValue(value))}
                   />
-                  <label htmlFor={`single-${requirementIndex}`} className="text-sm text-gray-700">
-                    단일 날짜
-                  </label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id={`multi-${requirementIndex}`}
-                    name={`duration-${requirementIndex}`}
-                    checked={requirement.timeSlots[0]?.duration?.type === 'multi'}
-                    onChange={() => handleDurationTypeChange(requirementIndex, 'multi')}
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <label htmlFor={`multi-${requirementIndex}`} className="text-sm text-gray-700">
-                    여러 날
-                  </label>
-                </div>
-                
-                {requirement.timeSlots[0]?.duration?.type === 'multi' && (
+              )}
+              
+              {/* 날짜별 기간 설정 및 시간대 추가 버튼 */}
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">~</span>
-                    <DateDropdownSelector
-                      value={toDropdownValue(requirement.timeSlots[0]?.duration?.endDate || dateStr)}
-                      onChange={(value) => handleDurationEndDateChange(requirementIndex, fromDropdownValue(value))}
+                    <input
+                      type="radio"
+                      id={`single-${requirementIndex}`}
+                      name={`duration-${requirementIndex}`}
+                      checked={requirement.timeSlots[0]?.duration?.type !== 'multi'}
+                      onChange={() => handleDurationTypeChange(requirementIndex, 'single')}
+                      className="text-blue-600 focus:ring-blue-500"
                     />
+                    <label htmlFor={`single-${requirementIndex}`} className="text-sm text-gray-700">
+                      단일 날짜
+                    </label>
                   </div>
-                )}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id={`multi-${requirementIndex}`}
+                      name={`duration-${requirementIndex}`}
+                      checked={requirement.timeSlots[0]?.duration?.type === 'multi'}
+                      onChange={() => handleDurationTypeChange(requirementIndex, 'multi')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor={`multi-${requirementIndex}`} className="text-sm text-gray-700">
+                      여러 날
+                    </label>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => addTimeSlotToDate(requirementIndex)}
+                >
+                  시간추가
+                </Button>
               </div>
             </div>
 

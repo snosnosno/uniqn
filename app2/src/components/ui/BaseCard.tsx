@@ -51,9 +51,9 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
     
     const paddingStyles = {
       none: '',
-      sm: 'p-3',
-      md: 'p-4',
-      lg: 'p-6',
+      sm: 'p-2 sm:p-3',
+      md: 'p-3 sm:p-4',
+      lg: 'p-3 sm:p-4 md:p-6',
     };
     
     const interactiveStyles = onClick ? 'cursor-pointer' : '';

@@ -1,5 +1,4 @@
 import { useMemo, useCallback, useState } from 'react';
-import { useUnifiedWorkLogs } from './useUnifiedWorkLogs';
 import { useJobPostingContext } from '../contexts/JobPostingContextAdapter';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
@@ -16,7 +15,6 @@ interface StaffWorkDataItem extends EnhancedPayrollCalculation {
 }
 
 interface UseStaffWorkDataProps {
-  eventId?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
 }
@@ -51,7 +49,6 @@ interface UseStaffWorkDataReturn {
 }
 
 export const useStaffWorkData = ({
-  eventId,
   startDate,
   endDate
 }: UseStaffWorkDataProps = {}): UseStaffWorkDataReturn => {
@@ -73,24 +70,11 @@ export const useStaffWorkData = ({
     logger.debug('JobPostingContext not available, will use direct subscription', { component: 'useStaffWorkData' });
   }
   
-  // Context가 사용 가능하고 로딩이 완료되면 구독을 건너뜀 (빈 배열이어도)
-  const hasContext = contextWorkLogs !== undefined;
-  const shouldSkipSubscription = Boolean(hasContext && !contextLoading);
-  
-  // 실시간 WorkLogs 구독 (Context에 데이터가 없을 때만)
-  const { 
-    workLogs: directWorkLogs, 
-    loading: workLogsLoading, 
-    error: workLogsError 
-  } = useUnifiedWorkLogs({
-    filter: { eventId: eventId || jobPosting?.id },
-    realtime: true,
-    autoNormalize: true,
-    skipSubscription: shouldSkipSubscription // Context에 데이터가 있으면 구독 건너뜀
-  });
-  
-  // WorkLogs 선택 (Context가 있으면 무조건 Context 사용, 없으면 직접 구독)
-  const workLogs = hasContext ? (contextWorkLogs || []) : directWorkLogs;
+  // Context에서 WorkLogs 사용 (직접 구독 완전 제거)
+  // EnhancedPayrollTab은 항상 JobPostingProvider 내부에서만 사용되므로 안전
+  const workLogs = contextWorkLogs || [];
+  const workLogsLoading = contextLoading;
+  const workLogsError = null as Error | null;
   
   // 상태 관리
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);

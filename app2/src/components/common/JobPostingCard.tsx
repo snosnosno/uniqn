@@ -116,13 +116,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   const getContentClasses = () => {
     switch (variant) {
       case 'admin-list':
-        return 'p-6';
+        return 'p-3 sm:p-4 md:p-6';
       case 'user-card':
-        return 'p-4 sm:p-6';
+        return 'p-3 sm:p-4 md:p-6';
       case 'detail-info':
-        return 'p-6';
+        return 'p-3 sm:p-4 md:p-6';
       default:
-        return 'p-6';
+        return 'p-3 sm:p-4 md:p-6';
     }
   };
 

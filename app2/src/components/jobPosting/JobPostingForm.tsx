@@ -105,7 +105,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         <div className="flex space-x-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={openLoadTemplateModal}
           >

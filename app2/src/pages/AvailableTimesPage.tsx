@@ -73,7 +73,7 @@ const AvailableTimesPage = () => {
   if (!currentUser) return <p>{t('availableTimes.status.loginRequired')}</p>;
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container">
       <h1 className="text-2xl font-bold mb-4">{t('availableTimes.title')}</h1>
       <div className="space-y-4">
         {dayKeys.map(dayKey => (

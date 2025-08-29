@@ -40,9 +40,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     availableRoles,
     updateRoleSalarySettings
     // getSalaryInfo // 향후 사용 예정
-  } = useStaffWorkData({
-    eventId: jobPosting?.id
-  });
+  } = useStaffWorkData();
 
   // 디버깅 로그
   logger.debug('EnhancedPayrollTab - 렌더링', {
