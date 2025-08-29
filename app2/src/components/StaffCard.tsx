@@ -104,7 +104,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     staff.name, 
     staff.assignedDate, 
     attendanceRecords,
-    eventId
+    eventId,
+    getStaffAttendanceStatus
   ]);
 
   const memoizedTimeData = useMemo(() => {
@@ -161,7 +162,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정'
     };
-  }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
+  }, [staff, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
   
 
   const toggleExpanded = useCallback((e: React.MouseEvent) => {

@@ -166,7 +166,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
-  }, [staff.id, staff.assignedTime, staff.assignedDate, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
+  }, [staff, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
 
   // 메모이제이션된 이벤트 핸들러들
   const handleEditStartTime = useCallback((e: React.MouseEvent) => {

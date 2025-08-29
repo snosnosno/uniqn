@@ -33,12 +33,10 @@ interface LightweightCalendarProps {
 const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
   schedules,
   currentView,
-  onViewChange,
   onEventClick,
   onDateClick
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedView, setSelectedView] = useState<CalendarView>(currentView);
 
   // 현재 월의 날짜 배열 생성 (이전/다음 달 날짜 포함)
   const calendarDays = useMemo(() => {
@@ -203,7 +201,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
 
   // 뷰에 따른 렌더링
   const renderCalendarContent = () => {
-    switch (selectedView) {
+    switch (currentView) {
       case 'timeGridWeek':
         return renderWeekView();
       case 'timeGridDay':

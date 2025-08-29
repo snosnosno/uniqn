@@ -463,61 +463,68 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       onClose={onClose}
       title={getModalTitle()}
     >
-      <div className="space-y-6">
-        {/* 기본 정보 */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-semibold text-lg mb-2">{t('attendance.date')}</h3>
-          <p className="text-gray-600">
-            {(() => {
-              try {
-                // 1. scheduledStartTime이 있으면 우선 사용
-                if (workLog.scheduledStartTime) {
-                  const date = parseToDate(workLog.scheduledStartTime);
-                  if (date) {
-                    return date.toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: '2-digit', 
-                      day: '2-digit',
-                      weekday: 'short'
-                    });
+      <div className="space-y-4">
+        {/* 기본 정보 - 컴팩트하게 변경 */}
+        <div className="bg-blue-50 p-3 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold text-gray-800">
+                  👤 {workLog.staffName || '이름 미정'}
+                </span>
+                <span className="text-sm text-gray-600">
+                  • {workLog.assignedRole || workLog.role || '역할 미정'}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600">
+                📅 {(() => {
+                  try {
+                    // 1. scheduledStartTime이 있으면 우선 사용
+                    if (workLog.scheduledStartTime) {
+                      const date = parseToDate(workLog.scheduledStartTime);
+                      if (date) {
+                        // 월과 일만 표시하여 더 간결하게
+                        return date.toLocaleDateString('ko-KR', {
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'short'
+                        });
+                      }
+                    }
+                    
+                    // 2. workLog.date가 있으면 사용
+                    if (workLog.date) {
+                      const date = parseToDate(workLog.date);
+                      if (date) {
+                        return date.toLocaleDateString('ko-KR', {
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'short'
+                        });
+                      }
+                      // parseToDate가 실패한 경우 원본 값 표시
+                      return String(workLog.date);
+                    }
+                    
+                    return '날짜 정보 없음';
+                  } catch (error) {
+                    // Error displaying date
+                    return workLog.date ? String(workLog.date) : '날짜 오류';
                   }
-                }
-                
-                // 2. workLog.date가 있으면 사용
-                if (workLog.date) {
-                  const date = parseToDate(workLog.date);
-                  if (date) {
-                    return date.toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit', 
-                      weekday: 'short'
-                    });
-                  }
-                  // parseToDate가 실패한 경우 원본 값 표시 (디버깅용)
-                  return String(workLog.date);
-                }
-                
-                return '날짜 정보 없음';
-              } catch (error) {
-                // Error displaying date
-                return workLog.date ? String(workLog.date) : '날짜 오류';
-              }
-            })()}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {t('attendance.eventId')}: {workLog.eventId}
-          </p>
+                })()}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 시간 편집 */}
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-semibold text-lg mb-3 flex items-center">
-            <EditIcon className="w-5 h-5 mr-2 text-blue-600" />
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <h3 className="text-base font-semibold mb-2 flex items-center">
+            <EditIcon className="w-4 h-4 mr-2 text-blue-600" />
             근무 시간 설정
           </h3>
-          <p className="text-sm text-gray-600 mb-3">
-            출근/퇴근 시간을 자유롭게 수정할 수 있습니다. 시간을 입력하지 않으면 '미정'로 표시됩니다.
+          <p className="text-xs text-gray-600 mb-3">
+            시간을 선택하지 않으면 '미정'으로 표시됩니다.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -529,7 +536,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   <select
                     value={startHour}
                     onChange={(e) => handleStartTimeChange(e.target.value, startMinute)}
-                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">시</option>
                     {hourOptions.map((option) => (
@@ -541,7 +548,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   <select
                     value={startMinute}
                     onChange={(e) => handleStartTimeChange(startHour, e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">분</option>
                     {minuteOptions.map((option) => (
@@ -560,10 +567,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                       setStartTime('');
                       setHasChanges(true);
                     }}
-                    className="w-full px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
-                    title="시작시간 지우기 (미정로 되돌리기)"
+                    className="w-full px-2 py-1.5 text-xs text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                    title="출근시간을 미정으로 설정"
                   >
-                    🗑️ 시작시간 지우기 (미정로 되돌리기)
+                    출근 시간 미정
                   </button>
                 )}
               </div>
@@ -571,14 +578,13 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
                 퇴근 시간
-                <span className="text-gray-500 text-xs ml-1">(선택사항)</span>
               </label>
               <div className="space-y-2">
                 <div className="flex space-x-2">
                   <select
                     value={endHour}
                     onChange={(e) => handleEndTimeChange(e.target.value, endMinute)}
-                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
+                    className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 focus:ring-green-500 focus:border-green-500"
                   >
                     <option value="">시</option>
                     {hourOptions.map((option) => (
@@ -590,7 +596,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   <select
                     value={endMinute}
                     onChange={(e) => handleEndTimeChange(endHour, e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded-md font-mono text-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
+                    className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 focus:ring-green-500 focus:border-green-500"
                   >
                     <option value="">분</option>
                     {minuteOptions.map((option) => (
@@ -607,10 +613,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                     setEndTime('');
                     setHasChanges(true);
                   }}
-                  className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                  title="종료시간을 미정으로 설정"
+                  className="w-full px-2 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  title="퇴근시간을 미정으로 설정"
                 >
-                  🗑️ 종료시간 지우기 (미정으로 설정)
+                  퇴근 시간 미정
                 </button>
               </div>
             </div>
@@ -619,13 +625,13 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
 
         {/* 근무 시간 요약 */}
-        <div className="bg-yellow-50 p-4 rounded-lg">
-          <h3 className="font-semibold text-lg mb-3">근무 시간 요약</h3>
+        <div className="bg-yellow-50 p-3 rounded-lg">
+          <h3 className="text-base font-semibold mb-2">근무 시간 요약</h3>
           <div className="text-center">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
               근무시간
             </label>
-            <div className="text-2xl font-mono font-bold text-blue-600">
+            <div className="text-base font-mono font-bold text-blue-600">
               {startTime ? (() => {
                 if (endTime) {
                   // 시작/종료 시간 모두 있는 경우
@@ -641,7 +647,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                     <div>
                       <div>{formatMinutesToTime(minutes)}</div>
                       {isNextDay && (
-                        <div className="text-sm text-orange-600 mt-1">
+                        <div className="text-xs text-orange-600 mt-1">
                           (다음날 {endTime}까지)
                         </div>
                       )}
@@ -651,8 +657,8 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                   // 시작시간만 있는 경우
                   return (
                     <div>
-                      <div className="text-lg">시작시간: {startTime}</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm">시작시간: {startTime}</div>
+                      <div className="text-xs text-gray-600 mt-1">
                         (종료시간 미정)
                       </div>
                     </div>
@@ -660,8 +666,8 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                 }
               })() : (
                 <div>
-                  <div className="text-lg text-gray-500">시간 미정</div>
-                  <div className="text-sm text-gray-400 mt-1">
+                  <div className="text-sm text-gray-500">시간 미정</div>
+                  <div className="text-xs text-gray-400 mt-1">
                     시작시간을 설정해주세요
                   </div>
                 </div>

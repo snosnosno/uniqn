@@ -6,7 +6,6 @@ import { convertToDateString } from '../../utils/jobPosting/dateUtils';
 import Button from '../common/Button';
 import DateDropdownSelector from '../DateDropdownSelector';
 import { Select } from '../common/Select';
-import { Input } from '../common/Input';
 
 interface DateSpecificRequirementsProps {
   requirements: DateSpecificRequirement[];
