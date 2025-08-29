@@ -49,18 +49,6 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
 
   return (
     <div className="mt-3 space-y-2">
-      <div className="flex items-center justify-end mb-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            lightImpact();
-            setShowActions(false);
-          }}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          ✕
-        </button>
-      </div>
       <div className="space-y-3">
         {/* 시간 편집 및 삭제 */}
         <div>

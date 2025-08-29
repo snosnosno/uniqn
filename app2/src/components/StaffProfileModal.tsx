@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { logger } from '../utils/logger';
 import { formatTime } from '../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
-import { FaPhone, FaEnvelope, FaIdCard, FaStar, FaUser } from './Icons/ReactIconsReplacement';
-import { doc, getDoc } from 'firebase/firestore';
+import { FaPhone, FaEnvelope, FaStar } from './Icons/ReactIconsReplacement';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import Modal, { ModalFooter } from './ui/Modal';
 import { StaffData } from '../hooks/useStaffManagement';
+import { PreQuestionAnswer } from '../types/jobPosting';
 
 interface StaffProfileModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ interface ProfileData extends StaffData {
   bankAccount?: string;
   residentId?: string;
   history?: string;
+  preQuestionAnswers?: PreQuestionAnswer[];
 }
 
 const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
@@ -40,6 +42,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   useTranslation();
   const [userProfile, setUserProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>([]);
 
   // 사용자 프로필 데이터 가져오기
   useEffect(() => {
@@ -80,6 +83,28 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         } else {
           logger.debug('사용자 프로필 문서를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: userId });
           setUserProfile(staff as ProfileData);
+        }
+
+        // 사전질문 답변 가져오기
+        if (staff?.postingId) {
+          const applicationsRef = collection(db, 'applications');
+          const q = query(
+            applicationsRef, 
+            where('eventId', '==', staff.postingId),
+            where('applicantId', '==', userId)
+          );
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty && querySnapshot.docs[0]) {
+            const applicationData = querySnapshot.docs[0].data();
+            if (applicationData.preQuestionAnswers) {
+              logger.debug('🔍 사전질문 답변 로드:', { 
+                component: 'StaffProfileModal', 
+                data: applicationData.preQuestionAnswers 
+              });
+              setPreQuestionAnswers(applicationData.preQuestionAnswers);
+            }
+          }
         }
       } catch (error) {
         logger.error('사용자 프로필 로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffProfileModal' });
@@ -184,16 +209,6 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   // 로딩 중이면 staff 데이터를 사용하고, 로드 완료되면 userProfile 사용
   const extendedStaff = userProfile || (staff as ProfileData);
 
-  // 역할 표시 함수
-  const getRoleDisplay = (role?: string) => {
-    const roleMap: { [key: string]: string } = {
-      'dealer': '딜러',
-      'staff': '스태프',
-      'admin': '관리자',
-      'user': '사용자'
-    };
-    return role ? (roleMap[role] || role) : '역할 미정';
-  };
 
   const footerButtons = (
     <ModalFooter>
@@ -236,18 +251,11 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
               <span className="text-gray-500 ml-1">({extendedStaff.ratingCount || 0}개 평점)</span>
             </div>
           )}
-          <p className="text-lg text-gray-600">
-            {getRoleDisplay(staff.role)}
-          </p>
         </div>
 
           
         {/* 연락처 정보 */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-            <FaIdCard className="w-4 h-4 mr-2" />
-            연락처 정보
-          </h3>
           <div className="space-y-3">
             {staff.phone ? (
               <div className="flex items-center justify-between">
@@ -287,10 +295,6 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
         {/* 상세 정보 */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-            <FaUser className="w-4 h-4 mr-2" />
-            상세 정보
-          </h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500 mb-1">성별</p>
@@ -327,29 +331,24 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           </p>
         </div>
 
-        {/* 개인 정보 (정산시 필요) */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            개인 정보
-            <span className="text-xs text-gray-500 ml-2 font-normal">(정산시 필요, 허가된 사람에게만 보입니다)</span>
-          </h3>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-600">주민등록번호</p>
-                <p className="font-medium text-gray-900">{extendedStaff.residentId || '제공되지 않음'}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">은행명</p>
-                <p className="font-medium text-gray-900">{extendedStaff.bankName || '제공되지 않음'}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">계좌번호</p>
-              <p className="font-medium text-gray-900">{extendedStaff.bankAccount || '제공되지 않음'}</p>
+        {/* 사전질문 답변 */}
+        {preQuestionAnswers && preQuestionAnswers.length > 0 && (
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">사전질문 답변</h3>
+            <div className="space-y-3">
+              {preQuestionAnswers.map((answer, index) => (
+                <div key={answer.questionId || index} className="border-l-2 border-yellow-300 pl-3">
+                  <p className="text-xs font-medium text-gray-600 mb-1">
+                    Q{index + 1}. {answer.question}
+                  </p>
+                  <p className="text-sm text-gray-800">
+                    {answer.answer || '답변 없음'}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
       </div>
     </Modal>
