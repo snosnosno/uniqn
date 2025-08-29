@@ -10,7 +10,8 @@ import {
   getApplicantSelections,
   groupMultiDaySelections,
   groupSingleDaySelections,
-  generateDateRange
+  generateDateRange,
+  convertDateToString
 } from './utils/applicantHelpers';
 
 interface MultiSelectControlsProps {
@@ -41,7 +42,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   const groupedSelections = useMemo(() => {
     const allSelections = getApplicantSelections(applicant);
     const multiDaySelections: any[] = [];
-    const singleDaySelections: any[] = [];
+    let singleDaySelections: any[] = [];
     
     // duration 정보로 분류
     allSelections.forEach((selection: any) => {
@@ -54,6 +55,21 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     
     // 다중일 그룹 처리
     const multiGroups = groupMultiDaySelections(multiDaySelections);
+    
+    // 다중일 그룹에 포함된 모든 날짜를 수집
+    const multiDayDates = new Set<string>();
+    multiDaySelections.forEach((selection: any) => {
+      if (selection.duration?.type === 'multi' && selection.duration?.endDate) {
+        const dates = generateDateRange(selection.date, convertDateToString(selection.duration.endDate));
+        dates.forEach(date => multiDayDates.add(date));
+      }
+    });
+    
+    // 단일날짜 선택사항에서 다중일에 이미 포함된 날짜 제외
+    singleDaySelections = singleDaySelections.filter((selection: any) => {
+      // 해당 날짜가 다중일 그룹에 포함되어 있지 않은 경우만 단일날짜로 표시
+      return !multiDayDates.has(selection.date);
+    });
     
     // 단일 날짜 그룹 처리
     const singleGroups = groupSingleDaySelections(singleDaySelections);
