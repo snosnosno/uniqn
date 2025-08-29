@@ -6,7 +6,11 @@ import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { Applicant, Assignment } from './types';
 import { 
   getApplicantSelectionsByDate, 
-  getDateSelectionStats
+  getDateSelectionStats,
+  getApplicantSelections,
+  groupMultiDaySelections,
+  groupSingleDaySelections,
+  generateDateRange
 } from './utils/applicantHelpers';
 
 interface MultiSelectControlsProps {
@@ -33,7 +37,34 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 }) => {
   const { t } = useTranslation();
   
-  // 날짜별 그룹화된 선택 사항 (메모이제이션)
+  // 선택사항을 다중일과 단일날짜로 분류하여 그룹화
+  const groupedSelections = useMemo(() => {
+    const allSelections = getApplicantSelections(applicant);
+    const multiDaySelections: any[] = [];
+    const singleDaySelections: any[] = [];
+    
+    // duration 정보로 분류
+    allSelections.forEach((selection: any) => {
+      if (selection.duration?.type === 'multi' && selection.duration?.endDate) {
+        multiDaySelections.push(selection);
+      } else {
+        singleDaySelections.push(selection);
+      }
+    });
+    
+    // 다중일 그룹 처리
+    const multiGroups = groupMultiDaySelections(multiDaySelections);
+    
+    // 단일 날짜 그룹 처리
+    const singleGroups = groupSingleDaySelections(singleDaySelections);
+    
+    return {
+      multiDayGroups: multiGroups,
+      singleDayGroups: singleGroups
+    };
+  }, [applicant]);
+  
+  // 날짜별 그룹화된 선택 사항 (메모이제이션) - 기존 코드 호환성 유지
   const dateGroupedSelections = useMemo(() => {
     const groups = getApplicantSelectionsByDate(applicant);
     
@@ -51,7 +82,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     });
   }, [applicant, selectedAssignments]);
   
-  if (dateGroupedSelections.length === 0) {
+  if (groupedSelections.multiDayGroups.length === 0 && groupedSelections.singleDayGroups.length === 0) {
     return null;
   }
 
@@ -81,14 +112,80 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     // 향후 필요시 구현 예정
     alert('시간 변경 기능은 준비 중입니다.');
   };
+  
+  /**
+   * 다중일 그룹이 모두 선택되었는지 확인
+   */
+  const isMultiDayGroupSelected = (group: any): boolean => {
+    return group.dates.every((date: string) => 
+      selectedAssignments.some(assignment => 
+        assignment.timeSlot === group.timeSlot && 
+        assignment.role === group.role && 
+        assignment.date === date
+      )
+    );
+  };
+  
+  /**
+   * 다중일 그룹 전체 선택/해제
+   */
+  const handleMultiDayGroupToggle = (group: any, isChecked: boolean) => {
+    group.dates.forEach((date: string) => {
+      const value = `${date}__${group.timeSlot}__${group.role}`;
+      onAssignmentToggle(value, isChecked);
+    });
+  };
 
   return (
     <div className="space-y-3">
-
-      {/* 날짜별 섹션 - 모바일에서도 2x2 그리드 배치 */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4">
-        {dateGroupedSelections.map((dateGroup, groupIndex) => (
-          <div key={`${dateGroup.date}-${groupIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
+      
+      {/* 다중일 그룹 표시 */}
+      {groupedSelections.multiDayGroups.length > 0 && (
+        <div className="space-y-3">
+          {groupedSelections.multiDayGroups.map((group: any, index: number) => {
+            const isGroupSelected = isMultiDayGroupSelected(group);
+            const groupKey = `multi-${group.timeSlot}-${group.role}-${index}`;
+            
+            return (
+              <div key={groupKey} className="border border-blue-300 rounded-lg bg-blue-50 overflow-hidden">
+                {/* 날짜 범위 헤더 */}
+                <div className="px-3 py-2 bg-blue-100 border-b border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-800">
+                      📅 {group.displayDateRange} ({group.dayCount}일)
+                    </span>
+                  </div>
+                </div>
+                
+                {/* 선택 옵션 */}
+                <div className="p-3">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isGroupSelected}
+                      onChange={(e) => handleMultiDayGroupToggle(group, e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm">
+                      <span className="font-medium text-gray-700">{group.timeSlot}</span>
+                      <span className="text-gray-500 mx-2">-</span>
+                      <span className="font-medium text-gray-800">
+                        {t(`jobPostingAdmin.create.${group.role}`) || group.role}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      
+      {/* 단일 날짜 그룹 표시 - 기존 그리드 레이아웃 유지 */}
+      {groupedSelections.singleDayGroups.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          {groupedSelections.singleDayGroups.map((dateGroup: any, groupIndex: number) => (
+            <div key={`${dateGroup.date}-${groupIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
             {/* 날짜 헤더 */}
             <div className="bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -106,7 +203,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 
             {/* 선택 항목들 */}
             <div className="divide-y divide-gray-100">
-              {dateGroup.selections.map((selection, selectionIndex) => {
+              {dateGroup.selections.map((selection: any, selectionIndex: number) => {
                 const safeDateString = selection.date || '';
                 const optionValue = safeDateString.trim() !== '' 
                   ? `${safeDateString}__${selection.time}__${selection.role}`
@@ -322,6 +419,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
           </div>
         ))}
       </div>
+      )}
 
       {/* 확정 버튼 */}
       <div className="pt-2">

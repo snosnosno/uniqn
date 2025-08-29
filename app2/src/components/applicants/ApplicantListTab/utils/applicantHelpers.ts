@@ -203,6 +203,10 @@ interface Selection {
   role: string;
   time: string;
   date: string;
+  duration?: {
+    type?: string;
+    endDate?: any;
+  };
 }
 
 /**
@@ -314,4 +318,84 @@ export const jobRoleMap: { [key: string]: string } = {
   'registration': 'Registration',
   'security': 'Security',
   'other': 'Other'
+};
+
+/**
+ * 날짜 범위 생성 함수
+ */
+export const generateDateRange = (startDate: string, endDate: string): string[] => {
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    dates.push(`${year}-${month}-${day}`);
+  }
+  
+  return dates;
+};
+
+/**
+ * 다중일 선택사항 그룹화
+ */
+export const groupMultiDaySelections = (selections: Selection[]) => {
+  const groups = new Map<string, any>();
+  
+  selections.forEach(selection => {
+    if (selection.duration?.type === 'multi' && selection.duration?.endDate) {
+      // 시간대-역할-시작날짜-종료날짜로 그룹 키 생성
+      const endDate = convertDateToString(selection.duration.endDate);
+      const key = `${selection.time}_${selection.role}_${selection.date}_${endDate}`;
+      
+      if (!groups.has(key)) {
+        const dates = generateDateRange(selection.date, endDate);
+        groups.set(key, {
+          timeSlot: selection.time,
+          role: selection.role,
+          startDate: selection.date,
+          endDate: endDate,
+          dates: dates,
+          dayCount: dates.length,
+          displayDateRange: dates.length === 1 
+            ? formatDateDisplay(selection.date)
+            : `${formatDateDisplay(selection.date)} ~ ${formatDateDisplay(endDate)}`,
+          selections: []
+        });
+      }
+      
+      groups.get(key).selections.push(selection);
+    }
+  });
+  
+  return Array.from(groups.values());
+};
+
+/**
+ * 단일 날짜 선택사항 그룹화 (기존 로직)
+ */
+export const groupSingleDaySelections = (selections: Selection[]) => {
+  const groups = new Map<string, any>();
+  
+  selections.forEach(selection => {
+    const dateKey = selection.date || 'no-date';
+    
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, {
+        date: dateKey,
+        displayDate: dateKey === 'no-date' ? '날짜 미정' : formatDateDisplay(dateKey),
+        selections: []
+      });
+    }
+    
+    groups.get(dateKey).selections.push(selection);
+  });
+  
+  return Array.from(groups.values()).sort((a, b) => {
+    if (a.date === 'no-date') return 1;
+    if (b.date === 'no-date') return -1;
+    return a.date.localeCompare(b.date);
+  });
 };

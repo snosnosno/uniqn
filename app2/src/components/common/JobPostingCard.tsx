@@ -309,7 +309,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                     📅 {dateDisplay}
                     {expandedDates.length > 0 && (
                       <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
-                        {expandedDates.length}일간
+                        {expandedDates.length}일
                       </span>
                     )}
                   </div>
@@ -321,7 +321,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                           {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
                             // 다중일인 경우 모든 날짜의 확정 인원 합산
                             let confirmedCount = 0;
-                            let totalRequired = r.count;
+                            let confirmedCountPerDay = 0;
                             
                             if (expandedDates.length > 0) {
                               // 다중일인 경우 각 날짜별 확정 인원 합산
@@ -333,7 +333,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   r.name
                                 );
                               });
-                              totalRequired = r.count * expandedDates.length;
+                              // 일당 평균 확정 인원 계산
+                              confirmedCountPerDay = Math.floor(confirmedCount / expandedDates.length);
                             } else {
                               // 단일 날짜
                               const dateString = timestampToLocalDateString(dateReq.date);
@@ -343,9 +344,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                 ts.time,
                                 r.name
                               );
+                              confirmedCountPerDay = confirmedCount;
                             }
                             
-                            const isFull = confirmedCount >= totalRequired;
+                            const displayCount = expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
+                            const isFull = displayCount >= r.count;
                             return (
                               <div key={roleIndex} className="text-sm text-gray-600">
                                 {roleIndex === 0 ? (
@@ -357,19 +360,23 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                       )}
                                     </span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
-                                      {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
+                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      {expandedDates.length > 0 && (
+                                        <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                      )}
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                        {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
+                                        {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                       </span>
                                     </span>
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
-                                    {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
+                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                    {expandedDates.length > 0 && (
+                                      <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                    )}
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                      {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
+                                      {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                     </span>
                                   </div>
                                 )}
@@ -382,7 +389,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                           {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
                             // 다중일인 경우 모든 날짜의 확정 인원 합산
                             let confirmedCount = 0;
-                            let totalRequired = r.count;
+                            let confirmedCountPerDay = 0;
                             
                             if (expandedDates.length > 0) {
                               // 다중일인 경우 각 날짜별 확정 인원 합산
@@ -394,7 +401,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   r.name
                                 );
                               });
-                              totalRequired = r.count * expandedDates.length;
+                              // 일당 평균 확정 인원 계산
+                              confirmedCountPerDay = Math.floor(confirmedCount / expandedDates.length);
                             } else {
                               // 단일 날짜
                               const dateString = timestampToLocalDateString(dateReq.date);
@@ -404,28 +412,34 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                 ts.time,
                                 r.name
                               );
+                              confirmedCountPerDay = confirmedCount;
                             }
                             
-                            const isFull = confirmedCount >= totalRequired;
+                            const displayCount = expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
+                            const isFull = displayCount >= r.count;
                             return (
                               <div key={roleIndex} className="text-sm text-gray-600">
                                 {roleIndex === 0 ? (
                                   <>
                                     <span className="font-medium text-gray-700">{ts.time}</span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
-                                      {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
+                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      {expandedDates.length > 0 && (
+                                        <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                      )}
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                        {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
+                                        {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                       </span>
                                     </span>
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
-                                    {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
+                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                    {expandedDates.length > 0 && (
+                                      <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                    )}
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                      {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
+                                      {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                     </span>
                                   </div>
                                 )}

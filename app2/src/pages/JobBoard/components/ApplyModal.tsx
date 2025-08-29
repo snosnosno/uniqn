@@ -317,11 +317,8 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                   <div key={dateIndex} className="mb-6">
                     <div className="mb-3 p-3 bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg border border-blue-200">
                       <h4 className="text-sm font-semibold text-blue-800 mb-1">
-                        📅 {dateDisplay} ({expandedDates.length}일간)
+                        📅 {dateDisplay} ({expandedDates.length}일)
                       </h4>
-                      <p className="text-xs text-blue-600">
-                        한 번의 선택으로 모든 날짜에 지원할 수 있습니다.
-                      </p>
                     </div>
                     <div className="pl-4 border-l-4 border-blue-300">
                       {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
@@ -352,8 +349,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                 return sum + count;
                               }, 0);
                               
-                              const totalRequired = r.count * expandedDates.length;
-                              const isFull = totalConfirmedCount >= totalRequired;
+                              // 일당 평균 확정 인원
+                              const confirmedCountPerDay = Math.floor(totalConfirmedCount / expandedDates.length);
+                              const isFull = confirmedCountPerDay >= r.count;
                               const isGroupChecked = isGroupSelected(ts.time, r.name, expandedDates);
                               
                               return (
@@ -381,15 +379,15 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                     isFull ? 'text-gray-400' : 'text-gray-700'
                                   }`}>
                                     <span className="font-medium">
-                                      👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)}
+                                      👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
                                     </span>
                                     <span className="text-sm text-blue-600 ml-2">
-                                      ({expandedDates.length}일 전체)
+                                      ({expandedDates.length}일)
                                     </span>
                                     <span className={`ml-2 text-xs ${
                                       isFull ? 'text-red-500 font-medium' : 'text-gray-500'
                                     }`}>
-                                      {isFull ? '마감' : `${totalConfirmedCount}/${totalRequired}명`}
+                                      {isFull ? '마감' : `(${confirmedCountPerDay}/${r.count})`}
                                     </span>
                                   </span>
                                 </label>
