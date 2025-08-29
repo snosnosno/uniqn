@@ -485,7 +485,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               <h4 className="text-sm font-medium text-gray-700 mb-4">📅 근무 내역</h4>
               {workHistory.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border rounded-lg overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
