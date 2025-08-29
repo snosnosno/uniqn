@@ -65,7 +65,9 @@ export const useApplicantData = (eventId?: string) => {
           assignedTimes: data.assignedTimes || (data.assignedTime ? [data.assignedTime] : data.timeSlot ? [data.timeSlot] : []),
           assignedDates: data.assignedDates || (dateString ? [dateString] : data.date ? [data.date] : []),
           // duration 정보도 매핑
-          assignedDurations: data.assignedDurations || []
+          assignedDurations: data.assignedDurations || [],
+          // eventId 추가
+          eventId: data.eventId || postId
         } as Applicant;
       });
       

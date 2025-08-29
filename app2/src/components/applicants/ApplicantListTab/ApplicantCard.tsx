@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
 import { getApplicantSelections, formatDateDisplay } from './utils/applicantHelpers';
 import { formatDate } from '../../../utils/jobPosting/dateUtils';
+import StaffProfileModal from '../../StaffProfileModal';
+import { StaffData } from '../../../hooks/useStaffManagement';
 
 interface ApplicantCardProps {
   applicant: Applicant;
@@ -15,6 +17,21 @@ interface ApplicantCardProps {
  */
 const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) => {
   const { t } = useTranslation();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // StaffData 형식으로 변환
+  const staffData: StaffData | null = applicant ? {
+    id: applicant.applicantId || applicant.id,
+    userId: applicant.applicantId || applicant.id,
+    name: applicant.applicantName,
+    phone: applicant.phone || '',
+    email: applicant.email || '',
+    role: applicant.assignedRole as any || '',
+    notes: applicant.notes || '',
+    postingId: applicant.eventId || '',
+    postingTitle: '', // 지원자 탭에서는 posting 정보가 없으므로 빈 문자열
+    assignedTime: applicant.assignedTime || ''
+  } : null;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
@@ -25,7 +42,12 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
         <div className="space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-medium text-gray-900 text-base">{applicant.applicantName}</h4>
+              <h4 
+                className="font-medium text-gray-900 text-base cursor-pointer hover:text-blue-600 hover:underline"
+                onClick={() => setIsProfileModalOpen(true)}
+              >
+                {applicant.applicantName}
+              </h4>
               <span className={`px-2 py-1 rounded-full text-xs ${
                 applicant.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                 applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
@@ -243,6 +265,13 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
           {applicant.status !== 'confirmed' && children}
         </div>
       </div>
+
+      {/* 스태프 프로필 모달 */}
+      <StaffProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        staff={staffData}
+      />
     </div>
   );
 };

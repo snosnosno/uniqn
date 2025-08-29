@@ -34,6 +34,10 @@ export interface Applicant {
     answer: string;
     required?: boolean;
   }>;
+  
+  // 추가 필드들
+  eventId?: string;  // 구인공고 ID
+  notes?: string;    // 메모
 }
 
 export interface ApplicantListTabProps {
