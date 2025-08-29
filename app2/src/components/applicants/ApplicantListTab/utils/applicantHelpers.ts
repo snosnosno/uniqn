@@ -339,22 +339,20 @@ export const generateDateRange = (startDate: string, endDate: string): string[] 
 };
 
 /**
- * 다중일 선택사항 그룹화
+ * 다중일 선택사항 그룹화 - 날짜 범위별로 그룹화하고, 같은 날짜 범위의 여러 역할을 하나의 그룹으로 묶음
  */
 export const groupMultiDaySelections = (selections: Selection[]) => {
-  const groups = new Map<string, any>();
+  const dateRangeGroups = new Map<string, any>();
   
   selections.forEach(selection => {
     if (selection.duration?.type === 'multi' && selection.duration?.endDate) {
-      // 시간대-역할-시작날짜-종료날짜로 그룹 키 생성
       const endDate = convertDateToString(selection.duration.endDate);
-      const key = `${selection.time}_${selection.role}_${selection.date}_${endDate}`;
+      // 날짜 범위만으로 그룹 키 생성 (시간대와 역할 제외)
+      const dateRangeKey = `${selection.date}_${endDate}`;
       
-      if (!groups.has(key)) {
+      if (!dateRangeGroups.has(dateRangeKey)) {
         const dates = generateDateRange(selection.date, endDate);
-        groups.set(key, {
-          timeSlot: selection.time,
-          role: selection.role,
+        dateRangeGroups.set(dateRangeKey, {
           startDate: selection.date,
           endDate: endDate,
           dates: dates,
@@ -362,15 +360,27 @@ export const groupMultiDaySelections = (selections: Selection[]) => {
           displayDateRange: dates.length === 1 
             ? formatDateDisplay(selection.date)
             : `${formatDateDisplay(selection.date)} ~ ${formatDateDisplay(endDate)}`,
-          selections: []
+          timeSlotRoles: [] // 시간대-역할 조합들
         });
       }
       
-      groups.get(key).selections.push(selection);
+      const group = dateRangeGroups.get(dateRangeKey);
+      // 같은 시간대-역할 조합이 이미 있는지 확인
+      const existingRole = group.timeSlotRoles.find((tr: any) => 
+        tr.timeSlot === selection.time && tr.role === selection.role
+      );
+      
+      if (!existingRole) {
+        group.timeSlotRoles.push({
+          timeSlot: selection.time,
+          role: selection.role,
+          selection: selection
+        });
+      }
     }
   });
   
-  return Array.from(groups.values());
+  return Array.from(dateRangeGroups.values());
 };
 
 /**

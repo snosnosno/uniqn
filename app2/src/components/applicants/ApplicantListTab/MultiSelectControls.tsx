@@ -114,37 +114,52 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   };
   
   /**
-   * 다중일 그룹이 모두 선택되었는지 확인
+   * 다중일 그룹의 특정 시간대-역할이 모두 선택되었는지 확인
    */
-  const isMultiDayGroupSelected = (group: any): boolean => {
-    return group.dates.every((date: string) => 
+  const isMultiDayRoleSelected = (dates: string[], timeSlot: string, role: string): boolean => {
+    return dates.every((date: string) => 
       selectedAssignments.some(assignment => 
-        assignment.timeSlot === group.timeSlot && 
-        assignment.role === group.role && 
+        assignment.timeSlot === timeSlot && 
+        assignment.role === role && 
         assignment.date === date
       )
     );
   };
   
   /**
-   * 다중일 그룹 전체 선택/해제
+   * 다중일 그룹의 특정 시간대-역할 전체 선택/해제
    */
-  const handleMultiDayGroupToggle = (group: any, isChecked: boolean) => {
-    group.dates.forEach((date: string) => {
-      const value = `${date}__${group.timeSlot}__${group.role}`;
-      onAssignmentToggle(value, isChecked);
+  const handleMultiDayRoleToggle = (dates: string[], timeSlot: string, role: string, isChecked: boolean) => {
+    // 각 날짜에 대해 중복 체크 후 선택/해제
+    dates.forEach((date: string) => {
+      if (isChecked) {
+        // 체크하려는 경우: 해당 날짜에 이미 다른 선택이 있는지 확인
+        const hasOtherSelection = selectedAssignments.some(assignment => 
+          assignment.date === date && 
+          !(assignment.timeSlot === timeSlot && assignment.role === role)
+        );
+        
+        if (!hasOtherSelection) {
+          // 다른 선택이 없을 때만 추가
+          const value = `${date}__${timeSlot}__${role}`;
+          onAssignmentToggle(value, true);
+        }
+      } else {
+        // 체크 해제하는 경우: 그냥 제거
+        const value = `${date}__${timeSlot}__${role}`;
+        onAssignmentToggle(value, false);
+      }
     });
   };
 
   return (
     <div className="space-y-3">
       
-      {/* 다중일 그룹 표시 */}
+      {/* 다중일 그룹 표시 - 날짜 범위별로 그룹화 */}
       {groupedSelections.multiDayGroups.length > 0 && (
         <div className="space-y-3">
           {groupedSelections.multiDayGroups.map((group: any, index: number) => {
-            const isGroupSelected = isMultiDayGroupSelected(group);
-            const groupKey = `multi-${group.timeSlot}-${group.role}-${index}`;
+            const groupKey = `multi-daterange-${index}`;
             
             return (
               <div key={groupKey} className="border border-blue-300 rounded-lg bg-blue-50 overflow-hidden">
@@ -157,23 +172,42 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                   </div>
                 </div>
                 
-                {/* 선택 옵션 */}
-                <div className="p-3">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isGroupSelected}
-                      onChange={(e) => handleMultiDayGroupToggle(group, e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-3 text-sm">
-                      <span className="font-medium text-gray-700">{group.timeSlot}</span>
-                      <span className="text-gray-500 mx-2">-</span>
-                      <span className="font-medium text-gray-800">
-                        {t(`jobPostingAdmin.create.${group.role}`) || group.role}
-                      </span>
-                    </span>
-                  </label>
+                {/* 시간대-역할 선택 옵션들 */}
+                <div className="divide-y divide-blue-200">
+                  {group.timeSlotRoles.map((tr: any, trIndex: number) => {
+                    const isRoleSelected = isMultiDayRoleSelected(group.dates, tr.timeSlot, tr.role);
+                    // 날짜별 중복 체크: 하나라도 다른 선택이 있으면 비활성화
+                    const hasConflict = group.dates.some((date: string) => 
+                      selectedAssignments.some(assignment => 
+                        assignment.date === date && 
+                        !(assignment.timeSlot === tr.timeSlot && assignment.role === tr.role)
+                      )
+                    );
+                    
+                    return (
+                      <div key={`${groupKey}-tr-${trIndex}`} className="p-3">
+                        <label className={`flex items-center ${hasConflict ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                          <input
+                            type="checkbox"
+                            checked={isRoleSelected}
+                            onChange={(e) => handleMultiDayRoleToggle(group.dates, tr.timeSlot, tr.role, e.target.checked)}
+                            disabled={hasConflict}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-300"
+                          />
+                          <span className="ml-3 text-sm">
+                            <span className="font-medium text-gray-700">{tr.timeSlot}</span>
+                            <span className="text-gray-500 mx-2">-</span>
+                            <span className="font-medium text-gray-800">
+                              {t(`jobPostingAdmin.create.${tr.role}`) || tr.role}
+                            </span>
+                            {hasConflict && (
+                              <span className="ml-2 text-xs text-red-600 font-medium">(날짜 중복)</span>
+                            )}
+                          </span>
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
