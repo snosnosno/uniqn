@@ -171,15 +171,16 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         </button>
       </div>
 
-      {/* 요약 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">총 인원</h3>
-          <p className="text-3xl font-bold text-gray-900">{summary.totalStaff}명</p>
+      {/* 요약 정보 */}
+      <div className="bg-white p-4 rounded-lg shadow flex justify-around items-center">
+        <div className="text-center">
+          <h3 className="text-xs font-medium text-gray-500 mb-1">총 인원</h3>
+          <p className="text-xl font-bold text-gray-900">{summary.totalStaff}명</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">총 지급액</h3>
-          <p className="text-3xl font-bold text-indigo-600">
+        <div className="h-10 w-px bg-gray-200"></div>
+        <div className="text-center">
+          <h3 className="text-xs font-medium text-gray-500 mb-1">총 지급액</h3>
+          <p className="text-xl font-bold text-indigo-600">
             {summary.totalAmount.toLocaleString('ko-KR')}
           </p>
         </div>
