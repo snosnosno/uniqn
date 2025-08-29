@@ -465,13 +465,29 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
 /**
  * 근무 시간 계산 - 간소화된 버전
  * scheduledStartTime/scheduledEndTime 우선 사용
+ * assignedTime을 scheduledStartTime의 fallback으로 사용
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  // 예정 시간만 사용 (정산 기준)
-  const startTime = parseTimeToString(workLog.scheduledStartTime);
+  // 예정 시간 사용 (정산 기준) - assignedTime을 fallback으로 사용
+  let startTime = parseTimeToString(workLog.scheduledStartTime);
+  
+  // scheduledStartTime이 없거나 '미정'인 경우 assignedTime 사용
+  if (!startTime || startTime === '미정') {
+    if (workLog.assignedTime && workLog.assignedTime !== '미정') {
+      startTime = workLog.assignedTime;
+      logger.debug('calculateWorkHours - assignedTime을 시작시간으로 사용', {
+        component: 'workLogMapper',
+        data: { 
+          workLogId: workLog.id,
+          assignedTime: workLog.assignedTime
+        }
+      });
+    }
+  }
+  
   const endTime = parseTimeToString(workLog.scheduledEndTime);
   
-  if (!startTime || !endTime) {
+  if (!startTime || !endTime || startTime === '미정' || endTime === '미정') {
     return 0;
   }
   

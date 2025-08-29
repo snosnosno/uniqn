@@ -158,6 +158,15 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           });
         }
         
+        // assignedTime이 있으면 scheduledStartTime의 기본값으로 사용
+        if (!finalStartTime && workLog.assignedTime) {
+          finalStartTime = parseTimeToTimestamp(workLog.assignedTime, workLog.date);
+          logger.debug('Using assignedTime as scheduledStartTime', { 
+            component: 'WorkTimeEditor', 
+            data: { assignedTime: workLog.assignedTime } 
+          });
+        }
+        
         // 그래도 없으면 workLog의 기존 값 사용
         if (!finalStartTime && workLog.scheduledStartTime) {
           finalStartTime = workLog.scheduledStartTime instanceof Date ? 
@@ -348,11 +357,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       return;
     }
     
-    // 정산 목적으로 예정시간 우선, 없으면 실제시간 사용
+    // 정산 목적으로 예정시간 우선, 없으면 assignedTime, 그다음 실제시간 사용
     // 표준화된 parseTimeToString 사용
     const actualStartTimeString = parseTimeToString(workLog.actualStartTime);
     const scheduledStartTimeString = parseTimeToString(workLog.scheduledStartTime);
-    const startTimeString = scheduledStartTimeString || actualStartTimeString || '';
+    const startTimeString = scheduledStartTimeString || workLog.assignedTime || actualStartTimeString || '';
     
     // 퇴근시간은 예정시간(scheduledEndTime)만 사용
     const scheduledEndTimeString = parseTimeToString(workLog.scheduledEndTime);

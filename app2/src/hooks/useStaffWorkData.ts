@@ -282,11 +282,14 @@ export const useStaffWorkData = ({
         const roleWorkLogs = roleWorkLogsMap.get(role) || [];
         
         // 실제 유효한 WorkLog가 없으면 스킵
-        const validLogs = roleWorkLogs.filter(log => 
-          log.scheduledStartTime && log.scheduledEndTime &&
-          log.scheduledStartTime !== '미정' && log.scheduledEndTime !== '미정' &&
-          log.scheduledStartTime !== '' && log.scheduledEndTime !== ''
-        );
+        // assignedTime이 있으면 scheduledStartTime의 fallback으로 사용
+        const validLogs = roleWorkLogs.filter(log => {
+          const hasValidStartTime = (log.scheduledStartTime && log.scheduledStartTime !== '미정' && log.scheduledStartTime !== '') ||
+                                   (log.assignedTime && log.assignedTime !== '미정' && log.assignedTime !== '');
+          const hasValidEndTime = log.scheduledEndTime && log.scheduledEndTime !== '미정' && log.scheduledEndTime !== '';
+          
+          return hasValidStartTime && hasValidEndTime;
+        });
         
         if (validLogs.length === 0) {
           return; // 이 역할 스킵
@@ -296,9 +299,12 @@ export const useStaffWorkData = ({
         
         roleWorkLogs.forEach(log => {
           // "미정" 시간 필터링 - 실제 근무 시간이 있는 경우만 처리
-          if (!log.scheduledStartTime || !log.scheduledEndTime ||
-              log.scheduledStartTime === '미정' || log.scheduledEndTime === '미정' ||
-              log.scheduledStartTime === '' || log.scheduledEndTime === '') {
+          // assignedTime을 scheduledStartTime의 fallback으로 사용
+          const hasValidStartTime = (log.scheduledStartTime && log.scheduledStartTime !== '미정' && log.scheduledStartTime !== '') ||
+                                   (log.assignedTime && log.assignedTime !== '미정' && log.assignedTime !== '');
+          const hasValidEndTime = log.scheduledEndTime && log.scheduledEndTime !== '미정' && log.scheduledEndTime !== '';
+          
+          if (!hasValidStartTime || !hasValidEndTime) {
             return; // 스킵
           }
           
