@@ -147,6 +147,49 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
     );
   };
 
+  // 그룹(여러 날짜) 전체가 선택되었는지 확인
+  const isGroupSelected = (timeSlot: string, role: string, dates: string[]): boolean => {
+    return dates.every(date => 
+      selectedAssignments.some(selected => 
+        selected.timeSlot === timeSlot && 
+        selected.role === role && 
+        selected.date === date
+      )
+    );
+  };
+
+  // 그룹 일괄 선택/해제 처리
+  const handleGroupAssignmentChange = (
+    timeSlot: string, 
+    role: string, 
+    dates: string[], 
+    isChecked: boolean,
+    duration?: any
+  ) => {
+    dates.forEach(date => {
+      const assignment: Assignment = {
+        timeSlot,
+        role,
+        date,
+        ...(duration && { duration })
+      };
+      
+      // 이미 선택된 항목인지 확인
+      const isAlreadySelected = selectedAssignments.some(selected => 
+        selected.timeSlot === assignment.timeSlot && 
+        selected.role === assignment.role && 
+        selected.date === assignment.date
+      );
+      
+      // 체크 상태와 현재 선택 상태가 다른 경우에만 변경
+      if (isChecked && !isAlreadySelected) {
+        onAssignmentChange(assignment, true);
+      } else if (!isChecked && isAlreadySelected) {
+        onAssignmentChange(assignment, false);
+      }
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white h-[95vh] sm:h-[85vh] flex flex-col">
@@ -268,89 +311,91 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                 }
               }
               
-              // 다중 날짜인 경우 확장된 날짜별로 표시
+              // 다중 날짜인 경우 그룹화하여 표시
               if (expandedDates.length > 0) {
                 return (
                   <div key={dateIndex} className="mb-6">
-                    <div className="mb-2 p-3 bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg border border-blue-200">
+                    <div className="mb-3 p-3 bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg border border-blue-200">
                       <h4 className="text-sm font-semibold text-blue-800 mb-1">
-                        📅 {dateDisplay}
+                        📅 {dateDisplay} ({expandedDates.length}일간)
                       </h4>
                       <p className="text-xs text-blue-600">
-                        여러 날짜가 자동으로 선택되었습니다. 필요시 개별 날짜를 해제할 수 있습니다.
+                        한 번의 선택으로 모든 날짜에 지원할 수 있습니다.
                       </p>
                     </div>
                     <div className="pl-4 border-l-4 border-blue-300">
-                      {expandedDates.map((expandedDate, expandedIndex) => (
-                        <div key={`${dateIndex}-${expandedIndex}`} className="mb-3">
-                          <h5 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-                            <span className="bg-white px-2 py-1 rounded-md shadow-sm border border-gray-200">
-                              📆 {formatDateUtil(expandedDate)}
-                            </span>
-                          </h5>
-                          {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
-                          <div key={tsIndex} className="mb-3 pl-3 border-l-2 border-blue-300">
-                            <div className="text-xs font-medium text-gray-700 mb-1 flex items-center">
-                              ⏰ {ts.isTimeToBeAnnounced ? (
-                                <span className="text-orange-600">
-                                  미정
-                                  {ts.tentativeDescription && (
-                                    <span className="text-gray-600 font-normal ml-2">
-                                      ({ts.tentativeDescription})
-                                    </span>
-                                  )}
-                                </span>
-                              ) : (
-                                ts.time
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
-                                const assignment: Assignment = { 
-                                  timeSlot: ts.time, 
-                                  role: r.name, 
-                                  date: expandedDate,
-                                  ...(ts.duration && { duration: ts.duration })
-                                };
-                                const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
+                      {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
+                        <div key={tsIndex} className="mb-4">
+                          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            ⏰ {ts.isTimeToBeAnnounced ? (
+                              <span className="text-orange-600">
+                                미정
+                                {ts.tentativeDescription && (
+                                  <span className="text-gray-600 font-normal ml-2">
+                                    ({ts.tentativeDescription})
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              ts.time
+                            )}
+                          </div>
+                          <div className="space-y-2 pl-3">
+                            {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
+                              // 전체 날짜에 대한 확정 인원 계산
+                              const totalConfirmedCount = expandedDates.reduce((sum, date) => {
+                                const count = jobPosting.confirmedStaff?.filter(staff => 
                                   staff.timeSlot === ts.time && 
                                   staff.role === r.name && 
-                                  staff.date === expandedDate
+                                  staff.date === date
                                 ).length || 0;
-                                const isFull = confirmedCount >= r.count;
-                                const isSelected = isAssignmentSelected(assignment);
-                                
-                                return (
-                                  <label 
-                                    key={roleIndex} 
-                                    className={`flex items-center p-1.5 rounded cursor-pointer text-xs ${
-                                      isFull ? 'bg-gray-100 cursor-not-allowed' : 
-                                      isSelected ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
-                                    }`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      disabled={isFull}
-                                      onChange={(e) => onAssignmentChange(assignment, e.target.checked)}
-                                      className="h-3 w-3 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
-                                    />
-                                    <span className={`ml-2 ${
-                                      isFull ? 'text-gray-400' : 'text-gray-700'
-                                    }`}>
-                                      👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
-                                      <span className={`ml-1 ${
-                                        isFull ? 'text-red-500 font-medium' : 'text-gray-500'
-                                      }`}>
-                                        ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
-                                      </span>
+                                return sum + count;
+                              }, 0);
+                              
+                              const totalRequired = r.count * expandedDates.length;
+                              const isFull = totalConfirmedCount >= totalRequired;
+                              const isGroupChecked = isGroupSelected(ts.time, r.name, expandedDates);
+                              
+                              return (
+                                <label 
+                                  key={roleIndex} 
+                                  className={`flex items-center p-2 rounded cursor-pointer ${
+                                    isFull ? 'bg-gray-100 cursor-not-allowed' : 
+                                    isGroupChecked ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isGroupChecked}
+                                    disabled={isFull}
+                                    onChange={(e) => handleGroupAssignmentChange(
+                                      ts.time, 
+                                      r.name, 
+                                      expandedDates, 
+                                      e.target.checked,
+                                      ts.duration
+                                    )}
+                                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                                  />
+                                  <span className={`ml-3 ${
+                                    isFull ? 'text-gray-400' : 'text-gray-700'
+                                  }`}>
+                                    <span className="font-medium">
+                                      👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)}
                                     </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
+                                    <span className="text-sm text-blue-600 ml-2">
+                                      ({expandedDates.length}일 전체)
+                                    </span>
+                                    <span className={`ml-2 text-xs ${
+                                      isFull ? 'text-red-500 font-medium' : 'text-gray-500'
+                                    }`}>
+                                      {isFull ? '마감' : `${totalConfirmedCount}/${totalRequired}명`}
+                                    </span>
+                                  </span>
+                                </label>
+                              );
+                            })}
                           </div>
-                        ))}
                         </div>
                       ))}
                     </div>

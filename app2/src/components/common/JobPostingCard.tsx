@@ -294,7 +294,12 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
               
               let dateDisplay = formatDateUtil(dateReq.date);
+              let expandedDates: string[] = [];
+              
               if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+                const startDate = convertToDateString(dateReq.date);
+                const endDate = convertToDateString(firstTimeSlot.duration.endDate);
+                expandedDates = generateDateRange(startDate, endDate);
                 dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
               }
               
@@ -302,6 +307,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 <div key={dateIndex} className="">
                   <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                     📅 {dateDisplay}
+                    {expandedDates.length > 0 && (
+                      <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                        {expandedDates.length}일간
+                      </span>
+                    )}
                   </div>
                 <div className="space-y-2">
                   {(dateReq.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
@@ -309,14 +319,33 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                       {ts.isTimeToBeAnnounced ? (
                         <>
                           {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
-                            const dateString = timestampToLocalDateString(dateReq.date);
-                            const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                              post,
-                              dateString,
-                              ts.time,
-                              r.name
-                            );
-                            const isFull = confirmedCount >= r.count;
+                            // 다중일인 경우 모든 날짜의 확정 인원 합산
+                            let confirmedCount = 0;
+                            let totalRequired = r.count;
+                            
+                            if (expandedDates.length > 0) {
+                              // 다중일인 경우 각 날짜별 확정 인원 합산
+                              expandedDates.forEach(date => {
+                                confirmedCount += JobPostingUtils.getConfirmedStaffCount(
+                                  post,
+                                  date,
+                                  ts.time,
+                                  r.name
+                                );
+                              });
+                              totalRequired = r.count * expandedDates.length;
+                            } else {
+                              // 단일 날짜
+                              const dateString = timestampToLocalDateString(dateReq.date);
+                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                post,
+                                dateString,
+                                ts.time,
+                                r.name
+                              );
+                            }
+                            
+                            const isFull = confirmedCount >= totalRequired;
                             return (
                               <div key={roleIndex} className="text-sm text-gray-600">
                                 {roleIndex === 0 ? (
@@ -328,17 +357,19 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                       )}
                                     </span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
+                                      {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                        {isFull ? '(마감)' : `(${confirmedCount}/${r.count})`}
+                                        {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
                                       </span>
                                     </span>
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
+                                    {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                      {isFull ? '(마감)' : `(${confirmedCount}/${r.count})`}
+                                      {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
                                     </span>
                                   </div>
                                 )}
@@ -349,31 +380,52 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                       ) : (
                         <>
                           {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
-                            const dateString = timestampToLocalDateString(dateReq.date);
-                            const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                              post,
-                              dateString,
-                              ts.time,
-                              r.name
-                            );
-                            const isFull = confirmedCount >= r.count;
+                            // 다중일인 경우 모든 날짜의 확정 인원 합산
+                            let confirmedCount = 0;
+                            let totalRequired = r.count;
+                            
+                            if (expandedDates.length > 0) {
+                              // 다중일인 경우 각 날짜별 확정 인원 합산
+                              expandedDates.forEach(date => {
+                                confirmedCount += JobPostingUtils.getConfirmedStaffCount(
+                                  post,
+                                  date,
+                                  ts.time,
+                                  r.name
+                                );
+                              });
+                              totalRequired = r.count * expandedDates.length;
+                            } else {
+                              // 단일 날짜
+                              const dateString = timestampToLocalDateString(dateReq.date);
+                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                post,
+                                dateString,
+                                ts.time,
+                                r.name
+                              );
+                            }
+                            
+                            const isFull = confirmedCount >= totalRequired;
                             return (
                               <div key={roleIndex} className="text-sm text-gray-600">
                                 {roleIndex === 0 ? (
                                   <>
                                     <span className="font-medium text-gray-700">{ts.time}</span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
+                                      {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                        {isFull ? '(마감)' : `(${confirmedCount}/${r.count})`}
+                                        {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
                                       </span>
                                     </span>
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: 
+                                    {expandedDates.length > 0 ? `${r.count}명 x ${expandedDates.length}일` : `${r.count}명`}
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
-                                      {isFull ? '(마감)' : `(${confirmedCount}/${r.count})`}
+                                      {isFull ? '(마감)' : `(${confirmedCount}/${totalRequired})`}
                                     </span>
                                   </div>
                                 )}
