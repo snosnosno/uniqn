@@ -186,7 +186,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         </div>
       </div>
 
-      {/* 역할별 급여 설정 */}
+      {/* 급여 설정 */}
       <RoleSalarySettings
         roles={availableRoles}
         jobPosting={jobPosting}

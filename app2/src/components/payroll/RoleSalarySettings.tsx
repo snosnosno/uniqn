@@ -124,7 +124,7 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
         >
           <div className="flex items-center gap-2">
             <Cog6ToothIcon className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-medium text-gray-900">역할별 급여 설정</h3>
+            <h3 className="text-lg font-medium text-gray-900">급여 설정</h3>
             <span className="text-sm text-gray-500">
               ({roles.length}개 역할)
             </span>
@@ -152,7 +152,7 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
         </button>
       </div>
 
-      {/* 역할별 급여 설정 */}
+      {/* 급여 설정 */}
       {isExpanded && (
         <div className="p-6">
           <div className="space-y-6">
