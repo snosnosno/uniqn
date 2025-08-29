@@ -1,7 +1,7 @@
 # 📁 T-HOLDEM 프로젝트 구조
 
-**최종 업데이트**: 2025년 1월 29일 오후 8시  
-**프로젝트 버전**: 2.3.1 (모바일 여백 최적화 및 반응형 개선)
+**최종 업데이트**: 2025년 1월 30일  
+**프로젝트 버전**: 2.1.0
 
 ## 🏗️ 전체 디렉토리 구조
 
@@ -11,10 +11,10 @@ T-HOLDEM/
 ├── 📚 docs/                        # 프로젝트 문서
 ├── ⚙️ scripts/                     # 유틸리티 스크립트
 ├── 🔥 functions/                   # Firebase Functions
-├── 🦐 SHRIMP/                      # 태스크 관리 시스템
-├── 🤖 claude_set/                  # Claude Code 설정
-├── 💾 backup/                      # 데이터 백업
-└── 📝 설정 파일들                   # 프로젝트 설정
+├── 📝 설정 파일들                   # 프로젝트 설정
+├── 📄 README.md                    # 프로젝트 소개
+├── 📄 CLAUDE.md                    # 개발 가이드
+└── 📄 CHANGELOG.md                 # 변경 이력
 
 ```
 
@@ -29,13 +29,14 @@ app2/src/
 │   │   ├── Badge.tsx               # 배지 컴포넌트
 │   │   ├── Button.tsx              # 버튼 컴포넌트
 │   │   ├── Card.tsx                # 카드 컴포넌트
-│   │   └── Input.tsx               # 입력 컴포넌트
+│   │   ├── Input.tsx               # 입력 컴포넌트
+│   │   └── JobPostingCardNew.tsx   # 구인공고 카드
 │   │
-│   ├── staff/                      # 스태프 관련 모듈화 컴포넌트 ✨
-│   │   ├── StaffCardHeader.tsx     # 스태프 헤더 (66줄)
-│   │   ├── StaffCardTimeSection.tsx # 시간 관리 (63줄)
-│   │   ├── StaffCardActions.tsx    # 액션 메뉴 (133줄)
-│   │   └── StaffCardContactInfo.tsx # 연락처 정보 (78줄)
+│   ├── staff/                      # 스태프 관련 모듈화 컴포넌트
+│   │   ├── StaffCardHeader.tsx     # 스태프 헤더
+│   │   ├── StaffCardTimeSection.tsx # 시간 관리
+│   │   ├── StaffCardActions.tsx    # 액션 메뉴
+│   │   └── StaffCardContactInfo.tsx # 연락처 정보
 │   │
 │   ├── payroll/                    # 급여 관련 컴포넌트 ✨
 │   │   ├── AllowanceEditModal.tsx  # 수당 편집 모달
@@ -74,7 +75,8 @@ app2/src/
 ├── 🎣 hooks/                        # 커스텀 훅
 │   ├── useStaffManagement.ts       # 스태프 관리
 │   ├── useAttendanceStatus.ts      # 출석 상태
-│   ├── useEnhancedPayroll.ts       # 정산 관리 ✨
+│   ├── useUnifiedWorkLogs.ts       # 통합 WorkLog 관리
+│   ├── useEnhancedPayroll.ts       # 정산 관리
 │   ├── useJobPostings.ts           # 구인공고
 │   └── usePermissions.ts           # 권한 관리
 │
@@ -88,8 +90,8 @@ app2/src/
 ├── 🛠️ utils/                        # 유틸리티 함수
 │   ├── logger.ts                   # 구조화된 로깅 시스템
 │   ├── performanceMonitor.ts       # 성능 모니터링
-│   ├── dateUtils.ts                # 날짜 처리
-│   ├── workLogUtils.ts             # 작업 로그 유틸리티 ✨
+│   ├── dateUtils.ts                # 날짜 처리 (한글 형식)
+│   ├── workLogUtils.ts             # 작업 로그 유틸리티
 │   ├── firebaseConnectionManager.ts # Firebase 연결 관리
 │   └── security/                   # 보안 관련
 │       ├── csrf.ts                 # CSRF 토큰
@@ -125,17 +127,16 @@ app2/
 
 ```
 docs/
-├── README.md                       # 문서 가이드
-├── TECHNICAL_DOCUMENTATION.md      # 통합 기술 문서
-├── PROJECT_STATUS_2025_01_17.md   # 프로젝트 현황
+├── README.md                       # 문서 인덱스
+├── PRODUCT_SPEC.md                 # 통합 제품 사양
 ├── PROJECT_STRUCTURE.md           # 프로젝트 구조 (현재 문서)
-├── T-HOLDEM_기능명세서.md         # 기능 명세서
-├── T-HOLDEM_워크플로우.md         # 운영 워크플로우
-├── T-HOLDEM_PRD.md                # 제품 요구사항 문서
-├── CLAUDE_SUBAGENTS_GUIDE.md      # Claude Code 가이드
+├── FIREBASE_DATA_FLOW.md           # 데이터베이스 구조
+├── TECHNICAL_DOCUMENTATION.md      # 기술 문서
+├── DEPLOYMENT.md                   # 배포 가이드 ✨
+├── TESTING_GUIDE.md                # 테스트 가이드 ✨
+├── API_DOCUMENTATION.md            # API 문서 ✨
 └── archive/                        # 아카이브된 문서
-    ├── 2025-01/                    # 2025년 1월 문서
-    └── app2-docs/                  # app2에서 이관된 문서
+    └── 2025-01/                    # 완료된 문서
 ```
 
 ## 🔥 Firebase 구조
@@ -165,32 +166,17 @@ functions/
 └── tsconfig.json                   # TypeScript 설정
 ```
 
-## 🦐 SHRIMP 태스크 관리
+## 🧪 테스트 구조
 
 ```
-SHRIMP/
-├── index.ts                        # 메인 진입점
-├── tasks.json                      # 태스크 데이터
-├── generators/                     # 태스크 생성기
-│   ├── planTask.ts
-│   ├── executeTask.ts
-│   └── analyzeTask.ts
-├── templates_en/                   # 영어 템플릿
-└── memory/                         # 태스크 메모리
-```
-
-## 🤖 Claude 설정
-
-```
-claude_set/
-├── SuperClaude/                    # SuperClaude 프레임워크
-│   └── Core/                       # 핵심 설정
-│       ├── CLAUDE.md
-│       ├── COMMANDS.md
-│       └── FLAGS.md
-└── claudia/                        # Claudia UI
-    ├── src/                        # 소스 코드
-    └── cc_agents/                  # Claude Code 에이전트
+app2/src/
+├── __tests__/                      # 테스트 파일
+│   └── setup/
+│       └── test-utils.tsx          # 테스트 유틸리티
+├── components/__tests__/           # 컴포넌트 테스트
+├── hooks/__tests__/                # 훅 테스트
+├── pages/__tests__/                # 페이지 테스트
+└── setupTests.ts                   # 테스트 설정
 ```
 
 ## ⚙️ 스크립트
@@ -198,10 +184,11 @@ claude_set/
 ```
 scripts/
 ├── firebase-migration/             # Firebase 마이그레이션
-│   ├── backup-firestore.ts        # Firestore 백업
-│   ├── migrate-fields.ts          # 필드 마이그레이션
-│   └── restore-firestore.ts       # Firestore 복원
-└── migrateUserRole.js             # 사용자 역할 마이그레이션
+│   ├── README.md                   # 마이그레이션 가이드
+│   ├── backup-firestore-admin.ts   # Admin SDK 백업
+│   ├── migrate-fields-admin.ts     # 필드 마이그레이션
+│   └── restore-firestore.ts        # Firestore 복원
+└── archive/                        # 완료된 스크립트 보관
 ```
 
 ## 📊 주요 기술 스택
@@ -218,22 +205,21 @@ scripts/
 | **Testing** | Jest | 29.x | 테스트 프레임워크 |
 | **Monitoring** | Sentry | 8.x | 에러 추적 |
 
-## 🚀 최근 변경사항 (2025-01-29)
+## 🚀 최근 변경사항 (2025-01-30)
 
 ### ✅ 완료된 작업
-- **레거시 필드 100% 제거** 🎉: 
-  - 모든 `dealerId` → `staffId` 마이그레이션 완료
-  - 모든 `checkInTime/checkOutTime` → `actualStartTime/actualEndTime` 표준화
-  - 모든 `dealerName` → `staffName` 변환 완료
-  - `jobPostingId` → `eventId` 통일
-  - **하위 호환성 코드 완전 제거** (fallback, deprecated 모두 삭제)
-- **타입 안전성 완벽 달성**: TypeScript 컴파일 에러 0개
-- **코드베이스 정리**: 
-  - 15개 이상 파일에서 레거시 코드 제거
-  - 약 100줄의 불필요한 하위 호환성 코드 삭제
-  - `shiftValidation.ts`, `workLogUtils.ts` 등 핵심 유틸리티 정리
-- **빌드 시스템**: Production 빌드 완벽 성공
-- **성능 유지**: 번들 크기 273KB (레거시 제거 후에도 안정적)
+- **문서 구조 정리**: 
+  - 새 문서 생성: DEPLOYMENT.md, TESTING_GUIDE.md, API_DOCUMENTATION.md
+  - 완료된 문서 아카이브로 이동
+  - scripts 폴더 정리 및 불필요한 파일 제거
+- **UI/UX 개선**:
+  - 스태프 프로필 모달 기능 추가
+  - 헤더에 출석체크 버튼 추가
+  - 날짜별 그룹화 기본 설정 (플랫 리스트 제거)
+- **코드 최적화**:
+  - 172줄의 불필요한 플랫 리스트 코드 제거
+  - 레거시 필드 100% 제거 완료
+  - TypeScript 에러 0개 유지
 
 ### 🔄 데이터 흐름
 1. **Firebase Firestore** → 실시간 데이터

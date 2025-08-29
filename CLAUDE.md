@@ -2,6 +2,7 @@
 
 이 파일은 Claude Code (claude.ai/code)가 이 저장소의 코드 작업 시 참고하는 가이드입니다.
 ****항상 한글로 답변할 것****
+
 ## 📌 프로젝트 개요
 
 **T-HOLDEM**은 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼입니다.
@@ -31,40 +32,33 @@
 ## 🚀 최근 업데이트 (2025-01-29)
 
 ### ✅ 완료된 작업
-- **모바일 여백 최적화** 📱 (NEW)
-  - Tailwind container 설정으로 반응형 패딩 적용
-  - 모바일: 12px, 태블릿: 16-24px, 데스크톱: 32-48px
-  - 모든 페이지와 컴포넌트에 반응형 여백 적용
-  - 콘텐츠 영역 15-20% 확대로 가독성 개선
-  
+- **스태프 관리 탭 개선** 📋
+  - 날짜별 그룹화를 기본으로 설정
+  - 체크박스 UI 제거로 인터페이스 단순화
+  - 플랫 리스트 렌더링 코드 제거 (172줄 감소)
+  - 각 날짜 그룹별 선택/해제 기능 유지
+
+- **UI/UX 개선** 🎨
+  - 스태프 이름 클릭 시 프로필 모달 표시
+  - 헤더에 출석체크 버튼 추가
+  - 지원자탭 이름 클릭 시 스태프 프로필 모달 표시
+  - 정산 UI 개선 및 불필요한 기능 제거
+  - 급여 설정 제목 간소화
+
 - **날짜 형식 표준화** 🗓️
   - 모든 날짜 표시를 "8월 25일 (월)" 한글 형식으로 통일
   - 년도 제거하여 간결한 표시
-  - 날짜 범위도 동일 형식 적용
-  
-- **구인공고 폼 개선** 📝
-  - 식사 복리후생 체크 시 "제공" 자동 입력
-  - 역할 인원 수 입력 버그 수정 (숫자 연결 문제 해결)
-  - 설명 필드 플레이스홀더 추가 및 최적화
-  - 잠정 시간 설명 플레이스홀더 개선
-  
-- **관리자 페이지 UI 개선** 🎨
-  - 관리/수정/삭제 버튼 카드 하단으로 이동
-  - 버튼 크기 반응형 최적화
-  - 카드 너비에 맞춰 균등 배치
   
 - **레거시 필드 완전 제거** ✨
   - 모든 `dealerId` → `staffId` 마이그레이션 완료
   - 모든 `jobPostingId` → `eventId` 변환 완료
-  - 모든 `dealerName` → `staffName` 교체 완료
-  - `checkInTime`/`checkOutTime` → `actualStartTime`/`actualEndTime` 표준화
-  - **하위 호환성 코드 완전 제거** (백업 필드, fallback 로직 모두 삭제)
+  - 하위 호환성 코드 완전 제거
 
 ### 📊 현재 상태
 - **빌드**: ✅ 성공 (경고만 있음)
 - **TypeScript**: ✅ 에러 0개 (완벽한 타입 안전성)
 - **ESLint**: 경고 약 40개 (주로 React Hook 의존성)
-- **번들 크기**: 273.66KB (최적화됨)
+- **번들 크기**: 273.05KB (최적화됨)
 - **레거시 코드**: 0개 (100% 제거 완료)
 
 ## 📁 프로젝트 구조
@@ -182,8 +176,14 @@ npm run test           # 테스트 실행
 
 - [Firebase 데이터 구조](docs/FIREBASE_DATA_FLOW.md)
 - [프로젝트 구조](docs/PROJECT_STRUCTURE.md)
-- [기능 명세서](docs/T-HOLDEM_기능명세서.md)
+- [기술 문서](docs/TECHNICAL_DOCUMENTATION.md)
+- [제품 사양서](docs/PRODUCT_SPEC.md)
 
 ---
 
-*마지막 업데이트: 2025년 1월 29일 오후 7시*
+*마지막 업데이트: 2025년 1월 29일 오후 11시 30분*
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

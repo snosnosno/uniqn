@@ -82,11 +82,23 @@ __pycache__/
 /SHRIMP/templates_zh/*
 
 # Firebase service account key
-# IMPORTANT: This file should not be committed to Git.
-/scripts/t-holdem-firebase-adminsdk-v4p2h-17b0754402.json
+# IMPORTANT: These files should NEVER be committed to Git.
 firebase-service-account.json
+serviceAccountKey.json
+serviceAccountKey*.json
 *-service-account.json
+*-service-account-*.json
+*-adminsdk-*.json
 /scripts/*-service-account.json
+/scripts/*-adminsdk-*.json
+
+# Security certificates and keys
+*.key
+*.pem
+*.cert
+*.crt
+*.p12
+*.pfx
 
 # Windows-specific files
 nul
