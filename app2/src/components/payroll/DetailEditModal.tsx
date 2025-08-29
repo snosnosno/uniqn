@@ -3,15 +3,16 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { EnhancedPayrollCalculation, AllowanceType } from '../../types/payroll';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
-import { useUnifiedWorkLogs } from '../../hooks/useUnifiedWorkLogs';
-import { useJobPostingStore } from '../../stores/jobPostingStore';
 import { calculateWorkHours, parseTimeToString } from '../../utils/workLogMapper';
 import { getStaffIdentifier, matchStaffIdentifier } from '../../utils/staffIdMapper';
+
+import { UnifiedWorkLog } from '../../types/unified/workLog';
 
 interface DetailEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   staff: EnhancedPayrollCalculation | null;
+  workLogs: UnifiedWorkLog[];  // props로 workLogs 받기
   onSave: (staff: EnhancedPayrollCalculation, allowances: EnhancedPayrollCalculation['allowances']) => void;
 }
 
@@ -19,6 +20,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   isOpen,
   onClose,
   staff,
+  workLogs,  // props로 받은 workLogs 사용
   onSave
 }) => {
   const [allowances, setAllowances] = useState({
@@ -33,13 +35,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   // 탭 상태 관리
   const [activeTab, setActiveTab] = useState<'basic' | 'work' | 'calculation'>('basic');
 
-  // 실시간 WorkLog 데이터 조회
-  const { eventId } = useJobPostingStore();
-  const { workLogs: realTimeWorkLogs } = useUnifiedWorkLogs({ 
-    filter: { eventId: eventId || '' },
-    realtime: true,
-    autoNormalize: true
-  });
+  // props로 받은 workLogs를 사용 (중복 구독 방지)
+  const realTimeWorkLogs = workLogs;
 
   // 탭 정의
   const tabs = [

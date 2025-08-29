@@ -27,6 +27,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   // 통합 훅 사용 - 모든 데이터와 로직이 여기에 통합됨
   const {
     staffWorkData,
+    workLogs,
     summary,
     loading,
     error,
@@ -364,6 +365,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
           isOpen={isEditModalOpen}
           onClose={closeEditModal}
           staff={editingStaff}
+          workLogs={workLogs}  // workLogs를 props로 전달
           onSave={handleSaveAllowances}
         />
       )}

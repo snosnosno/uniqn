@@ -56,11 +56,28 @@ export const useStaffWorkData = ({
   endDate
 }: UseStaffWorkDataProps = {}): UseStaffWorkDataReturn => {
   
-  // Context에서 데이터 가져오기
-  const { jobPosting, workLogs: contextWorkLogs } = useJobPostingContext();
-  const confirmedStaff = jobPosting?.confirmedStaff || [];
+  // Context에서 데이터 가져오기 (Context가 없는 환경 체크)
+  let contextWorkLogs: UnifiedWorkLog[] | undefined;
+  let contextLoading = false;
+  let jobPosting: any = null;
+  let confirmedStaff: any[] = [];
   
-  // 실시간 WorkLogs 구독 (Context의 workLogs가 없으면 직접 구독)
+  try {
+    const context = useJobPostingContext();
+    jobPosting = context.jobPosting;
+    contextWorkLogs = context.workLogs;
+    contextLoading = context.workLogsLoading;
+    confirmedStaff = jobPosting?.confirmedStaff || [];
+  } catch (error) {
+    // Context가 없는 환경 (Provider 밖에서 사용)
+    logger.debug('JobPostingContext not available, will use direct subscription', { component: 'useStaffWorkData' });
+  }
+  
+  // Context가 사용 가능하고 로딩이 완료되면 구독을 건너뜀 (빈 배열이어도)
+  const hasContext = contextWorkLogs !== undefined;
+  const shouldSkipSubscription = Boolean(hasContext && !contextLoading);
+  
+  // 실시간 WorkLogs 구독 (Context에 데이터가 없을 때만)
   const { 
     workLogs: directWorkLogs, 
     loading: workLogsLoading, 
@@ -68,11 +85,12 @@ export const useStaffWorkData = ({
   } = useUnifiedWorkLogs({
     filter: { eventId: eventId || jobPosting?.id },
     realtime: true,
-    autoNormalize: true
+    autoNormalize: true,
+    skipSubscription: shouldSkipSubscription // Context에 데이터가 있으면 구독 건너뜀
   });
   
-  // WorkLogs 선택 (Context 우선, 없으면 직접 구독)
-  const workLogs = contextWorkLogs?.length > 0 ? contextWorkLogs : directWorkLogs;
+  // WorkLogs 선택 (Context가 있으면 무조건 Context 사용, 없으면 직접 구독)
+  const workLogs = hasContext ? (contextWorkLogs || []) : directWorkLogs;
   
   // 상태 관리
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);

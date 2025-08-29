@@ -36,6 +36,7 @@ interface UseUnifiedWorkLogsOptions {
   limit?: number;
   realtime?: boolean;
   autoNormalize?: boolean;
+  skipSubscription?: boolean; // 구독을 완전히 건너뛸지 여부
 }
 
 interface UseUnifiedWorkLogsReturn {
@@ -75,7 +76,8 @@ export function useUnifiedWorkLogs(
     sort: initialSort = { field: '', direction: 'desc' }, // 기본 정렬 비활성화
     limit: queryLimit = 1000,
     realtime = true,
-    autoNormalize = true
+    autoNormalize = true,
+    skipSubscription = false // 구독을 완전히 건너뛸지 여부
   } = options;
   
   const [workLogs, setWorkLogs] = useState<UnifiedWorkLog[]>([]);
@@ -86,7 +88,12 @@ export function useUnifiedWorkLogs(
   
   // 데이터 조회 및 구독
   useEffect(() => {
-    if (!realtime) return undefined;
+    // skipSubscription이 true면 구독하지 않음
+    if (!realtime || skipSubscription) {
+      setLoading(false);
+      setWorkLogs([]);
+      return undefined;
+    }
     
     // 이전 구독 정리
     if (unsubscribeRef.current) {
@@ -209,7 +216,7 @@ export function useUnifiedWorkLogs(
       setLoading(false);
       return undefined; // 명시적 반환
     }
-  }, [filter.eventId, filter.staffId, filter.date, filter.dateFrom, filter.dateTo, filter.status, realtime, autoNormalize, initialSort.field, initialSort.direction, queryLimit]);
+  }, [filter.eventId, filter.staffId, filter.date, filter.dateFrom, filter.dateTo, filter.status, realtime, autoNormalize, initialSort.field, initialSort.direction, queryLimit, skipSubscription]);
   
   // WorkLog 생성
   const createWorkLog = useCallback(async (input: WorkLogCreateInput): Promise<string> => {
