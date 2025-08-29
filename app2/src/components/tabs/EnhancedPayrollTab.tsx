@@ -7,7 +7,6 @@ import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
 import DetailEditModal from '../payroll/DetailEditModal';
 import RoleSalarySettings from '../payroll/RoleSalarySettings';
-import BulkSalaryEditModal from '../payroll/BulkSalaryEditModal';
 import { EnhancedPayrollCalculation } from '../../types/payroll';
 
 interface EnhancedPayrollTabProps {
@@ -20,7 +19,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isBulkSalaryModalOpen, setIsBulkSalaryModalOpen] = useState(false);
 
   // 통합 훅 사용 - 모든 데이터와 로직이 여기에 통합됨
   const {
@@ -99,25 +97,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     closeEditModal();
   }, [updateStaffAllowances, closeEditModal]);
 
-  // 일괄 급여 수정 핸들러
-  const handleBulkSalaryEdit = useCallback((updates: any) => {
-    logger.debug('EnhancedPayrollTab - 일괄 급여 수정', {
-      component: 'EnhancedPayrollTab',
-      data: updates
-    });
-    
-    // 역할별 급여 설정 업데이트
-    const roleSalaryConfig: any = {};
-    if (updates.role && updates.salaryType && updates.salaryAmount) {
-      roleSalaryConfig[updates.role] = {
-        salaryType: updates.salaryType,
-        salaryAmount: updates.salaryAmount
-      };
-      updateRoleSalarySettings(roleSalaryConfig);
-    }
-    
-    setIsBulkSalaryModalOpen(false);
-  }, [updateRoleSalarySettings]);
 
   // 확정된 스태프가 없는 경우
   if (!jobPosting?.confirmedStaff || jobPosting.confirmedStaff.length === 0) {
@@ -194,7 +173,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         className="mb-6"
       />
 
-      {/* 일괄 수당 적용 패널 */}
+      {/* 추가 수당 설정 */}
       <BulkAllowancePanel
         availableRoles={availableRoles}
         onApply={applyBulkAllowances}
@@ -212,14 +191,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
             >
               {selectedStaffIds.length === staffWorkData.length ? '전체 해제' : '전체 선택'}
             </button>
-            {selectedStaffIds.length > 0 && (
-              <button
-                onClick={() => setIsBulkSalaryModalOpen(true)}
-                className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-              >
-                선택 항목 급여 수정
-              </button>
-            )}
           </div>
         </div>
 
@@ -335,24 +306,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         />
       )}
 
-      {/* 일괄 급여 편집 모달 */}
-      {isBulkSalaryModalOpen && (
-        <BulkSalaryEditModal
-          isOpen={isBulkSalaryModalOpen}
-          onClose={() => setIsBulkSalaryModalOpen(false)}
-          availableRoles={availableRoles}
-          selectedStaff={staffWorkData.filter(data => selectedStaffIds.includes((data as any).uniqueKey))}
-          onApply={async (update) => {
-            handleBulkSalaryEdit(update);
-            return { 
-              affectedStaff: [],
-              totalAmountDifference: 0,
-              successCount: selectedStaffIds.length,
-              failCount: 0
-            };
-          }}
-        />
-      )}
     </div>
   );
 };

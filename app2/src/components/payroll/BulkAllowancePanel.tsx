@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { BulkAllowanceSettings, AllowanceType } from '../../types/payroll';
 
 interface BulkAllowancePanelProps {
@@ -92,28 +91,37 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
   return (
     <div className="bg-white rounded-lg shadow">
       {/* 헤더 (클릭 가능) */}
-      <div 
-        className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">💰 수당 일괄 적용</h3>
-          {getTotalAllowances() > 0 && (
-            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full">
-              {getTotalAllowances().toLocaleString()}원
-            </span>
-          )}
-        </div>
-        {isExpanded ? (
-          <ChevronUpIcon className="h-5 w-5 text-gray-400" />
-        ) : (
-          <ChevronDownIcon className="h-5 w-5 text-gray-400" />
-        )}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-medium text-gray-900">💰 추가 수당 설정</h3>
+            {getTotalAllowances() > 0 && (
+              <span className="text-sm text-gray-500">
+                ({getTotalAllowances().toLocaleString()}원)
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <svg
+              className={`w-5 h-5 transform transition-transform ${
+                isExpanded ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
       </div>
 
       {/* 내용 (접기/펼치기) */}
       {isExpanded && (
-        <div className="px-6 pb-6 border-t border-gray-200">
+        <div className="p-6">
           {/* 적용 대상 선택 */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">적용 대상</label>
@@ -126,7 +134,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            전체 스태프
+            전체
           </button>
           <button
             onClick={() => setApplyTo('selected')}
@@ -137,7 +145,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
-            선택된 스태프 ({selectedStaffCount}명)
+            선택 ({selectedStaffCount}명)
           </button>
           <button
             onClick={() => setApplyTo('byRole')}
