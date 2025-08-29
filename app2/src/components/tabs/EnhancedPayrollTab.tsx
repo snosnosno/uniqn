@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting } from '../../types/jobPosting';
 import { useStaffWorkData } from '../../hooks/useStaffWorkData';
-import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
@@ -17,7 +16,6 @@ interface EnhancedPayrollTabProps {
 
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) => {
   const { i18n } = useTranslation();
-  const { refreshStaff, refreshWorkLogs } = useJobPostingContext();
   
   // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
@@ -121,30 +119,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
     setIsBulkSalaryModalOpen(false);
   }, [updateRoleSalarySettings]);
 
-  // 자동 불러오기 핸들러
-  const handleRefresh = useCallback(() => {
-    logger.info('정산 데이터 새로고침 시작', { component: 'EnhancedPayrollTab' });
-    
-    // 디버그: 현재 데이터 상태 확인
-    logger.info('📊 현재 정산 데이터 상태', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        jobPostingId: jobPosting?.id,
-        confirmedStaffCount: jobPosting?.confirmedStaff?.length || 0,
-        staffWorkDataCount: staffWorkData.length,
-        availableRoles,
-        summary
-      }
-    });
-    
-    refreshStaff();
-    refreshWorkLogs();
-    // 추가 동기화를 위한 재호출
-    setTimeout(() => {
-      refreshWorkLogs();
-    }, 500);
-  }, [refreshStaff, refreshWorkLogs, jobPosting, staffWorkData, availableRoles, summary]);
-
   // 확정된 스태프가 없는 경우
   if (!jobPosting?.confirmedStaff || jobPosting.confirmedStaff.length === 0) {
     return (
@@ -188,21 +162,13 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
       {/* 헤더 */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-900">정산 관리</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={handleRefresh}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            자동 불러오기
-          </button>
-          <button
-            onClick={exportToCSV}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            disabled={staffWorkData.length === 0}
-          >
-            CSV 내보내기
-          </button>
-        </div>
+        <button
+          onClick={exportToCSV}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          disabled={staffWorkData.length === 0}
+        >
+          CSV 내보내기
+        </button>
       </div>
 
       {/* 요약 카드 */}
