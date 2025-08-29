@@ -40,9 +40,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
   // 탭 정의
   const tabs = [
-    { id: 'basic' as const, name: '기본정보', icon: '👤' },
-    { id: 'work' as const, name: '근무내역', icon: '🕐' },
-    { id: 'calculation' as const, name: '급여계산', icon: '💰' }
+    { id: 'basic' as const, name: '정보', icon: '👤' },
+    { id: 'work' as const, name: '근무', icon: '🕐' },
+    { id: 'calculation' as const, name: '급여', icon: '💰' }
   ];
 
   // staff 데이터가 변경될 때 allowances 초기화
