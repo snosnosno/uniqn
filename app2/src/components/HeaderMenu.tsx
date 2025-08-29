@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { 
     FaTachometerAlt, FaUsers, FaTable, FaClock, 
-    FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList, FaQrcode,
+    FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList,
     FaSignOutAlt, FaUserCheck, FaCalendarAlt
 } from './Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -174,7 +174,6 @@ export const HeaderMenu: React.FC = () => {
               <NavItem to="/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/attendance" label={t('nav.attendance', 'Attendance')} Icon={FaQrcode} isOpen={true} onNavigate={closeMenu} />
               
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
               {!authLoading && currentUser && (

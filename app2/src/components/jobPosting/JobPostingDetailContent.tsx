@@ -8,13 +8,14 @@ import { timestampToLocalDateString } from '../../utils/dateUtils';
 
 interface JobPostingDetailContentProps {
   jobPosting: JobPosting;
+  hideTitle?: boolean; // 제목과 뱃지를 숨길지 여부
 }
 
 /**
  * 구인공고 상세 정보 컨텐츠 컴포넌트
  * JobDetailModal과 JobPostingDetailPage에서 공통으로 사용
  */
-const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPosting }) => {
+const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPosting, hideTitle = false }) => {
   const { t } = useTranslation();
 
   // 날짜 변환 처리
@@ -68,16 +69,27 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
     <div className="space-y-6">
       {/* 기본 정보 */}
       <div className="border-b pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{jobPosting.title}</h3>
-          <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-            jobPosting.recruitmentType === 'fixed' 
-              ? 'bg-purple-100 text-purple-800' 
-              : 'bg-blue-100 text-blue-800'
-          }`}>
-            {jobPosting.recruitmentType === 'fixed' ? '고정' : '지원'}
-          </span>
-        </div>
+        {/* 제목과 뱃지 - hideTitle이 false일 때만 표시 */}
+        {!hideTitle && (
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">{jobPosting.title}</h3>
+            <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+              jobPosting.recruitmentType === 'fixed' 
+                ? 'bg-purple-100 text-purple-800' 
+                : 'bg-blue-100 text-blue-800'
+            }`}>
+              {jobPosting.recruitmentType === 'fixed' ? '고정' : '지원'}
+            </span>
+          </div>
+        )}
+        
+        {/* 상세 설명 - 제목 바로 아래로 이동 */}
+        {jobPosting.description && (
+          <div className={hideTitle ? "pb-4 border-b" : "mb-4 pb-4 border-b"}>
+            <h4 className="font-semibold mb-2">📝 상세 설명</h4>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{jobPosting.description}</p>
+          </div>
+        )}
         
         <div className="space-y-2 text-sm">
           <p className="flex items-center">
@@ -116,33 +128,21 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
       {jobPosting.useRoleSalary && jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0 && (
         <div className="border-b pb-4">
           <h4 className="font-semibold mb-3">💰 역할별 급여</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left pb-2 font-medium text-gray-700">역할</th>
-                  <th className="text-left pb-2 font-medium text-gray-700">급여 유형</th>
-                  <th className="text-left pb-2 font-medium text-gray-700">급여 금액</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(jobPosting.roleSalaries).map(([role, salary]) => (
-                  <tr key={role} className="border-b border-gray-100">
-                    <td className="py-2">
-                      {role === 'other' && salary.customRoleName 
-                        ? salary.customRoleName 
-                        : getRoleDisplayName(role)}
-                    </td>
-                    <td className="py-2">{getSalaryTypeDisplayName(salary.salaryType)}</td>
-                    <td className="py-2">
-                      {salary.salaryType === 'negotiable' 
-                        ? '협의' 
-                        : `${salary.salaryAmount?.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}원`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2 text-sm">
+            {Object.entries(jobPosting.roleSalaries).map(([role, salary]) => (
+              <div key={role} className="flex items-center">
+                <span className="font-medium min-w-[80px]">
+                  {role === 'other' && salary.customRoleName 
+                    ? salary.customRoleName 
+                    : getRoleDisplayName(role)}:
+                </span>
+                <span className="ml-2">
+                  {salary.salaryType === 'negotiable' 
+                    ? '협의' 
+                    : formatSalaryDisplay(salary.salaryType, salary.salaryAmount)}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -239,13 +239,6 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         )}
       </div>
 
-      {/* 설명 */}
-      {jobPosting.description && (
-        <div className="border-b pb-4">
-          <h4 className="font-semibold mb-3">📝 상세 설명</h4>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{jobPosting.description}</p>
-        </div>
-      )}
 
       {/* 사전질문 */}
       {jobPosting.preQuestions && jobPosting.preQuestions.length > 0 && (

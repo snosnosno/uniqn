@@ -1,11 +1,19 @@
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { FaQrcode } from './Icons/ReactIconsReplacement';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 import HeaderMenu from './HeaderMenu';
 
 export const Layout = memo(() => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const handleAttendanceClick = () => {
+    navigate('/attendance');
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800 font-sans">
@@ -18,8 +26,24 @@ export const Layout = memo(() => {
             <span className="ml-2 text-sm text-gray-500 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
           </div>
           
-          {/* 헤더 메뉴 */}
-          <HeaderMenu />
+          {/* 헤더 버튼들 */}
+          <div className="flex items-center gap-2">
+            {/* 출석체크 버튼 */}
+            <button
+              onClick={handleAttendanceClick}
+              className={`flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-100 text-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                isMobile ? 'p-3 w-12 h-12' : 'p-2 w-10 h-10'
+              }`}
+              aria-label={t('nav.attendance', 'Attendance')}
+              title={t('nav.attendance', 'Attendance')}
+              style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
+            >
+              <FaQrcode className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
+            </button>
+            
+            {/* 헤더 메뉴 */}
+            <HeaderMenu />
+          </div>
         </div>
       </header>
 
