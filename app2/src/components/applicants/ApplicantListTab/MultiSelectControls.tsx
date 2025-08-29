@@ -46,7 +46,12 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     
     // duration 정보로 분류
     allSelections.forEach((selection: any) => {
-      if (selection.duration?.type === 'multi' && selection.duration?.endDate) {
+      // duration이 있고 type이 'multi'인 경우만 다중일로 분류
+      // endDate가 startDate와 다른 경우만 진짜 다중일
+      if (selection.duration && 
+          selection.duration.type === 'multi' && 
+          selection.duration.endDate &&
+          selection.date !== convertDateToString(selection.duration.endDate)) {
         multiDaySelections.push(selection);
       } else {
         singleDaySelections.push(selection);
@@ -56,19 +61,46 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     // 다중일 그룹 처리
     const multiGroups = groupMultiDaySelections(multiDaySelections);
     
-    // 다중일 그룹에 포함된 모든 날짜를 수집
-    const multiDayDates = new Set<string>();
+    // 다중일 그룹에 포함된 모든 날짜-시간-역할 조합을 수집
+    const multiDayKeys = new Set<string>();
     multiDaySelections.forEach((selection: any) => {
       if (selection.duration?.type === 'multi' && selection.duration?.endDate) {
         const dates = generateDateRange(selection.date, convertDateToString(selection.duration.endDate));
-        dates.forEach(date => multiDayDates.add(date));
+        dates.forEach(date => {
+          // 날짜-시간-역할 조합으로 고유 키 생성
+          const key = `${date}_${selection.time}_${selection.role}`;
+          multiDayKeys.add(key);
+        });
       }
     });
     
-    // 단일날짜 선택사항에서 다중일에 이미 포함된 날짜 제외
+    // 디버깅 로그
+    logger.debug('🔍 MultiSelectControls 데이터 분석:', {
+      component: 'MultiSelectControls',
+      data: {
+        allSelectionsCount: allSelections.length,
+        multiDaySelectionsCount: multiDaySelections.length,
+        singleDaySelectionsBeforeFilter: singleDaySelections.length,
+        multiDayKeys: Array.from(multiDayKeys),
+        singleDayDetails: singleDaySelections.map((s: any) => ({
+          date: s.date,
+          time: s.time,
+          role: s.role,
+          key: `${s.date}_${s.time}_${s.role}`
+        }))
+      }
+    });
+    
+    // 단일날짜 선택사항에서 다중일에 이미 포함된 날짜-시간-역할 조합 제외
     singleDaySelections = singleDaySelections.filter((selection: any) => {
-      // 해당 날짜가 다중일 그룹에 포함되어 있지 않은 경우만 단일날짜로 표시
-      return !multiDayDates.has(selection.date);
+      // 날짜-시간-역할 조합으로 키 생성
+      const key = `${selection.date}_${selection.time}_${selection.role}`;
+      // 해당 조합이 다중일 그룹에 포함되어 있지 않은 경우만 단일날짜로 표시
+      const shouldInclude = !multiDayKeys.has(key);
+      if (!shouldInclude) {
+        logger.debug(`🚫 제외된 단일날짜: ${selection.date} ${selection.time} ${selection.role} (다중일 그룹에 포함됨)`);
+      }
+      return shouldInclude;
     });
     
     // 단일 날짜 그룹 처리
