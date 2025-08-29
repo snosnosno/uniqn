@@ -63,23 +63,6 @@ const StaffCardContactInfo: React.FC<StaffCardContactInfoProps> = React.memo(({
             <p className="text-sm text-gray-500">연락처 정보가 없습니다</p>
           )}
         </div>
-        
-        {/* 공고 정보 */}
-        {postingTitle && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">소속 공고</h4>
-            <div className="bg-white px-3 py-2 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-600">
-                {postingTitle}
-              </p>
-              {postingId && (
-                <p className="text-xs text-gray-400 mt-1">
-                  ID: {postingId}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -49,8 +49,7 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
 
   return (
     <div className="mt-3 space-y-2">
-      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-        <span>스와이프 액션</span>
+      <div className="flex items-center justify-end mb-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -63,31 +62,8 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
         </button>
       </div>
       <div className="space-y-3">
-        {/* 출석 상태 변경 - AttendanceStatusPopover 사용 */}
-        <div>
-          <p className="text-xs font-medium text-gray-500 mb-2">출석 상태 변경</p>
-          <div className="flex justify-center">
-            <AttendanceStatusPopover
-              workLogId={workLogId}
-              currentStatus={currentStatus as AttendanceStatus}
-              staffId={staffId}
-              staffName={staffName}
-              size="md"
-              {...(eventId && { eventId })}
-              scheduledStartTime={scheduledStartTime}
-              scheduledEndTime={scheduledEndTime}
-              canEdit={!!canEdit && !multiSelectMode}
-              onStatusChange={() => {
-                setShowActions(false);
-                onStatusChange?.();
-              }}
-            />
-          </div>
-        </div>
-        
         {/* 시간 편집 및 삭제 */}
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-2">기타 작업</p>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staffId, 'start'))}

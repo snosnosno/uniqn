@@ -444,13 +444,13 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">기본 급여:</span>
                       <span className="text-sm text-gray-900">
-                        {formatCurrency(staff.baseSalary, 'KRW', 'ko')}
+                        {staff.baseSalary.toLocaleString('ko-KR')}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">기본급:</span>
                       <span className="text-sm text-gray-900">
-                        {formatCurrency(staff.basePay, 'KRW', 'ko')}
+                        {staff.basePay.toLocaleString('ko-KR')}
                       </span>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   </div>
                   <div className="bg-indigo-50 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-indigo-600">
-                      {formatCurrency(staff.totalAmount, 'KRW', 'ko')}
+                      {staff.totalAmount.toLocaleString('ko-KR')}
                     </div>
                     <div className="text-xs text-gray-500">총 지급액</div>
                   </div>
@@ -597,13 +597,13 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                         {getSalaryTypeLabel(staff.salaryType)} × {staff.salaryType === 'hourly' ? `${staff.totalHours.toFixed(1)}시간` : `${staff.totalDays}일`}
                       </span>
                       <span className="font-medium text-gray-900">
-                        {formatCurrency(staff.baseSalary, 'KRW', 'ko')} × {staff.salaryType === 'hourly' ? staff.totalHours.toFixed(1) : staff.totalDays}
+                        {staff.baseSalary.toLocaleString('ko-KR')} × {staff.salaryType === 'hourly' ? staff.totalHours.toFixed(1) : staff.totalDays}
                       </span>
                     </div>
                     <div className="border-t pt-2 flex justify-between">
                       <span className="text-sm font-medium text-gray-700">기본급 합계</span>
                       <span className="text-base font-bold text-gray-900">
-                        {formatCurrency(staff.basePay, 'KRW', 'ko')}
+                        {staff.basePay.toLocaleString('ko-KR')}
                       </span>
                     </div>
                   </div>
@@ -784,13 +784,13 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">수당 합계</span>
                     <span className="text-gray-900">
-                      {formatCurrency(getTotalAllowances(), 'KRW', 'ko')}
+                      {getTotalAllowances().toLocaleString('ko-KR')}
                     </span>
                   </div>
                   <div className="border-t border-indigo-200 pt-2 flex justify-between">
                     <span className="text-base font-medium text-gray-800">총 지급액</span>
                     <span className="text-lg font-bold text-indigo-600">
-                      {formatCurrency(getTotalAmount(), 'KRW', 'ko')}
+                      {getTotalAmount().toLocaleString('ko-KR')}
                     </span>
                   </div>
                 </div>

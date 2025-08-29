@@ -244,7 +244,7 @@ const BulkSalaryEditModal: React.FC<BulkSalaryEditModalProps> = ({
                 <h4 className="text-sm font-medium text-blue-900">적용 대상 요약</h4>
                 <p className="text-sm text-blue-700 mt-1">
                   {targetStaff.length}명의 스태프에게 {getSalaryTypeLabel(salaryType)}{' '}
-                  {formatCurrency(salaryAmount, 'KRW', 'ko')}를 적용합니다.
+                  {salaryAmount.toLocaleString('ko-KR')}원을 적용합니다.
                 </p>
                 {applyMode === 'byRole' && targetRole && (
                   <p className="text-xs text-blue-600 mt-1">
@@ -292,11 +292,11 @@ const BulkSalaryEditModal: React.FC<BulkSalaryEditModalProps> = ({
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-600">
                           {getSalaryTypeLabel(staff.beforeSalary.type)}<br />
-                          {formatCurrency(staff.beforeSalary.amount, 'KRW', 'ko')}
+                          {staff.beforeSalary.amount.toLocaleString('ko-KR')}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-900">
                           {getSalaryTypeLabel(staff.afterSalary.type)}<br />
-                          {formatCurrency(staff.afterSalary.amount, 'KRW', 'ko')}
+                          {staff.afterSalary.amount.toLocaleString('ko-KR')}
                         </td>
                         <td className="px-4 py-2 text-sm text-right">
                           <span className={`font-medium ${
@@ -304,7 +304,7 @@ const BulkSalaryEditModal: React.FC<BulkSalaryEditModalProps> = ({
                             staff.amountDifference < 0 ? 'text-red-600' : 'text-gray-600'
                           }`}>
                             {staff.amountDifference > 0 ? '+' : ''}
-                            {formatCurrency(staff.amountDifference, 'KRW', 'ko')}
+                            {staff.amountDifference.toLocaleString('ko-KR')}
                           </span>
                         </td>
                       </tr>
@@ -325,7 +325,7 @@ const BulkSalaryEditModal: React.FC<BulkSalaryEditModalProps> = ({
                       previewResult.totalAmountDifference < 0 ? 'text-red-600' : 'text-gray-600'
                     }`}>
                       {previewResult.totalAmountDifference > 0 ? '+' : ''}
-                      {formatCurrency(previewResult.totalAmountDifference, 'KRW', 'ko')}
+                      {previewResult.totalAmountDifference.toLocaleString('ko-KR')}
                     </span>
                   </div>
                 </div>

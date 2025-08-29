@@ -214,7 +214,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-sm font-medium text-gray-500 mb-2">총 지급액</h3>
           <p className="text-3xl font-bold text-indigo-600">
-            {formatCurrency(summary.totalAmount, i18n.language === 'ko' ? 'KRW' : 'USD', i18n.language)}
+            {summary.totalAmount.toLocaleString('ko-KR')}
           </p>
         </div>
       </div>
@@ -340,13 +340,13 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
                         {getSalaryTypeLabel(data.salaryType)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(data.basePay, 'KRW', 'ko')}
+                        {data.basePay.toLocaleString('ko-KR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(data.allowanceTotal, 'KRW', 'ko')}
+                        {data.allowanceTotal.toLocaleString('ko-KR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {formatCurrency(data.totalAmount, 'KRW', 'ko')}
+                        {data.totalAmount.toLocaleString('ko-KR')}
                       </td>
                     </tr>
                   );
