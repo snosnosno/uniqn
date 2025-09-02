@@ -69,7 +69,8 @@ export const parseTimeString = (
   timeString: string, 
   dateString: string
 ): { startTime: Timestamp | null; endTime: Timestamp | null } => {
-  if (!timeString || timeString === '미정' || !dateString) {
+  // 빈 문자열, 미정, 단일 대시 등 무효한 값 처리
+  if (!timeString || timeString === '미정' || timeString === '-' || !dateString) {
     return { startTime: null, endTime: null };
   }
 
@@ -82,8 +83,9 @@ export const parseTimeString = (
     const startStr = timeParts[0];
     const endStr = timeParts[1];
     
-    if (!startStr || !endStr) {
-      logger.warn('시간 문자열 파싱 실패:', { component: 'scheduleUtils', data: timeString });
+    // 빈 문자열이거나 유효하지 않은 시간 형식인 경우 조용히 null 반환
+    if (!startStr || !endStr || startStr === '' || endStr === '') {
+      // 경고 로그를 제거하거나 debug 레벨로 변경
       return { startTime: null, endTime: null };
     }
     

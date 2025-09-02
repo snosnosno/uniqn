@@ -92,7 +92,8 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
       {config.icon}
       <div className="flex flex-col">
         <span className="font-medium">{config.text}</span>
-        {size !== 'sm' && (actualStartTime || actualEndTime) ? <div className="text-xs opacity-75">
+        {/* 실제 시간 표시 - QR 기능 활성화 시 사용 예정 */}
+        {false && size !== 'sm' && (actualStartTime || actualEndTime) ? <div className="text-xs opacity-75">
             {actualStartTime ? <span>{t('attendance.checkIn', '출근')}: {actualStartTime}</span> : null}
             {actualStartTime && actualEndTime ? <span className="mx-1">|</span> : null}
             {actualEndTime ? <span>{t('attendance.checkOut', '퇴근')}: {actualEndTime}</span> : null}

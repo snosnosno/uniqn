@@ -39,8 +39,29 @@ const useScheduleData = (): UseScheduleDataReturn => {
     setError(null);
 
     try {
-      const _allEvents: ScheduleEvent[] = [];
       const unsubscribes: (() => void)[] = [];
+      
+      // applications와 workLogs를 저장할 맵 (병합을 위해)
+      const applicationsMap = new Map<string, ScheduleEvent[]>();
+      const workLogsMap = new Map<string, ScheduleEvent>();
+      
+      // 디버깅을 위한 로그
+      const logMergeState = () => {
+        logger.info('현재 맵 상태:', {
+          data: {
+            applicationsCount: applicationsMap.size,
+            workLogsCount: workLogsMap.size,
+            applications: Array.from(applicationsMap.entries()).map(([id, events]) => ({
+              id,
+              events: events.map(e => ({ date: e.date, eventId: e.eventId, type: e.type }))
+            })),
+            workLogs: Array.from(workLogsMap.entries()).map(([id, event]) => ({
+              id,
+              event: { date: event.date, eventId: event.eventId, type: event.type }
+            }))
+          }
+        });
+      };
 
       // 1. Applications 데이터 구독
       const applicationsQuery = query(
@@ -51,28 +72,23 @@ const useScheduleData = (): UseScheduleDataReturn => {
       const unsubApplications = onSnapshot(
         applicationsQuery,
         async (snapshot) => {
-          const applicationEvents: ScheduleEvent[] = [];
-          
-          // 모든 문서 처리를 Promise 배열로 변환
-          const promises = snapshot.docs.map(doc => 
-            processApplicationData(doc.id, doc.data() as ApplicationData)
-          );
-          
-          // 모든 Promise가 완료될 때까지 대기
-          const results = await Promise.all(promises);
-          
-          // 결과를 플래튼
-          results.forEach(events => {
-            applicationEvents.push(...events);
+          const changePromises = snapshot.docChanges().map(async (change) => {
+            const data = change.doc.data() as ApplicationData;
+            
+            if (change.type === 'removed') {
+              // 제거된 application 처리
+              applicationsMap.delete(change.doc.id);
+            } else {
+              // added나 modified 처리
+              const events = await processApplicationData(change.doc.id, data);
+              applicationsMap.set(change.doc.id, events);
+            }
           });
           
-          // 상태 업데이트
-          setSchedules(prev => {
-            const filtered = prev.filter(e => e.type !== 'applied');
-            return [...filtered, ...applicationEvents];
-          });
+          await Promise.all(changePromises);
           
-          setLoading(false);
+          // 병합된 데이터로 상태 업데이트
+          updateMergedSchedules();
         },
         (err) => {
           logger.error('Applications 구독 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useScheduleData' });
@@ -84,37 +100,29 @@ const useScheduleData = (): UseScheduleDataReturn => {
       unsubscribes.push(unsubApplications);
 
       // 2. WorkLogs 데이터 구독
-      const today = getTodayString();
       const workLogsQuery = query(
         collection(db, 'workLogs'),
-        where('date', '>=', today)
+        where('staffId', '==', currentUser.uid)
       );
 
       const unsubWorkLogs = onSnapshot(
         workLogsQuery,
-        (snapshot) => {
-          const workLogEvents: ScheduleEvent[] = [];
-          
-          snapshot.docs.forEach(doc => {
-            const data = doc.data();
+        async (snapshot) => {
+          const changePromises = snapshot.docChanges().map(async (change) => {
+            const data = change.doc.data() as WorkLogData;
             
-            // 관리자이거나 본인의 기록인 경우만 표시
-            // currentUser에 role이 없으므로 모든 본인 기록만 표시
-            if (data.staffId === currentUser.uid) {
-              const event = processWorkLogData(doc.id, data as WorkLogData);
-              workLogEvents.push(event);
+            if (change.type === 'removed') {
+              workLogsMap.delete(change.doc.id);
+            } else {
+              const event = await processWorkLogData(change.doc.id, data);
+              workLogsMap.set(change.doc.id, event);
             }
           });
           
-          // 상태 업데이트
-          setSchedules(prev => {
-            const filtered = prev.filter(e => 
-              e.sourceCollection !== 'workLogs'
-            );
-            return [...filtered, ...workLogEvents];
-          });
+          await Promise.all(changePromises);
           
-          setLoading(false);
+          // 병합된 데이터로 상태 업데이트
+          updateMergedSchedules();
         },
         (err) => {
           logger.error('WorkLogs 구독 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useScheduleData' });
@@ -124,6 +132,61 @@ const useScheduleData = (): UseScheduleDataReturn => {
       );
 
       unsubscribes.push(unsubWorkLogs);
+
+      // 데이터 병합 및 중복 제거 함수
+      const updateMergedSchedules = () => {
+        const mergedEvents: ScheduleEvent[] = [];
+        const processedKeys = new Set<string>();
+        
+        // 디버깅 로그
+        logMergeState();
+        
+        // workLogs 먼저 처리 (우선순위가 높음)
+        workLogsMap.forEach((workLog) => {
+          mergedEvents.push(workLog);
+          // 같은 날짜와 eventId를 가진 application을 추적하기 위한 키
+          if (workLog.eventId && workLog.date) {
+            const key = `${workLog.eventId}_${workLog.date}`;
+            processedKeys.add(key);
+            logger.info('WorkLog 키 추가:', { 
+              data: { key, eventId: workLog.eventId, date: workLog.date }
+            });
+          }
+        });
+        
+        // applications 처리 (workLog와 중복되지 않는 것만)
+        applicationsMap.forEach((events) => {
+          events.forEach(event => {
+            if (event.eventId && event.date) {
+              const key = `${event.eventId}_${event.date}`;
+              // workLog에 이미 같은 날짜/이벤트가 있으면 skip
+              if (processedKeys.has(key)) {
+                logger.info('Application 중복 스킵:', { 
+                  data: { key, eventId: event.eventId, date: event.date }
+                });
+              } else {
+                mergedEvents.push(event);
+                logger.info('Application 추가:', { 
+                  data: { key, eventId: event.eventId, date: event.date }
+                });
+              }
+            } else {
+              // eventId나 date가 없는 경우는 그냥 추가
+              mergedEvents.push(event);
+            }
+          });
+        });
+        
+        logger.info('병합 결과:', {
+          data: {
+            totalEvents: mergedEvents.length,
+            processedKeys: Array.from(processedKeys)
+          }
+        });
+        
+        setSchedules(mergedEvents);
+        setLoading(false);
+      };
 
       // 클린업 함수 반환
       return () => {
@@ -175,18 +238,48 @@ const useScheduleData = (): UseScheduleDataReturn => {
       new Date(e.date) > now
     );
     
-    const _thisMonthEvents = filteredSchedules.filter(e => {
+    const thisMonthEvents = filteredSchedules.filter(e => {
       const eventDate = new Date(e.date);
       return eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear;
+    });
+    
+    // 근무 시간 계산 (예정 시간 기준)
+    let totalHoursWorked = 0;
+    let totalEarnings = 0;
+    let thisMonthEarnings = 0;
+    
+    filteredSchedules.forEach(event => {
+      // 예정 시간 기준으로 근무 시간 계산
+      if (event.startTime && event.endTime) {
+        const startDate = event.startTime && 'toDate' in event.startTime ? 
+          event.startTime.toDate() : null;
+        const endDate = event.endTime && 'toDate' in event.endTime ? 
+          event.endTime.toDate() : null;
+          
+        if (startDate && endDate) {
+          const hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+          totalHoursWorked += hoursWorked;
+        }
+      }
+      
+      // 급여 계산
+      if (event.payrollAmount) {
+        totalEarnings += event.payrollAmount;
+        
+        const eventDate = new Date(event.date);
+        if (eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear) {
+          thisMonthEarnings += event.payrollAmount;
+        }
+      }
     });
     
     return {
       totalSchedules: filteredSchedules.length,
       completedSchedules: completedEvents.length,
       upcomingSchedules: upcomingEvents.length,
-      totalEarnings: 0,
-      thisMonthEarnings: 0,
-      hoursWorked: 0
+      totalEarnings: totalEarnings,
+      thisMonthEarnings: thisMonthEarnings,
+      hoursWorked: Math.round(totalHoursWorked)
     };
   }, [filteredSchedules]);
 

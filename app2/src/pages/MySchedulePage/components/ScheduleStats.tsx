@@ -42,7 +42,7 @@ const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }
       icon: <FaClock className="w-5 h-5 text-purple-500" />,
       label: '총 근무시간',
       value: `${stats.hoursWorked}시간`,
-      subValue: '실제 근무 기준',
+      subValue: '예정 근무 시간',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-200'
     }

@@ -109,7 +109,7 @@ export interface ScheduleEvent {
   status: AttendanceStatus;
   
   /** 지원 상태 */
-  applicationStatus?: 'pending' | 'confirmed' | 'rejected';
+  applicationStatus?: 'pending' | 'confirmed' | 'rejected' | 'completed';
   
   /** 정산 상태 */
   payrollStatus?: PayrollStatus;

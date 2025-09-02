@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { ScheduleEvent, AttendanceStatus } from '../../types/schedule';
@@ -24,9 +24,10 @@ export const processApplicationData = async (
   try {
     // 공고 정보 가져오기
     let jobPostingData: JobPostingData | null = null;
-    if (data.postId) {
+    const jobId = (data as any).eventId || data.postId;  // eventId 우선 사용
+    if (jobId) {
       try {
-        const jobPostingDoc = await getDoc(doc(db, 'jobPostings', data.postId));
+        const jobPostingDoc = await getDoc(doc(db, 'jobPostings', jobId));
         if (jobPostingDoc.exists()) {
           jobPostingData = { 
             id: jobPostingDoc.id, 
@@ -36,7 +37,7 @@ export const processApplicationData = async (
       } catch (error) {
         logger.error('공고 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), { 
           component: 'useScheduleData',
-          data: { postId: data.postId }
+          data: { jobId }
         });
       }
     }
@@ -72,24 +73,34 @@ export const processApplicationData = async (
     const startTimestamp = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
     const endTimestamp = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
     
+    // 상태별 type 매핑
+    const typeMap: Record<string, ScheduleEvent['type']> = {
+      'pending': 'applied',
+      'confirmed': 'confirmed',
+      'rejected': 'cancelled',
+      'completed': 'completed'
+    };
+    
     // 기본 스케줄 이벤트 생성
-    const baseEvent: ScheduleEvent = {
+    const baseEvent: ScheduleEvent & { assignedTime?: string } = {
       id: docId,
-      type: 'applied' as const,
+      type: typeMap[data.status] || 'applied',
       date: baseDate,
       startTime: startTimestamp,
       endTime: endTimestamp,
-      eventId: data.postId || '',
+      eventId: (data as any).eventId || data.postId || '',  // eventId 우선 사용, 없으면 postId 사용 (하위 호환성)
       eventName: data.postTitle || '제목 없음',
       location: jobPostingData?.location || '',
       ...(jobPostingData?.detailedAddress && { detailedAddress: jobPostingData.detailedAddress }),
       role: getRoleForApplicationStatus(data, baseDate),
       status: 'not_started' as AttendanceStatus, // 지원 상태에서는 출석 상태가 not_started
-      applicationStatus: data.status as 'pending' | 'confirmed' | 'rejected',
+      applicationStatus: data.status as 'pending' | 'confirmed' | 'rejected' | 'completed',
       notes: '',
       sourceCollection: 'applications' as const,
       sourceId: docId,
-      applicationId: docId
+      applicationId: docId,
+      // assignedTime 추가 (formatEventTime에서 사용)
+      ...(data.assignedTime && { assignedTime: data.assignedTime })
     };
     
     // assignedDates가 있는 경우 여러 날짜 이벤트 생성
@@ -134,13 +145,18 @@ export const processApplicationData = async (
           const startTimestamp = startTime ? convertTimeToTimestamp(startTime, date) : null;
           const endTimestamp = endTime ? convertTimeToTimestamp(endTime, date) : null;
           
-          const event: ScheduleEvent = {
+          // 더 고유한 ID 생성: docId_날짜 형식으로 변경
+          const uniqueId = `${docId}_${date.replace(/-/g, '')}`;
+          
+          const event: ScheduleEvent & { assignedTime?: string } = {
             ...baseEvent,
-            id: `${docId}_${index}`,
+            id: uniqueId,
             date: date,
             role: getRoleForApplicationStatus(data, date),
             startTime: startTimestamp,
-            endTime: endTimestamp
+            endTime: endTimestamp,
+            // assignedTime 추가 (formatEventTime에서 사용)
+            ...(timeStr && { assignedTime: timeStr })
           };
           events.push(event);
         });
@@ -164,36 +180,128 @@ export const processApplicationData = async (
 /**
  * 근무 기록 데이터를 스케줄 이벤트로 처리
  */
-export const processWorkLogData = (
+export const processWorkLogData = async (
   docId: string,
   data: WorkLogData
-): ScheduleEvent => {
-  // actualStartTime/actualEndTime 사용
-  const actualStart = data.actualStartTime || '';
-  const actualEnd = data.actualEndTime || '';
+): Promise<ScheduleEvent> => {
+  // jobPosting 정보 가져오기
+  let jobPostingData: JobPostingData | null = null;
+  let eventName = '근무'; // 기본값
+  let location = '';
   
-  const timeData = parseTimeString(
-    `${data.scheduledStartTime || actualStart || ''}-${data.scheduledEndTime || actualEnd || ''}`,
-    data.date
-  );
+  if (data.eventId) {
+    try {
+      const jobPostingDoc = await getDoc(doc(db, 'jobPostings', data.eventId));
+      if (jobPostingDoc.exists()) {
+        jobPostingData = { 
+          id: jobPostingDoc.id, 
+          ...jobPostingDoc.data() 
+        } as JobPostingData;
+        eventName = jobPostingData.title || '근무';
+        location = jobPostingData.location || '';
+      }
+    } catch (error) {
+      logger.error('공고 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), { 
+        component: 'processWorkLogData',
+        data: { eventId: data.eventId }
+      });
+    }
+  }
+  
+  // workLogMapper를 통해 정규화된 데이터 사용
+  const { normalizeWorkLog } = await import('../../utils/workLogMapper');
+  const normalizedLog = normalizeWorkLog(data);
+  
+  // 예정 시간과 실제 시간 처리 (Timestamp 타입으로 확정)
+  const scheduledStart = normalizedLog.scheduledStartTime as Timestamp | null;
+  const scheduledEnd = normalizedLog.scheduledEndTime as Timestamp | null;
+  const actualStart = normalizedLog.actualStartTime as Timestamp | null;
+  const actualEnd = normalizedLog.actualEndTime as Timestamp | null;
+  
+  // 이미 Timestamp 형태로 정규화되어 있으므로 직접 사용
+  const scheduledTimeData = {
+    startTime: scheduledStart,
+    endTime: scheduledEnd
+  };
+  
+  const actualTimeData = {
+    startTime: actualStart,
+    endTime: actualEnd
+  };
+  
+  // workLog status 기반 type 설정
+  const typeMap: Record<string, ScheduleEvent['type']> = {
+    'scheduled': 'confirmed',
+    'checked_in': 'confirmed', 
+    'checked_out': 'completed', // checked_out이면 완료로 처리
+    'completed': 'completed',
+    'absent': 'cancelled'
+  };
+  
+  // 출퇴근 완료 여부 확인
+  const isCompleted = normalizedLog.status === 'completed' || 
+                     normalizedLog.status === ('checked_out' as any) ||
+                     (normalizedLog.actualStartTime && normalizedLog.actualEndTime);
+  
+  // 근무 시간 계산 (분 단위) - 예정 시간 기준으로 변경
+  let totalWorkMinutes = 0;
+  
+  // 예정 시간 기준으로 계산 (스태프탭에서 수정한 시간)
+  if (scheduledTimeData.startTime && scheduledTimeData.endTime) {
+    // Timestamp 타입 확인 후 toDate() 호출
+    if (scheduledTimeData.startTime && 'toDate' in scheduledTimeData.startTime && 
+        scheduledTimeData.endTime && 'toDate' in scheduledTimeData.endTime) {
+      const start = scheduledTimeData.startTime.toDate();
+      const end = scheduledTimeData.endTime.toDate();
+      totalWorkMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
+    }
+  } 
+  // QR 기능 활성화 시 실제 시간 사용 - 현재는 주석 처리
+  // else if (actualTimeData.startTime && actualTimeData.endTime) {
+  //   if (actualTimeData.startTime && 'toDate' in actualTimeData.startTime && 
+  //       actualTimeData.endTime && 'toDate' in actualTimeData.endTime) {
+  //     const start = actualTimeData.startTime.toDate();
+  //     const end = actualTimeData.endTime.toDate();
+  //     totalWorkMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
+  //   }
+  // }
+  else if (normalizedLog.totalWorkMinutes) {
+    totalWorkMinutes = normalizedLog.totalWorkMinutes;
+  } else if (normalizedLog.hoursWorked) {
+    totalWorkMinutes = normalizedLog.hoursWorked * 60;
+  }
+  
+  // 급여 계산 (정산 상태 없이 계산만 제공)
+  let payrollAmount = 0;
+  
+  // 급여 계산 (시급 10,000원 기준 - 실제로는 설정에서 가져와야 함)
+  if (totalWorkMinutes > 0) {
+    const hourlyRate = 10000; // TODO: 실제 시급 설정에서 가져오기
+    payrollAmount = Math.floor((totalWorkMinutes / 60) * hourlyRate);
+  }
   
   return {
     id: docId,
-    type: 'confirmed' as const,
-    date: data.date,
-    startTime: timeData.startTime,
-    endTime: timeData.endTime,
-    actualStartTime: actualStart ? timeData.startTime : null,
-    actualEndTime: actualEnd ? timeData.endTime : null,
-    eventId: '',  // workLogs에는 eventId가 없음
-    eventName: '근무',  // 기본값
-    location: '',  // workLogs에는 location이 없음
-    role: data.role || '',
-    status: 'not_started' as AttendanceStatus,  // workLogs에는 status가 없으므로 기본값 사용
-    notes: data.notes || '',
+    type: isCompleted ? 'completed' : (typeMap[normalizedLog.status || ''] || 'confirmed'),
+    date: normalizedLog.date,
+    startTime: scheduledTimeData.startTime,
+    endTime: scheduledTimeData.endTime,
+    actualStartTime: actualTimeData.startTime,
+    actualEndTime: actualTimeData.endTime,
+    eventId: normalizedLog.eventId || '',
+    eventName: eventName,
+    location: location,
+    ...(jobPostingData?.detailedAddress && { detailedAddress: jobPostingData.detailedAddress }),
+    role: normalizedLog.role || '',
+    status: normalizedLog.status as AttendanceStatus || 'not_started',
+    notes: normalizedLog.notes || '',
     sourceCollection: 'workLogs' as const,
     sourceId: docId,
-    workLogId: docId
+    workLogId: docId,
+    // 급여 계산 정보 추가 (정산 상태 없이)
+    ...(totalWorkMinutes > 0 && {
+      payrollAmount: payrollAmount
+    })
   };
 };
 

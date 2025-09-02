@@ -52,6 +52,9 @@ export interface WorkLogData {
   notes?: string;
   createdAt?: any;
   updatedAt?: any;
+  // 추가된 필드들
+  status?: string; // 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'absent'
+  eventId?: string; // 연관된 이벤트 ID
 }
 
 export interface JobPostingData {

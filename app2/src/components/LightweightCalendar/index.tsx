@@ -91,10 +91,37 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
 
   // 시간 포맷팅 함수
   const formatEventTime = (event: ScheduleEvent): string => {
-    if (event.startTime && event.startTime instanceof Timestamp) {
+    // 1. startTime이 있고 Timestamp 타입인 경우 (예정시간 - 스태프탭에서 수정한 시간)
+    if (event.startTime && 'toDate' in event.startTime) {
       const date = event.startTime.toDate();
       return format(date, 'HH:mm');
     }
+    
+    // 2. assignedTime이 문자열로 있는 경우 (applications 데이터)
+    const eventWithAssignedTime = event as ScheduleEvent & { assignedTime?: string };
+    if (eventWithAssignedTime.assignedTime && typeof eventWithAssignedTime.assignedTime === 'string') {
+      // "09:00-16:00" 형식에서 시작 시간만 추출
+      const timeMatch = eventWithAssignedTime.assignedTime.match(/(\d{2}:\d{2})/);
+      if (timeMatch && timeMatch[1]) {
+        return timeMatch[1];
+      }
+    }
+    
+    // 3. 역할 정보가 있으면 역할 표시 (시간이 없는 경우)
+    if (event.role) {
+      // 역할이 시간 형식인 경우 (예: "09:00-16:00")
+      const roleTimeMatch = event.role.match(/(\d{2}:\d{2})/);
+      if (roleTimeMatch && roleTimeMatch[1]) {
+        return roleTimeMatch[1];
+      }
+    }
+    
+    // actualStartTime 체크 제거 - QR 기능 강화 시 재활성화 예정
+    // if (event.actualStartTime && 'toDate' in event.actualStartTime) {
+    //   const date = event.actualStartTime.toDate();
+    //   return format(date, 'HH:mm');
+    // }
+    
     return '미정';
   };
 
