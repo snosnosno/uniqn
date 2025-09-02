@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, where, getDocs, serverTimestamp, addDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
+import useUnifiedData, { useJobPostingData } from '../../../hooks/useUnifiedData';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../hooks/useToast';
@@ -69,8 +70,7 @@ export const useJobBoard = () => {
   const [preQuestionCompleted, setPreQuestionCompleted] = useState<Map<string, boolean>>(new Map());
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<Map<string, PreQuestionAnswer[]>>(new Map());
   
-  // 내 지원 현황 데이터
-  const [myApplications, setMyApplications] = useState<any[]>([]);
+  // 내 지원 현황 로딩 상태 (데이터는 UnifiedDataContext에서 가져옴)
   const [loadingMyApplications, setLoadingMyApplications] = useState(false);
   
   // Infinite Query based data fetching
@@ -132,69 +132,70 @@ export const useJobBoard = () => {
     fetchAppliedJobs();
   }, [jobPostings, currentUser]);
   
-  // 내 지원 현황 가져오기
-  const fetchMyApplications = useCallback(async () => {
-    if (!currentUser) return;
-    
-    setLoadingMyApplications(true);
-    try {
-      const applicationsQuery = query(
-        collection(db, 'applications'), 
-        where('applicantId', '==', currentUser.uid)
-      );
-      const applicationsSnapshot = await getDocs(applicationsQuery);
-      
-      const applicationsData = await Promise.all(
-        applicationsSnapshot.docs.map(async (applicationDoc) => {
-          const applicationData = applicationDoc.data();
-          
-          try {
-            const jobPostingDoc = await getDoc(doc(db, 'jobPostings', applicationData.eventId || applicationData.postId));
-            const jobPostingData = jobPostingDoc.exists() ? jobPostingDoc.data() : null;
-            
-            return {
-              id: applicationDoc.id,
-              ...applicationData,
-              jobPosting: jobPostingData ? {
-                id: jobPostingDoc.id,
-                ...jobPostingData
-              } : null
-            };
-          } catch (error) {
-            logger.error('Error fetching job posting:', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
-            return {
-              id: applicationDoc.id,
-              ...applicationData,
-              jobPosting: null
-            };
-          }
-        })
-      );
-      
-      // 최신 지원 순으로 정렬
-      applicationsData.sort((a, b) => {
-        const aDate = (a as any).appliedAt?.seconds || 0;
-        const bDate = (b as any).appliedAt?.seconds || 0;
-        return bDate - aDate;
-      });
-      
-      // 모든 지원 이력 표시 (삭제된 공고 포함)
-      setMyApplications(applicationsData);
-    } catch (error) {
-      logger.error('Error fetching my applications:', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
-      showError('지원 현황을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoadingMyApplications(false);
-    }
-  }, [currentUser, showError]);
+  // UnifiedDataContext에서 지원 현황 가져오기
+  const { jobPostings: allJobPostings } = useJobPostingData();
+  const unifiedContext = useUnifiedData();
   
-  // 탭 변경 시 데이터 로딩
-  useEffect(() => {
-    if (activeTab === 'myApplications' && currentUser) {
-      fetchMyApplications();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, currentUser]);
+  // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
+  const myApplications = useMemo(() => {
+    if (!currentUser || !unifiedContext.state) return [];
+    
+    // 현재 사용자의 지원서만 필터링
+    const userApplications = Array.from(unifiedContext.state.applications.values())
+      .filter(app => app.applicantId === currentUser.uid);
+    
+    // 각 지원서에 JobPosting 정보 추가하고 MyApplicationsTab 호환 형식으로 변환
+    const applicationsWithJobData = userApplications.map(application => {
+      const jobPosting = unifiedContext.state.jobPostings.get(application.postId);
+      
+      return {
+        id: application.id,
+        postId: application.postId,
+        status: application.status,
+        appliedAt: application.appliedAt || application.createdAt || new Date(),
+        confirmedAt: application.confirmedAt,
+        assignedTime: application.assignedTime,
+        assignedRole: application.assignedRole,
+        assignedDate: application.assignedDate,
+        assignedTimes: application.assignedTimes,
+        assignedRoles: application.assignedRoles,
+        assignedDates: application.assignedDates,
+        preQuestionAnswers: (application as any).preQuestionAnswers,
+        jobPosting: jobPosting ? {
+          id: jobPosting.id,
+          title: jobPosting.title,
+          location: jobPosting.location,
+          district: jobPosting.district,
+          detailedAddress: jobPosting.detailedAddress,
+          startDate: jobPosting.startDate,
+          endDate: jobPosting.endDate,
+          dateSpecificRequirements: jobPosting.dateSpecificRequirements,
+          salaryType: (jobPosting as any).salaryType,
+          salaryAmount: (jobPosting as any).salaryAmount,
+          benefits: (jobPosting as any).benefits,
+          useRoleSalary: (jobPosting as any).useRoleSalary,
+          roleSalaries: (jobPosting as any).roleSalaries
+        } : null
+      };
+    });
+    
+    // 최신 지원 순으로 정렬
+    applicationsWithJobData.sort((a, b) => {
+      const aDate = (a.appliedAt as any)?.seconds || 0;
+      const bDate = (b.appliedAt as any)?.seconds || 0;
+      return bDate - aDate;
+    });
+    
+    return applicationsWithJobData as any[];
+  }, [currentUser, unifiedContext.state]);
+  
+  // 레거시 fetchMyApplications 함수 (호환성 유지)
+  const fetchMyApplications = useCallback(() => {
+    // UnifiedDataContext가 실시간으로 업데이트하므로 별도 fetch 불필요
+    // 하지만 기존 컴포넌트 호환성을 위해 빈 함수로 유지
+  }, []);
+  
+  // UnifiedDataContext를 사용하므로 탭 변경 시 별도 데이터 로딩 불필요
   
   // Filter handlers
   const handleFilterChange = (filters: JobFilters) => {

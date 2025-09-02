@@ -17,6 +17,8 @@ import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 // Zustand 마이그레이션: Context 대신 Adapter 사용
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
+// UnifiedDataContext - 통합 데이터 관리
+import { UnifiedDataProvider } from './contexts/UnifiedDataContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
@@ -91,7 +93,8 @@ const App: React.FC = () => {
       <FirebaseErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <TournamentProvider>
+            <UnifiedDataProvider>
+              <TournamentProvider>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
@@ -138,7 +141,8 @@ const App: React.FC = () => {
                   </Route>
                 </Routes>
               </TournamentProvider>
-            </AuthProvider>
+            </UnifiedDataProvider>
+          </AuthProvider>
           </QueryClientProvider>
           <ToastContainer />
       </FirebaseErrorBoundary>

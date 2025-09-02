@@ -17,7 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { formatTime } from '../../utils/dateUtils';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { useScheduleData } from '../../hooks/useScheduleData';
+import { useScheduleData } from '../../hooks/useUnifiedData';
 import { CalendarView, ScheduleEvent, ATTENDANCE_STATUS_COLORS } from '../../types/schedule';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import { prepareWorkLogForCreate, prepareWorkLogForUpdate } from '../../utils/workLogMapper';

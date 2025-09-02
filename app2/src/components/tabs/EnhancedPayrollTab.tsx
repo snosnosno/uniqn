@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting } from '../../types/jobPosting';
-import { useStaffWorkData } from '../../hooks/useStaffWorkData';
+import { useUnifiedData } from '../../hooks/useUnifiedData';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
@@ -20,23 +20,84 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // 통합 훅 사용 - 모든 데이터와 로직이 여기에 통합됨
+  // 통합 데이터 훅 사용
   const {
-    staffWorkData,
-    workLogs,
-    summary,
+    state,
     loading,
-    error,
-    selectedStaffIds,
-    toggleStaffSelection,
-    toggleSelectAll,
-    applyBulkAllowances,
-    updateStaffAllowances,
-    exportToCSV,
-    availableRoles,
-    updateRoleSalarySettings
-    // getSalaryInfo // 향후 사용 예정
-  } = useStaffWorkData();
+    stats
+  } = useUnifiedData();
+  
+  // 정산용 데이터 변환 (임시 구현)
+  const staffWorkData = React.useMemo(() => {
+    return Array.from(state.staff.values()).map(staff => ({
+      ...staff,
+      staffName: staff.name,
+      baseSalary: 0,
+      basePay: 0,
+      totalSalary: 0,
+      totalAmount: 0,
+      totalDays: 0,
+      totalHours: 0,
+      allowanceTotal: 0,
+      allowances: [],
+      salaryType: 'hourly' as 'hourly' | 'daily'
+    }));
+  }, [state.staff]);
+  
+  const workLogs = React.useMemo(() => {
+    return Array.from(state.workLogs.values()).map(workLog => ({
+      ...workLog,
+      status: workLog.status === 'checked_in' ? 'in_progress' as const :
+              workLog.status === 'checked_out' ? 'completed' as const :
+              workLog.status === 'absent' ? 'cancelled' as const :
+              workLog.status || 'scheduled' as const
+    }));
+  }, [state.workLogs]);
+  
+  const summary = React.useMemo(() => ({
+    totalStaff: state.staff.size,
+    totalSalary: 0,
+    totalHours: 0,
+    totalAmount: 0
+  }), [state.staff.size]);
+  
+  const availableRoles = React.useMemo(() => ['Dealer', 'Floor', 'Server'], []);
+  
+  // 로컬 상태로 구현해야 할 기능들
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  
+  const toggleStaffSelection = useCallback((staffId: string) => {
+    setSelectedStaffIds(prev => 
+      prev.includes(staffId) 
+        ? prev.filter(id => id !== staffId)
+        : [...prev, staffId]
+    );
+  }, []);
+  
+  const toggleSelectAll = useCallback(() => {
+    setSelectedStaffIds(prev => 
+      prev.length === staffWorkData.length ? [] : staffWorkData.map(s => s.id)
+    );
+  }, [staffWorkData]);
+  
+  // 임시 구현 함수들
+  const applyBulkAllowances = useCallback(() => {
+    logger.info('대량 수당 적용', { component: 'EnhancedPayrollTab' });
+  }, []);
+  
+  const updateStaffAllowances = useCallback((uniqueKey?: string, allowances?: any) => {
+    logger.info('스태프 수당 업데이트', { component: 'EnhancedPayrollTab', data: { uniqueKey, allowances } });
+  }, []);
+  
+  const exportToCSV = useCallback(() => {
+    logger.info('CSV 내보내기', { component: 'EnhancedPayrollTab' });
+  }, []);
+  
+  const updateRoleSalarySettings = useCallback(() => {
+    logger.info('역할별 급여 설정 업데이트', { component: 'EnhancedPayrollTab' });
+  }, []);
+  
+  const error = state.error.global;
 
   // 디버깅 로그
   logger.debug('EnhancedPayrollTab - 렌더링', {
@@ -130,7 +191,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting }) =
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h3 className="text-lg font-medium text-red-800 mb-2">오류 발생</h3>
-          <p className="text-red-600">{error.message}</p>
+          <p className="text-red-600">{error || '알 수 없는 오류가 발생했습니다.'}</p>
         </div>
       </div>
     );
