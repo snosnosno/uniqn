@@ -59,25 +59,35 @@ const memoize = <T extends (...args: any[]) => any>(fn: T, keyGenerator: (...arg
 // Reducer 함수
 const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction): UnifiedDataState => {
   switch (action.type) {
-    case 'SET_LOADING':
+    case 'SET_LOADING': {
+      // 새로운 로딩 상태 계산
+      const newLoadingState = {
+        ...state.loading,
+        [action.collection]: action.loading,
+      };
+      
+      // 모든 컬렉션의 새로운 로딩 상태를 체크
+      const allCollectionsLoaded = 
+        newLoadingState.staff === false &&
+        newLoadingState.workLogs === false &&
+        newLoadingState.attendanceRecords === false &&
+        newLoadingState.jobPostings === false &&
+        newLoadingState.applications === false &&
+        newLoadingState.tournaments === false;
+      
+      // initial 로딩 상태 계산
+      const newInitialLoading = action.collection === 'initial' 
+        ? action.loading 
+        : allCollectionsLoaded ? false : newLoadingState.initial;
+      
       return {
         ...state,
         loading: {
-          ...state.loading,
-          [action.collection]: action.loading,
-          initial: action.collection === 'initial' ? action.loading : (
-            // 모든 컬렉션이 로딩 완료되면 initial을 false로
-            state.loading.staff === false &&
-            state.loading.workLogs === false &&
-            state.loading.attendanceRecords === false &&
-            state.loading.jobPostings === false &&
-            state.loading.applications === false &&
-            state.loading.tournaments === false
-              ? false 
-              : state.loading.initial
-          ),
+          ...newLoadingState,
+          initial: newInitialLoading,
         },
       };
+    }
 
     case 'SET_ERROR':
       return {

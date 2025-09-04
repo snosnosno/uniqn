@@ -24,7 +24,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // 통합 데이터 훅 사용
-  const { state, loading: dataLoading } = useUnifiedData();
+  const { state, loading } = useUnifiedData();
+  const dataLoading = loading.initial;
   
   // Web Worker 기반 정산 계산
   const {
@@ -180,7 +181,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [memoizedCalculatePayroll, calculationLoading]);
 
   // 통합된 로딩 및 에러 상태
-  const loading = dataLoading || calculationLoading;
+  const isLoading = dataLoading || calculationLoading;
   const error = state.error.global || calculationError;
   
   // 데이터 상태 디버깅
@@ -432,7 +433,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
