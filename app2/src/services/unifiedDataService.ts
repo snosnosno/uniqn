@@ -215,12 +215,86 @@ export class UnifiedDataService {
   private subscriptions: SubscriptionManager = {};
   private dispatcher: React.Dispatch<UnifiedDataAction> | null = null;
   private performanceTracker = new PerformanceTracker();
+  private currentUserId: string | null = null;
 
   /**
    * 디스패처 설정
    */
   setDispatcher(dispatch: React.Dispatch<UnifiedDataAction>): void {
     this.dispatcher = dispatch;
+  }
+
+  /**
+   * 현재 사용자 ID 설정 (선택적 데이터 필터링)
+   */
+  setCurrentUserId(userId: string | null): void {
+    const wasChanged = this.currentUserId !== userId;
+    this.currentUserId = userId;
+    
+    logger.info('UnifiedDataService: 사용자 ID 설정', { 
+      component: 'unifiedDataService',
+      data: { userId, hasUserId: !!userId, wasChanged }
+    });
+
+    // 사용자가 변경되었다면 캐시 무효화 및 구독 재시작
+    if (wasChanged && this.dispatcher) {
+      this.invalidateAllCaches();
+      this.restartUserSpecificSubscriptions();
+    }
+  }
+
+  /**
+   * 모든 캐시 무효화
+   */
+  private invalidateAllCaches(): void {
+    if (!this.dispatcher) return;
+
+    logger.info('UnifiedDataService: 캐시 무효화 시작', { 
+      component: 'unifiedDataService' 
+    });
+
+    // 모든 컬렉션의 캐시 키 업데이트
+    this.dispatcher({ type: 'INVALIDATE_CACHE', collection: 'applications' });
+    this.dispatcher({ type: 'INVALIDATE_CACHE', collection: 'workLogs' });
+    this.dispatcher({ type: 'INVALIDATE_CACHE', collection: 'attendanceRecords' });
+    
+    this.performanceTracker.incrementCacheMisses();
+  }
+
+  /**
+   * 사용자별 구독 재시작
+   */
+  private async restartUserSpecificSubscriptions(): Promise<void> {
+    try {
+      // 사용자별 구독만 재시작 (staff, jobPostings, tournaments는 유지)
+      if (this.subscriptions.applications) {
+        this.subscriptions.applications();
+        delete this.subscriptions.applications;
+      }
+      if (this.subscriptions.workLogs) {
+        this.subscriptions.workLogs();
+        delete this.subscriptions.workLogs;
+      }
+      if (this.subscriptions.attendanceRecords) {
+        this.subscriptions.attendanceRecords();
+        delete this.subscriptions.attendanceRecords;
+      }
+
+      // 새로운 구독 시작
+      await Promise.all([
+        this.subscribeToApplications(),
+        this.subscribeToWorkLogs(),
+        this.subscribeToAttendanceRecords(),
+      ]);
+
+      logger.info('UnifiedDataService: 사용자별 구독 재시작 완료', { 
+        component: 'unifiedDataService' 
+      });
+    } catch (error) {
+      logger.error('UnifiedDataService: 구독 재시작 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'unifiedDataService'
+      });
+    }
   }
 
   /**
@@ -272,8 +346,10 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'staff', loading: true });
 
+      // persons 컬렉션에서 staff 타입의 데이터만 가져옴
       const staffQuery = query(
-        collection(db, 'staff'),
+        collection(db, 'persons'),
+        where('type', 'in', ['staff', 'both']),
         orderBy('name', 'asc')
       );
 
@@ -336,10 +412,29 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'workLogs', loading: true });
 
-      const workLogsQuery = query(
-        collection(db, 'workLogs'),
-        orderBy('date', 'desc')
-      );
+      // 사용자별 필터링 쿼리 구성
+      let workLogsQuery;
+      if (this.currentUserId) {
+        // 현재 사용자의 근무 기록만 가져오기
+        workLogsQuery = query(
+          collection(db, 'workLogs'),
+          where('staffId', '==', this.currentUserId),
+          orderBy('date', 'desc')
+        );
+        logger.info('WorkLogs 사용자별 필터링 쿼리', { 
+          component: 'unifiedDataService',
+          data: { userId: this.currentUserId }
+        });
+      } else {
+        // 전체 근무 기록 가져오기 (관리자용)
+        workLogsQuery = query(
+          collection(db, 'workLogs'),
+          orderBy('date', 'desc')
+        );
+        logger.info('WorkLogs 전체 데이터 쿼리', { 
+          component: 'unifiedDataService'
+        });
+      }
 
       this.subscriptions.workLogs = onSnapshot(
         workLogsQuery,
@@ -400,10 +495,29 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'attendanceRecords', loading: true });
 
-      const attendanceQuery = query(
-        collection(db, 'attendanceRecords'),
-        orderBy('createdAt', 'desc')
-      );
+      // 사용자별 필터링 쿼리 구성
+      let attendanceQuery;
+      if (this.currentUserId) {
+        // 현재 사용자의 출석 기록만 가져오기
+        attendanceQuery = query(
+          collection(db, 'attendanceRecords'),
+          where('staffId', '==', this.currentUserId),
+          orderBy('createdAt', 'desc')
+        );
+        logger.info('AttendanceRecords 사용자별 필터링 쿼리', { 
+          component: 'unifiedDataService',
+          data: { userId: this.currentUserId }
+        });
+      } else {
+        // 전체 출석 기록 가져오기 (관리자용)
+        attendanceQuery = query(
+          collection(db, 'attendanceRecords'),
+          orderBy('createdAt', 'desc')
+        );
+        logger.info('AttendanceRecords 전체 데이터 쿼리', { 
+          component: 'unifiedDataService'
+        });
+      }
 
       this.subscriptions.attendanceRecords = onSnapshot(
         attendanceQuery,
@@ -528,10 +642,29 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: true });
 
-      const applicationsQuery = query(
-        collection(db, 'applications'),
-        orderBy('createdAt', 'desc')
-      );
+      // 사용자별 필터링 쿼리 구성
+      let applicationsQuery;
+      if (this.currentUserId) {
+        // 현재 사용자의 지원서만 가져오기
+        applicationsQuery = query(
+          collection(db, 'applications'),
+          where('applicantId', '==', this.currentUserId),
+          orderBy('createdAt', 'desc')
+        );
+        logger.info('Applications 사용자별 필터링 쿼리', { 
+          component: 'unifiedDataService',
+          data: { userId: this.currentUserId }
+        });
+      } else {
+        // 전체 지원서 가져오기 (관리자용)
+        applicationsQuery = query(
+          collection(db, 'applications'),
+          orderBy('createdAt', 'desc')
+        );
+        logger.info('Applications 전체 데이터 쿼리', { 
+          component: 'unifiedDataService'
+        });
+      }
 
       this.subscriptions.applications = onSnapshot(
         applicationsQuery,
@@ -560,9 +693,26 @@ export class UnifiedDataService {
         },
         (error) => {
           this.performanceTracker.incrementErrors();
-          logger.error('Applications 구독 오류', error, { component: 'unifiedDataService' });
+          
+          // 권한 오류와 인덱스 오류 구분
+          let errorMessage = error.message;
+          if (error.code === 'permission-denied') {
+            errorMessage = 'Applications 접근 권한이 없습니다. 로그인 상태를 확인하세요.';
+          } else if (error.message?.includes('index')) {
+            errorMessage = 'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.';
+          }
+          
+          logger.error('Applications 구독 오류', error, { 
+            component: 'unifiedDataService',
+            data: { 
+              code: error.code,
+              originalMessage: error.message,
+              processedMessage: errorMessage
+            }
+          });
+          
           if (this.dispatcher) {
-            this.dispatcher({ type: 'SET_ERROR', collection: 'applications', error: error.message });
+            this.dispatcher({ type: 'SET_ERROR', collection: 'applications', error: errorMessage });
             this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: false });
           }
         }

@@ -16,6 +16,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { logger } from '../utils/logger';
 import { unifiedDataService } from '../services/unifiedDataService';
+import { useAuth } from './AuthContext';
 import {
   UnifiedDataState,
   UnifiedDataAction,
@@ -91,6 +92,14 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       const staffMap = new Map<string, Staff>();
       action.data.forEach(staff => staffMap.set(staff.staffId, staff));
       
+      logger.info('📊 Staff 데이터 업데이트됨', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          count: action.data.length,
+          staffIds: action.data.slice(0, 3).map(s => s.staffId)
+        }
+      });
+      
       return {
         ...state,
         staff: staffMap,
@@ -104,6 +113,15 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'SET_WORK_LOGS': {
       const workLogsMap = new Map<string, WorkLog>();
       action.data.forEach(workLog => workLogsMap.set(workLog.id, workLog));
+      
+      logger.info('📊 WorkLogs 데이터 업데이트됨', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          count: action.data.length,
+          sampleIds: action.data.slice(0, 3).map(w => w.id),
+          staffIds: action.data.slice(0, 3).map(w => w.staffId)
+        }
+      });
       
       return {
         ...state,
@@ -146,6 +164,16 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'SET_APPLICATIONS': {
       const applicationsMap = new Map();
       action.data.forEach(app => applicationsMap.set(app.id, app));
+      
+      logger.info('📊 Applications 데이터 업데이트됨', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          count: action.data.length,
+          sampleIds: action.data.slice(0, 3).map(a => a.id),
+          applicantIds: action.data.slice(0, 3).map(a => a.applicantId),
+          statuses: action.data.slice(0, 3).map(a => a.status)
+        }
+      });
       
       return {
         ...state,
@@ -233,31 +261,65 @@ interface UnifiedDataProviderProps {
 export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(unifiedDataReducer, initialUnifiedDataState);
   const initializeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { currentUser } = useAuth(); // 현재 로그인한 사용자
 
-  // 서비스 초기화
+  // 사용자별 데이터 구독 설정
   useEffect(() => {
+    if (!currentUser) return;
+    
+    // 현재 사용자 ID를 서비스에 설정
+    unifiedDataService.setCurrentUserId(currentUser.uid);
+    
+    logger.info('UnifiedDataProvider: 사용자별 필터링 활성화', { 
+      component: 'UnifiedDataContext',
+      data: { userId: currentUser.uid }
+    });
+  }, [currentUser]);
+
+  // 서비스 초기화 (중복 초기화 방지)
+  useEffect(() => {
+    let isSubscribed = true;
+    
     logger.info('UnifiedDataProvider: 초기화 시작', { component: 'UnifiedDataContext' });
 
     // 디스패처 설정
     unifiedDataService.setDispatcher(dispatch);
 
-    // 구독 시작 (약간의 지연으로 React 렌더링 완료 대기)
-    initializeTimeoutRef.current = setTimeout(async () => {
+    // 구독 시작 (중복 호출 방지)
+    const initializeSubscriptions = async () => {
+      if (!isSubscribed) return;
+      
       try {
+        logger.info('🚀 Firebase 구독 시작...', { component: 'UnifiedDataContext' });
         await unifiedDataService.startAllSubscriptions();
-        logger.info('UnifiedDataProvider: 초기화 완료', { component: 'UnifiedDataContext' });
+        
+        if (isSubscribed) {
+          logger.info('✅ UnifiedDataProvider: 초기화 완료', { 
+            component: 'UnifiedDataContext',
+            data: {
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
       } catch (error) {
-        logger.error('UnifiedDataProvider: 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
-          component: 'UnifiedDataContext'
-        });
+        if (isSubscribed) {
+          logger.error('❌ UnifiedDataProvider: 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
+            component: 'UnifiedDataContext'
+          });
+        }
       }
-    }, 100);
+    };
 
-    // 클린업 함수
+    // 약간의 지연으로 React 렌더링 완료 대기
+    initializeTimeoutRef.current = setTimeout(initializeSubscriptions, 100);
+
+    // 클린업 함수 (메모리 누수 방지)
     return () => {
+      isSubscribed = false;
       if (initializeTimeoutRef.current) {
         clearTimeout(initializeTimeoutRef.current);
       }
+      logger.info('UnifiedDataProvider: 클린업 시작', { component: 'UnifiedDataContext' });
       unifiedDataService.stopAllSubscriptions();
       logger.info('UnifiedDataProvider: 클린업 완료', { component: 'UnifiedDataContext' });
     };

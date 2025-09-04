@@ -21,7 +21,6 @@ interface ScheduleDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   schedule: ScheduleEvent | null;
-  onCheckIn?: (scheduleId: string) => void;
   onCheckOut?: (scheduleId: string) => void;
   onCancel?: (scheduleId: string) => void;
   onDelete?: (scheduleId: string) => void;
@@ -31,7 +30,6 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   isOpen: _isOpen,
   onClose,
   schedule,
-  onCheckIn,
   onCheckOut,
   onCancel,
   onDelete
@@ -386,7 +384,6 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
   const typeDisplay = getTypeDisplay();
   const isToday = schedule.date === getTodayString();
-  const canCheckIn = isToday && schedule.type === 'confirmed' && schedule.status === 'not_started';
   const canCheckOut = isToday && schedule.type === 'confirmed' && schedule.status === 'checked_in';
   
   // 삭제 가능한 일정인지 확인 (완료되지 않은 일정만)
@@ -786,18 +783,6 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
         {/* 액션 버튼 */}
         <div className="mt-6 flex gap-3">
-          {canCheckIn && onCheckIn && (
-            <button
-              onClick={() => {
-                onCheckIn(schedule.id);
-                onClose();
-              }}
-              className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
-            >
-              출근하기
-            </button>
-          )}
-          
           {canCheckOut && onCheckOut && (
             <button
               onClick={() => {

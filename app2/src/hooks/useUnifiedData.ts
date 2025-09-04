@@ -61,13 +61,35 @@ export const useUnifiedData = () => {
  * 스케줄 전용 훅
  * 스케줄 페이지에서 사용하는 모든 데이터와 함수들
  */
-export const useScheduleData = () => {
+export const useScheduleData = (options?: { userId?: string }) => {
   const context = useUnifiedDataContext();
 
-  // 스케줄 이벤트들 (필터링 적용)
+  // 스케줄 이벤트들 (필터링 적용, 사용자 필터링 포함)
   const schedules = useMemo(() => {
-    return context.getFilteredScheduleEvents();
-  }, [context.getFilteredScheduleEvents]);
+    const allSchedules = context.getFilteredScheduleEvents();
+    
+    // userId가 제공된 경우 해당 사용자의 스케줄만 필터링
+    if (options?.userId) {
+      return allSchedules.filter(schedule => {
+        // WorkLog 기반 스케줄의 경우 staffId로 필터링
+        if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
+          const workLog = context.state.workLogs.get(schedule.workLogId);
+          return workLog?.staffId === options.userId;
+        }
+        
+        // Application 기반 스케줄의 경우 applicantId로 필터링
+        if (schedule.sourceCollection === 'applications') {
+          const scheduleId = schedule.id.replace('application_', '');
+          const application = context.state.applications.get(scheduleId);
+          return application?.applicantId === options.userId;
+        }
+        
+        return false;
+      });
+    }
+    
+    return allSchedules;
+  }, [context.getFilteredScheduleEvents, context.state.workLogs, context.state.applications, options?.userId]);
 
   // 스케줄 통계 계산
   const stats = useMemo((): ScheduleStats => {

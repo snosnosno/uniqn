@@ -111,6 +111,7 @@ const App: React.FC = () => {
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
                       <Route path="my-schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
+                      <Route path="schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
                       <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><AttendancePage /></Suspense>} />
                       <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
 

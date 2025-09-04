@@ -70,8 +70,11 @@ export const useJobBoard = () => {
   const [preQuestionCompleted, setPreQuestionCompleted] = useState<Map<string, boolean>>(new Map());
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<Map<string, PreQuestionAnswer[]>>(new Map());
   
-  // 내 지원 현황 로딩 상태 (데이터는 UnifiedDataContext에서 가져옴)
-  const [loadingMyApplications, setLoadingMyApplications] = useState(false);
+  // UnifiedDataContext 먼저 선언
+  const unifiedContext = useUnifiedData();
+  
+  // 내 지원 현황 로딩 상태 - 초기 로딩만 체크 (applications 특정 로딩은 제외)
+  const loadingMyApplications = unifiedContext.state.loading.initial;
   
   // Infinite Query based data fetching
   const {
@@ -120,11 +123,29 @@ export const useJobBoard = () => {
       if (jobPostings.length === 0) return;
       
       const postIds = jobPostings.map(p => p.id);
-      const q = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', 'in', postIds));
-      const querySnapshot = await getDocs(q);
+      // 마이그레이션 후에는 eventId만 사용하지만, 임시로 두 필드 모두 지원
+      const qEventId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', 'in', postIds));
+      const qPostId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', 'in', postIds));
+      
+      const [eventIdSnapshot, postIdSnapshot] = await Promise.all([
+        getDocs(qEventId).catch(() => ({ docs: [] })),
+        getDocs(qPostId).catch(() => ({ docs: [] }))
+      ]);
+      
       const appliedMap = new Map<string, string>();
-      querySnapshot.forEach(doc => {
-        appliedMap.set(doc.data().eventId || doc.data().postId, doc.data().status);
+      
+      // eventId 기반 결과 처리
+      eventIdSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        appliedMap.set(data.eventId, data.status);
+      });
+      
+      // postId 기반 결과 처리 (중복 제거)
+      postIdSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (!appliedMap.has(data.postId)) {
+          appliedMap.set(data.postId, data.status);
+        }
       });
       setAppliedJobs(appliedMap);
     };
@@ -134,19 +155,71 @@ export const useJobBoard = () => {
   
   // UnifiedDataContext에서 지원 현황 가져오기
   const { jobPostings: allJobPostings } = useJobPostingData();
-  const unifiedContext = useUnifiedData();
   
   // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
   const myApplications = useMemo(() => {
-    if (!currentUser || !unifiedContext.state) return [];
+    if (!currentUser || !unifiedContext.state) {
+      console.log('🎯 myApplications 계산 스킵:', { currentUser: !!currentUser, state: !!unifiedContext.state });
+      return [];
+    }
     
-    // 현재 사용자의 지원서만 필터링
-    const userApplications = Array.from(unifiedContext.state.applications.values())
-      .filter(app => app.applicantId === currentUser.uid);
+    // 디버깅: 전체 applications 데이터 확인
+    const allApplications = Array.from(unifiedContext.state.applications.values());
+    console.log('🎯 전체 Applications 데이터:', {
+      total: allApplications.length,
+      loading: {
+        applications: unifiedContext.state.loading.applications,
+        initial: unifiedContext.state.loading.initial
+      },
+      sample: allApplications.slice(0, 3).map(app => ({
+        id: app.id,
+        applicantId: app.applicantId,
+        postId: app.postId,
+        status: app.status
+      })),
+      currentUserId: currentUser.uid
+    });
+
+    // 초기 로딩 시에만 빈 배열 반환 (applications 특정 로딩은 제외)
+    if (unifiedContext.state.loading.initial && allApplications.length === 0) {
+      console.log('🔄 초기 로딩 중...');
+      return [];
+    }
+
+    // 데이터가 비어있어도 빈 배열 반환 (무한로딩 방지)
+    if (allApplications.length === 0) {
+      console.log('ℹ️ Applications 데이터가 비어있습니다 (정상 상태일 수 있음).');
+    }
+    
+    // 현재 사용자의 지원서만 필터링 (applicantId 필드 확인)
+    const userApplications = allApplications.filter(app => {
+      const matchesId = app.applicantId === currentUser.uid;
+      if (!matchesId && allApplications.length > 0) {
+        // 디버깅: 첫 번째 앱에서 필드 구조 확인
+        console.log('🔍 applicantId 매칭 실패 - 필드 구조 확인:', {
+          expected: currentUser.uid,
+          actual: app.applicantId,
+          appFields: Object.keys(app),
+          sampleApp: allApplications[0]
+        });
+      }
+      return matchesId;
+    });
+    
+    console.log('🎯 사용자별 필터링 결과:', {
+      userApplications: userApplications.length,
+      data: userApplications.map(app => ({
+        id: app.id,
+        postId: app.postId,
+        status: app.status
+      }))
+    });
     
     // 각 지원서에 JobPosting 정보 추가하고 MyApplicationsTab 호환 형식으로 변환
     const applicationsWithJobData = userApplications.map(application => {
-      const jobPosting = unifiedContext.state.jobPostings.get(application.postId);
+      // eventId 또는 postId로 jobPosting 찾기 (마이그레이션 호환성)
+      const eventId = (application as any).eventId || application.postId;
+      const jobPosting = unifiedContext.state.jobPostings.get(eventId);
       
       return {
         id: application.id,
@@ -338,11 +411,23 @@ export const useJobBoard = () => {
     if (window.confirm(t('jobBoard.alerts.confirmCancel'))) {
       setIsProcessing(postId);
       try {
-        const q = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', '==', postId));
-        const querySnapshot = await getDocs(q);
+        // eventId와 postId 모두 지원 (마이그레이션 호환성)
+        const qEventId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', '==', postId));
+        const qPostId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', '==', postId));
+        
+        const [eventIdSnapshot, postIdSnapshot] = await Promise.all([
+          getDocs(qEventId).catch(() => ({ docs: [] })),
+          getDocs(qPostId).catch(() => ({ docs: [] }))
+        ]);
+        
+        // 두 쿼리 결과 병합
+        const allDocs = [...eventIdSnapshot.docs, ...postIdSnapshot.docs];
+        const uniqueDocs = allDocs.filter((doc, index, arr) => 
+          arr.findIndex(d => d.id === doc.id) === index
+        );
         
         const deletePromises: Promise<void>[] = [];
-        querySnapshot.forEach((document) => {
+        uniqueDocs.forEach((document) => {
           deletePromises.push(deleteDoc(doc(db, 'applications', document.id)));
         });
         await Promise.all(deletePromises);

@@ -1,5 +1,20 @@
 {
+  "name": "tholdem-migration-scripts",
+  "version": "1.0.0",
+  "description": "T-HOLDEM Firebase migration scripts",
+  "main": "migratePostIdToEventId.js",
+  "scripts": {
+    "migrate": "node migratePostIdToEventId.js",
+    "rollback": "node migratePostIdToEventId.js --rollback",
+    "help": "node migratePostIdToEventId.js --help"
+  },
   "dependencies": {
     "firebase-admin": "^12.7.0"
-  }
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "T-HOLDEM Team",
+  "license": "MIT"
 }

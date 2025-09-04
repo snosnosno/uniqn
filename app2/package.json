@@ -64,7 +64,12 @@
     "deploy:all": "npm run build && cd .. && firebase deploy",
     "deploy:preview": "npm run build && cd .. && firebase hosting:channel:deploy preview",
     "quality": "npm run lint && npm run format:check && npm run type-check",
-    "quality:fix": "npm run lint:fix && npm run format"
+    "quality:fix": "npm run lint:fix && npm run format",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report"
   },
   "jest": {
     "transformIgnorePatterns": [

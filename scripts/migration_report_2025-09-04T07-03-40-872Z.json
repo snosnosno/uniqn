@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-09-04T07:03:40.872Z",
+  "stats": {
+    "totalDocuments": 3,
+    "migratedDocuments": 0,
+    "skippedDocuments": 3,
+    "errorDocuments": 0,
+    "errors": []
+  },
+  "migration": "postId_to_eventId",
+  "collection": "applications"
+}
