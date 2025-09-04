@@ -36,15 +36,16 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
 - **Error Tracking**: Sentry
 - **Performance**: Firebase Performance, Web Vitals
 
-### 📊 프로젝트 성과 (2025년 1월 17일)
+### 🚀 **핵심 기술 구현 사항**
+- ✅ **Web Workers**: 백그라운드 처리 시스템
+- ✅ **가상화**: 대용량 리스트 성능 최적화
+- ✅ **스마트 캐싱**: IndexedDB 기반 영구 캐시
+- ✅ **지연 로딩**: 컴포넌트 코드 스플리팅
+- ✅ **E2E 테스트**: Playwright 기반 테스트 프레임워크
+- ✅ **UnifiedDataContext**: 통합 데이터 관리
+- ✅ **보안 강화**: Firebase 키 및 환경 변수 보호
 
-| 지표 | 이전 | 현재 | 개선율 |
-|------|------|------|--------|
-| 번들 크기 | 1.6MB | 272.8KB | 83% ↓ |
-| 초기 로딩 | 3.5초 | 2.0초 | 43% ↓ |
-| Lighthouse 점수 | 68 | 91 | 34% ↑ |
-| 의존성 개수 | 141개 | 43개 | 69% ↓ |
-| TypeScript Strict | 부분 | 100% | ✅ |
+> 📊 **상세한 성과 지표**는 [PRODUCT_SPEC.md](PRODUCT_SPEC.md) 참조
 
 ---
 

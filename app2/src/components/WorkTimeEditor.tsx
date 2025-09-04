@@ -264,7 +264,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         } });
       }
       
-      // 업데이트된 데이터로 콜백 호출 - 변경된 값만 반영
+      // 🚀 즉시 UI 업데이트 (Optimistic Update) - setTimeout 제거
       if (onUpdate) {
         const updatedWorkLog = {
           ...workLog,
@@ -274,16 +274,19 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           scheduledEndTime: endTime === '' ? null : (endTime && endTime.trim() !== '' ? newEndTime : workLog.scheduledEndTime),
           updatedAt: Timestamp.now()
         };
+        
+        // 즉시 UI 업데이트 실행 (지연 없음)
         onUpdate(updatedWorkLog);
         
         // 업데이트 성공 로그
-        logger.info('WorkTimeEditor onUpdate 콜백 호출 완료', { 
+        logger.info('WorkTimeEditor 즉시 onUpdate 콜백 호출 완료', { 
           component: 'WorkTimeEditor', 
           data: { 
             staffId: workLog.staffId,
             date: workLog.date,
             newStartTime: startTime || '미정',
-            newEndTime: endTime || '미정'
+            newEndTime: endTime || '미정',
+            immediate: true // 즉시 업데이트 표시
           } 
         });
       }
@@ -317,30 +320,8 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
       showSuccess('시간이 성공적으로 업데이트되었습니다.');
       
-      // 동기화를 위한 짧은 지연 후 onUpdate 다시 호출
-      // Firebase 저장이 완료되었으므로 Context 갱신 트리거
-      setTimeout(() => {
-        logger.info('🔄 동기화를 위한 추가 onUpdate 호출', { 
-          component: 'WorkTimeEditor', 
-          data: { 
-            workLogId: finalWorkLogId,
-            scheduledStartTime: startTime || '미정',
-            scheduledEndTime: endTime || '미정'
-          } 
-        });
-        
-        // onUpdate를 다시 호출하여 Context 갱신 보장
-        if (onUpdate) {
-          const syncWorkLog = {
-            ...workLog,
-            id: finalWorkLogId,
-            scheduledStartTime: startTime === '' ? null : (startTime && startTime.trim() !== '' ? newStartTime : workLog.scheduledStartTime),
-            scheduledEndTime: endTime === '' ? null : (endTime && endTime.trim() !== '' ? newEndTime : workLog.scheduledEndTime),
-            updatedAt: Timestamp.now()
-          };
-          onUpdate(syncWorkLog);
-        }
-      }, 500); // 500ms 지연으로 Firebase 저장 완료 보장
+      // 🚀 즉시 동기화 - Firebase 저장과 동시에 Context 갱신
+      // setTimeout 지연 제거: Firebase onSnapshot이 자동으로 동기화 처리
       
     } catch (error) {
       logger.error('시간 업데이트 중 오류 발생', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });

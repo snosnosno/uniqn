@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { logger } from '../../utils/logger';
 import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
-// import { useTranslation } from 'react-i18next'; // not used
 import { 
   FaCalendarAlt, 
   FaSync,
@@ -38,12 +37,10 @@ import { doc, updateDoc, deleteDoc, Timestamp, collection, setDoc } from 'fireba
 import { db } from '../../firebase';
 
 const MySchedulePage: React.FC = () => {
-  // const { t } = useTranslation(); // not used
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // formatTime은 이미 utils/dateUtils에서 import됨
 
   // 상태 아이콘 렌더링
   const renderStatusIcon = (event: ScheduleEvent) => {

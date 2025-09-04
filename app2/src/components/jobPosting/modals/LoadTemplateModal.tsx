@@ -116,7 +116,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
         <InfoCard
           type="info"
           title="※ 안내:"
-          message="템플릿 불러오기 후 시작일과 종료일을 설정해주세요."
+          message="템플릿 불러오기 후 날짜를 설정해주세요."
           className="mt-4"
         />
         

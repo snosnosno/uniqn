@@ -1,7 +1,6 @@
 import React from 'react';
 import { FaFilter, FaSearch, FaTimes } from '../../../components/Icons/ReactIconsReplacement';
 import { ScheduleFilters as FiltersType } from '../../../types/schedule';
-// import { subDays, addDays, format } from 'date-fns'; // not used
 
 interface ScheduleFiltersProps {
   filters: FiltersType;

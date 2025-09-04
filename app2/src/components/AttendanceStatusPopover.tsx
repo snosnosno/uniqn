@@ -150,13 +150,19 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     setIsUpdating(true);
     setIsOpen(false);
 
-    // Optimistic update 즉시 적용
+    // 🚀 Optimistic Update 즉시 적용
     const targetWorkLogId = workLogId.startsWith('virtual_') ? 
       `${eventId || 'default-event'}_${workLogId.split('_')[1]}_${workLogId.split('_')[2]}` : 
       workLogId;
     
+    // 1. 즉시 UI 업데이트 (Optimistic Update)
     if (applyOptimisticUpdate) {
       applyOptimisticUpdate(targetWorkLogId, newStatus);
+    }
+    
+    // 2. 즉시 콜백 실행 (기존 100ms 지연 제거)
+    if (onStatusChange) {
+      onStatusChange(newStatus);
     }
 
     try {
@@ -292,19 +298,23 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         }
       }
 
-      // Firebase 데이터 전파를 위한 짧은 지연
-      setTimeout(() => {
-        if (onStatusChange) {
-          onStatusChange(newStatus);
-        }
-      }, 100);
-
-      // 성공 메시지 표시
+      // 3. 성공 메시지 표시
       const statusLabel = statusOptions.find(opt => opt.value === newStatus)?.label || newStatus;
       showSuccess(`${staffName}의 출석 상태가 "${statusLabel}"로 변경되었습니다.`);
       
     } catch (error) {
-      // 출석 상태 업데이트 오류
+      console.error('AttendanceStatusPopover - 상태 변경 오류:', error);
+      
+      // 4. 에러 발생 시 Optimistic Update 롤백
+      if (applyOptimisticUpdate) {
+        applyOptimisticUpdate(targetWorkLogId, currentStatus);
+      }
+      
+      // 5. 에러 콜백 실행 (원래 상태로 복원)
+      if (onStatusChange) {
+        onStatusChange(currentStatus);
+      }
+      
       showError('출석 상태 변경 중 오류가 발생했습니다.');
     } finally {
       setIsUpdating(false);

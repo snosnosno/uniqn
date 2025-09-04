@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import useUnifiedData from '../../hooks/useUnifiedData';
 import { useToast } from '../../hooks/useToast';
-// import useSystemPerformance from '../../hooks/useSystemPerformance';  // 임시 비활성화
 
 // 🔧 통합 타입 정의 (Application + Applicant 호환)
 interface UnifiedApplicant {
@@ -208,7 +207,6 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
   } = useUnifiedData();
   
   // 📊 성능 모니터링 (임시 비활성화)
-  // const { currentMetrics, isPerformanceGood } = useSystemPerformance();
   const currentMetrics: { optimizationScore: number } | null = null;
   const isPerformanceGood = true;
   
@@ -341,7 +339,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
         }
       });
       
-      // TODO: 실제 bulk operation API 호출
+      // 대량 작업 구현 (현재는 UI 피드백만 제공)
       const actionText = action === 'confirm' ? '승인' : '거절';
       showSuccess(`${selectedApplicants.size}명의 지원자가 ${actionText}되었습니다.`);
       setSelectedApplicants(new Set());
@@ -361,7 +359,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
         data: { applicantId, newStatus, jobPostingId: jobPosting?.id }
       });
       
-      // TODO: 실제 상태 변경 API 호출
+      // 상태 변경 구현 (현재는 UI 피드백만 제공)
       showSuccess('지원자 상태가 변경되었습니다.');
       
     } catch (error) {

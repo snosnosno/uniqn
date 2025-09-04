@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { doc, updateDoc, arrayUnion, arrayRemove, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
 import { db, promoteToStaff } from '../../../../firebase';
@@ -53,19 +53,47 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     setIsProcessing(true);
     
     try {
-      // 같은 날짜 중복 확정 방지 검사
+      const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
+      
+      // 🔍 같은 날짜 중복 확정 방지 검사 (개선된 버전)
       const targetDates = assignments
         .map(a => a.date)
         .filter(date => date && date.trim() !== '');
       
       if (targetDates.length > 0) {
-        const existingConfirmations = (jobPosting.confirmedStaff || []).filter((staff: any) => 
-          staff.userId === applicant.applicantId && 
+        // jobPosting의 최신 상태를 다시 확인
+        const jobPostingDoc = await getDoc(jobPostingRef);
+        const latestData = jobPostingDoc.data();
+        const latestConfirmedStaff = latestData?.confirmedStaff || [];
+        
+        const existingConfirmations = latestConfirmedStaff.filter((staff: any) => 
+          (staff.userId || staff.staffId) === applicant.applicantId && 
           targetDates.includes(staff.date)
         );
 
+        logger.debug('🔍 중복 확정 검사:', {
+          component: 'useApplicantActions',
+          data: {
+            applicantId: applicant.applicantId,
+            targetDates,
+            existingConfirmationsCount: existingConfirmations.length,
+            existingConfirmations: existingConfirmations.map((s: any) => ({
+              userId: s.userId || s.staffId,
+              role: s.role,
+              timeSlot: s.timeSlot,
+              date: s.date
+            })),
+            totalConfirmedStaffCount: latestConfirmedStaff.length
+          }
+        });
+
         if (existingConfirmations.length > 0) {
-          alert(`같은 날짜에 중복 확정할 수 없습니다.`);
+          const duplicateDates = existingConfirmations.map((s: any) => s.date).join(', ');
+          alert(`같은 날짜에 중복 확정할 수 없습니다.\n중복 날짜: ${duplicateDates}`);
+          logger.warn('⚠️ 중복 확정 시도 차단:', {
+            component: 'useApplicantActions',
+            data: { applicantId: applicant.applicantId, duplicateDates }
+          });
           return;
         }
       }
@@ -91,7 +119,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         return;
       }
 
-      const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
       const _applicationRef = doc(db, "applications", applicant.id);
 
       // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
@@ -241,35 +268,63 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // 🏗️ ApplicationHistory 서비스를 통한 확정 취소 (완전한 원본 데이터 복원)
       await ApplicationHistoryService.cancelConfirmation(applicant.id);
       
-      // 🔄 jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거
+      // 🔄 jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거 (필터링 방식)
       await runTransaction(db, async (transaction) => {
-        const confirmedStaffArray = jobPosting.confirmedStaff ?? [];  // TypeScript strict mode
+        // 최신 jobPosting 데이터를 transaction 내에서 가져오기
+        const jobPostingDoc = await transaction.get(jobPostingRef);
+        if (!jobPostingDoc.exists()) {
+          throw new Error('공고를 찾을 수 없습니다.');
+        }
+
+        const currentData = jobPostingDoc.data();
+        const confirmedStaffArray = currentData?.confirmedStaff ?? [];
+        
         if (confirmedStaffArray.length > 0) {
-          const staffEntriesToRemove = confirmedStaffArray.filter(
-            (staff: any) => (staff.userId || staff.staffId) === applicant.applicantId  // 필드명 호환성
+          // userId 기준으로 해당 지원자의 모든 항목 필터링 (완전 제거)
+          const filteredConfirmedStaff = confirmedStaffArray.filter(
+            (staff: any) => (staff.userId || staff.staffId) !== applicant.applicantId
           );
 
-          logger.debug('🗑️ confirmedStaff 항목 제거 (강화된 버전):', {
+          const removedCount = confirmedStaffArray.length - filteredConfirmedStaff.length;
+
+          logger.debug('🗑️ confirmedStaff 항목 필터링 제거 (개선된 버전):', {
             component: 'useApplicantActions',
             data: {
               applicantId: applicant.applicantId,
               applicantName: applicant.applicantName,
-              entriesToRemoveCount: staffEntriesToRemove.length,
-              staffEntriesToRemove: staffEntriesToRemove.map((s: any) => ({
-                userId: s.userId || s.staffId,
-                role: s.role,
-                timeSlot: s.timeSlot,
-                date: s.date
-              }))
+              originalCount: confirmedStaffArray.length,
+              filteredCount: filteredConfirmedStaff.length,
+              removedCount,
+              removedItems: confirmedStaffArray
+                .filter((s: any) => (s.userId || s.staffId) === applicant.applicantId)
+                .map((s: any) => ({
+                  userId: s.userId || s.staffId,
+                  role: s.role,
+                  timeSlot: s.timeSlot,
+                  date: s.date
+                }))
             }
           });
 
-          // 각 항목을 개별적으로 제거
-          staffEntriesToRemove.forEach((staffEntry: any) => {
-            transaction.update(jobPostingRef, {
-              confirmedStaff: arrayRemove(staffEntry)
-            });
+          // 전체 confirmedStaff 배열을 필터링된 배열로 교체
+          transaction.update(jobPostingRef, {
+            confirmedStaff: filteredConfirmedStaff
           });
+
+          // 제거 검증
+          if (removedCount === 0) {
+            logger.warn('⚠️ confirmedStaff에서 제거된 항목이 없음 - 데이터 불일치 가능성:', {
+              component: 'useApplicantActions',
+              data: { 
+                applicantId: applicant.applicantId,
+                confirmedStaffArray: confirmedStaffArray.map((s: any) => ({
+                  userId: s.userId || s.staffId,
+                  role: s.role,
+                  date: s.date
+                }))
+              }
+            });
+          }
         } else {
           logger.debug('ℹ️ confirmedStaff 배열이 비어있음 - 제거할 항목 없음', {
             component: 'useApplicantActions',
@@ -283,6 +338,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
       // staff 컬렉션 자동 삭제 (다중 문서 지원)
       await deleteStaffDocuments(applicant.applicantId, jobPosting.id);
+
+      // 🔍 취소 후 데이터 정합성 검증
+      await verifyDataIntegrityAfterCancel(jobPostingRef, applicant.applicantId);
 
       alert(`${applicant.applicantName}님의 확정이 취소되었습니다.`);
 
@@ -405,6 +463,76 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         component: 'useApplicantActions' 
       });
       alert('자동 마감 해제 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  /**
+   * 확정 취소 후 데이터 정합성 검증 함수
+   */
+  const verifyDataIntegrityAfterCancel = async (jobPostingRef: any, applicantId: string) => {
+    try {
+      logger.debug('🔍 확정 취소 후 데이터 정합성 검증 시작:', { 
+        component: 'useApplicantActions', 
+        data: { applicantId } 
+      });
+      
+      // jobPosting의 최종 상태 확인
+      const finalDoc = await getDoc(jobPostingRef);
+      if (!finalDoc.exists()) {
+        logger.error('❌ 검증: jobPosting 문서가 존재하지 않음', undefined, { 
+          component: 'useApplicantActions' 
+        });
+        return;
+      }
+
+      const finalData = finalDoc.data() as any;
+      const remainingConfirmedStaff = finalData?.confirmedStaff || [];
+      
+      // 해당 지원자의 잔여 데이터 확인
+      const remainingApplicantEntries = remainingConfirmedStaff.filter(
+        (staff: any) => (staff.userId || staff.staffId) === applicantId
+      );
+
+      if (remainingApplicantEntries.length > 0) {
+        logger.error('❌ 데이터 정합성 오류: confirmedStaff에 잔여 데이터 발견:', 
+          new Error('Data integrity violation'), {
+          component: 'useApplicantActions',
+          data: {
+            applicantId,
+            remainingEntries: remainingApplicantEntries.map((s: any) => ({
+              userId: s.userId || s.staffId,
+              role: s.role,
+              timeSlot: s.timeSlot,
+              date: s.date
+            }))
+          }
+        });
+        
+        // 강제로 다시 한번 정리 시도
+        await runTransaction(db, async (transaction) => {
+          const cleanedArray = remainingConfirmedStaff.filter(
+            (staff: any) => (staff.userId || staff.staffId) !== applicantId
+          );
+          transaction.update(jobPostingRef, {
+            confirmedStaff: cleanedArray
+          });
+        });
+        
+        logger.debug('🔧 강제 정리 완료:', { 
+          component: 'useApplicantActions',
+          data: { applicantId, removedEntries: remainingApplicantEntries.length } 
+        });
+      } else {
+        logger.debug('✅ 데이터 정합성 검증 통과: confirmedStaff 정상 정리됨', { 
+          component: 'useApplicantActions',
+          data: { applicantId, totalRemainingEntries: remainingConfirmedStaff.length } 
+        });
+      }
+      
+    } catch (err) {
+      logger.error('데이터 정합성 검증 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
+        component: 'useApplicantActions' 
+      });
     }
   };
 

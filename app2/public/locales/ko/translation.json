@@ -471,6 +471,7 @@
   },
   "jobBoard": {
     "title": "구인구직 게시판",
+    "noJobsAvailable": "구인 공고가 없습니다.",
     "search": {
       "label": "검색",
       "placeholder": "공고 제목, 설명으로 검색...",

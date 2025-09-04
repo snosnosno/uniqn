@@ -1,8 +1,6 @@
 import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
-  // createUserWithEmailAndPassword,
-  // signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
@@ -12,7 +10,6 @@ import { logger } from '../utils/logger';
 import { setSentryUser } from '../utils/sentry';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
 
 // 확장된 User 인터페이스 (Firebase User + 추가 필드)

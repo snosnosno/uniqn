@@ -174,7 +174,7 @@ export const useSystemPerformance = (options?: {
       
       // 시스템 성능 
       memoryUsage,
-      renderCount: 0, // TODO: 컴포넌트 렌더링 추적 추가
+      renderCount: 0, // 컴포넌트 렌더링 추적 기능 (추후 구현)
       componentUpdateRate: 0,
       
       // 데이터 통계

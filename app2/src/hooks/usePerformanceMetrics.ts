@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-// import { getVirtualizationStats } from './useVirtualization'; // 미사용
 import { getCacheStats } from './useCachedFormatDate';
 
 interface ComponentPerformance {

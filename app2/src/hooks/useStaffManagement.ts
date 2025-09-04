@@ -447,9 +447,36 @@ export const useStaffManagement = (
 
     // 날짜순으로 정렬된 키 반환
     const sortedDates = Object.keys(grouped).sort((a, b) => {
+      // 특수한 날짜들을 뒤로 보내기
       if (a === '날짜 미정') return 1;
       if (b === '날짜 미정') return -1;
-      return a.localeCompare(b);
+      if (a === '날짜 오류') return 1;
+      if (b === '날짜 오류') return -1;
+      
+      // 한국어 날짜 형식을 파싱하여 실제 날짜로 정렬
+      const parseKoreanDate = (dateStr: string): Date | null => {
+        // "9월 10일 (수)" 형식을 파싱
+        const match = dateStr.match(/(\d{1,2})월\s*(\d{1,2})일/);
+        if (match && match[1] && match[2]) {
+          const month = parseInt(match[1], 10);
+          const day = parseInt(match[2], 10);
+          // 년도는 현재 년도로 가정
+          const year = new Date().getFullYear();
+          return new Date(year, month - 1, day); // month는 0-based
+        }
+        return null;
+      };
+      
+      const dateA = parseKoreanDate(a);
+      const dateB = parseKoreanDate(b);
+      
+      // 날짜 파싱에 실패한 경우 문자열 비교로 폴백
+      if (!dateA && !dateB) return a.localeCompare(b);
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      // 날짜 객체로 비교 (시간순으로 정렬)
+      return dateA.getTime() - dateB.getTime();
     });
 
     return { grouped, sortedDates };

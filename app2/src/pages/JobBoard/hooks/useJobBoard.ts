@@ -73,8 +73,10 @@ export const useJobBoard = () => {
   // UnifiedDataContext 먼저 선언
   const unifiedContext = useUnifiedData();
   
-  // 내 지원 현황 로딩 상태 - 초기 로딩만 체크 (applications 특정 로딩은 제외)
-  const loadingMyApplications = unifiedContext.state.loading.initial;
+  // 내 지원 현황 로딩 상태 - 로딩 상태 개선
+  const loadingMyApplications = unifiedContext.state.loading.initial || 
+                               (unifiedContext.state.loading.applications && 
+                                Array.from(unifiedContext.state.applications.values()).length === 0);
   
   // Infinite Query based data fetching
   const {
@@ -123,7 +125,7 @@ export const useJobBoard = () => {
       if (jobPostings.length === 0) return;
       
       const postIds = jobPostings.map(p => p.id);
-      // 마이그레이션 후에는 eventId만 사용하지만, 임시로 두 필드 모두 지원
+      // eventId 우선 사용, postId는 하위 호환성만 지원
       const qEventId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', 'in', postIds));
       const qPostId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', 'in', postIds));
       
@@ -134,17 +136,21 @@ export const useJobBoard = () => {
       
       const appliedMap = new Map<string, string>();
       
-      // eventId 기반 결과 처리
+      // eventId 기반 결과 처리 (우선순위)
       eventIdSnapshot.docs.forEach(doc => {
         const data = doc.data();
-        appliedMap.set(data.eventId, data.status);
+        const jobId = data.eventId || data.postId; // eventId 우선, fallback으로 postId
+        if (jobId) {
+          appliedMap.set(jobId, data.status);
+        }
       });
       
-      // postId 기반 결과 처리 (중복 제거)
+      // postId 기반 결과 처리 (중복 제거 - eventId가 없는 경우만)
       postIdSnapshot.docs.forEach(doc => {
         const data = doc.data();
-        if (!appliedMap.has(data.postId)) {
-          appliedMap.set(data.postId, data.status);
+        const jobId = data.postId;
+        if (jobId && !appliedMap.has(jobId)) {
+          appliedMap.set(jobId, data.status);
         }
       });
       setAppliedJobs(appliedMap);
@@ -159,36 +165,55 @@ export const useJobBoard = () => {
   // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
   const myApplications = useMemo(() => {
     if (!currentUser || !unifiedContext.state) {
-      console.log('🎯 myApplications 계산 스킵:', { currentUser: !!currentUser, state: !!unifiedContext.state });
+      logger.debug('🎯 myApplications 계산 스킵', { 
+        component: 'useJobBoard',
+        data: { currentUser: !!currentUser, state: !!unifiedContext.state }
+      });
       return [];
     }
     
     // 디버깅: 전체 applications 데이터 확인
     const allApplications = Array.from(unifiedContext.state.applications.values());
-    console.log('🎯 전체 Applications 데이터:', {
-      total: allApplications.length,
-      loading: {
-        applications: unifiedContext.state.loading.applications,
-        initial: unifiedContext.state.loading.initial
-      },
-      sample: allApplications.slice(0, 3).map(app => ({
-        id: app.id,
-        applicantId: app.applicantId,
-        postId: app.postId,
-        status: app.status
-      })),
-      currentUserId: currentUser.uid
+    logger.debug('🎯 전체 Applications 데이터', {
+      component: 'useJobBoard',
+      data: {
+        total: allApplications.length,
+        loading: {
+          applications: unifiedContext.state.loading.applications,
+          initial: unifiedContext.state.loading.initial
+        },
+        sample: allApplications.slice(0, 3).map(app => ({
+          id: app.id,
+          applicantId: app.applicantId,
+          postId: app.postId,
+          status: app.status
+        })),
+        currentUserId: currentUser.uid
+      }
     });
 
-    // 초기 로딩 시에만 빈 배열 반환 (applications 특정 로딩은 제외)
-    if (unifiedContext.state.loading.initial && allApplications.length === 0) {
-      console.log('🔄 초기 로딩 중...');
+    // 로딩 상태 처리 개선 - 초기 로딩과 applications 특정 로딩 모두 고려
+    const isReallyLoading = unifiedContext.state.loading.initial || 
+                           (unifiedContext.state.loading.applications && allApplications.length === 0);
+                           
+    if (isReallyLoading) {
+      logger.debug('🔄 Applications 로딩 중', { 
+        component: 'useJobBoard',
+        data: {
+          initial: unifiedContext.state.loading.initial,
+          applications: unifiedContext.state.loading.applications,
+          count: allApplications.length
+        }
+      });
       return [];
     }
 
-    // 데이터가 비어있어도 빈 배열 반환 (무한로딩 방지)
+    // 데이터가 비어있어도 빈 배열 반환 (무한로딩 방지) - 로딩 완료 후
     if (allApplications.length === 0) {
-      console.log('ℹ️ Applications 데이터가 비어있습니다 (정상 상태일 수 있음).');
+      logger.info('ℹ️ Applications 데이터가 비어있습니다 (로딩 완료, 정상 상태)', { 
+        component: 'useJobBoard'
+      });
+      return []; // 빈 배열 명시적 반환
     }
     
     // 현재 사용자의 지원서만 필터링 (applicantId 필드 확인)
@@ -196,30 +221,50 @@ export const useJobBoard = () => {
       const matchesId = app.applicantId === currentUser.uid;
       if (!matchesId && allApplications.length > 0) {
         // 디버깅: 첫 번째 앱에서 필드 구조 확인
-        console.log('🔍 applicantId 매칭 실패 - 필드 구조 확인:', {
-          expected: currentUser.uid,
-          actual: app.applicantId,
-          appFields: Object.keys(app),
-          sampleApp: allApplications[0]
+        logger.debug('🔍 applicantId 매칭 실패 - 필드 구조 확인', {
+          component: 'useJobBoard',
+          data: {
+            expected: currentUser.uid,
+            actual: app.applicantId,
+            appFields: Object.keys(app),
+            sampleApp: allApplications[0]
+          }
         });
       }
       return matchesId;
     });
     
-    console.log('🎯 사용자별 필터링 결과:', {
-      userApplications: userApplications.length,
-      data: userApplications.map(app => ({
-        id: app.id,
-        postId: app.postId,
-        status: app.status
-      }))
+    logger.debug('🎯 사용자별 필터링 결과', {
+      component: 'useJobBoard',
+      data: {
+        userApplications: userApplications.length,
+        applications: userApplications.map(app => ({
+          id: app.id,
+          postId: app.postId,
+          status: app.status
+        }))
+      }
     });
     
     // 각 지원서에 JobPosting 정보 추가하고 MyApplicationsTab 호환 형식으로 변환
     const applicationsWithJobData = userApplications.map(application => {
-      // eventId 또는 postId로 jobPosting 찾기 (마이그레이션 호환성)
-      const eventId = (application as any).eventId || application.postId;
-      const jobPosting = unifiedContext.state.jobPostings.get(eventId);
+      // eventId 우선 사용, postId는 fallback (필드명 통일)
+      const jobId = (application as any).eventId || application.postId;
+      const jobPosting = unifiedContext.state.jobPostings.get(jobId);
+      
+      // jobPosting 조회 실패 시 로깅
+      if (jobId && !jobPosting) {
+        logger.debug('⚠️ JobPosting 조회 실패', {
+          component: 'useJobBoard',
+          data: {
+            applicationId: application.id,
+            eventId: (application as any).eventId,
+            postId: application.postId,
+            searchedId: jobId,
+            availableJobPostings: Array.from(unifiedContext.state.jobPostings.keys()).slice(0, 5)
+          }
+        });
+      }
       
       return {
         id: application.id,

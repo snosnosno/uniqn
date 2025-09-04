@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog } from '../Icons/ReactIconsReplacement';
 
-// import { useAuth } from '../../contexts/AuthContext';
 import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 
 interface ShiftManagementTabProps {
@@ -11,7 +10,6 @@ interface ShiftManagementTabProps {
 
 const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
-  // const { currentUser } = useAuth();
   const { staff, loading: contextLoading } = useJobPostingContext();
   
   const [loading] = useState(false);

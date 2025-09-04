@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
+import { logger } from '../../../utils/logger';
 
 interface FirebaseTimestamp {
   seconds: number;
@@ -289,16 +290,19 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
 
   // 디버깅을 위한 데이터 로그
   React.useEffect(() => {
-    console.log('🎯 MyApplicationsTab 데이터 상태:', {
-      applications: applications.length,
-      loading,
-      applicationsData: applications.slice(0, 3).map(app => ({
-        id: app.id,
-        postId: app.postId,
-        status: app.status,
-        hasJobPosting: !!app.jobPosting,
-        jobTitle: app.jobPosting?.title
-      }))
+    logger.debug('🎯 MyApplicationsTab 데이터 상태', {
+      component: 'MyApplicationsTab',
+      data: {
+        applications: applications.length,
+        loading,
+        applicationsData: applications.slice(0, 3).map(app => ({
+          id: app.id,
+          postId: app.postId,
+          status: app.status,
+          hasJobPosting: !!app.jobPosting,
+          jobTitle: app.jobPosting?.title
+        }))
+      }
     });
   }, [applications, loading]);
 

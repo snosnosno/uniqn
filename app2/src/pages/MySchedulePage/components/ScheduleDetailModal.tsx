@@ -140,74 +140,76 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     return labels[type] || type;
   }, []);
 
-  // 실제 급여 정보 계산 - useStaffWorkData와 동일한 로직 사용
-  const getSalaryInfo = useCallback(() => {
+  // 통합 급여 계산 유틸리티 사용
+  const getSalaryInfo = useCallback(async () => {
     if (!schedule) return { salaryType: 'hourly' as const, baseSalary: 10000, totalHours: 0, totalDays: 1, basePay: 0 };
     
-    const role = schedule.role;
-    let salaryType: 'hourly' | 'daily' | 'monthly' | 'other' = 'hourly';
-    let salaryAmount = 10000; // 기본값
+    // UnifiedWorkLog 형태로 변환
+    const workLogData = {
+      id: schedule.id,
+      scheduledStartTime: schedule.startTime,
+      scheduledEndTime: schedule.endTime,
+      date: schedule.date,
+      role: schedule.role,
+      eventId: schedule.eventId
+    };
+
+    const { calculateSingleWorkLogPayroll, calculateWorkHours } = await import('../../../utils/payrollCalculations');
     
-    // 공고의 역할별 급여 설정 우선 사용
-    if (jobPosting?.useRoleSalary && jobPosting.roleSalaries?.[role]) {
-      const roleSalary = jobPosting.roleSalaries[role];
-      if (roleSalary) {
-        salaryType = roleSalary.salaryType === 'negotiable' ? 'other' : roleSalary.salaryType;
-        salaryAmount = parseFloat(roleSalary.salaryAmount) || 10000;
-      }
-    }
-    // 공고의 기본 급여 설정 사용
-    else if (jobPosting?.salaryType && jobPosting.salaryAmount) {
-      salaryType = jobPosting.salaryType === 'negotiable' ? 'other' : jobPosting.salaryType;
-      salaryAmount = parseFloat(jobPosting.salaryAmount) || 10000;
-    }
-
-    // 근무 시간 계산 (calculateWorkHours 유틸 사용)
-    let totalHours = 0;
-    if (schedule.startTime && schedule.endTime) {
-      const workLogData = {
-        id: schedule.id,
-        scheduledStartTime: schedule.startTime,
-        scheduledEndTime: schedule.endTime,
-        assignedTime: null,
-      };
-      totalHours = calculateWorkHours(workLogData as any);
-    }
-
-    // 기본급 계산
-    let basePay = 0;
-    if (salaryType === 'hourly') {
-      basePay = Math.floor(totalHours * salaryAmount);
-    } else if (salaryType === 'daily') {
-      basePay = salaryAmount; // 일급은 하루치
-    } else if (salaryType === 'monthly') {
-      basePay = Math.floor(salaryAmount / 30); // 월급을 일할계산
-    }
+    // 근무시간 계산
+    const totalHours = calculateWorkHours(workLogData as any);
+    
+    // 급여 계산
+    const totalPay = calculateSingleWorkLogPayroll(workLogData as any, schedule.role, jobPosting);
+    
+    // 급여 정보 추출 (기존 getSalaryInfo와 호환성을 위해)
+    const { getRoleSalaryInfo } = await import('../../../utils/payrollCalculations');
+    const { salaryType, salaryAmount } = getRoleSalaryInfo(schedule.role, jobPosting);
 
     logger.debug('ScheduleDetailModal - 급여 정보 계산', {
       component: 'ScheduleDetailModal',
       data: {
-        role,
+        role: schedule.role,
         salaryType,
         salaryAmount,
         totalHours,
-        basePay,
-        hasJobPosting: !!jobPosting,
-        useRoleSalary: jobPosting?.useRoleSalary,
-        hasRoleSalaries: !!jobPosting?.roleSalaries?.[role]
+        totalPay,
+        hasJobPosting: !!jobPosting
       }
     });
 
     return {
-      salaryType,
+      salaryType: salaryType as 'hourly' | 'daily' | 'monthly' | 'other',
       baseSalary: salaryAmount,
       totalHours,
       totalDays: 1, // 일정은 하루
-      basePay: schedule.payrollAmount || basePay
+      basePay: schedule.payrollAmount || totalPay
     };
   }, [schedule, jobPosting]);
 
-  const salaryInfo = getSalaryInfo();
+  // 급여 정보 상태 관리
+  const [salaryInfo, setSalaryInfo] = useState<{
+    salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
+    baseSalary: number;
+    totalHours: number;
+    totalDays: number;
+    basePay: number;
+  }>({
+    salaryType: 'hourly',
+    baseSalary: 10000,
+    totalHours: 0,
+    totalDays: 1,
+    basePay: 0
+  });
+
+  // 급여 정보 업데이트
+  useEffect(() => {
+    const updateSalaryInfo = async () => {
+      const info = await getSalaryInfo();
+      setSalaryInfo(info);
+    };
+    updateSalaryInfo();
+  }, [getSalaryInfo]);
 
   // WorkLog 조회 공통 함수
   const getTargetWorkLog = useCallback(() => {

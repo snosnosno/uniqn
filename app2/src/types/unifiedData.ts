@@ -215,7 +215,11 @@ export type UnifiedDataAction =
   | { type: 'SET_TOURNAMENTS'; data: Tournament[] }
   | { type: 'SET_FILTERS'; filters: Partial<UnifiedFilters> }
   | { type: 'INVALIDATE_CACHE'; collection?: keyof CacheKeys }
-  | { type: 'UPDATE_LAST_UPDATED'; collection: keyof UnifiedDataState['lastUpdated'] };
+  | { type: 'UPDATE_LAST_UPDATED'; collection: keyof UnifiedDataState['lastUpdated'] }
+  // 🚀 즉시 업데이트를 위한 새로운 액션들
+  | { type: 'UPDATE_WORK_LOG'; workLog: WorkLog }
+  | { type: 'UPDATE_ATTENDANCE_RECORD'; record: AttendanceRecord }
+  | { type: 'UPDATE_STAFF'; staff: Staff };
 
 // 통합 데이터 컨텍스트 인터페이스
 export interface UnifiedDataContextType {

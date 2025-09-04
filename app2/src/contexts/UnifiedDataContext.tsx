@@ -66,19 +66,18 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
         [action.collection]: action.loading,
       };
       
-      // 모든 컬렉션의 새로운 로딩 상태를 체크
-      const allCollectionsLoaded = 
-        newLoadingState.staff === false &&
-        newLoadingState.workLogs === false &&
-        newLoadingState.attendanceRecords === false &&
-        newLoadingState.jobPostings === false &&
-        newLoadingState.applications === false &&
-        newLoadingState.tournaments === false;
+      // 핵심 컬렉션 정의 (동기화 문제 해결을 위한 독립적 관리)
+      const coreCollections = ['staff', 'workLogs', 'applications', 'jobPostings'];
       
-      // initial 로딩 상태 계산
+      // 핵심 컬렉션의 로딩 상태만 체크 (독립적인 로딩 관리)
+      const coreCollectionsLoaded = coreCollections.every(collection => 
+        newLoadingState[collection as keyof typeof newLoadingState] === false
+      );
+      
+      // initial 로딩 상태 계산 개선
       const newInitialLoading = action.collection === 'initial' 
         ? action.loading 
-        : allCollectionsLoaded ? false : newLoadingState.initial;
+        : coreCollectionsLoaded ? false : newLoadingState.initial;
       
       return {
         ...state,
@@ -253,6 +252,99 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
           [action.collection]: Date.now(),
         },
       };
+
+    // 🚀 즉시 업데이트를 위한 새로운 액션들
+    case 'UPDATE_WORK_LOG': {
+      const updatedWorkLogs = new Map(state.workLogs);
+      updatedWorkLogs.set(action.workLog.id, action.workLog);
+      
+      const timestamp = Date.now();
+      
+      logger.info('🔄 WorkLog 즉시 업데이트', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          workLogId: action.workLog.id,
+          staffId: action.workLog.staffId,
+          status: action.workLog.status
+        }
+      });
+      
+      return {
+        ...state,
+        workLogs: updatedWorkLogs,
+        cacheKeys: {
+          ...state.cacheKeys,
+          // 모든 관련 캐시 즉시 무효화
+          workLogs: `workLogs_update_${timestamp}`,
+          scheduleEvents: `scheduleEvents_update_${timestamp}`,
+        },
+        lastUpdated: {
+          ...state.lastUpdated,
+          workLogs: timestamp,
+        },
+      };
+    }
+
+    case 'UPDATE_ATTENDANCE_RECORD': {
+      const updatedAttendance = new Map(state.attendanceRecords);
+      updatedAttendance.set(action.record.id, action.record);
+      
+      const timestamp = Date.now();
+      
+      logger.info('🔄 AttendanceRecord 즉시 업데이트', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          recordId: action.record.id,
+          staffId: action.record.staffId,
+          status: action.record.status
+        }
+      });
+      
+      return {
+        ...state,
+        attendanceRecords: updatedAttendance,
+        cacheKeys: {
+          ...state.cacheKeys,
+          // 모든 관련 캐시 즉시 무효화
+          attendanceRecords: `attendance_update_${timestamp}`,
+          scheduleEvents: `scheduleEvents_update_${timestamp}`,
+        },
+        lastUpdated: {
+          ...state.lastUpdated,
+          attendanceRecords: timestamp,
+        },
+      };
+    }
+
+    case 'UPDATE_STAFF': {
+      const updatedStaff = new Map(state.staff);
+      updatedStaff.set(action.staff.staffId, action.staff);
+      
+      const timestamp = Date.now();
+      
+      logger.info('🔄 Staff 즉시 업데이트', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          staffId: action.staff.staffId,
+          name: action.staff.name,
+          role: action.staff.role
+        }
+      });
+      
+      return {
+        ...state,
+        staff: updatedStaff,
+        cacheKeys: {
+          ...state.cacheKeys,
+          // 스태프 관련 캐시 즉시 무효화
+          staff: `staff_update_${timestamp}`,
+        },
+        lastUpdated: {
+          ...state.lastUpdated,
+          staff: timestamp,
+        },
+      };
+    }
 
     default:
       return state;

@@ -463,48 +463,32 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
 }
 
 /**
- * 근무 시간 계산 - 간소화된 버전
+ * 근무 시간 계산 - 통합 급여 계산 유틸리티와 호환
  * scheduledStartTime/scheduledEndTime 우선 사용
  * assignedTime을 scheduledStartTime의 fallback으로 사용
+ * @deprecated 새로운 코드에서는 payrollCalculations.ts의 calculateWorkHours 사용 권장
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  // 예정 시간 사용 (정산 기준) - assignedTime을 fallback으로 사용
-  let startTime = parseTimeToString(workLog.scheduledStartTime);
+  // 새로운 통합 계산 함수와 동일한 로직으로 변경
+  const startTime = workLog.scheduledStartTime;
+  const endTime = workLog.scheduledEndTime;
   
-  // scheduledStartTime이 없거나 '미정'인 경우 assignedTime 사용
-  if (!startTime || startTime === '미정') {
-    if (workLog.assignedTime && workLog.assignedTime !== '미정') {
-      startTime = workLog.assignedTime;
-      logger.debug('calculateWorkHours - assignedTime을 시작시간으로 사용', {
-        component: 'workLogMapper',
-        data: { 
-          workLogId: workLog.id,
-          assignedTime: workLog.assignedTime
-        }
-      });
-    }
-  }
-  
-  const endTime = parseTimeToString(workLog.scheduledEndTime);
-  
-  if (!startTime || !endTime || startTime === '미정' || endTime === '미정') {
+  if (!startTime || !endTime) {
     return 0;
   }
   
   try {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    
-    let startTotalMinutes = (startHours || 0) * 60 + (startMinutes || 0);
-    let endTotalMinutes = (endHours || 0) * 60 + (endMinutes || 0);
-    
-    // 종료 시간이 시작 시간보다 이른 경우 (다음날)
-    if (endTotalMinutes < startTotalMinutes) {
-      endTotalMinutes += 24 * 60;
+    const startDate = startTime && typeof startTime === 'object' && 'toDate' in startTime ? 
+      startTime.toDate() : null;
+    const endDate = endTime && typeof endTime === 'object' && 'toDate' in endTime ? 
+      endTime.toDate() : null;
+      
+    if (!startDate || !endDate) {
+      return 0;
     }
     
-    const totalMinutes = endTotalMinutes - startTotalMinutes;
-    return Math.round((totalMinutes / 60) * 100) / 100; // 소수점 2자리
+    const hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    return Math.max(0, Math.round(hoursWorked * 100) / 100); // 소수점 2자리
   } catch (error) {
     logger.error('근무시간 계산 실패', error as Error, {
       component: 'workLogMapper',

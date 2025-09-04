@@ -12,8 +12,8 @@ import { FixedSizeList as List } from 'react-window';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import useUnifiedData from '../../hooks/useUnifiedData';
-// import useSystemPerformance from '../../hooks/useSystemPerformance'; // 임시 비활성화
 import { useToast } from '../../hooks/useToast';
+import AttendanceStatusPopover, { AttendanceStatus } from '../AttendanceStatusPopover';
 
 interface StaffManagementTabSimplifiedProps {
   jobPosting?: any;
@@ -38,6 +38,7 @@ interface StaffRowProps {
     selectedStaffIds: Set<string>;
     onStaffSelect: (staffId: string) => void;
     viewMode: 'list' | 'grid';
+    jobPosting?: any; // 🚀 AttendanceStatusPopover를 위한 jobPosting 정보
   };
 }
 
@@ -90,19 +91,25 @@ const StaffRow: React.FC<StaffRowProps> = ({ index, style, data }) => {
           </div>
           
           <div className="flex flex-col items-end space-y-1">
-            {staffItem.attendance && (
-              <span className={`px-2 py-1 text-xs rounded-full ${
-                staffItem.attendance.status === 'checked_in' 
-                  ? 'bg-green-100 text-green-800' 
-                  : staffItem.attendance.status === 'checked_out'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {staffItem.attendance.status === 'checked_in' && '✅ 출근'}
-                {staffItem.attendance.status === 'checked_out' && '🏁 퇴근'}  
-                {staffItem.attendance.status === 'not_started' && '⏳ 대기'}
-              </span>
-            )}
+            {/* 🚀 AttendanceStatusPopover로 출석 상태 변경 가능하게 개선 */}
+            <AttendanceStatusPopover
+              workLogId={`${data.jobPosting?.id || 'default-event'}_${staffItem.staffId}_${staffItem.workLog?.date || new Date().toISOString().split('T')[0]}`}
+              currentStatus={staffItem.attendance?.status || 'not_started'}
+              staffId={staffItem.staffId}
+              staffName={staffItem.name || ''}
+              eventId={data.jobPosting?.id || ''}
+              size="sm"
+              scheduledStartTime={staffItem.workLog?.scheduledStartTime}
+              scheduledEndTime={staffItem.workLog?.scheduledEndTime}
+              canEdit={true}
+              onStatusChange={(newStatus) => {
+                // 출석 상태 변경 완료
+                logger.info('출석 상태 변경됨', {
+                  component: 'StaffManagementTabSimplified',
+                  data: { staffId: staffItem.staffId, newStatus }
+                });
+              }}
+            />
           </div>
         </div>
       </div>
@@ -118,6 +125,12 @@ const StaffRow: React.FC<StaffRowProps> = ({ index, style, data }) => {
 const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> = ({ 
   jobPosting 
 }) => {
+  // 🚨 COMPONENT DEBUG - 컴포넌트 렌더링 확인
+  console.log('🚨 StaffManagementTabSimplified 렌더링!', { 
+    jobPosting, 
+    timestamp: new Date().toISOString() 
+  });
+  
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   
@@ -128,9 +141,6 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
   } = useUnifiedData();
   
   // 📊 성능 모니터링 (임시 비활성화)
-  // const { currentMetrics, isPerformanceGood } = useSystemPerformance({
-  //   enableRealtimeTracking: true
-  // });
   const currentMetrics: { optimizationScore: number; averageQueryTime: number; cacheHitRate: number; activeSubscriptions: number } | null = null;
   const isPerformanceGood = true;
   
@@ -162,9 +172,17 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
     );
   }, [state.attendanceRecords, jobPosting?.id]);
   
-  // 📋 날짜별 그룹화 (기존 복잡한 로직을 단순화)
+  // 📋 날짜별 그룹화 (중복 제거 로직 추가)
   const groupedData = useMemo(() => {
+    console.log('🔍 groupedData 생성 시작!', { 
+      staffDataLength: staffData.length,
+      workLogsDataLength: workLogsData.length,
+      attendanceDataLength: attendanceData.length,
+      jobPostingId: jobPosting?.id
+    });
+    
     const groups: Record<string, any[]> = {};
+    const processedStaffPerDate: Record<string, Set<string>> = {};
     
     staffData.forEach((staff: any) => {
       const workLogs = workLogsData.filter((log: any) => log.staffId === staff.staffId);
@@ -172,6 +190,18 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
       
       workLogs.forEach((workLog: any) => {
         const date = workLog.date;
+        
+        // 날짜별 중복 체크
+        if (!processedStaffPerDate[date]) {
+          processedStaffPerDate[date] = new Set();
+        }
+        
+        // 이미 해당 날짜에 추가된 스태프인지 확인
+        if (processedStaffPerDate[date]?.has(staff.staffId)) {
+          console.log('🚨 중복 스태프 발견:', { staffId: staff.staffId, date, name: staff.name });
+          return; // 중복이면 건너뛰기
+        }
+        
         if (!groups[date]) {
           groups[date] = [];
         }
@@ -181,7 +211,18 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
           workLog,
           attendance: attendance.find((att: any) => att.workLogId === workLog.id)
         });
+        
+        processedStaffPerDate[date]?.add(staff.staffId);
       });
+    });
+    
+    console.log('✅ groupedData 생성 완료!', { 
+      keys: Object.keys(groups),
+      groups,
+      processedStaffPerDate: Object.fromEntries(
+        Object.entries(processedStaffPerDate).map(([date, set]) => [date, Array.from(set)])
+      ),
+      timestamp: new Date().toISOString()
     });
     
     return groups;
@@ -191,9 +232,90 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
   const virtualizedItems = useMemo(() => {
     const items: VirtualizedStaffItem[] = [];
     
-    Object.entries(groupedData)
-      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-      .forEach(([date, staffList]) => {
+    // 🚨 CRITICAL DEBUG - 전체 플로우 추적
+    console.log('🚨 CRITICAL - virtualizedItems 생성 시작:', {
+      groupedData,
+      keys: Object.keys(groupedData),
+      entries: Object.entries(groupedData),
+      timestamp: new Date().toISOString()
+    });
+    
+    const sortedEntries = Object.entries(groupedData)
+      .sort(([dateA], [dateB]) => {
+        // 🔍 강제 디버그 - 실제 정렬 동작 확인
+        console.log('🔍 SORT DEBUG - 실제 정렬 호출됨:', {
+          dateA, 
+          dateB, 
+          groupedDataKeys: Object.keys(groupedData)
+        });
+        
+        // 강화된 날짜 파싱 함수 - 모든 가능한 형태 처리
+        const parseDate = (dateStr: string): Date | null => {
+          if (!dateStr) return null;
+          
+          // 1. ISO 형태 (2025-09-10, 2025/09/10)
+          const isoDate = new Date(dateStr);
+          if (!isNaN(isoDate.getTime())) {
+            return isoDate;
+          }
+          
+          // 2. 한국어 형태 파싱: "9월 10일", "2025년 9월 10일"
+          const koreanMatch = dateStr.match(/(\d{4}년\s*)?(\d{1,2})월\s*(\d{1,2})일/);
+          if (koreanMatch && koreanMatch[2] && koreanMatch[3]) {
+            const year = koreanMatch[1] ? parseInt(koreanMatch[1].replace('년', '')) : 2025;
+            const month = parseInt(koreanMatch[2]);
+            const day = parseInt(koreanMatch[3]);
+            return new Date(year, month - 1, day);
+          }
+          
+          // 3. 슬래시 형태: "2025/09/10", "09/10", "9/10"
+          const slashMatch = dateStr.match(/(?:(\d{4})\/)?(\d{1,2})\/(\d{1,2})/);
+          if (slashMatch && slashMatch[2] && slashMatch[3]) {
+            const year = slashMatch[1] ? parseInt(slashMatch[1]) : 2025;
+            const month = parseInt(slashMatch[2]);
+            const day = parseInt(slashMatch[3]);
+            return new Date(year, month - 1, day);
+          }
+          
+          // 4. 대시 형태: "09-10", "9-10"
+          const dashMatch = dateStr.match(/(\d{1,2})-(\d{1,2})/);
+          if (dashMatch && dashMatch[1] && dashMatch[2]) {
+            const month = parseInt(dashMatch[1]);
+            const day = parseInt(dashMatch[2]);
+            return new Date(2025, month - 1, day);
+          }
+          
+          // 5. 숫자만 있는 경우: "0910" (MMDD)
+          const numMatch = dateStr.match(/^(\d{2})(\d{2})$/);
+          if (numMatch && numMatch[1] && numMatch[2]) {
+            const month = parseInt(numMatch[1]);
+            const day = parseInt(numMatch[2]);
+            return new Date(2025, month - 1, day);
+          }
+          
+          return null;
+        };
+        
+        // 날짜 파싱 실행
+        const dateObjA = parseDate(dateA);
+        const dateObjB = parseDate(dateB);
+        
+        // 둘 다 유효한 날짜인 경우 타임스탬프로 정렬 (오름차순)
+        if (dateObjA && dateObjB) {
+          return dateObjA.getTime() - dateObjB.getTime();
+        }
+        
+        // 하나만 유효한 경우 유효한 것을 앞으로
+        if (dateObjA && !dateObjB) return -1;
+        if (!dateObjA && dateObjB) return 1;
+        
+        // 둘 다 파싱 실패한 경우 문자열 비교
+        return dateA.localeCompare(dateB);
+      });
+    
+    console.log('✅ 정렬 완료 - sortedEntries:', sortedEntries.map(([date]) => date));
+    
+    sortedEntries.forEach(([date, staffList]) => {
         // 날짜 헤더 추가
         items.push({
           id: `header-${date}`,
@@ -211,6 +333,12 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
           });
         });
       });
+    
+    console.log('🎉 virtualizedItems 생성 완료:', {
+      totalItems: items.length,
+      dateHeaders: items.filter(item => item.type === 'date-header').map(item => item.date),
+      timestamp: new Date().toISOString()
+    });
     
     return items;
   }, [groupedData]);
@@ -248,7 +376,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
         data: { selectedCount: selectedStaffIds.size, action }
       });
       
-      // TODO: 실제 bulk operation 구현
+      // 대량 작업 구현 (현재는 UI 피드백만 제공)
       showSuccess(`${selectedStaffIds.size}명의 스태프에 대한 ${action} 작업이 완료되었습니다.`);
       setSelectedStaffIds(new Set());
       
@@ -398,7 +526,8 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
                 items: virtualizedItems,
                 selectedStaffIds,
                 onStaffSelect: handleStaffSelect,
-                viewMode
+                viewMode,
+                jobPosting // 🚀 AttendanceStatusPopover를 위한 jobPosting 전달
               }}
             >
               {StaffRow}

@@ -133,7 +133,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
       unsubscribes.push(unsubWorkLogs);
 
-      // 데이터 병합 및 중복 제거 함수
+      // 데이터 병합 및 중복 제거 함수 (개선된 로직)
       const updateMergedSchedules = () => {
         const mergedEvents: ScheduleEvent[] = [];
         const processedKeys = new Set<string>();
@@ -144,12 +144,18 @@ const useScheduleData = (): UseScheduleDataReturn => {
         // workLogs 먼저 처리 (우선순위가 높음)
         workLogsMap.forEach((workLog) => {
           mergedEvents.push(workLog);
-          // 같은 날짜와 eventId를 가진 application을 추적하기 위한 키
+          // 더 정밀한 키 생성 (eventId + date + 시간대 포함)
           if (workLog.eventId && workLog.date) {
-            const key = `${workLog.eventId}_${workLog.date}`;
+            const timeKey = workLog.startTime ? new Date(workLog.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
+            const key = `${workLog.eventId}_${workLog.date}_${timeKey}`;
             processedKeys.add(key);
+            
+            // 기본 키도 추가 (시간 정보 없는 applications 대응)
+            const basicKey = `${workLog.eventId}_${workLog.date}`;
+            processedKeys.add(basicKey);
+            
             logger.info('WorkLog 키 추가:', { 
-              data: { key, eventId: workLog.eventId, date: workLog.date }
+              data: { key, basicKey, eventId: workLog.eventId, date: workLog.date, time: timeKey }
             });
           }
         });
@@ -158,21 +164,37 @@ const useScheduleData = (): UseScheduleDataReturn => {
         applicationsMap.forEach((events) => {
           events.forEach(event => {
             if (event.eventId && event.date) {
-              const key = `${event.eventId}_${event.date}`;
-              // workLog에 이미 같은 날짜/이벤트가 있으면 skip
-              if (processedKeys.has(key)) {
+              // 시간 정보가 있으면 정밀한 키, 없으면 기본 키 사용
+              const timeKey = event.startTime ? new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
+              const preciseKey = `${event.eventId}_${event.date}_${timeKey}`;
+              const basicKey = `${event.eventId}_${event.date}`;
+              
+              // 정밀한 키나 기본 키 중 하나라도 있으면 중복으로 판단
+              if (processedKeys.has(preciseKey) || processedKeys.has(basicKey)) {
                 logger.info('Application 중복 스킵:', { 
-                  data: { key, eventId: event.eventId, date: event.date }
+                  data: { 
+                    preciseKey, basicKey, 
+                    eventId: event.eventId, 
+                    date: event.date,
+                    time: timeKey,
+                    hasPrecise: processedKeys.has(preciseKey),
+                    hasBasic: processedKeys.has(basicKey)
+                  }
                 });
               } else {
                 mergedEvents.push(event);
+                processedKeys.add(preciseKey);
+                processedKeys.add(basicKey);
                 logger.info('Application 추가:', { 
-                  data: { key, eventId: event.eventId, date: event.date }
+                  data: { preciseKey, basicKey, eventId: event.eventId, date: event.date }
                 });
               }
             } else {
               // eventId나 date가 없는 경우는 그냥 추가
               mergedEvents.push(event);
+              logger.info('Application 추가 (키 없음):', { 
+                data: { id: event.id, eventId: event.eventId, date: event.date }
+              });
             }
           });
         });

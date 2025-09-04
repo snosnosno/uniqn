@@ -6,7 +6,7 @@ import { useHapticFeedback } from '../hooks/useHapticFeedback';
 import { useSwipeGestureReact } from '../hooks/useSwipeGesture';
 import { useCachedTimeDisplay, useCachedTimeSlotColor } from '../hooks/useCachedFormatDate';
 import { StaffData } from '../hooks/useStaffManagement';
-import AttendanceStatusPopover from './AttendanceStatusPopover';
+import AttendanceStatusPopover, { AttendanceStatus } from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 
@@ -55,6 +55,8 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  // 🚀 출석 상태 Optimistic Update를 위한 로컬 상태
+  const [optimisticAttendanceStatus, setOptimisticAttendanceStatus] = useState<AttendanceStatus | null>(null);
   
   const { lightImpact, mediumImpact, selectionFeedback } = useHapticFeedback();
 
@@ -267,7 +269,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               <div className="relative">
                 <AttendanceStatusPopover
                   workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
-                  currentStatus={memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
+                  currentStatus={optimisticAttendanceStatus || memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
                   staffId={staff.id}
                   staffName={staff.name || ''}
                   eventId={eventId || ''}
@@ -276,8 +278,14 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                   scheduledStartTime={memoizedTimeData.displayStartTime}
                   scheduledEndTime={memoizedTimeData.displayEndTime}
                   canEdit={!!canEdit && !multiSelectMode}
-                  onStatusChange={(_newStatus) => {
-                    // Status change handled
+                  onStatusChange={(newStatus) => {
+                    // 🚀 즉시 UI 업데이트 (Optimistic Update)
+                    setOptimisticAttendanceStatus(newStatus);
+                    
+                    // Firebase 업데이트 완료 후 실제 상태로 동기화 (3초 후 초기화)
+                    setTimeout(() => {
+                      setOptimisticAttendanceStatus(null);
+                    }, 3000);
                   }}
                 />
               </div>

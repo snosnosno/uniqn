@@ -4,8 +4,6 @@ import { logger } from './utils/logger';
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, doc, collection, getDocs, writeBatch, getDoc, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
 // Storage와 Functions는 동적 import를 위해 직접 import하지 않음
-// import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
-// import { getStorage } from 'firebase/storage';
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
 import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
@@ -27,8 +25,6 @@ export const db = getFirestore(app); // Export db as a named export
 
 // Storage와 Functions는 동적 로딩을 위해 별도 유틸리티 사용
 // firebase-dynamic.ts의 getStorageLazy(), getFunctionsLazy() 사용
-// export const storage = getStorage(app);
-// export const functions = getFunctions(app);
 
 // Connect to Firebase Emulators for local development
 const isEmulator = process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true';
@@ -82,7 +78,6 @@ export const setupTestData = async () => {
   }
 
   // Create 80 participants
-  // const participantsCollectionRef = collection(db, 'participants');
   for (let i = 1; i <= 80; i++) {
     const participantRef = doc(collection(db, 'participants'));
     batch.set(participantRef, {

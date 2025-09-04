@@ -38,7 +38,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     calculationTime
   } = usePayrollWorker();
   
-  // 실제 WorkLogs 데이터 (상태 변환 포함, eventId 필터링)
+  // 실제 WorkLogs 데이터 (상태 변환 통일, eventId 필터링)
   const workLogs = useMemo(() => {
     let filteredWorkLogs = Array.from(state.workLogs.values());
     
@@ -49,8 +49,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     
     return filteredWorkLogs.map(workLog => ({
       ...workLog,
+      // 상태 변환 통일 - 모든 탭에서 동일한 상태 사용
       status: workLog.status === 'checked_in' ? 'in_progress' as const :
               workLog.status === 'checked_out' ? 'completed' as const :
+              workLog.status === 'completed' ? 'completed' as const :
               workLog.status === 'absent' ? 'cancelled' as const :
               workLog.status || 'scheduled' as const
     }));
@@ -91,9 +93,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       });
     }
     
-    // 3. 기본 역할들 추가 (최소 보장)
-    ['Dealer', 'Floor', 'Server'].forEach(role => roleSet.add(role));
-    
+    // 실제 데이터에서 추출된 역할만 사용 (기본 역할 제거)
     return Array.from(roleSet).sort();
   }, [state.workLogs, jobPosting?.confirmedStaff]);
 
@@ -479,13 +479,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
           </div>
           <div className="h-10 w-px bg-gray-200"></div>
           <div className="text-center">
-            <h3 className="text-xs font-medium text-gray-500 mb-1">총 근무시간</h3>
-            <p className="text-xl font-bold text-blue-600">
-              {summary?.totalHours || 0}시간
-            </p>
-          </div>
-          <div className="h-10 w-px bg-gray-200"></div>
-          <div className="text-center">
             <h3 className="text-xs font-medium text-gray-500 mb-1">총 지급액</h3>
             <p className="text-xl font-bold text-indigo-600">
               {(summary?.totalAmount || 0).toLocaleString('ko-KR')}원
@@ -573,9 +566,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                   </td>
                 </tr>
               ) : (
-                staffWorkData.map((data) => {
-                  const uniqueKey = data.staffId;
-                  const isSelected = selectedStaffIds.includes(uniqueKey);
+                staffWorkData.map((data, index) => {
+                  // 더 견고한 uniqueKey 생성 (staffId + role + period + index)
+                  const uniqueKey = `${data.staffId}-${data.role}-${startDate}_${endDate}-${index}`;
+                  const isSelected = selectedStaffIds.includes(data.staffId);
                   
                   return (
                     <tr 
@@ -593,7 +587,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleStaffSelection(uniqueKey)}
+                          onChange={() => toggleStaffSelection(data.staffId)}
                           className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                         />
                       </td>

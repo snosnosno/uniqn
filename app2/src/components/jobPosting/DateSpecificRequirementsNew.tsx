@@ -55,7 +55,32 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       return;
     }
 
+    // 최대 날짜 개수 제한 (30개)
+    if (requirements.length >= 30) {
+      alert('최대 30개의 날짜까지만 추가할 수 있습니다.');
+      return;
+    }
+
     const dateStr = fromDropdownValue(selectedDate);
+    const selectedDateObj = new Date(dateStr);
+    const today = new Date();
+    
+    // 오늘 날짜를 기준으로 시간 제거 (날짜만 비교)
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const selectedMidnight = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate());
+    
+    // 과거 날짜 체크 (오늘은 선택 가능)
+    if (selectedMidnight < todayMidnight) {
+      alert('과거 날짜는 선택할 수 없습니다.');
+      return;
+    }
+    
+    // 1년 이후 날짜 체크
+    const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+    if (selectedMidnight > oneYearLater) {
+      alert('1년 이후의 날짜는 선택할 수 없습니다.');
+      return;
+    }
     
     // 중복 체크
     const isDuplicate = requirements.some(req => 
@@ -95,6 +120,25 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   // 날짜 변경 (중복 체크 포함)
   const handleDateChange = (requirementIndex: number, value: { year?: string; month?: string; day?: string }) => {
     const newDate = fromDropdownValue(value);
+    const selectedDateObj = new Date(newDate);
+    const today = new Date();
+    
+    // 오늘 날짜를 기준으로 시간 제거 (날짜만 비교)
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const selectedMidnight = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate());
+    
+    // 과거 날짜 체크 (오늘은 선택 가능)
+    if (selectedMidnight < todayMidnight) {
+      alert('과거 날짜는 선택할 수 없습니다.');
+      return;
+    }
+    
+    // 1년 이후 날짜 체크
+    const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+    if (selectedMidnight > oneYearLater) {
+      alert('1년 이후의 날짜는 선택할 수 없습니다.');
+      return;
+    }
     
     // 다른 요구사항과 중복 체크
     const isDuplicate = requirements.some((req, idx) => 
@@ -178,65 +222,37 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     onRequirementsChange(newRequirements);
   };
   
-  // 날짜별 종료일 변경 - 실제로 새로운 날짜 요구사항들을 생성
+  // 날짜별 종료일 변경 - UI 표시용으로만 사용, 자동 날짜 생성하지 않음
   const handleDurationEndDateChange = (requirementIndex: number, endDate: string) => {
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     
     if (requirement) {
       const startDateStr = getDateString(requirement.date);
+      const startDate = new Date(startDateStr);
+      const endDateObj = new Date(endDate);
       
-      // 시작일부터 종료일까지의 날짜 생성
-      const dates: string[] = [];
-      const start = new Date(startDateStr);
-      const end = new Date(endDate);
-      
-      // 날짜 범위 생성 (시작일은 이미 있으므로 제외)
-      const currentDate = new Date(start);
-      currentDate.setDate(currentDate.getDate() + 1); // 다음날부터 시작
-      
-      while (currentDate <= end) {
-        dates.push(convertToDateString(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      // 기존 날짜들과 중복 체크
-      const existingDates = requirements
-        .filter((_, idx) => idx !== requirementIndex)
-        .map(req => getDateString(req.date));
-      
-      const duplicates = dates.filter(date => existingDates.includes(date));
-      
-      if (duplicates.length > 0) {
-        alert(`다음 날짜가 이미 추가되어 있습니다: ${duplicates.join(', ')}`);
+      // 종료일 검증
+      if (endDateObj <= startDate) {
+        alert('종료일은 시작일보다 이후여야 합니다.');
         return;
       }
       
-      // duration 정보 업데이트 (UI 표시용)
+      // 날짜 범위 검증 (최대 30일)
+      const daysDiff = Math.ceil((endDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 30) {
+        alert('날짜 범위는 최대 30일까지만 선택할 수 있습니다.');
+        return;
+      }
+      
+      // duration 정보만 업데이트 (UI 표시용)
       requirement.timeSlots.forEach(slot => {
         if (slot.duration?.type === 'multi') {
           slot.duration.endDate = endDate;
         }
       });
       
-      // 새로운 날짜 요구사항들 생성
-      const newDateRequirements = dates.map(date => {
-        // 기존 요구사항의 시간대와 역할 정보 복사
-        const newReq = createNewDateSpecificRequirement(date);
-        newReq.timeSlots = requirement.timeSlots.map(slot => ({
-          ...slot,
-          duration: { type: 'single' }, // 각 날짜는 단일로 설정
-          roles: slot.roles.map(role => ({ ...role })) // 역할 정보 복사
-        }));
-        return newReq;
-      });
-      
-      // 새로운 요구사항들을 배열에 추가하고 날짜순 정렬
-      const allRequirements = [...newRequirements, ...newDateRequirements].sort((a, b) => 
-        getDateString(a.date).localeCompare(getDateString(b.date))
-      );
-      
-      onRequirementsChange(allRequirements);
+      onRequirementsChange(newRequirements);
     }
   };
 
@@ -257,7 +273,14 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     const timeSlot = requirement?.timeSlots[timeSlotIndex];
+    
     if (requirement && timeSlot) {
+      // 최대 역할 개수 제한 (10개)
+      if (timeSlot.roles.length >= 10) {
+        alert('한 시간대에 최대 10개의 역할까지만 추가할 수 있습니다.');
+        return;
+      }
+      
       timeSlot.roles.push({
         name: 'dealer',
         count: 1
@@ -542,13 +565,19 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                               <input
                                 type="number"
                                 min="1"
+                                max="50"
                                 value={role.count || ''}
                                 onChange={(e) => {
                                   const newValue = e.target.value;
-                                  const numValue = newValue === '' ? 0 : parseInt(newValue, 10);
-                                  if (!isNaN(numValue)) {
-                                    onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
+                                  const numValue = newValue === '' ? 1 : parseInt(newValue, 10);
+                                  
+                                  // 인원수 범위 검증 (1-50명)
+                                  if (isNaN(numValue) || numValue < 1 || numValue > 50) {
+                                    alert('인원수는 1명에서 50명 사이로 입력해주세요.');
+                                    return;
                                   }
+                                  
+                                  onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
                                 }}
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />

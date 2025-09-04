@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { FaClock, FaInfo, FaChevronDown, FaChevronUp } from './Icons/ReactIconsReplacement';
 
-// import { useTranslation } from 'react-i18next';
 import { TIME_INTERVALS, TimeInterval } from '../utils/timeUtils';
 
 interface TimeIntervalSelectorProps {
@@ -11,9 +10,6 @@ interface TimeIntervalSelectorProps {
   // 시간 간격 변경 콜백
   onIntervalChange: (interval: number) => void;
   
-  // 시간 범위 정보 (통계 표시용)
-  // startTime?: string;
-  // endTime?: string;
   
   // 컴포넌트 크기
   size?: 'sm' | 'md' | 'lg';
@@ -28,20 +24,15 @@ interface TimeIntervalSelectorProps {
 const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
   selectedInterval,
   onIntervalChange,
-  // startTime,
-  // endTime,
   size = 'md',
   disabled = false,
   className = '',
 }) => {
-  // const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   
   // 현재 선택된 간격 정보
   const selectedIntervalInfo = TIME_INTERVALS.find(interval => interval.value === selectedInterval) || TIME_INTERVALS[2];
   
-  // 시간 통계 계산 (미사용)
-  // const timeStats = startTime && endTime ? getTimeStatistics(startTime, endTime, selectedInterval) : null;
   
   // 크기별 스타일
   const sizeClasses = {

@@ -73,11 +73,13 @@ export const processApplicationData = async (
     const startTimestamp = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
     const endTimestamp = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
     
-    // 상태별 type 매핑
+    // 상태별 type 매핑 (통일된 상태 사용)
     const typeMap: Record<string, ScheduleEvent['type']> = {
       'pending': 'applied',
+      'applied': 'applied',
       'confirmed': 'confirmed',
       'rejected': 'cancelled',
+      'cancelled': 'cancelled',
       'completed': 'completed'
     };
     
@@ -229,13 +231,15 @@ export const processWorkLogData = async (
     endTime: actualEnd
   };
   
-  // workLog status 기반 type 설정
+  // workLog status 기반 type 설정 (상태 통일)
   const typeMap: Record<string, ScheduleEvent['type']> = {
     'scheduled': 'confirmed',
+    'in_progress': 'confirmed',
     'checked_in': 'confirmed', 
-    'checked_out': 'completed', // checked_out이면 완료로 처리
+    'checked_out': 'completed', // checked_out과 completed 통일
     'completed': 'completed',
-    'absent': 'cancelled'
+    'absent': 'cancelled',
+    'cancelled': 'cancelled'
   };
   
   // 출퇴근 완료 여부 확인
@@ -271,13 +275,13 @@ export const processWorkLogData = async (
     totalWorkMinutes = normalizedLog.hoursWorked * 60;
   }
   
-  // 급여 계산 (정산 상태 없이 계산만 제공)
+  // 급여 계산 (통합 유틸리티 사용)
   let payrollAmount = 0;
   
-  // 급여 계산 (시급 10,000원 기준 - 실제로는 설정에서 가져와야 함)
-  if (totalWorkMinutes > 0) {
-    const hourlyRate = 10000; // TODO: 실제 시급 설정에서 가져오기
-    payrollAmount = Math.floor((totalWorkMinutes / 60) * hourlyRate);
+  // 통합 급여 계산 유틸리티 사용
+  if (totalWorkMinutes > 0 && normalizedLog.role) {
+    const { calculateSingleWorkLogPayroll } = await import('../../utils/payrollCalculations');
+    payrollAmount = calculateSingleWorkLogPayroll(normalizedLog, normalizedLog.role, jobPostingData as any);
   }
   
   return {

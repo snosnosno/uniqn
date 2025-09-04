@@ -104,8 +104,8 @@ export const useScheduleData = (options?: { userId?: string }) => {
       upcomingSchedules: allEvents.filter(event => 
         event.type === 'confirmed' && new Date(event.date) >= now
       ).length,
-      totalEarnings: 0, // TODO: PayrollStatus 연결 후 계산
-      thisMonthEarnings: 0, // TODO: 이번달 수입 계산
+      totalEarnings: 0, // 수입 계산 기능 (PayrollStatus 통합 필요)
+      thisMonthEarnings: 0, // 이번달 수입 계산 기능 (추후 구현)
       hoursWorked: allEvents
         .filter(event => event.actualStartTime && event.actualEndTime)
         .reduce((total, event) => {

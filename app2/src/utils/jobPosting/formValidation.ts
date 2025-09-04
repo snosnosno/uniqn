@@ -34,6 +34,23 @@ export const validateDateSpecificRequirement = (requirement: DateSpecificRequire
   
   if (!requirement.date) {
     errors.push('날짜를 선택해주세요.');
+  } else {
+    const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
+    
+    // 날짜 형식 검증
+    if (!validateDateFormat(dateStr)) {
+      errors.push(`올바른 날짜 형식이 아닙니다. (${dateStr})`);
+    } else {
+      // 과거 날짜 검증
+      if (!validateNotPastDate(dateStr)) {
+        errors.push(`과거 날짜는 선택할 수 없습니다. (${dateStr})`);
+      }
+      
+      // 1년 이후 날짜 검증
+      if (!validateNotFutureDate(dateStr)) {
+        errors.push(`1년 이후의 날짜는 선택할 수 없습니다. (${dateStr})`);
+      }
+    }
   }
   
   if (requirement.timeSlots.length === 0) {
@@ -142,4 +159,30 @@ export const validateTimeFormat = (time: string): boolean => {
 export const validateDateFormat = (date: string): boolean => {
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   return dateRegex.test(date) && !isNaN(new Date(date).getTime());
+};
+
+/**
+ * 과거 날짜 검증 (오늘 날짜는 허용)
+ */
+export const validateNotPastDate = (date: string): boolean => {
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  const inputDate = new Date(date);
+  const inputMidnight = new Date(inputDate.getFullYear(), inputDate.getMonth(), inputDate.getDate());
+  
+  return inputMidnight >= todayMidnight;
+};
+
+/**
+ * 1년 이후 날짜 검증
+ */
+export const validateNotFutureDate = (date: string): boolean => {
+  const today = new Date();
+  const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+  
+  const inputDate = new Date(date);
+  const inputMidnight = new Date(inputDate.getFullYear(), inputDate.getMonth(), inputDate.getDate());
+  
+  return inputMidnight <= oneYearLater;
 };
