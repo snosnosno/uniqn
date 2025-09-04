@@ -28,12 +28,17 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Environment variables
+# Environment variables (보안상 중요!)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+/app2/.env
+app2/.env.local
+*/.env
+**/.env
+**/.env.local
 
 # Firebase Service Account (보안상 중요!)
 serviceAccountKey.json
@@ -92,6 +97,10 @@ serviceAccountKey*.json
 /scripts/*-service-account.json
 /scripts/*-adminsdk-*.json
 
+# 특정 Firebase Admin SDK 키 파일들 (발견된 실제 파일명)
+tholdem-ebc18-firebase-adminsdk-*.json
+scripts/firebase-adminsdk-key.json
+
 # Security certificates and keys
 *.key
 *.pem
@@ -99,6 +108,31 @@ serviceAccountKey*.json
 *.crt
 *.p12
 *.pfx
+
+# 추가 보안 파일들
+*.keystore
+*.jks
+*.jwt
+*secret*
+*secrets*
+*credentials*
+auth.json
+auth-*.json
+config/production.json
+config/development.json
+config/local.json
+
+# Firebase 설정 및 키 파일들 (추가)
+.firebaserc.local
+firebase-adminsdk-key.json
+*firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
+
+# AWS 관련 파일들
+.aws/
+aws-exports.js
+amplify-export-*/
 
 # Windows-specific files
 nul
@@ -123,6 +157,13 @@ claude_set/
 *.swo
 *~
 
-# Additional log files
+# Additional log files and debug files
 pglite-debug.log
 app2/pglite-debug.log
+**/pglite-debug.log
+firebase-debug.log*
+firestore-debug.log*
+functions/firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+database-debug.log
