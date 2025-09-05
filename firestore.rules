@@ -157,26 +157,26 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         request.auth.uid == resource.data.applicantId ||
         isPrivileged() ||
-        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid)
       );
       
-      // Users can create applications for themselves (eventId instead of postId)
+      // Users can create applications for themselves (using postId)
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
-        request.resource.data.keys().hasAll(['applicantId', 'eventId', 'status']) &&
+        request.resource.data.keys().hasAll(['applicantId', 'postId', 'status']) &&
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
       
       // Admin can update any application, job posting owners can update applications to their posts
       allow update: if isPrivileged() || 
-        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid);
+        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid);
       
       // Users can delete their own applications, admin and job posting owners can delete applications
       allow delete: if isSignedIn() && (
         request.auth.uid == resource.data.applicantId ||
         isPrivileged() ||
-        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid)
       );
     }
 

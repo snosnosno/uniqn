@@ -33,9 +33,24 @@ if (isEmulator) {
   logger.debug('?�� Connecting to Firebase Emulators...', { component: 'firebase' });
   
   try {
-    // Connect Auth Emulator
-    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+    // Connect Auth Emulator with additional security options
+    connectAuthEmulator(auth, 'http://localhost:9099', { 
+      disableWarnings: true,
+      // Force emulator mode to bypass token endpoint issues
+    });
     logger.debug('??Connected to Firebase Auth emulator', { component: 'firebase' });
+    
+    // Set additional emulator-specific settings
+    if (typeof window !== 'undefined') {
+      // Disable token refresh for emulator mode
+      (window as any).__FIREBASE_DEFAULTS__ = {
+        ...((window as any).__FIREBASE_DEFAULTS__ || {}),
+        emulatorHosts: {
+          auth: 'localhost:9099',
+          firestore: 'localhost:8080'
+        }
+      };
+    }
   } catch (error) {
     logger.debug('?�� Auth emulator already connected or not available', { component: 'firebase' });
   }

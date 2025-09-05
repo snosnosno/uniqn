@@ -270,46 +270,44 @@ export const generateDateRange = (startDate: string, endDate: string): string[] 
 
 /**
  * 날짜 배열을 범위 문자열로 변환
- * 예: ["2025-08-24", "2025-08-25", "2025-08-26"] → "25-08-24(일) ~ 25-08-26(화)"
+ * 예: ["2025-09-10", "2025-09-11", "2025-09-12", "2025-09-18"] → "9월 10일 (수) ~ 9월 12일 (금), 9월 18일 (목) (4일)"
  */
 export const formatDateRangeDisplay = (dates: string[]): string => {
   if (!dates || dates.length === 0) return '';
   
   const sortedDates = [...dates].sort();
+  const totalDays = sortedDates.length;
   
   // 단일 날짜
   if (sortedDates.length === 1) {
     return formatDate(sortedDates[0]);
   }
   
-  // 연속된 날짜 체크
-  const isConsecutive = sortedDates.every((date, idx) => {
-    if (idx === 0) return true;
-    const prev = sortedDates[idx - 1];
-    if (!prev) return false;
-    const prevDate = new Date(prev);
-    const currDate = new Date(date);
-    const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 3600 * 24);
-    return diffDays === 1;
+  // 연속된 날짜 그룹으로 분류
+  const groups = groupConsecutiveDates(sortedDates);
+  
+  // 각 그룹을 포맷팅
+  const formattedGroups = groups.map(group => {
+    if (group.length === 1) {
+      // 단일 날짜
+      return formatDate(group[0]);
+    } else {
+      // 날짜 범위
+      const first = formatDate(group[0]);
+      const last = formatDate(group[group.length - 1]);
+      return `${first} ~ ${last}`;
+    }
   });
   
-  // 연속된 경우 범위로 표시
-  if (isConsecutive) {
-    const first = formatDate(sortedDates[0]);
-    const last = formatDate(sortedDates[sortedDates.length - 1]);
-    return `${first} ~ ${last}`;
+  // 그룹들을 연결 - 콤마 뒤에 줄바꿈 추가
+  let result = formattedGroups.join(',\n');
+  
+  // 전체 일수 표시 (2일 이상일 때만)
+  if (totalDays > 1) {
+    result += ` (${totalDays}일)`;
   }
   
-  // 비연속 날짜 처리
-  if (sortedDates.length <= 3) {
-    // 3개 이하는 개별 표시
-    return sortedDates.map(d => formatDate(d)).join(', ');
-  } else {
-    // 3개 초과시 축약 표시
-    const first = formatDate(sortedDates[0]);
-    const last = formatDate(sortedDates[sortedDates.length - 1]);
-    return `${first} ~ ${last} (${sortedDates.length}일)`;
-  }
+  return result;
 };
 
 /**

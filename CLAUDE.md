@@ -224,6 +224,8 @@ const unsubscribe = onSnapshot(collection(db, 'staff'), (snapshot) => {
 
 ### 핵심 문서
 - `docs/SCHEDULE_PAGE_RENOVATION_PLAN.md` - **전면 아키텍처 개편 계획서** (필독)
+- `docs/DATA_USAGE_MAPPING.md` - **데이터 사용처 완전 분석** (페이지/탭/모달별 매핑)
+- `docs/SYNCHRONIZATION_BUG_FIX_REPORT.md` - 동기화 문제 해결 보고서
 - `docs/FIREBASE_DATA_FLOW.md` - Firebase 데이터 구조 및 흐름
 - `docs/TECHNICAL_DOCUMENTATION.md` - 기술 문서
 - `docs/TESTING_GUIDE.md` - 테스트 가이드
@@ -274,12 +276,18 @@ const formattedDate = format(new Date(), 'yyyy-MM-dd', { locale: ko });
 |------|--------|------|------|
 | 번들 크기 | 278.56KB | < 300KB | ✅ |
 | TypeScript 에러 | 0개 | 0개 | ✅ |
-| 테스트 커버리지 | 85% | > 70% | ✅ |
+| **E2E 테스트** | **100%** (32/32) | > 90% | ✅ |
 | 캐시 히트율 | 92% | > 80% | ✅ |
 | Firebase 인덱스 | 6개 | 최적화 | ✅ |
 | 월 운영비 | $70 | < $100 | ✅ (77% 절약) |
 
 ## 🔄 **최근 주요 업데이트**
+
+### 2025-09-04: **E2E 테스트 100% 달성!** 🏆
+- **Playwright E2E 테스트 100% 통과** (32/32 tests passing) 
+- 실제 관리자 계정 인증 시스템 완전 구현
+- test-auth-helper.ts 완전 재구축으로 안정성 확보
+- 크로스브라우저 호환성 검증 완료
 
 ### 2025-02-04: 보안 강화 & 버그 수정 ✅
 - 무한 로딩 문제 완전 해결 (`loading.initial` 사용)
@@ -439,5 +447,5 @@ logger.info('사용자 정보', { user }); // ❌ 개인정보 포함
 6. 보안 체크리스트 확인
 7. 커밋 컨벤션 준수
 
-*마지막 업데이트: 2025년 9월 4일*  
+*마지막 업데이트: 2025년 1월 (DATA_USAGE_MAPPING.md 추가)*  
 *프로젝트 버전: v4.0 (Production Ready)*

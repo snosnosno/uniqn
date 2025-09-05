@@ -346,6 +346,38 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       };
     }
 
+    case 'UPDATE_APPLICATION': {
+      const updatedApplications = new Map(state.applications);
+      updatedApplications.set(action.application.id, action.application);
+      
+      const timestamp = Date.now();
+      
+      logger.info('🔄 Application 즉시 업데이트', { 
+        component: 'UnifiedDataContext',
+        data: { 
+          applicationId: action.application.id,
+          postId: action.application.postId,
+          applicantId: action.application.applicantId,
+          status: action.application.status
+        }
+      });
+      
+      return {
+        ...state,
+        applications: updatedApplications,
+        cacheKeys: {
+          ...state.cacheKeys,
+          // 지원서 관련 캐시 즉시 무효화
+          applications: `applications_update_${timestamp}`,
+          scheduleEvents: `scheduleEvents_update_${timestamp}`,
+        },
+        lastUpdated: {
+          ...state.lastUpdated,
+          applications: timestamp,
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -363,20 +395,21 @@ interface UnifiedDataProviderProps {
 export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(unifiedDataReducer, initialUnifiedDataState);
   const initializeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { currentUser } = useAuth(); // 현재 로그인한 사용자
+  const { currentUser, role } = useAuth(); // 현재 로그인한 사용자와 role 정보
 
-  // 사용자별 데이터 구독 설정
+  // 사용자별 데이터 구독 설정 (사용자 ID와 role 모두 전달)
   useEffect(() => {
     if (!currentUser) return;
     
-    // 현재 사용자 ID를 서비스에 설정
+    // 현재 사용자 ID와 role을 서비스에 설정
     unifiedDataService.setCurrentUserId(currentUser.uid);
+    unifiedDataService.setUserRole(role);
     
     logger.info('UnifiedDataProvider: 사용자별 필터링 활성화', { 
       component: 'UnifiedDataContext',
-      data: { userId: currentUser.uid }
+      data: { userId: currentUser.uid, role, isAdmin: role === 'admin' || role === 'manager' }
     });
-  }, [currentUser]);
+  }, [currentUser, role]);
 
   // 서비스 초기화 (중복 초기화 방지)
   useEffect(() => {

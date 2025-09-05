@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, where, getDocs, serverTimestamp, addDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import useUnifiedData, { useJobPostingData } from '../../../hooks/useUnifiedData';
+import { useUnifiedDataContext } from '../../../contexts/UnifiedDataContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../hooks/useToast';
@@ -72,6 +73,7 @@ export const useJobBoard = () => {
   
   // UnifiedDataContext 먼저 선언
   const unifiedContext = useUnifiedData();
+  const { dispatch } = useUnifiedDataContext();
   
   // 내 지원 현황 로딩 상태 - 로딩 상태 개선
   const loadingMyApplications = unifiedContext.state.loading.initial || 
@@ -249,7 +251,7 @@ export const useJobBoard = () => {
     // 각 지원서에 JobPosting 정보 추가하고 MyApplicationsTab 호환 형식으로 변환
     const applicationsWithJobData = userApplications.map(application => {
       // eventId 우선 사용, postId는 fallback (필드명 통일)
-      const jobId = (application as any).eventId || application.postId;
+      const jobId = application.eventId || application.postId;
       const jobPosting = unifiedContext.state.jobPostings.get(jobId);
       
       // jobPosting 조회 실패 시 로깅
@@ -258,7 +260,7 @@ export const useJobBoard = () => {
           component: 'useJobBoard',
           data: {
             applicationId: application.id,
-            eventId: (application as any).eventId,
+            eventId: application.eventId,
             postId: application.postId,
             searchedId: jobId,
             availableJobPostings: Array.from(unifiedContext.state.jobPostings.keys()).slice(0, 5)
@@ -268,7 +270,7 @@ export const useJobBoard = () => {
       
       return {
         id: application.id,
-        postId: application.postId,
+        postId: application.eventId || application.postId,  // eventId 우선 사용
         status: application.status,
         appliedAt: application.appliedAt || application.createdAt || new Date(),
         confirmedAt: application.confirmedAt,
@@ -397,7 +399,7 @@ export const useJobBoard = () => {
       const applicationData: any = {
         applicantId: currentUser.uid,
         applicantName: staffDoc.data().name || t('jobBoard.unknownApplicant'),
-        eventId: selectedPost.id,  // postId 대신 eventId 사용
+        postId: selectedPost.id,  // 필드명 통일: postId 사용
         postTitle: selectedPost.title,
         status: 'applied',
         appliedAt: serverTimestamp(),
@@ -432,7 +434,31 @@ export const useJobBoard = () => {
         applicationData.assignedDurations = assignedDurations;
       }
       
-      await addDoc(collection(db, 'applications'), applicationData);
+      const docRef = await addDoc(collection(db, 'applications'), applicationData);
+      
+      // 즉시 캐시 업데이트를 위한 Application 객체 생성
+      const newApplication = {
+        id: docRef.id,
+        ...applicationData,
+        createdAt: new Date() as any, // Timestamp 대신 Date 사용
+        updatedAt: new Date() as any,
+      };
+      
+      // UnifiedDataContext에 즉시 업데이트 트리거
+      dispatch({
+        type: 'UPDATE_APPLICATION',
+        application: newApplication
+      });
+      
+      logger.info('🚀 지원서 즉시 업데이트 완료', {
+        component: 'useJobBoard',
+        data: {
+          applicationId: docRef.id,
+          postId: selectedPost.id,
+          applicantId: currentUser.uid,
+          status: 'applied'
+        }
+      });
       
       showSuccess(`지원이 완료되었습니다! (선택한 항목: ${selectedAssignments.length}개)`);
       setAppliedJobs(prev => new Map(prev).set(selectedPost.id, 'applied'));

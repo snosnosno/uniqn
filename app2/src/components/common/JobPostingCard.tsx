@@ -516,7 +516,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               <div className={getInfoItemClasses()}>
                 <span className="flex items-center">
                   <span className="mr-2">📅</span>
-                  <span className="break-words">{dateRangeDisplay}</span>
+                  <span className="break-words whitespace-pre-line">{dateRangeDisplay}</span>
                 </span>
               </div>
               

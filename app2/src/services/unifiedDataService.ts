@@ -170,6 +170,7 @@ const transformJobPostingData = (doc: DocumentData): JobPosting => ({
 const transformApplicationData = (doc: DocumentData): Application => ({
   id: doc.id,
   postId: doc.postId || '',
+  eventId: doc.eventId || doc.postId || '',
   postTitle: doc.postTitle || '',
   applicantId: doc.applicantId || '',
   applicantName: doc.applicantName || '',
@@ -216,6 +217,7 @@ export class UnifiedDataService {
   private dispatcher: React.Dispatch<UnifiedDataAction> | null = null;
   private performanceTracker = new PerformanceTracker();
   private currentUserId: string | null = null;
+  private userRole: string | null = null;
 
   /**
    * 디스패처 설정
@@ -241,6 +243,32 @@ export class UnifiedDataService {
       this.invalidateAllCaches();
       this.restartUserSpecificSubscriptions();
     }
+  }
+
+  /**
+   * 사용자 role 설정 (관리자 권한 확인)
+   */
+  setUserRole(role: string | null): void {
+    const wasChanged = this.userRole !== role;
+    this.userRole = role;
+    
+    logger.info('UnifiedDataService: 사용자 role 설정', { 
+      component: 'unifiedDataService',
+      data: { role, isAdmin: role === 'admin' || role === 'manager', wasChanged }
+    });
+
+    // Role이 변경되었다면 캐시 무효화 및 구독 재시작
+    if (wasChanged && this.dispatcher) {
+      this.invalidateAllCaches();
+      this.restartUserSpecificSubscriptions();
+    }
+  }
+
+  /**
+   * 관리자 권한 확인
+   */
+  private isAdmin(): boolean {
+    return this.userRole === 'admin' || this.userRole === 'manager';
   }
 
   /**
@@ -642,10 +670,10 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: true });
 
-      // 사용자별 필터링 쿼리 구성
+      // 사용자별 필터링 쿼리 구성 (관리자는 모든 데이터 접근)
       let applicationsQuery;
-      if (this.currentUserId) {
-        // 현재 사용자의 지원서만 가져오기
+      if (this.currentUserId && !this.isAdmin()) {
+        // 일반 사용자: 자신의 지원서만 가져오기
         applicationsQuery = query(
           collection(db, 'applications'),
           where('applicantId', '==', this.currentUserId),
@@ -653,16 +681,17 @@ export class UnifiedDataService {
         );
         logger.info('Applications 사용자별 필터링 쿼리', { 
           component: 'unifiedDataService',
-          data: { userId: this.currentUserId }
+          data: { userId: this.currentUserId, userRole: this.userRole }
         });
       } else {
-        // 전체 지원서 가져오기 (관리자용)
+        // 관리자 또는 로그인하지 않은 경우: 전체 지원서 가져오기
         applicationsQuery = query(
           collection(db, 'applications'),
           orderBy('createdAt', 'desc')
         );
-        logger.info('Applications 전체 데이터 쿼리', { 
-          component: 'unifiedDataService'
+        logger.info('Applications 전체 데이터 쿼리 (관리자 권한)', { 
+          component: 'unifiedDataService',
+          data: { userId: this.currentUserId, userRole: this.userRole, isAdmin: this.isAdmin() }
         });
       }
 

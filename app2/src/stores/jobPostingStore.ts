@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { doc, getDoc, onSnapshot, collection, query, where, orderBy, Unsubscribe, getDocs } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, orderBy, Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase';
 import { JobPosting } from '../types/jobPosting';
 import { Applicant } from '../types/applicant';
@@ -78,59 +78,23 @@ export const useJobPostingStore = create<JobPostingState>()(
                 const data = docSnapshot.data();
                 const jobPostingData = { id: docSnapshot.id, ...data } as JobPosting;
                 
-                // confirmedStaff가 이미 문서에 배열로 있는지 확인
+                // confirmedStaff는 문서 필드로만 관리 (서브컬렉션 접근 제거)
                 if (data.confirmedStaff && Array.isArray(data.confirmedStaff)) {
-                  logger.debug('confirmedStaff가 문서 필드로 존재', {
+                  logger.debug('confirmedStaff 필드 로드', {
                     component: 'jobPostingStore',
                     data: {
                       eventId: id,
-                      confirmedStaffCount: data.confirmedStaff.length,
-                      confirmedStaff: data.confirmedStaff
+                      confirmedStaffCount: data.confirmedStaff.length
                     }
                   });
                   // 이미 jobPostingData에 포함되어 있음
                 } else {
-                  // 서브컬렉션으로 시도 (실패할 가능성 있음)
-                  try {
-                    const confirmedStaffRef = collection(db, 'jobPostings', id, 'confirmedStaff');
-                    const confirmedStaffSnapshot = await getDocs(confirmedStaffRef);
-                    
-                    if (!confirmedStaffSnapshot.empty) {
-                      const confirmedStaffList: ConfirmedStaff[] = confirmedStaffSnapshot.docs.map(doc => ({
-                        ...doc.data()
-                      } as ConfirmedStaff));
-                      
-                      jobPostingData.confirmedStaff = confirmedStaffList;
-                      
-                      logger.debug('confirmedStaff 서브컬렉션에서 로드', {
-                        component: 'jobPostingStore',
-                        data: {
-                          eventId: id,
-                          confirmedStaffCount: confirmedStaffList.length
-                        }
-                      });
-                    } else {
-                      // 서브컬렉션이 비어있거나 없음
-                      jobPostingData.confirmedStaff = [];
-                      logger.debug('confirmedStaff가 없음', {
-                        component: 'jobPostingStore',
-                        data: { eventId: id }
-                      });
-                    }
-                  } catch (error) {
-                    // 권한 오류 등으로 서브컬렉션 접근 실패
-                    logger.warn('confirmedStaff 서브컬렉션 접근 실패, 필드 데이터 사용', {
-                      component: 'jobPostingStore',
-                      data: { 
-                        eventId: id,
-                        error: error instanceof Error ? error.message : String(error)
-                      }
-                    });
-                    // 필드에 없으면 빈 배열
-                    if (!jobPostingData.confirmedStaff) {
-                      jobPostingData.confirmedStaff = [];
-                    }
-                  }
+                  // confirmedStaff 필드가 없으면 빈 배열로 초기화
+                  jobPostingData.confirmedStaff = [];
+                  logger.debug('confirmedStaff 필드 없음, 빈 배열 초기화', {
+                    component: 'jobPostingStore',
+                    data: { eventId: id }
+                  });
                 }
                 
                 set({ 
@@ -176,50 +140,23 @@ export const useJobPostingStore = create<JobPostingState>()(
               const data = docSnap.data();
               const jobPostingData = { id: docSnap.id, ...data } as JobPosting;
               
-              // confirmedStaff가 이미 문서에 배열로 있는지 확인
+              // confirmedStaff는 문서 필드로만 관리 (서브컬렉션 접근 제거)
               if (data.confirmedStaff && Array.isArray(data.confirmedStaff)) {
-                logger.debug('refreshJobPosting - confirmedStaff가 문서 필드로 존재', {
+                logger.debug('refreshJobPosting - confirmedStaff 필드 로드', {
                   component: 'jobPostingStore',
                   data: {
                     eventId,
                     confirmedStaffCount: data.confirmedStaff.length
                   }
                 });
+                // 이미 jobPostingData에 포함되어 있음
               } else {
-                // 서브컬렉션 시도
-                try {
-                  const confirmedStaffRef = collection(db, 'jobPostings', eventId, 'confirmedStaff');
-                  const confirmedStaffSnapshot = await getDocs(confirmedStaffRef);
-                  
-                  if (!confirmedStaffSnapshot.empty) {
-                    const confirmedStaffList: ConfirmedStaff[] = confirmedStaffSnapshot.docs.map(doc => ({
-                      ...doc.data()
-                    } as ConfirmedStaff));
-                    
-                    jobPostingData.confirmedStaff = confirmedStaffList;
-                    
-                    logger.debug('refreshJobPosting - confirmedStaff 서브컬렉션에서 로드', {
-                      component: 'jobPostingStore',
-                      data: {
-                        eventId,
-                        confirmedStaffCount: confirmedStaffList.length
-                      }
-                    });
-                  } else {
-                    jobPostingData.confirmedStaff = [];
-                  }
-                } catch (error) {
-                  logger.warn('refreshJobPosting - confirmedStaff 접근 실패', {
-                    component: 'jobPostingStore',
-                    data: { 
-                      eventId,
-                      error: error instanceof Error ? error.message : String(error)
-                    }
-                  });
-                  if (!jobPostingData.confirmedStaff) {
-                    jobPostingData.confirmedStaff = [];
-                  }
-                }
+                // confirmedStaff 필드가 없으면 빈 배열로 초기화
+                jobPostingData.confirmedStaff = [];
+                logger.debug('refreshJobPosting - confirmedStaff 필드 없음, 빈 배열 초기화', {
+                  component: 'jobPostingStore',
+                  data: { eventId }
+                });
               }
               
               set({ 

@@ -86,7 +86,8 @@ export interface JobPosting {
 
 export interface Application {
   id: string;
-  postId: string;
+  postId: string;        // 기존 (하위 호환성)
+  eventId?: string;      // 표준 필드 (CLAUDE.md 표준)
   postTitle: string;
   applicantId: string;
   applicantName: string;
@@ -219,7 +220,8 @@ export type UnifiedDataAction =
   // 🚀 즉시 업데이트를 위한 새로운 액션들
   | { type: 'UPDATE_WORK_LOG'; workLog: WorkLog }
   | { type: 'UPDATE_ATTENDANCE_RECORD'; record: AttendanceRecord }
-  | { type: 'UPDATE_STAFF'; staff: Staff };
+  | { type: 'UPDATE_STAFF'; staff: Staff }
+  | { type: 'UPDATE_APPLICATION'; application: Application };
 
 // 통합 데이터 컨텍스트 인터페이스
 export interface UnifiedDataContextType {

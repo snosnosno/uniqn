@@ -1,131 +1,160 @@
-import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
 import { db } from '../../../../firebase';
 import { Applicant } from '../types';
+import { useApplicationData } from '../../../../hooks/useUnifiedData';
+import { Application } from '../../../../types/unifiedData';
 
 /**
- * 지원자 데이터를 관리하는 Custom Hook
+ * 지원자 데이터를 관리하는 Custom Hook (UnifiedDataContext 통합)
  */
 export const useApplicantData = (eventId?: string) => {
   const { t } = useTranslation();
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  
+  // UnifiedDataContext에서 applications 데이터 가져오기
+  const { applications, loading, error, refresh } = useApplicationData();
+  
+  // eventId에 해당하는 applications 필터링 및 Applicant 타입으로 변환
+  const applicants = useMemo(() => {
+    if (!eventId) {
+      logger.debug('🔍 useApplicantData: eventId가 없습니다', { component: 'useApplicantData' });
+      return [];
+    }
+    
+    logger.debug('🔍 useApplicantData: 지원서 필터링 시작', {
+      component: 'useApplicantData',
+      data: {
+        eventId,
+        totalApplications: applications.length,
+        applicationsById: applications.map(app => ({ id: app.id, postId: app.postId }))
+      }
+    });
+    
+    const filteredApplications = applications.filter(app => 
+      app.eventId === eventId || app.postId === eventId
+    );
+    
+    logger.info('✅ useApplicantData: 지원서 필터링 완료', {
+      component: 'useApplicantData',
+      data: {
+        eventId,
+        filteredCount: filteredApplications.length,
+        filteredApplications: filteredApplications.map(app => ({ 
+          id: app.id, 
+          postId: app.postId, 
+          applicantName: app.applicantName,
+          status: app.status
+        }))
+      }
+    });
+    
+    return filteredApplications.map((app: Application) => {
+      // Application 타입을 Applicant 타입으로 매핑
+      let dateString = '';
+      if (app.assignedDate) {
+        try {
+          if (app.assignedDate && typeof app.assignedDate === 'object' && 'toDate' in app.assignedDate) {
+            // Firestore Timestamp 객체인 경우
+            const date = (app.assignedDate as any).toDate();
+            dateString = date.toISOString().split('T')[0]; // yyyy-MM-dd 형식
+          } else if (typeof app.assignedDate === 'string') {
+            dateString = app.assignedDate;
+          }
+        } catch (error) {
+          logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { 
+            component: 'useApplicantData' 
+          });
+        }
+      }
+      
+      return {
+        id: app.id,
+        applicantId: app.applicantId,
+        applicantName: app.applicantName,
+        applicantPhone: app.applicantPhone,
+        applicantEmail: app.applicantEmail,
+        status: app.status,
+        role: app.role,
+        assignedRole: app.assignedRole || app.role,
+        assignedTime: app.assignedTime,
+        assignedDate: dateString || '',
+        assignedRoles: app.assignedRoles || (app.assignedRole ? [app.assignedRole] : app.role ? [app.role] : []),
+        assignedTimes: app.assignedTimes || (app.assignedTime ? [app.assignedTime] : []),
+        assignedDates: dateString ? [dateString] : [],
+        assignedDurations: [],
+        confirmedRole: app.confirmedRole,
+        confirmedTime: app.confirmedTime,
+        createdAt: app.createdAt,
+        updatedAt: app.updatedAt,
+        appliedAt: app.appliedAt,
+        confirmedAt: app.confirmedAt,
+        eventId: app.postId
+      } as Applicant;
+    });
+  }, [applications, eventId]);
+
+  // 사용자 정보를 추가로 가져오는 상태
+  const [applicantsWithUserInfo, setApplicantsWithUserInfo] = useState<Applicant[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
 
-  const loadApplicants = useCallback(async (postId: string) => {
-    setLoadingApplicants(true);
-    try {
-      const q = query(collection(db, 'applications'), where('eventId', '==', postId));
-      const querySnapshot = await getDocs(q);
-      const fetchedApplicants = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        logger.debug('🔍 Firebase 지원자 원본 데이터:', { 
-          component: 'useApplicantData',
-          data: { 
-            id: doc.id, 
-            data: data,
-            role: data.role,
-            timeSlot: data.timeSlot,
-            date: data.date,
-            assignedRole: data.assignedRole,
-            assignedTime: data.assignedTime,
-            assignedDate: data.assignedDate
-          }
-        });
-        
-        // Firebase 필드명을 Applicant 인터페이스에 맞게 매핑
-        // assignedDate를 Timestamp에서 문자열로 변환
-        let dateString = '';
-        if (data.assignedDate) {
-          try {
-            if (data.assignedDate.toDate) {
-              // Firestore Timestamp 객체인 경우
-              const date = data.assignedDate.toDate();
-              dateString = date.toISOString().split('T')[0]; // yyyy-MM-dd 형식
-            } else if (typeof data.assignedDate === 'string') {
-              dateString = data.assignedDate;
-            }
-          } catch (error) {
-            logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { 
-              component: 'useApplicantData' 
-            });
-          }
-        }
-        
-        return { 
-          id: doc.id, 
-          ...data,
-          // 필드명 매핑 (role -> assignedRole 등)
-          assignedRole: data.assignedRole || data.role,
-          assignedTime: data.assignedTime || data.timeSlot,
-          assignedDate: dateString || data.date,
-          // 다중 선택 필드도 매핑
-          assignedRoles: data.assignedRoles || (data.assignedRole ? [data.assignedRole] : data.role ? [data.role] : []),
-          assignedTimes: data.assignedTimes || (data.assignedTime ? [data.assignedTime] : data.timeSlot ? [data.timeSlot] : []),
-          assignedDates: data.assignedDates || (dateString ? [dateString] : data.date ? [data.date] : []),
-          // duration 정보도 매핑
-          assignedDurations: data.assignedDurations || [],
-          // eventId 추가
-          eventId: data.eventId || postId
-        } as Applicant;
-      });
-      
-      // 사용자 정보를 추가로 가져오기
-      const applicantsWithUserInfo = await Promise.all(
-        fetchedApplicants.map(async (applicant) => {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', applicant.applicantId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              return {
-                ...applicant,
-                gender: userData.gender,
-                age: userData.age,
-                experience: userData.experience,
-                email: userData.email,
-                phone: userData.phone  // phoneNumber에서 phone으로 변경
-              };
-            }
-            return applicant;
-          } catch (error) {
-            logger.error('Error fetching user data for applicant:', error instanceof Error ? error : new Error(String(error)), { 
-              component: 'useApplicantData', 
-              data: { applicantId: applicant.applicantId } 
-            });
-            return applicant;
-          }
-        })
-      );
-
-      setApplicants(applicantsWithUserInfo);
-      
-    } catch (error) {
-      logger.error('Error fetching applicants: ', error instanceof Error ? error : new Error(String(error)), { 
-        component: 'useApplicantData' 
-      });
-      alert(t('jobPostingAdmin.alerts.fetchApplicantsFailed'));
-    } finally {
-      setLoadingApplicants(false);
-    }
-  }, [t]);
-
-  // Load applicants when eventId changes
+  // 사용자 정보 추가 로딩
   useEffect(() => {
-    if (eventId) {
-      loadApplicants(eventId);
-    }
-  }, [eventId, loadApplicants]);
+    const loadUserInfo = async () => {
+      if (applicants.length === 0) {
+        setApplicantsWithUserInfo([]);
+        return;
+      }
+
+      setLoadingApplicants(true);
+      try {
+        const applicantsWithUserInfo = await Promise.all(
+          applicants.map(async (applicant) => {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', applicant.applicantId));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                return {
+                  ...applicant,
+                  gender: userData.gender,
+                  age: userData.age,
+                  experience: userData.experience,
+                  email: userData.email,
+                  phone: userData.phone
+                };
+              }
+              return applicant;
+            } catch (error) {
+              logger.error('Error fetching user data for applicant:', error instanceof Error ? error : new Error(String(error)), { 
+                component: 'useApplicantData', 
+                data: { applicantId: applicant.applicantId } 
+              });
+              return applicant;
+            }
+          })
+        );
+
+        setApplicantsWithUserInfo(applicantsWithUserInfo);
+      } catch (error) {
+        logger.error('Error fetching user info: ', error instanceof Error ? error : new Error(String(error)), { 
+          component: 'useApplicantData' 
+        });
+      } finally {
+        setLoadingApplicants(false);
+      }
+    };
+
+    loadUserInfo();
+  }, [applicants]);
 
   const refreshApplicants = useCallback(() => {
-    if (eventId) {
-      loadApplicants(eventId);
-    }
-  }, [eventId, loadApplicants]);
+    refresh();
+  }, [refresh]);
 
   return {
-    applicants,
-    loadingApplicants,
+    applicants: applicantsWithUserInfo,
+    loadingApplicants: loading || loadingApplicants,
     refreshApplicants
   };
 };

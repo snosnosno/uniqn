@@ -218,7 +218,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className={`font-medium ${group.time !== '미정' ? 'text-gray-700' : 'text-red-500'}`}>
+                                <span className={`font-medium ${group.time && group.time !== '미정' ? 'text-gray-700' : 'text-red-500'}`}>
                                   {group.time}
                                 </span>
                                 <span className="text-gray-500">-</span>
