@@ -971,6 +971,22 @@ export const getStaffCounts = (
   timeSlot: string,
   date?: string
 ): { confirmed: number; required: number } => {
+  // 디버깅 로그 추가
+  logger.debug('🔢 getStaffCounts 호출', {
+    component: 'applicantHelpers',
+    data: {
+      role,
+      timeSlot,
+      date,
+      applicationsCount: applications.length,
+      confirmedAppsCount: applications.filter(app => app.status === 'confirmed').length,
+      jobPostingStructure: {
+        hasDateSpecificRequirements: !!jobPosting?.dateSpecificRequirements,
+        dateReqsCount: jobPosting?.dateSpecificRequirements?.length || 0
+      }
+    }
+  });
+
   // 확정된 인원 계산
   const confirmed = applications.filter(app => 
     app.status === 'confirmed' && 
@@ -982,16 +998,56 @@ export const getStaffCounts = (
     })
   ).length;
   
-  // 필요 인원 계산
+  // 필요 인원 계산 - 올바른 데이터 구조 사용
   let required = 0;
-  if (jobPosting?.timeSlots) {
-    const timeSlotInfo = jobPosting.timeSlots.find((ts: any) => ts.time === timeSlot);
-    if (timeSlotInfo?.roles) {
-      const roleInfo = timeSlotInfo.roles.find((r: any) => r.role === role);
-      required = roleInfo?.count || 0;
+  if (jobPosting?.dateSpecificRequirements && Array.isArray(jobPosting.dateSpecificRequirements)) {
+    // date가 제공된 경우 해당 날짜의 요구사항만 찾기
+    if (date) {
+      const dateReq = jobPosting.dateSpecificRequirements.find((dateReq: any) => {
+        // 날짜 비교를 위한 변환
+        let dateReqDate = '';
+        if (dateReq.date) {
+          if (typeof dateReq.date === 'string') {
+            dateReqDate = dateReq.date;
+          } else if (dateReq.date.toDate) {
+            // Firebase Timestamp
+            dateReqDate = dateReq.date.toDate().toISOString().split('T')[0] || '';
+          } else if (typeof dateReq.date.seconds === 'number') {
+            // Timestamp with seconds
+            dateReqDate = new Date(dateReq.date.seconds * 1000).toISOString().split('T')[0] || '';
+          }
+        }
+        return dateReqDate === date;
+      });
+      
+      if (dateReq?.timeSlots) {
+        const timeSlotInfo = dateReq.timeSlots.find((ts: any) => ts.time === timeSlot);
+        if (timeSlotInfo?.roles) {
+          const roleInfo = timeSlotInfo.roles.find((r: any) => r.name === role);
+          required = roleInfo?.count || 0;
+        }
+      }
+    } else {
+      // date가 없는 경우 모든 날짜에서 해당 시간대/역할의 최대 요구사항 찾기
+      jobPosting.dateSpecificRequirements.forEach((dateReq: any) => {
+        if (dateReq?.timeSlots) {
+          const timeSlotInfo = dateReq.timeSlots.find((ts: any) => ts.time === timeSlot);
+          if (timeSlotInfo?.roles) {
+            const roleInfo = timeSlotInfo.roles.find((r: any) => r.name === role);
+            if (roleInfo?.count) {
+              required = Math.max(required, roleInfo.count);
+            }
+          }
+        }
+      });
     }
   }
   
+  logger.debug('🔢 getStaffCounts 결과', {
+    component: 'applicantHelpers',
+    data: { role, timeSlot, date, confirmed, required }
+  });
+
   return { confirmed, required };
 };
 

@@ -39,6 +39,16 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 }) => {
   const { t } = useTranslation();
   
+  // 디버깅: applications 배열 확인
+  logger.debug('📋 MultiSelectControls applications 데이터', {
+    component: 'MultiSelectControls', 
+    data: {
+      applicationsCount: applications.length,
+      confirmedCount: applications.filter(app => app.status === 'confirmed').length,
+      applicationsIds: applications.map(app => ({ id: app.id, status: app.status }))
+    }
+  });
+  
   // 🔥 새로운 checkMethod 기반 그룹화 로직 - 날짜 범위 유지
   const groupedSelections = useMemo(() => {
     const allSelections = getApplicantSelections(applicant, jobPosting);

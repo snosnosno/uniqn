@@ -80,7 +80,9 @@ export const useApplicantData = (eventId?: string) => {
         confirmedAt: app.confirmedAt,
         eventId: app.eventId || app.postId,
         // 🎯 중요: assignments 필드 추가 - Firebase 데이터의 assignments 배열을 그대로 전달
-        assignments: app.assignments || []
+        assignments: app.assignments || [],
+        // 🆕 사전질문 답변 필드 추가
+        preQuestionAnswers: app.preQuestionAnswers || []
       } as Applicant;
     });
   }, [applications, eventId]);
