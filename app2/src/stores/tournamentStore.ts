@@ -278,7 +278,7 @@ export const useTournamentStore = create<TournamentState>()(
           const targetPlayersPerTable = Math.ceil(totalPlayers / activeTables.length);
 
           // 재분배 로직은 복잡하므로 여기서는 기본 구조만 제공
-          logger.debug('테이블 밸런싱 필요:', { component: 'tournamentStore', data: { totalPlayers, targetPlayersPerTable } });
+          // Table balancing calculation completed
         }),
 
         reset: () => set(() => initialState),

@@ -46,10 +46,7 @@ export function register(config?: Config) {
         // Add some additional logging to localhost, pointing developers to the
         // service worker/PWA documentation.
         navigator.serviceWorker.ready.then(() => {
-          logger.debug('Log output', { component: 'serviceWorkerRegistration', data: 
-            'This web app is being served cache-first by a service ' +
-              'worker. To learn more, visit https://cra.link/PWA'
-           });
+          // PWA service worker ready
         });
       } else {
         // Is not localhost. Just register service worker
@@ -74,10 +71,7 @@ function registerValidSW(swUrl: string, config?: Config) {
               // At this point, the updated precached content has been fetched,
               // but the previous service worker will still serve the older
               // content until all client tabs are closed.
-              logger.debug('Log output', { component: 'serviceWorkerRegistration', data: 
-                'New content is available and will be used when all ' +
-                  'tabs for this page are closed. See https://cra.link/PWA.'
-               });
+              // New content available for update
 
               // Execute callback
               if (config && config.onUpdate) {
@@ -87,7 +81,7 @@ function registerValidSW(swUrl: string, config?: Config) {
               // At this point, everything has been precached.
               // It's the perfect time to display a
               // "Content is cached for offline use." message.
-              logger.debug('Content is cached for offline use.', { component: 'serviceWorkerRegistration' });
+              // Content cached for offline use
 
               // Execute callback
               if (config && config.onSuccess) {
@@ -127,7 +121,7 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
       }
     })
     .catch(() => {
-      logger.debug('No internet connection found. App is running in offline mode.', { component: 'serviceWorkerRegistration' });
+      // No internet connection - offline mode
     });
 }
 

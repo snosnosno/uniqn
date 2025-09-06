@@ -139,54 +139,26 @@ export const useJobBoard = () => {
   // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
   const myApplications = useMemo(() => {
     if (!currentUser || !unifiedContext.state) {
-      logger.debug('🎯 myApplications 계산 스킵', { 
-        component: 'useJobBoard',
-        data: { currentUser: !!currentUser, state: !!unifiedContext.state }
-      });
+      // myApplications 계산 스킵
       return [];
     }
     
     // 디버깅: 전체 applications 데이터 확인
     const allApplications = Array.from(unifiedContext.state.applications.values());
-    logger.debug('🎯 전체 Applications 데이터', {
-      component: 'useJobBoard',
-      data: {
-        total: allApplications.length,
-        loading: {
-          applications: unifiedContext.state.loading.applications,
-          initial: unifiedContext.state.loading.initial
-        },
-        sample: allApplications.slice(0, 3).map(app => ({
-          id: app.id,
-          applicantId: app.applicantId,
-          postId: app.postId,
-          status: app.status
-        })),
-        currentUserId: currentUser.uid
-      }
-    });
+    // 전체 Applications 데이터 처리
 
     // 로딩 상태 처리 개선 - 초기 로딩과 applications 특정 로딩 모두 고려
     const isReallyLoading = unifiedContext.state.loading.initial || 
                            (unifiedContext.state.loading.applications && allApplications.length === 0);
                            
     if (isReallyLoading) {
-      logger.debug('🔄 Applications 로딩 중', { 
-        component: 'useJobBoard',
-        data: {
-          initial: unifiedContext.state.loading.initial,
-          applications: unifiedContext.state.loading.applications,
-          count: allApplications.length
-        }
-      });
+      // Applications 로딩 중
       return [];
     }
 
     // 데이터가 비어있어도 빈 배열 반환 (무한로딩 방지) - 로딩 완료 후
     if (allApplications.length === 0) {
-      logger.info('ℹ️ Applications 데이터가 비어있습니다 (로딩 완료, 정상 상태)', { 
-        component: 'useJobBoard'
-      });
+      // Applications 데이터가 비어있음 (로딩 완료, 정상 상태)
       return []; // 빈 배열 명시적 반환
     }
     
@@ -446,36 +418,13 @@ export const useJobBoard = () => {
       }
       
       
-      // 🔍 Firebase 저장 전 데이터 확인 로깅 (상세)
-      logger.info('🚀 Firebase에 저장할 applicationData:', {
-        component: 'useJobBoard.handleApply',
-        data: {
-          postTitle: applicationData.postTitle,
-          assignments: applicationData.assignments,
-          assignmentsLength: applicationData.assignments?.length || 0,
-          assignmentsDetail: JSON.stringify(applicationData.assignments, null, 2),
-          hasPreQuestionAnswers: !!(applicationData.preQuestionAnswers?.length),
-          fullApplicationData: applicationData
-        }
-      });
+      // Firebase 저장 데이터 준비 완료
       
       // Firebase 저장 실행
-      logger.info('📤 Firebase 저장 시작...', {
-        component: 'useJobBoard.handleApply',
-        data: { collection: 'applications' }
-      });
       
       const docRef = await addDoc(collection(db, 'applications'), applicationData);
       
-      // 저장 성공 로깅
-      logger.info('✅ Firebase 저장 성공:', {
-        component: 'useJobBoard.handleApply',
-        data: {
-          docId: docRef.id,
-          savedAssignments: applicationData.assignments,
-          savedPostTitle: applicationData.postTitle
-        }
-      });
+      // Firebase 저장 성공
       
       // 즉시 캐시 업데이트를 위한 Application 객체 생성
       const newApplication = {
@@ -491,15 +440,7 @@ export const useJobBoard = () => {
         application: newApplication
       });
       
-      logger.info('🚀 지원서 즉시 업데이트 완료', {
-        component: 'useJobBoard',
-        data: {
-          applicationId: docRef.id,
-          postId: selectedPost.id,
-          applicantId: currentUser.uid,
-          status: 'applied'
-        }
-      });
+      // 지원서 즉시 업데이트 완료
       
       showSuccess(`지원이 완료되었습니다! (선택한 항목: ${selectedAssignments.length}개)`);
       setAppliedJobs(prev => new Map(prev).set(selectedPost.id, 'applied'));

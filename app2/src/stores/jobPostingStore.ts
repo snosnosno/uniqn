@@ -80,21 +80,10 @@ export const useJobPostingStore = create<JobPostingState>()(
                 
                 // confirmedStaff는 문서 필드로만 관리 (서브컬렉션 접근 제거)
                 if (data.confirmedStaff && Array.isArray(data.confirmedStaff)) {
-                  logger.debug('confirmedStaff 필드 로드', {
-                    component: 'jobPostingStore',
-                    data: {
-                      eventId: id,
-                      confirmedStaffCount: data.confirmedStaff.length
-                    }
-                  });
                   // 이미 jobPostingData에 포함되어 있음
                 } else {
                   // confirmedStaff 필드가 없으면 빈 배열로 초기화
                   jobPostingData.confirmedStaff = [];
-                  logger.debug('confirmedStaff 필드 없음, 빈 배열 초기화', {
-                    component: 'jobPostingStore',
-                    data: { eventId: id }
-                  });
                 }
                 
                 set({ 
@@ -142,21 +131,10 @@ export const useJobPostingStore = create<JobPostingState>()(
               
               // confirmedStaff는 문서 필드로만 관리 (서브컬렉션 접근 제거)
               if (data.confirmedStaff && Array.isArray(data.confirmedStaff)) {
-                logger.debug('refreshJobPosting - confirmedStaff 필드 로드', {
-                  component: 'jobPostingStore',
-                  data: {
-                    eventId,
-                    confirmedStaffCount: data.confirmedStaff.length
-                  }
-                });
                 // 이미 jobPostingData에 포함되어 있음
               } else {
                 // confirmedStaff 필드가 없으면 빈 배열로 초기화
                 jobPostingData.confirmedStaff = [];
-                logger.debug('refreshJobPosting - confirmedStaff 필드 없음, 빈 배열 초기화', {
-                  component: 'jobPostingStore',
-                  data: { eventId }
-                });
               }
               
               set({ 

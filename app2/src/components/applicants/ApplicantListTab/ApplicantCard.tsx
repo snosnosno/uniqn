@@ -37,112 +37,82 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
   } : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-      {/* 2x2 그리드 레이아웃 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+    <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
+      {/* 모바일 최적화된 레이아웃 */}
+      <div className="space-y-2">
         
-        {/* 1사분면: 기본 정보 */}
-        <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 
-                className="font-medium text-gray-900 text-base cursor-pointer hover:text-blue-600 hover:underline"
-                onClick={() => setIsProfileModalOpen(true)}
-              >
-                {applicant.applicantName}
-              </h4>
-              <span className={`px-2 py-1 rounded-full text-xs ${
-                applicant.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                'bg-yellow-100 text-yellow-800'
-              }`}>
-                {t(`jobPostingAdmin.applicants.status_${applicant.status}`)}
-              </span>
-            </div>
+        {/* 상단: 이름, 프로필 보기 버튼, 상태 */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className="font-medium text-gray-900 text-base">
+              {applicant.applicantName}
+            </h4>
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
+              className="text-xs text-blue-600 hover:text-blue-800 hover:underline bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition-colors"
+            >
+              (프로필 보기)
+            </button>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            applicant.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+            applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
+            'bg-yellow-100 text-yellow-800'
+          }`}>
+            {t(`jobPostingAdmin.applicants.status_${applicant.status}`)}
+          </span>
+        </div>
+        
+        {/* 기본 정보: 2x2 컴팩트 그리드 */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-600">
+          <div>
+            <span className="font-medium">{t('profile.gender')}:</span>
+            <span className="ml-1">
+              {applicant.gender ? (
+                applicant.gender.toLowerCase() === 'male' 
+                  ? t('gender.male') 
+                  : applicant.gender.toLowerCase() === 'female' 
+                  ? t('gender.female') 
+                  : applicant.gender
+              ) : '없음'}
+            </span>
           </div>
           
-          <div className="text-sm text-gray-600 space-y-1.5">
-            {applicant.appliedAt && (
-              <div className="flex items-center">
-                <span className="font-medium min-w-12">지원:</span>
-                <span className="ml-2">
-                  {(() => {
-                    // 🔧 TypeScript strict mode 준수: Union 타입 완전 처리
-                    if (typeof applicant.appliedAt === 'string') {
-                      return formatDateDisplay(applicant.appliedAt);
-                    }
-                    
-                    // Timestamp 타입 체크
-                    if (applicant.appliedAt && typeof applicant.appliedAt === 'object' && 'toDate' in applicant.appliedAt) {
-                      const dateStr = applicant.appliedAt.toDate().toISOString().split('T')[0] || '';
-                      return formatDateDisplay(dateStr);
-                    }
-                    
-                    // Date 타입 체크
-                    if (applicant.appliedAt instanceof Date) {
-                      const dateStr = applicant.appliedAt.toISOString().split('T')[0] || '';
-                      return formatDateDisplay(dateStr);
-                    }
-                    
-                    return '';
-                  })()}
-                </span>
-              </div>
-            )}
-            
-            {applicant.gender ? (
-              <div className="flex items-center">
-                <span className="font-medium min-w-12">{t('profile.gender')}:</span> 
-                <span className="ml-2">
-                  {applicant.gender.toLowerCase() === 'male' 
-                    ? t('gender.male') 
-                    : applicant.gender.toLowerCase() === 'female' 
-                    ? t('gender.female') 
-                    : applicant.gender}
-                </span>
-              </div>
-            ) : null}
-            
-            {applicant.age ? (
-              <div className="flex items-center">
-                <span className="font-medium min-w-12">{t('profile.age')}:</span>
-                <span className="ml-2">{applicant.age}</span>
-              </div>
-            ) : null}
-            
-            {applicant.experience ? (
-              <div className="flex items-center">
-                <span className="font-medium min-w-12">{t('profile.experience')}:</span>
-                <span className="ml-2">{applicant.experience}</span>
-              </div>
-            ) : null}
-            
-            {applicant.email ? (
-              <div className="flex items-center">
-                <span className="font-medium min-w-12">{t('profile.email')}:</span>
-                <span className="ml-2 text-xs break-all">{applicant.email}</span>
-              </div>
-            ) : null}
-            
-            {applicant.phone ? (
-              <div className="flex items-center">
-                <span className="font-medium min-w-12">{t('profile.phone')}:</span>
-                <span className="ml-2">{applicant.phone}</span>
-              </div>
-            ) : null}
+          <div>
+            <span className="font-medium">{t('profile.age')}:</span>
+            <span className="ml-1">{applicant.age || '없음'}</span>
+          </div>
+          
+          <div>
+            <span className="font-medium">지역:</span>
+            <span className="ml-1">없음</span>
+          </div>
+          
+          <div>
+            <span className="font-medium">{t('profile.experience')}:</span>
+            <span className="ml-1">{applicant.experience || '없음'}</span>
+          </div>
+        </div>
+        
+        {/* 연락처 정보: 한 줄로 컴팩트하게 */}
+        <div className="text-sm text-gray-600 space-y-1">
+          <div>
+            <span className="font-medium">{t('profile.email')}:</span>
+            <span className="ml-1 text-xs break-all">{applicant.email || '없음'}</span>
+          </div>
+          <div>
+            <span className="font-medium">{t('profile.phone')}:</span>
+            <span className="ml-1">{applicant.phone || '없음'}</span>
           </div>
         </div>
 
-        {/* 2사분면: 사전질문 답변 */}
-        <div className="space-y-3">
-          <div className="border-l-2 border-gray-200 pl-3">
-            <h5 className="font-medium text-gray-800 text-sm mb-2">📝 사전질문 답변</h5>
-            <PreQuestionDisplay applicant={applicant} />
-          </div>
+        {/* 사전질문 답변: 컴팩트하게 */}
+        <div className="border-l-2 border-gray-200 pl-2">
+          <PreQuestionDisplay applicant={applicant} />
         </div>
 
-        {/* 3-4사분면: 선택 시간 표시 및 체크박스 영역 */}
-        <div className="lg:col-span-2">
+        {/* 하단: 선택 시간 표시 및 체크박스 영역 */}
+        <div>
           {(() => {
             const applicantSelections = getApplicantSelections(applicant, jobPosting);
             
@@ -196,49 +166,12 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
               const allApplications = Array.from(processedApplications.values());
               
               return (
-                <div className="mb-4 p-4 rounded-lg border bg-green-50 border-green-200">
-                  <div className="space-y-3 mb-4">
+                <div className="mt-2 p-2 rounded-lg border bg-green-50 border-green-200">
+                  <div className="space-y-1">
                     {allApplications.map((group, groupIndex) => {
                       return (
-                        <div key={groupIndex} className="bg-white p-3 rounded border">
-                          <div className="mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-green-100 text-green-800">
-                                📅 {group.displayDateRange}
-                                {group.isGrouped && group.dayCount && <span className="ml-1">({group.dayCount}일)</span>}
-                              </span>
-                              {group.isGrouped && (
-                                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-purple-100 text-purple-700">
-                                  📋
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className={`font-medium ${group.time && group.time !== '미정' && group.time !== '시간 미정' ? 'text-gray-700' : 'text-red-500'}`}>
-                              ⏰ {group.time}
-                            </span>
-                            <span className="text-gray-500">-</span>
-                            <div className="font-medium text-gray-800">
-                              {group.isGrouped ? (
-                                // 그룹 선택: 역할들을 배지로 표시
-                                <div className="flex flex-wrap gap-1">
-                                  {group.roles.map((role: string, roleIndex: number) => (
-                                    role ? (
-                                      <span key={roleIndex} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-sm">
-                                        👤 {t(`roles.${role}`) || role}
-                                      </span>
-                                    ) : null
-                                  ))}
-                                </div>
-                              ) : (
-                                // 개별 선택: 역할들을 쉼표로 구분
-                                <span>
-                                  👤 {group.roles.filter((role: string) => role).map((role: string) => t(`roles.${role}`) || role).join(', ')}
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                        <div key={groupIndex} className="bg-white p-2 rounded border text-sm font-medium text-gray-700">
+                          📅 {group.displayDateRange} ⏰ {group.time} 👤 {group.roles.filter((role: string) => role).map((role: string) => t(`roles.${role}`) || role).join(', ')}
                         </div>
                       );
                     })}
@@ -250,22 +183,9 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
             // 기존 단일 선택 지원자 표시 (확정된 상태에서만)
             if (applicant.status === 'confirmed' && (applicant.assignedDate || applicant.assignedTime || applicant.assignedRole)) {
               return (
-                <div className="mb-4 p-4 rounded-lg bg-green-50 border border-green-200">
-                  <div className="text-sm bg-white p-2 rounded border mb-4">
-                    {applicant.assignedDate ? 
-                      <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md mr-2 bg-green-100 text-green-800">
-                        📅 {formatDateDisplay(applicant.assignedDate)}
-                      </span> : null
-                    }
-                    <span className="font-medium text-gray-700">{applicant.assignedTime}</span>
-                    {applicant.assignedRole && (
-                      <>
-                        <span className="text-gray-600 mx-1">-</span>
-                        <span className="font-medium text-gray-800">
-                          {applicant.assignedRole && (t(`roles.${applicant.assignedRole}`) || applicant.assignedRole)}
-                        </span>
-                      </>
-                    )}
+                <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
+                  <div className="text-sm bg-white p-2 rounded border font-medium text-gray-700">
+                    📅 {applicant.assignedDate ? formatDateDisplay(applicant.assignedDate) : ''} ⏰ {applicant.assignedTime} 👤 {applicant.assignedRole ? (t(`roles.${applicant.assignedRole}`) || applicant.assignedRole) : ''}
                   </div>
                 </div>
               );

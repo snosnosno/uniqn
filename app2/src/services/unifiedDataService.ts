@@ -32,7 +32,7 @@ import {
   Application,
   LegacyApplication
 } from '../types/application';
-// ApplicationMigration import 제거 - 개발 단계에서 불필요
+// Application types imported from types/application
 
 // 구독 관리 인터페이스
 interface SubscriptionManager {
@@ -181,21 +181,7 @@ const transformApplicationData = (doc: DocumentData): Application | null => {
 
     // 🆕 새로운 구조 데이터 명시적 변환 (assignments 필드 보장)
     
-    // 🔍 Firebase에서 가져온 원시 데이터 로깅
-    logger.info('📥 Firebase에서 가져온 원시 Application 데이터:', {
-      component: 'unifiedDataService',
-      data: {
-        id: doc.id,
-        docKeys: Object.keys(doc),
-        hasAssignments: 'assignments' in doc,
-        assignmentsRaw: doc.assignments,
-        assignmentsType: typeof doc.assignments,
-        assignmentsIsArray: Array.isArray(doc.assignments),
-        postTitle: doc.postTitle,
-        applicantId: doc.applicantId,
-        fullDoc: doc
-      }
-    });
+    // Firebase 원시 데이터 처리
     
     // 🔧 핵심 수정: assignments와 postTitle 필드를 명시적으로 보존
     const application: Application = {
@@ -207,17 +193,7 @@ const transformApplicationData = (doc: DocumentData): Application | null => {
       postTitle: doc.postTitle || '제목 없음'
     } as Application;
     
-    // 🔍 디버깅: 변환된 데이터 로깅
-    logger.debug('✅ 새로운 구조 Application 데이터 변환 완료:', {
-      component: 'unifiedDataService',
-      data: { 
-        id: doc.id,
-        hasAssignments: !!application.assignments,
-        assignmentsLength: application.assignments?.length || 0,
-        assignments: application.assignments,
-        postTitle: application.postTitle
-      }
-    });
+    // Application 데이터 변환 완료
 
     return application;
     
@@ -315,9 +291,7 @@ export class UnifiedDataService {
   private invalidateAllCaches(): void {
     if (!this.dispatcher) return;
 
-    logger.info('UnifiedDataService: 캐시 무효화 시작', { 
-      component: 'unifiedDataService' 
-    });
+    // 모든 컬렉션의 캐시 무효화
 
     // 모든 컬렉션의 캐시 키 업데이트
     this.dispatcher({ type: 'INVALIDATE_CACHE', collection: 'applications' });
@@ -371,7 +345,7 @@ export class UnifiedDataService {
       throw new Error('Dispatcher not set. Call setDispatcher() first.');
     }
 
-    logger.info('UnifiedDataService: 모든 구독 시작', { component: 'unifiedDataService' });
+    // 모든 구독 시작
 
     try {
       // 병렬로 모든 구독 시작
@@ -384,10 +358,7 @@ export class UnifiedDataService {
         this.subscribeToTournaments(),
       ]);
 
-      logger.info('UnifiedDataService: 모든 구독 완료', { 
-        component: 'unifiedDataService',
-        data: { subscriptionCount: this.performanceTracker.getMetrics().subscriptionCount }
-      });
+      // 모든 구독 완료
     } catch (error) {
       this.performanceTracker.incrementErrors();
       logger.error('UnifiedDataService: 구독 시작 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -423,10 +394,7 @@ export class UnifiedDataService {
         staffQuery,
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
-          logger.info('Staff 데이터 업데이트', { 
-            component: 'unifiedDataService',
-            data: { count: snapshot.size, queryTime: `${queryTime.toFixed(2)}ms` }
-          });
+          // Staff 데이터 업데이트 처리
 
           const staffData: Staff[] = [];
           snapshot.forEach((doc) => {
@@ -506,10 +474,7 @@ export class UnifiedDataService {
         workLogsQuery,
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
-          logger.info('WorkLogs 데이터 업데이트', { 
-            component: 'unifiedDataService',
-            data: { count: snapshot.size, queryTime: `${queryTime.toFixed(2)}ms` }
-          });
+          // WorkLogs 데이터 업데이트 처리
 
           const workLogsData: WorkLog[] = [];
           snapshot.forEach((doc) => {
@@ -589,10 +554,7 @@ export class UnifiedDataService {
         attendanceQuery,
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
-          logger.info('AttendanceRecords 데이터 업데이트', { 
-            component: 'unifiedDataService',
-            data: { count: snapshot.size, queryTime: `${queryTime.toFixed(2)}ms` }
-          });
+          // AttendanceRecords 데이터 업데이트 처리
 
           const attendanceData: AttendanceRecord[] = [];
           snapshot.forEach((doc) => {
@@ -653,10 +615,7 @@ export class UnifiedDataService {
         jobPostingsQuery,
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
-          logger.info('JobPostings 데이터 업데이트', { 
-            component: 'unifiedDataService',
-            data: { count: snapshot.size, queryTime: `${queryTime.toFixed(2)}ms` }
-          });
+          // JobPostings 데이터 업데이트 처리
 
           const jobPostingsData: JobPosting[] = [];
           snapshot.forEach((doc) => {
@@ -720,16 +679,7 @@ export class UnifiedDataService {
           const queryTime = endTimer();
           
           // 더 자세한 디버깅 정보 추가
-          logger.info('Applications 데이터 업데이트', { 
-            component: 'unifiedDataService',
-            data: { 
-              count: snapshot.size, 
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              isEmpty: snapshot.empty,
-              hasPendingWrites: snapshot.metadata.hasPendingWrites,
-              fromCache: snapshot.metadata.fromCache
-            }
-          });
+          // Applications 데이터 업데이트 처리
 
           const applicationsData: Application[] = [];
           const rawDocs: any[] = [];
@@ -842,10 +792,7 @@ export class UnifiedDataService {
         tournamentsQuery,
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
-          logger.info('Tournaments 데이터 업데이트', { 
-            component: 'unifiedDataService',
-            data: { count: snapshot.size, queryTime: `${queryTime.toFixed(2)}ms` }
-          });
+          // Tournaments 데이터 업데이트 처리
 
           const tournamentsData: Tournament[] = [];
           snapshot.forEach((doc) => {
@@ -890,14 +837,14 @@ export class UnifiedDataService {
    * 모든 구독 해제
    */
   stopAllSubscriptions(): void {
-    logger.info('UnifiedDataService: 모든 구독 해제 시작', { component: 'unifiedDataService' });
+    // 모든 구독 해제 시작
 
     Object.entries(this.subscriptions).forEach(([key, unsubscribe]) => {
       if (unsubscribe) {
         try {
           unsubscribe();
           this.performanceTracker.decrementSubscriptions();
-          logger.info(`${key} 구독 해제 완료`, { component: 'unifiedDataService' });
+          // 구독 해제 완료
         } catch (error) {
           logger.warn(`${key} 구독 해제 중 오류`, { component: 'unifiedDataService', data: { error } });
         }
@@ -905,7 +852,7 @@ export class UnifiedDataService {
     });
 
     this.subscriptions = {};
-    logger.info('UnifiedDataService: 모든 구독 해제 완료', { component: 'unifiedDataService' });
+    // 모든 구독 해제 완료
   }
 
   /**

@@ -96,26 +96,35 @@ const MultipleAssignmentsDisplay: React.FC<{
     <div className="space-y-2">
       {sortedDates.map((date) => (
         <div key={date} className="bg-gray-50 rounded-lg p-2">
-          <div className="text-blue-600 font-medium mb-1">
-            📅 {date}
-          </div>
-          <div className="space-y-1 ml-4">
-            {groupedByDate[date]?.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-gray-700">
-                  <span>⏰ {item.time}</span>
-                  {item.role && (
-                    <span className="text-gray-600">
-                      - 👤 {String(t(`roles.${item.role}`) || item.role)}
-                    </span>
-                  )}
+          {status === 'confirmed' ? (
+            // 확정 상태: 간소화된 표시
+            <div className="space-y-1">
+              {groupedByDate[date]?.map((item, idx) => (
+                <div key={idx} className="text-sm text-gray-700 font-medium">
+                  📅 {date} ⏰ {item.time} 👤 {item.role ? String(t(`roles.${item.role}`) || item.role) : ''}
                 </div>
-                {status === 'confirmed' && (
-                  <span className="text-green-600 text-sm font-medium">확정됨</span>
-                )}
+              ))}
+            </div>
+          ) : (
+            // 대기 상태: 기존 표시 방식 유지
+            <>
+              <div className="text-blue-600 font-medium mb-1">
+                📅 {date}
               </div>
-            ))}
-          </div>
+              <div className="space-y-1 ml-4">
+                {groupedByDate[date]?.map((item, idx) => (
+                  <div key={idx} className="flex items-center space-x-2 text-gray-700">
+                    <span>⏰ {item.time}</span>
+                    {item.role && (
+                      <span className="text-gray-600">
+                        - {String(t(`roles.${item.role}`) || item.role)}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ))}
     </div>
@@ -131,31 +140,33 @@ const SingleAssignmentDisplay: React.FC<{
   t: (key: string) => string;
 }> = ({ assignedTime, assignedRole, assignedDate, status, t }) => (
   <div className="p-2 bg-gray-50 rounded-lg">
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-        {/* 날짜 - 모바일에서 첫 줄 */}
-        {assignedDate && (
-          <div className="text-blue-600 font-medium">
-            📅 {formatDateOnly(assignedDate)}
+    {status === 'confirmed' ? (
+      // 확정 상태: 날짜 시간 역할 순서로 한 줄 간소화
+      <div className="text-sm text-gray-700 font-medium">
+        📅 {assignedDate ? formatDateOnly(assignedDate) : ''} ⏰ {formatDateTimeValue(assignedTime || '')} 👤 {assignedRole ? (String(t(`roles.${assignedRole}`) || assignedRole)) : ''}
+      </div>
+    ) : (
+      // 대기 상태: 기존 표시 방식 유지
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+          {/* 날짜 - 모바일에서 첫 줄 */}
+          {assignedDate && (
+            <div className="text-blue-600 font-medium">
+              📅 {formatDateOnly(assignedDate)}
+            </div>
+          )}
+          {/* 시간과 역할 - 모바일에서 둘째 줄 */}
+          <div className="flex items-center space-x-2 text-gray-700">
+            <span>⏰ {formatDateTimeValue(assignedTime || '')}</span>
+            {assignedRole && (
+              <span className="text-gray-600">
+                - {String(t(`roles.${assignedRole}`) || assignedRole)}
+              </span>
+            )}
           </div>
-        )}
-        {/* 시간과 역할 - 모바일에서 둘째 줄 */}
-        <div className="flex items-center space-x-2 text-gray-700">
-          <span>⏰ {formatDateTimeValue(assignedTime || '')}</span>
-          {assignedRole && (
-            <span className="text-gray-600">
-              - 👤 {String(t(`roles.${assignedRole}`) || assignedRole)}
-            </span>
-          )}
-          {status === 'confirmed' && (
-            <span className="ml-2 text-green-600 text-sm font-medium sm:hidden">확정됨</span>
-          )}
         </div>
       </div>
-      {status === 'confirmed' && (
-        <span className="hidden sm:block text-green-600 text-sm font-medium">확정됨</span>
-      )}
-    </div>
+    )}
   </div>
 );
 

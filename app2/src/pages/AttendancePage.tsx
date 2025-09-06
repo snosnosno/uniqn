@@ -41,7 +41,7 @@ const AttendancePage: React.FC = () => {
         }
 
         if (!!error) {
-            // logger.info('Info', { component: 'AttendancePage', data: error });
+            // Error handling logic could be added here if needed
         }
     }
 

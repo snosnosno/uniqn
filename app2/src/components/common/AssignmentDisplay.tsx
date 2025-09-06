@@ -175,44 +175,44 @@ const AssignmentDisplay: React.FC<AssignmentDisplayProps> = ({ assignments, stat
     <div className="space-y-2">
       {dateGroups.map((group) => (
         <div key={group.dateKey} className="bg-gray-50 rounded-lg p-2">
-          {/* 날짜 헤더 */}
-          <div className="text-blue-600 font-medium mb-2 flex items-center space-x-2">
-            <span>📅 {group.dateDisplay}</span>
-            {/* 선택 방식 배지 */}
-            <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
-              group.isGroupSelection 
-                ? 'bg-purple-100 text-purple-700' 
-                : 'bg-blue-100 text-blue-700'
-            }`}>
-              {group.isGroupSelection ? '📋' : '👤'}
-            </span>
-          </div>
-          
-          {/* 시간대별 역할 표시 */}
-          <div className="ml-4 space-y-1">
+          {/* 시간대별 역할 표시 - 확정 상태에서는 간소화 */}
+          <div className="space-y-1">
             {group.timeSlots.map((timeSlot, slotIndex) => (
-              <div key={slotIndex} className="flex items-center space-x-2 text-gray-700">
-                <span>⏰ {timeSlot.timeSlot}</span>
-                <span>-</span>
-                <div className="font-medium">
-                  {group.isGroupSelection ? (
-                    // 그룹 선택: 여러 역할을 배지로 표시
-                    <div className="flex flex-wrap gap-1">
-                      {timeSlot.roles.filter(role => role).map((role, roleIndex) => (
-                        <span key={roleIndex} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-sm">
-                          👤 {t(`roles.${role}`) || role}
-                        </span>
-                      ))}
+              <div key={slotIndex}>
+                {status === 'confirmed' ? (
+                  // 확정 상태: 날짜 시간 역할 순서로 한 줄 표시
+                  <div className="text-sm text-gray-700 font-medium">
+                    📅 {group.dateDisplay} ⏰ {timeSlot.timeSlot} 👤 {timeSlot.roles.filter(role => role).map(role => t(`roles.${role}`) || role).join(', ')}
+                  </div>
+                ) : (
+                  // 대기/확정되지 않은 상태: 기존 표시 방식 유지
+                  <>
+                    {/* 날짜 헤더 */}
+                    <div className="text-blue-600 font-medium mb-2 flex items-center space-x-2">
+                      <span>📅 {group.dateDisplay}</span>
                     </div>
-                  ) : (
-                    // 개별 선택: 역할들을 쉼표로 구분하여 표시
-                    <span>
-                      👤 {timeSlot.roles.filter(role => role).map(role => t(`roles.${role}`) || role).join(', ')}
-                    </span>
-                  )}
-                </div>
-                {status === 'confirmed' && (
-                  <span className="text-green-600 text-sm font-medium ml-2">확정됨</span>
+                    <div className="ml-4 flex items-center space-x-2 text-gray-700">
+                      <span>⏰ {timeSlot.timeSlot}</span>
+                      <span>-</span>
+                      <div className="font-medium">
+                        {group.isGroupSelection ? (
+                          // 그룹 선택: 여러 역할을 배지로 표시
+                          <div className="flex flex-wrap gap-1">
+                            {timeSlot.roles.filter(role => role).map((role, roleIndex) => (
+                              <span key={roleIndex} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-sm">
+                                {t(`roles.${role}`) || role}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          // 개별 선택: 역할들을 쉼표로 구분하여 표시
+                          <span>
+                            {timeSlot.roles.filter(role => role).map(role => t(`roles.${role}`) || role).join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             ))}

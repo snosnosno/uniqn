@@ -7,7 +7,7 @@ import {
   ApplicationHistoryEntry,
   LegacyApplication 
 } from '../types/application';
-// ApplicationMigration import 제거 - 개발 단계에서 불필요
+// Application history management service
 
 /**
  * 🔄 v2.0 지원 상태 정보 (새 구조)
@@ -47,10 +47,7 @@ export class ApplicationHistoryService {
     assignments: Assignment[]
   ): Promise<void> {
     try {
-      logger.debug('🏗️ ApplicationHistoryService.confirmApplication 시작:', {
-        component: 'ApplicationHistoryService',
-        data: { applicationId, assignmentsCount: assignments.length }
-      });
+      // 지원자 확정 시작
 
       const applicationRef = doc(db, 'applications', applicationId);
       
@@ -102,10 +99,7 @@ export class ApplicationHistoryService {
         transaction.update(applicationRef, updatedData);
       });
 
-      logger.debug('✅ 지원자 확정 히스토리 저장 완료:', {
-        component: 'ApplicationHistoryService',
-        data: { applicationId, assignmentsCount: assignments.length }
-      });
+      // 지원자 확정 히스토리 저장 완료
 
     } catch (error) {
       logger.error('❌ 지원자 확정 히스토리 저장 오류:', 
@@ -121,10 +115,7 @@ export class ApplicationHistoryService {
    */
   static async cancelConfirmation(applicationId: string): Promise<void> {
     try {
-      logger.debug('🔄 ApplicationHistoryService.cancelConfirmation 시작:', {
-        component: 'ApplicationHistoryService',
-        data: { applicationId }
-      });
+      // 확정 취소 시작
 
       const applicationRef = doc(db, 'applications', applicationId);
       
@@ -177,10 +168,7 @@ export class ApplicationHistoryService {
         transaction.update(applicationRef, restoredData);
       });
 
-      logger.debug('✅ 확정 취소 및 원본 데이터 복원 완료:', {
-        component: 'ApplicationHistoryService',
-        data: { applicationId }
-      });
+      // 확정 취소 및 원본 데이터 복원 완료
 
     } catch (error) {
       logger.error('❌ 확정 취소 처리 오류:', 
@@ -196,10 +184,7 @@ export class ApplicationHistoryService {
    */
   static async cancelApplication(applicationId: string): Promise<void> {
     try {
-      logger.debug('❌ ApplicationHistoryService.cancelApplication 시작:', {
-        component: 'ApplicationHistoryService',
-        data: { applicationId }
-      });
+      // 지원 취소 시작
 
       const applicationRef = doc(db, 'applications', applicationId);
       
@@ -210,10 +195,7 @@ export class ApplicationHistoryService {
         updatedAt: Timestamp.now()
       });
 
-      logger.debug('✅ 지원 취소 처리 완료:', {
-        component: 'ApplicationHistoryService',
-        data: { applicationId }
-      });
+      // 지원 취소 처리 완료
 
     } catch (error) {
       logger.error('❌ 지원 취소 처리 오류:', 

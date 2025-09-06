@@ -23,8 +23,7 @@ import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 
-// Debug utilities
-import './utils/debugFirebaseData';
+// Debug utilities removed for production
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));

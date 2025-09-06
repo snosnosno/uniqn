@@ -376,7 +376,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, [attendanceRecords]);
   
   const applyOptimisticUpdate = useCallback((staffId: string, status: string) => {
-    // TODO: 실제 optimistic update 로직 구현
+    // Optimistic update logic placeholder
     logger.info('Optimistic update applied', { 
       component: 'StaffManagementTab',
       data: { staffId, status }
@@ -409,7 +409,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   // 🎯 삭제 핸들러 - 통합된 삭제 로직
   const deleteStaff = useCallback(async (staffId: string) => {
     try {
-      // TODO: 실제 삭제 API 호출 로직 구현 필요
+      // Staff deletion API call implementation needed
       showSuccess('스태프가 삭제되었습니다.');
       refresh();
     } catch (error) {
@@ -435,7 +435,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const handleBulkDelete = async (staffIds: string[]) => {
     // 🎯 통합된 삭제 로직 (deleteStaff 훅 대신 직접 구현)
     try {
-      // TODO: 실제 삭제 API 호출 로직 구현 필요
+      // Bulk staff deletion API call implementation needed
       showSuccess(`${staffIds.length}명의 스태프가 삭제되었습니다.`);
       resetSelection();
       refresh(); // UnifiedData 새로고침
