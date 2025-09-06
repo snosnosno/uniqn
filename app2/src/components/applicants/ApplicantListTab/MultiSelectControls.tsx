@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../utils/logger';
-import { TimeSlot, DateSpecificRequirement } from '../../../types/jobPosting';
+import { DateSpecificRequirement } from '../../../types/jobPosting';
 import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { Applicant, Assignment } from './types';
 import { 

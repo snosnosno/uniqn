@@ -4,8 +4,7 @@ import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
 import { 
   getApplicantSelections, 
-  formatDateDisplay, 
-  groupApplicationsByConsecutiveDates
+  formatDateDisplay
 } from './utils/applicantHelpers';
 import StaffProfileModal from '../../StaffProfileModal';
 import { StaffData } from '../../../hooks/useStaffManagement';

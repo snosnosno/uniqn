@@ -195,13 +195,13 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
  * 타입 호환성 문제 해결 및 UnifiedDataContext 활용
  */
 const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPosting }) => {
-  const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  const { t: _t } = useTranslation();
+  const { currentUser: _currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
   
   // 🚀 UnifiedDataContext 활용
   const {
-    state,
+    state: _state,
     loading,
     getApplicationsByPostId
   } = useUnifiedData();

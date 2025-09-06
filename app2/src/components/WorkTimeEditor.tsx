@@ -47,7 +47,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
   workLog,
   onUpdate
 }) => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const { showSuccess, showError } = useToast();
   useAttendanceStatus({
     ...(workLog?.eventId && { eventId: workLog.eventId }),

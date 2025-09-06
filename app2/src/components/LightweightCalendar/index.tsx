@@ -20,7 +20,6 @@ import {
   SCHEDULE_COLORS,
  
 } from '../../types/schedule';
-import { Timestamp } from 'firebase/firestore';
 
 interface LightweightCalendarProps {
   schedules: ScheduleEvent[];
