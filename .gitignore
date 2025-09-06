@@ -17,6 +17,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 /logs
+*.log
+build.log
+app2/build.log
 
 # IDE settings
 .vscode/
@@ -167,3 +170,28 @@ functions/firestore-debug.log
 ui-debug.log
 pubsub-debug.log
 database-debug.log
+
+# Playwright MCP files (local development)
+.playwright-mcp/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# Test output and coverage
+coverage/
+app2/coverage/
+.nyc_output/
+test-results/
+playwright-report/
+test-report/
+
+# Runtime generated files
+app2/src/types/application.ts
+app2/src/utils/applicationMigration.ts  
+app2/src/utils/errorHandler.ts
+
+# Package lock files (optional, team preference)
+package-lock.json
+yarn.lock
