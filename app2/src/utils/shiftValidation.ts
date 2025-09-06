@@ -107,13 +107,13 @@ export const validateTableConflicts = (
     });
 
     // 중복 배정 검사
-    Object.entries(tableAssignments).forEach(([tableId, dealerIds]) => {
-      if (dealerIds.length > 1) {
-        dealerIds.forEach(staffId => {
+    Object.entries(tableAssignments).forEach(([tableId, staffIds]) => {
+      if (staffIds.length > 1) {
+        staffIds.forEach(staffId => {
           violations.push({
             type: 'table_conflict',
             severity: 'error',
-            message: `${timeSlot}에 ${tableId} 테이블이 중복 배정되었습니다 (${dealerIds.length}명 배정됨)`,
+            message: `${timeSlot}에 ${tableId} 테이블이 중복 배정되었습니다 (${staffIds.length}명 배정됨)`,
             staffId,
             timeSlot,
             suggestedFix: `다른 테이블로 변경하거나 대기/휴식 상태로 변경하세요`

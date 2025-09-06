@@ -81,15 +81,6 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       const isGroup = selection.checkMethod === 'group' || 
                      (selection.isGrouped && selection.dates && selection.dates.length > 1);
       
-      // 디버깅 로그 추가
-      console.log('🔍 Selection check:', {
-        role: selection.role,
-        time: selection.time,
-        checkMethod: selection.checkMethod,
-        isGrouped: selection.isGrouped,
-        datesLength: selection.dates?.length,
-        isGroup: isGroup
-      });
       
       if (isGroup) {
         groupSelections.push(selection);

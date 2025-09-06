@@ -161,16 +161,6 @@ export const convertDateToString = (rawDate: any): string => {
  */
 export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPosting) => {
   
-  // 🔍 디버깅: 데이터 구조 확인
-  console.log('🔍 Applicant data structure:', {
-    applicantId: applicant.id || applicant.applicantId,
-    hasAssignments: !!applicant.assignments,
-    assignmentsLength: applicant.assignments?.length,
-    hasDateAssignments: !!applicant.dateAssignments,
-    hasLegacyRoles: !!applicant.assignedRoles,
-    hasLegacyTimes: !!applicant.assignedTimes,
-    hasLegacyDates: !!applicant.assignedDates
-  });
   
   // 🚀 최우선: dateAssignments 사용 (날짜 기반 구조 - 최신 버전)
   if (applicant.dateAssignments && Array.isArray(applicant.dateAssignments) && applicant.dateAssignments.length > 0) {

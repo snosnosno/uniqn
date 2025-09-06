@@ -375,9 +375,9 @@ export function useUnifiedWorkLogs(
 /**
  * 특정 공고의 WorkLog 조회 전용 Hook
  */
-export function useJobPostingWorkLogs(jobPostingId?: string) {
+export function useJobPostingWorkLogs(eventId?: string) {
   return useUnifiedWorkLogs({
-    filter: jobPostingId ? { eventId: jobPostingId } : {},
+    filter: eventId ? { eventId: eventId } : {},
     sort: { field: '', direction: 'desc' }, // 정렬 비활성화
     realtime: true,
     autoNormalize: true

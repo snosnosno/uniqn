@@ -335,7 +335,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
         data: { 
           selectedCount: selectedApplicants.size, 
           action,
-          jobPostingId: jobPosting?.id 
+          eventId: jobPosting?.id 
         }
       });
       
@@ -356,7 +356,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
     try {
       logger.info('지원자 상태 변경', {
         component: 'ApplicantListTabUnified',
-        data: { applicantId, newStatus, jobPostingId: jobPosting?.id }
+        data: { applicantId, newStatus, eventId: jobPosting?.id }
       });
       
       // 상태 변경 구현 (현재는 UI 피드백만 제공)
