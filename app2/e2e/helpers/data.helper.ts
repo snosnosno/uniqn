@@ -139,15 +139,15 @@ export class DataHelper {
         };
         
         const docRef = await addDoc(collection(db, 'jobPostings'), jobPostingData);
-        console.log('✅ 테스트 구인공고 생성:', docRef.id);
+        if (process.env.E2E_DEBUG === 'true') console.log('✅ 테스트 구인공고 생성:', docRef.id);
         return docRef.id;
       }, { jobId, jobData });
       
-      console.log(`✅ 테스트 구인공고 생성: ${title} (ID: ${jobId})`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`✅ 테스트 구인공고 생성: ${title} (ID: ${jobId})`);
       return jobId;
       
     } catch (error) {
-      console.log('⚠️ UI를 통한 구인공고 생성 시도...');
+      if (process.env.E2E_DEBUG === 'true') console.log('⚠️ UI를 통한 구인공고 생성 시도...');
       
       // 구인공고 관리 페이지로 이동
       await this.page.goto('http://localhost:3001/admin/job-postings');
@@ -176,7 +176,7 @@ export class DataHelper {
       }
       
       if (!buttonClicked) {
-        console.log('⚠️ 구인공고 작성 버튼을 찾을 수 없어 데이터 생성 건너뜀');
+        if (process.env.E2E_DEBUG === 'true') console.log('⚠️ 구인공고 작성 버튼을 찾을 수 없어 데이터 생성 건너뜀');
         return null;
       }
       
@@ -236,10 +236,10 @@ export class DataHelper {
             const jobIdMatch = currentUrl.match(/job-postings\/([^\/\?]+)/);
             
             if (jobIdMatch) {
-              console.log(`✅ UI를 통해 구인공고 생성 성공: ${title} (ID: ${jobIdMatch[1]})`);
+              if (process.env.E2E_DEBUG === 'true') console.log(`✅ UI를 통해 구인공고 생성 성공: ${title} (ID: ${jobIdMatch[1]})`);
               return jobIdMatch[1];
             } else {
-              console.log(`✅ UI를 통해 구인공고 생성 완료: ${title}`);
+              if (process.env.E2E_DEBUG === 'true') console.log(`✅ UI를 통해 구인공고 생성 완료: ${title}`);
               return `ui-created-${Date.now()}`;
             }
           }
@@ -248,7 +248,7 @@ export class DataHelper {
         }
       }
       
-      console.log('⚠️ 저장 버튼을 찾을 수 없거나 클릭 실패');
+      if (process.env.E2E_DEBUG === 'true') console.log('⚠️ 저장 버튼을 찾을 수 없거나 클릭 실패');
       return null;
     }
   }
@@ -262,7 +262,7 @@ export class DataHelper {
     // Firebase SDK 대신 UI를 통한 지원서 생성
     try {
       // 구인구직 게시판으로 이동
-      await this.page.goto(`http://localhost:3001/job-board`);
+      await this.page.goto(`http://localhost:3001/jobs`);
       await this.page.waitForLoadState('domcontentloaded');
       
       // 해당 구인공고 찾기 및 지원하기 클릭
@@ -282,13 +282,13 @@ export class DataHelper {
           await this.page.waitForTimeout(1000);
         }
         
-        console.log(`✅ UI를 통한 테스트 지원서 생성: ${applicationData.applicantName}`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`✅ UI를 통한 테스트 지원서 생성: ${applicationData.applicantName}`);
       } else {
         // UI에서 찾을 수 없는 경우 로그만 출력
-        console.log(`⚠️ 구인공고를 찾을 수 없어 지원서 생성 건너뜀: ${jobId}`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`⚠️ 구인공고를 찾을 수 없어 지원서 생성 건너뜀: ${jobId}`);
       }
     } catch (error) {
-      console.log(`⚠️ UI를 통한 지원서 생성 실패, 건너뜀: ${error}`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`⚠️ UI를 통한 지원서 생성 실패, 건너뜀: ${error}`);
     }
   }
 
@@ -296,7 +296,7 @@ export class DataHelper {
    * 페이지에서 Firebase 데이터 로딩 대기
    */
   async waitForDataLoading(timeout: number = 10000): Promise<void> {
-    console.log('📊 Firebase 데이터 로딩 대기 중...');
+    if (process.env.E2E_DEBUG === 'true') console.log('📊 Firebase 데이터 로딩 대기 중...');
     
     // 로딩 스피너가 사라질 때까지 대기
     const loadingSelectors = [
@@ -316,7 +316,7 @@ export class DataHelper {
     // 데이터가 로드된 후 안정화 대기
     await this.page.waitForTimeout(1000);
     
-    console.log('✅ 데이터 로딩 완료');
+    if (process.env.E2E_DEBUG === 'true') console.log('✅ 데이터 로딩 완료');
   }
 
   /**
@@ -334,7 +334,7 @@ export class DataHelper {
       const context = (window as any).__UNIFIED_DATA_CONTEXT__;
       
       if (!context) {
-        console.warn('UnifiedDataContext가 윈도우 객체에서 찾을 수 없습니다.');
+        if (process.env.E2E_DEBUG === 'true') console.warn('UnifiedDataContext가 윈도우 객체에서 찾을 수 없습니다.');
         return {
           staffCount: 0,
           workLogsCount: 0, 
@@ -413,7 +413,7 @@ export class DataHelper {
    * 테스트 데이터 클린업
    */
   async cleanupTestData(testId?: string): Promise<void> {
-    console.log('🧹 테스트 데이터 클린업 시작...');
+    if (process.env.E2E_DEBUG === 'true') console.log('🧹 테스트 데이터 클린업 시작...');
     
     await this.page.evaluate((testId) => {
       // 테스트 데이터만 삭제 (production 데이터 보호)
@@ -437,9 +437,11 @@ export class DataHelper {
       if ('indexedDB' in window) {
         try {
           const deleteReq = indexedDB.deleteDatabase('T-HOLDEM-Cache-Test');
-          deleteReq.onsuccess = () => console.log('테스트 캐시 DB 삭제 완료');
+          deleteReq.onsuccess = () => {
+            if (process.env.E2E_DEBUG === 'true') console.log('테스트 캐시 DB 삭제 완료');
+          };
         } catch (error) {
-          console.warn('캐시 DB 삭제 중 오류:', error);
+          if (process.env.E2E_DEBUG === 'true') console.warn('캐시 DB 삭제 중 오류:', error);
         }
       }
     }, testId);
@@ -462,14 +464,14 @@ export class DataHelper {
             await doc.ref.delete();
           }
           
-          console.log(`✅ Firebase 테스트 데이터 삭제: ${testId}`);
+          if (process.env.E2E_DEBUG === 'true') console.log(`✅ Firebase 테스트 데이터 삭제: ${testId}`);
         } catch (error) {
-          console.warn('Firebase 데이터 삭제 중 오류:', error);
+          if (process.env.E2E_DEBUG === 'true') console.warn('Firebase 데이터 삭제 중 오류:', error);
         }
       }, testId);
     }
     
-    console.log('✅ 테스트 데이터 클린업 완료');
+    if (process.env.E2E_DEBUG === 'true') console.log('✅ 테스트 데이터 클린업 완료');
   }
 
   /**
@@ -477,7 +479,7 @@ export class DataHelper {
    */
   async navigateToJobDetail(jobTitle?: string, timeout: number = 10000): Promise<string | null> {
     try {
-      console.log(`🧭 구인공고 상세 페이지로 이동 중... (제목: ${jobTitle || '첫 번째 공고'})`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`🧭 구인공고 상세 페이지로 이동 중... (제목: ${jobTitle || '첫 번째 공고'})`);
       
       // 구인공고 관리 페이지로 먼저 이동
       await this.page.goto('http://localhost:3001/admin/job-postings');
@@ -489,7 +491,7 @@ export class DataHelper {
       const manageButtonCount = await manageButtons.count();
       
       if (manageButtonCount > 0) {
-        console.log(`📋 ${manageButtonCount}개의 관리 버튼 발견`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`📋 ${manageButtonCount}개의 관리 버튼 발견`);
         
         // 첫 번째 관리 버튼 클릭
         await manageButtons.first().click();
@@ -497,7 +499,7 @@ export class DataHelper {
         
         // 페이지가 변경되었는지 확인
         const currentUrl = this.page.url();
-        console.log(`📄 현재 URL: ${currentUrl}`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`📄 현재 URL: ${currentUrl}`);
         
         // 구인공고 관리 페이지의 탭들이 있는지 확인
         const tabSelectors = [
@@ -511,22 +513,22 @@ export class DataHelper {
         for (const selector of tabSelectors) {
           const tabCount = await this.page.locator(selector).count();
           if (tabCount > 0) {
-            console.log(`✅ ${selector} 셀렉터로 ${tabCount}개 탭 발견`);
+            if (process.env.E2E_DEBUG === 'true') console.log(`✅ ${selector} 셀렉터로 ${tabCount}개 탭 발견`);
             return 'job-detail-with-tabs';
           }
         }
         
         // 탭이 없어도 관리 페이지에는 진입했으므로 성공으로 처리
-        console.log('⚠️ 탭을 찾을 수 없지만 구인공고 관리 페이지에 진입 성공');
+        if (process.env.E2E_DEBUG === 'true') console.log('⚠️ 탭을 찾을 수 없지만 구인공고 관리 페이지에 진입 성공');
         return 'job-detail-no-tabs';
         
       } else {
-        console.log('⚠️ 관리 버튼을 찾을 수 없음, 일반 목록 페이지에서 진행');
+        if (process.env.E2E_DEBUG === 'true') console.log('⚠️ 관리 버튼을 찾을 수 없음, 일반 목록 페이지에서 진행');
         return 'job-postings-main';
       }
       
     } catch (error) {
-      console.log(`❌ 구인공고 상세 페이지 이동 실패: ${error}`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`❌ 구인공고 상세 페이지 이동 실패: ${error}`);
       return null;
     }
   }
@@ -536,7 +538,7 @@ export class DataHelper {
    */
   async clickTab(tabName: '지원자' | '스태프' | '정산' | 'applicant' | 'staff' | 'payroll', timeout: number = 10000): Promise<boolean> {
     try {
-      console.log(`🔄 탭 클릭 중: ${tabName}`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`🔄 탭 클릭 중: ${tabName}`);
       
       // 탭 버튼 패턴들
       const tabPatterns = {
@@ -575,22 +577,22 @@ export class DataHelper {
             if (await firstTab.isVisible({ timeout: 2000 })) {
               await firstTab.click();
               await this.page.waitForTimeout(1000);
-              console.log(`✅ ${tabName} 탭 클릭 완료`);
+              if (process.env.E2E_DEBUG === 'true') console.log(`✅ ${tabName} 탭 클릭 완료`);
               return true;
             }
           }
         }
       }
       
-      console.log(`⚠️ ${tabName} 탭을 찾을 수 없습니다.`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`⚠️ ${tabName} 탭을 찾을 수 없습니다.`);
       
       // 페이지의 모든 버튼 출력 (디버깅용)
       const allButtons = await this.page.locator('button').allTextContents();
-      console.log('🔍 페이지의 모든 버튼:', allButtons.slice(0, 10));
+      if (process.env.E2E_DEBUG === 'true') console.log('🔍 페이지의 모든 버튼:', allButtons.slice(0, 10));
       
       return false;
     } catch (error) {
-      console.log(`❌ ${tabName} 탭 클릭 실패: ${error}`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`❌ ${tabName} 탭 클릭 실패: ${error}`);
       return false;
     }
   }
@@ -599,7 +601,7 @@ export class DataHelper {
    * 테스트 환경 초기화
    */
   async initializeTestEnvironment(): Promise<void> {
-    console.log('🔧 테스트 환경 초기화...');
+    if (process.env.E2E_DEBUG === 'true') console.log('🔧 테스트 환경 초기화...');
     
     // 테스트 플래그 설정
     await this.page.addInitScript(() => {
@@ -614,7 +616,7 @@ export class DataHelper {
       });
     }
     
-    console.log('✅ 테스트 환경 초기화 완료');
+    if (process.env.E2E_DEBUG === 'true') console.log('✅ 테스트 환경 초기화 완료');
   }
 }
 

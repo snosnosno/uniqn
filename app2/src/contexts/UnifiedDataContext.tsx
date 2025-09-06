@@ -568,13 +568,13 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
           const event: ScheduleEvent = {
             id: `application_${application.id}`,
             type: 'applied',
-            date: application.assignedDate ? safeDateToString(application.assignedDate) : '',
+            date: application.assignments?.[0]?.dates?.[0] || '',
             startTime: null,
             endTime: null,
             eventId: application.postId,
             eventName: application.postTitle,
             location: 'Location TBD',
-            role: application.confirmedRole || application.assignedRole || application.role || 'Staff',
+            role: application.assignments?.[0]?.role || 'Staff',
             status: 'not_started',
             sourceCollection: 'applications',
             sourceId: application.id,
@@ -582,8 +582,8 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
           };
 
           // 시간 정보 파싱
-          if (application.confirmedTime || application.assignedTime) {
-            const timeString = application.confirmedTime || application.assignedTime || '';
+          if (application.assignments?.[0]?.timeSlot) {
+            const timeString = application.assignments[0].timeSlot;
             const { startTime, endTime } = parseTimeString(timeString, event.date);
             event.startTime = startTime;
             event.endTime = endTime;
@@ -722,7 +722,7 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
         wl.status === 'scheduled' || wl.status === 'checked_in'
       ).length,
       pendingApplications: Array.from(state.applications.values()).filter(app => 
-        app.status === 'pending'
+        app.status === 'applied'
       ).length,
       upcomingTournaments: Array.from(state.tournaments.values()).filter(t => 
         t.status === 'upcoming'

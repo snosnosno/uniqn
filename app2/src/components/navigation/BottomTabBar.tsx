@@ -46,7 +46,7 @@ const BottomTabBar: React.FC = () => {
       requiresAuth: true,
     },
     {
-      path: '/job-board',
+      path: '/jobs',
       label: '구인구직',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

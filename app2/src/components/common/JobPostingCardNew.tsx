@@ -135,7 +135,7 @@ const JobPostingCardNew: React.FC<JobPostingCardProps> = ({
                       const isFull = confirmedCount >= role.count;
                       return (
                         <div key={roleIndex}>
-                          {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
+                          {t(`roles.${role.name}`, role.name)}: {role.count}명
                           <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                             ({confirmedCount}/{role.count})
                           </span>

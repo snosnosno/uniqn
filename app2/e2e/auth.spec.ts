@@ -74,7 +74,7 @@ test.describe('사용자 인증', () => {
     
     // 3초 이내 로드 완료 확인
     expect(loadTime).toBeLessThan(3000);
-    console.log(`페이지 로드 시간: ${loadTime}ms`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`페이지 로드 시간: ${loadTime}ms`);
   });
 
   test('반응형 디자인 - 모바일', async ({ page }) => {

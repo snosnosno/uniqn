@@ -35,7 +35,7 @@ test.describe('구인구직 게시판', () => {
     
     // 성능 측정 시작
     await page.addInitScript(() => {
-      performance.mark('job-board-start');
+      performance.mark('jobs-start');
     });
   });
 
@@ -45,7 +45,7 @@ test.describe('구인구직 게시판', () => {
     const startTime = Date.now();
     
     // 구인구직 게시판 페이지 접근
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     
     // 페이지 로딩 대기
     await waitForDataLoading(page, 15000);
@@ -79,7 +79,7 @@ test.describe('구인구직 게시판', () => {
   });
 
   test('2-2. 공고 목록 표시 및 UnifiedDataContext 확인', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // UnifiedDataContext 상태 확인
@@ -154,7 +154,7 @@ test.describe('구인구직 게시판', () => {
   });
 
   test('2-3. 탭 네비게이션 기능 테스트', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 탭 찾기
@@ -210,7 +210,7 @@ test.describe('구인구직 게시판', () => {
   });
 
   test('2-4. 필터링 기능 테스트', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 필터 버튼 또는 필터 영역 찾기
@@ -292,7 +292,7 @@ test.describe('구인구직 게시판', () => {
   });
 
   test('2-5. 검색 기능 테스트', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 검색 입력 필드 찾기
@@ -366,7 +366,7 @@ test.describe('구인구직 게시판', () => {
   });
 
   test('2-6. 페이지네이션/무한 스크롤 테스트', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 초기 공고 수 확인
@@ -433,7 +433,7 @@ test.describe('구인구직 게시판', () => {
     // 모바일 뷰포트로 변경
     await page.setViewportSize({ width: 375, height: 812 }); // iPhone X
     
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 모바일에서 페이지 기본 요소 확인

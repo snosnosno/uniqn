@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, query, where, getDocs, serverTimestamp, addDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { serverTimestamp, addDoc, collection, doc, deleteDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import useUnifiedData, { useJobPostingData } from '../../../hooks/useUnifiedData';
 import { useUnifiedDataContext } from '../../../contexts/UnifiedDataContext';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useInfiniteJobPostings } from '../../../hooks/useJobPostings';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 import { logger } from '../../../utils/logger';
 import { JobPosting, PreQuestionAnswer } from '../../../types/jobPosting';
+import { Assignment } from '../../../types/application';
 import { sortJobPostingsByPriority } from '../../../utils/jobPosting/sortingUtils';
 
 export interface JobFilters {
@@ -19,16 +20,6 @@ export interface JobFilters {
   role: string;
   month: string;
   day: string;
-}
-
-export interface Assignment {
-  timeSlot: string;
-  role: string;
-  date?: string | any;
-  duration?: {
-    type: 'single' | 'multi';
-    endDate?: string;
-  };
 }
 
 /**
@@ -119,47 +110,28 @@ export const useJobBoard = () => {
     fetchNextPage
   });
   
-  // 지원한 공고 가져오기
+  // 지원한 공고 가져오기 - UnifiedDataContext 활용
   useEffect(() => {
     if (!currentUser || !jobPostings) return;
     
-    const fetchAppliedJobs = async () => {
-      if (jobPostings.length === 0) return;
-      
-      const postIds = jobPostings.map(p => p.id);
-      // eventId 우선 사용, postId는 하위 호환성만 지원
-      const qEventId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', 'in', postIds));
-      const qPostId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', 'in', postIds));
-      
-      const [eventIdSnapshot, postIdSnapshot] = await Promise.all([
-        getDocs(qEventId).catch(() => ({ docs: [] })),
-        getDocs(qPostId).catch(() => ({ docs: [] }))
-      ]);
-      
-      const appliedMap = new Map<string, string>();
-      
-      // eventId 기반 결과 처리 (우선순위)
-      eventIdSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const jobId = data.eventId || data.postId; // eventId 우선, fallback으로 postId
-        if (jobId) {
-          appliedMap.set(jobId, data.status);
-        }
-      });
-      
-      // postId 기반 결과 처리 (중복 제거 - eventId가 없는 경우만)
-      postIdSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const jobId = data.postId;
-        if (jobId && !appliedMap.has(jobId)) {
-          appliedMap.set(jobId, data.status);
-        }
-      });
-      setAppliedJobs(appliedMap);
-    };
+    if (jobPostings.length === 0) return;
     
-    fetchAppliedJobs();
-  }, [jobPostings, currentUser]);
+    const postIds = jobPostings.map(p => p.id);
+    const userApplications = Array.from(unifiedContext.state.applications.values())
+      .filter(app => app.applicantId === currentUser.uid);
+    
+    const appliedMap = new Map<string, string>();
+    
+    userApplications.forEach(app => {
+      // eventId 우선, fallback으로 postId 사용
+      const jobId = app.eventId || app.postId;
+      if (jobId && postIds.includes(jobId)) {
+        appliedMap.set(jobId, app.status);
+      }
+    });
+    
+    setAppliedJobs(appliedMap);
+  }, [jobPostings, currentUser, unifiedContext.state.applications]);
   
   // UnifiedDataContext에서 지원 현황 가져오기
   const { jobPostings: allJobPostings } = useJobPostingData();
@@ -274,12 +246,17 @@ export const useJobBoard = () => {
         status: application.status,
         appliedAt: application.appliedAt || application.createdAt || new Date(),
         confirmedAt: application.confirmedAt,
-        assignedTime: application.assignedTime,
-        assignedRole: application.assignedRole,
-        assignedDate: application.assignedDate,
-        assignedTimes: application.assignedTimes,
-        assignedRoles: application.assignedRoles,
-        assignedDates: application.assignedDates,
+        // 🔧 핵심 수정: postTitle 필드 추가 (jobPosting에서 가져오기)
+        postTitle: jobPosting?.title || application.postTitle || '제목 없음',
+        // 🎯 중요: assignments 배열을 그대로 전달 (MyApplicationsTab에서 직접 사용)
+        assignments: application.assignments || [],
+        // 레거시 호환성을 위한 개별 필드들 (하위 호환성)
+        assignedTime: application.assignments?.[0]?.timeSlot || '',
+        assignedRole: application.assignments?.[0]?.role || '',
+        assignedDate: application.assignments?.[0]?.dates?.[0] || '',
+        assignedTimes: application.assignments?.map(a => a.timeSlot) || [],
+        assignedRoles: application.assignments?.map(a => a.role) || [],
+        assignedDates: application.assignments?.flatMap(a => a.dates || []) || [],
         preQuestionAnswers: (application as any).preQuestionAnswers,
         jobPosting: jobPosting ? {
           id: jobPosting.id,
@@ -360,7 +337,7 @@ export const useJobBoard = () => {
       setSelectedAssignments(prev => prev.filter(item => 
         !(item.timeSlot === assignment.timeSlot && 
           item.role === assignment.role && 
-          item.date === assignment.date)
+          JSON.stringify(item.dates?.sort()) === JSON.stringify(assignment.dates?.sort()))
       ));
     }
   };
@@ -383,36 +360,84 @@ export const useJobBoard = () => {
         return;
       }
       
-      // 다중 선택 데이터 준비
-      const assignedRoles = selectedAssignments.map(item => item.role);
-      const assignedTimes = selectedAssignments.map(item => item.timeSlot);
-      const assignedDates = selectedAssignments.map(item => item.date).filter(Boolean);
-      const assignedDurations = selectedAssignments.map(item => item.duration || null);
+      // 🆕 그룹 선택 통합 처리 - 같은 timeSlot과 dates를 가진 역할들을 통합
+      const groupedAssignments = new Map<string, Assignment[]>();
       
-      // 기존 호환성을 위해 첫 번째 선택값 사용
-      const firstSelection = selectedAssignments[0];
+      // 1단계: assignments를 groupKey로 그룹화
+      selectedAssignments.forEach(item => {
+        const dates = item.dates && item.dates.length > 0 ? item.dates : [];
+        const groupKey = `${item.timeSlot}__${JSON.stringify(dates.sort())}`;
+        
+        if (!groupedAssignments.has(groupKey)) {
+          groupedAssignments.set(groupKey, []);
+        }
+        groupedAssignments.get(groupKey)!.push(item);
+      });
+      
+      // 2단계: 그룹화된 assignments를 통합 assignment로 변환
+      const assignments = Array.from(groupedAssignments.entries()).map(([groupKey, items]) => {
+        // 🔒 안전 검사: items 배열이 비어있으면 스킵
+        if (!items.length) return null;
+        
+        const firstItem = items[0]!; // TypeScript assertion (위에서 체크했으므로 안전)
+        const dates = firstItem.dates && firstItem.dates.length > 0 ? firstItem.dates : [];
+        
+        // 🎯 그룹 선택 판별: 같은 timeSlot + dates에 여러 역할이 있으면 그룹 선택
+        const isGroupSelection = items.length > 1;
+        
+        if (isGroupSelection) {
+          // 📋 그룹 선택: 여러 역할을 하나의 assignment로 통합
+          const roles = items.map(item => item.role).filter((role): role is string => Boolean(role));
+          
+          return {
+            roles: roles, // 🆕 여러 역할을 roles 배열로 저장
+            timeSlot: firstItem.timeSlot,
+            dates: dates,
+            checkMethod: 'group' as const,
+            isGrouped: true,
+            groupId: firstItem.groupId || `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            ...(firstItem.duration && {
+              duration: {
+                ...firstItem.duration,
+                startDate: dates[0] || '',
+              }
+            })
+          };
+        } else {
+          // 👤 개별 선택: 기존 방식 유지
+          return {
+            role: firstItem.role || '', // 🔒 기본값으로 빈 문자열 사용
+            timeSlot: firstItem.timeSlot,
+            dates: dates,
+            checkMethod: 'individual' as const,
+            isGrouped: firstItem.isGrouped || dates.length > 1,
+            ...(firstItem.duration && {
+              duration: {
+                ...firstItem.duration,
+                startDate: dates[0] || '',
+              }
+            }),
+            ...(firstItem.groupId && { groupId: firstItem.groupId })
+          };
+        }
+      }).filter(Boolean) as Assignment[]; // null 값 필터링
+
       
       // 사전질문 답변 가져오기
       const answers = preQuestionAnswers.get(selectedPost.id);
       
-      // Firebase용 데이터 객체 구성 (undefined 값 제거)
+      // Firebase용 데이터 객체 구성 (간소화)
       const applicationData: any = {
         applicantId: currentUser.uid,
         applicantName: staffDoc.data().name || t('jobBoard.unknownApplicant'),
-        postId: selectedPost.id,  // 필드명 통일: postId 사용
+        eventId: selectedPost.id,  // 필드명 통일: eventId 사용 (표준)
+        postId: selectedPost.id,   // 하위 호환성을 위해 유지
         postTitle: selectedPost.title,
         status: 'applied',
         appliedAt: serverTimestamp(),
         
-        // 기존 단일 선택 필드 (하위 호환성)
-        ...(firstSelection && {
-          assignedRole: firstSelection.role,
-          assignedTime: firstSelection.timeSlot,
-        }),
-        
-        // 새로운 다중 선택 필드
-        assignedRoles,
-        assignedTimes,
+        // 🆕 통합된 assignments 구조 (Single Source of Truth)
+        assignments
       };
       
       // 사전질문 답변이 있으면 추가
@@ -420,21 +445,37 @@ export const useJobBoard = () => {
         applicationData.preQuestionAnswers = answers;
       }
       
-      // 조건부로 필드 추가 (undefined 방지)
-      if (firstSelection && firstSelection.date) {
-        applicationData.assignedDate = firstSelection.date;
-      }
       
-      if (assignedDates.length > 0) {
-        applicationData.assignedDates = assignedDates;
-      }
+      // 🔍 Firebase 저장 전 데이터 확인 로깅 (상세)
+      logger.info('🚀 Firebase에 저장할 applicationData:', {
+        component: 'useJobBoard.handleApply',
+        data: {
+          postTitle: applicationData.postTitle,
+          assignments: applicationData.assignments,
+          assignmentsLength: applicationData.assignments?.length || 0,
+          assignmentsDetail: JSON.stringify(applicationData.assignments, null, 2),
+          hasPreQuestionAnswers: !!(applicationData.preQuestionAnswers?.length),
+          fullApplicationData: applicationData
+        }
+      });
       
-      // duration 정보 저장
-      if (assignedDurations.length > 0 && assignedDurations.some(d => d !== null)) {
-        applicationData.assignedDurations = assignedDurations;
-      }
+      // Firebase 저장 실행
+      logger.info('📤 Firebase 저장 시작...', {
+        component: 'useJobBoard.handleApply',
+        data: { collection: 'applications' }
+      });
       
       const docRef = await addDoc(collection(db, 'applications'), applicationData);
+      
+      // 저장 성공 로깅
+      logger.info('✅ Firebase 저장 성공:', {
+        component: 'useJobBoard.handleApply',
+        data: {
+          docId: docRef.id,
+          savedAssignments: applicationData.assignments,
+          savedPostTitle: applicationData.postTitle
+        }
+      });
       
       // 즉시 캐시 업데이트를 위한 Application 객체 생성
       const newApplication = {

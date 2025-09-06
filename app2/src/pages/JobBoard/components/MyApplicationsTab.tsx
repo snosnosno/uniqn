@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
 import { logger } from '../../../utils/logger';
+import AssignmentDisplay from '../../../components/common/AssignmentDisplay';
+import { 
+  Application, 
+  Assignment 
+} from '../../../types/application';
 
 interface FirebaseTimestamp {
   seconds: number;
@@ -57,7 +62,8 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-// 다중 지원 시간대 표시 컴포넌트
+
+// 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성)
 const MultipleAssignmentsDisplay: React.FC<{
   assignedTimes: string[];
   assignedRoles: string[];
@@ -100,7 +106,7 @@ const MultipleAssignmentsDisplay: React.FC<{
                   <span>⏰ {item.time}</span>
                   {item.role && (
                     <span className="text-gray-600">
-                      - 👤 {String(t(`jobPostingAdmin.create.${item.role}`) || item.role)}
+                      - 👤 {String(t(`roles.${item.role}`) || item.role)}
                     </span>
                   )}
                 </div>
@@ -138,7 +144,7 @@ const SingleAssignmentDisplay: React.FC<{
           <span>⏰ {formatDateTimeValue(assignedTime || '')}</span>
           {assignedRole && (
             <span className="text-gray-600">
-              - 👤 {String(t(`jobPostingAdmin.create.${assignedRole}`) || assignedRole)}
+              - 👤 {String(t(`roles.${assignedRole}`) || assignedRole)}
             </span>
           )}
           {status === 'confirmed' && (
@@ -165,8 +171,11 @@ const ApplicationCard: React.FC<{
     <div className="flex justify-between items-start mb-3">
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          {application.jobPosting?.title || '삭제된 공고'}
+          {application.postTitle || '제목 없음'}
         </h3>
+        <div className="text-sm text-gray-500 mt-1">
+          지원일: {formatDateOnly(application.appliedAt)}
+        </div>
       </div>
       <StatusBadge status={application.status} />
     </div>
@@ -183,24 +192,27 @@ const ApplicationCard: React.FC<{
     <div>
       <h4 className="font-medium text-gray-900 mb-2">지원한 시간대</h4>
       
-      {/* 다중 선택 vs 단일 선택 분기 */}
-      {application.assignedRoles && application.assignedTimes ? (
-        <MultipleAssignmentsDisplay
-          assignedTimes={application.assignedTimes}
-          assignedRoles={application.assignedRoles}
-          assignedDates={application.assignedDates}
-          status={application.status}
-          t={t}
-        />
-      ) : (
-        <SingleAssignmentDisplay
-          assignedTime={application.assignedTime}
-          assignedRole={application.assignedRole}
-          assignedDate={application.assignedDate}
-          status={application.status}
-          t={t}
-        />
-      )}
+      {/* 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요) */}
+      {(() => {
+        // 🎯 개발 단계: 마이그레이션 로직 제거
+        const processedApplication = application;
+
+        // assignments 배열 표시 (Single Source of Truth) - 공통 컴포넌트 사용
+        if (processedApplication.assignments && processedApplication.assignments.length > 0) {
+          return (
+            <AssignmentDisplay
+              assignments={processedApplication.assignments}
+              status={processedApplication.status}
+            />
+          );
+        } else {
+          return (
+            <div className="bg-gray-50 rounded-lg p-2">
+              <div className="text-gray-500 text-sm">지원 정보 없음</div>
+            </div>
+          );
+        }
+      })()}
 
       {application.jobPosting && (
         <div className="mt-3 flex flex-col sm:flex-row gap-2">
@@ -228,41 +240,7 @@ const ApplicationCard: React.FC<{
   </div>
 );
 
-interface Application {
-  id: string;
-  postId: string;
-  status: string;
-  appliedAt: DateValue;
-  confirmedAt?: DateValue;
-  assignedTime?: string | DateValue;
-  assignedRole?: string;
-  assignedDate?: DateValue;
-  // 다중 선택 지원 필드
-  assignedTimes?: string[];
-  assignedRoles?: string[];
-  assignedDates?: DateValue[];
-  // 사전질문 답변
-  preQuestionAnswers?: Array<{
-    question: string;
-    answer: string;
-    required: boolean;
-  }>;
-  jobPosting?: {
-    id: string;
-    title: string;
-    location: string;
-    district?: string;
-    detailedAddress?: string;
-    startDate?: DateValue;
-    endDate?: DateValue;
-    dateSpecificRequirements?: any[];
-    salaryType?: string;
-    salaryAmount?: number;
-    benefits?: Record<string, unknown>;
-    useRoleSalary?: boolean;
-    roleSalaries?: Record<string, any>;
-  } | null;
-}
+// 🔄 중복된 interface 제거 완료 - types/application.ts 타입 사용
 
 interface MyApplicationsTabProps {
   applications: Application[];
@@ -300,7 +278,16 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
           postId: app.postId,
           status: app.status,
           hasJobPosting: !!app.jobPosting,
-          jobTitle: app.jobPosting?.title
+          jobTitle: app.jobPosting?.title,
+          assignments: app.assignments,
+          assignmentsLength: app.assignments?.length || 0,
+          hasAssignments: !!app.assignments && app.assignments.length > 0,
+          // 레거시 필드들 확인
+          hasLegacyFields: !!(app as any).assignedDate || !!(app as any).assignedTime || !!(app as any).assignedRole ||
+                          !!(app as any).assignedDates || !!(app as any).assignedTimes || !!(app as any).assignedRoles ||
+                          !!(app as any).dateAssignments,
+          // 전체 데이터 구조
+          fullData: app
         }))
       }
     });

@@ -21,7 +21,7 @@ const ResponsiveNav: React.FC = () => {
   const desktopNavItems = [
     { path: '/', label: '홈' },
     { path: '/tables', label: '테이블', requiresAuth: true },
-    { path: '/job-board', label: '구인구직' },
+    { path: '/jobs', label: '구인구직' },
     { path: '/participants', label: '참가자', requiresAuth: true, adminOnly: true },
     { path: '/schedule', label: '스케줄', requiresAuth: true },
     { path: '/admin', label: '관리자', adminOnly: true },

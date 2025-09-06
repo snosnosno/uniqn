@@ -218,7 +218,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
                           const isFull = confirmedCount >= r.count;
                           return (
                             <div key={roleIndex} className={`text-sm ${isFull ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                              {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명 
+                              {t(`roles.${r.name}`, r.name)}: {r.count}명 
                               {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
                             </div>
                           );

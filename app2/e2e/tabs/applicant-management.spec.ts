@@ -341,7 +341,7 @@ test.describe('지원자 관리 탭', () => {
 
     // 새 탭에서 지원서 제출 시뮬레이션
     const newTab = await page.context().newPage();
-    await newTab.goto('http://localhost:3001/job-board');
+    await newTab.goto('http://localhost:3001/jobs');
     
     // 새 지원자 추가 (실제로는 다른 사용자가 지원하는 시나리오)
     await dataHelper.createTestApplication('test-job-applicants', {

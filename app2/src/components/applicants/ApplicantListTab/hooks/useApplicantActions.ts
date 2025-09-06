@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
 import { db, promoteToStaff } from '../../../../firebase';
 import { JobPostingUtils, JobPosting } from '../../../../types/jobPosting';
-import { Applicant, Assignment } from '../types';
+import { Assignment } from '../../../../types/application';
+import { Applicant } from '../types';
 import { jobRoleMap } from '../utils/applicantHelpers';
 import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
 
@@ -57,7 +58,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       
       // 🔍 같은 날짜 중복 확정 방지 검사 (개선된 버전)
       const targetDates = assignments
-        .map(a => a.date)
+        .flatMap(a => a.dates)
         .filter(date => date && date.trim() !== '');
       
       if (targetDates.length > 0) {
@@ -100,21 +101,23 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
       // 선택된 역할들이 마감되었는지 확인
       const fullRoles = assignments.filter(assignment => {
-        // 날짜별 요구사항만 사용하므로 date는 필수
-        if (!assignment.date) return false;
+        // dates 배열에서 첫 번째 날짜 사용
+        const assignmentDate = assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
+        if (!assignmentDate) return false;
         
         return JobPostingUtils.isRoleFull(
           jobPosting,
           assignment.timeSlot,
-          assignment.role,
-          assignment.date
+          assignment.role || '',
+          assignmentDate
         );
       });
       
       if (fullRoles.length > 0) {
-        const fullRoleMessages = fullRoles.map(assignment => 
-          `${assignment.date ? `${assignment.date} ` : ''}${assignment.timeSlot} - ${assignment.role}`
-        ).join(', ');
+        const fullRoleMessages = fullRoles.map(assignment => {
+          const assignmentDate = assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
+          return `${assignmentDate ? `${assignmentDate} ` : ''}${assignment.timeSlot} - ${assignment.role || ''}`;
+        }).join(', ');
         alert(`다음 역할은 이미 마감되어 확정할 수 없습니다:\n${fullRoleMessages}`);
         return;
       }
@@ -127,22 +130,25 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // 🔄 jobPosting의 confirmedStaff 배열 업데이트
       await runTransaction(db, async (transaction) => {
         assignments.forEach(assignment => {
-          const { timeSlot, role, date } = assignment;
-          const staffEntry: any = {
-            userId: applicant.applicantId,  // ✅ 타입 정의와 일치하는 필드명 사용
-            name: applicant.applicantName,
-            role,
-            timeSlot,
-            confirmedAt: new Date()
-          };
-          
-          // date가 존재하고 유효한 값일 때만 추가
-          if (date && date.trim() !== '') {
-            staffEntry.date = date;
-          }
-          
-          transaction.update(jobPostingRef, {
-            confirmedStaff: arrayUnion(staffEntry)
+          const { timeSlot, role, dates } = assignment;
+          // dates 배열의 각 날짜에 대해 staffEntry 생성
+          dates.forEach(date => {
+            const staffEntry: any = {
+              userId: applicant.applicantId,  // ✅ 타입 정의와 일치하는 필드명 사용
+              name: applicant.applicantName,
+              role,
+              timeSlot,
+              confirmedAt: new Date()
+            };
+            
+            // date가 존재하고 유효한 값일 때만 추가
+            if (date && date.trim() !== '') {
+              staffEntry.date = date;
+            }
+            
+            transaction.update(jobPostingRef, {
+              confirmedStaff: arrayUnion(staffEntry)
+            });
           });
         });
       });
@@ -159,71 +165,81 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           }
         });
         
-        // 각 assignment에 대해 개별적으로 promoteToStaff 호출
+        // 각 assignment의 각 날짜에 대해 개별적으로 promoteToStaff 호출
+        let assignmentIndex = 0;
         for (let i = 0; i < assignments.length; i++) {
           const assignment = assignments[i];
-          const assignedDate = String(assignment?.date || '');
+          if (!assignment) continue;
+          const assignmentDates = assignment.dates || [];
           
-          // 날짜가 빈 문자열이면 기본값 설정 (오늘 날짜 또는 공고의 기본 날짜)
-          let finalAssignedDate = assignedDate;
-          if (!finalAssignedDate || finalAssignedDate.trim() === '') {
-            // 공고에 날짜 정보가 있으면 사용, 없으면 오늘 날짜
-            if (jobPosting.eventDate) {
-              finalAssignedDate = jobPosting.eventDate;
-            } else {
-              const isoString = new Date().toISOString();
-              const datePart = isoString.split('T')[0];
-              finalAssignedDate = datePart || ''; // yyyy-MM-dd 형식
+          for (let dateIndex = 0; dateIndex < assignmentDates.length; dateIndex++) {
+            const assignedDate = assignmentDates[dateIndex] || '';
+            
+            // 날짜가 빈 문자열이면 기본값 설정 (오늘 날짜 또는 공고의 기본 날짜)
+            let finalAssignedDate = assignedDate;
+            if (!finalAssignedDate || finalAssignedDate.trim() === '') {
+              // 공고에 날짜 정보가 있으면 사용, 없으면 오늘 날짜
+              if (jobPosting.eventDate) {
+                finalAssignedDate = jobPosting.eventDate;
+              } else {
+                const isoString = new Date().toISOString();
+                const datePart = isoString.split('T')[0];
+                finalAssignedDate = datePart || ''; // yyyy-MM-dd 형식
+              }
             }
-          }
           
-          const jobRole = jobRoleMap[assignment?.role || ''] || 'Other';
-          
-          // 고유한 문서 ID 생성 (userId + assignment index)
-          const staffDocId = `${applicant.applicantId}_${i}`;
-          
-          logger.debug(`🔍 promoteToStaff 호출 ${i + 1}/${assignments.length}:`, { 
-            component: 'useApplicantActions',
-            data: {
-              assignment,
-              assignedDate,
-              finalAssignedDate,
-              jobRole,
-              staffDocId
-            }
-          });
-          
-          try {
-            await promoteToStaff(
-              staffDocId, // 고유한 문서 ID 사용
-              applicant.applicantName, 
-              jobRole, 
-              jobPosting.id, 
-              currentUser.uid,
-              assignment?.role || '',      // assignedRole - 지원자에서 확정된 역할
-              assignment?.timeSlot || '',  // assignedTime - 지원자에서 확정된 시간
-              applicant.email || '', // email 정보
-              applicant.phone || '',  // phone 정보
-              finalAssignedDate, // assignedDate - 지원자에서 확정된 날짜 (기본값 포함)
-              applicant.applicantId // 실제 사용자 ID
-            );
-            logger.debug(`✅ promoteToStaff 성공 ${i + 1}/${assignments.length}:`, { 
-              component: 'useApplicantActions', 
-              data: staffDocId 
+            const jobRole = jobRoleMap[assignment?.role || ''] || 'Other';
+            
+            // 고유한 문서 ID 생성 (userId + assignment index + date index)
+            const staffDocId = `${applicant.applicantId}_${assignmentIndex}`;
+            
+            logger.debug(`🔍 promoteToStaff 호출 ${assignmentIndex + 1}:`, { 
+              component: 'useApplicantActions',
+              data: {
+                assignment,
+                assignedDate,
+                finalAssignedDate,
+                jobRole,
+                staffDocId,
+                dateIndex
+              }
             });
-          } catch (promoteError) {
-            logger.error(`❌ promoteToStaff 오류 ${i + 1}/${assignments.length}:`, 
-              promoteError instanceof Error ? promoteError : new Error(String(promoteError)), 
-              { component: 'useApplicantActions' }
-            );
-            // 개별 promoteToStaff 실패해도 전체 프로세스는 계속 진행
+          
+            try {
+              await promoteToStaff(
+                staffDocId, // 고유한 문서 ID 사용
+                applicant.applicantName, 
+                jobRole, 
+                jobPosting.id, 
+                currentUser.uid,
+                assignment?.role || '',      // assignedRole - 지원자에서 확정된 역할
+                assignment?.timeSlot || '',  // assignedTime - 지원자에서 확정된 시간
+                applicant.email || '', // email 정보
+                applicant.phone || '',  // phone 정보
+                finalAssignedDate, // assignedDate - 지원자에서 확정된 날짜 (기본값 포함)
+                applicant.applicantId // 실제 사용자 ID
+              );
+              logger.debug(`✅ promoteToStaff 성공 ${assignmentIndex + 1}:`, { 
+                component: 'useApplicantActions', 
+                data: staffDocId 
+              });
+            } catch (promoteError) {
+              logger.error(`❌ promoteToStaff 오류 ${assignmentIndex + 1}:`, 
+                promoteError instanceof Error ? promoteError : new Error(String(promoteError)), 
+                { component: 'useApplicantActions' }
+              );
+              // 개별 promoteToStaff 실패해도 전체 프로세스는 계속 진행
+            }
+            
+            assignmentIndex++;
           }
         }
         
         logger.debug('✅ 모든 promoteToStaff 호출 완료', { component: 'useApplicantActions' });
       }
       
-      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${assignments.length}개 시간대 확정)`);
+      const totalAssignments = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
+      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정)`);
       
       // 자동 마감 로직 체크
       await checkAutoCloseJobPosting(jobPostingRef);

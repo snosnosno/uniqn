@@ -21,11 +21,11 @@ test.describe('구인공고 관리', () => {
   test('구인공고 목록 페이지 렌더링', async ({ page }) => {
     // 페이지 로딩 확인 - 로그인 페이지라면 인증이 제대로 작동한다는 뜻
     const pageTitle = await page.locator('h1, h2').first().textContent();
-    console.log(`페이지 제목: ${pageTitle}`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`페이지 제목: ${pageTitle}`);
     
     if (pageTitle?.includes('Login') || pageTitle?.includes('로그인')) {
       // 로그인 페이지가 표시되면 인증 시스템이 작동한다는 뜻으로 간주
-      console.log('인증 시스템이 정상 작동 - 로그인 페이지로 리다이렉트됨');
+      if (process.env.E2E_DEBUG === 'true') console.log('인증 시스템이 정상 작동 - 로그인 페이지로 리다이렉트됨');
       await expect(page.locator('h1, h2')).toContainText(/Login|로그인/i);
       
       // 로그인 폼이 있는지 확인
@@ -41,7 +41,7 @@ test.describe('구인공고 관리', () => {
         await expect(jobPostingList).toBeVisible();
       } else {
         // 최소한 페이지가 로딩되었는지만 확인
-        console.log('공고 목록 요소를 찾을 수 없지만 페이지는 로딩됨');
+        if (process.env.E2E_DEBUG === 'true') console.log('공고 목록 요소를 찾을 수 없지만 페이지는 로딩됨');
       }
       
       // 새 공고 작성 버튼 확인
@@ -71,9 +71,9 @@ test.describe('구인공고 관리', () => {
       const hasAnyInput = (await titleInput.count() > 0) || (await descInput.count() > 0) || (await locationInput.count() > 0);
       
       if (hasAnyInput) {
-        console.log('구인공고 작성 폼에 입력 필드들이 감지됨');
+        if (process.env.E2E_DEBUG === 'true') console.log('구인공고 작성 폼에 입력 필드들이 감지됨');
       } else {
-        console.log('구인공고 작성 폼을 찾을 수 없지만 폼 표시는 확인됨');
+        if (process.env.E2E_DEBUG === 'true') console.log('구인공고 작성 폼을 찾을 수 없지만 폼 표시는 확인됨');
       }
     }
   });
@@ -118,7 +118,7 @@ test.describe('구인공고 관리', () => {
         
         // 가상화로 인한 빠른 로딩 확인 (2초 이내)
         expect(loadTime).toBeLessThan(2000);
-        console.log(`지원자 탭 로딩 시간: ${loadTime}ms`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`지원자 탭 로딩 시간: ${loadTime}ms`);
         
         // 스크롤 성능 테스트
         const applicantList = page.locator('[data-testid="applicant-list"], .applicant-container').first();
@@ -130,7 +130,7 @@ test.describe('구인공고 관리', () => {
           const scrollTime = Date.now() - scrollStartTime;
           
           expect(scrollTime).toBeLessThan(300);
-          console.log(`지원자 목록 스크롤 시간: ${scrollTime}ms`);
+          if (process.env.E2E_DEBUG === 'true') console.log(`지원자 목록 스크롤 시간: ${scrollTime}ms`);
         }
       }
     }
@@ -157,7 +157,7 @@ test.describe('구인공고 관리', () => {
         
         // 가상화로 인한 빠른 로딩 확인 (2초 이내)
         expect(loadTime).toBeLessThan(2000);
-        console.log(`스태프 탭 로딩 시간: ${loadTime}ms`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`스태프 탭 로딩 시간: ${loadTime}ms`);
       }
     }
   });
@@ -185,7 +185,7 @@ test.describe('구인공고 관리', () => {
           
           // Web Workers로 인한 논블로킹 성능 확인 (3초 이내)
           expect(loadTime).toBeLessThan(3000);
-          console.log(`정산 탭 로딩 시간: ${loadTime}ms`);
+          if (process.env.E2E_DEBUG === 'true') console.log(`정산 탭 로딩 시간: ${loadTime}ms`);
           
           // 정산 계산 버튼이 있다면 클릭하여 Worker 테스트
           const calculateButton = page.locator('button').filter({ hasText: /계산|정산|Calculate/i }).first();
@@ -203,7 +203,7 @@ test.describe('구인공고 관리', () => {
             
             // Web Worker로 인한 빠른 계산 완료 확인 (5초 이내)
             expect(calcTime).toBeLessThan(5000);
-            console.log(`정산 계산 시간: ${calcTime}ms`);
+            if (process.env.E2E_DEBUG === 'true') console.log(`정산 계산 시간: ${calcTime}ms`);
           }
         }
       }
@@ -218,7 +218,7 @@ test.describe('구인공고 관리', () => {
     
     const initialLoad = performanceEntries[0] as any;
     
-    console.log(`초기 페이지 로드 시간: ${initialLoad.loadEventEnd - initialLoad.navigationStart}ms`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`초기 페이지 로드 시간: ${initialLoad.loadEventEnd - initialLoad.navigationStart}ms`);
     
     // 첫 번째 공고 상세로 이동 (탭 컴포넌트 지연 로딩 트리거)
     const firstJobPosting = page.locator('.job-card, tr, [data-testid*="job"]').nth(1).first();
@@ -233,7 +233,7 @@ test.describe('구인공고 관리', () => {
       if (await loadingIndicator.count() > 0) {
         await expect(loadingIndicator).toBeVisible();
         await expect(loadingIndicator).toBeHidden({ timeout: 3000 });
-        console.log('React.lazy 지연 로딩 확인됨');
+        if (process.env.E2E_DEBUG === 'true') console.log('React.lazy 지연 로딩 확인됨');
       }
       
       // 탭 컴포넌트가 정상 로드되었는지 확인
@@ -257,7 +257,7 @@ test.describe('구인공고 관리', () => {
       
       // 검색 응답 시간 확인 (2초 이내)
       expect(searchTime).toBeLessThan(2000);
-      console.log(`검색 응답 시간: ${searchTime}ms`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`검색 응답 시간: ${searchTime}ms`);
       
       // 검색 결과 표시 확인
       const jobList = page.locator('[data-testid="job-posting-list"], .job-card, table').first();

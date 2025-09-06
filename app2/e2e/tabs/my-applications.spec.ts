@@ -44,7 +44,7 @@ test.describe('내 지원현황 탭', () => {
     console.log('📋 내 지원현황 탭 접근 테스트 시작...');
     
     // 구인구직 페이지로 이동
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 내 지원현황 탭 찾기
@@ -126,7 +126,7 @@ test.describe('내 지원현황 탭', () => {
   });
 
   test('4-2. 지원한 공고 목록 확인', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 내 지원현황 탭으로 이동
@@ -232,7 +232,7 @@ test.describe('내 지원현황 탭', () => {
   });
 
   test('4-3. 지원 상태별 분류 및 표시', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 내 지원현황 탭으로 이동
@@ -321,7 +321,7 @@ test.describe('내 지원현황 탭', () => {
   });
 
   test('4-4. 지원 취소 기능 테스트', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 내 지원현황 탭으로 이동
@@ -409,7 +409,7 @@ test.describe('내 지원현황 탭', () => {
   });
 
   test('4-5. 실시간 상태 업데이트 확인', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 실시간 구독 테스트
@@ -468,7 +468,7 @@ test.describe('내 지원현황 탭', () => {
   });
 
   test('4-6. 지원현황 성능 및 사용성 테스트', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     
     // 성능 측정 시작
     const startTime = Date.now();

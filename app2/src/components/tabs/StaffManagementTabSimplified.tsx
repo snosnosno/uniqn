@@ -126,7 +126,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
   jobPosting 
 }) => {
   // 🚨 COMPONENT DEBUG - 컴포넌트 렌더링 확인
-  console.log('🚨 StaffManagementTabSimplified 렌더링!', { 
+  logger.debug('StaffManagementTabSimplified 렌더링', { 
     jobPosting, 
     timestamp: new Date().toISOString() 
   });
@@ -174,11 +174,11 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
   
   // 📋 날짜별 그룹화 (중복 제거 로직 추가)
   const groupedData = useMemo(() => {
-    console.log('🔍 groupedData 생성 시작!', { 
+    logger.debug('groupedData 생성 시작', { 
       staffDataLength: staffData.length,
       workLogsDataLength: workLogsData.length,
       attendanceDataLength: attendanceData.length,
-      jobPostingId: jobPosting?.id
+      jobPosting: jobPosting?.id
     });
     
     const groups: Record<string, any[]> = {};
@@ -198,7 +198,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
         
         // 이미 해당 날짜에 추가된 스태프인지 확인
         if (processedStaffPerDate[date]?.has(staff.staffId)) {
-          console.log('🚨 중복 스태프 발견:', { staffId: staff.staffId, date, name: staff.name });
+          logger.warn('중복 스태프 발견', { staffId: staff.staffId, date, name: staff.name });
           return; // 중복이면 건너뛰기
         }
         
@@ -216,7 +216,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
       });
     });
     
-    console.log('✅ groupedData 생성 완료!', { 
+    logger.debug('groupedData 생성 완료', { 
       keys: Object.keys(groups),
       groups,
       processedStaffPerDate: Object.fromEntries(
@@ -233,7 +233,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
     const items: VirtualizedStaffItem[] = [];
     
     // 🚨 CRITICAL DEBUG - 전체 플로우 추적
-    console.log('🚨 CRITICAL - virtualizedItems 생성 시작:', {
+    logger.debug('virtualizedItems 생성 시작', {
       groupedData,
       keys: Object.keys(groupedData),
       entries: Object.entries(groupedData),
@@ -243,7 +243,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
     const sortedEntries = Object.entries(groupedData)
       .sort(([dateA], [dateB]) => {
         // 🔍 강제 디버그 - 실제 정렬 동작 확인
-        console.log('🔍 SORT DEBUG - 실제 정렬 호출됨:', {
+        logger.debug('정렬 실행', {
           dateA, 
           dateB, 
           groupedDataKeys: Object.keys(groupedData)
@@ -313,7 +313,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
         return dateA.localeCompare(dateB);
       });
     
-    console.log('✅ 정렬 완료 - sortedEntries:', sortedEntries.map(([date]) => date));
+    logger.debug('정렬 완료', { dates: sortedEntries.map(([date]) => date) });
     
     sortedEntries.forEach(([date, staffList]) => {
         // 날짜 헤더 추가
@@ -334,7 +334,7 @@ const StaffManagementTabSimplified: React.FC<StaffManagementTabSimplifiedProps> 
         });
       });
     
-    console.log('🎉 virtualizedItems 생성 완료:', {
+    logger.debug('virtualizedItems 생성 완료', {
       totalItems: items.length,
       dateHeaders: items.filter(item => item.type === 'date-header').map(item => item.date),
       timestamp: new Date().toISOString()

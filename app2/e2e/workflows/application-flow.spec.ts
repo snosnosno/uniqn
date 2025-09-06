@@ -55,7 +55,7 @@ test.describe('지원하기 플로우', () => {
     const startTime = Date.now();
     
     // 일반 사용자로 로그인
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     
     const loginTime = Date.now() - startTime;
     console.log(`⏱️ 로그인 및 페이지 로드 시간: ${loginTime}ms`);
@@ -95,7 +95,7 @@ test.describe('지원하기 플로우', () => {
   });
 
   test('3-2. 공고 상세 페이지 진입', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 첫 번째 공고 카드 찾기
@@ -199,7 +199,7 @@ test.describe('지원하기 플로우', () => {
   });
 
   test('3-3. 지원하기 모달 열기 및 폼 확인', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 첫 번째 공고 선택
@@ -314,7 +314,7 @@ test.describe('지원하기 플로우', () => {
   });
 
   test('3-4. 지원서 정보 입력 및 제출', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 첫 번째 공고 선택
@@ -452,7 +452,7 @@ test.describe('지원하기 플로우', () => {
   });
 
   test('3-5. 중복 지원 방지 확인', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     await waitForDataLoading(page);
     
     // 동일한 공고에 다시 지원 시도
@@ -522,7 +522,7 @@ test.describe('지원하기 플로우', () => {
   });
 
   test('3-6. Firebase 지원서 데이터 저장 확인', async ({ page }) => {
-    await navigateToUserPage(page, '/job-board');
+    await navigateToUserPage(page, '/jobs');
     
     // applications 컬렉션 검증
     const applicationsValidation = await validateFirebaseCollection(page, {

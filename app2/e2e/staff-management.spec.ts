@@ -20,7 +20,7 @@ test.describe('스태프 관리', () => {
     } catch (headerError) {
       // 헤더가 보이지 않으면 최소한 페이지가 로딩되었는지 확인
       await page.waitForTimeout(2000);
-      console.log('헤더 확인 실패, 계속 진행');
+      if (process.env.E2E_DEBUG === 'true') console.log('헤더 확인 실패, 계속 진행');
     }
   });
 
@@ -30,19 +30,19 @@ test.describe('스태프 관리', () => {
     try {
       pageTitle = await page.locator('h1, h2').first().textContent({ timeout: 5000 });
     } catch (titleError) {
-      console.log('제목을 가져올 수 없음, URL로 페이지 상태 확인');
+      if (process.env.E2E_DEBUG === 'true') console.log('제목을 가져올 수 없음, URL로 페이지 상태 확인');
       const currentUrl = page.url();
       if (currentUrl.includes('/staff-management') || currentUrl.includes('/admin')) {
-        console.log('스태프 관리 페이지에 있지만 제목 로딩 중');
+        if (process.env.E2E_DEBUG === 'true') console.log('스태프 관리 페이지에 있지만 제목 로딩 중');
         return; // 페이지에 있다면 성공으로 간주
       }
     }
     
-    console.log(`페이지 제목: ${pageTitle}`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`페이지 제목: ${pageTitle}`);
     
     if (pageTitle?.includes('Login') || pageTitle?.includes('로그인')) {
       // 로그인 페이지가 표시되면 인증 시스템이 작동한다는 뜻으로 간주
-      console.log('인증 시스템이 정상 작동 - 로그인 페이지로 리다이렉트됨');
+      if (process.env.E2E_DEBUG === 'true') console.log('인증 시스템이 정상 작동 - 로그인 페이지로 리다이렉트됨');
       await expect(page.locator('h1, h2')).toContainText(/Login|로그인/i);
       
       // 로그인 폼이 있는지 확인
@@ -50,7 +50,7 @@ test.describe('스태프 관리', () => {
       await expect(page.locator('input[type="password"], input[name="password"]')).toBeVisible();
     } else if (pageTitle) {
       // 실제 스태프 관리 페이지가 로딩되었다면
-      console.log('스태프 관리 페이지 로딩 확인됨');
+      if (process.env.E2E_DEBUG === 'true') console.log('스태프 관리 페이지 로딩 확인됨');
       
       // 최소한의 페이지 요소 확인
       const anyContent = page.locator('div, main, section').first();
@@ -128,22 +128,22 @@ test.describe('스태프 관리', () => {
     if (await listContainer.count() > 0) {
       try {
         await expect(listContainer).toBeVisible();
-        console.log('스태프 목록 컨테이너 발견');
+        if (process.env.E2E_DEBUG === 'true') console.log('스태프 목록 컨테이너 발견');
       } catch (visibilityError) {
-        console.log('스태프 목록 컨테이너는 존재하지만 hidden 상태 - 성능 테스트는 통과로 간주');
+        if (process.env.E2E_DEBUG === 'true') console.log('스태프 목록 컨테이너는 존재하지만 hidden 상태 - 성능 테스트는 통과로 간주');
       }
     } else {
-      console.log('스태프 목록을 찾을 수 없지만 성능 테스트는 통과로 간주');
+      if (process.env.E2E_DEBUG === 'true') console.log('스태프 목록을 찾을 수 없지만 성능 테스트는 통과로 간주');
     }
     
     const loadTime = Date.now() - startTime;
     
     // 로딩 시간 확인 (가상화 효과) - 더 관대한 조건
-    console.log(`스태프 목록 로딩 시간: ${loadTime}ms`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`스태프 목록 로딩 시간: ${loadTime}ms`);
     if (loadTime < 10000) {
-      console.log('로딩 시간이 10초 이내로 acceptable');
+      if (process.env.E2E_DEBUG === 'true') console.log('로딩 시간이 10초 이내로 acceptable');
     } else {
-      console.log('로딩 시간이 다소 길지만 페이지는 정상 작동');
+      if (process.env.E2E_DEBUG === 'true') console.log('로딩 시간이 다소 길지만 페이지는 정상 작동');
     }
     
     // 가상화된 목록에서 스크롤 테스트
@@ -159,7 +159,7 @@ test.describe('스태프 관리', () => {
       
       // 스크롤이 부드럽게 작동하는지 확인 (500ms 이내)
       expect(scrollTime).toBeLessThan(500);
-      console.log(`스크롤 응답 시간: ${scrollTime}ms`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`스크롤 응답 시간: ${scrollTime}ms`);
     }
   });
 
@@ -215,7 +215,7 @@ test.describe('스태프 관리', () => {
     // 모바일에서도 스태프 목록이 적절히 표시되는지 확인 - 더 관대한 조건
     try {
       await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 3000 });
-      console.log('모바일에서 헤더 확인');
+      if (process.env.E2E_DEBUG === 'true') console.log('모바일에서 헤더 확인');
     } catch (headerError) {
       console.log('헤더를 찾을 수 없지만 모바일 반응형 테스트는 계속 진행');
     }

@@ -43,6 +43,32 @@ export interface LogContext {
   strategy?: string;
   additionalData?: Record<string, unknown>;
   timestamp?: string;
+  
+  // 새로 추가된 속성들
+  selectionsCount?: number;
+  firstSelection?: unknown;
+  hasDatesArray?: boolean | unknown[] | unknown;
+  hasCheckMethod?: boolean | string | unknown;
+  jobPosting?: unknown;
+  staffDataLength?: number;
+  workLogsDataLength?: number;
+  attendanceDataLength?: number;
+  staffId?: string;
+  date?: unknown;
+  name?: unknown;
+  keys?: string[];
+  groups?: Record<string, unknown[]>;
+  processedStaffPerDate?: Record<string, string[]>;
+  groupedData?: Record<string, unknown[]>;
+  entries?: [string, unknown[]][];
+  dateA?: string;
+  dateB?: string;
+  groupedDataKeys?: string[];
+  dates?: string[];
+  totalItems?: number;
+  dateHeaders?: (string | undefined)[];
+  memoryUsageMB?: number;
+  newLevel?: string;
 }
 
 // 로그 엔트리 인터페이스
@@ -58,6 +84,37 @@ export interface LogEntry {
 class StructuredLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
   private isProduction = process.env.NODE_ENV === 'production';
+  
+  // 로그 레벨 제어를 위한 환경변수
+  private minLogLevel: LogLevel;
+  
+  constructor() {
+    // 환경변수로 로그 레벨 설정 (기본값: 개발환경은 debug, 프로덕션은 warn)
+    const envLogLevel = process.env.REACT_APP_LOG_LEVEL?.toLowerCase();
+    
+    if (envLogLevel && Object.values(LogLevel).includes(envLogLevel as LogLevel)) {
+      this.minLogLevel = envLogLevel as LogLevel;
+    } else {
+      this.minLogLevel = this.isDevelopment ? LogLevel.DEBUG : LogLevel.WARN;
+    }
+  }
+  
+  // 로그 레벨 우선순위
+  private getLogLevelPriority(level: LogLevel): number {
+    const priorities = {
+      [LogLevel.DEBUG]: 0,
+      [LogLevel.INFO]: 1,
+      [LogLevel.WARN]: 2,
+      [LogLevel.ERROR]: 3,
+      [LogLevel.CRITICAL]: 4
+    };
+    return priorities[level];
+  }
+  
+  // 로그 레벨 체크
+  private shouldLog(level: LogLevel): boolean {
+    return this.getLogLevelPriority(level) >= this.getLogLevelPriority(this.minLogLevel);
+  }
 
   // 로그 레벨별 색상 정의
   private colors = {
@@ -87,7 +144,7 @@ class StructuredLogger {
 
   // 콘솔에 로그 출력
   private logToConsole(entry: LogEntry): void {
-    if (!this.isDevelopment) return;
+    if (!this.isDevelopment || !this.shouldLog(entry.level)) return;
 
     const { level, message, context, error } = entry;
     const emoji = this.emojis[level];
@@ -111,7 +168,7 @@ class StructuredLogger {
 
   // Firebase Functions를 통한 서버 로깅
   private async logToServer(entry: LogEntry): Promise<void> {
-    if (!this.isProduction) return;
+    if (!this.isProduction || !this.shouldLog(entry.level)) return;
 
     try {
       const functions = getFunctions();
@@ -154,26 +211,40 @@ class StructuredLogger {
 
   // 공개 메서드들
   public debug(message: string, context?: Partial<LogContext>): void {
-    // 프로덕션에서는 debug 로그 무시
-    if (this.isProduction) return;
-    
+    if (!this.shouldLog(LogLevel.DEBUG)) return;
     this.log(LogLevel.DEBUG, message, context);
   }
 
   public info(message: string, context?: Partial<LogContext>): void {
+    if (!this.shouldLog(LogLevel.INFO)) return;
     this.log(LogLevel.INFO, message, context);
   }
 
   public warn(message: string, context?: Partial<LogContext>): void {
+    if (!this.shouldLog(LogLevel.WARN)) return;
     this.log(LogLevel.WARN, message, context);
   }
 
   public error(message: string, error?: Error, context?: Partial<LogContext>): void {
+    if (!this.shouldLog(LogLevel.ERROR)) return;
     this.log(LogLevel.ERROR, message, context, error);
   }
 
   public critical(message: string, error?: Error, context?: Partial<LogContext>): void {
+    if (!this.shouldLog(LogLevel.CRITICAL)) return;
     this.log(LogLevel.CRITICAL, message, context, error);
+  }
+
+  // 현재 로그 레벨 확인 (개발/디버깅용)
+  public getCurrentLogLevel(): LogLevel {
+    return this.minLogLevel;
+  }
+
+  // 로그 레벨 동적 변경 (개발 환경에서만)
+  public setLogLevel(level: LogLevel): void {
+    if (!this.isDevelopment) return;
+    this.minLogLevel = level;
+    this.info('로그 레벨 변경됨', { newLevel: level });
   }
 
   // Firebase 작업 래퍼 (기존 withFirebaseErrorHandling 패턴 통합)
@@ -252,8 +323,6 @@ export const logger = new StructuredLogger();
 
 // 편의 함수들
 export const logDebug = (message: string, context?: Partial<LogContext>) => {
-  // 프로덕션에서는 debug 로그 무시 (이중 체크)
-  if (process.env.NODE_ENV === 'production') return;
   logger.debug(message, context);
 };
 export const logInfo = (message: string, context?: Partial<LogContext>) => logger.info(message, context);

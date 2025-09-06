@@ -205,7 +205,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                       )}
                                     </span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
+                                      {t(`roles.${role.name}`, role.name)}: {role.count}명
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                         ({confirmedCount}/{role.count})
                                       </span>
@@ -213,7 +213,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
+                                    {t(`roles.${role.name}`, role.name)}: {role.count}명
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                       ({confirmedCount}/{role.count})
                                     </span>
@@ -242,7 +242,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   <>
                                     <span className="font-medium text-gray-700">{ts.time}</span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
+                                      {t(`roles.${role.name}`, role.name)}: {role.count}명
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                         ({confirmedCount}/{role.count})
                                       </span>
@@ -250,7 +250,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${role.name}`, role.name)}: {role.count}명
+                                    {t(`roles.${role.name}`, role.name)}: {role.count}명
                                     <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
                                       ({confirmedCount}/{role.count})
                                     </span>
@@ -360,7 +360,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                       )}
                                     </span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      {t(`roles.${r.name}`, r.name)}: {r.count}명
                                       {expandedDates.length > 0 && (
                                         <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
                                       )}
@@ -371,7 +371,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                    {t(`roles.${r.name}`, r.name)}: {r.count}명
                                     {expandedDates.length > 0 && (
                                       <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
                                     )}
@@ -423,7 +423,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   <>
                                     <span className="font-medium text-gray-700">{ts.time}</span>
                                     <span className="ml-3">
-                                      {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      {t(`roles.${r.name}`, r.name)}: {r.count}명
                                       {expandedDates.length > 0 && (
                                         <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
                                       )}
@@ -434,7 +434,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   </>
                                 ) : (
                                   <div className="pl-[50px]">
-                                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                    {t(`roles.${r.name}`, r.name)}: {r.count}명
                                     {expandedDates.length > 0 && (
                                       <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
                                     )}

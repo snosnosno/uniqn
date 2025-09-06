@@ -15,8 +15,7 @@ import ApplicantCard from './ApplicantCard';
 import MultiSelectControls from './MultiSelectControls';
 import ApplicantActions from './ApplicantActions';
 
-// Utils
-import { hasMultipleSelections } from './utils/applicantHelpers';
+// Utils - hasMultipleSelections 제거 (더 이상 필요 없음)
 
 interface ApplicantListTabProps {
   jobPosting?: any;
@@ -83,7 +82,13 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     const newAssignment: Assignment = { 
       timeSlot: timeSlot.trim(), 
       role: role.trim(), 
-      date: date.trim() 
+      dates: date.trim() ? [date.trim()] : [],
+      isGrouped: false,
+      checkMethod: 'individual', // 개별 선택으로 마킹
+      duration: {
+        type: 'single',
+        startDate: date.trim()
+      }
     };
     
     setSelectedAssignment(prev => {
@@ -91,9 +96,9 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       
       if (isChecked) {
         // 체크됨: 같은 날짜에 이미 선택된 항목이 있는지 확인
-        const sameDate = newAssignment.date;
+        const sameDate = newAssignment.dates[0] || '';
         const alreadySelectedInSameDate = currentAssignments.some(assignment => 
-          assignment.date === sameDate && assignment.date.trim() !== ''
+          assignment.dates.length > 0 && assignment.dates[0] === sameDate && sameDate.trim() !== ''
         );
         
         if (alreadySelectedInSameDate && sameDate.trim() !== '') {
@@ -109,7 +114,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         const isDuplicate = currentAssignments.some(assignment => 
           assignment.timeSlot === newAssignment.timeSlot && 
           assignment.role === newAssignment.role && 
-          assignment.date === newAssignment.date
+          assignment.dates.length > 0 && newAssignment.dates.length > 0 &&
+          assignment.dates[0] === newAssignment.dates[0]
         );
         
         if (isDuplicate) {
@@ -130,7 +136,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         const filtered = currentAssignments.filter(assignment => 
           !(assignment.timeSlot === newAssignment.timeSlot && 
             assignment.role === newAssignment.role && 
-            assignment.date === newAssignment.date)
+            assignment.dates.length > 0 && newAssignment.dates.length > 0 &&
+            assignment.dates[0] === newAssignment.dates[0])
         );
         
         logger.debug('선택 항목 제거:', {
@@ -146,29 +153,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     });
   }, []);
 
-  /**
-   * 단일 선택 드롭다운 변경 핸들러
-   */
-  const handleSingleAssignmentChange = useCallback((applicantId: string, value: string) => {
-    if (!value) return;
-    
-    const parts = value.split('__');
-    let timeSlot = '', role = '', date = '';
-    
-    if (parts.length === 3) {
-      date = parts[0] || '';
-      timeSlot = parts[1] || '';
-      role = parts[2] || '';
-    } else if (parts.length === 2) {
-      timeSlot = parts[0] || '';
-      role = parts[1] || '';
-    }
-    
-    setSelectedAssignment(prev => ({
-      ...prev,
-      [applicantId]: [{ timeSlot, role, date: date || '' }]
-    }));
-  }, []);
+  // handleSingleAssignmentChange 함수 제거 - 더 이상 사용하지 않음
 
   // 로딩 중 표시
   if (!jobPosting) {
@@ -221,38 +206,21 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             const assignments = selectedAssignment[applicant.id] || [];
             
             return (
-              <ApplicantCard key={applicant.id} applicant={applicant}>
-                {/* 지원 중 상태에서의 액션 */}
+              <ApplicantCard key={applicant.id} applicant={applicant} jobPosting={jobPosting}>
+                {/* 지원 중 상태에서의 액션 - 체크박스 UI만 사용 */}
                 {applicant.status === 'applied' && (
-                  hasMultipleSelections(applicant) ? (
-                    // 다중 선택 UI
-                    <MultiSelectControls
-                      applicant={applicant}
-                      jobPosting={jobPosting}
-                      selectedAssignments={assignments}
-                      onAssignmentToggle={(value, isChecked) => 
-                        handleMultipleAssignmentToggle(applicant.id, value, isChecked)
-                      }
-                      onConfirm={() => handleConfirmApplicant(applicant, assignments)}
-                      canEdit={canEdit}
-                      _onRefresh={refreshApplicants}
-                    />
-                  ) : (
-                    // 단일 선택 UI
-                    <ApplicantActions
-                      applicant={applicant}
-                      jobPosting={jobPosting}
-                      selectedAssignment={assignments[0] || null}
-                      onAssignmentChange={(value) => {
-                        if (value) {
-                          handleSingleAssignmentChange(applicant.id, value);
-                        }
-                      }}
-                      onConfirm={() => handleConfirmApplicant(applicant, assignments)}
-                      onCancelConfirmation={() => handleCancelConfirmation(applicant)}
-                      canEdit={canEdit}
-                    />
-                  )
+                  <MultiSelectControls
+                    applicant={applicant}
+                    jobPosting={jobPosting}
+                    selectedAssignments={assignments}
+                    onAssignmentToggle={(value, isChecked) => 
+                      handleMultipleAssignmentToggle(applicant.id, value, isChecked)
+                    }
+                    onConfirm={() => handleConfirmApplicant(applicant, assignments)}
+                    canEdit={canEdit}
+                    _onRefresh={refreshApplicants}
+                    applications={applicants}  // 전체 지원자 데이터 전달 (카운트 계산용)
+                  />
                 )}
 
                 {/* 확정된 상태에서의 액션 */}

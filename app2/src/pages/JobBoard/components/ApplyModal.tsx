@@ -3,16 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '../../../types/jobPosting';
 import { formatDate as formatDateUtil, generateDateRange, formatDateRangeDisplay } from '../../../utils/jobPosting/dateUtils';
 import { logger } from '../../../utils/logger';
-
-interface Assignment {
-  timeSlot: string;
-  role: string;
-  date?: string | any;
-  duration?: {
-    type: 'single' | 'multi';
-    endDate?: string;
-  };
-}
+import { Assignment } from '../../../types/application';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -78,30 +69,45 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           }
         }
         
-        // 날짜 범위 생성 및 자동 선택
+        // 날짜 범위 생성 및 자동 선택 (하나의 Assignment로 그룹화)
         if (startDate && endDate) {
           const expandedDates = generateDateRange(startDate, endDate);
           
-          // 각 날짜에 대해 모든 timeSlot과 role을 자동 선택
-          expandedDates.forEach(expandedDate => {
-            dateReq.timeSlots.forEach((ts: TimeSlot) => {
-              ts.roles.forEach((role: RoleRequirement) => {
-                // 이미 마감된 항목은 제외
+          // 각 timeSlot과 role 조합을 하나의 Assignment로 생성 (날짜 배열 포함)
+          dateReq.timeSlots.forEach((ts: TimeSlot) => {
+            ts.roles.forEach((role: RoleRequirement) => {
+              // 모든 날짜에 대해 마감 여부 확인
+              const availableDates = expandedDates.filter(date => {
                 const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
                   staff.timeSlot === ts.time && 
                   staff.role === role.name && 
-                  staff.date === expandedDate
+                  staff.date === date
                 ).length || 0;
                 
-                if (confirmedCount < role.count) {
-                  autoSelectedAssignments.push({
-                    timeSlot: ts.time,
-                    role: role.name,
-                    date: expandedDate,
-                    ...(ts.duration && { duration: ts.duration })
-                  });
-                }
+                return confirmedCount < role.count;
               });
+              
+              // 🎯 v2.0: 사용 가능한 날짜가 있으면 새 구조로 Assignment 생성
+              if (availableDates.length > 0) {
+                const groupId = `${ts.time}_${role.name}_${startDate}_${endDate}`;
+                
+                autoSelectedAssignments.push({
+                  role: role.name,
+                  timeSlot: ts.time,
+                  dates: availableDates,  // 항상 배열 형태
+                  isGrouped: availableDates.length > 1,
+                  groupId: availableDates.length > 1 ? groupId : `single_${ts.time}_${role.name}_${availableDates[0]}`,
+                  checkMethod: availableDates.length > 1 ? 'group' : 'individual',  // 🎯 체크 방식 구분
+                  duration: availableDates.length > 1 ? {
+                    type: 'consecutive' as const,
+                    startDate: availableDates[0] || '',
+                    endDate: availableDates[availableDates.length - 1] || ''
+                  } : {
+                    type: 'single' as const,
+                    startDate: availableDates[0] || ''
+                  }
+                });
+              }
             });
           });
         }
@@ -115,12 +121,13 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
       
       // 각 항목을 개별적으로 추가 (이미 선택된 항목은 체크)
       autoSelectedAssignments.forEach(assignment => {
-        // 이미 선택된 항목인지 확인
-        const isAlreadySelected = selectedAssignments.some(selected => 
-          selected.timeSlot === assignment.timeSlot && 
-          selected.role === assignment.role && 
-          selected.date === assignment.date
-        );
+        // 🎯 v2.0: 새 구조 기반 중복 확인
+        const isAlreadySelected = selectedAssignments.some(selected => {
+          return selected.timeSlot === assignment.timeSlot && 
+                 selected.role === assignment.role &&
+                 selected.dates && assignment.dates &&
+                 JSON.stringify(selected.dates.sort()) === JSON.stringify(assignment.dates.sort());
+        });
         
         if (!isAlreadySelected) {
           onAssignmentChange(assignment, true);
@@ -138,22 +145,37 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 선택된 항목인지 확인
+  // 선택된 항목인지 확인 (dates 배열 고려)
+  // 🎯 v2.0: Assignment 선택 여부 확인 (새 구조 기반)
   const isAssignmentSelected = (assignment: Assignment): boolean => {
-    return selectedAssignments.some(selected => 
-      selected.timeSlot === assignment.timeSlot && 
-      selected.role === assignment.role &&
-      (assignment.date ? selected.date === assignment.date : !selected.date)
-    );
+    return selectedAssignments.some(selected => {
+      return selected.timeSlot === assignment.timeSlot && 
+             selected.role === assignment.role &&
+             selected.dates && assignment.dates &&
+             JSON.stringify(selected.dates.sort()) === JSON.stringify(assignment.dates.sort());
+    });
   };
 
   // 그룹(여러 날짜) 전체가 선택되었는지 확인
   const isGroupSelected = (timeSlot: string, role: string, dates: string[]): boolean => {
+    // 1. dates 배열을 포함한 Assignment가 있는지 확인
+    const hasGroupAssignment = selectedAssignments.some(selected => 
+      selected.timeSlot === timeSlot && 
+      selected.role === role &&
+      selected.dates &&
+      JSON.stringify(selected.dates.sort()) === JSON.stringify(dates.sort())
+    );
+
+    if (hasGroupAssignment) {
+      return true;
+    }
+
+    // 2. 개별 Assignment들이 모두 선택되어 있는지 확인 (하위호환성)
     return dates.every(date => 
       selectedAssignments.some(selected => 
         selected.timeSlot === timeSlot && 
         selected.role === role && 
-        selected.date === date
+        selected.dates && selected.dates.includes(date)
       )
     );
   };
@@ -166,28 +188,52 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
     isChecked: boolean,
     duration?: any
   ) => {
-    dates.forEach(date => {
-      const assignment: Assignment = {
-        timeSlot,
-        role,
-        date,
-        ...(duration && { duration })
-      };
-      
-      // 이미 선택된 항목인지 확인
-      const isAlreadySelected = selectedAssignments.some(selected => 
-        selected.timeSlot === assignment.timeSlot && 
-        selected.role === assignment.role && 
-        selected.date === assignment.date
-      );
-      
-      // 체크 상태와 현재 선택 상태가 다른 경우에만 변경
-      if (isChecked && !isAlreadySelected) {
-        onAssignmentChange(assignment, true);
-      } else if (!isChecked && isAlreadySelected) {
-        onAssignmentChange(assignment, false);
+    // 🎯 v2.0: 새로운 통합 구조에 맞게 Assignment 생성
+    const groupAssignment: Assignment = {
+      role,
+      timeSlot,
+      dates, // 항상 배열 형태 (단일 날짜도 배열)
+      isGrouped: true,
+      groupId: `${timeSlot}_${role}_${dates[0]}_${dates[dates.length - 1]}`,
+      checkMethod: 'group', // 🎯 그룹 체크 방식 명시
+      duration: duration ? (dates.length > 1 ? {
+        type: 'consecutive' as const,
+        startDate: dates[0] || '',
+        endDate: dates[dates.length - 1] || ''
+      } : {
+        type: 'single' as const,
+        startDate: dates[0] || ''
+      }) : {
+        type: 'single' as const,
+        startDate: dates[0] || ''
       }
-    });
+    };
+    
+    if (isChecked) {
+      // 선택: dates 배열을 포함한 Assignment 추가
+      onAssignmentChange(groupAssignment, true);
+    } else {
+      // 해제: 같은 timeSlot과 role을 가진 Assignment 제거
+      // 🎯 v2.0: 날짜별로 개별 Assignment도 생성 (하위 호환성)
+      dates.forEach(date => {
+        const singleAssignment: Assignment = {
+          role,
+          timeSlot,
+          dates: [date], // 단일 날짜도 배열 형태
+          isGrouped: false,
+          groupId: `single_${timeSlot}_${role}_${date}`,
+          checkMethod: 'individual', // 🎯 개별 체크 방식 명시
+          duration: {
+            type: 'single',
+            startDate: date || ''
+          }
+        };
+        onAssignmentChange(singleAssignment, false);
+      });
+      
+      // dates 배열을 포함한 Assignment도 제거
+      onAssignmentChange(groupAssignment, false);
+    }
   };
 
   return (
@@ -197,76 +243,6 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           {t('jobBoard.applyModal.title', { postTitle: jobPosting.title })}
         </h3>
         
-        {/* 선택된 항목들 미리보기 - 날짜별로 그룹화 */}
-        {selectedAssignments.length > 0 && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-            <h4 className="text-sm font-medium text-green-800 mb-2">
-              선택된 항목 ({selectedAssignments.length}개):
-            </h4>
-            <div className="space-y-2">
-              {(() => {
-                // 날짜별로 그룹화
-                const groupedByDate = selectedAssignments.reduce((acc, assignment) => {
-                  const dateKey = assignment.date || 'no-date';
-                  if (!acc[dateKey]) {
-                    acc[dateKey] = [];
-                  }
-                  acc[dateKey]!.push(assignment);
-                  return acc;
-                }, {} as Record<string, typeof selectedAssignments>);
-                
-                // 날짜 순서대로 정렬
-                const sortedDates = Object.keys(groupedByDate).sort().filter(d => d !== 'no-date');
-                
-                // 연속된 날짜를 범위로 표시
-                const dateRangeDisplay = sortedDates.length > 1 ? 
-                  formatDateRangeDisplay(sortedDates) : 
-                  (sortedDates[0] ? formatDateUtil(sortedDates[0]) : '');
-                
-                return (
-                  <div className="text-xs text-green-700">
-                    {dateRangeDisplay && (
-                      <div className="font-medium mb-2 text-sm">
-                        📅 {dateRangeDisplay}
-                      </div>
-                    )}
-                    {sortedDates.map(dateKey => (
-                      <div key={dateKey} className="mb-2">
-                        <div className="font-medium text-green-600 mb-1 pl-3">
-                          {formatDateUtil(dateKey)}
-                        </div>
-                        <div className="ml-6 space-y-0.5">
-                          {(() => {
-                            // 시간대별로 다시 그룹화
-                            const groupedByTime = groupedByDate[dateKey]!.reduce((acc, assignment) => {
-                              if (!acc[assignment.timeSlot]) {
-                                acc[assignment.timeSlot] = [];
-                              }
-                              acc[assignment.timeSlot]!.push(assignment);
-                              return acc;
-                            }, {} as Record<string, typeof selectedAssignments>);
-                            
-                            return Object.entries(groupedByTime).map(([timeSlot, assignments]) => (
-                              <div key={`${dateKey}-${timeSlot}`}>
-                                ⏰ {timeSlot} - 
-                                {assignments.map((a, idx) => (
-                                  <span key={idx}>
-                                    {idx > 0 && ', '}
-                                    {t(`jobPostingAdmin.create.${a.role}`, a.role)}
-                                  </span>
-                                ))}
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
         
         <div className="flex-1 overflow-y-auto">
           <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -314,13 +290,13 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               // 다중 날짜인 경우 그룹화하여 표시
               if (expandedDates.length > 0) {
                 return (
-                  <div key={dateIndex} className="mb-6">
-                    <div className="mb-3 p-3 bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg border border-blue-200">
+                  <div key={dateIndex} className="mb-6 bg-blue-50 rounded-lg border border-blue-200 overflow-hidden">
+                    <div className="p-3 bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-200">
                       <h4 className="text-sm font-semibold text-blue-800 mb-1">
                         📅 {dateDisplay} ({expandedDates.length}일)
                       </h4>
                     </div>
-                    <div className="pl-4 border-l-4 border-blue-300">
+                    <div className="p-4 bg-blue-50">
                       {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                         <div key={tsIndex} className="mb-4">
                           <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -359,7 +335,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                   key={roleIndex} 
                                   className={`flex items-center p-2 rounded cursor-pointer ${
                                     isFull ? 'bg-gray-100 cursor-not-allowed' : 
-                                    isGroupChecked ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
+                                    isGroupChecked ? 'bg-blue-100 border border-blue-300' : 'bg-white/50 hover:bg-white border border-blue-200'
                                   }`}
                                 >
                                   <input
@@ -373,13 +349,13 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                       e.target.checked,
                                       ts.duration
                                     )}
-                                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:cursor-not-allowed"
                                   />
                                   <span className={`ml-3 ${
                                     isFull ? 'text-gray-400' : 'text-gray-700'
                                   }`}>
                                     <span className="font-medium">
-                                      👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)}: {r.count}명
+                                      👤 {t(`roles.${r.name}`, r.name)}: {r.count}명
                                     </span>
                                     <span className="text-sm text-blue-600 ml-2">
                                       ({expandedDates.length}일)
@@ -424,11 +400,39 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                     </div>
                     <div className="space-y-2">
                       {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
-                        const assignment = { timeSlot: ts.time, role: r.name, date: dateReq.date };
+                        // 날짜 문자열 변환 (타임스탬프 → 문자열)
+                        let dateString = '';
+                        if (typeof dateReq.date === 'string') {
+                          dateString = dateReq.date;
+                        } else if (dateReq.date) {
+                          try {
+                            if ((dateReq.date as any).toDate) {
+                              const date = (dateReq.date as any).toDate();
+                              dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                            } else if ((dateReq.date as any).seconds) {
+                              const date = new Date((dateReq.date as any).seconds * 1000);
+                              dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                            }
+                          } catch (error) {
+                            logger.error('Date conversion error in single date:', error as Error);
+                            dateString = String(dateReq.date);
+                          }
+                        }
+                        
+                        const assignment: Assignment = {
+                          timeSlot: ts.time,
+                          role: r.name,
+                          dates: [dateString],
+                          isGrouped: false,
+                          duration: {
+                            type: 'single',
+                            startDate: dateString
+                          }
+                        };
                         const confirmedCount = jobPosting.confirmedStaff?.filter(staff => 
                           staff.timeSlot === ts.time && 
                           staff.role === r.name && 
-                          staff.date === dateReq.date
+                          staff.date === dateString
                         ).length || 0;
                         const isFull = confirmedCount >= r.count;
                         const isSelected = isAssignmentSelected(assignment);
@@ -451,7 +455,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                             <span className={`ml-3 text-sm ${
                               isFull ? 'text-gray-400' : 'text-gray-700'
                             }`}>
-                              👤 {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
+                              👤 {t(`roles.${r.name}`, r.name)} 
                               <span className={`ml-2 text-xs ${
                                 isFull ? 'text-red-500 font-medium' : 'text-gray-500'
                               }`}>

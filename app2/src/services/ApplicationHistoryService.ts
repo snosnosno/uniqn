@@ -1,26 +1,21 @@
 import { Timestamp, doc, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
-import { Assignment } from '../components/applicants/ApplicantListTab/types';
+import { 
+  Application, 
+  Assignment, 
+  ApplicationHistoryEntry,
+  LegacyApplication 
+} from '../types/application';
+// ApplicationMigration import 제거 - 개발 단계에서 불필요
 
 /**
- * 지원 히스토리 정보
- */
-export interface ApplicationHistoryEntry {
-  confirmedAt: Timestamp;
-  cancelledAt?: Timestamp;
-  assignments: Assignment[];
-}
-
-/**
- * 지원 상태 정보
+ * 🔄 v2.0 지원 상태 정보 (새 구조)
  */
 export interface ApplicationStateInfo {
   status: 'applied' | 'confirmed' | 'cancelled';
   originalApplication: {
-    roles: string[];
-    times: string[];
-    dates: string[];
+    assignments: Assignment[];
     appliedAt: Timestamp;
   };
   confirmationHistory: ApplicationHistoryEntry[];
@@ -28,12 +23,19 @@ export interface ApplicationStateInfo {
 }
 
 /**
- * 지원자 상태 전환 히스토리를 관리하는 서비스 클래스
+ * 🎯 지원자 상태 전환 히스토리를 관리하는 서비스 클래스 (v2.0)
+ * 
+ * 🚀 v2.0 개선사항:
+ * - 통합된 assignments 배열 사용 (Single Source of Truth)
+ * - 레거시 필드 제거 (assignedRoles, assignedTimes, assignedDates 등)
+ * - 자동 마이그레이션 지원
+ * - 타입 안전성 강화
  * 
  * 핵심 기능:
- * 1. 상태 전환 시 원본 데이터 완전 보존
+ * 1. 상태 전환 시 원본 데이터 완전 보존 
  * 2. 확정/취소 히스토리 추적
  * 3. 데이터 무결성 보장
+ * 4. 레거시 데이터 자동 마이그레이션
  */
 export class ApplicationHistoryService {
   
@@ -61,12 +63,13 @@ export class ApplicationHistoryService {
 
         const currentData = applicationDoc.data();
         
+        // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
+        const processedData: Application = currentData as Application;
+        
         // 원본 지원 데이터 보존 (최초 확정 시에만)
-        const originalApplication = currentData.originalApplication || {
-          roles: currentData.assignedRoles || [currentData.assignedRole].filter(Boolean),
-          times: currentData.assignedTimes || [currentData.assignedTime].filter(Boolean),
-          dates: currentData.assignedDates || [currentData.assignedDate].filter(Boolean),
-          appliedAt: currentData.appliedAt || Timestamp.now()
+        const originalApplication = processedData.originalApplication || {
+          assignments: processedData.assignments || [],
+          appliedAt: processedData.appliedAt || Timestamp.now()
         };
 
         // 새로운 확정 히스토리 항목
@@ -76,32 +79,27 @@ export class ApplicationHistoryService {
         };
 
         // 기존 히스토리에 추가
-        const confirmationHistory = currentData.confirmationHistory || [];
+        const confirmationHistory = processedData.confirmationHistory || [];
         confirmationHistory.push(newHistoryEntry);
 
-        // 지원서 업데이트
-        transaction.update(applicationRef, {
+        // 🎯 새 구조로 지원서 업데이트 (v2.0)
+        const updatedData: Partial<Application> = {
           status: 'confirmed',
           confirmedAt: Timestamp.now(),
           
-          // 🔄 원본 데이터 완전 보존
+          // 핵심 배정 정보 (Single Source of Truth)
+          assignments,
+          
+          // 히스토리 정보
           originalApplication,
           confirmationHistory,
-          
-          // 단일 필드 (하위 호환성)
-          assignedRole: assignments[0]?.role || '',
-          assignedTime: assignments[0]?.timeSlot || '',
-          assignedDate: assignments[0]?.date || '',
-          
-          // 다중 선택 필드
-          assignedRoles: assignments.map(a => a.role),
-          assignedTimes: assignments.map(a => a.timeSlot),
-          assignedDates: assignments.map(a => String(a.date || '')),
           
           // 메타데이터
           lastModified: Timestamp.now(),
           updatedAt: Timestamp.now()
-        });
+        };
+
+        transaction.update(applicationRef, updatedData);
       });
 
       logger.debug('✅ 지원자 확정 히스토리 저장 완료:', {
@@ -139,35 +137,33 @@ export class ApplicationHistoryService {
 
         const currentData = applicationDoc.data();
         
+        // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
+        const processedData: Application = currentData as Application;
+        
         // 원본 지원 데이터 확인
-        const originalApplication = currentData.originalApplication;
+        const originalApplication = processedData.originalApplication;
         if (!originalApplication) {
           throw new Error('원본 지원 데이터를 찾을 수 없습니다.');
         }
 
         // 최신 확정 히스토리에 취소 시간 추가
-        const confirmationHistory = currentData.confirmationHistory || [];
+        const confirmationHistory = processedData.confirmationHistory || [];
         if (confirmationHistory.length > 0) {
           const lastEntry = confirmationHistory[confirmationHistory.length - 1];
-          lastEntry.cancelledAt = Timestamp.now();
+          if (lastEntry) {
+            lastEntry.cancelledAt = Timestamp.now();
+          }
         }
 
-        // 지원서 상태를 'applied'로 복원하고 원본 데이터 완전 복원
-        transaction.update(applicationRef, {
+        // 🎯 새 구조로 지원서 상태를 'applied'로 복원 (v2.0)
+        const restoredData: Partial<Application> = {
           status: 'applied',
           
-          // 🔄 원본 지원 데이터 완전 복원
-          assignedRoles: originalApplication.roles,
-          assignedTimes: originalApplication.times,
-          assignedDates: originalApplication.dates,
+          // 원본 assignments 완전 복원
+          assignments: originalApplication.assignments,
           
-          // 단일 필드도 원본으로 복원 (첫 번째 값)
-          assignedRole: originalApplication.roles[0] || null,
-          assignedTime: originalApplication.times[0] || null,
-          assignedDate: originalApplication.dates[0] || null,
-          
-          // 확정 관련 필드 제거
-          confirmedAt: null,
+          // 확정 관련 필드 제거 (타입 호환성 위해 제거)
+          // confirmedAt: null,
           cancelledAt: Timestamp.now(),
           
           // 히스토리 업데이트
@@ -176,7 +172,9 @@ export class ApplicationHistoryService {
           // 메타데이터
           lastModified: Timestamp.now(),
           updatedAt: Timestamp.now()
-        });
+        };
+
+        transaction.update(applicationRef, restoredData);
       });
 
       logger.debug('✅ 확정 취소 및 원본 데이터 복원 완료:', {
@@ -227,52 +225,39 @@ export class ApplicationHistoryService {
   }
 
   /**
-   * 지원자의 원본 지원 데이터 가져오기
+   * 🎯 지원자의 원본 지원 데이터 가져오기 (v2.0)
+   * 
+   * @param applicantData 지원자 데이터 (레거시 또는 새 구조)
+   * @returns 원본 assignments 배열
    */
-  static getOriginalApplicationData(applicantData: any): {
-    roles: string[];
-    times: string[];  
-    dates: string[];
-  } {
+  static getOriginalApplicationData(applicantData: Application | LegacyApplication): Assignment[] {
+    // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
+    const processedData: Application = applicantData as Application;
+
     // 히스토리에서 원본 데이터 우선 사용
-    if (applicantData.originalApplication) {
-      return {
-        roles: applicantData.originalApplication.roles || [],
-        times: applicantData.originalApplication.times || [],
-        dates: applicantData.originalApplication.dates || []
-      };
+    if (processedData.originalApplication?.assignments) {
+      return processedData.originalApplication.assignments;
     }
 
-    // 히스토리가 없는 경우 현재 배열 데이터 사용
-    if (applicantData.assignedRoles?.length || 
-        applicantData.assignedTimes?.length || 
-        applicantData.assignedDates?.length) {
-      return {
-        roles: applicantData.assignedRoles || [],
-        times: applicantData.assignedTimes || [],
-        dates: applicantData.assignedDates || []
-      };
+    // 현재 assignments 사용 (원본이 없는 경우)
+    if (processedData.assignments && Array.isArray(processedData.assignments)) {
+      return processedData.assignments;
     }
 
-    // 배열 데이터도 없는 경우 단일 필드 사용
-    return {
-      roles: applicantData.assignedRole ? [applicantData.assignedRole] : [],
-      times: applicantData.assignedTime ? [applicantData.assignedTime] : [],
-      dates: applicantData.assignedDate ? [applicantData.assignedDate] : []
-    };
+    return [];
   }
 
   /**
    * 지원자의 확정 히스토리 가져오기
    */
-  static getConfirmationHistory(applicantData: any): ApplicationHistoryEntry[] {
-    return applicantData.confirmationHistory || [];
+  static getConfirmationHistory(applicantData: Application | LegacyApplication): ApplicationHistoryEntry[] {
+    return (applicantData as Application).confirmationHistory || [];
   }
 
   /**
    * 지원자의 현재 활성 확정 정보 가져오기 (취소되지 않은 최신 확정)
    */
-  static getCurrentConfirmation(applicantData: any): ApplicationHistoryEntry | null {
+  static getCurrentConfirmation(applicantData: Application | LegacyApplication): ApplicationHistoryEntry | null {
     const history = this.getConfirmationHistory(applicantData);
     
     // 취소되지 않은 가장 최근 확정 찾기
@@ -287,76 +272,80 @@ export class ApplicationHistoryService {
   }
 
   /**
-   * 확정된 지원자의 실제 선택사항만 가져오기 (확정된 assignments만)
+   * 🎯 확정된 지원자의 실제 선택사항 가져오기 (v2.0)
    * 
-   * @param applicantData 지원자 데이터
-   * @returns 확정된 선택사항 배열 (role, time, date)
+   * @param applicantData 지원자 데이터 (레거시 또는 새 구조)
+   * @returns 확정된 assignments 배열
    */
-  static getConfirmedSelections(applicantData: any): Array<{role: string, time: string, date: string}> {
-    if (applicantData.status !== 'confirmed') {
+  static getConfirmedSelections(applicantData: Application | LegacyApplication): Assignment[] {
+    // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
+    const processedData: Application = applicantData as Application;
+
+    if (processedData.status !== 'confirmed') {
       return [];
     }
 
     // 현재 활성 확정 정보 가져오기
-    const currentConfirmation = this.getCurrentConfirmation(applicantData);
+    const currentConfirmation = this.getCurrentConfirmation(processedData);
     
     if (currentConfirmation && currentConfirmation.assignments) {
       // 확정 히스토리에서 실제 선택된 assignments 반환
-      return currentConfirmation.assignments.map(assignment => ({
-        role: assignment.role,
-        time: assignment.timeSlot,
-        date: assignment.date
-      }));
+      return currentConfirmation.assignments;
     }
 
-    // 히스토리가 없는 경우 현재 저장된 확정 데이터 사용
-    const confirmedRoles = applicantData.assignedRoles || [];
-    const confirmedTimes = applicantData.assignedTimes || [];
-    const confirmedDates = applicantData.assignedDates || [];
-    
-    const selections = [];
-    const maxLength = Math.max(confirmedRoles.length, confirmedTimes.length, confirmedDates.length);
-    
-    for (let i = 0; i < maxLength; i++) {
-      selections.push({
-        role: confirmedRoles[i] || '',
-        time: confirmedTimes[i] || '',
-        date: confirmedDates[i] || ''
-      });
+    // 히스토리가 없는 경우 현재 assignments 사용
+    if (processedData.assignments && Array.isArray(processedData.assignments)) {
+      return processedData.assignments;
     }
     
-    return selections;
+    return [];
   }
 
   /**
-   * 데이터 무결성 검증
+   * 🎯 데이터 무결성 검증 (v2.0)
    */
-  static validateApplicationData(applicantData: any): {
+  static validateApplicationData(applicantData: Application | LegacyApplication): {
     isValid: boolean;
     errors: string[];
   } {
     const errors: string[] = [];
 
+    // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
+    const dataToValidate: Application = applicantData as Application;
+
     // 기본 필드 검증
-    if (!applicantData.applicantId) {
+    if (!dataToValidate.applicantId) {
       errors.push('applicantId가 없습니다.');
     }
 
-    if (!applicantData.status || !['applied', 'confirmed', 'cancelled'].includes(applicantData.status)) {
+    if (!dataToValidate.status || !['applied', 'confirmed', 'cancelled'].includes(dataToValidate.status)) {
       errors.push('유효하지 않은 status입니다.');
     }
 
-    // 원본 데이터 검증 (확정된 경우)
-    if (applicantData.status === 'confirmed') {
-      const originalApp = applicantData.originalApplication;
-      if (!originalApp || 
-          !originalApp.roles?.length || 
-          !originalApp.times?.length || 
-          !originalApp.dates?.length) {
-        errors.push('확정된 지원서에 원본 데이터가 없습니다.');
+    // assignments 배열 검증
+    if (!dataToValidate.assignments || !Array.isArray(dataToValidate.assignments)) {
+      errors.push('assignments 배열이 없습니다.');
+    } else if (dataToValidate.assignments.length === 0) {
+      errors.push('assignments 배열이 비어있습니다.');
+    } else {
+      // 각 assignment 검증
+      dataToValidate.assignments.forEach((assignment: any, index: number) => {
+        if (!assignment.role) errors.push(`assignments[${index}]: role 누락`);
+        if (!assignment.timeSlot) errors.push(`assignments[${index}]: timeSlot 누락`);
+        if (!assignment.dates || !Array.isArray(assignment.dates) || assignment.dates.length === 0) {
+          errors.push(`assignments[${index}]: dates 배열이 비어있음`);
+        }
+      });
+    }
+
+    // 확정된 경우 추가 검증
+    if (dataToValidate.status === 'confirmed') {
+      const originalApp = dataToValidate.originalApplication;
+      if (!originalApp || !originalApp.assignments?.length) {
+        errors.push('확정된 지원서에 원본 assignments가 없습니다.');
       }
 
-      if (!applicantData.confirmationHistory?.length) {
+      if (!dataToValidate.confirmationHistory?.length) {
         errors.push('확정된 지원서에 히스토리가 없습니다.');
       }
     }

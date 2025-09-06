@@ -11,13 +11,14 @@ import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { parseAssignedTime, convertTimeToTimestamp } from '../../utils/workLogUtils';
 import { getRoleForApplicationStatus } from './roleUtils';
 import { ApplicationData, WorkLogData, JobPostingData } from './types';
+import type { Application, WorkLog } from '../../types/unifiedData';
 
 /**
  * 지원서 데이터를 스케줄 이벤트로 처리
  */
 export const processApplicationData = async (
   docId: string, 
-  data: ApplicationData
+  data: ApplicationData | Application
 ): Promise<ScheduleEvent[]> => {
   const events: ScheduleEvent[] = [];
   
@@ -45,9 +46,9 @@ export const processApplicationData = async (
     // 기본 날짜 처리
     let baseDate = '';
     
-    // assignedDate가 있으면 우선 사용
-    if (data.assignedDate) {
-      baseDate = safeDateToString(data.assignedDate);
+    // assignments에서 첫 번째 날짜가 있으면 우선 사용 (Application 타입인 경우만)
+    if ((data as any).assignments?.[0]?.dates?.[0]) {
+      baseDate = (data as any).assignments[0].dates[0];
     }
     
     // 공고 날짜 사용 (fallback)
@@ -68,8 +69,9 @@ export const processApplicationData = async (
       }
     }
     
-    // assignedTime 파싱 (하위 호환성 유지)
-    const { startTime, endTime } = parseAssignedTime(data.assignedTime || '');
+    // assignedTime 파싱 - assignments에서 가져오기 (Application 타입인 경우만)
+    const assignedTime = (data as any).assignments?.[0]?.timeSlot || '';
+    const { startTime, endTime } = parseAssignedTime(assignedTime);
     const startTimestamp = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
     const endTimestamp = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
     
@@ -102,14 +104,97 @@ export const processApplicationData = async (
       sourceId: docId,
       applicationId: docId,
       // assignedTime 추가 (formatEventTime에서 사용)
-      ...(data.assignedTime && { assignedTime: data.assignedTime })
+      ...(assignedTime && { assignedTime: assignedTime })
     };
     
-    // assignedDates가 있는 경우 여러 날짜 이벤트 생성
-    if (data.assignedDates && Array.isArray(data.assignedDates)) {
+    // 🚀 dateAssignments 구조 최우선 처리 (날짜 기반 구조 - 최신 버전)
+    if ((data as any).dateAssignments && Array.isArray((data as any).dateAssignments) && (data as any).dateAssignments.length > 0) {
+      const dateAssignments = (data as any).dateAssignments;
+      
+      dateAssignments.forEach((dateAssignment: any, dateIndex: number) => {
+        const dateStr = dateAssignment.date;
+        
+        dateAssignment.selections.forEach((selection: any, selectionIndex: number) => {
+          const timeStr = selection.timeSlot || '';
+          const { startTime, endTime } = parseAssignedTime(timeStr);
+          const startTimestamp = startTime ? convertTimeToTimestamp(startTime, dateStr) : null;
+          const endTimestamp = endTime ? convertTimeToTimestamp(endTime, dateStr) : null;
+          
+          // 고유한 ID 생성: docId_date인덱스_selection인덱스
+          const uniqueId = `${docId}_d${dateIndex}_s${selectionIndex}`;
+          
+          const event: ScheduleEvent & { assignedTime?: string } = {
+            ...baseEvent,
+            id: uniqueId,
+            date: dateStr,
+            startTime: startTimestamp,
+            endTime: endTimestamp,
+            role: selection.role,
+            assignedTime: timeStr
+          };
+          
+          events.push(event);
+          
+          logger.debug('✅ dateAssignments 기반 스케줄 이벤트 생성:', {
+            component: 'processApplicationData',
+            data: { 
+              docId, 
+              uniqueId, 
+              date: dateStr, 
+              role: selection.role, 
+              timeSlot: selection.timeSlot,
+              isConsecutive: dateAssignment.isConsecutive,
+              groupId: dateAssignment.groupId
+            }
+          });
+        });
+      });
+      
+      return events;
+    }
+    
+    // 🆕 assignments 구조 차우선 처리 (기존 그룹 중심 구조)
+    if ((data as any).assignments && Array.isArray((data as any).assignments) && (data as any).assignments.length > 0) {
+      const assignments = (data as any).assignments;
+      
+      assignments.forEach((assignment: any, assignmentIndex: number) => {
+        if (assignment.dates && Array.isArray(assignment.dates)) {
+          assignment.dates.forEach((dateStr: string, dateIndex: number) => {
+            const timeStr = assignment.timeSlot || '';
+            const { startTime, endTime } = parseAssignedTime(timeStr);
+            const startTimestamp = startTime ? convertTimeToTimestamp(startTime, dateStr) : null;
+            const endTimestamp = endTime ? convertTimeToTimestamp(endTime, dateStr) : null;
+            
+            // 고유한 ID 생성: docId_assignment인덱스_날짜
+            const uniqueId = `${docId}_a${assignmentIndex}_${dateStr.replace(/-/g, '')}`;
+            
+            const event: ScheduleEvent & { assignedTime?: string } = {
+              ...baseEvent,
+              id: uniqueId,
+              date: dateStr,
+              role: assignment.role,
+              startTime: startTimestamp,
+              endTime: endTimestamp,
+              ...(timeStr && { assignedTime: timeStr })
+            };
+            events.push(event);
+          });
+        }
+      });
+    }
+    // 🔧 Fallback: assignments에서 여러 날짜 이벤트 생성 (Application 타입인 경우만)
+    else if ((data as any).assignments && Array.isArray((data as any).assignments) && (data as any).assignments.length > 0) {
       const convertedDates: string[] = [];
       
-      data.assignedDates.forEach((dateItem: any) => {
+      // assignments 배열에서 모든 날짜 추출
+      const allDates: string[] = [];
+      (data as any).assignments.forEach((assignment: any) => {
+        if (assignment.dates) {
+          allDates.push(...assignment.dates);
+        }
+      });
+      
+      allDates.forEach((dateItem: any) => {
         let convertedDate = '';
         
         if (typeof dateItem === 'string') {
@@ -142,7 +227,8 @@ export const processApplicationData = async (
       // 여러 날짜가 있으면 각 날짜마다 이벤트 생성
       if (convertedDates.length > 0) {
         convertedDates.forEach((date, index) => {
-          const timeStr = data.assignedTimes?.[index] || data.assignedTime || '';
+          const assignment = (data as any).assignments.find((a: any) => a.dates && a.dates.includes(date));
+          const timeStr = assignment?.timeSlot || '';
           const { startTime, endTime } = parseAssignedTime(timeStr);
           const startTimestamp = startTime ? convertTimeToTimestamp(startTime, date) : null;
           const endTimestamp = endTime ? convertTimeToTimestamp(endTime, date) : null;
@@ -184,7 +270,7 @@ export const processApplicationData = async (
  */
 export const processWorkLogData = async (
   docId: string,
-  data: WorkLogData
+  data: WorkLogData | WorkLog
 ): Promise<ScheduleEvent> => {
   // jobPosting 정보 가져오기
   let jobPostingData: JobPostingData | null = null;

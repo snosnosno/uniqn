@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
 import { calculateMinutes } from '../utils/timeUtils';
 import { formatTime } from '../utils/dateUtils';
+import { logger } from '../utils/logger';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
@@ -303,7 +304,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       showSuccess(`${staffName}의 출석 상태가 "${statusLabel}"로 변경되었습니다.`);
       
     } catch (error) {
-      console.error('AttendanceStatusPopover - 상태 변경 오류:', error);
+      logger.error('AttendanceStatusPopover 상태 변경 오류', error instanceof Error ? error : new Error(String(error)));
       
       // 4. 에러 발생 시 Optimistic Update 롤백
       if (applyOptimisticUpdate) {

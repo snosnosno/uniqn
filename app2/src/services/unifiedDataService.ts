@@ -24,11 +24,15 @@ import {
   WorkLog,
   AttendanceRecord,
   JobPosting,
-  Application,
   Tournament,
   UnifiedDataAction,
   PerformanceMetrics,
 } from '../types/unifiedData';
+import { 
+  Application,
+  LegacyApplication
+} from '../types/application';
+// ApplicationMigration import 제거 - 개발 단계에서 불필요
 
 // 구독 관리 인터페이스
 interface SubscriptionManager {
@@ -167,30 +171,64 @@ const transformJobPostingData = (doc: DocumentData): JobPosting => ({
   updatedAt: doc.updatedAt,
 });
 
-const transformApplicationData = (doc: DocumentData): Application => ({
-  id: doc.id,
-  postId: doc.postId || '',
-  eventId: doc.eventId || doc.postId || '',
-  postTitle: doc.postTitle || '',
-  applicantId: doc.applicantId || '',
-  applicantName: doc.applicantName || '',
-  applicantPhone: doc.applicantPhone,
-  applicantEmail: doc.applicantEmail,
-  status: doc.status || 'pending',
-  role: doc.role,
-  assignedRole: doc.assignedRole,
-  assignedRoles: doc.assignedRoles,
-  confirmedRole: doc.confirmedRole,
-  assignedDate: doc.assignedDate,
-  assignedDates: doc.assignedDates,
-  assignedTime: doc.assignedTime,
-  assignedTimes: doc.assignedTimes,
-  confirmedTime: doc.confirmedTime,
-  createdAt: doc.createdAt,
-  updatedAt: doc.updatedAt,
-  appliedAt: doc.appliedAt,
-  confirmedAt: doc.confirmedAt,
-});
+/**
+ * 🔄 Application 데이터 변환 (v2.0) - 자동 마이그레이션 지원
+ */
+const transformApplicationData = (doc: DocumentData): Application | null => {
+  try {
+    // 🎯 개발 단계: 모든 데이터는 새 구조로 저장됨 (마이그레이션 불필요)
+    // 마이그레이션 로직 제거 - 실사용자 없음, 개발 단계
+
+    // 🆕 새로운 구조 데이터 명시적 변환 (assignments 필드 보장)
+    
+    // 🔍 Firebase에서 가져온 원시 데이터 로깅
+    logger.info('📥 Firebase에서 가져온 원시 Application 데이터:', {
+      component: 'unifiedDataService',
+      data: {
+        id: doc.id,
+        docKeys: Object.keys(doc),
+        hasAssignments: 'assignments' in doc,
+        assignmentsRaw: doc.assignments,
+        assignmentsType: typeof doc.assignments,
+        assignmentsIsArray: Array.isArray(doc.assignments),
+        postTitle: doc.postTitle,
+        applicantId: doc.applicantId,
+        fullDoc: doc
+      }
+    });
+    
+    // 🔧 핵심 수정: assignments와 postTitle 필드를 명시적으로 보존
+    const application: Application = {
+      ...doc, // 기본적으로 모든 Firebase 데이터를 포함
+      id: doc.id,
+      // 🎯 중요: Firebase에서 가져온 assignments를 명시적으로 보존
+      assignments: doc.assignments || [],
+      // postTitle 기본값 설정 (Firebase 데이터 우선, 없으면 기본값)
+      postTitle: doc.postTitle || '제목 없음'
+    } as Application;
+    
+    // 🔍 디버깅: 변환된 데이터 로깅
+    logger.debug('✅ 새로운 구조 Application 데이터 변환 완료:', {
+      component: 'unifiedDataService',
+      data: { 
+        id: doc.id,
+        hasAssignments: !!application.assignments,
+        assignmentsLength: application.assignments?.length || 0,
+        assignments: application.assignments,
+        postTitle: application.postTitle
+      }
+    });
+
+    return application;
+    
+  } catch (error) {
+    logger.error('❌ Application 데이터 변환 오류:', error as Error, {
+      component: 'unifiedDataService',
+      data: { id: doc.id }
+    });
+    return null;
+  }
+};
 
 const transformTournamentData = (doc: DocumentData): Tournament => ({
   id: doc.id,
@@ -660,7 +698,7 @@ export class UnifiedDataService {
   }
 
   /**
-   * Applications 컬렉션 구독
+   * Applications 컬렉션 구독 (단순 쿼리 방식)
    */
   private async subscribeToApplications(): Promise<void> {
     if (!this.dispatcher) return;
@@ -670,48 +708,64 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: true });
 
-      // 사용자별 필터링 쿼리 구성 (관리자는 모든 데이터 접근)
-      let applicationsQuery;
-      if (this.currentUserId && !this.isAdmin()) {
-        // 일반 사용자: 자신의 지원서만 가져오기
-        applicationsQuery = query(
-          collection(db, 'applications'),
-          where('applicantId', '==', this.currentUserId),
-          orderBy('createdAt', 'desc')
-        );
-        logger.info('Applications 사용자별 필터링 쿼리', { 
-          component: 'unifiedDataService',
-          data: { userId: this.currentUserId, userRole: this.userRole }
-        });
-      } else {
-        // 관리자 또는 로그인하지 않은 경우: 전체 지원서 가져오기
-        applicationsQuery = query(
-          collection(db, 'applications'),
-          orderBy('createdAt', 'desc')
-        );
-        logger.info('Applications 전체 데이터 쿼리 (관리자 권한)', { 
-          component: 'unifiedDataService',
-          data: { userId: this.currentUserId, userRole: this.userRole, isAdmin: this.isAdmin() }
-        });
-      }
+      // 인덱스 문제를 피하기 위해 orderBy 제거하고 단순 쿼리로 테스트
+      const applicationsQuery = query(
+        collection(db, 'applications')
+        // orderBy('createdAt', 'desc') // 임시로 비활성화
+      );
 
       this.subscriptions.applications = onSnapshot(
         applicationsQuery,
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
+          
+          // 더 자세한 디버깅 정보 추가
           logger.info('Applications 데이터 업데이트', { 
             component: 'unifiedDataService',
-            data: { count: snapshot.size, queryTime: `${queryTime.toFixed(2)}ms` }
+            data: { 
+              count: snapshot.size, 
+              queryTime: `${queryTime.toFixed(2)}ms`,
+              isEmpty: snapshot.empty,
+              hasPendingWrites: snapshot.metadata.hasPendingWrites,
+              fromCache: snapshot.metadata.fromCache
+            }
           });
 
           const applicationsData: Application[] = [];
+          const rawDocs: any[] = [];
+          
           snapshot.forEach((doc) => {
             try {
-              applicationsData.push(transformApplicationData({ id: doc.id, ...doc.data() }));
+              const rawData = { id: doc.id, ...doc.data() };
+              rawDocs.push(rawData);
+              
+              // 🔄 변환 결과가 null이 아닌 경우만 추가 (마이그레이션 실패한 경우 제외)
+              const transformedApplication = transformApplicationData(rawData);
+              if (transformedApplication) {
+                applicationsData.push(transformedApplication);
+              }
             } catch (error) {
-              logger.warn('Application 데이터 변환 오류', { component: 'unifiedDataService', data: { docId: doc.id, error } });
+              logger.warn('Application 데이터 변환 오류', { 
+                component: 'unifiedDataService', 
+                data: { docId: doc.id, rawData: doc.data(), error } 
+              });
             }
           });
+
+          // Raw 데이터 로깅 추가
+          if (rawDocs.length > 0) {
+            logger.info('Applications 원시 데이터', {
+              component: 'unifiedDataService',
+              data: { 
+                rawDocs: rawDocs.map(doc => ({
+                  id: doc.id,
+                  applicantId: doc.applicantId,
+                  postId: doc.postId,
+                  status: doc.status
+                }))
+              }
+            });
+          }
 
           if (this.dispatcher) {
             this.dispatcher({ type: 'SET_APPLICATIONS', data: applicationsData });
@@ -721,29 +775,7 @@ export class UnifiedDataService {
           }
         },
         (error) => {
-          this.performanceTracker.incrementErrors();
-          
-          // 권한 오류와 인덱스 오류 구분
-          let errorMessage = error.message;
-          if (error.code === 'permission-denied') {
-            errorMessage = 'Applications 접근 권한이 없습니다. 로그인 상태를 확인하세요.';
-          } else if (error.message?.includes('index')) {
-            errorMessage = 'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.';
-          }
-          
-          logger.error('Applications 구독 오류', error, { 
-            component: 'unifiedDataService',
-            data: { 
-              code: error.code,
-              originalMessage: error.message,
-              processedMessage: errorMessage
-            }
-          });
-          
-          if (this.dispatcher) {
-            this.dispatcher({ type: 'SET_ERROR', collection: 'applications', error: errorMessage });
-            this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: false });
-          }
+          this.handleApplicationsError(error);
         }
       );
 
@@ -757,6 +789,36 @@ export class UnifiedDataService {
         this.dispatcher({ type: 'SET_ERROR', collection: 'applications', error: 'Applications 데이터 구독 실패' });
         this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: false });
       }
+    }
+  }
+
+
+  /**
+   * Applications 에러 처리 헬퍼 메서드
+   */
+  private handleApplicationsError(error: any): void {
+    this.performanceTracker.incrementErrors();
+    
+    // 권한 오류와 인덱스 오류 구분
+    let errorMessage = error.message;
+    if (error.code === 'permission-denied') {
+      errorMessage = 'Applications 접근 권한이 없습니다. 로그인 상태를 확인하세요.';
+    } else if (error.message?.includes('index')) {
+      errorMessage = 'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.';
+    }
+    
+    logger.error('Applications 구독 오류', error, { 
+      component: 'unifiedDataService',
+      data: { 
+        code: error.code,
+        originalMessage: error.message,
+        processedMessage: errorMessage
+      }
+    });
+    
+    if (this.dispatcher) {
+      this.dispatcher({ type: 'SET_ERROR', collection: 'applications', error: errorMessage });
+      this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: false });
     }
   }
 

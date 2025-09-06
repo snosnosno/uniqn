@@ -121,6 +121,12 @@ export const useDevTools = () => {
         
         // 메모리 사용량이 200MB를 넘으면 경고
         if (memoryMB > 200) {
+          logger.warn('높은 메모리 사용량 감지', {
+            memoryUsageMB: Math.round(memoryMB),
+            component: 'useDevTools'
+          });
+          
+          // 개발자 콘솔에도 시각적 경고 표시
           console.warn(
             '%c⚠️ 높은 메모리 사용량 감지',
             'font-size: 14px; font-weight: bold; color: #f59e0b;',

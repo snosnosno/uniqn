@@ -48,7 +48,7 @@ test.describe('성능 테스트', () => {
       });
     });
     
-    console.log('Core Web Vitals:', webVitals);
+    if (process.env.E2E_DEBUG === 'true') console.log('Core Web Vitals:', webVitals);
     
     // LCP는 2.5초 이하여야 함
     if ((webVitals as any).lcp) {
@@ -71,7 +71,7 @@ test.describe('성능 테스트', () => {
     
     // 4초 이내 로드 완료 (현실적 목표 조정)
     expect(loadTime).toBeLessThan(4000);
-    console.log(`페이지 로드 시간: ${loadTime}ms`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`페이지 로드 시간: ${loadTime}ms`);
     
     // 리소스 로드 시간 분석
     const performanceMetrics = await page.evaluate(() => {
@@ -84,7 +84,7 @@ test.describe('성능 테스트', () => {
       };
     });
     
-    console.log('성능 메트릭:', performanceMetrics);
+    if (process.env.E2E_DEBUG === 'true') console.log('성능 메트릭:', performanceMetrics);
     
     // DOM Interactive는 1.5초 이내 (NaN 체크)
     if (!isNaN(performanceMetrics.domInteractive)) {
@@ -111,7 +111,7 @@ test.describe('성능 테스트', () => {
         }));
     });
     
-    console.log('JavaScript 번들 정보:', jsResources);
+    if (process.env.E2E_DEBUG === 'true') console.log('JavaScript 번들 정보:', jsResources);
     
     // 메인 번들의 크기 확인 (1MB 이하로 현실적 조정)
     const mainBundle = jsResources.find((resource: any) => 
@@ -120,7 +120,7 @@ test.describe('성능 테스트', () => {
     
     if (mainBundle) {
       expect(mainBundle.size).toBeLessThan(1024 * 1024); // 1MB
-      console.log(`메인 번들 크기: ${Math.round(mainBundle.size / 1024)}KB`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`메인 번들 크기: ${Math.round(mainBundle.size / 1024)}KB`);
     }
     
     // 개별 청크 크기 확인 (100KB 이하)
@@ -144,7 +144,7 @@ test.describe('성능 테스트', () => {
     });
     
     if (initialMemory) {
-      console.log('초기 메모리 사용량:', initialMemory);
+      if (process.env.E2E_DEBUG === 'true') console.log('초기 메모리 사용량:', initialMemory);
       
       // 여러 페이지 네비게이션 시뮬레이션
       if (await page.locator('a, button').count() > 0) {
@@ -165,12 +165,12 @@ test.describe('성능 테스트', () => {
         });
         
         if (finalMemory) {
-          console.log('최종 메모리 사용량:', finalMemory);
+          if (process.env.E2E_DEBUG === 'true') console.log('최종 메모리 사용량:', finalMemory);
           
           // 메모리 누수 확인 (50MB 증가 이하)
           const memoryIncrease = finalMemory.used - initialMemory.used;
           expect(memoryIncrease).toBeLessThan(50 * 1024 * 1024); // 50MB
-          console.log(`메모리 증가량: ${Math.round(memoryIncrease / 1024 / 1024)}MB`);
+          if (process.env.E2E_DEBUG === 'true') console.log(`메모리 증가량: ${Math.round(memoryIncrease / 1024 / 1024)}MB`);
         }
       }
     }
@@ -190,7 +190,7 @@ test.describe('성능 테스트', () => {
       await expect(page.locator('h1, h2').first()).toBeVisible();
       
       const firstLoadTime = Date.now() - firstLoadStart;
-      console.log(`첫 번째 로드 시간: ${firstLoadTime}ms`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`첫 번째 로드 시간: ${firstLoadTime}ms`);
       
       // 페이지 새로고침 (캐시 효과 테스트)
       const secondLoadStart = Date.now();
@@ -198,13 +198,13 @@ test.describe('성능 테스트', () => {
       await expect(page.locator('h1, h2').first()).toBeVisible();
       
       const secondLoadTime = Date.now() - secondLoadStart;
-      console.log(`두 번째 로드 시간 (캐시): ${secondLoadTime}ms`);
+      if (process.env.E2E_DEBUG === 'true') console.log(`두 번째 로드 시간 (캐시): ${secondLoadTime}ms`);
       
       // 캐시로 인한 성능 향상 확인 (최소 20% 향상)
       if (firstLoadTime > 1000) {
         expect(secondLoadTime).toBeLessThan(firstLoadTime * 0.8);
         const improvement = Math.round((1 - secondLoadTime / firstLoadTime) * 100);
-        console.log(`캐시 성능 향상: ${improvement}%`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`캐시 성능 향상: ${improvement}%`);
       }
     }
   });
@@ -237,14 +237,14 @@ test.describe('성능 테스트', () => {
           
           // Web Worker 사용으로 메인 스레드 비블로킹 확인 (100ms 이내)
           expect(interactionTime).toBeLessThan(100);
-          console.log(`메인 스레드 반응 시간: ${interactionTime}ms`);
+          if (process.env.E2E_DEBUG === 'true') console.log(`메인 스레드 반응 시간: ${interactionTime}ms`);
         }
         
         // 계산 완료 대기
         await page.waitForTimeout(2000);
         
         const calculationTime = Date.now() - startTime;
-        console.log(`Web Worker 계산 시간: ${calculationTime}ms`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`Web Worker 계산 시간: ${calculationTime}ms`);
         
         // Web Worker로 인한 적절한 계산 시간 (10초 이내)
         expect(calculationTime).toBeLessThan(10000);
@@ -279,7 +279,7 @@ test.describe('성능 테스트', () => {
         
         // 가상화로 인한 빠른 스크롤 (200ms 이내)
         expect(scrollTime).toBeLessThan(200);
-        console.log(`${test.label} 스크롤 시간: ${scrollTime}ms`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`${test.label} 스크롤 시간: ${scrollTime}ms`);
       }
     }
   });
@@ -299,7 +299,7 @@ test.describe('성능 테스트', () => {
     await page.goto('/');
     await page.waitForTimeout(3000); // 모든 요청 완료 대기
     
-    console.log(`총 네트워크 요청 수: ${requests.length}`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`총 네트워크 요청 수: ${requests.length}`);
     
     // Firebase 요청 분석
     const firebaseRequests = requests.filter(req => 
@@ -307,7 +307,7 @@ test.describe('성능 테스트', () => {
       req.url.includes('firebase')
     );
     
-    console.log(`Firebase 요청 수: ${firebaseRequests.length}`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`Firebase 요청 수: ${firebaseRequests.length}`);
     
     // 스마트 캐싱으로 인한 Firebase 요청 최적화 확인 (10개 이하)
     expect(firebaseRequests.length).toBeLessThan(10);
@@ -318,7 +318,7 @@ test.describe('성능 테스트', () => {
     
     // 중복 요청 최소화 확인 (5% 이하)
     expect(duplicateRequests / requests.length).toBeLessThan(0.05);
-    console.log(`중복 요청 비율: ${Math.round(duplicateRequests / requests.length * 100)}%`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`중복 요청 비율: ${Math.round(duplicateRequests / requests.length * 100)}%`);
   });
 
   test('React.lazy 코드 분할 효과', async ({ page }) => {
@@ -327,7 +327,7 @@ test.describe('성능 테스트', () => {
       return document.querySelectorAll('script[src*=".js"]').length;
     });
     
-    console.log(`초기 JavaScript 파일 수: ${initialJSCount}`);
+    if (process.env.E2E_DEBUG === 'true') console.log(`초기 JavaScript 파일 수: ${initialJSCount}`);
     
     await page.goto('/');
     
@@ -356,11 +356,11 @@ test.describe('성능 테스트', () => {
           return document.querySelectorAll('script[src*=".js"]').length;
         });
         
-        console.log(`최종 JavaScript 파일 수: ${finalJSCount}`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`최종 JavaScript 파일 수: ${finalJSCount}`);
         
         // 코드 분할로 인한 동적 로딩 확인
         expect(finalJSCount).toBeGreaterThan(initialJSCount);
-        console.log(`동적 로딩된 파일 수: ${finalJSCount - initialJSCount}`);
+        if (process.env.E2E_DEBUG === 'true') console.log(`동적 로딩된 파일 수: ${finalJSCount - initialJSCount}`);
       }
     }
   });

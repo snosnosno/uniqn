@@ -1,6 +1,8 @@
 // Applicant 관련 타입 정의
 import { Timestamp } from 'firebase/firestore';
 import { JobPosting } from '../../../types/jobPosting';
+import { ApplicationGroup, ApplicationAssignment, DateBasedAssignment } from '../../../types/unifiedData';
+import { Assignment } from '../../../types/application';
 
 export interface Applicant {
   id: string;
@@ -27,6 +29,15 @@ export interface Applicant {
     endDate?: string;
   } | null>;
   
+  // 🚀 최신 메인 필드 - 날짜 기반 구조 (최우선)
+  dateAssignments?: DateBasedAssignment[];
+  
+  // 🆕 기존 메인 필드 - 그룹 중심 assignments 구조 (마이그레이션 기간)
+  assignments?: ApplicationAssignment[];
+  
+  // 🔧 Legacy 그룹 기반 필드 - 연속된 날짜 그룹 정보 보존 (deprecated)
+  assignedGroups?: ApplicationGroup[];
+  
   // 사전질문 답변
   preQuestionAnswers?: Array<{
     questionId: string;
@@ -44,14 +55,7 @@ export interface ApplicantListTabProps {
   jobPosting?: JobPosting; // any → JobPosting 타입으로 수정 (TypeScript strict mode 준수)
 }
 
-export interface Assignment {
-  timeSlot: string;
-  role: string;
-  date: string;
-  duration?: {
-    type: 'single' | 'multi';
-    endDate?: string;
-  };
-}
+// Assignment 타입은 통합된 types/application.ts에서 import함 (중복 제거)
+export type { Assignment } from '../../../types/application';
 
 export type SelectedAssignments = { [key: string]: Assignment[] };

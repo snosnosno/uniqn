@@ -9,6 +9,7 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { ScheduleEvent } from './schedule';
+import { Application } from './application';
 
 // 기존 개별 타입들
 export interface Staff {
@@ -84,30 +85,57 @@ export interface JobPosting {
   updatedAt?: Timestamp;
 }
 
-export interface Application {
-  id: string;
-  postId: string;        // 기존 (하위 호환성)
-  eventId?: string;      // 표준 필드 (CLAUDE.md 표준)
-  postTitle: string;
-  applicantId: string;
-  applicantName: string;
-  applicantPhone?: string;
-  applicantEmail?: string;
-  status: 'pending' | 'confirmed' | 'rejected' | 'completed';
-  role?: string;
-  assignedRole?: string;
-  assignedRoles?: string[];
-  confirmedRole?: string;
-  assignedDate?: Timestamp;
-  assignedDates?: Timestamp[];
-  assignedTime?: string;
-  assignedTimes?: string[];
-  confirmedTime?: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
-  appliedAt?: Timestamp;
-  confirmedAt?: Timestamp;
+/**
+ * 지원자 선택 그룹 - 연속된 날짜 정보를 보존
+ */
+// 🔧 Legacy 그룹 구조 (하위 호환성용)
+export interface ApplicationGroup {
+  role: string;
+  timeSlot: string;
+  dates: string[];
+  checkMethod?: 'group' | 'individual'; // 추가
+  groupId?: string;                      // 추가
+  duration?: {
+    type: 'single' | 'multi';
+    endDate?: string;
+  };
 }
+
+// 🆕 개선된 Assignment 구조 - 그룹 중심 설계
+export interface ApplicationAssignment {
+  // 🆕 그룹 선택 지원: 단일 역할 또는 다중 역할
+  role?: string;            // 개별 선택 시 사용
+  roles?: string[];         // 그룹 선택 시 다중 역할 (예: ['dealer', 'floor'])
+  
+  timeSlot: string;
+  dates: string[];  // 항상 배열로 관리 (단일 날짜도 [date] 형태)
+  duration?: {
+    type: 'single' | 'multi' | 'consecutive';
+    startDate: string;
+    endDate?: string;
+  };
+  // 그룹 메타데이터
+  isGrouped: boolean;      // 그룹으로 선택되었는지 (연속된 날짜 등)
+  groupId?: string;        // 그룹 식별자 (같은 그룹의 assignments 식별)
+  checkMethod?: 'group' | 'individual'; // 추가
+}
+
+// 🚀 날짜 기반 구조 - 최신 설계
+export interface DateBasedSelection {
+  role: string;
+  timeSlot: string;
+}
+
+export interface DateBasedAssignment {
+  date: string;                        // "2025-02-09" 형식
+  selections: DateBasedSelection[];    // 해당 날짜의 모든 역할/시간 조합
+  isConsecutive?: boolean;             // 연속된 날짜 그룹의 일부인지
+  groupId?: string;                    // 연속된 날짜 그룹 식별자
+  checkMethod?: 'group' | 'individual'; // 추가
+}
+
+// Application 타입은 types/application.ts에서 import함 (중복 제거)
+export type { Application } from './application';
 
 export interface Tournament {
   id: string;

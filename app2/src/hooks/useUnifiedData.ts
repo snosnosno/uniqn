@@ -261,7 +261,7 @@ export const useApplicationData = () => {
   }, [context.state.applications]);
 
   const getPendingApplications = useMemo(() => {
-    return applications.filter(app => app.status === 'pending');
+    return applications.filter(app => app.status === 'applied');
   }, [applications]);
 
   const getConfirmedApplications = useMemo(() => {

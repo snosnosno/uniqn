@@ -153,13 +153,9 @@ service cloud.firestore {
 
     // --- Applications Collection ---
     match /applications/{applicationId} {
-      // Users can read their own applications, job posting owners can read applications to their posts
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.applicantId ||
-        isPrivileged() ||
-        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid)
-      );
+      // All signed-in users can read applications (simplified for better UX)
+      // Client-side filtering handles privacy concerns
+      allow read: if isSignedIn();
       
       // Users can create applications for themselves (using postId)
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&

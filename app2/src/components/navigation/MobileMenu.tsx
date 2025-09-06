@@ -62,7 +62,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       adminOnly: true,
     },
     {
-      path: '/job-board',
+      path: '/jobs',
       label: '구인구직',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
