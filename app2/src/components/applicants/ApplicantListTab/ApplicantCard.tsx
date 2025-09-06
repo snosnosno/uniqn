@@ -2,20 +2,24 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
-import { getApplicantSelections, formatDateDisplay } from './utils/applicantHelpers';
-import { formatDate } from '../../../utils/jobPosting/dateUtils';
+import { 
+  getApplicantSelections, 
+  formatDateDisplay, 
+  groupApplicationsByConsecutiveDates
+} from './utils/applicantHelpers';
 import StaffProfileModal from '../../StaffProfileModal';
 import { StaffData } from '../../../hooks/useStaffManagement';
 
 interface ApplicantCardProps {
   applicant: Applicant;
+  jobPosting?: any; // 역할 정보 복원을 위한 구인공고 데이터
   children?: React.ReactNode; // 액션 버튼들을 위한 children
 }
 
 /**
  * 개별 지원자 정보를 표시하는 카드 컴포넌트 (2x2 그리드 레이아웃)
  */
-const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) => {
+const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, children }) => {
   const { t } = useTranslation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -138,131 +142,147 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, children }) =>
           </div>
         </div>
 
-        {/* 3-4사분면: 확정 시간 선택 (날짜별 배치) */}
+        {/* 3-4사분면: 선택 시간 표시 및 체크박스 영역 */}
         <div className="lg:col-span-2">
-          {/* 확정된 경우 선택 정보 표시 */}
-          {applicant.status === 'confirmed' && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              {(() => {
-                const confirmedSelections = getApplicantSelections(applicant);
-                if (confirmedSelections.length > 0) {
-                  // 날짜별로 그룹화하여 표시
-                  const groupedByDate = confirmedSelections.reduce((acc, selection) => {
-                    const dateKey = selection.date || 'no-date';
-                    if (!acc[dateKey]) {
-                      acc[dateKey] = [];
-                    }
-                    acc[dateKey].push(selection);
-                    return acc;
-                  }, {} as Record<string, typeof confirmedSelections>);
+          {(() => {
+            const applicantSelections = getApplicantSelections(applicant, jobPosting);
+            
+            // 확정된 상태일 때만 지원 정보 표시
+            if (applicant.status === 'confirmed' && applicantSelections.length > 0) {
+              // 🎯 선택 사항을 그룹과 개별로 분류
+              const processedApplications = new Map<string, any>();
+              
+              applicantSelections.forEach((selection: any) => {
+                // checkMethod가 'group'이고 dates가 여러 개인 경우 그룹으로 처리
+                if (selection.checkMethod === 'group' && selection.dates && selection.dates.length > 1) {
+                  const groupKey = `group-${selection.groupId || selection.time}`;
                   
-                  const sortedDates = Object.keys(groupedByDate).sort().filter(d => d !== 'no-date');
-                  
-                  // 시간대와 역할이 같은 연속된 날짜만 그룹화
-                  type ScheduleGroup = {
-                    dates: string[];
-                    time: string;
-                    role: string;
-                  };
-                  
-                  const scheduleGroups: ScheduleGroup[] = [];
-                  
-                  // 각 날짜의 시간대-역할 조합을 추적
-                  sortedDates.forEach(date => {
-                    const selections = groupedByDate[date] || [];
-                    
-                    selections.forEach((selection: any) => {
-                      const { time, role } = selection;
-                      
-                      // 마지막 그룹이 같은 시간대와 역할을 가지고 있고, 날짜가 연속적인지 확인
-                      const lastGroup = scheduleGroups[scheduleGroups.length - 1];
-                      
-                      if (lastGroup && 
-                          lastGroup.time === time && 
-                          lastGroup.role === role) {
-                        // 마지막 날짜와 현재 날짜가 연속적인지 확인
-                        const lastDate = lastGroup.dates[lastGroup.dates.length - 1];
-                        if (lastDate) {
-                          const lastDateObj = new Date(lastDate);
-                          const currentDateObj = new Date(date);
-                          const diffDays = (currentDateObj.getTime() - lastDateObj.getTime()) / (1000 * 3600 * 24);
-                          
-                          if (diffDays === 1) {
-                            // 연속된 날짜면 현재 그룹에 추가
-                            lastGroup.dates.push(date);
-                            return;
-                          }
-                        }
-                      }
-                      
-                      // 새로운 그룹 생성
-                      scheduleGroups.push({
-                        dates: [date],
-                        time,
-                        role
-                      });
+                  if (!processedApplications.has(groupKey)) {
+                    processedApplications.set(groupKey, {
+                      displayDateRange: `${formatDateDisplay(selection.dates[0])}~${formatDateDisplay(selection.dates[selection.dates.length - 1])}`,
+                      dayCount: selection.dates.length,
+                      time: selection.time,
+                      roles: [],
+                      isGrouped: true,
+                      checkMethod: 'group'
                     });
-                  });
+                  }
                   
-                  return (
-                    <>
-                      <div className="space-y-3 mb-4">
-                        {scheduleGroups.map((group, groupIndex) => {
-                          return (
-                            <div key={groupIndex} className="bg-white p-3 rounded border">
-                              <div className="mb-2">
-                                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md">
-                                  📅 {group.dates.length === 1 
-                                    ? formatDate(group.dates[0]) 
-                                    : `${formatDate(group.dates[0])} ~ ${formatDate(group.dates[group.dates.length - 1])}`}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className={`font-medium ${group.time && group.time !== '미정' ? 'text-gray-700' : 'text-red-500'}`}>
-                                  {group.time}
-                                </span>
-                                <span className="text-gray-500">-</span>
-                                <span className="font-medium text-gray-800">
-                                  {t(`jobPostingAdmin.create.${group.role}`) || group.role}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-end">
-                        {children}
-                      </div>
-                    </>
-                  );
+                  const group = processedApplications.get(groupKey)!;
+                  if (selection.role && !group.roles.includes(selection.role)) {
+                    group.roles.push(selection.role);
+                  }
+                } else {
+                  // 개별 선택 처리
+                  const dateKey = selection.date || selection.dates?.[0] || 'no-date';
+                  const individualKey = `individual-${dateKey}-${selection.time}`;
+                  
+                  if (!processedApplications.has(individualKey)) {
+                    processedApplications.set(individualKey, {
+                      displayDateRange: formatDateDisplay(dateKey),
+                      time: selection.time,
+                      roles: [],
+                      isGrouped: false,
+                      checkMethod: 'individual'
+                    });
+                  }
+                  
+                  const individual = processedApplications.get(individualKey)!;
+                  if (selection.role && !individual.roles.includes(selection.role)) {
+                    individual.roles.push(selection.role);
+                  }
                 }
-                
-                // 기존 단일 선택 지원자 표시 (하위 호환성)
-                return (
-                  <>
-                    <div className="text-sm bg-white p-2 rounded border mb-4">
-                      {applicant.assignedDate ? 
-                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md mr-2">
-                          📅 {formatDateDisplay(applicant.assignedDate)}
-                        </span> : null
-                      }
-                      <span className="font-medium text-gray-700">{applicant.assignedTime}</span>
-                      <span className="text-gray-600 mx-1">-</span>
-                      <span className="font-medium text-gray-800">
-                        {applicant.assignedRole ? t(`jobPostingAdmin.create.${applicant.assignedRole}`) : applicant.assignedRole}
-                      </span>
-                    </div>
-                    <div className="flex justify-end">
-                      {children}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
-          
-          {/* 확정 시간 선택 영역 (3-4사분면) - 확정된 상태에서는 숨김 */}
-          {applicant.status !== 'confirmed' && children}
+              });
+              
+              const allApplications = Array.from(processedApplications.values());
+              
+              return (
+                <div className="mb-4 p-4 rounded-lg border bg-green-50 border-green-200">
+                  <div className="space-y-3 mb-4">
+                    {allApplications.map((group, groupIndex) => {
+                      return (
+                        <div key={groupIndex} className="bg-white p-3 rounded border">
+                          <div className="mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-green-100 text-green-800">
+                                📅 {group.displayDateRange}
+                                {group.isGrouped && group.dayCount && <span className="ml-1">({group.dayCount}일)</span>}
+                              </span>
+                              {group.isGrouped && (
+                                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-purple-100 text-purple-700">
+                                  📋
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className={`font-medium ${group.time && group.time !== '미정' && group.time !== '시간 미정' ? 'text-gray-700' : 'text-red-500'}`}>
+                              ⏰ {group.time}
+                            </span>
+                            <span className="text-gray-500">-</span>
+                            <div className="font-medium text-gray-800">
+                              {group.isGrouped ? (
+                                // 그룹 선택: 역할들을 배지로 표시
+                                <div className="flex flex-wrap gap-1">
+                                  {group.roles.map((role: string, roleIndex: number) => (
+                                    role ? (
+                                      <span key={roleIndex} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-sm">
+                                        👤 {t(`roles.${role}`) || role}
+                                      </span>
+                                    ) : null
+                                  ))}
+                                </div>
+                              ) : (
+                                // 개별 선택: 역할들을 쉼표로 구분
+                                <span>
+                                  👤 {group.roles.filter((role: string) => role).map((role: string) => t(`roles.${role}`) || role).join(', ')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            
+            // 기존 단일 선택 지원자 표시 (확정된 상태에서만)
+            if (applicant.status === 'confirmed' && (applicant.assignedDate || applicant.assignedTime || applicant.assignedRole)) {
+              return (
+                <div className="mb-4 p-4 rounded-lg bg-green-50 border border-green-200">
+                  <div className="text-sm bg-white p-2 rounded border mb-4">
+                    {applicant.assignedDate ? 
+                      <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md mr-2 bg-green-100 text-green-800">
+                        📅 {formatDateDisplay(applicant.assignedDate)}
+                      </span> : null
+                    }
+                    <span className="font-medium text-gray-700">{applicant.assignedTime}</span>
+                    {applicant.assignedRole && (
+                      <>
+                        <span className="text-gray-600 mx-1">-</span>
+                        <span className="font-medium text-gray-800">
+                          {applicant.assignedRole && (t(`roles.${applicant.assignedRole}`) || applicant.assignedRole)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            
+            // 확정되지 않은 상태에서는 체크박스만 표시
+            if (applicant.status !== 'confirmed') {
+              return (
+                <div>
+                  {children}
+                </div>
+              );
+            }
+            
+            return null;
+          })()}
         </div>
       </div>
 

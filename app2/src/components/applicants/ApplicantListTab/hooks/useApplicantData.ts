@@ -52,22 +52,9 @@ export const useApplicantData = (eventId?: string) => {
     
     return filteredApplications.map((app: Application) => {
       // Application 타입을 Applicant 타입으로 매핑
-      let dateString = '';
-      if (app.assignedDate) {
-        try {
-          if (app.assignedDate && typeof app.assignedDate === 'object' && 'toDate' in app.assignedDate) {
-            // Firestore Timestamp 객체인 경우
-            const date = (app.assignedDate as any).toDate();
-            dateString = date.toISOString().split('T')[0]; // yyyy-MM-dd 형식
-          } else if (typeof app.assignedDate === 'string') {
-            dateString = app.assignedDate;
-          }
-        } catch (error) {
-          logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { 
-            component: 'useApplicantData' 
-          });
-        }
-      }
+      // assignments에서 첫 번째 assignment의 정보를 사용 (하위 호환성)
+      const firstAssignment = app.assignments && app.assignments.length > 0 ? app.assignments[0] : null;
+      const assignedDate = firstAssignment && firstAssignment.dates.length > 0 ? firstAssignment.dates[0] : '';
       
       return {
         id: app.id,
@@ -76,21 +63,24 @@ export const useApplicantData = (eventId?: string) => {
         applicantPhone: app.applicantPhone,
         applicantEmail: app.applicantEmail,
         status: app.status,
-        role: app.role,
-        assignedRole: app.assignedRole || app.role,
-        assignedTime: app.assignedTime,
-        assignedDate: dateString || '',
-        assignedRoles: app.assignedRoles || (app.assignedRole ? [app.assignedRole] : app.role ? [app.role] : []),
-        assignedTimes: app.assignedTimes || (app.assignedTime ? [app.assignedTime] : []),
-        assignedDates: dateString ? [dateString] : [],
-        assignedDurations: [],
-        confirmedRole: app.confirmedRole,
-        confirmedTime: app.confirmedTime,
+        role: firstAssignment?.role || '',
+        assignedRole: firstAssignment?.role || '',
+        assignedTime: firstAssignment?.timeSlot || '',
+        assignedDate: assignedDate,
+        assignedRoles: app.assignments?.map(a => a.role) || [],
+        assignedTimes: app.assignments?.map(a => a.timeSlot) || [],
+        assignedDates: app.assignments?.flatMap(a => a.dates) || [],
+        assignedDurations: app.assignments?.map(a => a.duration || null) || [],
+        assignedGroups: [], // 빈 배열로 초기화 (레거시 호환성)
+        confirmedRole: firstAssignment?.role || '',
+        confirmedTime: firstAssignment?.timeSlot || '',
         createdAt: app.createdAt,
         updatedAt: app.updatedAt,
         appliedAt: app.appliedAt,
         confirmedAt: app.confirmedAt,
-        eventId: app.postId
+        eventId: app.eventId || app.postId,
+        // 🎯 중요: assignments 필드 추가 - Firebase 데이터의 assignments 배열을 그대로 전달
+        assignments: app.assignments || []
       } as Applicant;
     });
   }, [applications, eventId]);

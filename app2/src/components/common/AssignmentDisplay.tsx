@@ -1,0 +1,226 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Assignment } from '../../types/application';
+import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
+
+interface FirebaseTimestamp {
+  seconds: number;
+  nanoseconds: number;
+  toDate?: () => Date;
+}
+
+type DateValue = string | Date | FirebaseTimestamp;
+
+// 날짜/시간 포맷팅 유틸 함수
+const formatDateTimeValue = (value: string | DateValue): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && 'seconds' in value) {
+    return formatDateUtil(value as FirebaseTimestamp);
+  }
+  return String(value);
+};
+
+const formatDateOnly = (value: DateValue): string => {
+  return value ? formatDateUtil(value) : '날짜 미정';
+};
+
+interface AssignmentDisplayProps {
+  assignments: Assignment[];
+  status: string;
+}
+
+/**
+ * 🎯 통합 assignments 표시 컴포넌트
+ * MyApplicationsTab과 ApplicantCard에서 공통으로 사용
+ * 날짜별 그룹화 및 그룹선택/개별선택 구분 표시
+ */
+const AssignmentDisplay: React.FC<AssignmentDisplayProps> = ({ assignments, status }) => {
+  const { t } = useTranslation();
+  
+  // assignments를 처리 방식에 따라 분류 및 날짜별 그룹화
+  const processAssignments = () => {
+    const dateGroups: Array<{
+      dateKey: string;
+      dateDisplay: string;
+      checkMethod: 'group' | 'individual';
+      isGroupSelection: boolean;
+      timeSlots: Array<{
+        timeSlot: string;
+        roles: string[];
+      }>;
+    }> = [];
+
+    assignments.forEach((assignment) => {
+      // checkMethod가 없는 경우 기본값 처리
+      const checkMethod = assignment.checkMethod || 
+        (assignment.dates && assignment.dates.length > 1 && assignment.isGrouped ? 'group' : 'individual');
+      
+      // 그룹 선택과 개별 선택 구분 표시
+      const isGroupSelection: boolean = checkMethod === 'group' || Boolean(assignment.roles && assignment.roles.length > 0);
+      
+      if (!assignment.dates || assignment.dates.length === 0) return;
+
+      if (checkMethod === 'group') {
+        // 그룹선택: 날짜 범위로 표시
+        const sortedDates = [...assignment.dates].sort();
+        const dateDisplay = sortedDates.length > 1 ? 
+          `${formatDateOnly(sortedDates[0] || '')} ~ ${formatDateOnly(sortedDates[sortedDates.length - 1] || '')}` :
+          formatDateOnly(sortedDates[0] || '');
+        
+        const dateKey = `group-${sortedDates.join('-')}-${assignment.timeSlot}`;
+        
+        // 그룹선택의 역할들 수집
+        const roles: string[] = [];
+        if (assignment.roles && assignment.roles.length > 0) {
+          roles.push(...assignment.roles);
+        } else if (assignment.role) {
+          roles.push(assignment.role);
+        }
+
+        // 같은 날짜 범위와 시간대의 기존 그룹 찾기
+        let existingGroup = dateGroups.find(group => 
+          group.dateKey === dateKey && group.checkMethod === 'group'
+        );
+
+        if (!existingGroup) {
+          // 새로운 그룹선택 그룹 생성
+          existingGroup = {
+            dateKey,
+            dateDisplay,
+            checkMethod,
+            isGroupSelection,
+            timeSlots: [{
+              timeSlot: assignment.timeSlot,
+              roles: []
+            }]
+          };
+          dateGroups.push(existingGroup);
+        }
+
+        // 기존 시간대 슬롯에 역할 추가
+        const timeSlot = existingGroup.timeSlots[0];
+        if (timeSlot) {
+          roles.forEach(role => {
+            if (!timeSlot.roles.includes(role)) {
+              timeSlot.roles.push(role);
+            }
+          });
+        }
+
+      } else {
+        // 개별선택: 각 날짜별로 분리하여 표시
+        assignment.dates.forEach(date => {
+          const dateDisplay = formatDateOnly(date || '');
+          const dateKey = `individual-${date}`;
+          
+          // 같은 날짜의 기존 그룹 찾기
+          let existingGroup = dateGroups.find(group => 
+            group.dateKey === dateKey && group.checkMethod === 'individual'
+          );
+          
+          if (!existingGroup) {
+            // 새로운 날짜 그룹 생성
+            const newGroup = {
+              dateKey,
+              dateDisplay,
+              checkMethod,
+              isGroupSelection,
+              timeSlots: [] as Array<{
+                timeSlot: string;
+                roles: string[];
+              }>
+            };
+            dateGroups.push(newGroup);
+            existingGroup = newGroup;
+          }
+          
+          // 같은 시간대의 기존 슬롯 찾기
+          let existingTimeSlot = existingGroup.timeSlots.find(slot => 
+            slot.timeSlot === assignment.timeSlot
+          );
+          
+          if (!existingTimeSlot) {
+            // 새로운 시간대 슬롯 생성
+            existingTimeSlot = {
+              timeSlot: assignment.timeSlot,
+              roles: []
+            };
+            existingGroup.timeSlots.push(existingTimeSlot);
+          }
+          
+          // 역할 추가
+          const rolesToAdd: string[] = [];
+          if (assignment.roles && assignment.roles.length > 0) {
+            rolesToAdd.push(...assignment.roles);
+          } else if (assignment.role) {
+            rolesToAdd.push(assignment.role);
+          }
+          
+          rolesToAdd.forEach(role => {
+            if (!existingTimeSlot!.roles.includes(role)) {
+              existingTimeSlot!.roles.push(role);
+            }
+          });
+        });
+      }
+    });
+
+    return dateGroups;
+  };
+
+  const dateGroups = processAssignments();
+
+  return (
+    <div className="space-y-2">
+      {dateGroups.map((group) => (
+        <div key={group.dateKey} className="bg-gray-50 rounded-lg p-2">
+          {/* 날짜 헤더 */}
+          <div className="text-blue-600 font-medium mb-2 flex items-center space-x-2">
+            <span>📅 {group.dateDisplay}</span>
+            {/* 선택 방식 배지 */}
+            <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+              group.isGroupSelection 
+                ? 'bg-purple-100 text-purple-700' 
+                : 'bg-blue-100 text-blue-700'
+            }`}>
+              {group.isGroupSelection ? '📋' : '👤'}
+            </span>
+          </div>
+          
+          {/* 시간대별 역할 표시 */}
+          <div className="ml-4 space-y-1">
+            {group.timeSlots.map((timeSlot, slotIndex) => (
+              <div key={slotIndex} className="flex items-center space-x-2 text-gray-700">
+                <span>⏰ {timeSlot.timeSlot}</span>
+                <span>-</span>
+                <div className="font-medium">
+                  {group.isGroupSelection ? (
+                    // 그룹 선택: 여러 역할을 배지로 표시
+                    <div className="flex flex-wrap gap-1">
+                      {timeSlot.roles.filter(role => role).map((role, roleIndex) => (
+                        <span key={roleIndex} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-sm">
+                          👤 {t(`roles.${role}`) || role}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    // 개별 선택: 역할들을 쉼표로 구분하여 표시
+                    <span>
+                      👤 {timeSlot.roles.filter(role => role).map(role => t(`roles.${role}`) || role).join(', ')}
+                    </span>
+                  )}
+                </div>
+                {status === 'confirmed' && (
+                  <span className="text-green-600 text-sm font-medium ml-2">확정됨</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default AssignmentDisplay;

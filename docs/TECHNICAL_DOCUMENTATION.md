@@ -41,9 +41,11 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 종합 웹 플랫폼입�
 - ✅ **가상화**: 대용량 리스트 성능 최적화
 - ✅ **스마트 캐싱**: IndexedDB 기반 영구 캐시
 - ✅ **지연 로딩**: 컴포넌트 코드 스플리팅
-- ✅ **E2E 테스트**: Playwright 기반 테스트 프레임워크
+- ✅ **E2E 테스트**: Playwright 기반 테스트 프레임워크 (100% 달성)
 - ✅ **UnifiedDataContext**: 통합 데이터 관리
 - ✅ **보안 강화**: Firebase 키 및 환경 변수 보호
+- ✅ **AssignmentDisplay**: 통합 assignments 표시 컴포넌트
+- ✅ **데이터 일관성**: 탭 간 데이터 표시 일관성 확보
 
 > 📊 **상세한 성과 지표**는 [PRODUCT_SPEC.md](PRODUCT_SPEC.md) 참조
 
@@ -474,5 +476,5 @@ REACT_APP_USE_FIREBASE_EMULATOR=true
 
 ---
 
-*최종 업데이트: 2025년 1월 17일*
+*최종 업데이트: 2025년 9월 6일*
 *작성자: Claude Code Assistant*

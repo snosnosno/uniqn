@@ -1,8 +1,9 @@
 # T-HOLDEM 데이터 사용처 상세 분석 보고서
 
-**작성일**: 2025년 1월 [현재 날짜]  
-**버전**: v1.0  
+**작성일**: 2025년 9월 6일  
+**버전**: v1.1  
 **분석 범위**: 전체 로컬 환경 데이터 사용처 매핑
+**최근 업데이트**: 데이터 표시 일관성 개선 반영
 
 ## 📊 UnifiedDataContext 중심 데이터 구조
 
@@ -36,9 +37,11 @@
   
   #### a) **지원자 탭** (ApplicantListTab)
   - **사용 데이터**: 
-    - `applications` (지원서 목록)
+    - `applications` (지원서 목록, assignments 포함)
     - `users` (지원자 정보)
+  - **컴포넌트**: AssignmentDisplay (그룹/개별 선택 구분 표시)
   - **모달**: 지원자 상세 정보 모달
+  - **최근 개선**: checkMethod 기반 그룹/개별 선택 구분 정상화
   
   #### b) **스태프 탭** (StaffManagementTab)
   - **사용 데이터**: 
@@ -79,8 +82,10 @@
   
   #### b) **내 지원 현황 탭** (MyApplicationsTab)
   - **사용 데이터**: 
-    - `applications` (내 지원서)
+    - `applications` (내 지원서, assignments 포함)
     - `jobPostings` (공고 정보)
+  - **컴포넌트**: AssignmentDisplay (그룹/개별 선택 구분 표시)
+  - **최근 개선**: 지원자 탭과 데이터 표시 일관성 확보
 
 ### 5. **내 스케줄 페이지** (MySchedulePage)
 - **경로**: `/my-schedule`, `/schedule`
