@@ -386,21 +386,53 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   });
   
   // 🎯 출석 상태 관련 헬퍼 함수들 - 단순화
-  const getStaffAttendanceStatus = useCallback((staffId: string) => {
+  const getStaffAttendanceStatus = useCallback((staffId: string, targetDate?: string) => {
     // WorkLogs에서 직접 출석상태 계산 (실시간 반영)
-    const today = getTodayString();
-    const workLog = Array.from(state.workLogs.values()).find(wl => 
-      wl.staffId && wl.staffId.startsWith(staffId) && wl.date === today
-    );
+    const searchDate = targetDate || getTodayString();
     
-    if (workLog && workLog.status) {
-      // 'scheduled' 상태는 'not_started'로 매핑
-      if (workLog.status === 'scheduled') return 'not_started';
-      return workLog.status;
+    // 더 정확한 staffId 매칭을 위한 후보들 생성
+    const staffIdCandidates = [
+      staffId,
+      staffId.replace(/_\d+$/, ''), // assignmentIndex 제거
+      `${staffId}_0`, // _0 추가
+    ];
+    
+    // 해당 스태프의 WorkLog를 정확히 찾기
+    const workLog = Array.from(state.workLogs.values()).find(wl => {
+      if (!wl.staffId || wl.date !== searchDate) return false;
+      
+      // staffId 정확히 매칭
+      return staffIdCandidates.some(candidateId => 
+        wl.staffId === candidateId || wl.staffId.includes(candidateId)
+      );
+    });
+    
+    logger.info('🔍 getStaffAttendanceStatus 디버깅 (수정됨)', { 
+      component: 'StaffManagementTab',
+      data: { 
+        staffId, 
+        searchDate,
+        staffIdCandidates,
+        workLogFound: !!workLog,
+        workLogDate: workLog?.date,
+        workLogStatus: workLog?.status,
+        workLogId: workLog?.id,
+        actualStaffId: workLog?.staffId,
+        totalWorkLogs: state.workLogs.size
+      }
+    });
+    
+    if (workLog) {
+      // attendanceRecord 구조로 반환 (StaffRow가 기대하는 형태)
+      return {
+        status: workLog.status === 'scheduled' ? 'not_started' : workLog.status,
+        workLog: workLog,
+        workLogId: workLog.id
+      };
     }
     
-    // WorkLog가 없으면 기본값
-    return 'not_started';
+    // WorkLog가 없으면 null 반환
+    return null;
   }, [state.workLogs]);
   
   const applyOptimisticUpdate = useCallback((workLogId: string, status: string) => {
@@ -517,7 +549,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     logger.info('🔍 getStaffWorkLog fallback 조회 완료', {
       component: 'StaffManagementTab',
-      data: debugInfo
+      data: {
+        검색_대상_staffId: staffId,
+        검색_대상_date: date,
+        생성된_후보_IDs: candidates,
+        찾은_WorkLog_ID: foundWithId,
+        결과: workLog ? '찾음' : '못찾음',
+        전체_WorkLog_개수: state.workLogs?.size || 0,
+        debugInfo: debugInfo
+      }
     });
     
     return workLog;

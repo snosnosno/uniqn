@@ -13,7 +13,7 @@ interface StaffRowProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => any;
+  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
@@ -93,25 +93,13 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     const workLogId = generateVirtualWorkLogId(staff.id, dateString, staff.postingId);
     const actualStaffId = staff.id.replace(/_\d+$/, ''); // actualStaffId 정의 추가
     
-    // workLogId로 출석 상태 가져오기 - 렌더링 시점마다 새로 호출
-    const attendanceRecord = getStaffAttendanceStatus(workLogId);
-    
-    // 더 정확한 매칭을 위해 여러 방법으로 검색
-    let finalAttendanceRecord = attendanceRecord;
-    if (!finalAttendanceRecord && eventId) {
-      // eventId를 포함한 실제 workLogId로 다시 검색 (조건부 _0_ 패턴)
-      const hasNumberSuffix = /_\d+$/.test(actualStaffId);
-      const realWorkLogId = hasNumberSuffix ? 
-        `${eventId}_${actualStaffId}_${dateString}` : 
-        `${eventId}_${actualStaffId}_0_${dateString}`;
-      finalAttendanceRecord = getStaffAttendanceStatus(realWorkLogId);
-    }
-    
+    // getStaffAttendanceStatus는 이제 attendanceRecord 구조를 반환합니다
+    const attendanceRecord = getStaffAttendanceStatus(staff.id, dateString);
     
     // 실제 workLogId 추출 (Firebase에 저장된 형식)
     let realWorkLogId = workLogId; // 기본값은 virtual workLogId
-    if (finalAttendanceRecord && finalAttendanceRecord.workLogId) {
-      realWorkLogId = finalAttendanceRecord.workLogId; // 실제 Firebase의 workLogId 사용
+    if (attendanceRecord && attendanceRecord.workLogId) {
+      realWorkLogId = attendanceRecord.workLogId; // 실제 Firebase의 workLogId 사용
     } else if (eventId) {
       // attendanceRecord가 없으면 eventId를 포함한 형식으로 생성 (조건부 _0_ 패턴)
       const hasNumberSuffix = /_\d+$/.test(actualStaffId);
@@ -121,7 +109,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     }
     
     return {
-      attendanceRecord: finalAttendanceRecord,
+      attendanceRecord,
       workLogId,
       realWorkLogId, // 실제 Firebase workLogId 추가
       actualStaffId,
@@ -448,6 +436,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           scheduledStartTime={memoizedTimeData.displayStartTime}
           scheduledEndTime={memoizedTimeData.displayEndTime}
           canEdit={!!canEdit && !multiSelectMode}
+          targetDate={memoizedAttendanceData.dateString}
           {...(applyOptimisticUpdate && { applyOptimisticUpdate })}
           onStatusChange={() => {
             // 상태 변경 시 강제 리렌더링

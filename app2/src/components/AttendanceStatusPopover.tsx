@@ -30,6 +30,7 @@ interface AttendanceStatusPopoverProps {
   scheduledStartTime?: Timestamp | Date | string | null; // 예정 출근 시간
   scheduledEndTime?: Timestamp | Date | string | null; // 예정 퇴근 시간
   applyOptimisticUpdate?: (workLogId: string, newStatus: AttendanceStatus) => void;
+  targetDate?: string; // 대상 날짜 (YYYY-MM-DD 형식)
 }
 
 const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
@@ -37,6 +38,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   currentStatus,
   staffId,
   staffName = '',
+  targetDate,
   size = 'md',
   className = '',
   eventId,
@@ -54,8 +56,14 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const [localStatus, setLocalStatus] = useState<AttendanceStatus | 'scheduled'>(currentStatus);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // currentStatus가 변경되면 localStatus 업데이트
+  useEffect(() => {
+    setLocalStatus(currentStatus);
+  }, [currentStatus]);
 
   const statusOptions: { value: AttendanceStatus; label: string; icon: React.ReactNode; color: string; bgColor: string }[] = [
     {
@@ -82,7 +90,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   ];
 
   // 'scheduled' 상태는 'not_started'로 매핑하여 처리 (기존 데이터 호환성)
-  const normalizedStatus = currentStatus === 'scheduled' ? 'not_started' : currentStatus;
+  const normalizedStatus = localStatus === 'scheduled' ? 'not_started' : localStatus;
   const currentOption = statusOptions.find(option => option.value === normalizedStatus) || statusOptions[0]!;
 
   // 팝오버 위치 계산
@@ -146,11 +154,16 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
 
   const handleStatusChange = async (newStatus: AttendanceStatus) => {
     
-    if (newStatus === currentStatus || isUpdating) return;
+    if (newStatus === localStatus || isUpdating) return;
+    
+    // 즉시 UI 업데이트 (Optimistic Update)
+    setLocalStatus(newStatus);
     
     // 출근 상태로 변경 시 출근 시간이 미정인지 확인
     if (newStatus === 'checked_in' && (!scheduledStartTime || scheduledStartTime === '미정')) {
       showError('출근 시간이 설정되지 않았습니다. 먼저 출근 시간을 설정해주세요.');
+      // 실패 시 원래 상태로 복원
+      setLocalStatus(currentStatus);
       return;
     }
 
@@ -168,12 +181,25 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     
     // WorkLog 객체 생성 for Optimistic Update
     const now = Timestamp.now();
+    const workLogDate = targetDate || getTodayString();
+    
+    logger.info('🔍 AttendanceStatusPopover WorkLog 생성 디버깅', {
+      component: 'AttendanceStatusPopover',
+      data: {
+        targetDate,
+        workLogDate,
+        workLogId: targetWorkLogId,
+        staffId,
+        newStatus
+      }
+    });
+    
     const optimisticWorkLog: Partial<WorkLog> = {
       id: targetWorkLogId,
       eventId: eventId || 'default-event',
       staffId: staffId,
       staffName: staffName,
-      date: getTodayString(), // 오늘 날짜 사용
+      date: workLogDate, // 디버깅을 위해 변수로 분리
       role: 'staff', // 기본값
       status: newStatus as any,
       updatedAt: now,
@@ -291,8 +317,69 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           transaction.update(workLogRef, updateData);
           
         } else {
-          // 🚀 WorkLog가 존재하지 않으면 에러 발생 (스태프 확정 시 사전 생성되어야 함)
-          throw new Error(`WorkLog가 존재하지 않습니다. 스태프 확정 시 사전 생성되어야 합니다. ID: ${realWorkLogId}`);
+          // 🚀 WorkLog가 존재하지 않으면 새로 생성 (fallback 로직)
+          logger.info('🔍 WorkLog가 존재하지 않아 새로 생성합니다', {
+            component: 'AttendanceStatusPopover',
+            data: {
+              생성될_WorkLog_ID: realWorkLogId,
+              staffId,
+              eventId,
+              targetDate: workLogDate,
+              원본_workLogId: workLogId
+            }
+          });
+          
+          const newWorkLogData: Record<string, any> = {
+            id: realWorkLogId,
+            eventId: eventId || 'default-event',
+            staffId: staffId,
+            staffName: staffName,
+            date: workLogDate,
+            role: 'staff',
+            status: newStatus,
+            createdAt: now,
+            updatedAt: now
+          };
+
+          // 출근 상태로 생성 시 actualStartTime 설정
+          if (newStatus === 'checked_in') {
+            newWorkLogData.actualStartTime = now;
+          }
+          // 퇴근 상태로 생성 시 actualEndTime도 설정
+          if (newStatus === 'checked_out') {
+            newWorkLogData.actualStartTime = now;
+            newWorkLogData.actualEndTime = now;
+          }
+          
+          // 스케줄된 시간이 있으면 추가
+          if (scheduledStartTime instanceof Timestamp) {
+            newWorkLogData.scheduledStartTime = scheduledStartTime;
+          }
+          if (scheduledEndTime instanceof Timestamp) {
+            newWorkLogData.scheduledEndTime = scheduledEndTime;
+          }
+
+          transaction.set(workLogRef, newWorkLogData);
+          
+          // 생성 완료 로깅
+          logger.info('✅ 새 WorkLog 생성 완료', {
+            component: 'AttendanceStatusPopover',
+            data: {
+              저장된_WorkLog_ID: realWorkLogId,
+              저장된_데이터: newWorkLogData
+            }
+          });
+        }
+      });
+
+      // 트랜잭션 완료 후 로깅
+      logger.info('🎯 Firebase 트랜잭션 완료', {
+        component: 'AttendanceStatusPopover',
+        data: {
+          처리된_WorkLog_ID: realWorkLogId,
+          newStatus,
+          staffId,
+          targetDate: workLogDate
         }
       });
 
@@ -302,6 +389,9 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       
     } catch (error) {
       logger.error('AttendanceStatusPopover 상태 변경 오류', error instanceof Error ? error : new Error(String(error)));
+      
+      // 에러 발생 시 localStatus를 원래 상태로 복원
+      setLocalStatus(currentStatus);
       
       // 🚀 3단계: 에러 발생 시 Optimistic Update 롤백
       const rollbackWorkLog: Partial<WorkLog> = {
@@ -395,15 +485,13 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
               
               return (
                 <div className="text-xs opacity-75">
-                  {actualStartTime && <div>출근: {formatTime(actualStartTime)}</div>}
                   {actualEndTime && <div>퇴근: {formatTime(actualEndTime)}</div>}
                   <div className="font-semibold text-blue-600">근무: {timeString}</div>
                 </div>
               );
             }
-            return actualStartTime ? (
+            return actualEndTime ? (
               <div className="text-xs opacity-75">
-                <div>출근: {formatTime(actualStartTime)}</div>
                 {actualEndTime && <div>퇴근: {formatTime(actualEndTime)}</div>}
               </div>
             ) : null;
