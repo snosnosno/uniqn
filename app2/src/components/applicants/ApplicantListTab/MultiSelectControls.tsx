@@ -382,9 +382,6 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                                 );
                               })()}
                               <span className="font-medium text-gray-700 ml-2">{timeGroup.timeSlot}</span>
-                              {hasConflict && (
-                                <span className="ml-2 text-xs text-red-600 font-medium">(날짜 중복)</span>
-                              )}
                             </span>
                           </div>
                         </label>
@@ -420,13 +417,13 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
             const timeGroups = Array.from(timeGroupsMap.values());
             
             return (
-              <div key={`${dateGroup.date}-unified-${cardIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div key={`${dateGroup.date}-unified-${cardIndex}`} className="border border-green-300 rounded-lg overflow-hidden">
                 {/* 날짜 헤더 */}
-                <div className="bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-gray-200">
+                <div className="bg-green-100 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <span className="text-sm sm:text-base">📅</span>
-                      <span className="text-xs sm:text-sm font-medium text-gray-800">
+                      <span className="text-xs sm:text-sm font-medium text-green-800">
                         {dateGroup.date === 'no-date' ? '날짜 미정' : dateGroup.displayDate} (1일)
                       </span>
                     </div>
@@ -437,7 +434,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                 </div>
 
                 {/* 시간대별로 그룹화된 선택 항목들 */}
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-green-100">
                   {timeGroups.map((timeGroup, timeGroupIndex: number) => (
                     <div key={`${dateGroup.date}-${timeGroup.time}-unified-${timeGroupIndex}`} className="p-2 sm:p-3">
                       <div className="space-y-2">

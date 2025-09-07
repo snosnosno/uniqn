@@ -574,7 +574,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   // Early return if no job posting data
   if (!jobPosting) {
     return (
-      <div className="p-6">
+      <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
           <div className="text-lg text-gray-500">공고 정보를 불러올 수 없습니다.</div>
         </div>
@@ -584,7 +584,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   if (loading?.initial) {
     return (
-      <div className="p-6">
+      <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600 ml-4">{t('common.loading')}</p>
@@ -602,7 +602,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         visibleItems={mobileVirtualization.shouldVirtualize ? mobileVirtualization.maxVisibleItems : desktopVirtualization.shouldVirtualize ? desktopVirtualization.maxVisibleItems : filteredStaffCount}
         onMetricsUpdate={onMetricsUpdate}
       >
-        <div className="p-6">
+        <div className="p-1 sm:p-4">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
           

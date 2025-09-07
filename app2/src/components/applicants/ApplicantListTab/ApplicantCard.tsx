@@ -37,7 +37,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
   } : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
+    <div className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2.5">
       {/* 모바일 최적화된 레이아웃 */}
       <div className="space-y-2">
         

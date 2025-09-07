@@ -177,7 +177,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   }
 
   return (
-    <div className="p-2 sm:p-6">
+    <div className="p-1 sm:p-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-base md:text-lg font-medium">
           {loadingApplicants ? (
