@@ -63,7 +63,7 @@ export interface WorkLog {
   overtimeHours?: number;
   earlyLeaveHours?: number;
   notes?: string;
-  status?: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
+  status?: 'scheduled' | 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

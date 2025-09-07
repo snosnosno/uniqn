@@ -158,7 +158,7 @@ const transformWorkLogData = (doc: DocumentData): WorkLog => ({
   overtimeHours: doc.overtimeHours,
   earlyLeaveHours: doc.earlyLeaveHours,
   notes: doc.notes,
-  status: doc.status || 'scheduled',
+  status: doc.status === 'scheduled' ? 'not_started' : (doc.status || 'not_started'),
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
 });

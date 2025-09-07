@@ -387,9 +387,21 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   // 🎯 출석 상태 관련 헬퍼 함수들 - 단순화
   const getStaffAttendanceStatus = useCallback((staffId: string) => {
-    const record = attendanceRecords.find(record => (record as any).staffId === staffId);
-    return (record as any)?.status || 'absent';
-  }, [attendanceRecords]);
+    // WorkLogs에서 직접 출석상태 계산 (실시간 반영)
+    const today = getTodayString();
+    const workLog = Array.from(state.workLogs.values()).find(wl => 
+      wl.staffId && wl.staffId.startsWith(staffId) && wl.date === today
+    );
+    
+    if (workLog && workLog.status) {
+      // 'scheduled' 상태는 'not_started'로 매핑
+      if (workLog.status === 'scheduled') return 'not_started';
+      return workLog.status;
+    }
+    
+    // WorkLog가 없으면 기본값
+    return 'not_started';
+  }, [state.workLogs]);
   
   const applyOptimisticUpdate = useCallback((workLogId: string, status: string) => {
     // 🚀 AttendanceStatusPopover에서 호출되는 Optimistic Update 콜백

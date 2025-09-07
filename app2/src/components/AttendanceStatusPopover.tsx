@@ -17,7 +17,7 @@ export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 interface AttendanceStatusPopoverProps {
   workLogId: string;
-  currentStatus: AttendanceStatus;
+  currentStatus: AttendanceStatus | 'scheduled';
   staffId: string;
   staffName?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -81,7 +81,9 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     }
   ];
 
-  const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0]!;
+  // 'scheduled' 상태는 'not_started'로 매핑하여 처리 (기존 데이터 호환성)
+  const normalizedStatus = currentStatus === 'scheduled' ? 'not_started' : currentStatus;
+  const currentOption = statusOptions.find(option => option.value === normalizedStatus) || statusOptions[0]!;
 
   // 팝오버 위치 계산
   useEffect(() => {
@@ -261,6 +263,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         
         if (docSnap.exists()) {
           // ✅ 기존 workLog 업데이트 - actual 시간과 상태만 업데이트 (scheduled 시간 유지)
+          // UI 상태를 Firebase에 그대로 저장 (변환하지 않음)
           const updateData: Record<string, any> = {
             status: newStatus,
             updatedAt: now
@@ -341,12 +344,12 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       
       // 레거시 콜백 롤백 (호환성 유지)
       if (applyOptimisticUpdate) {
-        applyOptimisticUpdate(targetWorkLogId, currentStatus);
+        applyOptimisticUpdate(targetWorkLogId, normalizedStatus);
       }
       
       // 에러 콜백 실행 (원래 상태로 복원)
       if (onStatusChange) {
-        onStatusChange(currentStatus);
+        onStatusChange(normalizedStatus);
       }
       
       showError('출석 상태 변경 중 오류가 발생했습니다.');
