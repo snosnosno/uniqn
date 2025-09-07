@@ -19,8 +19,32 @@ export interface Staff {
   role: string;
   phone?: string;
   email?: string;
+  // 지원자 확정 시 배정 정보
+  assignedRole?: string;    // 지원자에서 확정된 역할
+  assignedTime?: string;    // 지원자에서 확정된 시간 (예: "09:00~18:00")
+  assignedDate?: string;    // 지원자에서 확정된 날짜 (예: "2025-01-06")
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  
+  // users 컬렉션 연결용 (필수)
+  userId?: string;          // users 컬렉션과 연결하는 사용자 ID
+  
+  // 원래 지원 정보
+  postingId?: string;       // 원래 지원한 공고 ID (사전질문 조회용)
+  
+  // 추가 개인정보 (users에서 조회한 캐시용)
+  gender?: string;          // 성별 (male/female/other)
+  age?: number;             // 나이
+  experience?: string;      // 경력 (예: "2년")
+  nationality?: string;     // 국적 (KR/US/JP 등)
+  region?: string;          // 지역 (seoul/gyeonggi 등)
+  history?: string;         // 이력
+  notes?: string;           // 기타 메모
+  
+  // 은행 정보 (users에서 조회한 캐시용)
+  bankName?: string;        // 은행명
+  bankAccount?: string;     // 계좌번호
+  residentId?: string;      // 주민등록번호 뒷자리
 }
 
 export interface WorkLog {
@@ -288,6 +312,11 @@ export interface UnifiedDataContextType {
     cacheHitRate: number;
     averageQueryTime: number;
   };
+  
+  // Optimistic Updates
+  updateWorkLogOptimistic: (workLog: WorkLog) => void;
+  updateAttendanceOptimistic: (record: AttendanceRecord) => void;
+  updateStaffOptimistic: (staff: Staff) => void;
 }
 
 // 초기 상태

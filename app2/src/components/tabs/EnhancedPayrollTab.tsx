@@ -49,9 +49,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     
     return filteredWorkLogs.map(workLog => ({
       ...workLog,
-      // 상태 변환 통일 - 모든 탭에서 동일한 상태 사용
-      status: workLog.status === 'checked_in' ? 'in_progress' as const :
-              workLog.status === 'checked_out' ? 'completed' as const :
+      // 상태 변환 통일 - UnifiedWorkLog 타입과 호환
+      status: workLog.status === 'checked_in' ? 'checked_in' as const :
+              workLog.status === 'checked_out' ? 'checked_out' as const :
               workLog.status === 'completed' ? 'completed' as const :
               workLog.status === 'absent' ? 'cancelled' as const :
               workLog.status || 'scheduled' as const

@@ -44,13 +44,102 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>([]);
 
+  // 사전질문 답변 로드 함수
+  const loadPreQuestionAnswers = async (staff: StaffData, userId: string) => {
+    try {
+      // postingId 확인 (여러 필드에서 확인)
+      const eventId = staff?.postingId;
+      if (!eventId) {
+        logger.debug('postingId를 찾을 수 없습니다:', { 
+          component: 'StaffProfileModal', 
+          data: { staff: staff?.name, postingId: eventId } 
+        });
+        return;
+      }
+
+      logger.debug('🔍 사전질문 답변 조회 시작:', { 
+        component: 'StaffProfileModal', 
+        data: { eventId, userId, staffName: staff.name }
+      });
+
+      const applicationsRef = collection(db, 'applications');
+      const q = query(
+        applicationsRef, 
+        where('eventId', '==', eventId),
+        where('applicantId', '==', userId)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // 가장 최근 지원서를 사용 (여러 개 있을 경우)
+        const applications = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt,
+            preQuestionAnswers: data.preQuestionAnswers
+          };
+        });
+        
+        // createdAt 기준으로 정렬하여 가장 최근 것 사용
+        applications.sort((a, b) => {
+          const aTime = a.createdAt?.toMillis?.() || 0;
+          const bTime = b.createdAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
+
+        const latestApplication = applications[0];
+        if (latestApplication && latestApplication.preQuestionAnswers) {
+          logger.debug('🔍 사전질문 답변 로드 성공:', { 
+            component: 'StaffProfileModal', 
+            data: { 
+              count: latestApplication.preQuestionAnswers.length,
+              applicationId: latestApplication.id 
+            }
+          });
+          setPreQuestionAnswers(latestApplication.preQuestionAnswers);
+        } else {
+          logger.debug('사전질문 답변이 없습니다:', { 
+            component: 'StaffProfileModal', 
+            data: { applicationId: latestApplication?.id }
+          });
+        }
+      } else {
+        logger.debug('해당하는 지원서를 찾을 수 없습니다:', { 
+          component: 'StaffProfileModal', 
+          data: { eventId, userId }
+        });
+      }
+    } catch (error) {
+      logger.error('사전질문 답변 로드 오류:', error instanceof Error ? error : new Error(String(error)), { 
+        component: 'StaffProfileModal',
+        data: { eventId: staff?.postingId, userId }
+      });
+    }
+  };
+
   // 사용자 프로필 데이터 가져오기
   useEffect(() => {
     const fetchUserProfile = async () => {
-      // staff.userId 또는 staff.id를 사용 (staff 컬렉션에서 userId가 실제 사용자 ID)
-      const userId = staff?.userId || staff?.id;
+      if (!staff) return;
+      
+      // staff 데이터에 이미 추가 정보가 있는지 확인
+      const hasExtendedInfo = staff.gender || staff.age || staff.experience || staff.nationality;
+      
+      if (hasExtendedInfo) {
+        // staff 데이터에 이미 추가 정보가 포함되어 있으면 바로 사용
+        logger.debug('🔍 Staff 데이터에서 추가 정보 사용:', { component: 'StaffProfileModal', data: staff });
+        setUserProfile(staff as ProfileData);
+        setLoading(false);
+        return;
+      }
+      
+      // staff 데이터에 추가 정보가 없으면 users 컬렉션에서 조회
+      const userId = staff.userId || staff.id;
       if (!userId) {
         logger.debug('userId를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: staff });
+        setUserProfile(staff as ProfileData);
         return;
       }
       
@@ -65,20 +154,20 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           logger.debug('🔍 사용자 프로필 데이터 로드:', { component: 'StaffProfileModal', data: userData });
           setUserProfile({
             ...staff,
-            ...userData,
-            // userData의 값들을 우선 사용
+            // userData의 값들을 우선 사용 (staff에 없는 경우)
+            nationality: staff.nationality || userData.nationality,
+            region: staff.region || userData.region,
+            age: staff.age || userData.age,
+            experience: staff.experience || userData.experience,
+            gender: staff.gender || userData.gender,
+            bankName: staff.bankName || userData.bankName,
+            bankAccount: staff.bankAccount || userData.bankAccount,
+            residentId: staff.residentId || userData.residentId,
+            history: staff.history || userData.history,
+            notes: staff.notes || userData.notes,
+            // 평점은 users에서만 가져옴 (제외 요청되었지만 기존 코드 호환성)
             rating: userData.rating,
-            ratingCount: userData.ratingCount,
-            nationality: userData.nationality,
-            region: userData.region,
-            age: userData.age,
-            experience: userData.experience,
-            gender: userData.gender,
-            bankName: userData.bankName,
-            bankAccount: userData.bankAccount,
-            residentId: userData.residentId,
-            history: userData.history,
-            notes: userData.notes || staff.notes
+            ratingCount: userData.ratingCount
           } as ProfileData);
         } else {
           logger.debug('사용자 프로필 문서를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: userId });
@@ -86,26 +175,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         }
 
         // 사전질문 답변 가져오기
-        if (staff?.postingId) {
-          const applicationsRef = collection(db, 'applications');
-          const q = query(
-            applicationsRef, 
-            where('eventId', '==', staff.postingId),
-            where('applicantId', '==', userId)
-          );
-          const querySnapshot = await getDocs(q);
-          
-          if (!querySnapshot.empty && querySnapshot.docs[0]) {
-            const applicationData = querySnapshot.docs[0].data();
-            if (applicationData.preQuestionAnswers) {
-              logger.debug('🔍 사전질문 답변 로드:', { 
-                component: 'StaffProfileModal', 
-                data: applicationData.preQuestionAnswers 
-              });
-              setPreQuestionAnswers(applicationData.preQuestionAnswers);
-            }
-          }
-        }
+        await loadPreQuestionAnswers(staff, userId);
       } catch (error) {
         logger.error('사용자 프로필 로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffProfileModal' });
         setUserProfile(staff as ProfileData);
@@ -253,7 +323,25 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           )}
         </div>
 
-          
+        {/* 사전질문 답변 */}
+        {preQuestionAnswers && preQuestionAnswers.length > 0 && (
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">사전질문 답변</h3>
+            <div className="space-y-3">
+              {preQuestionAnswers.map((answer, index) => (
+                <div key={answer.questionId || index} className="border-l-2 border-yellow-300 pl-3">
+                  <p className="text-xs font-medium text-gray-600 mb-1">
+                    Q{index + 1}. {answer.question}
+                  </p>
+                  <p className="text-sm text-gray-800">
+                    {answer.answer || '답변 없음'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 연락처 정보 */}
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="space-y-3">
@@ -330,25 +418,6 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             {extendedStaff.notes || staff.notes || '없음'}
           </p>
         </div>
-
-        {/* 사전질문 답변 */}
-        {preQuestionAnswers && preQuestionAnswers.length > 0 && (
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">사전질문 답변</h3>
-            <div className="space-y-3">
-              {preQuestionAnswers.map((answer, index) => (
-                <div key={answer.questionId || index} className="border-l-2 border-yellow-300 pl-3">
-                  <p className="text-xs font-medium text-gray-600 mb-1">
-                    Q{index + 1}. {answer.question}
-                  </p>
-                  <p className="text-sm text-gray-800">
-                    {answer.answer || '답변 없음'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
     </Modal>

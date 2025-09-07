@@ -115,8 +115,32 @@ const transformStaffData = (doc: DocumentData): Staff => ({
   role: doc.role || '',
   phone: doc.phone,
   email: doc.email,
+  // 지원자 확정 시 배정 정보 추가
+  assignedRole: doc.assignedRole,
+  assignedTime: doc.assignedTime,
+  assignedDate: doc.assignedDate,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
+  
+  // users 컬렉션 연결용
+  userId: doc.userId || doc.id, // userId가 없으면 id 사용 (하위 호환성)
+  
+  // 원래 지원 정보
+  postingId: doc.postingId,
+  
+  // 추가 개인정보 (persons에서 가져온 경우)
+  gender: doc.gender,
+  age: typeof doc.age === 'string' ? parseInt(doc.age, 10) : doc.age,
+  experience: doc.experience,
+  nationality: doc.nationality,
+  region: doc.region,
+  history: doc.history,
+  notes: doc.notes,
+  
+  // 은행 정보
+  bankName: doc.bankName,
+  bankAccount: doc.bankAccount,
+  residentId: doc.residentId,
 });
 
 const transformWorkLogData = (doc: DocumentData): WorkLog => ({

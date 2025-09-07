@@ -102,8 +102,8 @@ export interface UnifiedWorkLog {
   overtime?: number;
   
   // 상태
-  /** 근무 상태 */
-  status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  /** 근무 상태 - 출석 상태와 통합 */
+  status?: 'scheduled' | 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
   
   // 테이블/위치 정보 (딜러용)
   /** 테이블 배정 정보 */
@@ -148,7 +148,7 @@ export interface WorkLogCreateInput {
   scheduledStartTime?: string | Timestamp | null;
   scheduledEndTime?: string | Timestamp | null;
   role?: string;
-  status?: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status?: 'scheduled' | 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
 }
 
 /**
@@ -253,7 +253,9 @@ export const validateWorkLog = (data: any): { isValid: boolean; errors: string[]
  */
 export const WORKLOG_STATUS = {
   SCHEDULED: 'scheduled',
-  IN_PROGRESS: 'in_progress',
+  NOT_STARTED: 'not_started',
+  CHECKED_IN: 'checked_in',
+  CHECKED_OUT: 'checked_out',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled'
 } as const;

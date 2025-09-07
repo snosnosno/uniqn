@@ -105,7 +105,15 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
         component: 'UnifiedDataContext',
         data: { 
           count: action.data.length,
-          staffIds: action.data.slice(0, 3).map(s => s.staffId)
+          staffIds: action.data.slice(0, 3).map(s => s.staffId),
+          sampleStaff: action.data.slice(0, 1).map(s => ({
+            name: s.name,
+            phone: s.phone,
+            email: s.email,
+            assignedDate: s.assignedDate,
+            assignedTime: s.assignedTime,
+            assignedRole: s.assignedRole
+          }))
         }
       });
       
@@ -755,6 +763,49 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     };
   }, []);
 
+  // Optimistic Updates
+  const updateWorkLogOptimistic = useCallback((workLog: WorkLog) => {
+    dispatch({ type: 'UPDATE_WORK_LOG', workLog });
+    
+    // 3초 후 실제 데이터로 갱신
+    setTimeout(() => {
+      refresh('workLogs');
+    }, 3000);
+    
+    logger.info('WorkLog Optimistic Update 적용', { 
+      component: 'UnifiedDataContext', 
+      data: { workLogId: workLog.id, staffId: workLog.staffId } 
+    });
+  }, [refresh]);
+
+  const updateAttendanceOptimistic = useCallback((record: AttendanceRecord) => {
+    dispatch({ type: 'UPDATE_ATTENDANCE_RECORD', record });
+    
+    // 3초 후 실제 데이터로 갱신
+    setTimeout(() => {
+      refresh('attendanceRecords');
+    }, 3000);
+    
+    logger.info('AttendanceRecord Optimistic Update 적용', { 
+      component: 'UnifiedDataContext', 
+      data: { recordId: record.id, staffId: record.staffId, status: record.status } 
+    });
+  }, [refresh]);
+
+  const updateStaffOptimistic = useCallback((staff: Staff) => {
+    dispatch({ type: 'UPDATE_STAFF', staff });
+    
+    // 3초 후 실제 데이터로 갱신
+    setTimeout(() => {
+      refresh('staff');
+    }, 3000);
+    
+    logger.info('Staff Optimistic Update 적용', { 
+      component: 'UnifiedDataContext', 
+      data: { staffId: staff.staffId, name: staff.name } 
+    });
+  }, [refresh]);
+
   // Context value
   const contextValue: UnifiedDataContextType = {
     state,
@@ -770,6 +821,9 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     getStats,
     refresh,
     getPerformanceMetrics,
+    updateWorkLogOptimistic,
+    updateAttendanceOptimistic,
+    updateStaffOptimistic,
   };
 
   return (

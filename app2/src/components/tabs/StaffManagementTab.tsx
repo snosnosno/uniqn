@@ -6,7 +6,7 @@
  * @since 2025-02-04
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
@@ -68,16 +68,35 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     if (!state.staff || state.staff.size === 0) return [];
     
     return Array.from(state.staff.values()).map(staff => {
-      const staffAny = staff as any; // 안전한 타입 변환
       return {
         id: staff.staffId,
+        userId: staff.userId || staff.staffId, // userId 추가 (하위 호환성)
         staffId: staff.staffId,
         name: staff.name || '이름 미정',
         role: staff.role || '',
-        assignedRole: staffAny.assignedRole || '',
-        assignedTime: staffAny.assignedTime || '',
-        assignedDate: staffAny.assignedDate || '',
-        status: staffAny.status || 'active'
+        // 연락처 정보
+        phone: staff.phone,
+        email: staff.email,
+        // 지원자 확정 정보
+        assignedRole: staff.assignedRole || '',
+        assignedTime: staff.assignedTime || '',
+        assignedDate: staff.assignedDate || '',
+        // 원래 지원 정보
+        postingId: staff.postingId,
+        postingTitle: '', // TODO: jobPosting 정보와 연결 필요
+        // 추가 개인정보
+        gender: staff.gender,
+        age: staff.age,
+        experience: staff.experience,
+        nationality: staff.nationality,
+        region: staff.region,
+        history: staff.history,
+        notes: staff.notes,
+        // 은행 정보
+        bankName: staff.bankName,
+        bankAccount: staff.bankAccount,
+        // 기타
+        status: 'active' // 기본값
       };
     });
   }, [state.staff]);
@@ -142,7 +161,33 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   // 🎯 필터링 상태 - 내장 상태로 관리 (복잡한 훅 제거)
   const [filters, setFilters] = useState({ searchTerm: '' });
-  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  
+  // 🎯 날짜 확장 상태 - localStorage와 연동
+  const getStorageKey = useCallback(() => `staff-expanded-dates-${jobPosting?.id || 'default'}`, [jobPosting?.id]);
+  
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(() => {
+    try {
+      const storageKey = `staff-expanded-dates-${jobPosting?.id || 'default'}`;
+      const stored = localStorage.getItem(storageKey);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch (error) {
+      logger.warn('expandedDates localStorage 복원 실패:', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      return new Set();
+    }
+  });
+
+  // localStorage에 expandedDates 저장
+  useEffect(() => {
+    try {
+      localStorage.setItem(getStorageKey(), JSON.stringify(Array.from(expandedDates)));
+    } catch (error) {
+      logger.warn('expandedDates localStorage 저장 실패:', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  }, [expandedDates, getStorageKey]);
   
   const toggleDateExpansion = useCallback((date: string) => {
     setExpandedDates(prev => {

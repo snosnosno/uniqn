@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaClock, FaCheckCircle } from './Icons/ReactIconsReplacement';
-import { doc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, Timestamp, runTransaction } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -39,7 +39,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   eventId,
   onStatusChange,
   actualStartTime,
-  // actualEndTime,
+  actualEndTime,
   canEdit = true,
   scheduledStartTime,
   scheduledEndTime,
@@ -169,7 +169,10 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     try {
       const now = Timestamp.now();
       
-      // virtual_ 프리픽스가 있으면 새로운 workLog 생성
+      // 🔄 통합 WorkLog 업데이트 로직 - 항상 동일한 workLog ID 사용
+      let realWorkLogId = workLogId;
+      
+      // virtual_ 프리픽스가 있으면 실제 workLog ID로 변환
       if (workLogId.startsWith('virtual_')) {
         // 날짜 형식 파싱을 더 안전하게 처리
         const parts = workLogId.split('_');
@@ -197,107 +200,80 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           date = getTodayString();
         }
         
+        realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_0_${date}`;
+      }
+      
+      // 🚀 통합 workLog 업데이트 - 트랜잭션 사용
+      const workLogRef = doc(db, 'workLogs', realWorkLogId);
+      
+      // 트랜잭션을 사용하여 원자적 업데이트 보장
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(workLogRef);
         
-        // eventId가 없으면 기본값 사용
-        
-        const realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_${date}`;
-        
-        
-        const newWorkLogData = {
-          eventId: eventId || 'default-event',
-          staffId: actualStaffId,
-          staffName: staffName || 'Unknown',
-          date: date,
-          status: newStatus,
-          scheduledStartTime: null as Timestamp | null,
-          scheduledEndTime: null as Timestamp | null,
-          actualStartTime: null as Timestamp | null,
-          actualEndTime: null as Timestamp | null,
-          createdAt: now,
-          updatedAt: now
-        };
-        
-        // 출근 상태로 변경 시 actualStartTime 설정
-        if (newStatus === 'checked_in') {
-          newWorkLogData.actualStartTime = now;
-        }
-        // 퇴근 상태로 변경 시 actualEndTime 설정
-        if (newStatus === 'checked_out') {
-          newWorkLogData.actualEndTime = now;
-          // actualStartTime이 없으면 현재 시간으로 설정
-          if (!newWorkLogData.actualStartTime) {
-            newWorkLogData.actualStartTime = now;
-          }
-        }
-        
-        const workLogRef = doc(db, 'workLogs', realWorkLogId);
-        await setDoc(workLogRef, newWorkLogData);
-        
-      } else {
-        // 기존 workLog 업데이트 또는 생성
-        const updateData: Record<string, any> = {
-          status: newStatus,
-          updatedAt: now
-        };
+        if (docSnap.exists()) {
+          // ✅ 기존 workLog 업데이트 - actual 시간과 상태만 업데이트 (scheduled 시간 유지)
+          const updateData: Record<string, any> = {
+            status: newStatus,
+            updatedAt: now
+          };
 
-        // 출근 상태로 변경 시 actualStartTime 설정
-        if (newStatus === 'checked_in') {
-          updateData.actualStartTime = now;
-        }
-        // 퇴근 상태로 변경 시 actualEndTime 설정
-        if (newStatus === 'checked_out') {
-          updateData.actualEndTime = now;
-          // actualStartTime이 없으면 현재 시간으로 설정
-          if (!actualStartTime) {
+          // 출근 상태로 변경 시 actualStartTime 설정
+          if (newStatus === 'checked_in') {
             updateData.actualStartTime = now;
           }
-        }
-
-        const workLogRef = doc(db, 'workLogs', workLogId);
-        
-        try {
-          // 먼저 문서 업데이트 시도
-          await updateDoc(workLogRef, updateData);
-        } catch (updateError: any) {
-          // 문서가 존재하지 않는 경우 생성
-          if (updateError.code === 'not-found' || updateError.message?.includes('No document to update')) {
-            // workLog 문서가 없어서 새로 생성
-            
-            // workLogId에서 정보 추출 (eventId_staffId_date 형식)
-            const parts = workLogId.split('_');
-            let extractedEventId = eventId || 'default-event';
-            let extractedStaffId = staffId;
-            let extractedDate = getTodayString();
-            
-            if (parts.length >= 3) {
-              // 첫 번째 부분은 eventId, 마지막 부분은 날짜, 중간은 staffId
-              extractedEventId = parts[0] || 'default-event';
-              extractedDate = parts[parts.length - 1] || getTodayString();
-              // 중간 부분들을 모두 합쳐서 staffId로 처리 (언더스코어가 포함된 staffId 처리)
-              extractedStaffId = parts.slice(1, -1).join('_');
+          // 퇴근 상태로 변경 시 actualEndTime 설정
+          if (newStatus === 'checked_out') {
+            updateData.actualEndTime = now;
+            // actualStartTime이 없으면 현재 시간으로 설정
+            const existingData = docSnap.data();
+            if (!existingData?.actualStartTime) {
+              updateData.actualStartTime = now;
             }
-            
-            const newWorkLogData = {
-              eventId: extractedEventId,
-              staffId: extractedStaffId,
-              staffName: staffName || 'Unknown',
-              date: extractedDate,
-              status: newStatus,
-              scheduledStartTime: null as Timestamp | null,
-              scheduledEndTime: null as Timestamp | null,
-              actualStartTime: null as Timestamp | null,
-              actualEndTime: null as Timestamp | null,
-              createdAt: now,
-              updatedAt: now
-            };
-            
-            await setDoc(workLogRef, newWorkLogData);
-          } else {
-            // 다른 종류의 오류는 다시 throw
-            throw updateError;
           }
+          // 출근 전으로 변경 시 actual 시간들 초기화
+          if (newStatus === 'not_started') {
+            updateData.actualStartTime = null;
+            updateData.actualEndTime = null;
+          }
+
+          transaction.update(workLogRef, updateData);
+          
+        } else {
+          // ❌ workLog가 존재하지 않으면 새로 생성 (WorkTimeEditor에서 먼저 생성되어야 함)
+          // workLogId에서 정보 추출
+          const parts = realWorkLogId.split('_');
+          let extractedEventId = eventId || 'default-event';
+          let extractedStaffId = staffId;
+          let extractedDate = getTodayString();
+          
+          if (parts.length >= 4) {
+            extractedEventId = parts[0] || 'default-event';
+            extractedDate = parts[parts.length - 1] || getTodayString();
+            // staffId_0 부분에서 staffId만 추출
+            extractedStaffId = parts.slice(1, -2).join('_');
+          }
+          
+          const newWorkLogData = {
+            eventId: extractedEventId,
+            staffId: extractedStaffId,
+            staffName: staffName || 'Unknown',
+            date: extractedDate,
+            role: 'floor', // 기본 역할
+            type: 'manual',
+            status: newStatus,
+            // scheduled 시간은 null로 초기화 (WorkTimeEditor에서 설정)
+            scheduledStartTime: null,
+            scheduledEndTime: null,
+            // actual 시간 설정
+            actualStartTime: newStatus === 'checked_in' || newStatus === 'checked_out' ? now : null,
+            actualEndTime: newStatus === 'checked_out' ? now : null,
+            createdAt: now,
+            updatedAt: now
+          };
+          
+          transaction.set(workLogRef, newWorkLogData);
         }
-      }
+      });
 
       // 3. 성공 메시지 표시
       const statusLabel = statusOptions.find(opt => opt.value === newStatus)?.label || newStatus;
@@ -349,14 +325,28 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
             <span className="text-xs opacity-75">출근: {formatTime(actualStartTime)}</span>
           )}
           {currentStatus === 'checked_out' && (() => {
+            // scheduled 시간으로 근무시간 계산 (급여 정산용)
             const totalMinutes = calculateMinutes(scheduledStartTime, scheduledEndTime);
+            
             if (totalMinutes > 0) {
               const hours = Math.floor(totalMinutes / 60);
               const minutes = totalMinutes % 60;
               const timeString = `${hours}:${minutes.toString().padStart(2, '0')}`;
-              return <span className="text-xs opacity-75">근무: {timeString}</span>;
+              
+              return (
+                <div className="text-xs opacity-75">
+                  {actualStartTime && <div>출근: {formatTime(actualStartTime)}</div>}
+                  {actualEndTime && <div>퇴근: {formatTime(actualEndTime)}</div>}
+                  <div className="font-semibold text-blue-600">근무: {timeString}</div>
+                </div>
+              );
             }
-            return null;
+            return actualStartTime ? (
+              <div className="text-xs opacity-75">
+                <div>출근: {formatTime(actualStartTime)}</div>
+                {actualEndTime && <div>퇴근: {formatTime(actualEndTime)}</div>}
+              </div>
+            ) : null;
           })()}
         </div>
       </button>

@@ -113,31 +113,35 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     // getStaffWorkLog을 사용하여 workLog 데이터 가져오기
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
-    // workLogs의 scheduledStartTime을 우선 사용 (날짜별 개별 시간 관리)
-    // staff.assignedTime이 없으면 staff.timeSlot 사용
-    let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot;
+    // 🔥 workLog의 scheduledStartTime을 최우선 사용 (실시간 Firebase 데이터)
+    let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot; // fallback값
+    
     if (workLog?.scheduledStartTime) {
       try {
         // Timestamp를 시간 문자열로 변환
-        let timeDate: Date;
         if (typeof workLog.scheduledStartTime === 'string') {
           // 문자열인 경우 그대로 사용
           scheduledStartTime = workLog.scheduledStartTime;
         } else if (workLog.scheduledStartTime && typeof workLog.scheduledStartTime === 'object' && 'toDate' in workLog.scheduledStartTime) {
-          // Timestamp인 경우
-          timeDate = workLog.scheduledStartTime.toDate();
-          scheduledStartTime = timeDate.toLocaleTimeString('en-US', { 
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
-          });
+          // Timestamp인 경우 - 더 정확한 시간 포맷 사용
+          const timeDate = workLog.scheduledStartTime.toDate();
+          const hours = timeDate.getHours().toString().padStart(2, '0');
+          const minutes = timeDate.getMinutes().toString().padStart(2, '0');
+          scheduledStartTime = `${hours}:${minutes}`;
         }
+        logger.debug('workLog scheduledStartTime 사용', {
+          component: 'StaffRow',
+          data: { staffId: staff.id, scheduledStartTime }
+        });
       } catch (error) {
-        // 변환 실패시 staff의 assignedTime 사용
+        logger.warn('workLog 시간 변환 실패, fallback 사용', {
+          component: 'StaffRow',
+          data: { staffId: staff.id, error }
+        });
       }
     }
     
-    // 퇴근시간 - workLogs의 scheduledEndTime도 고려
+    // 🔥 퇴근시간 - workLog의 scheduledEndTime 최우선 사용
     let scheduledEndTime = null;
     if (workLog?.scheduledEndTime) {
       try {
@@ -145,16 +149,21 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           // 문자열인 경우 그대로 사용
           scheduledEndTime = workLog.scheduledEndTime;
         } else if (workLog.scheduledEndTime && typeof workLog.scheduledEndTime === 'object' && 'toDate' in workLog.scheduledEndTime) {
-          // Timestamp인 경우
+          // Timestamp인 경우 - 더 정확한 시간 포맷 사용
           const timeDate = workLog.scheduledEndTime.toDate();
-          scheduledEndTime = timeDate.toLocaleTimeString('en-US', { 
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
-          });
+          const hours = timeDate.getHours().toString().padStart(2, '0');
+          const minutes = timeDate.getMinutes().toString().padStart(2, '0');
+          scheduledEndTime = `${hours}:${minutes}`;
         }
+        logger.debug('workLog scheduledEndTime 사용', {
+          component: 'StaffRow',
+          data: { staffId: staff.id, scheduledEndTime }
+        });
       } catch (error) {
-        // 변환 실패시 fallback
+        logger.warn('workLog 퇴근시간 변환 실패', {
+          component: 'StaffRow',
+          data: { staffId: staff.id, error }
+        });
       }
     }
     

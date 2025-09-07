@@ -1,4 +1,4 @@
-import { doc, updateDoc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, Timestamp, getDoc, runTransaction } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -220,47 +220,65 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           endTime: endTime || '미정' 
         } });
       } else {
-        // 기존 WorkLog 업데이트 - 통합 시스템 사용
+        // 기존 WorkLog 업데이트 - 통합된 트랜잭션 기반 로직 사용
         const workLogRef = doc(db, 'workLogs', workLog.id);
         
-        // 기존 값을 유지하면서 업데이트할 데이터 준비
-        // 변경된 값만 업데이트하도록 수정
-        const updatePayload: any = {};
+        // 트랜잭션을 사용하여 원자적 업데이트 보장
+        await runTransaction(db, async (transaction) => {
+          const docSnap = await transaction.get(workLogRef);
+          
+          const updatePayload: any = {
+            updatedAt: Timestamp.now()
+          };
+          
+          // scheduled 시간만 업데이트 (actual 시간은 유지)
+          if (startTime === '') {
+            updatePayload.scheduledStartTime = null;
+          } else if (startTime && startTime.trim() !== '') {
+            updatePayload.scheduledStartTime = newStartTime;
+          } else {
+            updatePayload.scheduledStartTime = null;
+          }
+          
+          if (endTime === '') {
+            updatePayload.scheduledEndTime = null;
+          } else if (endTime && endTime.trim() !== '') {
+            updatePayload.scheduledEndTime = newEndTime;
+          } else {
+            updatePayload.scheduledEndTime = null;
+          }
+          
+          if (docSnap.exists()) {
+            // 기존 문서 업데이트 - actual 시간과 상태는 유지
+            transaction.update(workLogRef, updatePayload);
+          } else {
+            // 새 문서 생성 - 모든 필드 초기화
+            const newWorkLogData = {
+              eventId: workLog.eventId || '',
+              staffId: getStaffIdentifier(workLog),
+              staffName: workLog.staffName || '',
+              date: workLog.date,
+              role: workLog.assignedRole || workLog.role || 'dealer',
+              type: 'schedule',
+              status: 'scheduled',
+              // scheduled 시간 설정
+              scheduledStartTime: updatePayload.scheduledStartTime,
+              scheduledEndTime: updatePayload.scheduledEndTime,
+              // actual 시간은 null로 초기화
+              actualStartTime: null,
+              actualEndTime: null,
+              createdAt: Timestamp.now(),
+              updatedAt: Timestamp.now()
+            };
+            transaction.set(workLogRef, newWorkLogData);
+          }
+        });
         
-        // startTime 처리 - 항상 업데이트 (UI에 표시된 값 그대로 저장)
-        if (startTime === '') {
-          // 빈 문자열은 명시적으로 "미정"으로 설정
-          updatePayload.scheduledStartTime = null;
-        } else if (startTime && startTime.trim() !== '') {
-          // 새로운 값이 있으면 업데이트
-          updatePayload.scheduledStartTime = newStartTime;
-        } else {
-          // startTime이 undefined이거나 null인 경우 null로 설정
-          updatePayload.scheduledStartTime = null;
-        }
-        
-        // endTime 처리 - 항상 업데이트 (UI에 표시된 값 그대로 저장)
-        if (endTime === '') {
-          // 빈 문자열은 명시적으로 "미정"으로 설정
-          updatePayload.scheduledEndTime = null;
-        } else if (endTime && endTime.trim() !== '') {
-          // 새로운 값이 있으면 업데이트
-          updatePayload.scheduledEndTime = newEndTime;
-        } else {
-          // endTime이 undefined이거나 null인 경우 null로 설정
-          updatePayload.scheduledEndTime = null;
-        }
-        
-        // 항상 업데이트 수행 (시간 정보는 중요하므로 항상 저장)
-        const updateData = prepareWorkLogForUpdate(updatePayload);
-        
-        await updateDoc(workLogRef, updateData);
-        
-        logger.info('WorkLog 업데이트 완료', { component: 'WorkTimeEditor', data: { 
+        logger.info('WorkLog 통합 업데이트 완료', { component: 'WorkTimeEditor', data: { 
           id: workLog.id, 
           startTime: startTime || '미정',
           endTime: endTime || '미정',
-          updatePayload
+          transaction: true
         } });
       }
       

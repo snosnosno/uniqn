@@ -36,10 +36,16 @@ interface StaffData {
   age?: number;
   experience?: string;
   nationality?: string;
+  region?: string;          // 지역 정보 추가
   history?: string;
   notes?: string;
   postingId: string;
   postingTitle: string;
+  
+  // 은행 정보
+  bankName?: string;        // 은행명
+  bankAccount?: string;     // 계좌번호
+  residentId?: string;      // 주민등록번호 뒷자리
   assignedEvents?: string[]; // 스태프가 등록된 모든 공고 ID 배열
   assignedRole?: string;     // 지원자에서 확정된 역할
   /** @deprecated - workLog의 scheduledStartTime/scheduledEndTime 사용 권장. 하위 호환성을 위해 유지 */
