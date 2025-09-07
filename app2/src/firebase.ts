@@ -153,6 +153,7 @@ export const promoteToStaff = async (
         
         // 기본 정보
         userId,
+        staffId: documentId, // ✅ WorkLog과 매칭을 위한 staffId 추가
         name: userName,
         email: email || '',
         phone: phone || '',
@@ -189,6 +190,7 @@ export const promoteToStaff = async (
         
         // 기본 정보
         userId,
+        staffId: documentId, // ✅ WorkLog과 매칭을 위한 staffId 추가
         name: userName,
         email: email || '',
         phone: phone || '',

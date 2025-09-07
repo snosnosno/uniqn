@@ -16,6 +16,7 @@ import { useToast } from '../../hooks/useToast';
 import useUnifiedData from '../../hooks/useUnifiedData';
 import type { WorkLog } from '../../types/unifiedData';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
+import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLogSimplified';
 // createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
 
 // 유틸리티 imports
@@ -453,29 +454,62 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
   
   const getStaffWorkLog = useCallback((staffId: string, date: string) => {
-    // 🔧 WorkLog ID 패턴 수정: staffId가 이미 '_0' 포함하므로 추가 '_0' 제거
-    const workLogId = `${jobPosting?.id}_${staffId}_${date}`;
-    const workLog = state.workLogs?.get(workLogId) || null;
+    if (!jobPosting?.id) return null;
     
-    // 🔍 WorkLog ID 매칭 상세 디버깅
-    logger.info('🔍 getStaffWorkLog ID 매칭 수정 후', {
-      component: 'StaffManagementTab',
-      data: {
-        requestedStaffId: staffId,
-        requestedDate: date,
-        generatedWorkLogId: workLogId,
-        jobPostingId: jobPosting?.id,
-        workLogFound: !!workLog,
-        actualWorkLogId: workLog?.id,
-        workLogsMapSize: state.workLogs?.size || 0,
-        beforeFix: `${jobPosting?.id}_${staffId}_0_${date}`, // 이전 잘못된 패턴
-        afterFix: workLogId, // 수정된 패턴
-        matchingKeys: Array.from(state.workLogs?.keys() || []).filter(key => key.includes(staffId)).slice(0, 3)
+    // 🔥 로딩 상태 체크 제거 - 항상 현재 데이터 반환
+    // 이전: 로딩 중에는 null을 반환하여 업데이트 차단
+    // 현재: 로딩 중에도 현재 캐시된 데이터를 반환하여 즉시 반영
+    
+    // ✅ fallback 로직으로 여러 ID 패턴 시도
+    const candidates = generateWorkLogIdCandidates(jobPosting.id, staffId, date);
+    let workLog = null;
+    let foundWithId = null;
+    
+    // 모든 후보 ID에 대해 WorkLog 검색
+    for (const candidateId of candidates) {
+      const candidateLog = state.workLogs?.get(candidateId);
+      if (candidateLog) {
+        workLog = candidateLog;
+        foundWithId = candidateId;
+        break;
       }
+    }
+    
+    // 🔍 WorkLog 조회 결과 디버깅 정보
+    const debugInfo: any = {
+      requestedStaffId: staffId,
+      requestedDate: date,
+      jobPostingId: jobPosting.id,
+      candidateIds: candidates,
+      foundWorkLogId: foundWithId,
+      workLogFound: !!workLog,
+      actualWorkLogId: workLog?.id,
+    };
+    
+    // WorkLog를 찾지 못한 경우 추가 디버깅 정보
+    if (!workLog && state.workLogs) {
+      const allWorkLogIds = Array.from(state.workLogs.keys());
+      const matchingIds = allWorkLogIds.filter(id => 
+        id.includes(staffId) || id.includes(staffId.replace(/_\d+$/, ''))
+      );
+      
+      debugInfo.totalWorkLogsCount = state.workLogs.size;
+      debugInfo.matchingWorkLogIds = matchingIds.slice(0, 5); // 처음 5개만
+      debugInfo.sampleWorkLogIds = allWorkLogIds.slice(0, 3); // 샘플 3개
+    }
+    
+    debugInfo.workLogsMapSize = state.workLogs?.size || 0;
+    debugInfo.workLogsLoading = state.loading.workLogs;
+    debugInfo.initialLoading = state.loading.initial;
+    debugInfo.staffIdHasNumberSuffix = /_\d+$/.test(staffId);
+    
+    logger.info('🔍 getStaffWorkLog fallback 조회 완료', {
+      component: 'StaffManagementTab',
+      data: debugInfo
     });
     
     return workLog;
-  }, [state.workLogs, jobPosting?.id]);
+  }, [state.workLogs, jobPosting?.id, state.lastUpdated.workLogs]); // 🔥 lastUpdated 추가로 업데이트 즉시 감지
 
   // 🎯 삭제 핸들러 - 통합된 삭제 로직
   const deleteStaff = useCallback(async (staffId: string) => {

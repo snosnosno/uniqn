@@ -282,13 +282,16 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
         workLogs: updatedWorkLogs,
         cacheKeys: {
           ...state.cacheKeys,
-          // 모든 관련 캐시 즉시 무효화
+          // 🔥 모든 관련 캐시 즉시 무효화 (attendanceRecords 추가)
           workLogs: `workLogs_update_${timestamp}`,
           scheduleEvents: `scheduleEvents_update_${timestamp}`,
+          attendanceRecords: `attendance_update_${timestamp}`, // WorkLog 변경이 출석 상태에 영향
+          staff: `staff_update_${timestamp}`, // Staff와 WorkLog 연관 캐시도 무효화
         },
         lastUpdated: {
           ...state.lastUpdated,
           workLogs: timestamp,
+          attendanceRecords: timestamp, // attendanceRecords도 갱신 시간 업데이트
         },
       };
     }

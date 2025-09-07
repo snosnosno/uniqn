@@ -9,6 +9,7 @@ import { getTodayString } from '../utils/jobPosting/dateUtils';
 import { calculateMinutes } from '../utils/timeUtils';
 import { formatTime } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
+import { createWorkLogId } from '../utils/workLogSimplified';
 import { useUnifiedData } from '../hooks/useUnifiedData';
 import type { WorkLog } from '../types/unifiedData';
 
@@ -154,10 +155,14 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     setIsUpdating(true);
     setIsOpen(false);
 
-    // 🚀 1단계: Optimistic Update 즉시 적용
-    const targetWorkLogId = workLogId.startsWith('virtual_') ? 
-      `${eventId || 'default-event'}_${workLogId.split('_')[1]}_${workLogId.split('_')[2]}` : 
-      workLogId;
+    // 🚀 1단계: Optimistic Update 즉시 적용 - createWorkLogId 사용
+    let targetWorkLogId = workLogId;
+    if (workLogId.startsWith('virtual_') && eventId) {
+      const parts = workLogId.split('_');
+      const actualStaffId = parts[1] || staffId;
+      const date = parts.length > 2 ? parts.slice(2).join('-') : getTodayString();
+      targetWorkLogId = createWorkLogId(eventId, actualStaffId, date);
+    }
     
     // WorkLog 객체 생성 for Optimistic Update
     const now = Timestamp.now();
@@ -216,47 +221,35 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     try {
       const now = Timestamp.now();
       
-      // 🔄 통합 WorkLog 업데이트 로직 - 항상 동일한 workLog ID 사용
+      // 🔄 통합 WorkLog 업데이트 로직 - createWorkLogId 사용으로 단순화
       let realWorkLogId = workLogId;
       
       // virtual_ 프리픽스가 있으면 실제 workLog ID로 변환
-      if (workLogId.startsWith('virtual_')) {
-        // 날짜 형식 파싱을 더 안전하게 처리
+      if (workLogId.startsWith('virtual_') && eventId) {
         const parts = workLogId.split('_');
-        let actualStaffId = '';
+        const actualStaffId = parts[1] || staffId;
         let date = '';
         
-        // virtual_스태프ID_날짜 형식 파싱
+        // 날짜 파싱 (여러 형식 지원)
         if (parts.length >= 3) {
-          actualStaffId = parts[1] || '';
-          // 날짜가 언더스코어로 분리된 경우 (예: virtual_staffId_2025_01_28)
           if (parts.length > 3 && parts[2] && parts[2].length === 4 && /^\d{4}$/.test(parts[2])) {
+            // virtual_staffId_2025_01_28 형식
             date = `${parts[2]}-${parts[3] || ''}-${parts[4] || ''}`;
           } else {
-            date = parts[2] || '';
+            // virtual_staffId_2025-01-28 형식
+            date = parts.slice(2).join('-');
           }
-        } else if (parts.length === 2) {
-          // virtual_스태프ID 형식인 경우 (날짜가 없는 경우)
-          actualStaffId = parts[1] || '';
+        } else {
           date = getTodayString();
         }
         
         // 날짜 형식 검증 및 복구
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          // 잘못된 날짜 형식, 오늘 날짜로 대체
           date = getTodayString();
         }
         
-        // actualStaffId에 이미 _숫자가 있는지 체크 (예: tURgdOBmtYfO5Bgzm8NyGKGtbL12_0)
-        const hasNumberSuffix = /_\d+$/.test(actualStaffId);
-        
-        if (hasNumberSuffix) {
-          // 이미 _숫자가 있으면 추가 _0을 붙이지 않음
-          realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_${date}`;
-        } else {
-          // 없으면 기존 방식대로 _0 추가
-          realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_0_${date}`;
-        }
+        // ✅ createWorkLogId 함수 사용으로 통일된 ID 생성
+        realWorkLogId = createWorkLogId(eventId, actualStaffId, date);
       }
       
       // 🚀 통합 workLog 업데이트 - 트랜잭션 사용

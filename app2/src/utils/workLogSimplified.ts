@@ -8,23 +8,57 @@ import { Timestamp } from 'firebase/firestore';
 
 /**
  * WorkLog ID 생성 (표준 형식: eventId_staffId_date)
- * staffId에 이미 _숫자가 포함된 경우 추가 _0을 붙이지 않음
+ * staffId 형식을 정규화하여 일관된 패턴 보장
  */
 export const createWorkLogId = (
   eventId: string, 
   staffId: string, 
   date: string
 ): string => {
-  // staffId에 이미 _숫자 패턴이 있는지 체크 (예: tURgdOBmtYfO5Bgzm8NyGKGtbL12_0)
-  const hasNumberSuffix = /_\d+$/.test(staffId);
+  // 🔥 개선된 ID 생성 로직
+  // staffId가 이미 assignmentIndex를 포함하는지 체크
+  const hasAssignmentIndex = /_\d+$/.test(staffId);
   
-  if (hasNumberSuffix) {
-    // 이미 _숫자가 있으면 추가 _0을 붙이지 않음
+  if (hasAssignmentIndex) {
+    // 이미 assignmentIndex가 있으면 그대로 사용
     return `${eventId}_${staffId}_${date}`;
   } else {
-    // 없으면 기존 방식대로 _0 추가
+    // assignmentIndex가 없으면 _0을 추가 (기본값)
     return `${eventId}_${staffId}_0_${date}`;
   }
+};
+
+/**
+ * 여러 staffId 패턴으로 WorkLog ID 후보들 생성
+ * 조회 시 여러 패턴을 시도할 수 있도록 도움
+ */
+export const generateWorkLogIdCandidates = (
+  eventId: string, 
+  staffId: string, 
+  date: string
+): string[] => {
+  const candidates: string[] = [];
+  
+  // 🔥 패턴 1: staffId가 이미 완전한 형태인 경우 (예: userId_0)
+  // 실제 WorkLog ID: eventId_userId_0_date
+  if (/_\d+$/.test(staffId)) {
+    candidates.push(`${eventId}_${staffId}_${date}`);
+  }
+  
+  // 🔥 패턴 2: staffId에 _0을 추가하는 패턴 (기본값)
+  // staffId: userId → WorkLog ID: eventId_userId_0_date  
+  candidates.push(`${eventId}_${staffId}_0_${date}`);
+  
+  // 🔥 패턴 3: 다양한 assignmentIndex 시도 (다중 날짜 할당 대응)
+  for (let i = 1; i < 5; i++) {  // 0~4 인덱스 시도
+    candidates.push(`${eventId}_${staffId}_${i}_${date}`);
+  }
+  
+  // 🔥 패턴 4: 레거시 패턴 (호환성)
+  candidates.push(createWorkLogId(eventId, staffId, date));
+  
+  // 중복 제거 (ES5 호환)
+  return Array.from(new Set(candidates));
 };
 
 /**

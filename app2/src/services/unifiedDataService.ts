@@ -472,42 +472,95 @@ export class UnifiedDataService {
 
       // 사용자별 필터링 쿼리 구성
       let workLogsQuery;
-      if (this.currentUserId) {
-        // 현재 사용자의 근무 기록만 가져오기
+      if (this.currentUserId && !this.isAdmin()) {
+        // 🔥 일반 사용자: staffId가 userId로 시작하는 모든 WorkLog 가져오기
+        // assignment index 때문에 exact match가 안되므로 array-contains-any 또는 전체 조회 후 필터링
+        // Firebase에서는 "starts with" 쿼리가 직접 지원되지 않으므로, 
+        // 전체 데이터를 가져온 후 클라이언트에서 필터링
         workLogsQuery = query(
           collection(db, 'workLogs'),
-          where('staffId', '==', this.currentUserId),
           orderBy('date', 'desc')
         );
-        logger.info('WorkLogs 사용자별 필터링 쿼리', { 
+        logger.info('WorkLogs 사용자별 필터링 쿼리 (클라이언트 필터링)', { 
           component: 'unifiedDataService',
-          data: { userId: this.currentUserId }
+          data: { userId: this.currentUserId, note: 'staffId 시작 패턴 매칭을 위해 전체 조회 후 필터링' }
         });
       } else {
-        // 전체 근무 기록 가져오기 (관리자용)
+        // 전체 근무 기록 가져오기 (관리자용 또는 userId 없음)
         workLogsQuery = query(
           collection(db, 'workLogs'),
           orderBy('date', 'desc')
         );
         logger.info('WorkLogs 전체 데이터 쿼리', { 
-          component: 'unifiedDataService'
+          component: 'unifiedDataService',
+          data: { isAdmin: this.isAdmin(), hasUserId: !!this.currentUserId }
         });
       }
 
       this.subscriptions.workLogs = onSnapshot(
         workLogsQuery,
+        { includeMetadataChanges: true }, // 🔥 메타데이터 변경도 감지하여 실시간성 강화
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
-          // WorkLogs 데이터 업데이트 처리
+          
+          // 🔥 변경된 문서만 효율적으로 처리
+          const changes = snapshot.docChanges({ includeMetadataChanges: true });
+          
+          if (changes.length > 0) {
+            logger.info('🔄 WorkLogs 실시간 변경 감지', {
+              component: 'unifiedDataService',
+              data: {
+                totalChanges: changes.length,
+                changeTypes: changes.map(change => ({
+                  type: change.type,
+                  docId: change.doc.id,
+                  fromCache: change.doc.metadata.fromCache
+                }))
+              }
+            });
+          }
 
+          // WorkLogs 데이터 업데이트 처리
           const workLogsData: WorkLog[] = [];
+          let filteredCount = 0;
+          let totalCount = 0;
+          
           snapshot.forEach((doc) => {
             try {
-              workLogsData.push(transformWorkLogData({ id: doc.id, ...doc.data() }));
+              totalCount++;
+              const rawData = { id: doc.id, ...doc.data() };
+              const workLog = transformWorkLogData(rawData);
+              
+              // 🔥 클라이언트 측 필터링: staffId가 userId로 시작하는지 확인
+              if (this.currentUserId && !this.isAdmin()) {
+                if (workLog.staffId && workLog.staffId.startsWith(this.currentUserId)) {
+                  workLogsData.push(workLog);
+                  filteredCount++;
+                }
+                // userId와 매칭되지 않는 WorkLog는 제외
+              } else {
+                // 관리자이거나 userId가 없으면 모든 데이터 포함
+                workLogsData.push(workLog);
+                filteredCount++;
+              }
             } catch (error) {
               logger.warn('WorkLog 데이터 변환 오류', { component: 'unifiedDataService', data: { docId: doc.id, error } });
             }
           });
+
+          // 🔍 필터링 결과 로깅
+          if (this.currentUserId && !this.isAdmin()) {
+            logger.info('🔍 WorkLog 클라이언트 필터링 결과', {
+              component: 'unifiedDataService',
+              data: {
+                userId: this.currentUserId,
+                totalWorkLogs: totalCount,
+                filteredWorkLogs: filteredCount,
+                workLogsMapSize: workLogsData.length,
+                sampleWorkLogIds: workLogsData.slice(0, 3).map(wl => wl.id)
+              }
+            });
+          }
 
           if (this.dispatcher) {
             this.dispatcher({ type: 'SET_WORK_LOGS', data: workLogsData });
@@ -552,25 +605,25 @@ export class UnifiedDataService {
 
       // 사용자별 필터링 쿼리 구성
       let attendanceQuery;
-      if (this.currentUserId) {
-        // 현재 사용자의 출석 기록만 가져오기
+      if (this.currentUserId && !this.isAdmin()) {
+        // 🔥 일반 사용자: staffId가 userId로 시작하는 모든 AttendanceRecord 가져오기 (클라이언트 필터링)
         attendanceQuery = query(
           collection(db, 'attendanceRecords'),
-          where('staffId', '==', this.currentUserId),
           orderBy('createdAt', 'desc')
         );
-        logger.info('AttendanceRecords 사용자별 필터링 쿼리', { 
+        logger.info('AttendanceRecords 사용자별 필터링 쿼리 (클라이언트 필터링)', { 
           component: 'unifiedDataService',
-          data: { userId: this.currentUserId }
+          data: { userId: this.currentUserId, note: 'staffId 시작 패턴 매칭을 위해 전체 조회 후 필터링' }
         });
       } else {
-        // 전체 출석 기록 가져오기 (관리자용)
+        // 전체 출석 기록 가져오기 (관리자용 또는 userId 없음)
         attendanceQuery = query(
           collection(db, 'attendanceRecords'),
           orderBy('createdAt', 'desc')
         );
         logger.info('AttendanceRecords 전체 데이터 쿼리', { 
-          component: 'unifiedDataService'
+          component: 'unifiedDataService',
+          data: { isAdmin: this.isAdmin(), hasUserId: !!this.currentUserId }
         });
       }
 
@@ -579,15 +632,44 @@ export class UnifiedDataService {
         (snapshot: QuerySnapshot) => {
           const queryTime = endTimer();
           // AttendanceRecords 데이터 업데이트 처리
-
           const attendanceData: AttendanceRecord[] = [];
+          let filteredCount = 0;
+          let totalCount = 0;
+          
           snapshot.forEach((doc) => {
             try {
-              attendanceData.push(transformAttendanceData({ id: doc.id, ...doc.data() }));
+              totalCount++;
+              const rawData = { id: doc.id, ...doc.data() };
+              const attendanceRecord = transformAttendanceData(rawData);
+              
+              // 🔥 클라이언트 측 필터링: staffId가 userId로 시작하는지 확인
+              if (this.currentUserId && !this.isAdmin()) {
+                if (attendanceRecord.staffId && attendanceRecord.staffId.startsWith(this.currentUserId)) {
+                  attendanceData.push(attendanceRecord);
+                  filteredCount++;
+                }
+                // userId와 매칭되지 않는 AttendanceRecord는 제외
+              } else {
+                // 관리자이거나 userId가 없으면 모든 데이터 포함
+                attendanceData.push(attendanceRecord);
+                filteredCount++;
+              }
             } catch (error) {
               logger.warn('AttendanceRecord 데이터 변환 오류', { component: 'unifiedDataService', data: { docId: doc.id, error } });
             }
           });
+
+          // 🔍 필터링 결과 로깅 (WorkLog보다 간단하게)
+          if (this.currentUserId && !this.isAdmin() && totalCount > 0) {
+            logger.info('🔍 AttendanceRecords 클라이언트 필터링 결과', {
+              component: 'unifiedDataService',
+              data: {
+                userId: this.currentUserId,
+                totalRecords: totalCount,
+                filteredRecords: filteredCount
+              }
+            });
+          }
 
           if (this.dispatcher) {
             this.dispatcher({ type: 'SET_ATTENDANCE_RECORDS', data: attendanceData });

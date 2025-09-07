@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
@@ -47,6 +47,31 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   onSelect
 }) => {
   useTranslation();
+  
+  // 🔄 WorkLog 로딩 완료 후 강제 재렌더링을 위한 상태
+  const [renderKey, setRenderKey] = useState(0);
+  const [lastWorkLogId, setLastWorkLogId] = useState<string | null>(null);
+  
+  // 🔄 WorkLog 데이터 변화 감지 및 강제 재렌더링 (무한루프 방지)
+  useEffect(() => {
+    const dateString = convertToDateString(staff.assignedDate) || getTodayString();
+    const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
+    
+    if (workLog && workLog.id && workLog.id !== lastWorkLogId) {
+      // 새로운 WorkLog가 감지되면 재렌더링 트리거
+      setLastWorkLogId(workLog.id);
+      setRenderKey(prev => prev + 1);
+      logger.debug('🔄 새로운 WorkLog 감지 - StaffRow 재렌더링 트리거', {
+        component: 'StaffRow',
+        data: {
+          staffId: staff.id,
+          workLogId: workLog.id,
+          previousWorkLogId: lastWorkLogId,
+          renderKey: renderKey + 1
+        }
+      });
+    }
+  }, [staff.id, staff.assignedDate, getStaffWorkLog, lastWorkLogId]);
 
   // 메모이제이션된 포맷팅 훅 사용
   const formattedDate = useCachedFormatDate(staff.assignedDate);
@@ -130,12 +155,15 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
         getStaffWorkLogFunction: !!getStaffWorkLog,
         scheduledStartTime: workLog?.scheduledStartTime,
         scheduledEndTime: workLog?.scheduledEndTime,
-        assignedTime: workLog?.assignedTime
+        assignedTime: workLog?.assignedTime,
+        workLogStatus: workLog?.status,
+        actualStartTime: workLog?.actualStartTime,
+        actualEndTime: workLog?.actualEndTime
       }
     });
     
     return workLog;
-  }, [staff.id, staff.assignedDate, getStaffWorkLog]);
+  }, [staff.id, staff.assignedDate, getStaffWorkLog, attendanceRecords, renderKey]); // renderKey 추가
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
@@ -216,7 +244,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     staff.assignedTime, 
     formatTimeDisplay, 
     getTimeSlotColor, 
-    currentWorkLog  // 🔥 currentWorkLog 의존성 추가로 WorkLog 변화 감지
+    currentWorkLog,  // 🔥 currentWorkLog 의존성 추가로 WorkLog 변화 감지
+    currentWorkLog?.updatedAt  // 🔥 updatedAt 변경도 감지하여 더 정확한 업데이트
   ]);
 
   // 메모이제이션된 이벤트 핸들러들

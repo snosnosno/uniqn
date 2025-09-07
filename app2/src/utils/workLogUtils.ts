@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { parseToDate, getTodayString } from './jobPosting/dateUtils';
+import { createWorkLogId } from './workLogSimplified';
 
 /**
  * WorkLog 생성 및 관리를 위한 유틸리티 함수들
@@ -83,17 +84,8 @@ export const generateVirtualWorkLogId = (
   const normalizedDate = normalizeStaffDate(date);
   
   if (eventId) {
-    // eventId가 있으면 실제 workLogId 형식
-    // staffId에 이미 _숫자가 있는지 체크 (예: tURgdOBmtYfO5Bgzm8NyGKGtbL12_0)
-    const hasNumberSuffix = /_\d+$/.test(staffId);
-    
-    if (hasNumberSuffix) {
-      // 이미 _숫자가 있으면 추가 _0을 붙이지 않음
-      return `${eventId}_${staffId}_${normalizedDate}`;
-    } else {
-      // 없으면 기존 방식대로 _0 추가
-      return `${eventId}_${staffId}_0_${normalizedDate}`;
-    }
+    // ✅ createWorkLogId 함수 사용으로 통일된 ID 생성
+    return createWorkLogId(eventId, staffId, normalizedDate);
   }
   
   // eventId가 없으면 virtual_ prefix 추가 (staffId에서 _숫자 패턴 제거)
@@ -117,9 +109,11 @@ interface CreateWorkLogParams {
 
 /**
  * WorkLog ID 생성 (표준화된 형식: eventId_staffId_date)
+ * @deprecated createWorkLogId 함수를 사용하세요
  */
 export const generateWorkLogId = (eventId: string, staffId: string, date: string): string => {
-  return `${eventId}_${staffId}_${date}`;
+  // ✅ createWorkLogId 함수 사용으로 통일된 ID 생성
+  return createWorkLogId(eventId, staffId, date);
 };
 
 /**
