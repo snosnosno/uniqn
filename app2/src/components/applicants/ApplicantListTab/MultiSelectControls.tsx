@@ -125,20 +125,88 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       }
     });
     
-    // Map을 배열로 변환
-    const finalGroupSelections = Array.from(dateRangeGroups.values()).map(dateGroup => ({
-      ...dateGroup,
-      timeSlotGroups: Array.from(dateGroup.timeSlotGroups.values())
-    }));
+    // Map을 배열로 변환하고 날짜순으로 정렬
+    const finalGroupSelections = Array.from(dateRangeGroups.values())
+      .map(dateGroup => ({
+        ...dateGroup,
+        timeSlotGroups: Array.from(dateGroup.timeSlotGroups.values())
+      }))
+      .sort((a, b) => {
+        // 날짜 배열에서 첫 번째 날짜 기준으로 정렬
+        const aFirstDate = a.dates && a.dates.length > 0 ? a.dates[0] : '';
+        const bFirstDate = b.dates && b.dates.length > 0 ? b.dates[0] : '';
+        
+        // 날짜 없는 경우는 마지막으로
+        if (!aFirstDate && !bFirstDate) return 0;
+        if (!aFirstDate) return 1;
+        if (!bFirstDate) return -1;
+        
+        // 날짜순 정렬
+        return aFirstDate.localeCompare(bFirstDate);
+      });
     
-    // 개별 선택: 날짜별로 그룹화
-    const individualGroups = groupSingleDaySelections(individualSelections);
+    // 개별 선택: 날짜별로 그룹화하고 날짜순 정렬 보장
+    const individualGroups = groupSingleDaySelections(individualSelections)
+      .sort((a, b) => {
+        // 날짜 없는 경우는 마지막으로
+        if (a.date === 'no-date' && b.date === 'no-date') return 0;
+        if (a.date === 'no-date') return 1;
+        if (b.date === 'no-date') return -1;
+        
+        // 날짜순 정렬
+        return a.date.localeCompare(b.date);
+      });
     
     return {
       groupSelections: finalGroupSelections,
       individualGroups: individualGroups
     };
   }, [applicant, jobPosting]);
+
+  // 그룹과 개별 선택을 통합하여 날짜순으로 정렬
+  const allSortedCards = useMemo(() => {
+    const cards: Array<{
+      type: 'group' | 'individual';
+      dateGroup: any;
+      timeGroup?: any;
+      groupKey?: string;
+      timeIndex?: number;
+      sortDate: string;
+    }> = [];
+    
+    // 그룹 선택 카드들 추가
+    groupedSelections.groupSelections.forEach((dateGroup: any, index: number) => {
+      dateGroup.timeSlotGroups.forEach((timeGroup: any, timeIndex: number) => {
+        cards.push({
+          type: 'group',
+          dateGroup,
+          timeGroup,
+          groupKey: `group-selection-${index}`,
+          timeIndex,
+          sortDate: (dateGroup.dates && dateGroup.dates.length > 0) ? dateGroup.dates[0] : '' // 시작 날짜 기준
+        });
+      });
+    });
+    
+    // 개별 선택 카드들 추가
+    groupedSelections.individualGroups.forEach((dateGroup: any) => {
+      cards.push({
+        type: 'individual',
+        dateGroup,
+        sortDate: dateGroup.date || '' // 해당 날짜 기준
+      });
+    });
+    
+    // 날짜순 정렬
+    return cards.sort((a, b) => {
+      // 날짜 없는 경우는 마지막으로
+      if (!a.sortDate || a.sortDate === 'no-date') return 1;
+      if (!b.sortDate || b.sortDate === 'no-date') return -1;
+      
+      // 날짜순 정렬 (시작 날짜 기준)
+      return a.sortDate.localeCompare(b.sortDate);
+    });
+  }, [groupedSelections]);
   
   // 날짜별 그룹화된 선택 사항 (메모이제이션) - 기존 코드 호환성 유지
   const dateGroupedSelections = useMemo(() => {
@@ -162,8 +230,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     });
   }, [applicant, selectedAssignments]);
   
-  if (groupedSelections.groupSelections.length === 0 && 
-      groupedSelections.individualGroups.length === 0) {
+  if (allSortedCards.length === 0) {
     return null;
   }
 
@@ -237,49 +304,74 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   return (
     <div className="space-y-3">
       
-      {/* 그룹 선택 표시 - checkMethod='group' */}
-      {groupedSelections.groupSelections.length > 0 && (
-        <div className="space-y-3">
-          {groupedSelections.groupSelections.map((dateGroup: any, index: number) => {
-            const groupKey = `group-selection-${index}`;
+      {/* 통합된 그룹 및 개별 선택 - 날짜순으로 정렬된 2x2 그리드 */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+        {allSortedCards.map((card, cardIndex) => {
+          if (card.type === 'group') {
+            // 그룹 선택 카드 렌더링
+            const { dateGroup, timeGroup, groupKey, timeIndex } = card;
             
             return (
-              <div key={groupKey} className="border border-green-300 rounded-lg bg-green-50 overflow-hidden">
+              <div key={`${groupKey}-time-${timeIndex}-unified`} className="border border-green-300 rounded-lg overflow-hidden">
                 {/* 날짜 범위 헤더 */}
-                <div className="px-3 py-2 bg-green-100 border-b border-green-200">
+                <div className="bg-green-100 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-green-800">
-                      📅 {dateGroup.displayDateRange} ({dateGroup.dayCount}일)
-                    </span>
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <span className="text-sm sm:text-base">📅</span>
+                      <div className="text-xs sm:text-sm font-medium text-green-800">
+                        {(() => {
+                          // 여러 날인 경우 두 줄로 표시
+                          if (dateGroup.dayCount > 1) {
+                            const dates = dateGroup.dates || [];
+                            const firstDate = dates[0];
+                            const lastDate = dates[dates.length - 1];
+                            
+                            if (firstDate && lastDate) {
+                              const firstFormatted = formatDateDisplay(firstDate);
+                              const lastFormatted = formatDateDisplay(lastDate);
+                              return (
+                                <div className="leading-tight">
+                                  <div>{firstFormatted} ~</div>
+                                  <div>{lastFormatted}({dateGroup.dayCount}일)</div>
+                                </div>
+                              );
+                            }
+                          }
+                          // 단일 날짜인 경우 기존 형식
+                          return `${dateGroup.displayDateRange} (${dateGroup.dayCount}일)`;
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                {/* 시간대별로 그룹화된 체크박스들 */}
-                <div className="divide-y divide-green-200">
-                  {dateGroup.timeSlotGroups.map((timeGroup: any, timeIndex: number) => (
-                    <div key={`${groupKey}-time-${timeIndex}`} className="p-3">
-                      {/* 각 역할별로 체크박스 생성 */}
-                      {timeGroup.roles.map((role: string, roleIndex: number) => {
-                        const isRoleSelected = isMultiDayRoleSelected(dateGroup.dates, timeGroup.timeSlot, role);
-                        // 날짜별 중복 체크: 하나라도 다른 선택이 있으면 비활성화
-                        const hasConflict = dateGroup.dates.some((date: string) => 
-                          selectedAssignments.some(assignment => 
-                            (assignment.dates?.[0] || '') === date && 
-                            !(assignment.timeSlot === timeGroup.timeSlot && assignment.role === role)
-                          )
-                        );
-                        
-                        return (
-                          <label key={`${groupKey}-time-${timeIndex}-role-${roleIndex}`} 
-                            className={`flex items-center mb-2 last:mb-0 ${hasConflict ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                {/* 역할별 체크박스들 */}
+                <div className="p-2 sm:p-3">
+                  <div className="space-y-2">
+                    {timeGroup.roles.map((role: string, roleIndex: number) => {
+                      const isRoleSelected = isMultiDayRoleSelected(dateGroup.dates, timeGroup.timeSlot, role);
+                      // 날짜별 중복 체크: 하나라도 다른 선택이 있으면 비활성화
+                      const hasConflict = dateGroup.dates.some((date: string) => 
+                        selectedAssignments.some(assignment => 
+                          (assignment.dates?.[0] || '') === date && 
+                          !(assignment.timeSlot === timeGroup.timeSlot && assignment.role === role)
+                        )
+                      );
+                      
+                      return (
+                        <label key={`${groupKey}-time-${timeIndex}-role-${roleIndex}-unified`} 
+                          className={`flex items-center justify-between p-2 rounded border ${
+                            isRoleSelected ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                          } ${hasConflict ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <div className="flex items-center">
                             <input
                               type="checkbox"
                               checked={isRoleSelected}
                               onChange={(e) => handleMultiDayRoleToggle(dateGroup.dates, timeGroup.timeSlot, role, e.target.checked)}
                               disabled={!canEdit || hasConflict}
-                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:bg-gray-300"
+                              className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:bg-gray-300"
                             />
-                            <span className="ml-3 text-sm">
+                            <span className="ml-2 text-xs sm:text-sm">
                               <span className="font-medium text-gray-800">
                                 {role ? (t(`roles.${role}`) || role) : ''}
                               </span>
@@ -289,29 +381,23 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                                   <span className="text-gray-500 ml-1">({counts.confirmed}/{counts.required})</span>
                                 );
                               })()}
-                              <span className="text-gray-500 mx-2">-</span>
-                              <span className="font-medium text-gray-700">{timeGroup.timeSlot}</span>
+                              <span className="font-medium text-gray-700 ml-2">{timeGroup.timeSlot}</span>
                               {hasConflict && (
                                 <span className="ml-2 text-xs text-red-600 font-medium">(날짜 중복)</span>
                               )}
                             </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ))}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
-
-      
-      {/* 개별 선택 표시 - checkMethod='individual' */}
-      {groupedSelections.individualGroups.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-          {groupedSelections.individualGroups.map((dateGroup: any, groupIndex: number) => {
+          } else {
+            // 개별 선택 카드 렌더링
+            const { dateGroup } = card;
+            
             // 🔥 같은 시간대의 여러 역할 그룹화
             const timeGroupsMap = new Map<string, { time: string; roles: string[]; selections: any[] }>();
             
@@ -334,14 +420,14 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
             const timeGroups = Array.from(timeGroupsMap.values());
             
             return (
-              <div key={`${dateGroup.date}-${groupIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div key={`${dateGroup.date}-unified-${cardIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
                 {/* 날짜 헤더 */}
                 <div className="bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <span className="text-sm sm:text-base">📅</span>
                       <span className="text-xs sm:text-sm font-medium text-gray-800">
-                        {dateGroup.date === 'no-date' ? '날짜 미정' : dateGroup.displayDate}
+                        {dateGroup.date === 'no-date' ? '날짜 미정' : dateGroup.displayDate} (1일)
                       </span>
                     </div>
                     <span className="text-xs text-gray-500 hidden sm:block">
@@ -353,7 +439,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                 {/* 시간대별로 그룹화된 선택 항목들 */}
                 <div className="divide-y divide-gray-100">
                   {timeGroups.map((timeGroup, timeGroupIndex: number) => (
-                    <div key={`${dateGroup.date}-${timeGroup.time}-${timeGroupIndex}`} className="p-2 sm:p-3">
+                    <div key={`${dateGroup.date}-${timeGroup.time}-unified-${timeGroupIndex}`} className="p-2 sm:p-3">
                       <div className="space-y-2">
                         {timeGroup.roles.map((role, roleIndex) => {
                           const selection = timeGroup.selections.find(s => s.role === role);
@@ -374,7 +460,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                             );
                           
                           return (
-                            <label key={`${timeGroup.time}-${role}-${roleIndex}`} 
+                            <label key={`${timeGroup.time}-${role}-unified-${roleIndex}`} 
                               className={`flex items-center justify-between p-2 rounded border ${
                                 isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
                               } ${hasOtherSelectionInSameDate ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
@@ -408,9 +494,9 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+          }
+        })}
+      </div>
       
       {/* 확정 버튼 */}
       <div className="mt-4 pt-4 border-t border-gray-200">

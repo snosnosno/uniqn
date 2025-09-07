@@ -63,6 +63,17 @@ export const useApplicantData = (eventId?: string) => {
         applicantPhone: app.applicantPhone,
         applicantEmail: app.applicantEmail,
         status: app.status,
+        // 🔍 임시 디버깅: status 값 확인
+        ...(app.status && logger.debug('🔍 useApplicantData: applicant status', {
+          component: 'useApplicantData',
+          data: { 
+            applicantName: app.applicantName, 
+            status: app.status,
+            statusType: typeof app.status,
+            isConfirmed: app.status === 'confirmed',
+            rawStatus: JSON.stringify(app.status)
+          }
+        }) as any),
         role: firstAssignment?.role || '',
         assignedRole: firstAssignment?.role || '',
         assignedTime: firstAssignment?.timeSlot || '',

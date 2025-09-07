@@ -22,32 +22,46 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
   const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 권한 체크 - 공고 작성자만 수정 가능
-  const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
+  // 권한 체크 - 공고 작성자 또는 관리자만 수정 가능
+  const canEdit = currentUser?.uid && (
+    currentUser.uid === jobPosting?.createdBy || 
+    currentUser.role === 'admin'
+  );
+  
+  // 🔍 디버깅: canEdit 값 확인
+  logger.debug('🔍 useApplicantActions: canEdit 값 확인', {
+    component: 'useApplicantActions',
+    data: {
+      currentUserUid: currentUser?.uid,
+      jobPostingCreatedBy: jobPosting?.createdBy,
+      canEdit: canEdit,
+      condition1: !!currentUser?.uid,
+      condition2: currentUser?.uid === jobPosting?.createdBy
+    }
+  });
 
   /**
    * WorkLog 사전 생성 함수 (스태프 확정 시 모든 근무일에 대해 생성)
    */
   const createWorkLogsForConfirmedStaff = useCallback(async (
-    staffId: string, 
     staffName: string, 
     eventId: string, 
-    assignments: Assignment[]
+    assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[]  // ✅ assignment와 staffDocId 배열
   ) => {
     logger.debug('🔍 WorkLog 사전 생성 시작:', {
       component: 'useApplicantActions',
-      data: { staffId, eventId, assignments }
+      data: { assignmentsWithStaffIds, eventId }
     });
 
     try {
-      for (const assignment of assignments) {
+      for (const { assignment, staffDocId } of assignmentsWithStaffIds) {
         const { dates, timeSlot, role } = assignment;
         
         for (const date of dates) {
           if (!date || date.trim() === '') continue;
           
-          // WorkLog ID 패턴: eventId_staffId_0_date
-          const workLogId = `${eventId}_${staffId}_0_${date}`;
+          // WorkLog ID 패턴: eventId_staffDocId_date (staffDocId에 이미 _숫자 포함)
+          const workLogId = `${eventId}_${staffDocId}_${date}`;
           const workLogRef = doc(db, 'workLogs', workLogId);
           
           // 이미 존재하는지 확인
@@ -104,7 +118,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           // WorkLog 데이터 생성
           const workLogData = {
             id: workLogId,
-            staffId,
+            staffId: staffDocId,  // ✅ staffDocId 사용 (assignmentIndex 포함)
             staffName,
             eventId,
             date,
@@ -269,6 +283,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       });
 
       // 각 assignment마다 별도의 스태프 문서 생성 (다중 날짜/시간대 지원)
+      const assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[] = []; // ✅ staffDocId 수집용 배열
+      
       if (currentUser && assignments.length > 0) {
         logger.debug('🔍 다중 promoteToStaff 호출 시작:', { 
           component: 'useApplicantActions',
@@ -338,6 +354,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
                 component: 'useApplicantActions', 
                 data: staffDocId 
               });
+              
+              // ✅ WorkLog 생성용으로 assignment와 staffDocId 저장
+              assignmentsWithStaffIds.push({ assignment, staffDocId });
             } catch (promoteError) {
               logger.error(`❌ promoteToStaff 오류 ${assignmentIndex + 1}:`, 
                 promoteError instanceof Error ? promoteError : new Error(String(promoteError)), 
@@ -366,10 +385,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
       try {
         await createWorkLogsForConfirmedStaff(
-          applicant.applicantId,
           applicant.applicantName,
           jobPosting.id,
-          assignments
+          assignmentsWithStaffIds  // ✅ assignment와 staffDocId 배열 전달
         );
         logger.debug('✅ 스태프 확정 시 WorkLog 일괄 생성 완료', { component: 'useApplicantActions' });
       } catch (workLogError) {
@@ -697,7 +715,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
   };
 
   /**
-   * 확정 취소 시 관련 WorkLog 삭제 함수
+   * 확정 취소 시 관련 WorkLog 삭제 함수 (완전 개선: 두 가지 방법 병행)
    */
   const deleteWorkLogsForCancelledStaff = async (applicantId: string, postingId: string) => {
     try {
@@ -706,33 +724,125 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         data: { applicantId, postingId }
       });
 
-      // workLogs 컬렉션에서 해당 스태프의 모든 WorkLog 찾기
-      const workLogsQuery = query(
+      let deletedCount = 0;
+
+      // 🎯 방법 1: eventId로 모든 WorkLog를 가져온 후 클라이언트에서 필터링
+      const allWorkLogsQuery = query(
         collection(db, 'workLogs'),
-        where('staffId', '==', applicantId),
         where('eventId', '==', postingId)
       );
 
-      const workLogsSnapshot = await getDocs(workLogsQuery);
-      logger.debug('🔍 삭제할 WorkLog 문서 수:', {
+      const allWorkLogsSnapshot = await getDocs(allWorkLogsQuery);
+      logger.debug('🔍 해당 이벤트의 모든 WorkLog 수:', {
         component: 'useApplicantActions',
-        data: workLogsSnapshot.size
+        data: { 
+          totalWorkLogs: allWorkLogsSnapshot.size,
+          eventId: postingId
+        }
       });
 
-      // 각 WorkLog 문서 개별 삭제
-      const deletePromises = workLogsSnapshot.docs.map(async (workLogDoc) => {
-        logger.debug('🗑️ WorkLog 문서 삭제:', {
+      // 클라이언트에서 staffId 필터링 (더 정확함)
+      const targetWorkLogs = allWorkLogsSnapshot.docs.filter(workLogDoc => {
+        const data = workLogDoc.data();
+        const staffId = data?.staffId || '';
+        
+        // staffId가 applicantId로 시작하거나 정확히 일치하는 경우
+        const isMatch = staffId === applicantId || staffId.startsWith(applicantId + '_');
+        
+        if (isMatch) {
+          logger.debug('🎯 삭제 대상 WorkLog 발견:', {
+            component: 'useApplicantActions',
+            data: { 
+              workLogId: workLogDoc.id,
+              staffId: staffId,
+              eventId: data?.eventId,
+              date: data?.date,
+              assignedTime: data?.assignedTime
+            }
+          });
+        }
+        
+        return isMatch;
+      });
+
+      logger.info('🔍 삭제할 WorkLog 문서들:', {
+        component: 'useApplicantActions',
+        data: { 
+          applicantId,
+          postingId,
+          targetCount: targetWorkLogs.length,
+          targetWorkLogs: targetWorkLogs.map(doc => ({
+            id: doc.id,
+            staffId: doc.data()?.staffId,
+            eventId: doc.data()?.eventId,
+            date: doc.data()?.date
+          }))
+        }
+      });
+
+      // 🗑️ 각 WorkLog 문서 삭제
+      for (const workLogDoc of targetWorkLogs) {
+        try {
+          logger.debug('🗑️ WorkLog 문서 삭제 시도:', {
+            component: 'useApplicantActions',
+            data: { 
+              workLogId: workLogDoc.id, 
+              staffId: workLogDoc.data()?.staffId 
+            }
+          });
+          
+          await deleteDoc(doc(db, 'workLogs', workLogDoc.id));
+          deletedCount++;
+          
+          logger.debug('✅ WorkLog 문서 삭제 성공:', {
+            component: 'useApplicantActions',
+            data: { workLogId: workLogDoc.id }
+          });
+        } catch (deleteError) {
+          logger.error('❌ 개별 WorkLog 삭제 실패:', 
+            deleteError instanceof Error ? deleteError : new Error(String(deleteError)), {
+            component: 'useApplicantActions',
+            data: { 
+              workLogId: workLogDoc.id,
+              staffId: workLogDoc.data()?.staffId
+            }
+          });
+        }
+      }
+
+      logger.info('✅ WorkLog 삭제 완료 (최종 결과):', {
+        component: 'useApplicantActions',
+        data: {
+          applicantId,
+          postingId,
+          totalFound: targetWorkLogs.length,
+          successfullyDeleted: deletedCount,
+          allSuccessful: deletedCount === targetWorkLogs.length
+        }
+      });
+
+      // 삭제 결과 검증
+      if (deletedCount === 0 && targetWorkLogs.length === 0) {
+        logger.warn('⚠️ 삭제할 WorkLog를 찾지 못함:', {
           component: 'useApplicantActions',
-          data: { workLogId: workLogDoc.id, data: workLogDoc.data() }
+          data: { applicantId, postingId }
         });
-        return deleteDoc(doc(db, 'workLogs', workLogDoc.id));
-      });
+      } else if (deletedCount !== targetWorkLogs.length) {
+        logger.warn('⚠️ 일부 WorkLog 삭제 실패:', {
+          component: 'useApplicantActions',
+          data: { 
+            expected: targetWorkLogs.length,
+            actual: deletedCount,
+            applicantId,
+            postingId
+          }
+        });
+      }
 
-      await Promise.all(deletePromises);
-      logger.debug('✅ 모든 관련 WorkLog 삭제 완료', { component: 'useApplicantActions' });
     } catch (err) {
-      logger.error('WorkLog 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), {
-        component: 'useApplicantActions'
+      logger.error('WorkLog 삭제 중 심각한 오류:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'useApplicantActions',
+        data: { applicantId, postingId }
       });
       // 에러가 발생해도 전체 프로세스는 계속 진행 (확정 취소는 성공)
     }

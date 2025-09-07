@@ -8,7 +8,7 @@ export interface Applicant {
   id: string;
   applicantName: string;
   applicantId: string;
-  status: 'applied' | 'confirmed' | 'rejected';
+  status: 'applied' | 'confirmed' | 'cancelled';
   assignedRole?: string;
   assignedTime?: string;
   appliedAt: Timestamp | string | Date;  // any → 구체적 타입으로 수정 (TypeScript strict mode 준수)

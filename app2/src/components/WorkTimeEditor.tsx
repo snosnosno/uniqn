@@ -12,6 +12,8 @@ import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
 import { prepareWorkLogForCreate, prepareWorkLogForUpdate, parseTimeToString, parseTimeToTimestamp } from '../utils/workLogMapper';
 import { WorkLogCreateInput } from '../types/unified/workLog';
 import { getStaffIdentifier } from '../utils/staffIdMapper';
+import { useUnifiedData } from '../hooks/useUnifiedData';
+import type { WorkLog } from '../types/unifiedData';
 
 import Modal from './ui/Modal';
 
@@ -30,6 +32,7 @@ interface WorkLogWithTimestamp {
   scheduledEndTime: Timestamp | Date | null;
   actualStartTime: Timestamp | Date | null;
   actualEndTime: Timestamp | Date | null;
+  status?: string;  // 출석 상태
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -49,6 +52,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 }) => {
   const { t: _t } = useTranslation();
   const { showSuccess, showError } = useToast();
+  const { updateWorkLogOptimistic } = useUnifiedData();
   useAttendanceStatus({
     ...(workLog?.eventId && { eventId: workLog.eventId }),
     ...(workLog?.date && { date: workLog.date })
@@ -119,8 +123,69 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         newEndTime
       } });
       
-      // 🚀 단순화된 WorkLog 업데이트 (사전 생성된 WorkLog만 업데이트)
-      // 스태프 확정 시 이미 WorkLog가 생성되었으므로 업데이트만 수행
+      // 🚀 1단계: Optimistic Update - 즉시 UI 반영
+      const optimisticWorkLog: Partial<WorkLog> = {
+        id: workLog.id,
+        eventId: workLog.eventId,
+        staffId: workLog.staffId,
+        staffName: workLog.staffName || '',
+        date: workLog.date,
+        status: (workLog.status || 'scheduled') as any,
+        updatedAt: Timestamp.now()
+      };
+      
+      // 조건부 필드 추가
+      if (workLog.role) {
+        optimisticWorkLog.role = workLog.role;
+      }
+      if (workLog.createdAt) {
+        optimisticWorkLog.createdAt = workLog.createdAt;
+      }
+      
+      // 조건부로 타임스탬프 필드 추가 (exactOptionalPropertyTypes 지원)
+      if (startTime === '') {
+        // 빈 문자열이면 scheduledStartTime 제거 (undefined로)
+      } else if (startTime && startTime.trim() !== '' && newStartTime instanceof Timestamp) {
+        optimisticWorkLog.scheduledStartTime = newStartTime;
+      } else if (workLog.scheduledStartTime instanceof Timestamp) {
+        optimisticWorkLog.scheduledStartTime = workLog.scheduledStartTime;
+      }
+      
+      if (endTime === '') {
+        // 빈 문자열이면 scheduledEndTime 제거 (undefined로)
+      } else if (endTime && endTime.trim() !== '' && newEndTime instanceof Timestamp) {
+        optimisticWorkLog.scheduledEndTime = newEndTime;
+      } else if (workLog.scheduledEndTime instanceof Timestamp) {
+        optimisticWorkLog.scheduledEndTime = workLog.scheduledEndTime;
+      }
+      
+      if (workLog.actualStartTime instanceof Timestamp) {
+        optimisticWorkLog.actualStartTime = workLog.actualStartTime;
+      }
+      if (workLog.actualEndTime instanceof Timestamp) {
+        optimisticWorkLog.actualEndTime = workLog.actualEndTime;
+      }
+      
+      // 🔥 assignedTime 필드도 추가 (UI에서 사용)
+      if (startTime && startTime.trim() !== '') {
+        optimisticWorkLog.assignedTime = startTime;
+      }
+      
+      // UnifiedDataContext를 통한 즉시 UI 업데이트
+      updateWorkLogOptimistic(optimisticWorkLog as WorkLog);
+      
+      logger.info('🚀 Optimistic Update 완료', { 
+        component: 'WorkTimeEditor', 
+        data: { 
+          workLogId: workLog.id,
+          staffId: workLog.staffId,
+          newStartTime: startTime || '미정',
+          newEndTime: endTime || '미정',
+          assignedTime: startTime || '미정'
+        } 
+      });
+      
+      // 🚀 2단계: Firebase 업데이트 (백그라운드 처리)
       const workLogRef = doc(db, 'workLogs', workLog.id);
       
       // 트랜잭션을 사용하여 원자적 업데이트 보장
@@ -138,10 +203,13 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         // scheduled 시간만 업데이트 (actual 시간은 유지)
         if (startTime === '') {
           updatePayload.scheduledStartTime = null;
+          updatePayload.assignedTime = null; // 🔥 assignedTime도 함께 업데이트
         } else if (startTime && startTime.trim() !== '') {
           updatePayload.scheduledStartTime = newStartTime;
+          updatePayload.assignedTime = startTime; // 🔥 assignedTime도 함께 업데이트
         } else {
           updatePayload.scheduledStartTime = null;
+          updatePayload.assignedTime = null; // 🔥 assignedTime도 함께 업데이트
         }
         
         if (endTime === '') {
@@ -156,7 +224,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         transaction.update(workLogRef, updatePayload);
       });
       
-      logger.info('WorkLog 업데이트 완료 (사전 생성된 WorkLog)', { 
+      logger.info('🚀 Firebase 업데이트 완료', { 
         component: 'WorkTimeEditor', 
         data: { 
           id: workLog.id, 
@@ -165,26 +233,22 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         } 
       });
       
-      // 🚀 즉시 UI 업데이트 (Optimistic Update)
+      // 🚀 3단계: 레거시 onUpdate 콜백 호출 (호환성 유지)
       if (onUpdate) {
         const updatedWorkLog = {
           ...workLog,
-          // 변경된 값만 업데이트, 변경되지 않은 값은 기존 값 유지
           scheduledStartTime: startTime === '' ? null : (startTime && startTime.trim() !== '' ? newStartTime : workLog.scheduledStartTime),
           scheduledEndTime: endTime === '' ? null : (endTime && endTime.trim() !== '' ? newEndTime : workLog.scheduledEndTime),
           updatedAt: Timestamp.now()
         };
         
-        // 즉시 UI 업데이트 실행
         onUpdate(updatedWorkLog);
         
-        logger.info('WorkTimeEditor 즉시 onUpdate 콜백 호출 완료', { 
+        logger.info('onUpdate 콜백 호출 완료 (호환성)', { 
           component: 'WorkTimeEditor', 
           data: { 
             staffId: workLog.staffId,
-            date: workLog.date,
-            newStartTime: startTime || '미정',
-            newEndTime: endTime || '미정'
+            date: workLog.date
           } 
         });
       }
@@ -223,6 +287,51 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
     } catch (error) {
       logger.error('시간 업데이트 중 오류 발생', error instanceof Error ? error : new Error(String(error)), { component: 'WorkTimeEditor' });
+      
+      // 🚀 4단계: 에러 발생 시 Optimistic Update 롤백
+      const rollbackWorkLog: Partial<WorkLog> = {
+        id: workLog.id,
+        eventId: workLog.eventId,
+        staffId: workLog.staffId,
+        staffName: workLog.staffName || '',
+        date: workLog.date,
+        status: (workLog.status || 'scheduled') as any,
+        updatedAt: workLog.updatedAt || Timestamp.now()
+      };
+      
+      // 조건부 필드 추가 (rollback)
+      if (workLog.role) {
+        rollbackWorkLog.role = workLog.role;
+      }
+      if (workLog.createdAt) {
+        rollbackWorkLog.createdAt = workLog.createdAt;
+      }
+      
+      // 조건부로 원본 타임스탬프 필드 복원
+      if (workLog.scheduledStartTime instanceof Timestamp) {
+        rollbackWorkLog.scheduledStartTime = workLog.scheduledStartTime;
+      }
+      if (workLog.scheduledEndTime instanceof Timestamp) {
+        rollbackWorkLog.scheduledEndTime = workLog.scheduledEndTime;
+      }
+      if (workLog.actualStartTime instanceof Timestamp) {
+        rollbackWorkLog.actualStartTime = workLog.actualStartTime;
+      }
+      if (workLog.actualEndTime instanceof Timestamp) {
+        rollbackWorkLog.actualEndTime = workLog.actualEndTime;
+      }
+      
+      // 원래 상태로 롤백
+      updateWorkLogOptimistic(rollbackWorkLog as WorkLog);
+      
+      logger.info('🔄 Optimistic Update 롤백 완료', { 
+        component: 'WorkTimeEditor', 
+        data: { 
+          workLogId: workLog.id,
+          staffId: workLog.staffId
+        } 
+      });
+      
       showError('시간 업데이트 중 오류가 발생했습니다.');
     } finally {
       setIsUpdating(false);

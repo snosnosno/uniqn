@@ -225,15 +225,29 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
 
                 {/* 확정된 상태에서의 액션 */}
                 {applicant.status === 'confirmed' && (
-                  <ApplicantActions
-                    applicant={applicant}
-                    jobPosting={jobPosting}
-                    selectedAssignment={null}
-                    onAssignmentChange={() => {}}
-                    onConfirm={() => {}}
-                    onCancelConfirmation={() => handleCancelConfirmation(applicant)}
-                    canEdit={canEdit}
-                  />
+                  <>
+                    {(() => {
+                      logger.debug('🚀 ApplicantListTab: ApplicantActions 렌더링 시도', {
+                        component: 'ApplicantListTab',
+                        data: {
+                          applicantName: applicant.applicantName,
+                          applicantStatus: applicant.status,
+                          canEdit: canEdit,
+                          aboutToRenderApplicantActions: true
+                        }
+                      });
+                      return null; // 로깅만 수행
+                    })()}
+                    <ApplicantActions
+                      applicant={applicant}
+                      jobPosting={jobPosting}
+                      selectedAssignment={null}
+                      onAssignmentChange={() => {}}
+                      onConfirm={() => {}}
+                      onCancelConfirmation={() => handleCancelConfirmation(applicant)}
+                      canEdit={canEdit}
+                    />
+                  </>
                 )}
               </ApplicantCard>
             );

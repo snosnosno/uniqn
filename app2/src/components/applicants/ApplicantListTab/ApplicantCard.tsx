@@ -56,7 +56,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
           </div>
           <span className={`px-2 py-1 rounded-full text-xs ${
             applicant.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-            applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
+            applicant.status === 'cancelled' ? 'bg-red-100 text-red-800' :
             'bg-yellow-100 text-yellow-800'
           }`}>
             {t(`jobPostingAdmin.applicants.status_${applicant.status}`)}
@@ -116,89 +116,99 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
           {(() => {
             const applicantSelections = getApplicantSelections(applicant, jobPosting);
             
-            // 확정된 상태일 때만 지원 정보 표시
-            if (applicant.status === 'confirmed' && applicantSelections.length > 0) {
-              // 🎯 선택 사항을 그룹과 개별로 분류
-              const processedApplications = new Map<string, any>();
-              
-              applicantSelections.forEach((selection: any) => {
-                // checkMethod가 'group'이고 dates가 여러 개인 경우 그룹으로 처리
-                if (selection.checkMethod === 'group' && selection.dates && selection.dates.length > 1) {
-                  const groupKey = `group-${selection.groupId || selection.time}`;
-                  
-                  if (!processedApplications.has(groupKey)) {
-                    processedApplications.set(groupKey, {
-                      displayDateRange: `${formatDateDisplay(selection.dates[0])}~${formatDateDisplay(selection.dates[selection.dates.length - 1])}`,
-                      dayCount: selection.dates.length,
-                      time: selection.time,
-                      roles: [],
-                      isGrouped: true,
-                      checkMethod: 'group'
-                    });
-                  }
-                  
-                  const group = processedApplications.get(groupKey)!;
-                  if (selection.role && !group.roles.includes(selection.role)) {
-                    group.roles.push(selection.role);
-                  }
-                } else {
-                  // 개별 선택 처리
-                  const dateKey = selection.date || selection.dates?.[0] || 'no-date';
-                  const individualKey = `individual-${dateKey}-${selection.time}`;
-                  
-                  if (!processedApplications.has(individualKey)) {
-                    processedApplications.set(individualKey, {
-                      displayDateRange: formatDateDisplay(dateKey),
-                      time: selection.time,
-                      roles: [],
-                      isGrouped: false,
-                      checkMethod: 'individual'
-                    });
-                  }
-                  
-                  const individual = processedApplications.get(individualKey)!;
-                  if (selection.role && !individual.roles.includes(selection.role)) {
-                    individual.roles.push(selection.role);
-                  }
-                }
-              });
-              
-              const allApplications = Array.from(processedApplications.values());
-              
+            // 확정된 상태일 때 지원 정보와 버튼을 모두 표시
+            if (applicant.status === 'confirmed') {
               return (
-                <div className="mt-2 p-2 rounded-lg border bg-green-50 border-green-200">
-                  <div className="space-y-1">
-                    {allApplications.map((group, groupIndex) => {
-                      return (
-                        <div key={groupIndex} className="bg-white p-2 rounded border text-sm font-medium text-gray-700">
-                          📅 {group.displayDateRange} ⏰ {group.time} 👤 {group.roles.filter((role: string) => role).map((role: string) => t(`roles.${role}`) || role).join(', ')}
+                <div className="space-y-2">
+                  {/* 지원 정보 표시 (applicantSelections가 있는 경우) */}
+                  {applicantSelections.length > 0 && (() => {
+                    // 🎯 선택 사항을 그룹과 개별로 분류
+                    const processedApplications = new Map<string, any>();
+                    
+                    applicantSelections.forEach((selection: any) => {
+                      // checkMethod가 'group'이고 dates가 여러 개인 경우 그룹으로 처리
+                      if (selection.checkMethod === 'group' && selection.dates && selection.dates.length > 1) {
+                        const groupKey = `group-${selection.groupId || selection.time}`;
+                        
+                        if (!processedApplications.has(groupKey)) {
+                          processedApplications.set(groupKey, {
+                            displayDateRange: `${formatDateDisplay(selection.dates[0])}~${formatDateDisplay(selection.dates[selection.dates.length - 1])}`,
+                            dayCount: selection.dates.length,
+                            time: selection.time,
+                            roles: [],
+                            isGrouped: true,
+                            checkMethod: 'group'
+                          });
+                        }
+                        
+                        const group = processedApplications.get(groupKey)!;
+                        if (selection.role && !group.roles.includes(selection.role)) {
+                          group.roles.push(selection.role);
+                        }
+                      } else {
+                        // 개별 선택 처리
+                        const dateKey = selection.date || selection.dates?.[0] || 'no-date';
+                        const individualKey = `individual-${dateKey}-${selection.time}`;
+                        
+                        if (!processedApplications.has(individualKey)) {
+                          processedApplications.set(individualKey, {
+                            displayDateRange: formatDateDisplay(dateKey),
+                            time: selection.time,
+                            roles: [],
+                            isGrouped: false,
+                            checkMethod: 'individual'
+                          });
+                        }
+                        
+                        const individual = processedApplications.get(individualKey)!;
+                        if (selection.role && !individual.roles.includes(selection.role)) {
+                          individual.roles.push(selection.role);
+                        }
+                      }
+                    });
+                    
+                    const allApplications = Array.from(processedApplications.values());
+                    
+                    return (
+                      <div className="mt-2 p-2 rounded-lg border bg-green-50 border-green-200">
+                        <div className="space-y-1">
+                          {allApplications.map((group, groupIndex) => {
+                            return (
+                              <div key={groupIndex} className="bg-white p-2 rounded border text-sm font-medium text-gray-700">
+                                📅 {group.displayDateRange} ⏰ {group.time} 👤 {group.roles.filter((role: string) => role).map((role: string) => t(`roles.${role}`) || role).join(', ')}
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }
-            
-            // 기존 단일 선택 지원자 표시 (확정된 상태에서만)
-            if (applicant.status === 'confirmed' && (applicant.assignedDate || applicant.assignedTime || applicant.assignedRole)) {
-              return (
-                <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
-                  <div className="text-sm bg-white p-2 rounded border font-medium text-gray-700">
-                    📅 {applicant.assignedDate ? formatDateDisplay(applicant.assignedDate) : ''} ⏰ {applicant.assignedTime} 👤 {applicant.assignedRole ? (t(`roles.${applicant.assignedRole}`) || applicant.assignedRole) : ''}
-                  </div>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* 기존 단일 선택 지원자 표시 */}
+                  {applicantSelections.length === 0 && (applicant.assignedDate || applicant.assignedTime || applicant.assignedRole) && (
+                    <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
+                      <div className="text-sm bg-white p-2 rounded border font-medium text-gray-700">
+                        📅 {applicant.assignedDate ? formatDateDisplay(applicant.assignedDate) : ''} ⏰ {applicant.assignedTime} 👤 {applicant.assignedRole ? (t(`roles.${applicant.assignedRole}`) || applicant.assignedRole) : ''}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 확정취소 버튼 등 children 표시 */}
+                  {children && (
+                    <div>
+                      {children}
+                    </div>
+                  )}
                 </div>
               );
             }
             
             // 확정되지 않은 상태에서는 체크박스만 표시
-            if (applicant.status !== 'confirmed') {
-              return (
-                <div>
-                  {children}
-                </div>
-              );
-            }
+            return (
+              <div>
+                {children}
+              </div>
+            );
             
             return null;
           })()}

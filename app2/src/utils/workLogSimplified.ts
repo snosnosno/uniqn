@@ -7,14 +7,24 @@ import { Timestamp } from 'firebase/firestore';
  */
 
 /**
- * WorkLog ID 생성 (표준 형식: eventId_staffId_0_date)
+ * WorkLog ID 생성 (표준 형식: eventId_staffId_date)
+ * staffId에 이미 _숫자가 포함된 경우 추가 _0을 붙이지 않음
  */
 export const createWorkLogId = (
   eventId: string, 
   staffId: string, 
   date: string
 ): string => {
-  return `${eventId}_${staffId}_0_${date}`;
+  // staffId에 이미 _숫자 패턴이 있는지 체크 (예: tURgdOBmtYfO5Bgzm8NyGKGtbL12_0)
+  const hasNumberSuffix = /_\d+$/.test(staffId);
+  
+  if (hasNumberSuffix) {
+    // 이미 _숫자가 있으면 추가 _0을 붙이지 않음
+    return `${eventId}_${staffId}_${date}`;
+  } else {
+    // 없으면 기존 방식대로 _0 추가
+    return `${eventId}_${staffId}_0_${date}`;
+  }
 };
 
 /**

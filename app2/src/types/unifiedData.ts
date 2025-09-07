@@ -58,6 +58,7 @@ export interface WorkLog {
   actualStartTime?: Timestamp;
   actualEndTime?: Timestamp;
   role?: string;
+  assignedTime?: string; // 🔥 UI에서 사용하는 시간 표시 필드
   hoursWorked?: number;
   overtimeHours?: number;
   earlyLeaveHours?: number;

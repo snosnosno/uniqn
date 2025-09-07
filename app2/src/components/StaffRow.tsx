@@ -33,6 +33,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   onEditWorkTime,
   onDeleteStaff,
   getStaffAttendanceStatus,
+  attendanceRecords,  // ✅ attendanceRecords props 추가
   formatTimeDisplay,
   getTimeSlotColor,
   showDate = false,
@@ -73,8 +74,11 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     // 더 정확한 매칭을 위해 여러 방법으로 검색
     let finalAttendanceRecord = attendanceRecord;
     if (!finalAttendanceRecord && eventId) {
-      // eventId를 포함한 실제 workLogId로 다시 검색 (_0_ 패턴 포함)
-      const realWorkLogId = `${eventId}_${actualStaffId}_0_${dateString}`;
+      // eventId를 포함한 실제 workLogId로 다시 검색 (조건부 _0_ 패턴)
+      const hasNumberSuffix = /_\d+$/.test(actualStaffId);
+      const realWorkLogId = hasNumberSuffix ? 
+        `${eventId}_${actualStaffId}_${dateString}` : 
+        `${eventId}_${actualStaffId}_0_${dateString}`;
       finalAttendanceRecord = getStaffAttendanceStatus(realWorkLogId);
     }
     
@@ -84,8 +88,11 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     if (finalAttendanceRecord && finalAttendanceRecord.workLogId) {
       realWorkLogId = finalAttendanceRecord.workLogId; // 실제 Firebase의 workLogId 사용
     } else if (eventId) {
-      // attendanceRecord가 없으면 eventId를 포함한 형식으로 생성 (_0_ 패턴 포함)
-      realWorkLogId = `${eventId}_${actualStaffId}_0_${dateString}`;
+      // attendanceRecord가 없으면 eventId를 포함한 형식으로 생성 (조건부 _0_ 패턴)
+      const hasNumberSuffix = /_\d+$/.test(actualStaffId);
+      realWorkLogId = hasNumberSuffix ? 
+        `${eventId}_${actualStaffId}_${dateString}` : 
+        `${eventId}_${actualStaffId}_0_${dateString}`;
     }
     
     return {
@@ -102,65 +109,93 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     staff.assignedDate, 
     staff.postingId,  // postingId 추가
     getStaffAttendanceStatus, 
-    eventId
+    eventId,
+    attendanceRecords  // ✅ props의 attendanceRecords 의존성 추가로 상태 변화 감지
   ]);
+
+  // 🔥 WorkLog 데이터를 별도 useMemo로 분리하여 변화 감지
+  const currentWorkLog = useMemo(() => {
+    const dateString = convertToDateString(staff.assignedDate) || getTodayString();
+    const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
+    
+    // 🔍 디버깅: getStaffWorkLog 호출 상세 분석 및 WorkLog ID 매칭 검증
+    logger.info('🔍 StaffRow currentWorkLog 상세 분석', {
+      component: 'StaffRow',
+      data: { 
+        staffId: staff.id, 
+        dateString,
+        expectedWorkLogIdPattern: `eventId_${staff.id}_${dateString} (conditional _0_)`,
+        hasWorkLog: !!workLog,
+        actualWorkLogId: workLog?.id,
+        getStaffWorkLogFunction: !!getStaffWorkLog,
+        scheduledStartTime: workLog?.scheduledStartTime,
+        scheduledEndTime: workLog?.scheduledEndTime,
+        assignedTime: workLog?.assignedTime
+      }
+    });
+    
+    return workLog;
+  }, [staff.id, staff.assignedDate, getStaffWorkLog]);
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
     // 날짜 추출
     const dateString = convertToDateString(staff.assignedDate) || getTodayString();
     
-    // getStaffWorkLog을 사용하여 workLog 데이터 가져오기
-    const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
-    
-    // 🔥 workLog의 scheduledStartTime을 최우선 사용 (실시간 Firebase 데이터)
+    // 🔥 workLog.scheduledStartTime을 최우선으로 사용 (Firebase 실시간 데이터)
     let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot; // fallback값
     
-    if (workLog?.scheduledStartTime) {
+    // 🔥 workLog.scheduledStartTime을 최우선으로 확인 (Firebase 실시간 업데이트 반영)
+    if (currentWorkLog?.scheduledStartTime) {
       try {
         // Timestamp를 시간 문자열로 변환
-        if (typeof workLog.scheduledStartTime === 'string') {
+        if (typeof currentWorkLog.scheduledStartTime === 'string') {
           // 문자열인 경우 그대로 사용
-          scheduledStartTime = workLog.scheduledStartTime;
-        } else if (workLog.scheduledStartTime && typeof workLog.scheduledStartTime === 'object' && 'toDate' in workLog.scheduledStartTime) {
+          scheduledStartTime = currentWorkLog.scheduledStartTime;
+        } else if (currentWorkLog.scheduledStartTime && typeof currentWorkLog.scheduledStartTime === 'object' && 'toDate' in currentWorkLog.scheduledStartTime) {
           // Timestamp인 경우 - 더 정확한 시간 포맷 사용
-          const timeDate = workLog.scheduledStartTime.toDate();
+          const timeDate = currentWorkLog.scheduledStartTime.toDate();
           const hours = timeDate.getHours().toString().padStart(2, '0');
           const minutes = timeDate.getMinutes().toString().padStart(2, '0');
           scheduledStartTime = `${hours}:${minutes}`;
         }
-        logger.debug('workLog scheduledStartTime 사용', {
+        logger.debug('currentWorkLog scheduledStartTime 사용 (우선순위 1)', {
           component: 'StaffRow',
           data: { staffId: staff.id, scheduledStartTime }
         });
       } catch (error) {
-        logger.warn('workLog 시간 변환 실패, fallback 사용', {
+        logger.warn('currentWorkLog scheduledStartTime 변환 실패, staff.assignedTime fallback 사용', {
           component: 'StaffRow',
-          data: { staffId: staff.id, error }
+          data: { staffId: staff.id, error, fallback: staff.assignedTime }
         });
       }
+    } else {
+      logger.debug('workLog 없음, staff.assignedTime fallback 사용 (우선순위 2)', {
+        component: 'StaffRow',
+        data: { staffId: staff.id, fallback: staff.assignedTime }
+      });
     }
     
-    // 🔥 퇴근시간 - workLog의 scheduledEndTime 최우선 사용
+    // 🔥 퇴근시간 - currentWorkLog의 scheduledEndTime 최우선 사용
     let scheduledEndTime = null;
-    if (workLog?.scheduledEndTime) {
+    if (currentWorkLog?.scheduledEndTime) {
       try {
-        if (typeof workLog.scheduledEndTime === 'string') {
+        if (typeof currentWorkLog.scheduledEndTime === 'string') {
           // 문자열인 경우 그대로 사용
-          scheduledEndTime = workLog.scheduledEndTime;
-        } else if (workLog.scheduledEndTime && typeof workLog.scheduledEndTime === 'object' && 'toDate' in workLog.scheduledEndTime) {
+          scheduledEndTime = currentWorkLog.scheduledEndTime;
+        } else if (currentWorkLog.scheduledEndTime && typeof currentWorkLog.scheduledEndTime === 'object' && 'toDate' in currentWorkLog.scheduledEndTime) {
           // Timestamp인 경우 - 더 정확한 시간 포맷 사용
-          const timeDate = workLog.scheduledEndTime.toDate();
+          const timeDate = currentWorkLog.scheduledEndTime.toDate();
           const hours = timeDate.getHours().toString().padStart(2, '0');
           const minutes = timeDate.getMinutes().toString().padStart(2, '0');
           scheduledEndTime = `${hours}:${minutes}`;
         }
-        logger.debug('workLog scheduledEndTime 사용', {
+        logger.debug('currentWorkLog scheduledEndTime 사용', {
           component: 'StaffRow',
           data: { staffId: staff.id, scheduledEndTime }
         });
       } catch (error) {
-        logger.warn('workLog 퇴근시간 변환 실패', {
+        logger.warn('currentWorkLog 퇴근시간 변환 실패', {
           component: 'StaffRow',
           data: { staffId: staff.id, error }
         });
@@ -175,7 +210,14 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
-  }, [staff, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
+  }, [
+    staff.id, 
+    staff.assignedDate, 
+    staff.assignedTime, 
+    formatTimeDisplay, 
+    getTimeSlotColor, 
+    currentWorkLog  // 🔥 currentWorkLog 의존성 추가로 WorkLog 변화 감지
+  ]);
 
   // 메모이제이션된 이벤트 핸들러들
   const handleEditStartTime = useCallback((e: React.MouseEvent) => {
@@ -372,18 +414,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           staffName={staff.name || ''}
           eventId={eventId || ''}
           size="sm"
-          actualStartTime={(() => {
-            // workLog에서 actualStartTime 가져오기
-            const dateString = convertToDateString(staff.assignedDate) || getTodayString();
-            const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
-            return workLog?.actualStartTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualStartTime;
-          })()}
-          actualEndTime={(() => {
-            // workLog에서 actualEndTime 가져오기
-            const dateString = convertToDateString(staff.assignedDate) || getTodayString();
-            const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
-            return workLog?.actualEndTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualEndTime;
-          })()}
+          actualStartTime={currentWorkLog?.actualStartTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualStartTime}
+          actualEndTime={currentWorkLog?.actualEndTime || memoizedAttendanceData.attendanceRecord?.workLog?.actualEndTime}
           scheduledStartTime={memoizedTimeData.displayStartTime}
           scheduledEndTime={memoizedTimeData.displayEndTime}
           canEdit={!!canEdit && !multiSelectMode}

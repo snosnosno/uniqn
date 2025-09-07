@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../../types/jobPosting';
 import { timestampToLocalDateString } from '../../../utils/dateUtils';
+import { logger } from '../../../utils/logger';
 import { Applicant, Assignment } from './types';
 import { formatDateDisplay } from './utils/applicantHelpers';
 
@@ -28,6 +29,20 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
   canEdit
 }) => {
   const { t } = useTranslation();
+  
+  // 🔍 강화된 디버깅 - 컴포넌트가 렌더링되는지 확인
+  logger.info('🚨 ApplicantActions 컴포넌트 렌더링!', {
+    component: 'ApplicantActions',
+    data: {
+      name: applicant?.applicantName || 'Unknown',
+      status: applicant?.status || 'Unknown',
+      canEdit: canEdit,
+      hasApplicant: !!applicant,
+      applicantStatusType: typeof applicant?.status,
+      applicantStatusValue: JSON.stringify(applicant?.status),
+      renderedAt: new Date().toISOString()
+    }
+  });
 
   // 지원 중인 상태 - 단일 선택 드롭다운
   if (applicant.status === 'applied') {
@@ -73,15 +88,30 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
     );
   }
 
-  // 확정된 상태 - 취소 버튼
-  if (applicant.status === 'confirmed') {
+  // 확정된 상태 - 취소 버튼 (confirmed 또는 cancelled 상태)
+  if (applicant.status === 'confirmed' || applicant.status === 'cancelled') {
+    logger.info('🚨 ApplicantActions: 확정 취소 버튼 렌더링!', {
+      component: 'ApplicantActions',
+      data: {
+        applicantName: applicant.applicantName,
+        applicantStatus: applicant.status,
+        canEdit: canEdit,
+        willShowButton: true
+      }
+    });
+    
     return (
       <div className="ml-4 text-sm space-y-2">
         <div className="flex space-x-2">
           <button 
             onClick={onCancelConfirmation}
-            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className={`px-3 py-1 text-white rounded text-sm font-medium ${
+              canEdit 
+                ? 'bg-red-500 hover:bg-red-600 cursor-pointer' 
+                : 'bg-gray-400 cursor-not-allowed'
+            }`}
             disabled={!canEdit}
+            title={!canEdit ? '권한이 없습니다' : '확정을 취소합니다'}
           >
             ❌ 확정 취소
           </button>
@@ -89,6 +119,10 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
       </div>
     );
   }
+
+  // 최종 로그 - 렌더링되지 않는 경우
+  const errorMessage = `ApplicantActions 렌더링되지 않음! 이름: ${applicant?.applicantName}, 상태: ${applicant?.status}, canEdit: ${canEdit}`;
+  logger.error('🚨 ' + errorMessage, new Error(errorMessage));
 
   return null;
 };

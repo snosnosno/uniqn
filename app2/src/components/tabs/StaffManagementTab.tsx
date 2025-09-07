@@ -9,11 +9,12 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import useUnifiedData from '../../hooks/useUnifiedData';
+import type { WorkLog } from '../../types/unifiedData';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 // createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
 
@@ -60,8 +61,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     state,
     loading,
     error,
-    refresh
+    refresh,
+    updateWorkLogOptimistic
   } = useUnifiedData();
+
 
   // 스태프 데이터 변환 및 메모이제이션
   const staffData = useMemo(() => {
@@ -101,7 +104,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
   }, [state.staff]);
 
-  // 출석 기록 배열 변환
+  // 🎯 출석 기록 배열 변환 (StaffRow에서 실시간 업데이트 감지용)
   const attendanceRecords = useMemo(() => {
     return state.attendanceRecords ? Array.from(state.attendanceRecords.values()) : [];
   }, [state.attendanceRecords]);
@@ -240,7 +243,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     const actualStaffId = staffId.replace(/_\d{4}-\d{2}-\d{2}$/, '');
     
     // Firebase에서 직접 최신 workLog 가져오기
-    const workLogId = `${jobPosting?.id || 'default-event'}_${actualStaffId}_0_${workDate}`;
+    const workLogId = `${jobPosting?.id || 'default-event'}_${actualStaffId}_${workDate}`;
     const workLogRef = doc(db, 'workLogs', workLogId);
     
     try {
@@ -305,9 +308,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   // WorkTimeEditor의 onUpdate 콜백 처리
   const handleWorkTimeUpdate = useCallback((updatedWorkLog: any) => {
-    // workLog가 업데이트되면 자동으로 Firebase 구독이 감지하여 UI 업데이트
-    // 추가로 필요한 처리가 있다면 여기서 수행
-    logger.info('WorkTimeEditor에서 시간 업데이트 완료', { 
+    logger.info('🚀 WorkTimeEditor에서 시간 업데이트 완료', { 
       component: 'StaffManagementTab',
       data: { 
         workLogId: updatedWorkLog.id,
@@ -315,11 +316,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       }
     });
     
-    // 업데이트된 데이터로 selectedWorkLog 갱신 (모달은 열어둠)
+    // 🚀 1단계: UnifiedDataContext를 통한 즉시 UI 업데이트
+    updateWorkLogOptimistic(updatedWorkLog);
+    
+    // 2단계: 업데이트된 데이터로 selectedWorkLog 갱신 (모달은 열어둠)
     setSelectedWorkLog(updatedWorkLog);
     
-    // 🎯 중요: UnifiedDataContext로 통합된 데이터 새로고침
-    logger.info('🔄 UnifiedData 강제 새로고침 시작', { 
+    // 🚀 3단계: Firebase 구독이 자동 동기화를 처리하므로 refresh() 제거
+    // 기존 refresh() 호출을 제거하여 불필요한 네트워크 요청 방지
+    logger.info('🎯 즉시 UI 업데이트 완료 (refresh 불필요)', { 
       component: 'StaffManagementTab',
       data: { 
         workLogId: updatedWorkLog.id,
@@ -327,8 +332,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         date: updatedWorkLog.date
       }
     });
-    refresh();
-  }, [refresh]);
+  }, [updateWorkLogOptimistic]);
   
 
   // 🎯 필터링된 데이터 계산 - 단순화된 그룹화 로직
@@ -386,13 +390,49 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return (record as any)?.status || 'absent';
   }, [attendanceRecords]);
   
-  const applyOptimisticUpdate = useCallback((staffId: string, status: string) => {
-    // Optimistic update logic placeholder
-    logger.info('Optimistic update applied', { 
-      component: 'StaffManagementTab',
-      data: { staffId, status }
-    });
-  }, []);
+  const applyOptimisticUpdate = useCallback((workLogId: string, status: string) => {
+    // 🚀 AttendanceStatusPopover에서 호출되는 Optimistic Update 콜백
+    // 실제 WorkLog를 찾아서 업데이트
+    const existingWorkLog = Array.from(state.workLogs.values()).find(wl => wl.id === workLogId);
+    
+    if (existingWorkLog) {
+      const optimisticWorkLog: Partial<WorkLog> = {
+        ...existingWorkLog,
+        status: status as any,
+        updatedAt: Timestamp.fromDate(new Date())
+      };
+      
+      // 조건부로 타임스탬프 필드 추가 (exactOptionalPropertyTypes 지원)
+      if (status === 'checked_in') {
+        optimisticWorkLog.actualStartTime = Timestamp.fromDate(new Date());
+      } else if (existingWorkLog.actualStartTime) {
+        optimisticWorkLog.actualStartTime = existingWorkLog.actualStartTime;
+      }
+      
+      if (status === 'checked_out') {
+        optimisticWorkLog.actualEndTime = Timestamp.fromDate(new Date());
+      } else if (existingWorkLog.actualEndTime) {
+        optimisticWorkLog.actualEndTime = existingWorkLog.actualEndTime;
+      }
+      
+      // UnifiedDataContext를 통한 즉시 UI 업데이트
+      updateWorkLogOptimistic(optimisticWorkLog as WorkLog);
+      
+      logger.info('🚀 StaffManagementTab Optimistic Update 완료', { 
+        component: 'StaffManagementTab',
+        data: { 
+          workLogId, 
+          status,
+          staffId: existingWorkLog.staffId 
+        }
+      });
+    } else {
+      logger.warn('⚠️ WorkLog를 찾을 수 없어 Optimistic Update 스킵', { 
+        component: 'StaffManagementTab',
+        data: { workLogId, status }
+      });
+    }
+  }, [state.workLogs, updateWorkLogOptimistic]);
   
   const formatTimeDisplay = useCallback((timeValue: any) => {
     if (!timeValue) return '';
@@ -413,8 +453,28 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
   
   const getStaffWorkLog = useCallback((staffId: string, date: string) => {
-    const workLogId = `${jobPosting?.id}_${staffId}_0_${date}`;
-    return state.workLogs?.get(workLogId) || null;
+    // 🔧 WorkLog ID 패턴 수정: staffId가 이미 '_0' 포함하므로 추가 '_0' 제거
+    const workLogId = `${jobPosting?.id}_${staffId}_${date}`;
+    const workLog = state.workLogs?.get(workLogId) || null;
+    
+    // 🔍 WorkLog ID 매칭 상세 디버깅
+    logger.info('🔍 getStaffWorkLog ID 매칭 수정 후', {
+      component: 'StaffManagementTab',
+      data: {
+        requestedStaffId: staffId,
+        requestedDate: date,
+        generatedWorkLogId: workLogId,
+        jobPostingId: jobPosting?.id,
+        workLogFound: !!workLog,
+        actualWorkLogId: workLog?.id,
+        workLogsMapSize: state.workLogs?.size || 0,
+        beforeFix: `${jobPosting?.id}_${staffId}_0_${date}`, // 이전 잘못된 패턴
+        afterFix: workLogId, // 수정된 패턴
+        matchingKeys: Array.from(state.workLogs?.keys() || []).filter(key => key.includes(staffId)).slice(0, 3)
+      }
+    });
+    
+    return workLog;
   }, [state.workLogs, jobPosting?.id]);
 
   // 🎯 삭제 핸들러 - 통합된 삭제 로직

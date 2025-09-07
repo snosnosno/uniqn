@@ -54,6 +54,9 @@ export const useUnifiedData = () => {
     stats: context.getStats(),
     refresh: context.refresh,
     performanceMetrics: context.getPerformanceMetrics(),
+    
+    // Optimistic Update 함수들
+    updateWorkLogOptimistic: context.updateWorkLogOptimistic,
   };
 };
 

@@ -9,6 +9,8 @@ import { getTodayString } from '../utils/jobPosting/dateUtils';
 import { calculateMinutes } from '../utils/timeUtils';
 import { formatTime } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
+import { useUnifiedData } from '../hooks/useUnifiedData';
+import type { WorkLog } from '../types/unifiedData';
 
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
@@ -47,6 +49,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
+  const { updateWorkLogOptimistic } = useUnifiedData();
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
@@ -151,20 +154,64 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     setIsUpdating(true);
     setIsOpen(false);
 
-    // 🚀 Optimistic Update 즉시 적용
+    // 🚀 1단계: Optimistic Update 즉시 적용
     const targetWorkLogId = workLogId.startsWith('virtual_') ? 
       `${eventId || 'default-event'}_${workLogId.split('_')[1]}_${workLogId.split('_')[2]}` : 
       workLogId;
     
-    // 1. 즉시 UI 업데이트 (Optimistic Update)
+    // WorkLog 객체 생성 for Optimistic Update
+    const now = Timestamp.now();
+    const optimisticWorkLog: Partial<WorkLog> = {
+      id: targetWorkLogId,
+      eventId: eventId || 'default-event',
+      staffId: staffId,
+      staffName: staffName,
+      date: getTodayString(), // 오늘 날짜 사용
+      role: 'staff', // 기본값
+      status: newStatus as any,
+      updatedAt: now,
+      createdAt: now // 기본값
+    };
+    
+    // 조건부로 타임스탬프 필드 추가 (exactOptionalPropertyTypes 지원)
+    if (scheduledStartTime instanceof Timestamp) {
+      optimisticWorkLog.scheduledStartTime = scheduledStartTime;
+    }
+    if (scheduledEndTime instanceof Timestamp) {
+      optimisticWorkLog.scheduledEndTime = scheduledEndTime;
+    }
+    if (newStatus === 'checked_in') {
+      optimisticWorkLog.actualStartTime = now;
+    } else if (actualStartTime instanceof Timestamp) {
+      optimisticWorkLog.actualStartTime = actualStartTime;
+    }
+    if (newStatus === 'checked_out') {
+      optimisticWorkLog.actualEndTime = now;
+    } else if (actualEndTime instanceof Timestamp) {
+      optimisticWorkLog.actualEndTime = actualEndTime;
+    }
+    
+    // UnifiedDataContext를 통한 즉시 UI 업데이트
+    updateWorkLogOptimistic(optimisticWorkLog as WorkLog);
+    
+    // 레거시 콜백 호출 (호환성 유지)
     if (applyOptimisticUpdate) {
       applyOptimisticUpdate(targetWorkLogId, newStatus);
     }
     
-    // 2. 즉시 콜백 실행 (기존 100ms 지연 제거)
+    // 즉시 콜백 실행 (기존 100ms 지연 제거)
     if (onStatusChange) {
       onStatusChange(newStatus);
     }
+    
+    logger.info('🚀 AttendanceStatusPopover Optimistic Update 완료', { 
+      component: 'AttendanceStatusPopover',
+      data: { 
+        workLogId: targetWorkLogId,
+        staffId: staffId,
+        newStatus: newStatus
+      } 
+    });
 
     try {
       const now = Timestamp.now();
@@ -200,7 +247,16 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           date = getTodayString();
         }
         
-        realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_0_${date}`;
+        // actualStaffId에 이미 _숫자가 있는지 체크 (예: tURgdOBmtYfO5Bgzm8NyGKGtbL12_0)
+        const hasNumberSuffix = /_\d+$/.test(actualStaffId);
+        
+        if (hasNumberSuffix) {
+          // 이미 _숫자가 있으면 추가 _0을 붙이지 않음
+          realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_${date}`;
+        } else {
+          // 없으면 기존 방식대로 _0 추가
+          realWorkLogId = `${eventId || 'default-event'}_${actualStaffId}_0_${date}`;
+        }
       }
       
       // 🚀 통합 workLog 업데이트 - 트랜잭션 사용
@@ -251,12 +307,51 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     } catch (error) {
       logger.error('AttendanceStatusPopover 상태 변경 오류', error instanceof Error ? error : new Error(String(error)));
       
-      // 4. 에러 발생 시 Optimistic Update 롤백
+      // 🚀 3단계: 에러 발생 시 Optimistic Update 롤백
+      const rollbackWorkLog: Partial<WorkLog> = {
+        id: targetWorkLogId,
+        eventId: eventId || 'default-event',
+        staffId: staffId,
+        staffName: staffName,
+        date: getTodayString(),
+        role: 'staff',
+        status: currentStatus as any, // 원래 상태로 복원
+        updatedAt: Timestamp.now(),
+        createdAt: now
+      };
+      
+      // 조건부로 타임스탬프 필드 추가 (rollback)
+      if (scheduledStartTime instanceof Timestamp) {
+        rollbackWorkLog.scheduledStartTime = scheduledStartTime;
+      }
+      if (scheduledEndTime instanceof Timestamp) {
+        rollbackWorkLog.scheduledEndTime = scheduledEndTime;
+      }
+      if (actualStartTime instanceof Timestamp) {
+        rollbackWorkLog.actualStartTime = actualStartTime;
+      }
+      if (actualEndTime instanceof Timestamp) {
+        rollbackWorkLog.actualEndTime = actualEndTime;
+      }
+      
+      // UnifiedDataContext를 통한 롤백
+      updateWorkLogOptimistic(rollbackWorkLog as WorkLog);
+      
+      logger.info('🔄 AttendanceStatusPopover Optimistic Update 롤백 완료', { 
+        component: 'AttendanceStatusPopover',
+        data: { 
+          workLogId: targetWorkLogId,
+          staffId: staffId,
+          rollbackStatus: currentStatus
+        } 
+      });
+      
+      // 레거시 콜백 롤백 (호환성 유지)
       if (applyOptimisticUpdate) {
         applyOptimisticUpdate(targetWorkLogId, currentStatus);
       }
       
-      // 5. 에러 콜백 실행 (원래 상태로 복원)
+      // 에러 콜백 실행 (원래 상태로 복원)
       if (onStatusChange) {
         onStatusChange(currentStatus);
       }

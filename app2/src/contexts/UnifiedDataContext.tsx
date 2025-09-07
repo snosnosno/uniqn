@@ -767,30 +767,26 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
   const updateWorkLogOptimistic = useCallback((workLog: WorkLog) => {
     dispatch({ type: 'UPDATE_WORK_LOG', workLog });
     
-    // 3초 후 실제 데이터로 갱신
-    setTimeout(() => {
-      refresh('workLogs');
-    }, 3000);
+    // 🔥 Firebase 실시간 구독이 자동으로 업데이트를 처리하므로 수동 새로고침 제거
+    // 이전: 3초 후 강제 새로고침으로 Optimistic Update가 덮어씌워지는 문제
     
     logger.info('WorkLog Optimistic Update 적용', { 
       component: 'UnifiedDataContext', 
       data: { workLogId: workLog.id, staffId: workLog.staffId } 
     });
-  }, [refresh]);
+  }, []);
 
   const updateAttendanceOptimistic = useCallback((record: AttendanceRecord) => {
     dispatch({ type: 'UPDATE_ATTENDANCE_RECORD', record });
     
-    // 3초 후 실제 데이터로 갱신
-    setTimeout(() => {
-      refresh('attendanceRecords');
-    }, 3000);
+    // 🔥 Firebase 실시간 구독이 자동으로 업데이트를 처리하므로 수동 새로고침 제거
+    // 이전: 3초 후 강제 새로고침으로 Optimistic Update가 덮어씌워지는 문제
     
     logger.info('AttendanceRecord Optimistic Update 적용', { 
       component: 'UnifiedDataContext', 
       data: { recordId: record.id, staffId: record.staffId, status: record.status } 
     });
-  }, [refresh]);
+  }, []);
 
   const updateStaffOptimistic = useCallback((staff: Staff) => {
     dispatch({ type: 'UPDATE_STAFF', staff });
