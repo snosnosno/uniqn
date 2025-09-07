@@ -239,39 +239,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           transaction.update(workLogRef, updateData);
           
         } else {
-          // ❌ workLog가 존재하지 않으면 새로 생성 (WorkTimeEditor에서 먼저 생성되어야 함)
-          // workLogId에서 정보 추출
-          const parts = realWorkLogId.split('_');
-          let extractedEventId = eventId || 'default-event';
-          let extractedStaffId = staffId;
-          let extractedDate = getTodayString();
-          
-          if (parts.length >= 4) {
-            extractedEventId = parts[0] || 'default-event';
-            extractedDate = parts[parts.length - 1] || getTodayString();
-            // staffId_0 부분에서 staffId만 추출
-            extractedStaffId = parts.slice(1, -2).join('_');
-          }
-          
-          const newWorkLogData = {
-            eventId: extractedEventId,
-            staffId: extractedStaffId,
-            staffName: staffName || 'Unknown',
-            date: extractedDate,
-            role: 'floor', // 기본 역할
-            type: 'manual',
-            status: newStatus,
-            // scheduled 시간은 null로 초기화 (WorkTimeEditor에서 설정)
-            scheduledStartTime: null,
-            scheduledEndTime: null,
-            // actual 시간 설정
-            actualStartTime: newStatus === 'checked_in' || newStatus === 'checked_out' ? now : null,
-            actualEndTime: newStatus === 'checked_out' ? now : null,
-            createdAt: now,
-            updatedAt: now
-          };
-          
-          transaction.set(workLogRef, newWorkLogData);
+          // 🚀 WorkLog가 존재하지 않으면 에러 발생 (스태프 확정 시 사전 생성되어야 함)
+          throw new Error(`WorkLog가 존재하지 않습니다. 스태프 확정 시 사전 생성되어야 합니다. ID: ${realWorkLogId}`);
         }
       });
 

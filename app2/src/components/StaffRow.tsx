@@ -73,8 +73,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     // 더 정확한 매칭을 위해 여러 방법으로 검색
     let finalAttendanceRecord = attendanceRecord;
     if (!finalAttendanceRecord && eventId) {
-      // eventId를 포함한 실제 workLogId로 다시 검색
-      const realWorkLogId = `${eventId}_${actualStaffId}_${dateString}`;
+      // eventId를 포함한 실제 workLogId로 다시 검색 (_0_ 패턴 포함)
+      const realWorkLogId = `${eventId}_${actualStaffId}_0_${dateString}`;
       finalAttendanceRecord = getStaffAttendanceStatus(realWorkLogId);
     }
     
@@ -84,8 +84,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     if (finalAttendanceRecord && finalAttendanceRecord.workLogId) {
       realWorkLogId = finalAttendanceRecord.workLogId; // 실제 Firebase의 workLogId 사용
     } else if (eventId) {
-      // attendanceRecord가 없으면 eventId를 포함한 형식으로 생성
-      realWorkLogId = `${eventId}_${actualStaffId}_${dateString}`;
+      // attendanceRecord가 없으면 eventId를 포함한 형식으로 생성 (_0_ 패턴 포함)
+      realWorkLogId = `${eventId}_${actualStaffId}_0_${dateString}`;
     }
     
     return {

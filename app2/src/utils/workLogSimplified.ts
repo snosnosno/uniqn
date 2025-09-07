@@ -7,14 +7,14 @@ import { Timestamp } from 'firebase/firestore';
  */
 
 /**
- * WorkLog ID 생성 (표준 형식: eventId_staffId_date)
+ * WorkLog ID 생성 (표준 형식: eventId_staffId_0_date)
  */
 export const createWorkLogId = (
   eventId: string, 
   staffId: string, 
   date: string
 ): string => {
-  return `${eventId}_${staffId}_${date}`;
+  return `${eventId}_${staffId}_0_${date}`;
 };
 
 /**
@@ -209,29 +209,6 @@ export const prepareWorkLogUpdate = (
 };
 
 /**
- * 가상 WorkLog 생성 (UI 표시용, DB 저장 X)
+ * 🚀 createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
+ * 가상 WorkLog는 더 이상 사용하지 않습니다.
  */
-export const createVirtualWorkLog = (
-  staffId: string,
-  date: string,
-  eventId?: string
-) => {
-  const id = eventId 
-    ? `${eventId}_${staffId}_${date}`
-    : `virtual_${staffId}_${date}`;
-    
-  return {
-    id: `virtual_${id}`,
-    eventId: eventId || '',
-    staffId,
-    staffName: '',
-    role: '',
-    date,
-    scheduledStartTime: null,
-    scheduledEndTime: null,
-    actualStartTime: null,
-    actualEndTime: null,
-    status: 'scheduled' as const,
-    isVirtual: true
-  };
-};

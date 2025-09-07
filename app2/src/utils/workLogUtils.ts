@@ -85,8 +85,8 @@ export const generateVirtualWorkLogId = (
   const normalizedDate = normalizeStaffDate(date);
   
   if (eventId) {
-    // eventId가 있으면 실제 workLogId 형식
-    return `${eventId}_${actualStaffId}_${normalizedDate}`;
+    // eventId가 있으면 실제 workLogId 형식 (_0_ 패턴 포함)
+    return `${eventId}_${actualStaffId}_0_${normalizedDate}`;
   }
   
   // eventId가 없으면 virtual_ prefix 추가
@@ -217,57 +217,55 @@ export const convertAssignedTimeToScheduled = (
 };
 
 /**
- * 가상 WorkLog 생성 (DB에 저장되지 않은 임시 객체)
+ * 🚀 createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
+ * 가상 WorkLog는 더 이상 사용하지 않습니다.
  */
-export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
-  const {
-    eventId,
-    staffId,
-    staffName,
-    role,
-    date,
-    assignedTime,
-    scheduledStartTime,
-    scheduledEndTime,
-    actualStartTime,
-    actualEndTime,
-    status = 'not_started'
-  } = params;
-  
-
-  const workLogId = generateWorkLogId(eventId, staffId, date);
-  
-  // assignedTime이 있고 scheduledStartTime이 없는 경우 변환
-  let startTime = scheduledStartTime;
-  let endTime = scheduledEndTime;
-  
-  if (!startTime && assignedTime && assignedTime !== '미정') {
-    const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } = 
-      convertAssignedTimeToScheduled(assignedTime, date);
-    startTime = convertedStart;
-    if (!endTime) {
-      endTime = convertedEnd;
-    }
-  }
-
-  return {
-    id: `virtual_${workLogId}`,
-    eventId,
-    staffId,
-    staffName: staffName,
-    role,  // 역할 추가
-    date,
-    scheduledStartTime: startTime || null,
-    scheduledEndTime: endTime || null,
-    actualStartTime: actualStartTime || null,
-    actualEndTime: actualEndTime || null,
-    status,
-    // 가상 WorkLog 표시자 - Firebase에 저장되지 않은 임시 객체
-    isVirtual: true,
-    // 원본 assignedTime 보존 (디버깅 및 fallback용)
-    assignedTime: assignedTime || null
-  };
-};
+// 🚀 createVirtualWorkLog 함수 전체 주석 처리됨
+// export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
+//   const {
+//     eventId,
+//     staffId,
+//     staffName,
+//     role,
+//     date,
+//     assignedTime,
+//     scheduledStartTime,
+//     scheduledEndTime,
+//     actualStartTime,
+//     actualEndTime,
+//     status = 'not_started'
+//   } = params;
+//   
+//   const workLogId = generateWorkLogId(eventId, staffId, date);
+//   
+//   let startTime = scheduledStartTime;
+//   let endTime = scheduledEndTime;
+//   
+//   if (!startTime && assignedTime && assignedTime !== '미정') {
+//     const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } = 
+//       convertAssignedTimeToScheduled(assignedTime, date);
+//     startTime = convertedStart;
+//     if (!endTime) {
+//       endTime = convertedEnd;
+//     }
+//   }
+// 
+//   return {
+//     id: `virtual_${workLogId}`,
+//     eventId,
+//     staffId,
+//     staffName: staffName,
+//     role,
+//     date,
+//     scheduledStartTime: startTime || null,
+//     scheduledEndTime: endTime || null,
+//     actualStartTime: actualStartTime || null,
+//     actualEndTime: actualEndTime || null,
+//     status,
+//     isVirtual: true,
+//     assignedTime: assignedTime || null
+//   };
+// };
 
 /**
  * 새로운 WorkLog 데이터 생성 (DB 저장용)

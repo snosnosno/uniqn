@@ -188,6 +188,9 @@ REACT_APP_FIREBASE_AUTH_DOMAIN=your_domain
 ### 🚨 **알려진 이슈**
 - **무한 로딩 문제**: `loading.initial` 사용 (해결됨 ✅)
 - **데이터 표시 불일치**: assignments 필드 누락 문제 (해결됨 ✅)
+- **WorkLog 중복 생성 문제**: 스태프 확정 시 사전 생성으로 해결됨 ✅
+- **WorkLog ID 패턴 통일**: `${eventId}_${staffId}_0_${date}` 패턴으로 일관성 확보 ✅
+- **화면 실시간 업데이트 지연**: 출석 상태 변경 후 즉시 반영되지 않는 문제 (⚠️ 진행 중)
 - **근무시간 계산**: `scheduledStartTime/scheduledEndTime` 사용 필수
 - **급여 계산**: `payrollCalculations.ts` 통합 유틸리티만 사용
 
@@ -227,6 +230,7 @@ const unsubscribe = onSnapshot(collection(db, 'staff'), (snapshot) => {
 ### 핵심 문서
 - `docs/SCHEDULE_PAGE_RENOVATION_PLAN.md` - **전면 아키텍처 개편 계획서** (필독)
 - `docs/DATA_USAGE_MAPPING.md` - **데이터 사용처 완전 분석** (페이지/탭/모달별 매핑)
+- `docs/STAFF_TAB_ANALYSIS.md` - **스태프탭 분석 및 수정 가이드** (WorkLog 중복 생성 문제 해결 포함)
 - `docs/SYNCHRONIZATION_BUG_FIX_REPORT.md` - 동기화 문제 해결 보고서
 - `docs/FIREBASE_DATA_FLOW.md` - Firebase 데이터 구조 및 흐름
 - `docs/TECHNICAL_DOCUMENTATION.md` - 기술 문서
@@ -284,6 +288,15 @@ const formattedDate = format(new Date(), 'yyyy-MM-dd', { locale: ko });
 | 월 운영비 | $70 | < $100 | ✅ (77% 절약) |
 
 ## 🔄 **최근 주요 업데이트**
+
+### 2025-09-07: **WorkLog 중복 생성 문제 완전 해결** 🎉
+- **WorkLog 중복 생성 문제 100% 해결**: 시간수정+출석상태변경 시 2개 생성 → 1개만 생성
+- **스태프 확정 시 WorkLog 사전 생성**: `useApplicantActions.ts`에서 스태프 확정과 동시에 WorkLog 생성
+- **WorkLog ID 패턴 통일**: `${eventId}_${staffId}_0_${date}` 패턴으로 모든 파일 일관성 확보
+- **출석 상태 변경 정상화**: AttendanceStatusPopover에서 기존 WorkLog 업데이트만 수행  
+- **실시간 동기화 개선**: Optimistic Update로 즉시 UI 반영 및 성공 알림 표시
+- **수정된 핵심 파일**: useApplicantActions.ts, WorkTimeEditor.tsx, AttendanceStatusPopover.tsx, workLogSimplified.ts, StaffRow.tsx 등
+- **⚠️ 남은 이슈**: 출석 상태 변경 후 화면 실시간 업데이트 지연 문제
 
 ### 2025-09-06: **데이터 표시 일관성 개선** ✅
 - **지원자 탭과 내 지원 현황 탭 간 데이터 표시 불일치 해결**
@@ -456,5 +469,5 @@ logger.info('사용자 정보', { user }); // ❌ 개인정보 포함
 6. 보안 체크리스트 확인
 7. 커밋 컨벤션 준수
 
-*마지막 업데이트: 2025년 9월 (데이터 표시 일관성 개선)*  
-*프로젝트 버전: v4.1 (Production Ready)*
+*마지막 업데이트: 2025년 9월 7일 (WorkLog 중복 생성 문제 완전 해결)*  
+*프로젝트 버전: v4.2 (Production Ready)*

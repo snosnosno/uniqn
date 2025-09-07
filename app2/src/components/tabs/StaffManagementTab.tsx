@@ -15,7 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import useUnifiedData from '../../hooks/useUnifiedData';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
-import { createVirtualWorkLog } from '../../utils/workLogSimplified';
+// createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
 
 // 유틸리티 imports
 import { useResponsive } from '../../hooks/useResponsive';
@@ -240,7 +240,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     const actualStaffId = staffId.replace(/_\d{4}-\d{2}-\d{2}$/, '');
     
     // Firebase에서 직접 최신 workLog 가져오기
-    const workLogId = `${jobPosting?.id || 'default-event'}_${actualStaffId}_${workDate}`;
+    const workLogId = `${jobPosting?.id || 'default-event'}_${actualStaffId}_0_${workDate}`;
     const workLogRef = doc(db, 'workLogs', workLogId);
     
     try {
@@ -277,37 +277,19 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         const timeValue = staff.assignedTime || (staff as any).timeSlot || null;
         
         // 디버깅: staff의 시간 값 확인
-        logger.info('가상 WorkLog 생성 시도', { 
+        // 🚀 스태프 확정 시 사전 생성된 WorkLog를 찾아서 에러 메시지 표시
+        logger.error('WorkLog를 찾을 수 없습니다. 스태프 확정 시 사전 생성되어야 합니다.', new Error('WorkLog not found'), {
           component: 'StaffManagementTab',
           data: {
             staffId: actualStaffId,
             staffName: staff.name,
-            assignedTime: staff.assignedTime,
-            timeSlot: (staff as any).timeSlot,
-            timeValue,
-            workDate
+            workDate,
+            expectedWorkLogId: workLogId
           }
         });
         
-        // 해당 날짜의 가상 WorkLog 생성 (유틸리티 함수 사용)
-        const virtualWorkLog = createVirtualWorkLog(
-          actualStaffId,
-          workDate,
-          jobPosting?.id
-        );
-        
-        // staff 정보 추가
-        const enrichedVirtualWorkLog = {
-          ...virtualWorkLog,
-          staffName: staff.name || '이름 미정',
-          role: staff.role || '',
-          assignedRole: staff.assignedRole || '',  // 중요: assignedRole 추가
-          assignedTime: staff.assignedTime || '',
-          assignedDate: staff.assignedDate || ''
-        };
-        
-        setSelectedWorkLog(enrichedVirtualWorkLog);
-        setIsWorkTimeEditorOpen(true);
+        showError(`${staff.name}님의 ${workDate} 근무 기록을 찾을 수 없습니다. 스태프 확정 시 자동 생성되어야 합니다.`);
+        return;
       }
     } catch (error) {
       logger.error('WorkLog 가져오기 실패', error instanceof Error ? error : new Error(String(error)), { 
@@ -315,25 +297,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         data: { staffId, workDate }
       });
       
-      // 오류 발생 시 가상 WorkLog 생성
-      const virtualWorkLog = createVirtualWorkLog(
-        actualStaffId,
-        workDate,
-        jobPosting?.id
-      );
-      
-      // staff 정보 추가
-      const enrichedVirtualWorkLog = {
-        ...virtualWorkLog,
-        staffName: staff.name || '이름 미정',
-        role: staff.role || '',
-        assignedRole: staff.assignedRole || '',  // 중요: assignedRole 추가
-        assignedTime: staff.assignedTime || '',
-        assignedDate: staff.assignedDate || ''
-      };
-      
-      setSelectedWorkLog(enrichedVirtualWorkLog);
-      setIsWorkTimeEditorOpen(true);
+      // 🚀 오류 발생 시에도 가상 WorkLog 생성하지 않고 에러 처리
+      showError(`${staff.name}님의 근무 기록 조회 중 오류가 발생했습니다.`);
+      return;
     }
   }, [canEdit, staffData, jobPosting?.id, showError]);
   
@@ -447,7 +413,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
   
   const getStaffWorkLog = useCallback((staffId: string, date: string) => {
-    const workLogId = `${jobPosting?.id}_${staffId}_${date}`;
+    const workLogId = `${jobPosting?.id}_${staffId}_0_${date}`;
     return state.workLogs?.get(workLogId) || null;
   }, [state.workLogs, jobPosting?.id]);
 

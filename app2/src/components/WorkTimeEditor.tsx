@@ -119,199 +119,79 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         newEndTime
       } });
       
-      // 가상 WorkLog인지 확인 (ID가 'virtual_'로 시작하는 경우)
-      const isVirtual = workLog.id.startsWith('virtual_');
+      // 🚀 단순화된 WorkLog 업데이트 (사전 생성된 WorkLog만 업데이트)
+      // 스태프 확정 시 이미 WorkLog가 생성되었으므로 업데이트만 수행
+      const workLogRef = doc(db, 'workLogs', workLog.id);
       
-      let finalWorkLogId = workLog.id;
-      
-      if (isVirtual) {
-        // 가상 WorkLog의 경우 새로운 문서 생성
-        const realWorkLogId = `${workLog.eventId}_${workLog.staffId}_${workLog.date}`;
-        finalWorkLogId = realWorkLogId;
-        const workLogRef = doc(db, 'workLogs', realWorkLogId);
+      // 트랜잭션을 사용하여 원자적 업데이트 보장
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(workLogRef);
         
-        // 통합 시스템 사용 - staffId는 아래에서 사용됨
-        
-        // 가상 WorkLog 저장 시 시간 값 우선순위:
-        // 1. UI에 표시된 값 (startTime/endTime) - 이미 스태프탭에서 설정된 값
-        // 2. 새로 파싱된 값 (newStartTime/newEndTime) 
-        // 3. workLog의 기존 scheduledTime 값
-        let finalStartTime = newStartTime;
-        let finalEndTime = newEndTime;
-        
-        // 중요: UI에 표시된 값이 있으면 무조건 사용 (스태프탭 설정 우선)
-        if (!finalStartTime && startTime && startTime.trim() !== '') {
-          // startTime이 있으면 이를 파싱해서 사용
-          finalStartTime = parseTimeToTimestamp(startTime, workLog.date);
-          logger.debug('Using UI startTime for virtual WorkLog', { 
-            component: 'WorkTimeEditor', 
-            data: { startTime, finalStartTime } 
-          });
+        if (!docSnap.exists()) {
+          throw new Error(`WorkLog가 존재하지 않습니다. ID: ${workLog.id}`);
         }
         
-        if (!finalEndTime && endTime && endTime.trim() !== '') {
-          // endTime이 있으면 이를 파싱해서 사용
-          finalEndTime = parseTimeToTimestamp(endTime, workLog.date);
-          logger.debug('Using UI endTime for virtual WorkLog', { 
-            component: 'WorkTimeEditor', 
-            data: { endTime, finalEndTime } 
-          });
-        }
-        
-        // assignedTime이 있으면 scheduledStartTime의 기본값으로 사용
-        if (!finalStartTime && workLog.assignedTime) {
-          finalStartTime = parseTimeToTimestamp(workLog.assignedTime, workLog.date);
-          logger.debug('Using assignedTime as scheduledStartTime', { 
-            component: 'WorkTimeEditor', 
-            data: { assignedTime: workLog.assignedTime } 
-          });
-        }
-        
-        // 그래도 없으면 workLog의 기존 값 사용
-        if (!finalStartTime && workLog.scheduledStartTime) {
-          finalStartTime = workLog.scheduledStartTime instanceof Date ? 
-            Timestamp.fromDate(workLog.scheduledStartTime) : 
-            workLog.scheduledStartTime;
-          logger.debug('Using existing scheduledStartTime', { 
-            component: 'WorkTimeEditor', 
-            data: { scheduledStartTime: workLog.scheduledStartTime } 
-          });
-        }
-        
-        if (!finalEndTime && workLog.scheduledEndTime) {
-          finalEndTime = workLog.scheduledEndTime instanceof Date ? 
-            Timestamp.fromDate(workLog.scheduledEndTime) : 
-            workLog.scheduledEndTime;
-          logger.debug('Using existing scheduledEndTime', { 
-            component: 'WorkTimeEditor', 
-            data: { scheduledEndTime: workLog.scheduledEndTime } 
-          });
-        }
-        
-        // 최종 저장 데이터 로깅
-        logger.info('Virtual WorkLog final times', { 
-          component: 'WorkTimeEditor', 
-          data: {
-            startTime: startTime || 'empty',
-            endTime: endTime || 'empty',
-            finalStartTime: finalStartTime ? 'set' : 'null',
-            finalEndTime: finalEndTime ? 'set' : 'null'
-          }
-        });
-        
-        const createInput: WorkLogCreateInput = {
-          staffId: getStaffIdentifier(workLog),
-          eventId: workLog.eventId || '',
-          staffName: workLog.staffName || '',
-          date: workLog.date,
-          role: workLog.assignedRole || workLog.role || 'dealer',  // assignedRole 우선 사용
-          type: 'schedule',
-          scheduledStartTime: finalStartTime,
-          scheduledEndTime: finalEndTime,
-          status: 'scheduled'
+        const updatePayload: any = {
+          updatedAt: Timestamp.now()
         };
         
-        const workLogData = prepareWorkLogForCreate(createInput);
-        await setDoc(workLogRef, workLogData);
+        // scheduled 시간만 업데이트 (actual 시간은 유지)
+        if (startTime === '') {
+          updatePayload.scheduledStartTime = null;
+        } else if (startTime && startTime.trim() !== '') {
+          updatePayload.scheduledStartTime = newStartTime;
+        } else {
+          updatePayload.scheduledStartTime = null;
+        }
         
-        logger.info('가상 WorkLog를 실제 문서로 생성 완료', { component: 'WorkTimeEditor', data: { 
-          id: realWorkLogId, 
-          startTime: startTime || '미정',
-          endTime: endTime || '미정' 
-        } });
-      } else {
-        // 기존 WorkLog 업데이트 - 통합된 트랜잭션 기반 로직 사용
-        const workLogRef = doc(db, 'workLogs', workLog.id);
+        if (endTime === '') {
+          updatePayload.scheduledEndTime = null;
+        } else if (endTime && endTime.trim() !== '') {
+          updatePayload.scheduledEndTime = newEndTime;
+        } else {
+          updatePayload.scheduledEndTime = null;
+        }
         
-        // 트랜잭션을 사용하여 원자적 업데이트 보장
-        await runTransaction(db, async (transaction) => {
-          const docSnap = await transaction.get(workLogRef);
-          
-          const updatePayload: any = {
-            updatedAt: Timestamp.now()
-          };
-          
-          // scheduled 시간만 업데이트 (actual 시간은 유지)
-          if (startTime === '') {
-            updatePayload.scheduledStartTime = null;
-          } else if (startTime && startTime.trim() !== '') {
-            updatePayload.scheduledStartTime = newStartTime;
-          } else {
-            updatePayload.scheduledStartTime = null;
-          }
-          
-          if (endTime === '') {
-            updatePayload.scheduledEndTime = null;
-          } else if (endTime && endTime.trim() !== '') {
-            updatePayload.scheduledEndTime = newEndTime;
-          } else {
-            updatePayload.scheduledEndTime = null;
-          }
-          
-          if (docSnap.exists()) {
-            // 기존 문서 업데이트 - actual 시간과 상태는 유지
-            transaction.update(workLogRef, updatePayload);
-          } else {
-            // 새 문서 생성 - 모든 필드 초기화
-            const newWorkLogData = {
-              eventId: workLog.eventId || '',
-              staffId: getStaffIdentifier(workLog),
-              staffName: workLog.staffName || '',
-              date: workLog.date,
-              role: workLog.assignedRole || workLog.role || 'dealer',
-              type: 'schedule',
-              status: 'scheduled',
-              // scheduled 시간 설정
-              scheduledStartTime: updatePayload.scheduledStartTime,
-              scheduledEndTime: updatePayload.scheduledEndTime,
-              // actual 시간은 null로 초기화
-              actualStartTime: null,
-              actualEndTime: null,
-              createdAt: Timestamp.now(),
-              updatedAt: Timestamp.now()
-            };
-            transaction.set(workLogRef, newWorkLogData);
-          }
-        });
-        
-        logger.info('WorkLog 통합 업데이트 완료', { component: 'WorkTimeEditor', data: { 
+        // 기존 문서 업데이트 - actual 시간과 상태는 유지
+        transaction.update(workLogRef, updatePayload);
+      });
+      
+      logger.info('WorkLog 업데이트 완료 (사전 생성된 WorkLog)', { 
+        component: 'WorkTimeEditor', 
+        data: { 
           id: workLog.id, 
           startTime: startTime || '미정',
-          endTime: endTime || '미정',
-          transaction: true
-        } });
-      }
+          endTime: endTime || '미정'
+        } 
+      });
       
-      // 🚀 즉시 UI 업데이트 (Optimistic Update) - setTimeout 제거
+      // 🚀 즉시 UI 업데이트 (Optimistic Update)
       if (onUpdate) {
         const updatedWorkLog = {
           ...workLog,
-          id: finalWorkLogId, // 가상 ID를 실제 ID로 변경
           // 변경된 값만 업데이트, 변경되지 않은 값은 기존 값 유지
           scheduledStartTime: startTime === '' ? null : (startTime && startTime.trim() !== '' ? newStartTime : workLog.scheduledStartTime),
           scheduledEndTime: endTime === '' ? null : (endTime && endTime.trim() !== '' ? newEndTime : workLog.scheduledEndTime),
           updatedAt: Timestamp.now()
         };
         
-        // 즉시 UI 업데이트 실행 (지연 없음)
+        // 즉시 UI 업데이트 실행
         onUpdate(updatedWorkLog);
         
-        // 업데이트 성공 로그
         logger.info('WorkTimeEditor 즉시 onUpdate 콜백 호출 완료', { 
           component: 'WorkTimeEditor', 
           data: { 
             staffId: workLog.staffId,
             date: workLog.date,
             newStartTime: startTime || '미정',
-            newEndTime: endTime || '미정',
-            immediate: true // 즉시 업데이트 표시
+            newEndTime: endTime || '미정'
           } 
         });
       }
       
       // 저장 후 Firebase에서 최신 데이터 다시 가져오기
-      const workLogRef = doc(db, 'workLogs', finalWorkLogId);
-      const docSnap = await getDoc(workLogRef);
+      const finalWorkLogRef = doc(db, 'workLogs', workLog.id);
+      const docSnap = await getDoc(finalWorkLogRef);
       
       if (docSnap.exists()) {
         const data = docSnap.data();

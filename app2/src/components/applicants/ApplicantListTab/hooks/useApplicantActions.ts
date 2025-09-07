@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
 import { db, promoteToStaff } from '../../../../firebase';
@@ -24,6 +24,121 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
   // 권한 체크 - 공고 작성자만 수정 가능
   const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
+
+  /**
+   * WorkLog 사전 생성 함수 (스태프 확정 시 모든 근무일에 대해 생성)
+   */
+  const createWorkLogsForConfirmedStaff = useCallback(async (
+    staffId: string, 
+    staffName: string, 
+    eventId: string, 
+    assignments: Assignment[]
+  ) => {
+    logger.debug('🔍 WorkLog 사전 생성 시작:', {
+      component: 'useApplicantActions',
+      data: { staffId, eventId, assignments }
+    });
+
+    try {
+      for (const assignment of assignments) {
+        const { dates, timeSlot, role } = assignment;
+        
+        for (const date of dates) {
+          if (!date || date.trim() === '') continue;
+          
+          // WorkLog ID 패턴: eventId_staffId_0_date
+          const workLogId = `${eventId}_${staffId}_0_${date}`;
+          const workLogRef = doc(db, 'workLogs', workLogId);
+          
+          // 이미 존재하는지 확인
+          const existingDoc = await getDoc(workLogRef);
+          if (existingDoc.exists()) {
+            logger.debug('WorkLog 이미 존재함, 건너뜀:', { 
+              component: 'useApplicantActions', 
+              data: workLogId 
+            });
+            continue;
+          }
+          
+          // 시간 문자열을 Timestamp로 변환
+          let scheduledStartTime: Timestamp | null = null;
+          let scheduledEndTime: Timestamp | null = null;
+          
+          if (timeSlot && timeSlot.includes('~')) {
+            const [startTime, endTime] = timeSlot.split('~');
+            const baseDate = new Date(`${date}T00:00:00`);
+            
+            if (startTime && startTime.trim()) {
+              const timeParts = startTime.split(':');
+              if (timeParts.length >= 2) {
+                const hours = parseInt(timeParts[0] || '0', 10);
+                const minutes = parseInt(timeParts[1] || '0', 10);
+                if (!isNaN(hours) && !isNaN(minutes)) {
+                  const startDate = new Date(baseDate);
+                  startDate.setHours(hours, minutes, 0, 0);
+                  scheduledStartTime = Timestamp.fromDate(startDate);
+                }
+              }
+            }
+            
+            if (endTime && endTime.trim()) {
+              const timeParts = endTime.split(':');
+              if (timeParts.length >= 2) {
+                const hours = parseInt(timeParts[0] || '0', 10);
+                const minutes = parseInt(timeParts[1] || '0', 10);
+                if (!isNaN(hours) && !isNaN(minutes)) {
+                  const endDate = new Date(baseDate);
+                  endDate.setHours(hours, minutes, 0, 0);
+                
+                  // 종료 시간이 시작 시간보다 이전이면 다음날로 처리
+                  if (scheduledStartTime && endDate.getTime() <= scheduledStartTime.toDate().getTime()) {
+                    endDate.setDate(endDate.getDate() + 1);
+                  }
+                
+                  scheduledEndTime = Timestamp.fromDate(endDate);
+                }
+              }
+            }
+          }
+          
+          // WorkLog 데이터 생성
+          const workLogData = {
+            id: workLogId,
+            staffId,
+            staffName,
+            eventId,
+            date,
+            role: role || '',
+            type: 'schedule',
+            status: 'scheduled',
+            scheduledStartTime,
+            scheduledEndTime,
+            actualStartTime: null,
+            actualEndTime: null,
+            assignedTime: timeSlot || '',
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            createdBy: 'system'
+          };
+          
+          // Firestore에 WorkLog 생성
+          await setDoc(workLogRef, workLogData);
+          
+          logger.debug('✅ WorkLog 생성 완료:', {
+            component: 'useApplicantActions',
+            data: { workLogId, date, timeSlot, role }
+          });
+        }
+      }
+      
+      logger.debug('✅ 모든 WorkLog 사전 생성 완료', { component: 'useApplicantActions' });
+    } catch (error) {
+      logger.error('WorkLog 사전 생성 중 오류:', error instanceof Error ? error : new Error(String(error)), {
+        component: 'useApplicantActions'
+      });
+      throw error; // 상위에서 처리할 수 있도록 에러 전파
+    }
+  }, []);
 
   /**
    * 지원자를 확정하는 함수
@@ -237,9 +352,35 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         
         logger.debug('✅ 모든 promoteToStaff 호출 완료', { component: 'useApplicantActions' });
       }
+
+      // 🚀 스태프 확정 시 WorkLog 일괄 생성 (Option 2 구현)
+      logger.debug('🔍 스태프 확정 후 WorkLog 일괄 생성 시작:', {
+        component: 'useApplicantActions',
+        data: { 
+          applicantId: applicant.applicantId,
+          applicantName: applicant.applicantName,
+          eventId: jobPosting.id,
+          assignments
+        }
+      });
+
+      try {
+        await createWorkLogsForConfirmedStaff(
+          applicant.applicantId,
+          applicant.applicantName,
+          jobPosting.id,
+          assignments
+        );
+        logger.debug('✅ 스태프 확정 시 WorkLog 일괄 생성 완료', { component: 'useApplicantActions' });
+      } catch (workLogError) {
+        logger.error('WorkLog 일괄 생성 중 오류 (확정은 성공):', workLogError instanceof Error ? workLogError : new Error(String(workLogError)), {
+          component: 'useApplicantActions'
+        });
+        // WorkLog 생성 실패해도 확정은 성공했으므로 계속 진행
+      }
       
       const totalAssignments = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
-      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정)`);
+      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 사전 생성 완료)`);
       
       // 자동 마감 로직 체크
       await checkAutoCloseJobPosting(jobPostingRef);
@@ -355,10 +496,13 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // staff 컬렉션 자동 삭제 (다중 문서 지원)
       await deleteStaffDocuments(applicant.applicantId, jobPosting.id);
 
+      // 🚀 확정 취소 시 관련 WorkLog 삭제
+      await deleteWorkLogsForCancelledStaff(applicant.applicantId, jobPosting.id);
+
       // 🔍 취소 후 데이터 정합성 검증
       await verifyDataIntegrityAfterCancel(jobPostingRef, applicant.applicantId);
 
-      alert(`${applicant.applicantName}님의 확정이 취소되었습니다.`);
+      alert(`${applicant.applicantName}님의 확정이 취소되었습니다. (WorkLog도 함께 삭제됨)`);
 
       // 지원자 목록 새로고침
       onRefresh();
@@ -549,6 +693,48 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       logger.error('데이터 정합성 검증 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
         component: 'useApplicantActions' 
       });
+    }
+  };
+
+  /**
+   * 확정 취소 시 관련 WorkLog 삭제 함수
+   */
+  const deleteWorkLogsForCancelledStaff = async (applicantId: string, postingId: string) => {
+    try {
+      logger.debug('🔍 확정 취소에 따른 WorkLog 삭제 시작:', {
+        component: 'useApplicantActions',
+        data: { applicantId, postingId }
+      });
+
+      // workLogs 컬렉션에서 해당 스태프의 모든 WorkLog 찾기
+      const workLogsQuery = query(
+        collection(db, 'workLogs'),
+        where('staffId', '==', applicantId),
+        where('eventId', '==', postingId)
+      );
+
+      const workLogsSnapshot = await getDocs(workLogsQuery);
+      logger.debug('🔍 삭제할 WorkLog 문서 수:', {
+        component: 'useApplicantActions',
+        data: workLogsSnapshot.size
+      });
+
+      // 각 WorkLog 문서 개별 삭제
+      const deletePromises = workLogsSnapshot.docs.map(async (workLogDoc) => {
+        logger.debug('🗑️ WorkLog 문서 삭제:', {
+          component: 'useApplicantActions',
+          data: { workLogId: workLogDoc.id, data: workLogDoc.data() }
+        });
+        return deleteDoc(doc(db, 'workLogs', workLogDoc.id));
+      });
+
+      await Promise.all(deletePromises);
+      logger.debug('✅ 모든 관련 WorkLog 삭제 완료', { component: 'useApplicantActions' });
+    } catch (err) {
+      logger.error('WorkLog 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'useApplicantActions'
+      });
+      // 에러가 발생해도 전체 프로세스는 계속 진행 (확정 취소는 성공)
     }
   };
 
