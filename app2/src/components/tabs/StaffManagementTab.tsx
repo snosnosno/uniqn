@@ -22,12 +22,10 @@ import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLo
 // 유틸리티 imports
 import { useResponsive } from '../../hooks/useResponsive';
 import { useVirtualization } from '../../hooks/useVirtualization';
-import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 import { BulkOperationService } from '../../services/BulkOperationService';
 import BulkActionsModal from '../BulkActionsModal';
 import BulkTimeEditModal from '../BulkTimeEditModal';
 import PerformanceMonitor from '../PerformanceMonitor';
-import PerformanceDashboard from '../PerformanceDashboard';
 import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
 import StaffDateGroup from '../StaffDateGroup';
 import StaffDateGroupMobile from '../StaffDateGroupMobile';
@@ -175,9 +173,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       const stored = localStorage.getItem(storageKey);
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch (error) {
-      logger.warn('expandedDates localStorage 복원 실패:', { 
-        error: error instanceof Error ? error.message : String(error) 
-      });
       return new Set();
     }
   });
@@ -187,9 +182,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     try {
       localStorage.setItem(getStorageKey(), JSON.stringify(Array.from(expandedDates)));
     } catch (error) {
-      logger.warn('expandedDates localStorage 저장 실패:', { 
-        error: error instanceof Error ? error.message : String(error) 
-      });
     }
   }, [expandedDates, getStorageKey]);
   
@@ -205,20 +197,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
   }, []);
   
-  // 성능 모니터링 상태 (개발 환경에서만)
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
-  const { registerComponentMetrics } = usePerformanceMetrics();
   
-  // 성능 메트릭 업데이트 콜백 (안정적인 참조를 위해 useCallback 사용)
-  const onMetricsUpdate = useCallback((metrics: any) => {
-    registerComponentMetrics(
-      'StaffManagementTab',
-      metrics.lastRenderTime,
-      metrics.virtualizationActive,
-      metrics.totalItems,
-      metrics.visibleItems
-    );
-  }, [registerComponentMetrics]);
   
   // 권한 체크 - 공고 작성자만 수정 가능
   const canEdit = currentUser?.uid && currentUser.uid === jobPosting?.createdBy;
@@ -264,16 +243,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           assignedRole: staff.assignedRole || data.assignedRole || '',  // assignedRole 추가
           role: data.role || staff.role || ''  // role 정보도 보장
         };
-        logger.info('WorkLog 데이터 가져오기 성공', { 
-          component: 'StaffManagementTab',
-          data: { 
-            workLogId,
-            hasScheduledStartTime: !!data.scheduledStartTime,
-            hasScheduledEndTime: !!data.scheduledEndTime,
-            scheduledStartTimeType: data.scheduledStartTime ? typeof data.scheduledStartTime : 'null',
-            scheduledEndTimeType: data.scheduledEndTime ? typeof data.scheduledEndTime : 'null'
-          }
-        });
         setSelectedWorkLog(workLogData);
         setIsWorkTimeEditorOpen(true);
       } else {
@@ -309,13 +278,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   // WorkTimeEditor의 onUpdate 콜백 처리
   const handleWorkTimeUpdate = useCallback((updatedWorkLog: any) => {
-    logger.info('🚀 WorkTimeEditor에서 시간 업데이트 완료', { 
-      component: 'StaffManagementTab',
-      data: { 
-        workLogId: updatedWorkLog.id,
-        staffId: updatedWorkLog.staffId
-      }
-    });
     
     // 🚀 1단계: UnifiedDataContext를 통한 즉시 UI 업데이트
     updateWorkLogOptimistic(updatedWorkLog);
@@ -325,14 +287,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     // 🚀 3단계: Firebase 구독이 자동 동기화를 처리하므로 refresh() 제거
     // 기존 refresh() 호출을 제거하여 불필요한 네트워크 요청 방지
-    logger.info('🎯 즉시 UI 업데이트 완료 (refresh 불필요)', { 
-      component: 'StaffManagementTab',
-      data: { 
-        workLogId: updatedWorkLog.id,
-        staffId: updatedWorkLog.staffId,
-        date: updatedWorkLog.date
-      }
-    });
   }, [updateWorkLogOptimistic]);
   
 
@@ -407,20 +361,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       );
     });
     
-    logger.info('🔍 getStaffAttendanceStatus 디버깅 (수정됨)', { 
-      component: 'StaffManagementTab',
-      data: { 
-        staffId, 
-        searchDate,
-        staffIdCandidates,
-        workLogFound: !!workLog,
-        workLogDate: workLog?.date,
-        workLogStatus: workLog?.status,
-        workLogId: workLog?.id,
-        actualStaffId: workLog?.staffId,
-        totalWorkLogs: state.workLogs.size
-      }
-    });
     
     if (workLog) {
       // attendanceRecord 구조로 반환 (StaffRow가 기대하는 형태)
@@ -463,19 +403,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       // UnifiedDataContext를 통한 즉시 UI 업데이트
       updateWorkLogOptimistic(optimisticWorkLog as WorkLog);
       
-      logger.info('🚀 StaffManagementTab Optimistic Update 완료', { 
-        component: 'StaffManagementTab',
-        data: { 
-          workLogId, 
-          status,
-          staffId: existingWorkLog.staffId 
-        }
-      });
     } else {
-      logger.warn('⚠️ WorkLog를 찾을 수 없어 Optimistic Update 스킵', { 
-        component: 'StaffManagementTab',
-        data: { workLogId, status }
-      });
     }
   }, [state.workLogs, updateWorkLogOptimistic]);
   
@@ -547,18 +475,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     debugInfo.initialLoading = state.loading.initial;
     debugInfo.staffIdHasNumberSuffix = /_\d+$/.test(staffId);
     
-    logger.info('🔍 getStaffWorkLog fallback 조회 완료', {
-      component: 'StaffManagementTab',
-      data: {
-        검색_대상_staffId: staffId,
-        검색_대상_date: date,
-        생성된_후보_IDs: candidates,
-        찾은_WorkLog_ID: foundWithId,
-        결과: workLog ? '찾음' : '못찾음',
-        전체_WorkLog_개수: state.workLogs?.size || 0,
-        debugInfo: debugInfo
-      }
-    });
     
     return workLog;
   }, [state.workLogs, jobPosting?.id, state.lastUpdated.workLogs]); // 🔥 lastUpdated 추가로 업데이트 즉시 감지
@@ -686,7 +602,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         isVirtualized={mobileVirtualization.shouldVirtualize || desktopVirtualization.shouldVirtualize}
         totalItems={filteredStaffCount}
         visibleItems={mobileVirtualization.shouldVirtualize ? mobileVirtualization.maxVisibleItems : desktopVirtualization.shouldVirtualize ? desktopVirtualization.maxVisibleItems : filteredStaffCount}
-        onMetricsUpdate={onMetricsUpdate}
       >
         <div className="p-1 sm:p-4">
         <div className="flex justify-between items-center mb-6">
@@ -927,11 +842,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         </div>
       </PerformanceMonitor>
 
-      {/* 성능 대시보드 (개발 환경에서만) */}
-      <PerformanceDashboard
-        isVisible={isDashboardOpen}
-        onToggle={() => setIsDashboardOpen(!isDashboardOpen)}
-      />
 
       {/* QR 코드 생성 모달 */}
       <QRCodeGeneratorModal

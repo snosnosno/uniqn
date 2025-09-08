@@ -28,17 +28,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     currentUser.role === 'admin'
   );
   
-  // 🔍 디버깅: canEdit 값 확인
-  logger.debug('🔍 useApplicantActions: canEdit 값 확인', {
-    component: 'useApplicantActions',
-    data: {
-      currentUserUid: currentUser?.uid,
-      jobPostingCreatedBy: jobPosting?.createdBy,
-      canEdit: canEdit,
-      condition1: !!currentUser?.uid,
-      condition2: currentUser?.uid === jobPosting?.createdBy
-    }
-  });
+  // canEdit 값 확인
 
   /**
    * WorkLog 사전 생성 함수 (스태프 확정 시 모든 근무일에 대해 생성)
@@ -48,11 +38,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     eventId: string, 
     assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[]  // ✅ assignment와 staffDocId 배열
   ) => {
-    logger.debug('🔍 WorkLog 사전 생성 시작:', {
-      component: 'useApplicantActions',
-      data: { assignmentsWithStaffIds, eventId }
-    });
-
     try {
       for (const { assignment, staffDocId } of assignmentsWithStaffIds) {
         const { dates, timeSlot, role } = assignment;
@@ -67,10 +52,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           // 이미 존재하는지 확인
           const existingDoc = await getDoc(workLogRef);
           if (existingDoc.exists()) {
-            logger.debug('WorkLog 이미 존재함, 건너뜀:', { 
-              component: 'useApplicantActions', 
-              data: workLogId 
-            });
             continue;
           }
           
@@ -137,15 +118,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           
           // Firestore에 WorkLog 생성
           await setDoc(workLogRef, workLogData);
-          
-          logger.debug('✅ WorkLog 생성 완료:', {
-            component: 'useApplicantActions',
-            data: { workLogId, date, timeSlot, role }
-          });
         }
       }
-      
-      logger.debug('✅ 모든 WorkLog 사전 생성 완료', { component: 'useApplicantActions' });
     } catch (error) {
       logger.error('WorkLog 사전 생성 중 오류:', error instanceof Error ? error : new Error(String(error)), {
         component: 'useApplicantActions'
@@ -164,15 +138,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       return;
     }
     
-    logger.debug('🔍 handleConfirmApplicant 시작:', { 
-      component: 'useApplicantActions',
-      data: {
-        applicantId: applicant.id,
-        applicantName: applicant.applicantName,
-        assignments,
-        assignmentsLength: assignments?.length
-      }
-    });
     
     if (!assignments || assignments.length === 0) {
       alert(t('jobPostingAdmin.alerts.selectRoleToAssign'));
@@ -201,29 +166,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           targetDates.includes(staff.date)
         );
 
-        logger.debug('🔍 중복 확정 검사:', {
-          component: 'useApplicantActions',
-          data: {
-            applicantId: applicant.applicantId,
-            targetDates,
-            existingConfirmationsCount: existingConfirmations.length,
-            existingConfirmations: existingConfirmations.map((s: any) => ({
-              userId: s.userId || s.staffId,
-              role: s.role,
-              timeSlot: s.timeSlot,
-              date: s.date
-            })),
-            totalConfirmedStaffCount: latestConfirmedStaff.length
-          }
-        });
-
         if (existingConfirmations.length > 0) {
           const duplicateDates = existingConfirmations.map((s: any) => s.date).join(', ');
           alert(`같은 날짜에 중복 확정할 수 없습니다.\n중복 날짜: ${duplicateDates}`);
-          logger.warn('⚠️ 중복 확정 시도 차단:', {
-            component: 'useApplicantActions',
-            data: { applicantId: applicant.applicantId, duplicateDates }
-          });
           return;
         }
       }
@@ -286,15 +231,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       const assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[] = []; // ✅ staffDocId 수집용 배열
       
       if (currentUser && assignments.length > 0) {
-        logger.debug('🔍 다중 promoteToStaff 호출 시작:', { 
-          component: 'useApplicantActions',
-          data: {
-            assignments,
-            assignmentsCount: assignments.length,
-            applicantId: applicant.applicantId,
-            applicantName: applicant.applicantName
-          }
-        });
         
         // 각 assignment의 각 날짜에 대해 개별적으로 promoteToStaff 호출
         let assignmentIndex = 0;
@@ -324,17 +260,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
             // 고유한 문서 ID 생성 (userId + assignment index + date index)
             const staffDocId = `${applicant.applicantId}_${assignmentIndex}`;
             
-            logger.debug(`🔍 promoteToStaff 호출 ${assignmentIndex + 1}:`, { 
-              component: 'useApplicantActions',
-              data: {
-                assignment,
-                assignedDate,
-                finalAssignedDate,
-                jobRole,
-                staffDocId,
-                dateIndex
-              }
-            });
           
             try {
               await promoteToStaff(
@@ -350,10 +275,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
                 finalAssignedDate, // assignedDate - 지원자에서 확정된 날짜 (기본값 포함)
                 applicant.applicantId // 실제 사용자 ID
               );
-              logger.debug(`✅ promoteToStaff 성공 ${assignmentIndex + 1}:`, { 
-                component: 'useApplicantActions', 
-                data: staffDocId 
-              });
               
               // ✅ WorkLog 생성용으로 assignment와 staffDocId 저장
               assignmentsWithStaffIds.push({ assignment, staffDocId });
@@ -369,19 +290,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           }
         }
         
-        logger.debug('✅ 모든 promoteToStaff 호출 완료', { component: 'useApplicantActions' });
       }
 
       // 🚀 스태프 확정 시 WorkLog 일괄 생성 (Option 2 구현)
-      logger.debug('🔍 스태프 확정 후 WorkLog 일괄 생성 시작:', {
-        component: 'useApplicantActions',
-        data: { 
-          applicantId: applicant.applicantId,
-          applicantName: applicant.applicantName,
-          eventId: jobPosting.id,
-          assignments
-        }
-      });
 
       try {
         await createWorkLogsForConfirmedStaff(
@@ -389,7 +300,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           jobPosting.id,
           assignmentsWithStaffIds  // ✅ assignment와 staffDocId 배열 전달
         );
-        logger.debug('✅ 스태프 확정 시 WorkLog 일괄 생성 완료', { component: 'useApplicantActions' });
       } catch (workLogError) {
         logger.error('WorkLog 일괄 생성 중 오류 (확정은 성공):', workLogError instanceof Error ? workLogError : new Error(String(workLogError)), {
           component: 'useApplicantActions'
@@ -462,24 +372,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
           const removedCount = confirmedStaffArray.length - filteredConfirmedStaff.length;
 
-          logger.debug('🗑️ confirmedStaff 항목 필터링 제거 (개선된 버전):', {
-            component: 'useApplicantActions',
-            data: {
-              applicantId: applicant.applicantId,
-              applicantName: applicant.applicantName,
-              originalCount: confirmedStaffArray.length,
-              filteredCount: filteredConfirmedStaff.length,
-              removedCount,
-              removedItems: confirmedStaffArray
-                .filter((s: any) => (s.userId || s.staffId) === applicant.applicantId)
-                .map((s: any) => ({
-                  userId: s.userId || s.staffId,
-                  role: s.role,
-                  timeSlot: s.timeSlot,
-                  date: s.date
-                }))
-            }
-          });
 
           // 전체 confirmedStaff 배열을 필터링된 배열로 교체
           transaction.update(jobPostingRef, {
@@ -488,23 +380,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
           // 제거 검증
           if (removedCount === 0) {
-            logger.warn('⚠️ confirmedStaff에서 제거된 항목이 없음 - 데이터 불일치 가능성:', {
-              component: 'useApplicantActions',
-              data: { 
-                applicantId: applicant.applicantId,
-                confirmedStaffArray: confirmedStaffArray.map((s: any) => ({
-                  userId: s.userId || s.staffId,
-                  role: s.role,
-                  date: s.date
-                }))
-              }
-            });
           }
         } else {
-          logger.debug('ℹ️ confirmedStaff 배열이 비어있음 - 제거할 항목 없음', {
-            component: 'useApplicantActions',
-            data: { applicantId: applicant.applicantId }
-          });
         }
       });
 
@@ -649,10 +526,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
    */
   const verifyDataIntegrityAfterCancel = async (jobPostingRef: any, applicantId: string) => {
     try {
-      logger.debug('🔍 확정 취소 후 데이터 정합성 검증 시작:', { 
-        component: 'useApplicantActions', 
-        data: { applicantId } 
-      });
       
       // jobPosting의 최종 상태 확인
       const finalDoc = await getDoc(jobPostingRef);
@@ -696,15 +569,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           });
         });
         
-        logger.debug('🔧 강제 정리 완료:', { 
-          component: 'useApplicantActions',
-          data: { applicantId, removedEntries: remainingApplicantEntries.length } 
-        });
       } else {
-        logger.debug('✅ 데이터 정합성 검증 통과: confirmedStaff 정상 정리됨', { 
-          component: 'useApplicantActions',
-          data: { applicantId, totalRemainingEntries: remainingConfirmedStaff.length } 
-        });
       }
       
     } catch (err) {
@@ -719,10 +584,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
    */
   const deleteWorkLogsForCancelledStaff = async (applicantId: string, postingId: string) => {
     try {
-      logger.debug('🔍 확정 취소에 따른 WorkLog 삭제 시작:', {
-        component: 'useApplicantActions',
-        data: { applicantId, postingId }
-      });
 
       let deletedCount = 0;
 
@@ -733,13 +594,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       );
 
       const allWorkLogsSnapshot = await getDocs(allWorkLogsQuery);
-      logger.debug('🔍 해당 이벤트의 모든 WorkLog 수:', {
-        component: 'useApplicantActions',
-        data: { 
-          totalWorkLogs: allWorkLogsSnapshot.size,
-          eventId: postingId
-        }
-      });
 
       // 클라이언트에서 staffId 필터링 (더 정확함)
       const targetWorkLogs = allWorkLogsSnapshot.docs.filter(workLogDoc => {
@@ -749,55 +603,18 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         // staffId가 applicantId로 시작하거나 정확히 일치하는 경우
         const isMatch = staffId === applicantId || staffId.startsWith(applicantId + '_');
         
-        if (isMatch) {
-          logger.debug('🎯 삭제 대상 WorkLog 발견:', {
-            component: 'useApplicantActions',
-            data: { 
-              workLogId: workLogDoc.id,
-              staffId: staffId,
-              eventId: data?.eventId,
-              date: data?.date,
-              assignedTime: data?.assignedTime
-            }
-          });
-        }
         
         return isMatch;
       });
 
-      logger.info('🔍 삭제할 WorkLog 문서들:', {
-        component: 'useApplicantActions',
-        data: { 
-          applicantId,
-          postingId,
-          targetCount: targetWorkLogs.length,
-          targetWorkLogs: targetWorkLogs.map(doc => ({
-            id: doc.id,
-            staffId: doc.data()?.staffId,
-            eventId: doc.data()?.eventId,
-            date: doc.data()?.date
-          }))
-        }
-      });
 
       // 🗑️ 각 WorkLog 문서 삭제
       for (const workLogDoc of targetWorkLogs) {
         try {
-          logger.debug('🗑️ WorkLog 문서 삭제 시도:', {
-            component: 'useApplicantActions',
-            data: { 
-              workLogId: workLogDoc.id, 
-              staffId: workLogDoc.data()?.staffId 
-            }
-          });
           
           await deleteDoc(doc(db, 'workLogs', workLogDoc.id));
           deletedCount++;
           
-          logger.debug('✅ WorkLog 문서 삭제 성공:', {
-            component: 'useApplicantActions',
-            data: { workLogId: workLogDoc.id }
-          });
         } catch (deleteError) {
           logger.error('❌ 개별 WorkLog 삭제 실패:', 
             deleteError instanceof Error ? deleteError : new Error(String(deleteError)), {
@@ -810,33 +627,10 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         }
       }
 
-      logger.info('✅ WorkLog 삭제 완료 (최종 결과):', {
-        component: 'useApplicantActions',
-        data: {
-          applicantId,
-          postingId,
-          totalFound: targetWorkLogs.length,
-          successfullyDeleted: deletedCount,
-          allSuccessful: deletedCount === targetWorkLogs.length
-        }
-      });
 
       // 삭제 결과 검증
       if (deletedCount === 0 && targetWorkLogs.length === 0) {
-        logger.warn('⚠️ 삭제할 WorkLog를 찾지 못함:', {
-          component: 'useApplicantActions',
-          data: { applicantId, postingId }
-        });
       } else if (deletedCount !== targetWorkLogs.length) {
-        logger.warn('⚠️ 일부 WorkLog 삭제 실패:', {
-          component: 'useApplicantActions',
-          data: { 
-            expected: targetWorkLogs.length,
-            actual: deletedCount,
-            applicantId,
-            postingId
-          }
-        });
       }
 
     } catch (err) {
@@ -853,10 +647,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
    */
   const deleteStaffDocuments = async (applicantId: string, postingId: string) => {
     try {
-      logger.debug('🔍 다중 스태프 문서 삭제 시작:', { 
-        component: 'useApplicantActions', 
-        data: applicantId 
-      });
       
       // persons 컬렉션에서 해당 지원자와 관련된 모든 문서 찾기
       const staffQuery = query(
@@ -866,22 +656,13 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       );
       
       const staffSnapshot = await getDocs(staffQuery);
-      logger.debug('🔍 삭제할 스태프 문서 수:', { 
-        component: 'useApplicantActions', 
-        data: staffSnapshot.size 
-      });
       
       // 각 스태프 문서 개별 삭제
       const deletePromises = staffSnapshot.docs.map(async (staffDoc) => {
-        logger.debug('🗑️ 스태프 문서 삭제:', { 
-          component: 'useApplicantActions', 
-          data: staffDoc.id 
-        });
         return deleteDoc(doc(db, 'persons', staffDoc.id));
       });
       
       await Promise.all(deletePromises);
-      logger.debug('✅ 모든 스태프 문서 삭제 완료', { component: 'useApplicantActions' });
     } catch (err) {
       logger.error('staff 컬렉션 자동 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
         component: 'useApplicantActions' 

@@ -90,20 +90,16 @@ export const useDevTools = () => {
     };
   }, [state.isEnabled, state.isOpen, toggleDevTools, closeDevTools]);
 
-  // 개발 환경 체크 및 콘솔 안내 메시지
+  // 개발 환경 체크 및 안내 메시지
   useEffect(() => {
     if (state.isEnabled && !sessionStorage.getItem('devtools-intro-shown')) {
-      console.log(
-        '%c🛠️ UnifiedData DevTools',
-        'font-size: 16px; font-weight: bold; color: #2563eb;'
-      );
-      console.log(
-        '%c개발자 도구가 활성화되었습니다.\n' +
-        '• Ctrl+Shift+D: 개발자 도구 열기/닫기\n' +
-        '• ESC: 개발자 도구 닫기\n' +
-        '• 실시간 성능 모니터링, 캐시 상태, 로그 확인 가능',
-        'color: #6b7280; line-height: 1.5;'
-      );
+      logger.info('개발자 도구 활성화', {
+        component: 'useDevTools',
+        data: {
+          shortcuts: ['Ctrl+Shift+D: 토글', 'ESC: 닫기'],
+          features: ['성능 모니터링', '캐시 상태', '로그 확인']
+        }
+      });
       
       sessionStorage.setItem('devtools-intro-shown', 'true');
     }
@@ -126,12 +122,15 @@ export const useDevTools = () => {
             component: 'useDevTools'
           });
           
-          // 개발자 콘솔에도 시각적 경고 표시
-          console.warn(
-            '%c⚠️ 높은 메모리 사용량 감지',
-            'font-size: 14px; font-weight: bold; color: #f59e0b;',
-            `\n현재 사용량: ${Math.round(memoryMB)}MB\n개발자 도구를 열어 상세 정보를 확인하세요.`
-          );
+          // 추가 경고 로깅
+          logger.warn('메모리 사용량 임계치 도달', {
+            component: 'useDevTools',
+            data: {
+              currentUsageMB: Math.round(memoryMB),
+              threshold: 200,
+              recommendation: '개발자 도구에서 상세 정보 확인'
+            }
+          });
           performanceWarningShown = true;
         }
       }

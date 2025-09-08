@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaClock, FaCheckCircle } from './Icons/ReactIconsReplacement';
-import { doc, updateDoc, setDoc, Timestamp, runTransaction } from 'firebase/firestore';
+import { doc, Timestamp, runTransaction } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -183,16 +183,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
     const now = Timestamp.now();
     const workLogDate = targetDate || getTodayString();
     
-    logger.info('🔍 AttendanceStatusPopover WorkLog 생성 디버깅', {
-      component: 'AttendanceStatusPopover',
-      data: {
-        targetDate,
-        workLogDate,
-        workLogId: targetWorkLogId,
-        staffId,
-        newStatus
-      }
-    });
     
     const optimisticWorkLog: Partial<WorkLog> = {
       id: targetWorkLogId,
@@ -237,14 +227,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       onStatusChange(newStatus);
     }
     
-    logger.info('🚀 AttendanceStatusPopover Optimistic Update 완료', { 
-      component: 'AttendanceStatusPopover',
-      data: { 
-        workLogId: targetWorkLogId,
-        staffId: staffId,
-        newStatus: newStatus
-      } 
-    });
 
     try {
       const now = Timestamp.now();
@@ -318,16 +300,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           
         } else {
           // 🚀 WorkLog가 존재하지 않으면 새로 생성 (fallback 로직)
-          logger.info('🔍 WorkLog가 존재하지 않아 새로 생성합니다', {
-            component: 'AttendanceStatusPopover',
-            data: {
-              생성될_WorkLog_ID: realWorkLogId,
-              staffId,
-              eventId,
-              targetDate: workLogDate,
-              원본_workLogId: workLogId
-            }
-          });
           
           const newWorkLogData: Record<string, any> = {
             id: realWorkLogId,
@@ -362,26 +334,10 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           transaction.set(workLogRef, newWorkLogData);
           
           // 생성 완료 로깅
-          logger.info('✅ 새 WorkLog 생성 완료', {
-            component: 'AttendanceStatusPopover',
-            data: {
-              저장된_WorkLog_ID: realWorkLogId,
-              저장된_데이터: newWorkLogData
-            }
-          });
         }
       });
 
       // 트랜잭션 완료 후 로깅
-      logger.info('🎯 Firebase 트랜잭션 완료', {
-        component: 'AttendanceStatusPopover',
-        data: {
-          처리된_WorkLog_ID: realWorkLogId,
-          newStatus,
-          staffId,
-          targetDate: workLogDate
-        }
-      });
 
       // 3. 성공 메시지 표시
       const statusLabel = statusOptions.find(opt => opt.value === newStatus)?.label || newStatus;
@@ -423,14 +379,6 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       // UnifiedDataContext를 통한 롤백
       updateWorkLogOptimistic(rollbackWorkLog as WorkLog);
       
-      logger.info('🔄 AttendanceStatusPopover Optimistic Update 롤백 완료', { 
-        component: 'AttendanceStatusPopover',
-        data: { 
-          workLogId: targetWorkLogId,
-          staffId: staffId,
-          rollbackStatus: currentStatus
-        } 
-      });
       
       // 레거시 콜백 롤백 (호환성 유지)
       if (applyOptimisticUpdate) {

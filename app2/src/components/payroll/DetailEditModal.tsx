@@ -110,29 +110,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     // 역할이 일치하는 스케줄 데이터만 있고 실제 데이터가 없는 경우도 포함
     const uniqueWorkLogs = Array.from(mergedLogsMap.values());
     
-    logger.debug('DetailEditModal - 실시간 WorkLog 병합 결과', {
-      component: 'DetailEditModal',
-      data: {
-        staffId: staffId,
-        staffName: staff.staffName,
-        staffRole: staff.role,
-        totalWorkLogs: realTimeWorkLogs.length,
-        allStaffWorkLogs: allStaffWorkLogs.length,
-        mergedWorkLogs: uniqueWorkLogs.length,
-        workLogIds: uniqueWorkLogs.map(log => log.id),
-        mergedDetails: uniqueWorkLogs.map(log => ({
-          id: log.id,
-          date: log.date,
-          role: log.role,
-          type: log.type,
-          status: log.status,
-          scheduledStartTime: log.scheduledStartTime,
-          scheduledEndTime: log.scheduledEndTime,
-          actualStartTime: log.actualStartTime,
-          actualEndTime: log.actualEndTime
-        }))
-      }
-    });
     
     if (uniqueWorkLogs.length === 0) return [];
     
@@ -187,17 +164,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             const result = parseTimeToString(timeValue);
             
             if (result) {
-              logger.debug('DetailEditModal - 시간 파싱 성공', {
-                component: 'DetailEditModal',
-                data: { timeValue, result }
-              });
               return result;
             }
             
-            logger.debug('DetailEditModal - 시간 파싱 실패', {
-              component: 'DetailEditModal',
-              data: { timeValue }
-            });
             return '미정';
           };
 
@@ -209,32 +178,14 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           // scheduledTime이 있으면 사용
           if (log.scheduledStartTime) {
             startTime = parseTime(log.scheduledStartTime);
-            logger.debug('scheduledStartTime 파싱', {
-              component: 'DetailEditModal',
-              data: { 
-                raw: log.scheduledStartTime,
-                parsed: startTime 
-              }
-            });
           }
           if (log.scheduledEndTime) {
             endTime = parseTime(log.scheduledEndTime);
-            logger.debug('scheduledEndTime 파싱', {
-              component: 'DetailEditModal',
-              data: { 
-                raw: log.scheduledEndTime,
-                parsed: endTime 
-              }
-            });
           }
           
           // timeSlot 필드에서 직접 파싱 (백업)
           if ((startTime === '미정' || endTime === '미정') && (log as any).timeSlot) {
             const timeSlot = (log as any).timeSlot;
-            logger.debug('timeSlot 필드 파싱 시도', {
-              component: 'DetailEditModal',
-              data: { timeSlot }
-            });
             if (timeSlot && timeSlot !== '미정' && timeSlot.includes('-')) {
               const parts = timeSlot.split('-').map((t: string) => t.trim());
               if (parts[0] && startTime === '미정') {
@@ -243,10 +194,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               if (parts[1] && endTime === '미정') {
                 endTime = parts[1];
               }
-              logger.debug('timeSlot 파싱 결과', {
-                component: 'DetailEditModal',
-                data: { startTime, endTime }
-              });
             }
           }
           

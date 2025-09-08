@@ -88,17 +88,6 @@ export const useJobBoard = () => {
     // 오늘 날짜 기준 우선순위 정렬 적용
     const sortedResult = sortJobPostingsByPriority(result);
     
-    logger.debug('📋 JobBoardPage - 정렬된 공고 목록:', { 
-      component: 'JobBoardPage', 
-      data: {
-        total: sortedResult.length,
-        top5: sortedResult.slice(0, 5).map(p => ({ 
-          id: p.id, 
-          title: p.title,
-          dates: p.dateSpecificRequirements?.length || 0
-        }))
-      }
-    });
     
     return sortedResult;
   }, [infiniteData]);
@@ -167,30 +156,10 @@ export const useJobBoard = () => {
       const matchesId = app.applicantId === currentUser.uid;
       if (!matchesId && allApplications.length > 0) {
         // 디버깅: 첫 번째 앱에서 필드 구조 확인
-        logger.debug('🔍 applicantId 매칭 실패 - 필드 구조 확인', {
-          component: 'useJobBoard',
-          data: {
-            expected: currentUser.uid,
-            actual: app.applicantId,
-            appFields: Object.keys(app),
-            sampleApp: allApplications[0]
-          }
-        });
       }
       return matchesId;
     });
     
-    logger.debug('🎯 사용자별 필터링 결과', {
-      component: 'useJobBoard',
-      data: {
-        userApplications: userApplications.length,
-        applications: userApplications.map(app => ({
-          id: app.id,
-          postId: app.postId,
-          status: app.status
-        }))
-      }
-    });
     
     // 각 지원서에 JobPosting 정보 추가하고 MyApplicationsTab 호환 형식으로 변환
     const applicationsWithJobData = userApplications.map(application => {
@@ -198,19 +167,7 @@ export const useJobBoard = () => {
       const jobId = application.eventId || application.postId;
       const jobPosting = unifiedContext.state.jobPostings.get(jobId);
       
-      // jobPosting 조회 실패 시 로깅
-      if (jobId && !jobPosting) {
-        logger.debug('⚠️ JobPosting 조회 실패', {
-          component: 'useJobBoard',
-          data: {
-            applicationId: application.id,
-            eventId: application.eventId,
-            postId: application.postId,
-            searchedId: jobId,
-            availableJobPostings: Array.from(unifiedContext.state.jobPostings.keys()).slice(0, 5)
-          }
-        });
-      }
+      // jobPosting 조회 실패 시 - 로깅 제거됨
       
       return {
         id: application.id,

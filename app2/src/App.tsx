@@ -23,7 +23,6 @@ import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 
-// Debug utilities removed for production
 
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
@@ -44,7 +43,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
 const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
-const PerformanceReport = lazy(() => import('./pages/PerformanceReport'));
 
 
 // A component to handle role-based redirection
@@ -135,7 +133,6 @@ const App: React.FC = () => {
                           <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
                           <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                           <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
-                          <Route path="performance" element={<Suspense fallback={<LoadingSpinner />}><PerformanceReport /></Suspense>} />
                       </Route>
                     </Route>
                   </Route>

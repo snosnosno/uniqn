@@ -190,7 +190,7 @@ REACT_APP_FIREBASE_AUTH_DOMAIN=your_domain
 - **데이터 표시 불일치**: assignments 필드 누락 문제 (해결됨 ✅)
 - **WorkLog 중복 생성 문제**: 스태프 확정 시 사전 생성으로 해결됨 ✅
 - **WorkLog ID 패턴 통일**: `${eventId}_${staffId}_0_${date}` 패턴으로 일관성 확보 ✅
-- **화면 실시간 업데이트 지연**: 출석 상태 변경 후 즉시 반영되지 않는 문제 (⚠️ 진행 중)
+- **출석상태 UI 실시간 동기화**: 로컬 상태 추가로 즉시 UI 반영 구현 (✅ 해결됨)
 - **근무시간 계산**: `scheduledStartTime/scheduledEndTime` 사용 필수
 - **급여 계산**: `payrollCalculations.ts` 통합 유틸리티만 사용
 
@@ -296,7 +296,8 @@ const formattedDate = format(new Date(), 'yyyy-MM-dd', { locale: ko });
 - **출석 상태 변경 정상화**: AttendanceStatusPopover에서 기존 WorkLog 업데이트만 수행  
 - **실시간 동기화 개선**: Optimistic Update로 즉시 UI 반영 및 성공 알림 표시
 - **수정된 핵심 파일**: useApplicantActions.ts, WorkTimeEditor.tsx, AttendanceStatusPopover.tsx, workLogSimplified.ts, StaffRow.tsx 등
-- **⚠️ 남은 이슈**: 출석 상태 변경 후 화면 실시간 업데이트 지연 문제
+- **✅ 출석상태 UI 실시간 동기화**: 로컬 상태 추가 및 Optimistic Update로 즉시 반영 구현
+- **✅ 퇴근시간 표시 개선**: 퇴근 상태일 때 불필요한 출근시간 표시 제거
 
 ### 2025-09-06: **데이터 표시 일관성 개선** ✅
 - **지원자 탭과 내 지원 현황 탭 간 데이터 표시 불일치 해결**
@@ -469,5 +470,5 @@ logger.info('사용자 정보', { user }); // ❌ 개인정보 포함
 6. 보안 체크리스트 확인
 7. 커밋 컨벤션 준수
 
-*마지막 업데이트: 2025년 9월 7일 (WorkLog 중복 생성 문제 완전 해결)*  
-*프로젝트 버전: v4.2 (Production Ready)*
+*마지막 업데이트: 2025년 9월 7일 (출석상태 UI 실시간 동기화 완전 해결)*  
+*프로젝트 버전: v4.3 (Production Ready)*

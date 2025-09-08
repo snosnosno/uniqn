@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { logger } from '../../../utils/logger';
 
 // Types
 import { Assignment, SelectedAssignments } from './types';
@@ -59,10 +58,6 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
    * 다중 선택용 체크박스 토글 함수 (날짜별 중복 방지 강화)
    */
   const handleMultipleAssignmentToggle = useCallback((applicantId: string, value: string, isChecked: boolean) => {
-    logger.debug('🔍 handleMultipleAssignmentToggle 시작:', { 
-      component: 'ApplicantListTab', 
-      data: { applicantId, value, isChecked } 
-    });
     
     // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
     const parts = value.split('__');
@@ -102,10 +97,6 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         );
         
         if (alreadySelectedInSameDate && sameDate.trim() !== '') {
-          logger.warn('같은 날짜 중복 선택 시도 차단:', {
-            component: 'ApplicantListTab',
-            data: { applicantId, sameDate, newAssignment }
-          });
           // 사용자에게 알림 없이 조용히 차단 (UI에서 이미 시각적으로 표시됨)
           return prev;
         }
@@ -122,10 +113,6 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           return prev;
         }
         
-        logger.debug('선택 항목 추가:', {
-          component: 'ApplicantListTab',
-          data: { applicantId, newAssignment }
-        });
         
         return {
           ...prev,
@@ -140,10 +127,6 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
             assignment.dates[0] === newAssignment.dates[0])
         );
         
-        logger.debug('선택 항목 제거:', {
-          component: 'ApplicantListTab',
-          data: { applicantId, newAssignment, remainingCount: filtered.length }
-        });
         
         return {
           ...prev,
@@ -227,16 +210,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
                 {applicant.status === 'confirmed' && (
                   <>
                     {(() => {
-                      logger.debug('🚀 ApplicantListTab: ApplicantActions 렌더링 시도', {
-                        component: 'ApplicantListTab',
-                        data: {
-                          applicantName: applicant.applicantName,
-                          applicantStatus: applicant.status,
-                          canEdit: canEdit,
-                          aboutToRenderApplicantActions: true
-                        }
-                      });
-                      return null; // 로깅만 수행
+                      return null;
                     })()}
                     <ApplicantActions
                       applicant={applicant}

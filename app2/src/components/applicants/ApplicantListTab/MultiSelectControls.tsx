@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../utils/logger';
-import { DateSpecificRequirement } from '../../../types/jobPosting';
-import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { Applicant, Assignment } from './types';
 import { 
   getApplicantSelectionsByDate, 
@@ -234,7 +232,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     return null;
   }
 
-  const totalSelectedCount = selectedAssignments.length;
+  const _totalSelectedCount = selectedAssignments.length;
   const _totalCount = dateGroupedSelections.reduce((sum, group) => sum + group.totalCount, 0);
 
   /**

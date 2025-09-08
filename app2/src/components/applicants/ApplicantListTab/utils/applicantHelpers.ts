@@ -380,7 +380,6 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
     try {
       const confirmedSelections = ApplicationHistoryService.getConfirmedSelections(applicant as any);
       
-      // logger.debug 제거 - 성능 최적화
       
       return confirmedSelections;
     } catch (error) {
@@ -407,7 +406,6 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
       const selections = [];
       const maxLength = Math.max(roles.length, times.length, dates.length);
       
-      // logger.debug 제거 - 성능 최적화
       
       // 원본 데이터로부터 완전 복원
       for (let i = 0; i < maxLength; i++) {
@@ -424,7 +422,6 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
         });
       }
       
-      // logger.debug 제거 - 성능 최적화
       return selections;
     }
   } catch (error) {
@@ -459,7 +456,6 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
     
     const finalLength = actualLength > 0 ? actualLength : 1;
     
-    // logger.debug 제거 - 성능 최적화
     
     // 🔥 핵심: 모든 인덱스 완전 복원 (빈 값 필터링 제거)
     for (let i = 0; i < finalLength; i++) {
@@ -492,7 +488,6 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
       });
     }
     
-    // logger.debug 제거 - 성능 최적화
     return selections;
   }
   
@@ -509,11 +504,9 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
       isGrouped: false
     }];
     
-    // logger.debug 제거 - 성능 최적화
     return singleSelection;
   }
   
-  // logger.debug 제거 - 성능 최적화
   return [];
 };
 
@@ -590,7 +583,6 @@ export interface SelectionWithStats extends Selection {
  * 지원자의 선택 사항을 날짜별로 그룹화하는 함수
  */
 export const getApplicantSelectionsByDate = (applicant: Applicant, jobPosting?: JobPosting): DateGroupedSelections[] => {
-  // logger.debug 제거 - 성능 최적화
 
   const selections = getApplicantSelections(applicant, jobPosting);
   
@@ -626,7 +618,6 @@ export const getApplicantSelectionsByDate = (applicant: Applicant, jobPosting?: 
       return a.date.localeCompare(b.date);
     });
 
-  // logger.debug 제거 - 성능 최적화
 
   return groupedSelections;
 };

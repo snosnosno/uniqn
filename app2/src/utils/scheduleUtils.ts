@@ -85,7 +85,6 @@ export const parseTimeString = (
     
     // 빈 문자열이거나 유효하지 않은 시간 형식인 경우 조용히 null 반환
     if (!startStr || !endStr || startStr === '' || endStr === '') {
-      // 경고 로그를 제거하거나 debug 레벨로 변경
       return { startTime: null, endTime: null };
     }
     

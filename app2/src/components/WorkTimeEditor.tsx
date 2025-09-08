@@ -1,4 +1,4 @@
-import { doc, updateDoc, setDoc, Timestamp, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, Timestamp, getDoc, runTransaction } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +9,7 @@ import { useToast } from '../hooks/useToast';
 import { parseToDate } from '../utils/jobPosting/dateUtils';
 import { useAttendanceStatus } from '../hooks/useAttendanceStatus';
 import { calculateMinutes, formatMinutesToTime } from '../utils/timeUtils';
-import { prepareWorkLogForCreate, prepareWorkLogForUpdate, parseTimeToString, parseTimeToTimestamp } from '../utils/workLogMapper';
-import { WorkLogCreateInput } from '../types/unified/workLog';
-import { getStaffIdentifier } from '../utils/staffIdMapper';
+import { parseTimeToString, parseTimeToTimestamp } from '../utils/workLogMapper';
 import { useUnifiedData } from '../hooks/useUnifiedData';
 import type { WorkLog } from '../types/unifiedData';
 
@@ -103,12 +101,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
     try {
       // workLog.date를 기반으로 baseDate 설정 (공고에 등록된 날짜 사용)
       // workLog.date를 사용하여 시간 파싱
-      logger.debug('handleUpdateTime - using workLog date:', { 
-        component: 'WorkTimeEditor', 
-        data: {
-          workLogDate: workLog.date
-        }
-      });
       
       // 화면에 표시된 시간을 그대로 저장 (사용자가 수정하지 않아도)
       const newStartTime = startTime && startTime.trim() !== '' ? 
@@ -116,12 +108,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       const newEndTime = endTime && endTime.trim() !== '' ? 
         parseTimeToTimestamp(endTime, workLog.date) : null;
       
-      logger.debug('handleUpdateTime - parsed times:', { component: 'WorkTimeEditor', data: {
-        startTime,
-        endTime,
-        newStartTime,
-        newEndTime
-      } });
       
       // 🚀 1단계: Optimistic Update - 즉시 UI 반영
       const optimisticWorkLog: Partial<WorkLog> = {
@@ -174,16 +160,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       // UnifiedDataContext를 통한 즉시 UI 업데이트
       updateWorkLogOptimistic(optimisticWorkLog as WorkLog);
       
-      logger.info('🚀 Optimistic Update 완료', { 
-        component: 'WorkTimeEditor', 
-        data: { 
-          workLogId: workLog.id,
-          staffId: workLog.staffId,
-          newStartTime: startTime || '미정',
-          newEndTime: endTime || '미정',
-          assignedTime: startTime || '미정'
-        } 
-      });
       
       // 🚀 2단계: Firebase 업데이트 (백그라운드 처리)
       const workLogRef = doc(db, 'workLogs', workLog.id);
@@ -224,14 +200,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         transaction.update(workLogRef, updatePayload);
       });
       
-      logger.info('🚀 Firebase 업데이트 완료', { 
-        component: 'WorkTimeEditor', 
-        data: { 
-          id: workLog.id, 
-          startTime: startTime || '미정',
-          endTime: endTime || '미정'
-        } 
-      });
       
       // 🚀 3단계: 레거시 onUpdate 콜백 호출 (호환성 유지)
       if (onUpdate) {
@@ -244,13 +212,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         
         onUpdate(updatedWorkLog);
         
-        logger.info('onUpdate 콜백 호출 완료 (호환성)', { 
-          component: 'WorkTimeEditor', 
-          data: { 
-            staffId: workLog.staffId,
-            date: workLog.date
-          } 
-        });
       }
       
       // 저장 후 Firebase에서 최신 데이터 다시 가져오기
@@ -324,13 +285,6 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       // 원래 상태로 롤백
       updateWorkLogOptimistic(rollbackWorkLog as WorkLog);
       
-      logger.info('🔄 Optimistic Update 롤백 완료', { 
-        component: 'WorkTimeEditor', 
-        data: { 
-          workLogId: workLog.id,
-          staffId: workLog.staffId
-        } 
-      });
       
       showError('시간 업데이트 중 오류가 발생했습니다.');
     } finally {
@@ -403,9 +357,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
   // 시간 분리 함수
   const parseTime = (timeString: string) => {
-    if (!timeString) return { hour: '', minute: '' };
+    if (!timeString) return { hour: '', minute: '00' };
     const [hour, minute] = timeString.split(':');
-    return { hour: hour || '', minute: minute || '' };
+    return { hour: hour || '', minute: minute || '00' };
   };
 
   const combineTime = (hour: string, minute: string) => {
@@ -419,11 +373,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
 
   // 시작 시간 분리
   const [startHour, setStartHour] = useState('');
-  const [startMinute, setStartMinute] = useState('');
+  const [startMinute, setStartMinute] = useState('00');
 
   // 종료 시간 분리
   const [endHour, setEndHour] = useState('');
-  const [endMinute, setEndMinute] = useState('');
+  const [endMinute, setEndMinute] = useState('00');
 
   // 시간 업데이트 핸들러 - UI만 업데이트
   const handleStartTimeChange = (hour: string, minute: string) => {
@@ -538,7 +492,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                     onChange={(e) => handleStartTimeChange(startHour, e.target.value)}
                     className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">분</option>
+                    <option value="00">00분</option>
                     {minuteOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -586,7 +540,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
                     onChange={(e) => handleEndTimeChange(endHour, e.target.value)}
                     className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 focus:ring-green-500 focus:border-green-500"
                   >
-                    <option value="">분</option>
+                    <option value="00">00분</option>
                     {minuteOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}

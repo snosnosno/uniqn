@@ -179,7 +179,6 @@ const VirtualizedTableRow: React.FC<{
         <div className="ml-3 min-w-0 flex-1">
           <button
             onClick={() => {
-              // logger.debug 제거 - 성능 최적화
               if (onShowProfile) {
                 onShowProfile(staff.id);
               }

@@ -157,7 +157,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       } else if (['not_started', 'checked_in', 'checked_out'].includes(workLog.status)) {
         status = workLog.status as AttendanceStatus;
       }
-      // logger.debug 제거 - 성능 최적화
     } else {
       // status 필드가 없거나 유효하지 않은 경우 실제 출퇴근 시간으로 계산
       const hasActualStartTime = !!(workLog.actualStartTime);
@@ -183,7 +182,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         }
       }
       
-      // logger.debug 제거 - 성능 최적화
     }
 
     // formatTime 함수를 사용하여 시간 문자열 변환 (이미 import됨)
@@ -228,7 +226,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
   // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
   const getStaffAttendanceStatus = (staffIdOrWorkLogId: string): AttendanceRecord | undefined => {
-    // logger.debug 제거 - 성능 최적화 (매번 호출되므로 성능 저하 원인)
 
     // workLogId로 먼저 검색 시도 (virtual_ 접두사 포함)
     if (staffIdOrWorkLogId.includes('virtual_') || staffIdOrWorkLogId.includes('_')) {
@@ -236,8 +233,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       const record = attendanceRecords.find(record => record.workLogId === staffIdOrWorkLogId);
       
       if (record) {
-        // logger.debug 제거 - 성능 최적화
-        return record;
+          return record;
       }
       
       // virtual_ 형식인 경우 실제 workLogId 매칭 시도
@@ -250,27 +246,22 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           const staffId = match[1];
           const date = match[2];
           
-          // logger.debug 제거 - 성능 최적화
-          
+              
           const matchedRecord = attendanceRecords.find(record => {
             const recordStaffId = record.staffId || record.workLog?.staffId;
             const isStaffMatch = recordStaffId === staffId;
             const isDateMatch = record.workLog?.date === date;
             const isMatch = isStaffMatch && isDateMatch;
             
-            // logger.debug 제거 - 성능 최적화
-            return isMatch;
+                  return isMatch;
           });
           
           if (matchedRecord) {
-            // logger.debug 제거 - 성능 최적화
-            return matchedRecord;
+                  return matchedRecord;
           } else {
-            // logger.debug 제거 - 성능 최적화
-          }
+                }
         } else {
-          // logger.debug 제거 - 성능 최적화
-        }
+            }
       }
     }
     
@@ -297,7 +288,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       return isStaffMatch;
     });
 
-    // logger.debug 제거 - 성능 최적화 (매번 호출되므로 성능 저하 원인)
     
     return fallbackRecord || undefined;
   };

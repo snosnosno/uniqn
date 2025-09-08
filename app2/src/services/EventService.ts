@@ -10,17 +10,13 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   limit as limitQuery,
   onSnapshot,
-  Timestamp,
-  writeBatch,
   Unsubscribe,
   QueryConstraint,
-  DocumentData,
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';

@@ -1,5 +1,4 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
-import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
 import { StaffData } from '../hooks/useStaffManagement';
@@ -61,15 +60,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       // 새로운 WorkLog가 감지되면 재렌더링 트리거
       setLastWorkLogId(workLog.id);
       setRenderKey(prev => prev + 1);
-      logger.debug('🔄 새로운 WorkLog 감지 - StaffRow 재렌더링 트리거', {
-        component: 'StaffRow',
-        data: {
-          staffId: staff.id,
-          workLogId: workLog.id,
-          previousWorkLogId: lastWorkLogId,
-          renderKey: renderKey + 1
-        }
-      });
     }
   }, [staff.id, staff.assignedDate, getStaffWorkLog, lastWorkLogId]);
 
@@ -132,32 +122,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
     
     // 🔍 디버깅: getStaffWorkLog 호출 상세 분석 및 WorkLog ID 매칭 검증
-    logger.info('🔍 StaffRow currentWorkLog 상세 분석', {
-      component: 'StaffRow',
-      data: { 
-        staffId: staff.id, 
-        dateString,
-        expectedWorkLogIdPattern: `eventId_${staff.id}_${dateString} (conditional _0_)`,
-        hasWorkLog: !!workLog,
-        actualWorkLogId: workLog?.id,
-        getStaffWorkLogFunction: !!getStaffWorkLog,
-        scheduledStartTime: workLog?.scheduledStartTime,
-        scheduledEndTime: workLog?.scheduledEndTime,
-        assignedTime: workLog?.assignedTime,
-        workLogStatus: workLog?.status,
-        actualStartTime: workLog?.actualStartTime,
-        actualEndTime: workLog?.actualEndTime
-      }
-    });
     
     return workLog;
   }, [staff.id, staff.assignedDate, getStaffWorkLog, attendanceRecords, renderKey]); // renderKey 추가
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
-    // 날짜 추출
-    const dateString = convertToDateString(staff.assignedDate) || getTodayString();
-    
     // 🔥 workLog.scheduledStartTime을 최우선으로 사용 (Firebase 실시간 데이터)
     let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot; // fallback값
     
@@ -175,21 +145,9 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           const minutes = timeDate.getMinutes().toString().padStart(2, '0');
           scheduledStartTime = `${hours}:${minutes}`;
         }
-        logger.debug('currentWorkLog scheduledStartTime 사용 (우선순위 1)', {
-          component: 'StaffRow',
-          data: { staffId: staff.id, scheduledStartTime }
-        });
       } catch (error) {
-        logger.warn('currentWorkLog scheduledStartTime 변환 실패, staff.assignedTime fallback 사용', {
-          component: 'StaffRow',
-          data: { staffId: staff.id, error, fallback: staff.assignedTime }
-        });
       }
     } else {
-      logger.debug('workLog 없음, staff.assignedTime fallback 사용 (우선순위 2)', {
-        component: 'StaffRow',
-        data: { staffId: staff.id, fallback: staff.assignedTime }
-      });
     }
     
     // 🔥 퇴근시간 - currentWorkLog의 scheduledEndTime 최우선 사용
@@ -206,15 +164,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           const minutes = timeDate.getMinutes().toString().padStart(2, '0');
           scheduledEndTime = `${hours}:${minutes}`;
         }
-        logger.debug('currentWorkLog scheduledEndTime 사용', {
-          component: 'StaffRow',
-          data: { staffId: staff.id, scheduledEndTime }
-        });
       } catch (error) {
-        logger.warn('currentWorkLog 퇴근시간 변환 실패', {
-          component: 'StaffRow',
-          data: { staffId: staff.id, error }
-        });
       }
     }
     
@@ -242,7 +192,6 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     
     // 다중 선택 모드에서는 무시
     if (multiSelectMode) {
-      logger.debug('다중 선택 모드에서 시작 시간 클릭 무시됨', { component: 'StaffRow' });
       return;
     }
     

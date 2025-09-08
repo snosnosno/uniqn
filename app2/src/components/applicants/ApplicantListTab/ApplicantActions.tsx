@@ -30,19 +30,6 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
 }) => {
   const { t } = useTranslation();
   
-  // 🔍 강화된 디버깅 - 컴포넌트가 렌더링되는지 확인
-  logger.info('🚨 ApplicantActions 컴포넌트 렌더링!', {
-    component: 'ApplicantActions',
-    data: {
-      name: applicant?.applicantName || 'Unknown',
-      status: applicant?.status || 'Unknown',
-      canEdit: canEdit,
-      hasApplicant: !!applicant,
-      applicantStatusType: typeof applicant?.status,
-      applicantStatusValue: JSON.stringify(applicant?.status),
-      renderedAt: new Date().toISOString()
-    }
-  });
 
   // 지원 중인 상태 - 단일 선택 드롭다운
   if (applicant.status === 'applied') {
