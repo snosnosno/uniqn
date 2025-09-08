@@ -1,7 +1,7 @@
 # 🔌 T-HOLDEM API 레퍼런스
 
 **최종 업데이트**: 2025년 9월 8일  
-**버전**: v4.3 (Production Ready)  
+**버전**: v4.1 (Production Ready)  
 **상태**: ✅ Firebase Functions 및 Firestore API 완성
 
 ## 📋 목차

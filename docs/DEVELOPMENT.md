@@ -1,7 +1,7 @@
 # 💻 T-HOLDEM 개발 가이드
 
 **최종 업데이트**: 2025년 9월 8일  
-**버전**: v4.3 (Production Ready)  
+**버전**: v4.1 (Production Ready)  
 **대상**: 개발자 및 기여자
 
 ## 📋 목차

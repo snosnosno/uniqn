@@ -24,7 +24,7 @@
 
 - **프로젝트 ID**: tholdem-ebc18  
 - **배포 URL**: https://tholdem-ebc18.web.app
-- **상태**: 🏆 100% 완성 (v4.0) - Production-Ready ✅
+- **상태**: 🏆 100% 완성 (v4.1) - Production-Ready ✅
 - **핵심 기능**: 토너먼트 운영, 스태프 관리, 구인공고, 실시간 출석 추적, 급여 정산
 
 ### 기술 스택
@@ -289,6 +289,15 @@ const formattedDate = format(new Date(), 'yyyy-MM-dd', { locale: ko });
 
 ## 🔄 **최근 주요 업데이트**
 
+### 2025-09-08: **스태프 삭제 시 구인공고 인원 카운트 정확한 반영** 🎯
+- **confirmedStaff 삭제 실패 문제 해결**: staffId와 userId 매칭 이슈 완전 해결
+- **baseStaffId 추출 로직**: `staffId.replace(/_\d+$/, '')` 접미사 제거 로직 추가
+- **실시간 인원 카운트 반영**: JobPostingCard에 삭제 즉시 반영 (예: 5명 → 4명)
+- **사용자 피드백 개선**: 삭제 성공 메시지에 역할별 인원 변화 정보 포함
+- **상태 기반 UI 제어**: 출근 후/급여 지급 후 삭제 불가 및 툴팁 표시
+- **일괄 삭제 지원**: 여러 스태프 동시 삭제 시에도 정확한 인원 카운트 업데이트
+- **수정된 핵심 파일**: StaffManagementTab.tsx, StaffCardActions.tsx
+
 ### 2025-09-07: **WorkLog 중복 생성 문제 완전 해결** 🎉
 - **WorkLog 중복 생성 문제 100% 해결**: 시간수정+출석상태변경 시 2개 생성 → 1개만 생성
 - **스태프 확정 시 WorkLog 사전 생성**: `useApplicantActions.ts`에서 스태프 확정과 동시에 WorkLog 생성
@@ -330,11 +339,12 @@ const formattedDate = format(new Date(), 'yyyy-MM-dd', { locale: ko });
 
 ## 🎯 **프로젝트 상태**
 
-**🏆 현재 상태: 100% 완성 (v4.0)**
+**🏆 현재 상태: 100% 완성 (v4.1)**
 - **프로덕션 준비**: 완료 ✅
 - **성능 최적화**: Enterprise급 달성 ✅  
 - **안정성**: TypeScript 에러 0개 ✅
 - **확장성**: UnifiedDataContext 기반 ✅
+- **데이터 일관성**: 인원 카운트 정확 반영 ✅
 
 **🚀 주요 달성 성과**:
 - 95% 성능 향상, 77% 운영비 절약
@@ -470,5 +480,5 @@ logger.info('사용자 정보', { user }); // ❌ 개인정보 포함
 6. 보안 체크리스트 확인
 7. 커밋 컨벤션 준수
 
-*마지막 업데이트: 2025년 9월 7일 (출석상태 UI 실시간 동기화 완전 해결)*  
-*프로젝트 버전: v4.3 (Production Ready)*
+*마지막 업데이트: 2025년 9월 8일 (스태프 삭제 시 인원 카운트 정확 반영)*  
+*프로젝트 버전: v4.1 (Production Ready)*

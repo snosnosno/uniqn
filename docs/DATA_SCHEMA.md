@@ -1,8 +1,8 @@
 # 📊 T-HOLDEM 데이터 스키마 가이드
 
 **최종 업데이트**: 2025년 9월 8일  
-**버전**: v4.3 (Production Ready)  
-**상태**: ✅ 표준 필드명 통일 완료
+**버전**: v4.1 (Production Ready)  
+**상태**: ✅ 표준 필드명 통일 + confirmedStaff 데이터 일관성 완료
 
 ## 📋 목차
 

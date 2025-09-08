@@ -1,8 +1,8 @@
 # 🔧 T-HOLDEM 문제 해결 가이드
 
 **최종 업데이트**: 2025년 9월 8일  
-**버전**: v4.3 (Production Ready)  
-**상태**: ✅ 주요 이슈 모두 해결 완료
+**버전**: v4.1 (Production Ready)  
+**상태**: ✅ 주요 이슈 모두 해결 완료 (스태프 삭제 이슈 포함)
 
 ## 📋 목차
 
@@ -16,6 +16,35 @@
 8. [긴급 상황 대응](#-긴급-상황-대응)
 
 ## ✅ 해결된 주요 이슈
+
+### 🎯 스태프 삭제 시 인원 카운트 미반영 문제 (완전 해결)
+
+**문제**: 스태프 삭제 시 JobPosting의 confirmedStaff에서 제거되지 않아 인원 카운트가 정확하지 않은 문제
+
+**원인**: 
+```typescript
+// ❌ 문제 코드 - staffId와 userId 매칭 실패
+const filteredStaff = confirmedStaff.filter(
+  staff => !(staff.userId === staffId && staff.date === date)
+);
+// staffId: "abc123_0", staff.userId: "abc123" → 매칭 실패
+```
+
+**해결 방법**:
+```typescript
+// ✅ 해결 코드 - baseStaffId 추출 로직 추가
+const baseStaffId = staffId.replace(/_\d+$/, ''); // "_0", "_1" 등 제거
+
+const filteredStaff = confirmedStaff.filter(staff => {
+  const staffUserId = staff.userId || staff.staffId;
+  return !(staffUserId === baseStaffId && staff.date === date);
+});
+```
+
+**결과**: 
+- ✅ confirmedStaff 정확한 삭제
+- ✅ JobPostingCard 인원 카운트 실시간 반영
+- ✅ 사용자 피드백 개선 (예: "플로어 10:00: 5 → 4명")
 
 ### 🎉 WorkLog 중복 생성 문제 (완전 해결)
 
