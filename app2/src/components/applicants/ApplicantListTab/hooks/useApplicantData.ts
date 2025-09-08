@@ -19,36 +19,36 @@ export const useApplicantData = (eventId?: string) => {
   // eventId에 해당하는 applications 필터링 및 Applicant 타입으로 변환
   const applicants = useMemo(() => {
     if (!eventId) {
-      logger.debug('🔍 useApplicantData: eventId가 없습니다', { component: 'useApplicantData' });
+      // logger.debug('🔍 useApplicantData: eventId가 없습니다', { component: 'useApplicantData' });
       return [];
     }
     
-    logger.debug('🔍 useApplicantData: 지원서 필터링 시작', {
-      component: 'useApplicantData',
-      data: {
-        eventId,
-        totalApplications: applications.length,
-        applicationsById: applications.map(app => ({ id: app.id, postId: app.postId }))
-      }
-    });
+    // logger.debug('🔍 useApplicantData: 지원서 필터링 시작', {
+    //   component: 'useApplicantData',
+    //   data: {
+    //     eventId,
+    //     totalApplications: applications.length,
+    //     applicationsById: applications.map(app => ({ id: app.id, postId: app.postId }))
+    //   }
+    // });
     
     const filteredApplications = applications.filter(app => 
       app.eventId === eventId || app.postId === eventId
     );
     
-    logger.info('✅ useApplicantData: 지원서 필터링 완료', {
-      component: 'useApplicantData',
-      data: {
-        eventId,
-        filteredCount: filteredApplications.length,
-        filteredApplications: filteredApplications.map(app => ({ 
-          id: app.id, 
-          postId: app.postId, 
-          applicantName: app.applicantName,
-          status: app.status
-        }))
-      }
-    });
+    // logger.info('✅ useApplicantData: 지원서 필터링 완료', {
+    //   component: 'useApplicantData',
+    //   data: {
+    //     eventId,
+    //     filteredCount: filteredApplications.length,
+    //     filteredApplications: filteredApplications.map(app => ({ 
+    //       id: app.id, 
+    //       postId: app.postId, 
+    //       applicantName: app.applicantName,
+    //       status: app.status
+    //     }))
+    //   }
+    // });
     
     return filteredApplications.map((app: Application) => {
       // Application 타입을 Applicant 타입으로 매핑
@@ -64,16 +64,16 @@ export const useApplicantData = (eventId?: string) => {
         applicantEmail: app.applicantEmail,
         status: app.status,
         // 🔍 임시 디버깅: status 값 확인
-        ...(app.status && logger.debug('🔍 useApplicantData: applicant status', {
-          component: 'useApplicantData',
-          data: { 
-            applicantName: app.applicantName, 
-            status: app.status,
-            statusType: typeof app.status,
-            isConfirmed: app.status === 'confirmed',
-            rawStatus: JSON.stringify(app.status)
-          }
-        }) as any),
+        // ...(app.status && logger.debug('🔍 useApplicantData: applicant status', {
+        //   component: 'useApplicantData',
+        //   data: { 
+        //     applicantName: app.applicantName, 
+        //     status: app.status,
+        //     statusType: typeof app.status,
+        //     isConfirmed: app.status === 'confirmed',
+        //     rawStatus: JSON.stringify(app.status)
+        //   }
+        // }) as any),
         role: firstAssignment?.role || '',
         assignedRole: firstAssignment?.role || '',
         assignedTime: firstAssignment?.timeSlot || '',

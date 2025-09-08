@@ -57,16 +57,16 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           } as JobPosting;
           setJobPosting(jobPostingData);
           
-          logger.debug('ScheduleDetailModal - JobPosting 조회 성공', {
-            component: 'ScheduleDetailModal',
-            data: {
-              eventId: schedule.eventId,
-              title: jobPostingData.title,
-              location: jobPostingData.location,
-              detailedAddress: jobPostingData.detailedAddress,
-              hasRoleSalaries: !!jobPostingData.roleSalaries
-            }
-          });
+          // logger.debug('ScheduleDetailModal - JobPosting 조회 성공', {
+          //   component: 'ScheduleDetailModal',
+          //   data: {
+          //     eventId: schedule.eventId,
+          //     title: jobPostingData.title,
+          //     location: jobPostingData.location,
+          //     detailedAddress: jobPostingData.detailedAddress,
+          //     hasRoleSalaries: !!jobPostingData.roleSalaries
+          //   }
+          // });
         } else {
           setJobPosting(null);
           logger.warn('ScheduleDetailModal - JobPosting 문서 없음', {
@@ -110,13 +110,13 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         
         setRealTimeWorkLogs(workLogsData);
         
-        logger.debug('ScheduleDetailModal - WorkLog 구독 업데이트', {
-          component: 'ScheduleDetailModal',
-          data: {
-            eventId: schedule.eventId,
-            workLogsCount: workLogsData.length
-          }
-        });
+        // logger.debug('ScheduleDetailModal - WorkLog 구독 업데이트', {
+        //   component: 'ScheduleDetailModal',
+        //   data: {
+        //     eventId: schedule.eventId,
+        //     workLogsCount: workLogsData.length
+        //   }
+        // });
       },
       (error) => {
         logger.error('ScheduleDetailModal - WorkLog 구독 오류:', error instanceof Error ? error : new Error(String(error)), {
@@ -166,17 +166,17 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     const { getRoleSalaryInfo } = await import('../../../utils/payrollCalculations');
     const { salaryType, salaryAmount } = getRoleSalaryInfo(schedule.role, jobPosting);
 
-    logger.debug('ScheduleDetailModal - 급여 정보 계산', {
-      component: 'ScheduleDetailModal',
-      data: {
-        role: schedule.role,
-        salaryType,
-        salaryAmount,
-        totalHours,
-        totalPay,
-        hasJobPosting: !!jobPosting
-      }
-    });
+    // logger.debug('ScheduleDetailModal - 급여 정보 계산', {
+    //   component: 'ScheduleDetailModal',
+    //   data: {
+    //     role: schedule.role,
+    //     salaryType,
+    //     salaryAmount,
+    //     totalHours,
+    //     totalPay,
+    //     hasJobPosting: !!jobPosting
+    //   }
+    // });
 
     return {
       salaryType: salaryType as 'hourly' | 'daily' | 'monthly' | 'other',

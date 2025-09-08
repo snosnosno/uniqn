@@ -190,38 +190,38 @@ export const useEnhancedPayroll = ({
     // WorkLog ID 기반 중복 방지 - 같은 WorkLog는 한 번만 처리
     const processedWorkLogIds = new Set<string>();
     
-    logger.debug('Processing confirmedStaff for virtual WorkLogs', {
-      component: 'useEnhancedPayroll',
-      data: {
-        confirmedStaffCount: confirmedStaff.length,
-        confirmedStaff: confirmedStaff.map(s => ({
-          userId: s.userId,
-          name: s.name,
-          role: s.role,
-          timeSlot: s.timeSlot,
-          date: s.date
-        }))
-      }
-    });
+    // logger.debug('Processing confirmedStaff for virtual WorkLogs', {
+    //   component: 'useEnhancedPayroll',
+    //   data: {
+    //     confirmedStaffCount: confirmedStaff.length,
+    //     confirmedStaff: confirmedStaff.map(s => ({
+    //       userId: s.userId,
+    //       name: s.name,
+    //       role: s.role,
+    //       timeSlot: s.timeSlot,
+    //       date: s.date
+    //     }))
+    //   }
+    // });
     
     confirmedStaff.forEach(staff => {
       const staffId = getStaffIdentifier(staff);
       const staffRoleKey = `${staffId}_${staff.role}_${staff.date || ''}`;
       
-      logger.debug('Processing confirmedStaff item', {
-        component: 'useEnhancedPayroll',
-        data: {
-          staffRoleKey,
-          staffId,
-          userId: staff.userId,
-          name: staff.name,
-          role: staff.role,
-          date: staff.date,
-          timeSlot: staff.timeSlot,
-          assignedTime: (staff as any).assignedTime,
-          alreadyProcessed: processedStaffRoles.has(staffRoleKey)
-        }
-      });
+      // logger.debug('Processing confirmedStaff item', {
+      //   component: 'useEnhancedPayroll',
+      //   data: {
+      //     staffRoleKey,
+      //     staffId,
+      //     userId: staff.userId,
+      //     name: staff.name,
+      //     role: staff.role,
+      //     date: staff.date,
+      //     timeSlot: staff.timeSlot,
+      //     assignedTime: (staff as any).assignedTime,
+      //     alreadyProcessed: processedStaffRoles.has(staffRoleKey)
+      //   }
+      // });
       
       // 해당 스태프의 특정 날짜 workLog 찾기 - staffId/userId 통합 매칭
       const staffWorkLogs = filteredWorkLogs.filter(log => 
@@ -230,20 +230,20 @@ export const useEnhancedPayroll = ({
       );
       
       
-      logger.debug('Processing staff', {
-        component: 'useEnhancedPayroll',
-        data: {
-          staffId: staff.userId,
-          staffName: staff.name,
-          role: staff.role,
-          date: staff.date,
-          timeSlot: staff.timeSlot,
-          timeSlotType: typeof staff.timeSlot,
-          hasWorkLogs: staffWorkLogs.length > 0,
-          workLogCount: staffWorkLogs.length,
-          alreadyProcessed: processedStaffRoles.has(staffRoleKey)
-        }
-      });
+      // logger.debug('Processing staff', {
+      //   component: 'useEnhancedPayroll',
+      //   data: {
+      //     staffId: staff.userId,
+      //     staffName: staff.name,
+      //     role: staff.role,
+      //     date: staff.date,
+      //     timeSlot: staff.timeSlot,
+      //     timeSlotType: typeof staff.timeSlot,
+      //     hasWorkLogs: staffWorkLogs.length > 0,
+      //     workLogCount: staffWorkLogs.length,
+      //     alreadyProcessed: processedStaffRoles.has(staffRoleKey)
+      //   }
+      // });
       
       const log = staffWorkLogs[0];
       if (log && staffWorkLogs.length > 0) {
@@ -272,31 +272,31 @@ export const useEnhancedPayroll = ({
                 finalScheduledEnd = scheduledEndTime;
               }
               
-              logger.debug('Complemented workLog times with timeSlot', {
-                component: 'useEnhancedPayroll',
-                data: {
-                  staffId: staff.userId,
-                  role: staff.role,
-                  date: log.date,
-                  timeSlot,
-                  startTimeAdded: !log.scheduledStartTime && !!scheduledStartTime,
-                  endTimeAdded: !log.scheduledEndTime && !!scheduledEndTime
-                }
-              });
+              // logger.debug('Complemented workLog times with timeSlot', {
+              //   component: 'useEnhancedPayroll',
+              //   data: {
+              //     staffId: staff.userId,
+              //     role: staff.role,
+              //     date: log.date,
+              //     timeSlot,
+              //     startTimeAdded: !log.scheduledStartTime && !!scheduledStartTime,
+              //     endTimeAdded: !log.scheduledEndTime && !!scheduledEndTime
+              //   }
+              // });
             }
           }
           
-          logger.debug('Using actual WorkLog times from Staff tab', {
-            component: 'useEnhancedPayroll',
-            data: {
-              staffId: staff.userId,
-              role: staff.role,
-              date: log.date,
-              scheduledStartTime: finalScheduledStart ? 'exists' : 'null',
-              scheduledEndTime: finalScheduledEnd ? 'exists' : 'null',
-              source: finalScheduledStart === log.scheduledStartTime ? 'workLog_only' : 'workLog_plus_timeSlot'
-            }
-          });
+          // logger.debug('Using actual WorkLog times from Staff tab', {
+          //   component: 'useEnhancedPayroll',
+          //   data: {
+          //     staffId: staff.userId,
+          //     role: staff.role,
+          //     date: log.date,
+          //     scheduledStartTime: finalScheduledStart ? 'exists' : 'null',
+          //     scheduledEndTime: finalScheduledEnd ? 'exists' : 'null',
+          //     source: finalScheduledStart === log.scheduledStartTime ? 'workLog_only' : 'workLog_plus_timeSlot'
+          //   }
+          // });
           
           // 새 객체 생성하여 시간 정보와 역할 추가
           const enhancedLog = {
@@ -321,35 +321,35 @@ export const useEnhancedPayroll = ({
           log.scheduledStartTime
         );
         
-        logger.debug('Searching for existing WorkLog', {
-          component: 'useEnhancedPayroll',
-          data: {
-            staffId: staffId,
-            staffName: staff.name,
-            role: staff.role,
-            date: staff.date,
-            timeSlot: staff.timeSlot,
-            foundExisting: !!existingWorkLog,
-            existingWorkLogId: existingWorkLog?.id || null,
-            totalWorkLogs: workLogs.length,
-            matchingStaffWorkLogs: workLogs.filter(log => matchStaffIdentifier(log, [staffId])).map(log => ({
-              id: log.id,
-              date: log.date,
-              hasTime: !!log.scheduledStartTime
-            }))
-          }
-        });
+        // logger.debug('Searching for existing WorkLog', {
+        //   component: 'useEnhancedPayroll',
+        //   data: {
+        //     staffId: staffId,
+        //     staffName: staff.name,
+        //     role: staff.role,
+        //     date: staff.date,
+        //     timeSlot: staff.timeSlot,
+        //     foundExisting: !!existingWorkLog,
+        //     existingWorkLogId: existingWorkLog?.id || null,
+        //     totalWorkLogs: workLogs.length,
+        //     matchingStaffWorkLogs: workLogs.filter(log => matchStaffIdentifier(log, [staffId])).map(log => ({
+        //       id: log.id,
+        //       date: log.date,
+        //       hasTime: !!log.scheduledStartTime
+        //     }))
+        //   }
+        // });
         
         if (existingWorkLog && !processedWorkLogIds.has(existingWorkLog.id)) {
           // 해당 날짜에 이미 실제 workLog가 있고 아직 처리되지 않았으면 실제 데이터 사용
-          logger.debug('Found existing workLog for this specific date - using actual workLog', {
-            component: 'useEnhancedPayroll',
-            data: {
-              staffId: staff.userId,
-              role: staff.role,
-              date: staff.date
-            }
-          });
+          // logger.debug('Found existing workLog for this specific date - using actual workLog', {
+          //   component: 'useEnhancedPayroll',
+          //   data: {
+          //     staffId: staff.userId,
+          //     role: staff.role,
+          //     date: staff.date
+          //   }
+          // });
           
           // 실제 workLog에 시간 정보가 없는 경우 timeSlot으로 보완
           let finalScheduledStart = existingWorkLog.scheduledStartTime;
@@ -368,17 +368,17 @@ export const useEnhancedPayroll = ({
                 finalScheduledEnd = scheduledEndTime;
               }
               
-              logger.debug('Complemented existing workLog times with timeSlot', {
-                component: 'useEnhancedPayroll',
-                data: {
-                  staffId: staff.userId,
-                  role: staff.role,
-                  date: existingWorkLog.date,
-                  timeSlot,
-                  startTimeAdded: !existingWorkLog.scheduledStartTime && !!scheduledStartTime,
-                  endTimeAdded: !existingWorkLog.scheduledEndTime && !!scheduledEndTime
-                }
-              });
+              // logger.debug('Complemented existing workLog times with timeSlot', {
+              //   component: 'useEnhancedPayroll',
+              //   data: {
+              //     staffId: staff.userId,
+              //     role: staff.role,
+              //     date: existingWorkLog.date,
+              //     timeSlot,
+              //     startTimeAdded: !existingWorkLog.scheduledStartTime && !!scheduledStartTime,
+              //     endTimeAdded: !existingWorkLog.scheduledEndTime && !!scheduledEndTime
+              //   }
+              // });
             }
           }
           
@@ -395,22 +395,22 @@ export const useEnhancedPayroll = ({
           processedStaffRoles.add(staffRoleKey);
           processedWorkLogIds.add(existingWorkLog.id);
           
-          logger.debug('Added existing workLog to roleBasedWorkLogs', {
-            component: 'useEnhancedPayroll'
-          });
+          // logger.debug('Added existing workLog to roleBasedWorkLogs', {
+          //   component: 'useEnhancedPayroll'
+          // });
           
           // 실제 workLog 처리 완료, 다음 staff로 넘어감
           return;
         } else if (existingWorkLog && processedWorkLogIds.has(existingWorkLog.id)) {
           // 이미 처리된 WorkLog인 경우 건너뛰기
-          logger.debug('Existing workLog already processed - skipping', {
-            component: 'useEnhancedPayroll',
-            data: {
-              staffId: staff.userId,
-              role: staff.role,
-              date: staff.date
-            }
-          });
+          // logger.debug('Existing workLog already processed - skipping', {
+          //   component: 'useEnhancedPayroll',
+          //   data: {
+          //     staffId: staff.userId,
+          //     role: staff.role,
+          //     date: staff.date
+          //   }
+          // });
           return;
         }
         
@@ -434,29 +434,29 @@ export const useEnhancedPayroll = ({
         
         // 이미 처리된 스태프는 건너뛰기
         if (processedStaffRoles.has(staffRoleKey)) {
-          logger.debug('Staff already processed - skipping virtual WorkLog creation', {
-            component: 'useEnhancedPayroll',
-            data: {
-              staffId: staff.userId,
-              staffName: staff.name,
-              role: staff.role,
-              date: staff.date,
-              staffRoleKey: staffRoleKey
-            }
-          });
+          // logger.debug('Staff already processed - skipping virtual WorkLog creation', {
+          //   component: 'useEnhancedPayroll',
+          //   data: {
+          //     staffId: staff.userId,
+          //     staffName: staff.name,
+          //     role: staff.role,
+          //     date: staff.date,
+          //     staffRoleKey: staffRoleKey
+          //   }
+          // });
           return;
         }
         
-        logger.debug('Attempting to create virtual WorkLog', {
-          component: 'useEnhancedPayroll',
-          data: {
-            staffId: staff.userId,
-            originalTimeSlot: staff.timeSlot,
-            timeSlot: timeSlot,
-            timeSlotType: typeof timeSlot,
-            hasTimeSlot: !!timeSlot
-          }
-        });
+        // logger.debug('Attempting to create virtual WorkLog', {
+        //   component: 'useEnhancedPayroll',
+        //   data: {
+        //     staffId: staff.userId,
+        //     originalTimeSlot: staff.timeSlot,
+        //     timeSlot: timeSlot,
+        //     timeSlotType: typeof timeSlot,
+        //     hasTimeSlot: !!timeSlot
+        //   }
+        // });
         
         if (timeSlot) {
           // 날짜 설정: staff.date가 있으면 사용, 없으면 오늘 날짜 사용
@@ -498,19 +498,19 @@ export const useEnhancedPayroll = ({
           const { scheduledStartTime, scheduledEndTime } = 
             convertAssignedTimeToScheduled(processedTimeSlot, virtualDate);
           
-          logger.debug('Creating virtual WorkLog from timeSlot', { 
-            component: 'useEnhancedPayroll',
-            data: {
-              staffId: staff.userId,
-              staffName: staff.name,
-              timeSlot,
-              virtualDate,
-              scheduledStartTime: scheduledStartTime ? 'set' : 'null',
-              scheduledEndTime: scheduledEndTime ? 'set' : 'null',
-              startTimeSeconds: scheduledStartTime ? (scheduledStartTime as any).seconds : 'N/A',
-              endTimeSeconds: scheduledEndTime ? (scheduledEndTime as any).seconds : 'N/A'
-            }
-          });
+          // logger.debug('Creating virtual WorkLog from timeSlot', { 
+          //   component: 'useEnhancedPayroll',
+          //   data: {
+          //     staffId: staff.userId,
+          //     staffName: staff.name,
+          //     timeSlot,
+          //     virtualDate,
+          //     scheduledStartTime: scheduledStartTime ? 'set' : 'null',
+          //     scheduledEndTime: scheduledEndTime ? 'set' : 'null',
+          //     startTimeSeconds: scheduledStartTime ? (scheduledStartTime as any).seconds : 'N/A',
+          //     endTimeSeconds: scheduledEndTime ? (scheduledEndTime as any).seconds : 'N/A'
+          //   }
+          // });
           
           const virtualLog = {
             id: `virtual_${staff.userId}_${virtualDate}`, // 가상 workLog ID (역할 제외)
@@ -545,20 +545,20 @@ export const useEnhancedPayroll = ({
     });
     
     // 역할 기반 workLogs 생성 완료
-    logger.debug('Role-based WorkLogs created', {
-      component: 'useEnhancedPayroll',
-      data: {
-        roleBasedWorkLogsCount: roleBasedWorkLogs.length,
-        roleBasedWorkLogsDetails: roleBasedWorkLogs.map(log => ({
-          id: log.id,
-          staffId: log.staffId,
-          date: log.date,
-          role: (log as any).role,
-          staffName: (log as any).staffName,
-          isVirtual: (log as any).isVirtual
-        }))
-      }
-    });
+    // logger.debug('Role-based WorkLogs created', {
+    //   component: 'useEnhancedPayroll',
+    //   data: {
+    //     roleBasedWorkLogsCount: roleBasedWorkLogs.length,
+    //     roleBasedWorkLogsDetails: roleBasedWorkLogs.map(log => ({
+    //       id: log.id,
+    //       staffId: log.staffId,
+    //       date: log.date,
+    //       role: (log as any).role,
+    //       staffName: (log as any).staffName,
+    //       isVirtual: (log as any).isVirtual
+    //     }))
+    //   }
+    // });
     
     // 역할 기반 workLogs를 staffId + role로 그룹화
     roleBasedWorkLogs.forEach((log, index) => {
@@ -590,9 +590,9 @@ export const useEnhancedPayroll = ({
         }
       }
       
-      logger.debug('Processing WorkLog for aggregation', {
-        component: 'useEnhancedPayroll'
-      });
+      // logger.debug('Processing WorkLog for aggregation', {
+      //   component: 'useEnhancedPayroll'
+      // });
       
       // confirmedStaff에서 이름 가져오기 (staffId/userId 통합)
       if (!staffName) {
@@ -632,17 +632,17 @@ export const useEnhancedPayroll = ({
       let totalHours = 0;
       const uniqueDates = new Set<string>();
       
-      logger.debug('Calculating payroll for role group', {
-        component: 'useEnhancedPayroll',
-        data: {
-          key,
-          staffId: data.staffId,
-          staffName: data.staffName,
-          role: data.role,
-          workLogCount: data.workLogs.length,
-          workLogDates: data.workLogs.map(log => log.date)
-        }
-      });
+      // logger.debug('Calculating payroll for role group', {
+      //   component: 'useEnhancedPayroll',
+      //   data: {
+      //     key,
+      //     staffId: data.staffId,
+      //     staffName: data.staffName,
+      //     role: data.role,
+      //     workLogCount: data.workLogs.length,
+      //     workLogDates: data.workLogs.map(log => log.date)
+      //   }
+      // });
       
       // 이미 roleBasedWorkLogs 생성 과정에서 중복 방지된 WorkLog들을 재활용
       // 중복 방지를 위한 추가 처리된 WorkLog ID 추적 (이 섹션에서만 사용)
@@ -657,9 +657,9 @@ export const useEnhancedPayroll = ({
           log.scheduledStartTime = scheduledStartTime;
           log.scheduledEndTime = scheduledEndTime;
           
-          logger.debug('Backup logic 1: Applied assignedTime to virtual WorkLog', {
-            component: 'useEnhancedPayroll'
-          });
+          // logger.debug('Backup logic 1: Applied assignedTime to virtual WorkLog', {
+          //   component: 'useEnhancedPayroll'
+          // });
         }
         
         // 백업 로직 2: scheduledTime이 없지만 assignedTime이 있는 경우 (가상이 아니어도)
@@ -669,9 +669,9 @@ export const useEnhancedPayroll = ({
           log.scheduledStartTime = scheduledStartTime;
           log.scheduledEndTime = scheduledEndTime;
           
-          logger.debug('Backup logic 2: Applied assignedTime to WorkLog', {
-            component: 'useEnhancedPayroll'
-          });
+          // logger.debug('Backup logic 2: Applied assignedTime to WorkLog', {
+          //   component: 'useEnhancedPayroll'
+          // });
         }
         
         // 정산 목적: scheduledEndTime(스태프탭 설정) 있으면 계산
@@ -697,24 +697,24 @@ export const useEnhancedPayroll = ({
           
           // 디버깅: 시간 계산 결과 확인
           
-          logger.debug('Work hours calculated', {
-            component: 'useEnhancedPayroll'
-          });
+          // logger.debug('Work hours calculated', {
+          //   component: 'useEnhancedPayroll'
+          // });
         }
       });
       
       // 고유 날짜 수 계산
       const totalDays = uniqueDates.size;
 
-      logger.debug('Final calculation for role group', {
-        component: 'useEnhancedPayroll',
-        data: {
-          key,
-          totalHours,
-          totalDays,
-          uniqueDates: Array.from(uniqueDates)
-        }
-      });
+      // logger.debug('Final calculation for role group', {
+      //   component: 'useEnhancedPayroll',
+      //   data: {
+      //     key,
+      //     totalHours,
+      //     totalDays,
+      //     uniqueDates: Array.from(uniqueDates)
+      //   }
+      // });
       
       // 급여 정보 가져오기
       const { salaryType, salaryAmount } = getSalaryInfo(data.role);
