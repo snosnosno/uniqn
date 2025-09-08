@@ -9,6 +9,7 @@ import { StaffData } from '../hooks/useStaffManagement';
 import AttendanceStatusPopover, { AttendanceStatus } from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 import { UnifiedWorkLog } from '../types/unified/workLog';
+import { createWorkLogId } from '../utils/workLogSimplified';
 
 // BaseCard 및 하위 컴포넌트들 import
 import BaseCard, { CardHeader, CardBody, CardFooter } from './ui/BaseCard';
@@ -21,7 +22,7 @@ interface StaffCardProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => any;
+  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
@@ -83,22 +84,18 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     }
     
     const actualStaffId = staff.id.replace(/_\d+$/, '');
-    const workLogId = `virtual_${actualStaffId}_${dateString}`;
     
-    const attendanceRecord = getStaffAttendanceStatus(workLogId);
+    // 🚀 실제 WorkLog ID 사용 (virtual_ 프리픽스 제거)
+    const realWorkLogId = eventId ? createWorkLogId(eventId, actualStaffId, dateString) : `${actualStaffId}_${dateString}`;
+    
+    // getStaffAttendanceStatus에 실제 WorkLog ID 전달
+    const attendanceRecord = getStaffAttendanceStatus(actualStaffId, dateString);
     const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
-    
-    let realWorkLogId = workLogId;
-    if (attendanceRecord && attendanceRecord.workLogId) {
-      realWorkLogId = attendanceRecord.workLogId;
-    } else if (eventId) {
-      realWorkLogId = `${eventId}_${actualStaffId}_${dateString}`;
-    }
     
     return {
       attendanceRecord,
       workLogRecord,
-      workLogId,
+      workLogId: realWorkLogId, // workLogId도 실제 ID로 변경
       realWorkLogId
     };
   }, [

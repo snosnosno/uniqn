@@ -12,7 +12,7 @@ interface StaffDateGroupMobileProps {
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => any;
+  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;

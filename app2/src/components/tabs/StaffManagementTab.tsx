@@ -339,28 +339,18 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     isMobile: false
   });
   
-  // 🎯 출석 상태 관련 헬퍼 함수들 - 단순화
+  // 🎯 출석 상태 관련 헬퍼 함수들 - createWorkLogId 사용으로 통일
   const getStaffAttendanceStatus = useCallback((staffId: string, targetDate?: string) => {
     // WorkLogs에서 직접 출석상태 계산 (실시간 반영)
     const searchDate = targetDate || getTodayString();
     
-    // 더 정확한 staffId 매칭을 위한 후보들 생성
-    const staffIdCandidates = [
-      staffId,
-      staffId.replace(/_\d+$/, ''), // assignmentIndex 제거
-      `${staffId}_0`, // _0 추가
-    ];
+    if (!jobPosting?.id) return null;
     
-    // 해당 스태프의 WorkLog를 정확히 찾기
-    const workLog = Array.from(state.workLogs.values()).find(wl => {
-      if (!wl.staffId || wl.date !== searchDate) return false;
-      
-      // staffId 정확히 매칭
-      return staffIdCandidates.some(candidateId => 
-        wl.staffId === candidateId || wl.staffId.includes(candidateId)
-      );
-    });
+    // 🚀 createWorkLogId를 사용하여 정확한 WorkLog ID 생성
+    const expectedWorkLogId = createWorkLogId(jobPosting.id, staffId, searchDate);
     
+    // 정확한 ID로 WorkLog 찾기
+    const workLog = state.workLogs.get(expectedWorkLogId);
     
     if (workLog) {
       // attendanceRecord 구조로 반환 (StaffRow가 기대하는 형태)
@@ -373,7 +363,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     
     // WorkLog가 없으면 null 반환
     return null;
-  }, [state.workLogs]);
+  }, [state.workLogs, jobPosting?.id]);
   
   const applyOptimisticUpdate = useCallback((workLogId: string, status: string) => {
     // 🚀 AttendanceStatusPopover에서 호출되는 Optimistic Update 콜백

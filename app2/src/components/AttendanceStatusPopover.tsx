@@ -299,41 +299,20 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           transaction.update(workLogRef, updateData);
           
         } else {
-          // 🚀 WorkLog가 존재하지 않으면 새로 생성 (fallback 로직)
+          // 🚀 WorkLog가 존재하지 않으면 에러 처리 (fallback 생성 제거)
+          logger.error('AttendanceStatusPopover: WorkLog를 찾을 수 없습니다', new Error('WorkLog not found'), {
+            component: 'AttendanceStatusPopover',
+            data: {
+              realWorkLogId,
+              staffId,
+              staffName,
+              eventId,
+              workLogDate
+            }
+          });
           
-          const newWorkLogData: Record<string, any> = {
-            id: realWorkLogId,
-            eventId: eventId || 'default-event',
-            staffId: staffId,
-            staffName: staffName,
-            date: workLogDate,
-            role: 'staff',
-            status: newStatus,
-            createdAt: now,
-            updatedAt: now
-          };
-
-          // 출근 상태로 생성 시 actualStartTime 설정
-          if (newStatus === 'checked_in') {
-            newWorkLogData.actualStartTime = now;
-          }
-          // 퇴근 상태로 생성 시 actualEndTime도 설정
-          if (newStatus === 'checked_out') {
-            newWorkLogData.actualStartTime = now;
-            newWorkLogData.actualEndTime = now;
-          }
-          
-          // 스케줄된 시간이 있으면 추가
-          if (scheduledStartTime instanceof Timestamp) {
-            newWorkLogData.scheduledStartTime = scheduledStartTime;
-          }
-          if (scheduledEndTime instanceof Timestamp) {
-            newWorkLogData.scheduledEndTime = scheduledEndTime;
-          }
-
-          transaction.set(workLogRef, newWorkLogData);
-          
-          // 생성 완료 로깅
+          // 트랜잭션 롤백을 위해 에러 throw
+          throw new Error(`${staffName}님의 근무 기록을 찾을 수 없습니다. 스태프 확정 시 자동 생성되어야 합니다.`);
         }
       });
 
