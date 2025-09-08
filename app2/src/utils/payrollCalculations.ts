@@ -74,12 +74,63 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
   }
   
   try {
-    const startDate = startTime && typeof startTime === 'object' && 'toDate' in startTime ? 
-      startTime.toDate() : null;
-    const endDate = endTime && typeof endTime === 'object' && 'toDate' in endTime ? 
-      endTime.toDate() : null;
+    // 디버그: 시간 데이터 로깅
+    logger.info('근무시간 계산 시작', {
+      component: 'payrollCalculations',
+      data: {
+        workLogId: workLog.id,
+        startTime: startTime,
+        endTime: endTime,
+        startTimeType: typeof startTime,
+        endTimeType: typeof endTime,
+        hasSecondsInStart: startTime && typeof startTime === 'object' && 'seconds' in startTime,
+        hasSecondsInEnd: endTime && typeof endTime === 'object' && 'seconds' in endTime
+      }
+    });
+    
+    // Firebase Timestamp 형태 처리 개선
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+    
+    // startTime 처리
+    if (startTime) {
+      if (typeof startTime === 'object' && 'toDate' in startTime) {
+        // Firebase Timestamp 객체 (toDate 메서드 있음)
+        startDate = startTime.toDate();
+        logger.info('startTime: toDate() 사용', { component: 'payrollCalculations', data: { startDate } });
+      } else if (typeof startTime === 'object' && 'seconds' in startTime) {
+        // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
+        startDate = new Date((startTime as any).seconds * 1000);
+        logger.info('startTime: seconds 사용', { component: 'payrollCalculations', data: { seconds: (startTime as any).seconds, startDate } });
+      } else if (typeof startTime === 'string') {
+        // 문자열 형태 시간
+        startDate = new Date(startTime);
+        logger.info('startTime: 문자열 사용', { component: 'payrollCalculations', data: { startTime, startDate } });
+      }
+    }
+    
+    // endTime 처리
+    if (endTime) {
+      if (typeof endTime === 'object' && 'toDate' in endTime) {
+        // Firebase Timestamp 객체 (toDate 메서드 있음)
+        endDate = endTime.toDate();
+        logger.info('endTime: toDate() 사용', { component: 'payrollCalculations', data: { endDate } });
+      } else if (typeof endTime === 'object' && 'seconds' in endTime) {
+        // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
+        endDate = new Date((endTime as any).seconds * 1000);
+        logger.info('endTime: seconds 사용', { component: 'payrollCalculations', data: { seconds: (endTime as any).seconds, endDate } });
+      } else if (typeof endTime === 'string') {
+        // 문자열 형태 시간
+        endDate = new Date(endTime);
+        logger.info('endTime: 문자열 사용', { component: 'payrollCalculations', data: { endTime, endDate } });
+      }
+    }
       
     if (!startDate || !endDate) {
+      logger.warn('시작/종료 시간 파싱 실패', {
+        component: 'payrollCalculations',
+        data: { startDate, endDate, startTime, endTime }
+      });
       return 0;
     }
     

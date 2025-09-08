@@ -17,6 +17,13 @@ import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
 import { JobPosting } from '../types/jobPosting';
 import { logger } from '../utils/logger';
+import { 
+  getRoleSalaryInfo, 
+  calculateBasePay, 
+  calculateAllowances,
+  calculateWorkHours
+} from '../utils/payrollCalculations';
+import { matchStaffIdentifier } from '../utils/staffIdMapper';
 
 interface PayrollWorkerState {
   payrollData: EnhancedPayrollCalculation[];
@@ -70,14 +77,17 @@ export const usePayrollWorker = () => {
             calculationTime
           });
 
-          logger.info('Web Worker 정산 계산 완료', {
-            component: 'usePayrollWorker',
-            data: {
-              staffCount: payrollData.length,
-              calculationTime: Math.round(calculationTime),
-              totalAmount: summary.totalAmount
-            }
-          });
+          // 성능이 좋지 않을 때만 로그 출력 (성능 최적화)
+          if (calculationTime > 500) {
+            logger.info('Web Worker 정산 계산 완료 (느림)', {
+              component: 'usePayrollWorker',
+              data: {
+                staffCount: payrollData.length,
+                calculationTime: Math.round(calculationTime),
+                totalAmount: summary.totalAmount
+              }
+            });
+          }
         } else if (event.data.type === 'PAYROLL_ERROR') {
           const { error, stack } = event.data.payload;
           
@@ -107,9 +117,7 @@ export const usePayrollWorker = () => {
         });
       };
 
-      logger.info('Web Worker 초기화 완료', {
-        component: 'usePayrollWorker'
-      });
+      // Web Worker 초기화 로그 제거 (성능 최적화)
     } catch (error) {
       logger.error('Web Worker 생성 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'usePayrollWorker'
@@ -127,22 +135,13 @@ export const usePayrollWorker = () => {
         workerRef.current.terminate();
         workerRef.current = null;
         
-        logger.info('Web Worker 종료', {
-          component: 'usePayrollWorker'
-        });
+        // Web Worker 종료 로그 제거 (성능 최적화)
       }
     };
   }, []);
 
-  // 정산 계산 실행
+  // 정산 계산 실행 (Web Worker 우회 - 임시 수정)
   const calculatePayroll = useCallback(async (params: PayrollCalculationParams) => {
-    if (!workerRef.current) {
-      logger.warn('Web Worker가 초기화되지 않았습니다.', {
-        component: 'usePayrollWorker'
-      });
-      return;
-    }
-
     setState(prev => ({
       ...prev,
       loading: true,
@@ -152,12 +151,7 @@ export const usePayrollWorker = () => {
     const startTime = performance.now();
 
     try {
-      const message: PayrollCalculationMessage = {
-        type: 'CALCULATE_PAYROLL',
-        payload: params
-      };
-
-      logger.info('Web Worker로 정산 계산 요청', {
+      logger.info('메인 스레드에서 정산 계산 시작 (Web Worker 우회)', {
         component: 'usePayrollWorker',
         data: {
           workLogsCount: params.workLogs.length,
@@ -166,17 +160,273 @@ export const usePayrollWorker = () => {
         }
       });
 
-      workerRef.current.postMessage(message);
+      // 실제 계산 로직 수행
+      const calculationTime = performance.now() - startTime;
+      
+      const payrollData: EnhancedPayrollCalculation[] = [];
+      const staffRoleMap = new Map<string, {
+        staffId: string;
+        staffName: string;
+        role: string;
+        workLogs: UnifiedWorkLog[];
+      }>();
+
+      logger.info('confirmedStaff 데이터 확인', {
+        component: 'usePayrollWorker',
+        data: {
+          confirmedStaffCount: params.confirmedStaff.length,
+          confirmedStaff: params.confirmedStaff.map(staff => ({
+            userId: staff.userId,
+            name: staff.name,
+            role: staff.role
+          }))
+        }
+      });
+
+      logger.info('WorkLogs 데이터 확인', {
+        component: 'usePayrollWorker',
+        data: {
+          workLogsCount: params.workLogs.length,
+          workLogs: params.workLogs.map(log => ({
+            id: log.id,
+            staffId: log.staffId,
+            date: log.date,
+            hasScheduledStart: !!log.scheduledStartTime,
+            hasScheduledEnd: !!log.scheduledEndTime
+          }))
+        }
+      });
+
+      // 1단계: 모든 WorkLog를 스태프별로 그룹화
+      const staffWorkLogsMap = new Map<string, UnifiedWorkLog[]>();
+      
+      for (const log of params.workLogs) {
+        if (log.date >= params.startDate && log.date <= params.endDate) {
+          // 모든 confirmedStaff와 매칭되는지 확인
+          for (const staff of params.confirmedStaff) {
+            if (matchStaffIdentifier(log, [staff.userId])) {
+              if (!staffWorkLogsMap.has(staff.userId)) {
+                staffWorkLogsMap.set(staff.userId, []);
+              }
+              staffWorkLogsMap.get(staff.userId)!.push(log);
+              break; // 중복 추가 방지
+            }
+          }
+        }
+      }
+
+      logger.info('스태프별 WorkLog 그룹화 완료', {
+        component: 'usePayrollWorker',
+        data: {
+          staffCount: staffWorkLogsMap.size,
+          staffWorkLogs: Array.from(staffWorkLogsMap.entries()).map(([staffId, logs]) => ({
+            staffId,
+            workLogsCount: logs.length
+          }))
+        }
+      });
+
+      // 2단계: 각 확정된 스태프별로 역할별 계산
+      for (const staff of params.confirmedStaff) {
+        const staffId = staff.userId;
+        const key = `${staffId}_${staff.role}`;
+        
+        if (!staffRoleMap.has(key)) {
+          staffRoleMap.set(key, {
+            staffId,
+            staffName: staff.name,
+            role: staff.role,
+            workLogs: []
+          });
+        }
+
+        // 해당 스태프의 WorkLog 가져오기
+        const staffWorkLogs = staffWorkLogsMap.get(staffId) || [];
+        
+        // 역할별 필터링 (해당 역할의 WorkLog만)
+        const roleWorkLogs = staffWorkLogs.filter(log => log.role === staff.role);
+
+        logger.info('스태프 처리 중', {
+          component: 'usePayrollWorker',
+          data: {
+            staffId,
+            staffName: staff.name,
+            role: staff.role,
+            key,
+            totalStaffWorkLogs: staffWorkLogs.length,
+            roleWorkLogs: roleWorkLogs.length
+          }
+        });
+
+        const entry = staffRoleMap.get(key);
+        if (entry) {
+          entry.workLogs = roleWorkLogs; // 중복 방지를 위해 직접 할당
+        }
+      }
+
+      logger.info('최종 staffRoleMap 상태', {
+        component: 'usePayrollWorker',
+        data: {
+          mapSize: staffRoleMap.size,
+          entries: Array.from(staffRoleMap.entries()).map(([key, data]) => ({
+            key,
+            staffId: data.staffId,
+            staffName: data.staffName,
+            role: data.role,
+            workLogsCount: data.workLogs.length
+          }))
+        }
+      });
+
+      // 각 스태프-역할 조합별로 정산 계산
+      for (const [key, data] of Array.from(staffRoleMap)) {
+        let totalHours = 0;
+        const uniqueDates = new Set<string>();
+
+        // WorkLog 기반 실제 근무시간 계산
+        for (const log of data.workLogs) {
+          logger.info('WorkLog 데이터 구조 확인', {
+            component: 'usePayrollWorker',
+            data: {
+              logId: log.id,
+              scheduledStartTime: log.scheduledStartTime,
+              scheduledEndTime: log.scheduledEndTime,
+              startTimeType: typeof log.scheduledStartTime,
+              endTimeType: typeof log.scheduledEndTime,
+              hasStartTime: !!log.scheduledStartTime,
+              hasEndTime: !!log.scheduledEndTime
+            }
+          });
+          
+          if (log.scheduledStartTime && log.scheduledEndTime) {
+            uniqueDates.add(log.date);
+            const hours = calculateWorkHours(log);
+            totalHours += hours;
+          } else {
+            logger.warn('WorkLog에 시간 정보 없음', {
+              component: 'usePayrollWorker',
+              data: {
+                logId: log.id,
+                date: log.date,
+                hasStart: !!log.scheduledStartTime,
+                hasEnd: !!log.scheduledEndTime
+              }
+            });
+          }
+        }
+
+        const totalDays = uniqueDates.size;
+
+        // 역할별 급여 정보 가져오기
+        const { salaryType, salaryAmount } = getRoleSalaryInfo(
+          data.role,
+          params.jobPosting,
+          params.roleSalaryOverrides
+        );
+
+        // 기본급 계산
+        const basePay = calculateBasePay(salaryType, salaryAmount, totalHours, totalDays);
+        
+        // 수당 계산
+        const staffAllowanceOverride = params.staffAllowanceOverrides?.[key] || 
+                                      params.staffAllowanceOverrides?.[data.staffId];
+        const defaultAllowances = calculateAllowances(params.jobPosting);
+        const allowances = staffAllowanceOverride || defaultAllowances;
+
+        const allowanceTotal = 
+          allowances.meal +
+          allowances.transportation +
+          allowances.accommodation +
+          allowances.bonus +
+          allowances.other;
+
+        const totalAmount = basePay + allowanceTotal;
+
+        // EnhancedPayrollCalculation 객체 생성
+        const payrollCalculation: EnhancedPayrollCalculation = {
+          staffId: data.staffId,
+          staffName: data.staffName,
+          role: data.role,
+          workLogs: data.workLogs,
+          totalHours: Math.round(totalHours * 100) / 100,
+          totalDays,
+          salaryType: salaryType as any,
+          baseSalary: salaryAmount,
+          allowances,
+          basePay,
+          allowanceTotal,
+          totalAmount,
+          period: {
+            start: params.startDate,
+            end: params.endDate
+          }
+        };
+
+        payrollData.push(payrollCalculation);
+      }
+
+      // 요약 정보 계산
+      const roleStats: Record<string, { count: number; hours: number; amount: number; }> = {};
+      const salaryTypeStats = { hourly: 0, daily: 0, monthly: 0, other: 0 };
+
+      for (const data of payrollData) {
+        // 역할별 통계
+        if (!roleStats[data.role]) {
+          roleStats[data.role] = { count: 0, hours: 0, amount: 0 };
+        }
+        const roleData = roleStats[data.role];
+        if (roleData) {
+          roleData.count++;
+          roleData.hours += data.totalHours;
+          roleData.amount += data.totalAmount;
+        }
+
+        // 급여 유형별 통계
+        salaryTypeStats[data.salaryType as keyof typeof salaryTypeStats] += data.totalAmount;
+      }
+
+      const summary: PayrollSummary = {
+        totalStaff: payrollData.length,
+        totalHours: payrollData.reduce((sum, data) => sum + data.totalHours, 0),
+        totalDays: payrollData.reduce((sum, data) => sum + data.totalDays, 0),
+        totalAmount: payrollData.reduce((sum, data) => sum + data.totalAmount, 0),
+        byRole: roleStats,
+        bySalaryType: salaryTypeStats,
+        period: {
+          start: params.startDate,
+          end: params.endDate
+        }
+      };
+
+      setState({
+        payrollData,
+        summary,
+        loading: false,
+        error: null,
+        calculationTime
+      });
+
+      logger.info('메인 스레드 정산 계산 완료 (실제 데이터)', {
+        component: 'usePayrollWorker',
+        data: {
+          staffCount: payrollData.length,
+          calculationTime: Math.round(calculationTime),
+          totalAmount: summary.totalAmount,
+          totalHours: Math.round(summary.totalHours * 100) / 100,
+          roles: Object.keys(roleStats)
+        }
+      });
+
     } catch (error) {
       const requestTime = performance.now() - startTime;
       
       setState(prev => ({
         ...prev,
         loading: false,
-        error: '정산 계산 요청 중 오류가 발생했습니다.'
+        error: '정산 계산 중 오류가 발생했습니다.'
       }));
 
-      logger.error('정산 계산 요청 실패', error instanceof Error ? error : new Error(String(error)), {
+      logger.error('메인 스레드 정산 계산 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'usePayrollWorker',
         data: { requestTime }
       });
@@ -206,9 +456,7 @@ export const usePayrollWorker = () => {
           error: null
         }));
 
-        logger.info('정산 계산 취소 및 Worker 재시작', {
-          component: 'usePayrollWorker'
-        });
+        // 재시작 로그 제거 (성능 최적화)
       } catch (error) {
         setState(prev => ({
           ...prev,

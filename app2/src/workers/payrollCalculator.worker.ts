@@ -98,26 +98,57 @@ const convertAssignedTimeToScheduled = (timeSlot: string, date: string) => {
 };
 
 const calculateWorkHours = (log: UnifiedWorkLog): number => {
-  if (!log.scheduledStartTime || !log.scheduledEndTime) {
+  const startTime = log.scheduledStartTime;
+  const endTime = log.scheduledEndTime;
+  
+  if (!startTime || !endTime) {
     return 0;
   }
 
-  const start = typeof log.scheduledStartTime === 'object' && 'seconds' in log.scheduledStartTime
-    ? log.scheduledStartTime.seconds * 1000
-    : new Date(log.scheduledStartTime as any).getTime();
+  try {
+    // Firebase Timestamp 형태 처리 개선 (payrollCalculations.ts와 동일)
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+    
+    // startTime 처리
+    if (startTime) {
+      if (typeof startTime === 'object' && 'toDate' in startTime) {
+        // Firebase Timestamp 객체 (toDate 메서드 있음)
+        startDate = (startTime as any).toDate();
+      } else if (typeof startTime === 'object' && 'seconds' in startTime) {
+        // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
+        startDate = new Date((startTime as any).seconds * 1000);
+      } else if (typeof startTime === 'string') {
+        // 문자열 형태 시간
+        startDate = new Date(startTime);
+      }
+    }
+    
+    // endTime 처리
+    if (endTime) {
+      if (typeof endTime === 'object' && 'toDate' in endTime) {
+        // Firebase Timestamp 객체 (toDate 메서드 있음)
+        endDate = (endTime as any).toDate();
+      } else if (typeof endTime === 'object' && 'seconds' in endTime) {
+        // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
+        endDate = new Date((endTime as any).seconds * 1000);
+      } else if (typeof endTime === 'string') {
+        // 문자열 형태 시간
+        endDate = new Date(endTime);
+      }
+    }
+      
+    if (!startDate || !endDate) {
+      return 0;
+    }
 
-  const end = typeof log.scheduledEndTime === 'object' && 'seconds' in log.scheduledEndTime
-    ? log.scheduledEndTime.seconds * 1000
-    : new Date(log.scheduledEndTime as any).getTime();
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
 
-  if (isNaN(start) || isNaN(end)) {
+    return Math.max(0, Math.round(diffHours * 100) / 100);
+  } catch (error) {
     return 0;
   }
-
-  const diffMs = end - start;
-  const diffHours = diffMs / (1000 * 60 * 60);
-
-  return Math.max(0, Math.round(diffHours * 100) / 100);
 };
 
 // 메인 계산 함수

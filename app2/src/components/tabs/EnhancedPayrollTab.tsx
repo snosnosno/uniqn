@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 import { JobPosting } from '../../types/jobPosting';
@@ -19,6 +19,10 @@ interface EnhancedPayrollTabProps {
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eventId }) => {
   const { i18n } = useTranslation();
   
+  // 계산 중복 방지를 위한 ref
+  const hasCalculated = useRef(false);
+  const lastCalculationKey = useRef<string>('');
+  
   // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -38,23 +42,21 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     calculationTime
   } = usePayrollWorker();
   
-  // 실제 WorkLogs 데이터 (상태 변환 통일, eventId 필터링)
+  // 실제 WorkLogs 데이터 (상태 변환 통일, eventId 필터링) - 메모이제이션 강화
   const workLogs = useMemo(() => {
-    let filteredWorkLogs = Array.from(state.workLogs.values());
+    const workLogsArray = Array.from(state.workLogs.values());
     
-    // eventId가 제공된 경우 해당 이벤트의 workLogs만 필터링
-    if (eventId) {
-      filteredWorkLogs = filteredWorkLogs.filter(workLog => workLog.eventId === eventId);
-    }
+    // eventId 필터링을 먼저 수행하여 처리할 데이터 양 감소
+    const filteredWorkLogs = eventId 
+      ? workLogsArray.filter(workLog => workLog.eventId === eventId)
+      : workLogsArray;
     
+    // 상태 변환은 한 번에 수행
     return filteredWorkLogs.map(workLog => ({
       ...workLog,
-      // 상태 변환 통일 - UnifiedWorkLog 타입과 호환
-      status: workLog.status === 'checked_in' ? 'checked_in' as const :
-              workLog.status === 'checked_out' ? 'checked_out' as const :
-              workLog.status === 'completed' ? 'completed' as const :
-              workLog.status === 'absent' ? 'cancelled' as const :
-              workLog.status || 'scheduled' as const
+      // 상태 변환 통일 - UnifiedWorkLog 타입과 호환 (조건문 최적화)
+      status: workLog.status === 'absent' ? 'cancelled' as const : 
+              (workLog.status || 'scheduled') as 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'scheduled'
     }));
   }, [state.workLogs, eventId]);
 
@@ -73,82 +75,89 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     };
   }, []);
 
-  // 역할 목록 (UnifiedData에서 추출, jobPosting은 보조)
+  // 역할 목록 (UnifiedData에서 추출, jobPosting은 보조) - 메모이제이션 강화
   const availableRoles = useMemo(() => {
     const roleSet = new Set<string>();
     
-    // 1. WorkLogs에서 역할 추출 (가장 신뢰할 수 있는 소스)
-    Array.from(state.workLogs.values()).forEach(workLog => {
+    // 1. WorkLogs에서 역할 추출 (이미 필터링된 workLogs 사용)
+    workLogs.forEach(workLog => {
       if (workLog.role) {
         roleSet.add(workLog.role);
       }
     });
     
     // 2. jobPosting의 confirmedStaff에서 추가
-    if (jobPosting?.confirmedStaff) {
-      jobPosting.confirmedStaff.forEach(staff => {
-        if (staff.role) {
-          roleSet.add(staff.role);
-        }
-      });
-    }
+    jobPosting?.confirmedStaff?.forEach(staff => {
+      if (staff.role) {
+        roleSet.add(staff.role);
+      }
+    });
     
-    // 실제 데이터에서 추출된 역할만 사용 (기본 역할 제거)
-    return Array.from(roleSet).sort();
-  }, [state.workLogs, jobPosting?.confirmedStaff]);
+    // Set을 Array로 변환하면서 정렬까지 한 번에 수행
+    return roleSet.size > 0 ? Array.from(roleSet).sort() : [];
+  }, [workLogs, jobPosting?.confirmedStaff]);
 
   // 수당 및 급여 오버라이드 상태 관리
   const [staffAllowanceOverrides, setStaffAllowanceOverrides] = useState<Record<string, any>>({});
   const [roleSalaryOverrides, setRoleSalaryOverrides] = useState<Record<string, { salaryType: string; salaryAmount: number }>>({});
 
-  // 확정된 스태프 가져오기 (jobPosting 또는 UnifiedData에서)
+  // 확정된 스태프 가져오기 (jobPosting 또는 UnifiedData에서) - 메모이제이션 강화
   const confirmedStaff = useMemo(() => {
-    // jobPosting이 있으면 우선 사용
-    if (jobPosting?.confirmedStaff) {
+    // jobPosting이 있으면 우선 사용 (early return)
+    if (jobPosting?.confirmedStaff && jobPosting.confirmedStaff.length > 0) {
       return jobPosting.confirmedStaff;
     }
     
-    // jobPosting이 없으면 UnifiedData의 스태프 정보 사용
-    const allStaff = Array.from(state.staff.values());
-    const allWorkLogs = Array.from(state.workLogs.values());
+    // 이미 필터링된 workLogs와 staff 데이터 사용
+    const staffArray = Array.from(state.staff.values());
+    const staffLookup = new Map(staffArray.map(staff => [staff.id, staff]));
     
-    // WorkLogs에서 확정된 스태프 추출
-    const confirmedStaffFromWorkLogs = allWorkLogs.map(workLog => ({
-      userId: workLog.staffId,
-      staffId: workLog.staffId,
-      name: workLog.staffName || allStaff.find(s => s.id === workLog.staffId)?.name || 'Unknown',
-      role: workLog.role || 'Staff',
-      date: workLog.date,
-      timeSlot: `${workLog.scheduledStartTime ? new Date(workLog.scheduledStartTime.seconds * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '09:00'}-${workLog.scheduledEndTime ? new Date(workLog.scheduledEndTime.seconds * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '18:00'}`,
-      confirmedAt: workLog.createdAt || Timestamp.now(),
-      status: 'confirmed' as const,
-      phone: allStaff.find(s => s.id === workLog.staffId)?.phone || '',
-      note: ''
-    }));
+    // WorkLogs에서 확정된 스태프 추출 (이미 필터링된 workLogs 사용)
+    const confirmedStaffMap = new Map();
     
-    // 중복 제거
-    const uniqueStaff = confirmedStaffFromWorkLogs.reduce((acc, staff) => {
-      const key = `${staff.staffId}_${staff.date}_${staff.role}`;
-      if (!acc.some(s => `${s.staffId}_${s.date}_${s.role}` === key)) {
-        acc.push(staff);
+    workLogs.forEach(workLog => {
+      const key = `${workLog.staffId}_${workLog.role}`;
+      if (!confirmedStaffMap.has(key)) {
+        const staff = staffLookup.get(workLog.staffId);
+        confirmedStaffMap.set(key, {
+          userId: workLog.staffId,
+          staffId: workLog.staffId,
+          name: workLog.staffName || staff?.name || 'Unknown',
+          role: workLog.role || 'Staff',
+          timeSlot: `${workLog.scheduledStartTime ? new Date(workLog.scheduledStartTime.seconds * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '09:00'}-${workLog.scheduledEndTime ? new Date(workLog.scheduledEndTime.seconds * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '18:00'}`,
+          confirmedAt: workLog.createdAt || Timestamp.now(),
+          status: 'confirmed' as const,
+          phone: staff?.phone || '',
+          note: ''
+        });
       }
-      return acc;
-    }, [] as typeof confirmedStaffFromWorkLogs);
+    });
     
-    return uniqueStaff;
-  }, [jobPosting?.confirmedStaff, state.staff, state.workLogs]);
+    return Array.from(confirmedStaffMap.values());
+  }, [jobPosting?.confirmedStaff, workLogs, state.staff]);
+
+  // confirmedStaff 길이를 안정적인 변수로 메모이제이션 (useEffect 의존성 최적화)
+  const confirmedStaffCount = useMemo(() => confirmedStaff?.length || 0, [confirmedStaff]);
+
+  // 객체 참조 안정화를 위한 메모이제이션 (무한 루프 방지)
+  const memoizedRoleSalaryOverrides = useMemo(() => 
+    roleSalaryOverrides || {}, [JSON.stringify(roleSalaryOverrides)]
+  );
+
+  const memoizedStaffAllowanceOverrides = useMemo(() => 
+    staffAllowanceOverrides || {}, [JSON.stringify(staffAllowanceOverrides)]
+  );
+
+  // 중복 계산 방지를 위한 키 메모이제이션 (무한 루프 방지)
+  const calculationKey = useMemo(() => 
+    `${workLogs.length}-${confirmedStaffCount}-${startDate}-${endDate}-${JSON.stringify(memoizedRoleSalaryOverrides)}-${JSON.stringify(memoizedStaffAllowanceOverrides)}`,
+    [workLogs.length, confirmedStaffCount, startDate, endDate, memoizedRoleSalaryOverrides, memoizedStaffAllowanceOverrides]
+  );
 
   // 정산 계산 실행 (메모이제이션으로 무한루프 방지)
   const memoizedCalculatePayroll = useCallback(() => {
-    if (confirmedStaff.length === 0 || workLogs.length === 0) {
-      logger.debug('정산 계산 스킵 - 데이터 부족', {
-        component: 'EnhancedPayrollTab',
-        data: {
-          confirmedStaff: confirmedStaff.length,
-          workLogs: workLogs.length,
-          hasJobPosting: !!jobPosting
-        }
-      });
+    if (!confirmedStaff || confirmedStaff.length === 0 || workLogs.length === 0) {
+      // 데이터가 없을 때는 로그 출력하지 않음 (성능 최적화)
       return;
     }
 
@@ -164,41 +173,50 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
     calculatePayroll({
       workLogs,
-      confirmedStaff,
+      confirmedStaff: confirmedStaff || [],
       jobPosting: jobPosting || null,
       startDate: startDate,
       endDate: endDate,
-      roleSalaryOverrides: roleSalaryOverrides,
-      staffAllowanceOverrides: staffAllowanceOverrides
+      roleSalaryOverrides: memoizedRoleSalaryOverrides,
+      staffAllowanceOverrides: memoizedStaffAllowanceOverrides
     });
-  }, [workLogs, confirmedStaff, jobPosting, startDate, endDate, roleSalaryOverrides, staffAllowanceOverrides, calculatePayroll]);
+  }, [workLogs, confirmedStaff, jobPosting, startDate, endDate, memoizedRoleSalaryOverrides, memoizedStaffAllowanceOverrides, calculatePayroll]);
 
   useEffect(() => {
-    // 계산 중이 아닐 때만 실행 (중복 호출 방지)
-    if (!calculationLoading) {
+    // 계산 중이 아니고, 데이터가 있고, 이전 계산과 다를 때만 실행
+    if (
+      !calculationLoading && 
+      workLogs.length > 0 && 
+      confirmedStaffCount > 0 &&
+      lastCalculationKey.current !== calculationKey
+    ) {
+      lastCalculationKey.current = calculationKey;
+      hasCalculated.current = true;
       memoizedCalculatePayroll();
     }
-  }, [memoizedCalculatePayroll, calculationLoading]);
+  }, [calculationLoading, calculationKey, memoizedCalculatePayroll]);
 
   // 통합된 로딩 및 에러 상태
   const isLoading = dataLoading || calculationLoading;
   const error = state.error.global || calculationError;
   
-  // 데이터 상태 디버깅
+  // 데이터 상태 디버깅 (production에서는 비활성화, 계산 중일 때는 로그 스킵)
   useEffect(() => {
-    logger.debug('정산탭 데이터 상태 확인', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        dataLoading,
-        calculationLoading,
-        workLogsCount: workLogs.length,
-        confirmedStaffCount: confirmedStaff.length,
-        payrollDataCount: payrollData?.length || 0,
-        hasJobPosting: !!jobPosting,
-        error: error || null
-      }
-    });
-  }, [dataLoading, calculationLoading, workLogs.length, confirmedStaff.length, payrollData?.length, jobPosting, error]);
+    if (process.env.NODE_ENV === 'development' && !calculationLoading) {
+      logger.debug('정산탭 데이터 상태 확인', {
+        component: 'EnhancedPayrollTab',
+        data: {
+          dataLoading,
+          calculationLoading,
+          workLogsCount: workLogs.length,
+          confirmedStaffCount: confirmedStaffCount,
+          payrollDataCount: payrollData?.length || 0,
+          hasJobPosting: !!jobPosting,
+          error: error || null
+        }
+      });
+    }
+  }, [dataLoading, calculationLoading, workLogs.length, confirmedStaffCount, payrollData?.length, jobPosting, error]);
 
   // 실제 정산 데이터 사용
   const staffWorkData = payrollData || [];
@@ -352,17 +370,19 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     setRoleSalaryOverrides(updates);
   }, []);
 
-  // 디버깅 로그
-  logger.debug('EnhancedPayrollTab - 렌더링', {
-    component: 'EnhancedPayrollTab',
-    data: {
-      payrollDataCount: staffWorkData.length,
-      summary: summary || { totalStaff: 0, totalAmount: 0 },
-      availableRoles,
-      isOptimized,
-      calculationTime: calculationTime || 0
-    }
-  });
+  // 디버깅 로그 (development 모드에서만)
+  if (process.env.NODE_ENV === 'development' && payrollData?.length > 0) {
+    logger.debug('EnhancedPayrollTab - 렌더링', {
+      component: 'EnhancedPayrollTab',
+      data: {
+        payrollDataCount: staffWorkData.length,
+        summary: summary || { totalStaff: 0, totalAmount: 0 },
+        availableRoles,
+        isOptimized,
+        calculationTime: calculationTime || 0
+      }
+    });
+  }
 
   // 급여 유형 한글 변환
   const getSalaryTypeLabel = useCallback((type: string) => {
@@ -377,15 +397,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
   // 수당 편집 모달 열기
   const openEditModal = useCallback((data: any) => {
-    logger.debug('EnhancedPayrollTab - 수당 편집 모달 열기', { 
-      component: 'EnhancedPayrollTab', 
-      data: {
-        uniqueKey: data.uniqueKey,
-        staffName: data.staffName,
-        role: data.role
-      }
-    });
-    
     setEditingStaff(data);
     setIsEditModalOpen(true);
   }, []);
@@ -398,21 +409,13 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
   // 수당 저장
   const handleSaveAllowances = useCallback((staff: EnhancedPayrollCalculation, allowances: EnhancedPayrollCalculation['allowances']) => {
-    logger.debug('EnhancedPayrollTab - 수당 저장', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        staffId: staff.staffId,
-        allowances
-      }
-    });
-    
     updateStaffAllowances(staff.staffId, allowances);
     closeEditModal();
   }, [updateStaffAllowances, closeEditModal]);
 
 
   // 확정된 스태프가 없는 경우 (UnifiedData 기반 체크)
-  if (confirmedStaff.length === 0 && workLogs.length === 0) {
+  if ((!confirmedStaff || confirmedStaff.length === 0) && workLogs.length === 0) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -486,14 +489,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
           </div>
         </div>
         
-        {/* 성능 지표 (Web Worker 사용시) */}
-        {isOptimized && summary && (
-          <div className="text-center pt-2 border-t border-gray-100">
-            <span className="text-xs text-green-600 font-medium">
-              ⚡ 최적화됨 ({Math.round(calculationTime || 0)}ms)
-            </span>
-          </div>
-        )}
       </div>
 
       {/* 급여 설정 */}

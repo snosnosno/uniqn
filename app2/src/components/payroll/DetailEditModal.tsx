@@ -74,41 +74,41 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
       return matches;
     });
     
-    // 2. 날짜별로 그룹화하여 스케줄 데이터와 실제 데이터 병합
+    // 2. 날짜별로 그룹화하여 모든 관련 WorkLog 포함 (role 체크 완화)
     const mergedLogsMap = new Map<string, any>();
     
-    // 먼저 스케줄 데이터 (type: 'schedule'이고 role이 일치하는 데이터)를 맵에 넣기
+    // 해당 스태프의 모든 WorkLog를 날짜별로 처리 (role 제한 완화)
     allStaffWorkLogs.forEach(log => {
-      if (log.role === staff.role && log.type === 'schedule') {
-        const key = `${log.date}_${staff.role}`;
-        mergedLogsMap.set(key, { ...log });
+      const logRole = log.role || staff.role; // role이 없으면 staff.role 사용
+      const key = `${log.date}_${logRole}`;
+      
+      if (!mergedLogsMap.has(key)) {
+        // 새로운 날짜-역할 조합인 경우 추가
+        mergedLogsMap.set(key, { ...log, role: logRole });
+      } else {
+        // 기존 데이터가 있는 경우 병합
+        const existingLog = mergedLogsMap.get(key);
+        mergedLogsMap.set(key, {
+          ...existingLog,
+          // 실제 시간 정보가 있으면 우선 사용
+          actualStartTime: log.actualStartTime || existingLog.actualStartTime,
+          actualEndTime: log.actualEndTime || existingLog.actualEndTime,
+          // 예정 시간 정보 우선순위: 현재 log → 기존 log
+          scheduledStartTime: log.scheduledStartTime || existingLog.scheduledStartTime,
+          scheduledEndTime: log.scheduledEndTime || existingLog.scheduledEndTime,
+          // 상태 정보 (checked_out, checked_in 등) 우선 사용
+          status: log.status || existingLog.status,
+          // 기타 정보 병합 (타입 안전성을 위해 any로 캐스팅)
+          timeSlot: (log as any).timeSlot || (existingLog as any).timeSlot,
+          assignedTime: (log as any).assignedTime || (existingLog as any).assignedTime
+        });
       }
     });
     
-    // 실제 출퇴근 데이터를 찾아서 병합
-    allStaffWorkLogs.forEach(log => {
-      // type이 schedule이 아니고 actualStartTime/actualEndTime이 있는 경우 (실제 출퇴근 데이터)
-      if (log.type !== 'schedule' && (log.actualStartTime || log.actualEndTime || (log as any).status === 'checked_out')) {
-        // 해당 날짜의 스케줄 데이터 찾기
-        const scheduleKey = `${log.date}_${staff.role}`;
-        if (mergedLogsMap.has(scheduleKey)) {
-          // 스케줄 데이터가 있는 경우에만 실제 데이터 병합
-          // 이렇게 하면 해당 역할의 스케줄이 있는 날짜만 출퇴근 데이터가 표시됨
-          const scheduleLog = mergedLogsMap.get(scheduleKey);
-          mergedLogsMap.set(scheduleKey, {
-            ...scheduleLog,
-            actualStartTime: log.actualStartTime || scheduleLog.actualStartTime,
-            actualEndTime: log.actualEndTime || scheduleLog.actualEndTime,
-            status: log.status || scheduleLog.status // 실제 상태 우선 (checked_out 등)
-          });
-        }
-        // else 블록 제거: 스케줄 데이터가 없는 날짜의 출퇴근 데이터는 무시
-        // (다른 역할의 출퇴근 데이터일 가능성이 높음)
-      }
-    });
-    
-    // 역할이 일치하는 스케줄 데이터만 있고 실제 데이터가 없는 경우도 포함
-    const uniqueWorkLogs = Array.from(mergedLogsMap.values());
+    // 현재 선택된 역할과 일치하는 것만 필터링 (선택사항)
+    const uniqueWorkLogs = Array.from(mergedLogsMap.values()).filter(log => 
+      !log.role || log.role === staff.role || !staff.role
+    );
     
     
     if (uniqueWorkLogs.length === 0) return [];
@@ -237,6 +237,19 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             }
           }
           
+          // 상태 결정 로직 개선
+          let displayStatus = log.status || 'scheduled';
+          
+          // 시간정보가 없는 경우의 상태 처리
+          if ((startTime === '미정' || endTime === '미정') && !log.actualStartTime && !log.actualEndTime) {
+            displayStatus = 'scheduled'; // 예정 상태
+          }
+          
+          // 실제 출퇴근 데이터가 있는 경우 상태 우선
+          if (log.actualStartTime || log.actualEndTime || log.status === 'checked_out' || log.status === 'checked_in') {
+            displayStatus = log.status || 'checked_in';
+          }
+          
           return {
             date: dateStr,
             dayName,
@@ -244,8 +257,11 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             startTime,
             endTime,
             workHours: workHours.toFixed(1),
-            status: log.status || 'scheduled',
-            rawLog: log
+            status: displayStatus,
+            rawLog: log,
+            // 추가 정보
+            hasTimeInfo: startTime !== '미정' && endTime !== '미정',
+            hasActualTime: !!(log.actualStartTime || log.actualEndTime)
           };
         } catch (error) {
           logger.error('근무 내역 파싱 오류', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
