@@ -15,7 +15,7 @@ interface StaffCardActionsProps {
   scheduledEndTime: string;
   canEdit: boolean;
   multiSelectMode: boolean;
-  onEditWorkTime: (staffId: string, type: 'start' | 'end') => void;
+  onEditWorkTime: (staffId: string, type?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => void;
   onStatusChange?: () => void;
   lightImpact: () => void;
@@ -54,33 +54,19 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
         <div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staffId, 'start'))}
+              onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staffId))}
               disabled={!canEdit}
               className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
                 canEdit 
                   ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' 
                   : 'text-gray-400 bg-gray-50 cursor-not-allowed'
               }`}
+              title={!canEdit ? "수정 권한이 없습니다" : "근무 시간 수정"}
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              출근 시간
-            </button>
-            <button
-              onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staffId, 'end'))}
-              disabled={!canEdit}
-              className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                canEdit
-                  ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                  : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
-              }`}
-              title={!canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              퇴근 시간
+              시간
             </button>
             <button
               onClick={(e) => handleActionClick(e, () => canEdit && onDeleteStaff(staffId))}

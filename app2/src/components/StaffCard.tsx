@@ -16,7 +16,6 @@ import BaseCard, { CardHeader, CardBody, CardFooter } from './ui/BaseCard';
 import StaffCardHeader from './staff/StaffCardHeader';
 import StaffCardTimeSection from './staff/StaffCardTimeSection';
 import StaffCardActions from './staff/StaffCardActions';
-import StaffCardContactInfo from './staff/StaffCardContactInfo';
 
 interface StaffCardProps {
   staff: StaffData;
@@ -54,7 +53,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   multiSelectMode = false
 }) => {
   useTranslation();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showActions, setShowActions] = useState(false);
   // 🚀 출석 상태 Optimistic Update를 위한 로컬 상태
   const [optimisticAttendanceStatus, setOptimisticAttendanceStatus] = useState<AttendanceStatus | null>(null);
@@ -164,10 +162,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   }, [staff, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
   
 
-  const toggleExpanded = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(prev => !prev);
-  }, []);
 
 
   const toggleActions = useCallback((e: React.MouseEvent) => {
@@ -215,7 +209,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               ? 'border-primary-500 bg-primary-50 staff-card-selected' 
               : 'border-dashed hover:border-gray-400 hover:bg-gray-50'
             : ''
-        } ${isExpanded ? 'shadow-lg' : ''} touch-none select-none`}
+        } touch-none select-none`}
         aria-label={`스태프 카드: ${memoizedStaffData.displayName}`}
         aria-describedby={`staff-${staff.id}-details`}
       >
@@ -247,67 +241,54 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               </button>
             </div>
             
-            {/* 두 번째 줄: 시간 */}
-            <div className="mb-2">
-              <StaffCardTimeSection
-                displayStartTime={memoizedTimeData.displayStartTime}
-                displayEndTime={memoizedTimeData.displayEndTime}
-                startTimeColor={memoizedTimeData.startTimeColor}
-                endTimeColor={memoizedTimeData.endTimeColor}
-                canEdit={canEdit}
-                multiSelectMode={multiSelectMode}
-                onEditWorkTime={onEditWorkTime}
-                staffId={staff.id}
-              />
-            </div>
-            
-            {/* 세 번째 줄: 출석상태와 확장버튼 */}
+            {/* 두 번째 줄: 시간과 출석상태를 한 줄에 */}
             <div className="flex items-center justify-between">
-              <div className="relative">
-                <AttendanceStatusPopover
-                  workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
-                  currentStatus={optimisticAttendanceStatus || memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
+              <div className="flex items-center space-x-3 flex-1">
+                <StaffCardTimeSection
+                  displayStartTime={memoizedTimeData.displayStartTime}
+                  displayEndTime={memoizedTimeData.displayEndTime}
+                  startTimeColor={memoizedTimeData.startTimeColor}
+                  endTimeColor={memoizedTimeData.endTimeColor}
+                  canEdit={canEdit}
+                  multiSelectMode={multiSelectMode}
+                  onEditWorkTime={onEditWorkTime}
                   staffId={staff.id}
-                  staffName={staff.name || ''}
-                  eventId={eventId || ''}
-                  size="sm"
-                  className="scale-90"
-                  scheduledStartTime={memoizedTimeData.displayStartTime}
-                  scheduledEndTime={memoizedTimeData.displayEndTime}
-                  canEdit={!!canEdit && !multiSelectMode}
-                  onStatusChange={(newStatus) => {
-                    // 🚀 즉시 UI 업데이트 (Optimistic Update)
-                    setOptimisticAttendanceStatus(newStatus);
-                    
-                    // Firebase 업데이트 완료 후 실제 상태로 동기화 (3초 후 초기화)
-                    setTimeout(() => {
-                      setOptimisticAttendanceStatus(null);
-                    }, 3000);
-                  }}
                 />
+                
+                <div className="relative">
+                  <AttendanceStatusPopover
+                    workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
+                    currentStatus={optimisticAttendanceStatus || memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
+                    staffId={staff.id}
+                    staffName={staff.name || ''}
+                    eventId={eventId || ''}
+                    size="sm"
+                    className="scale-90"
+                    scheduledStartTime={memoizedTimeData.displayStartTime}
+                    scheduledEndTime={memoizedTimeData.displayEndTime}
+                    canEdit={!!canEdit && !multiSelectMode}
+                    onStatusChange={(newStatus) => {
+                      // 🚀 즉시 UI 업데이트 (Optimistic Update)
+                      setOptimisticAttendanceStatus(newStatus);
+                      
+                      // Firebase 업데이트 완료 후 실제 상태로 동기화 (3초 후 초기화)
+                      setTimeout(() => {
+                        setOptimisticAttendanceStatus(null);
+                      }, 3000);
+                    }}
+                  />
+                </div>
               </div>
               
-              {/* 확장 버튼을 오른쪽 끝에 */}
-              <div className="flex items-center space-x-1">
-                <button
-                  onClick={toggleExpanded}
-                  className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <svg className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {/* 데스크톱: 메뉴 버튼 */}
-                <button
-                  onClick={toggleActions}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
-                </button>
-              </div>
+              {/* 데스크톱: 메뉴 버튼 */}
+              <button
+                onClick={toggleActions}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
             </div>
             
             {/* 선택 모드 표시 */}
@@ -362,16 +343,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
           />
         </CardBody>
         
-        {isExpanded && (
-          <CardFooter className="p-0">
-            <StaffCardContactInfo
-              {...(staff.phone && { phone: staff.phone })}
-              {...(staff.email && { email: staff.email })}
-              {...(staff.postingTitle && { postingTitle: staff.postingTitle })}
-              {...(staff.postingId && { postingId: staff.postingId })}
-            />
-          </CardFooter>
-        )}
       </BaseCard>
     </div>
   );

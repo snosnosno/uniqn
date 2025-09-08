@@ -103,6 +103,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
   }, [state.staff]);
 
+  // 🎯 고유한 스태프 수 계산 (중복 제거)
+  const uniqueStaffCount = useMemo(() => {
+    const uniqueNames = new Set(staffData.map(staff => staff.name));
+    return uniqueNames.size;
+  }, [staffData]);
+
   // 🎯 출석 기록 배열 변환 (StaffRow에서 실시간 업데이트 감지용)
   const attendanceRecords = useMemo(() => {
     return state.attendanceRecords ? Array.from(state.attendanceRecords.values()) : [];
@@ -310,14 +316,18 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       grouped[date]?.push(staff);
     });
     
+    // 필터링된 고유 스태프 수 계산
+    const uniqueFilteredNames = new Set(filtered.map(staff => staff.name));
+    
     return {
       grouped,
       sortedDates: sortedDates.sort(),
-      total: filtered.length
+      total: filtered.length,
+      uniqueCount: uniqueFilteredNames.size
     };
   }, [staffData, filters.searchTerm]);
   
-  const filteredStaffCount = groupedStaffData.total;
+  const filteredStaffCount = groupedStaffData.uniqueCount;
   
   const selectedStaffData = useMemo(() => {
     if (selectedStaff.size === 0) return [];
@@ -600,6 +610,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           {/* 데스크톱에서만 검색 기능을 오른쪽 상단에 표시 */}
           {!isMobile && !isTablet && (
             <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-600 font-medium">
+                총 {uniqueStaffCount}명
+                {filteredStaffCount !== uniqueStaffCount && ` (${filteredStaffCount}명 필터됨)`}
+              </span>
               <div className="relative">
                 <input
                   type="text"
@@ -639,7 +653,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       <span>선택 항목 수정 ({selectedStaff.size}명)</span>
                     </button>
                   )}
-                  {!multiSelectMode && (
+                  {multiSelectMode && (
                     <button
                       onClick={() => {
                         // 전체 스태프를 선택하고 일괄 수정 모달 열기
@@ -647,9 +661,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         setIsBulkTimeEditOpen(true);
                       }}
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      title={`전체 ${staffData.length}명 일괄 수정`}
+                      title={`전체 ${uniqueStaffCount}명 수정`}
                     >
-                      전체 일괄 수정
+                      전체 수정
                     </button>
                   )}
                 </>
@@ -677,15 +691,29 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">
-                  총 {staffData.length}명
-                  {filteredStaffCount !== staffData.length && ` (${filteredStaffCount}명 필터됨)`}
+                  총 {uniqueStaffCount}명
+                  {filteredStaffCount !== uniqueStaffCount && ` (${filteredStaffCount}명 필터됨)`}
                 </span>
-                <button
-                  onClick={() => setIsQrModalOpen(true)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                >
-                  QR 생성
-                </button>
+                <div className="flex space-x-2">
+                  {canEdit && (
+                    <button
+                      onClick={handleMultiSelectToggle}
+                      className={`px-3 py-1 rounded text-sm ${
+                        multiSelectMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {multiSelectMode ? '선택 취소' : '선택 모드'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsQrModalOpen(true)}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  >
+                    QR 생성
+                  </button>
+                </div>
               </div>
               <input
                 type="text"
@@ -696,47 +724,23 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               />
             </div>
             
-            {/* 다중 선택 모드 및 일괄 작업 */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">
-                  총 {staffData.length}명
-                  {filteredStaffCount !== staffData.length && ` (${filteredStaffCount}명 필터됨)`}
-                </span>
+            {/* 선택 모드 활성화 시 일괄 작업 버튼 */}
+            {multiSelectMode && selectedStaff.size > 0 && canEdit && (
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={handleBulkActions}
+                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                >
+                  일괄 작업 ({selectedStaff.size})
+                </button>
+                <button
+                  onClick={() => setIsBulkTimeEditOpen(true)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                >
+                  시간 수정
+                </button>
               </div>
-              <div className="flex space-x-2">
-                {canEdit && (
-                  <>
-                    <button
-                      onClick={handleMultiSelectToggle}
-                      className={`px-3 py-1 rounded text-sm ${
-                        multiSelectMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {multiSelectMode ? '선택 취소' : '다중 선택'}
-                    </button>
-                    {multiSelectMode && selectedStaff.size > 0 && (
-                      <>
-                        <button
-                          onClick={handleBulkActions}
-                          className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                        >
-                          일괄 작업 ({selectedStaff.size})
-                        </button>
-                        <button
-                          onClick={() => setIsBulkTimeEditOpen(true)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                        >
-                          시간 수정
-                        </button>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -755,7 +759,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         )}
 
         {/* 스태프 목록 */}
-        {staffData.length === 0 ? (
+        {uniqueStaffCount === 0 ? (
           <div className="bg-gray-50 p-6 rounded-lg text-center">
             <p className="text-gray-600 mb-4">이 공고에 할당된 스태프가 없습니다.</p>
             <p className="text-sm text-gray-500">
@@ -917,7 +921,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       {multiSelectMode && selectedStaff.size > 0 && canEdit && (isMobile || isTablet) && (
         <MobileSelectionBar
           selectedCount={selectedStaff.size}
-          totalCount={staffData.length}
+          totalCount={uniqueStaffCount}
           onSelectAll={() => selectAll(staffData.map(s => s.id))}
           onDeselectAll={deselectAll}
           onBulkEdit={() => setIsBulkTimeEditOpen(true)}

@@ -75,7 +75,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
       {/* 날짜 헤더 */}
       <div 
-        className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-4 cursor-pointer active:from-blue-600 active:to-purple-700 transition-all duration-150"
+        className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 cursor-pointer active:from-blue-600 active:to-purple-700 transition-all duration-150"
         onClick={handleHeaderClick}
       >
         <div className="flex items-center justify-between">
@@ -83,17 +83,17 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
             <div className="text-white">
               {date === '날짜 미정' ? (
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl">📅</span>
+                  <span className="text-xl">📅</span>
                   <div>
-                    <div className="text-lg font-bold">날짜 미정</div>
-                    <div className="text-sm text-blue-100">일정 조정 필요</div>
+                    <div className="text-base font-bold">날짜 미정</div>
+                    <div className="text-xs text-blue-100">일정 조정 필요</div>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl">📅</span>
+                  <span className="text-xl">📅</span>
                   <div>
-                    <div className="text-lg font-bold">
+                    <div className="text-base font-bold">
                       {(() => {
                         try {
                           // yy-MM-dd 형식에서 MM-dd(요일) 형식으로 변환
