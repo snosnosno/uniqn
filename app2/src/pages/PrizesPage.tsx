@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
 import { useTournament } from '../contexts/TournamentContextAdapter';

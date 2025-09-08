@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { logger } from '../utils/logger';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { User } from '../types/common';

@@ -34,10 +34,10 @@ function parseTimeSlot(timeSlot: string | null | undefined): { start: string; en
       };
     }
     
-    logger.debug('timeSlot 파싱 실패', {
-      component: 'workLogMapper',
-      data: { timeSlot }
-    });
+    // logger.debug('timeSlot 파싱 실패', {
+    //   component: 'workLogMapper',
+    //   data: { timeSlot }
+    // });
     return null;
   } catch (error) {
     logger.error('timeSlot 파싱 오류', error as Error, {
@@ -54,10 +54,10 @@ function parseTimeSlot(timeSlot: string | null | undefined): { start: string; en
  */
 export function parseTimeToString(timeValue: any): string | null {
   if (!timeValue) {
-    logger.debug('시간 값 없음', {
-      component: 'workLogMapper',
-      data: { timeValue }
-    });
+    // logger.debug('시간 값 없음', {
+    //   component: 'workLogMapper',
+    //   data: { timeValue }
+    // });
     return null;
   }
   
@@ -65,73 +65,73 @@ export function parseTimeToString(timeValue: any): string | null {
     let date: Date | null = null;
     
     // 디버깅: 입력 값 타입 확인
-    logger.debug('시간 파싱 시도', {
-      component: 'workLogMapper',
-      data: { 
-        timeValue,
-        type: typeof timeValue,
-        hasToDate: typeof timeValue === 'object' && timeValue !== null && 'toDate' in timeValue,
-        hasSeconds: typeof timeValue === 'object' && timeValue !== null && 'seconds' in timeValue,
-        hasNanoseconds: typeof timeValue === 'object' && timeValue !== null && 'nanoseconds' in timeValue,
-        isDate: timeValue instanceof Date
-      }
-    });
+    // logger.debug('시간 파싱 시도', {
+    //   component: 'workLogMapper',
+    //   data: { 
+    //     timeValue,
+    //     type: typeof timeValue,
+    //     hasToDate: typeof timeValue === 'object' && timeValue !== null && 'toDate' in timeValue,
+    //     hasSeconds: typeof timeValue === 'object' && timeValue !== null && 'seconds' in timeValue,
+    //     hasNanoseconds: typeof timeValue === 'object' && timeValue !== null && 'nanoseconds' in timeValue,
+    //     isDate: timeValue instanceof Date
+    //   }
+    // });
     
     // Firebase Timestamp 처리 (우선순위 높음)
     if (typeof timeValue === 'object' && timeValue !== null) {
       // Firestore Timestamp 객체
       if ('toDate' in timeValue && typeof timeValue.toDate === 'function') {
         date = timeValue.toDate();
-        logger.debug('Firebase Timestamp toDate 사용', {
-          component: 'workLogMapper',
-          data: { date: date?.toISOString() }
-        });
+        // logger.debug('Firebase Timestamp toDate 사용', {
+        //   component: 'workLogMapper',
+        //   data: { date: date?.toISOString() }
+        // });
       }
       // seconds/nanoseconds 형태의 Timestamp (Firebase SDK에서 생성한 Timestamp)
       else if ('seconds' in timeValue && 'nanoseconds' in timeValue && typeof timeValue.seconds === 'number') {
         date = new Date(timeValue.seconds * 1000 + timeValue.nanoseconds / 1000000);
-        logger.debug('seconds/nanoseconds 형태 Timestamp 변환', {
-          component: 'workLogMapper',
-          data: { 
-            seconds: timeValue.seconds, 
-            nanoseconds: timeValue.nanoseconds,
-            date: date?.toISOString() 
-          }
-        });
+        // logger.debug('seconds/nanoseconds 형태 Timestamp 변환', {
+        //   component: 'workLogMapper',
+        //   data: { 
+        //     seconds: timeValue.seconds, 
+        //     nanoseconds: timeValue.nanoseconds,
+        //     date: date?.toISOString() 
+        //   }
+        // });
       }
       // seconds만 있는 경우
       else if ('seconds' in timeValue && typeof timeValue.seconds === 'number') {
         date = new Date(timeValue.seconds * 1000);
-        logger.debug('seconds 형태 Timestamp 변환', {
-          component: 'workLogMapper',
-          data: { seconds: timeValue.seconds, date: date?.toISOString() }
-        });
+        // logger.debug('seconds 형태 Timestamp 변환', {
+        //   component: 'workLogMapper',
+        //   data: { seconds: timeValue.seconds, date: date?.toISOString() }
+        // });
       }
       // _seconds (Firestore 내부 형식)
       else if ('_seconds' in timeValue && typeof timeValue._seconds === 'number') {
         date = new Date(timeValue._seconds * 1000);
-        logger.debug('_seconds 형태 Timestamp 변환', {
-          component: 'workLogMapper',
-          data: { _seconds: timeValue._seconds, date: date?.toISOString() }
-        });
+        // logger.debug('_seconds 형태 Timestamp 변환', {
+        //   component: 'workLogMapper',
+        //   data: { _seconds: timeValue._seconds, date: date?.toISOString() }
+        // });
       }
     }
     // Date 객체 처리
     else if (timeValue instanceof Date) {
       date = timeValue;
-      logger.debug('Date 객체 사용', {
-        component: 'workLogMapper',
-        data: { date: date?.toISOString() }
-      });
+      // logger.debug('Date 객체 사용', {
+      //   component: 'workLogMapper',
+      //   data: { date: date?.toISOString() }
+      // });
     }
     // 문자열 처리
     else if (typeof timeValue === 'string') {
       // 이미 HH:mm 형식인 경우
       if (/^\d{1,2}:\d{2}$/.test(timeValue)) {
-        logger.debug('HH:mm 형식 그대로 사용', {
-          component: 'workLogMapper',
-          data: { timeValue }
-        });
+        // logger.debug('HH:mm 형식 그대로 사용', {
+        //   component: 'workLogMapper',
+        //   data: { timeValue }
+        // });
         return timeValue;
       }
       // ISO 문자열 파싱
@@ -159,10 +159,10 @@ export function parseTimeToString(timeValue: any): string | null {
     const minutes = date.getMinutes();
     const result = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     
-    logger.debug('시간 파싱 성공', {
-      component: 'workLogMapper',
-      data: { timeValue, result }
-    });
+    // logger.debug('시간 파싱 성공', {
+    //   component: 'workLogMapper',
+    //   data: { timeValue, result }
+    // });
     
     return result;
   } catch (error) {
@@ -208,23 +208,23 @@ export function parseTimeToTimestamp(timeStr: string, baseDate: string): Timesta
 export function normalizeWorkLog(data: any): UnifiedWorkLog {
   try {
     // 디버깅: 실제 필드 확인
-    logger.debug('WorkLog 원본 데이터 필드', {
-      component: 'workLogMapper',
-      data: {
-        id: data.id,
-        fields: Object.keys(data),
-        timeSlot: data.timeSlot,
-        scheduledStartTime: data.scheduledStartTime,
-        scheduledEndTime: data.scheduledEndTime,
-        actualStartTime: data.actualStartTime,
-        actualEndTime: data.actualEndTime,
-        role: data.role,
-        staffName: data.staffName,
-        date: data.date,
-        // timeSlot 파싱 결과도 확인
-        parsedTimeSlot: parseTimeSlot(data.timeSlot)
-      }
-    });
+    // logger.debug('WorkLog 원본 데이터 필드', {
+    //   component: 'workLogMapper',
+    //   data: {
+    //     id: data.id,
+    //     fields: Object.keys(data),
+    //     timeSlot: data.timeSlot,
+    //     scheduledStartTime: data.scheduledStartTime,
+    //     scheduledEndTime: data.scheduledEndTime,
+    //     actualStartTime: data.actualStartTime,
+    //     actualEndTime: data.actualEndTime,
+    //     role: data.role,
+    //     staffName: data.staffName,
+    //     date: data.date,
+    //     // timeSlot 파싱 결과도 확인
+    //     parsedTimeSlot: parseTimeSlot(data.timeSlot)
+    //   }
+    // });
     
     // 기본 필드 매핑
     const normalized: UnifiedWorkLog = {
@@ -247,61 +247,61 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       scheduledStartTime: (() => {
         // 이미 Timestamp 형태면 그대로 사용
         if (data.scheduledStartTime) {
-          logger.debug('기존 scheduledStartTime 사용', {
-            component: 'workLogMapper',
-            data: { scheduledStartTime: data.scheduledStartTime }
-          });
+          // logger.debug('기존 scheduledStartTime 사용', {
+          //   component: 'workLogMapper',
+          //   data: { scheduledStartTime: data.scheduledStartTime }
+          // });
           return data.scheduledStartTime;
         }
         // timeSlot에서 파싱
         const parsed = parseTimeSlot(data.timeSlot);
         if (parsed && data.date) {
           const timestamp = parseTimeToTimestamp(parsed.start, data.date);
-          logger.debug('timeSlot에서 scheduledStartTime 생성', {
-            component: 'workLogMapper',
-            data: { 
-              timeSlot: data.timeSlot,
-              parsedStart: parsed.start,
-              date: data.date,
-              timestamp
-            }
-          });
+          // logger.debug('timeSlot에서 scheduledStartTime 생성', {
+          //   component: 'workLogMapper',
+          //   data: { 
+          //     timeSlot: data.timeSlot,
+          //     parsedStart: parsed.start,
+          //     date: data.date,
+          //     timestamp
+          //   }
+          // });
           return timestamp;
         }
-        logger.debug('scheduledStartTime 생성 실패', {
-          component: 'workLogMapper',
-          data: { timeSlot: data.timeSlot, date: data.date }
-        });
+        // logger.debug('scheduledStartTime 생성 실패', {
+        //   component: 'workLogMapper',
+        //   data: { timeSlot: data.timeSlot, date: data.date }
+        // });
         return null;
       })(),
       scheduledEndTime: (() => {
         // 이미 Timestamp 형태면 그대로 사용
         if (data.scheduledEndTime) {
-          logger.debug('기존 scheduledEndTime 사용', {
-            component: 'workLogMapper',
-            data: { scheduledEndTime: data.scheduledEndTime }
-          });
+          // logger.debug('기존 scheduledEndTime 사용', {
+          //   component: 'workLogMapper',
+          //   data: { scheduledEndTime: data.scheduledEndTime }
+          // });
           return data.scheduledEndTime;
         }
         // timeSlot에서 파싱
         const parsed = parseTimeSlot(data.timeSlot);
         if (parsed && data.date) {
           const timestamp = parseTimeToTimestamp(parsed.end, data.date);
-          logger.debug('timeSlot에서 scheduledEndTime 생성', {
-            component: 'workLogMapper',
-            data: { 
-              timeSlot: data.timeSlot,
-              parsedEnd: parsed.end,
-              date: data.date,
-              timestamp
-            }
-          });
+          // logger.debug('timeSlot에서 scheduledEndTime 생성', {
+          //   component: 'workLogMapper',
+          //   data: { 
+          //     timeSlot: data.timeSlot,
+          //     parsedEnd: parsed.end,
+          //     date: data.date,
+          //     timestamp
+          //   }
+          // });
           return timestamp;
         }
-        logger.debug('scheduledEndTime 생성 실패', {
-          component: 'workLogMapper',
-          data: { timeSlot: data.timeSlot, date: data.date }
-        });
+        // logger.debug('scheduledEndTime 생성 실패', {
+        //   component: 'workLogMapper',
+        //   data: { timeSlot: data.timeSlot, date: data.date }
+        // });
         return null;
       })(),
       actualStartTime: data.actualStartTime || null,

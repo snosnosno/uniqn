@@ -101,21 +101,21 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       const staffMap = new Map<string, Staff>();
       action.data.forEach(staff => staffMap.set(staff.staffId, staff));
       
-      logger.info('📊 Staff 데이터 업데이트됨', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          count: action.data.length,
-          staffIds: action.data.slice(0, 3).map(s => s.staffId),
-          sampleStaff: action.data.slice(0, 1).map(s => ({
-            name: s.name,
-            phone: s.phone,
-            email: s.email,
-            assignedDate: s.assignedDate,
-            assignedTime: s.assignedTime,
-            assignedRole: s.assignedRole
-          }))
-        }
-      });
+      // logger.info('📊 Staff 데이터 업데이트됨', { 
+      //   component: 'UnifiedDataContext',
+      //   data: { 
+      //     count: action.data.length,
+      //     staffIds: action.data.slice(0, 3).map(s => s.staffId),
+      //     sampleStaff: action.data.slice(0, 1).map(s => ({
+      //       name: s.name,
+      //       phone: s.phone,
+      //       email: s.email,
+      //       assignedDate: s.assignedDate,
+      //       assignedTime: s.assignedTime,
+      //       assignedRole: s.assignedRole
+      //     }))
+      //   }
+      // });
       
       return {
         ...state,
@@ -131,14 +131,14 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       const workLogsMap = new Map<string, WorkLog>();
       action.data.forEach(workLog => workLogsMap.set(workLog.id, workLog));
       
-      logger.info('📊 WorkLogs 데이터 업데이트됨', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          count: action.data.length,
-          sampleIds: action.data.slice(0, 3).map(w => w.id),
-          staffIds: action.data.slice(0, 3).map(w => w.staffId)
-        }
-      });
+      // logger.info('📊 WorkLogs 데이터 업데이트됨', { 
+      //   component: 'UnifiedDataContext',
+      //   data: { 
+      //     count: action.data.length,
+      //     sampleIds: action.data.slice(0, 3).map(w => w.id),
+      //     staffIds: action.data.slice(0, 3).map(w => w.staffId)
+      //   }
+      // });
       
       return {
         ...state,
@@ -182,15 +182,15 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       const applicationsMap = new Map();
       action.data.forEach(app => applicationsMap.set(app.id, app));
       
-      logger.info('📊 Applications 데이터 업데이트됨', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          count: action.data.length,
-          sampleIds: action.data.slice(0, 3).map(a => a.id),
-          applicantIds: action.data.slice(0, 3).map(a => a.applicantId),
-          statuses: action.data.slice(0, 3).map(a => a.status)
-        }
-      });
+      // logger.info('📊 Applications 데이터 업데이트됨', { 
+      //   component: 'UnifiedDataContext',
+      //   data: { 
+      //     count: action.data.length,
+      //     sampleIds: action.data.slice(0, 3).map(a => a.id),
+      //     applicantIds: action.data.slice(0, 3).map(a => a.applicantId),
+      //     statuses: action.data.slice(0, 3).map(a => a.status)
+      //   }
+      // });
       
       return {
         ...state,
@@ -606,14 +606,14 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
         }
       });
 
-      logger.info('스케줄 이벤트 생성 완료', { 
-        component: 'UnifiedDataContext', 
-        data: {
-          totalEvents: events.length,
-          workLogEvents: events.filter(e => e.sourceCollection === 'workLogs').length,
-          applicationEvents: events.filter(e => e.sourceCollection === 'applications').length
-        }
-      });
+      // logger.info('스케줄 이벤트 생성 완료', { 
+      //   component: 'UnifiedDataContext', 
+      //   data: {
+      //     totalEvents: events.length,
+      //     workLogEvents: events.filter(e => e.sourceCollection === 'workLogs').length,
+      //     applicationEvents: events.filter(e => e.sourceCollection === 'applications').length
+      //   }
+      // });
 
     } catch (error) {
       logger.error('스케줄 이벤트 생성 실패', error instanceof Error ? error : new Error(String(error)), {
