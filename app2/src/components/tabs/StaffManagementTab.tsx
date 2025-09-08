@@ -9,7 +9,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, query, where, getDocs, deleteDoc, updateDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
@@ -479,17 +479,227 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return workLog;
   }, [state.workLogs, jobPosting?.id, state.lastUpdated.workLogs]); // 🔥 lastUpdated 추가로 업데이트 즉시 감지
 
-  // 🎯 삭제 핸들러 - 통합된 삭제 로직
-  const deleteStaff = useCallback(async (staffId: string) => {
+  // 🔒 삭제 가능 조건 검증 함수
+  const canDeleteStaff = useCallback(async (staffId: string, date: string): Promise<{
+    canDelete: boolean;
+    reason?: string;
+  }> => {
     try {
-      // Staff deletion API call implementation needed
-      showSuccess('스태프가 삭제되었습니다.');
+      // 1. WorkLog 상태 확인
+      const workLogQuery = query(
+        collection(db, 'workLogs'),
+        where('eventId', '==', jobPosting?.id),
+        where('staffId', '==', staffId),
+        where('date', '==', date)
+      );
+      
+      const workLogSnapshot = await getDocs(workLogQuery);
+      if (!workLogSnapshot.empty) {
+        const workLogDoc = workLogSnapshot.docs[0];
+        const workLogData = workLogDoc?.data();
+        const status = workLogData?.status;
+        
+        // 2. 삭제 가능 상태 체크
+        const deletableStatuses = ['scheduled', 'not_started'];
+        if (status && !deletableStatuses.includes(status)) {
+          const statusMessages = {
+            checked_in: '이미 출근한 스태프는 삭제할 수 없습니다.',
+            checked_out: '퇴근 처리된 스태프는 삭제할 수 없습니다.',
+            completed: '근무 완료된 스태프는 삭제할 수 없습니다.',
+            cancelled: '이미 취소된 스태프입니다.'
+          };
+          return {
+            canDelete: false,
+            reason: statusMessages[status as keyof typeof statusMessages] || '삭제할 수 없는 상태입니다.'
+          };
+        }
+        
+        // 3. 급여 지급 확인
+        if (workLogData?.isPaid) {
+          return {
+            canDelete: false,
+            reason: '급여가 지급된 스태프는 삭제할 수 없습니다.'
+          };
+        }
+      }
+      
+      // 4. AttendanceRecord 확인
+      const attendanceQuery = query(
+        collection(db, 'attendanceRecords'),
+        where('eventId', '==', jobPosting?.id),
+        where('staffId', '==', staffId),
+        where('date', '==', date)
+      );
+      
+      const attendanceSnapshot = await getDocs(attendanceQuery);
+      if (!attendanceSnapshot.empty) {
+        const hasActiveAttendance = attendanceSnapshot.docs.some(doc => {
+          const data = doc.data();
+          return data.status === 'checked_in' || data.status === 'checked_out';
+        });
+        
+        if (hasActiveAttendance) {
+          return {
+            canDelete: false,
+            reason: '출퇴근 기록이 있는 스태프는 삭제할 수 없습니다.'
+          };
+        }
+      }
+      
+      return { canDelete: true };
+      
+    } catch (error) {
+      logger.error('삭제 가능 여부 확인 실패', error instanceof Error ? error : new Error(String(error)));
+      return {
+        canDelete: false,
+        reason: '삭제 가능 여부를 확인할 수 없습니다.'
+      };
+    }
+  }, [jobPosting?.id]);
+
+  // 🎯 삭제 핸들러 - Transaction 기반 안전한 삭제 (확정취소 로직 적용)
+  const deleteStaff = useCallback(async (staffId: string, staffName: string, date: string) => {
+    try {
+      // 1. 삭제 가능 여부 검증
+      const { canDelete, reason } = await canDeleteStaff(staffId, date);
+      if (!canDelete) {
+        showError(reason || '삭제할 수 없습니다.');
+        return;
+      }
+      
+      // 2. 삭제 전 인원 카운트 계산 (해당 스태프의 역할/시간 정보 파악)
+      let staffRole = '';
+      let staffTimeSlot = '';
+      const baseStaffId = staffId.replace(/_\d+$/, '');
+      
+      if (jobPosting?.confirmedStaff) {
+        const targetStaff = jobPosting.confirmedStaff.find(
+          (staff: any) => (staff.userId || staff.staffId) === baseStaffId && staff.date === date
+        );
+        staffRole = targetStaff?.role || '';
+        staffTimeSlot = targetStaff?.timeSlot || '';
+      }
+
+      // 3. 확인 대화상자
+      if (!window.confirm(`${staffName} 스태프를 ${date} 날짜에서 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`)) {
+        return;
+      }
+      
+      // 4. Transaction으로 원자적 처리 (확정취소와 동일한 로직)
+      await runTransaction(db, async (transaction) => {
+        if (!jobPosting?.id) {
+          throw new Error('공고 정보를 찾을 수 없습니다.');
+        }
+        
+        // 3-1. confirmedStaff에서 해당 날짜의 스태프만 제거
+        const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
+        const jobPostingDoc = await transaction.get(jobPostingRef);
+        
+        if (!jobPostingDoc.exists()) {
+          throw new Error('공고를 찾을 수 없습니다.');
+        }
+        
+        const currentData = jobPostingDoc.data();
+        const confirmedStaffArray = currentData?.confirmedStaff || [];
+        
+        // staffId에서 접미사 제거 (_0, _1 등)
+        const baseStaffId = staffId.replace(/_\d+$/, '');
+        
+        // 해당 스태프의 해당 날짜 항목만 필터링 (userId와 staffId 모두 체크)
+        const filteredConfirmedStaff = confirmedStaffArray.filter(
+          (staff: any) => {
+            const staffUserId = staff.userId || staff.staffId;
+            return !(staffUserId === baseStaffId && staff.date === date);
+          }
+        );
+        
+        transaction.update(jobPostingRef, {
+          confirmedStaff: filteredConfirmedStaff
+        });
+        
+        const removedCount = confirmedStaffArray.length - filteredConfirmedStaff.length;
+        logger.info(`confirmedStaff에서 제거: staffId=${staffId} (base: ${baseStaffId}), date=${date}, removed: ${removedCount}`, { 
+          component: 'StaffManagementTab'
+        });
+      });
+      
+      // 4. persons 문서 삭제 (staffId 필드로 수정)
+      const personsQuery = query(
+        collection(db, 'persons'),
+        where('staffId', '==', staffId),
+        where('postingId', '==', jobPosting?.id),
+        where('assignedDate', '==', date)
+      );
+      
+      const personsSnapshot = await getDocs(personsQuery);
+      for (const personDoc of personsSnapshot.docs) {
+        await deleteDoc(personDoc.ref);
+        logger.info(`persons 문서 삭제: ${personDoc.id}`, { component: 'StaffManagementTab' });
+      }
+      
+      // 5. WorkLog 삭제 (scheduled/not_started만)
+      const workLogQuery = query(
+        collection(db, 'workLogs'),
+        where('eventId', '==', jobPosting?.id),
+        where('staffId', '==', staffId),
+        where('date', '==', date),
+        where('status', 'in', ['scheduled', 'not_started'])
+      );
+      
+      const workLogSnapshot = await getDocs(workLogQuery);
+      for (const workLogDoc of workLogSnapshot.docs) {
+        await deleteDoc(workLogDoc.ref);
+        logger.info(`WorkLog 삭제: ${workLogDoc.id}`, { component: 'StaffManagementTab' });
+      }
+      
+      // 6. AttendanceRecord 삭제 (not_started만)
+      const attendanceQuery = query(
+        collection(db, 'attendanceRecords'),
+        where('eventId', '==', jobPosting?.id),
+        where('staffId', '==', staffId),
+        where('date', '==', date),
+        where('status', '==', 'not_started')
+      );
+      
+      const attendanceSnapshot = await getDocs(attendanceQuery);
+      for (const attendanceDoc of attendanceSnapshot.docs) {
+        await deleteDoc(attendanceDoc.ref);
+        logger.info(`AttendanceRecord 삭제: ${attendanceDoc.id}`, { component: 'StaffManagementTab' });
+      }
+      
+      // 7. 삭제 후 인원 변화 메시지 생성
+      let roleInfo = '';
+      if (staffRole && staffTimeSlot) {
+        // 삭제 후 해당 역할의 현재 인원 수 계산
+        const currentCount = jobPosting?.confirmedStaff?.filter(
+          (staff: any) => staff.role === staffRole && 
+                         staff.timeSlot === staffTimeSlot && 
+                         staff.date === date
+        ).length || 0;
+        
+        roleInfo = ` (${staffRole} ${staffTimeSlot}: ${currentCount + 1} → ${currentCount}명)`;
+      }
+      
+      showSuccess(`${staffName} 스태프가 ${date} 날짜에서 삭제되었습니다.${roleInfo}`);
       refresh();
+      
     } catch (error) {
       logger.error('스태프 삭제 실패', error instanceof Error ? error : new Error(String(error)));
       showError('스태프 삭제 중 오류가 발생했습니다.');
     }
-  }, [refresh, showSuccess, showError]);
+  }, [canDeleteStaff, jobPosting?.id, jobPosting?.confirmedStaff, refresh, showSuccess, showError]);
+
+  // 레거시 호환을 위한 deleteStaff wrapper (기존 StaffCard 인터페이스 유지)
+  const deleteStaffWrapper = useCallback(async (staffId: string) => {
+    const staff = staffData.find(s => s.id === staffId);
+    if (staff) {
+      const staffName = staff.name || '이름 미정';
+      const date = staff.assignedDate || new Date().toISOString().split('T')[0];
+      if (date) {
+        await deleteStaff(staffId, staffName, date);
+      }
+    }
+  }, [deleteStaff, staffData]);
 
   // 최적화된 핸들러들 (메모이제이션 강화)
   const handleStaffSelect = useCallback((staffId: string) => {
@@ -506,15 +716,163 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   };
   
   const handleBulkDelete = async (staffIds: string[]) => {
-    // 🎯 통합된 삭제 로직 (deleteStaff 훅 대신 직접 구현)
     try {
-      // Bulk staff deletion API call implementation needed
-      showSuccess(`${staffIds.length}명의 스태프가 삭제되었습니다.`);
+      // 1. 각 스태프의 삭제 가능 여부 확인
+      const deletableStaff: Array<{staffId: string, staffName: string, date: string}> = [];
+      const nonDeletableStaff: Array<{staffId: string, staffName: string, reason: string}> = [];
+      
+      for (const staffId of staffIds) {
+        const staff = staffData.find(s => s.id === staffId);
+        const staffName = staff?.name || '이름 미정';
+        const date = staff?.assignedDate || new Date().toISOString().split('T')[0];
+        
+        if (date) {
+          const { canDelete, reason } = await canDeleteStaff(staffId, date);
+          if (canDelete) {
+            deletableStaff.push({ staffId, staffName, date });
+          } else {
+            nonDeletableStaff.push({ staffId, staffName, reason: reason || '알 수 없는 이유' });
+          }
+        } else {
+          nonDeletableStaff.push({ staffId, staffName, reason: '날짜 정보가 없습니다' });
+        }
+      }
+      
+      // 2. 삭제 불가능한 스태프가 있으면 안내
+      if (nonDeletableStaff.length > 0) {
+        const nonDeletableMessage = nonDeletableStaff.map(s => 
+          `• ${s.staffName}: ${s.reason}`
+        ).join('\n');
+        
+        const hasDeleteableStaff = deletableStaff.length > 0;
+        
+        if (!hasDeleteableStaff) {
+          // 모두 삭제 불가능한 경우
+          showError(`선택한 모든 스태프를 삭제할 수 없습니다:\n\n${nonDeletableMessage}`);
+          return;
+        } else {
+          // 일부만 삭제 가능한 경우
+          if (!window.confirm(`다음 스태프는 삭제할 수 없습니다:\n${nonDeletableMessage}\n\n나머지 ${deletableStaff.length}명만 삭제하시겠습니까?`)) {
+            return;
+          }
+        }
+      } else {
+        // 모든 스태프 삭제 가능한 경우
+        if (!window.confirm(`선택된 ${deletableStaff.length}명의 스태프를 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`)) {
+          return;
+        }
+      }
+      
+      // 3. 삭제 가능한 스태프만 처리 (개별 deleteStaff 함수 사용)
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const { staffId, staffName, date } of deletableStaff) {
+        try {
+          // deleteStaff 함수를 직접 사용하되, confirm 대화상자는 스킵
+          await runTransaction(db, async (transaction) => {
+            if (!jobPosting?.id) {
+              throw new Error('공고 정보를 찾을 수 없습니다.');
+            }
+            
+            // confirmedStaff에서 해당 날짜의 스태프만 제거
+            const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
+            const jobPostingDoc = await transaction.get(jobPostingRef);
+            
+            if (jobPostingDoc.exists()) {
+              const currentData = jobPostingDoc.data();
+              const confirmedStaffArray = currentData?.confirmedStaff || [];
+              
+              // staffId에서 접미사 제거 (_0, _1 등)
+              const baseStaffId = staffId.replace(/_\d+$/, '');
+              
+              const filteredConfirmedStaff = confirmedStaffArray.filter(
+                (staff: any) => {
+                  const staffUserId = staff.userId || staff.staffId;
+                  return !(staffUserId === baseStaffId && staff.date === date);
+                }
+              );
+              
+              transaction.update(jobPostingRef, {
+                confirmedStaff: filteredConfirmedStaff
+              });
+            }
+          });
+          
+          // persons, workLogs, attendanceRecords 삭제
+          const deletionPromises = [];
+          
+          // persons 삭제
+          const personsQuery = query(
+            collection(db, 'persons'),
+            where('staffId', '==', staffId),
+            where('postingId', '==', jobPosting?.id),
+            where('assignedDate', '==', date)
+          );
+          deletionPromises.push(
+            getDocs(personsQuery).then(snapshot => {
+              return Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
+            })
+          );
+          
+          // WorkLog 삭제 (scheduled/not_started만)
+          const workLogQuery = query(
+            collection(db, 'workLogs'),
+            where('eventId', '==', jobPosting?.id),
+            where('staffId', '==', staffId),
+            where('date', '==', date),
+            where('status', 'in', ['scheduled', 'not_started'])
+          );
+          deletionPromises.push(
+            getDocs(workLogQuery).then(snapshot => {
+              return Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
+            })
+          );
+          
+          // AttendanceRecord 삭제 (not_started만)
+          const attendanceQuery = query(
+            collection(db, 'attendanceRecords'),
+            where('eventId', '==', jobPosting?.id),
+            where('staffId', '==', staffId),
+            where('date', '==', date),
+            where('status', '==', 'not_started')
+          );
+          deletionPromises.push(
+            getDocs(attendanceQuery).then(snapshot => {
+              return Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
+            })
+          );
+          
+          await Promise.all(deletionPromises);
+          
+          logger.info(`일괄 삭제 성공: ${staffName} (${staffId})`, { component: 'StaffManagementTab' });
+          successCount++;
+          
+        } catch (error) {
+          logger.error(`일괄 삭제 실패: ${staffName} (${staffId})`, error instanceof Error ? error : new Error(String(error)));
+          failCount++;
+        }
+      }
+      
+      // 4. 결과 메시지 (인원 변화 포함)
+      let resultMessage = '';
+      if (successCount > 0 && failCount === 0) {
+        resultMessage = `${successCount}명의 스태프가 삭제되었습니다. 인원 카운트가 업데이트되었습니다.`;
+        showSuccess(resultMessage);
+      } else if (successCount > 0 && failCount > 0) {
+        resultMessage = `${successCount}명 삭제 완료, ${failCount}명 삭제 실패했습니다. 인원 카운트가 부분 업데이트되었습니다.`;
+        showError(resultMessage);
+      } else {
+        resultMessage = '선택한 스태프를 삭제할 수 없습니다.';
+        showError(resultMessage);
+      }
+      
       resetSelection();
-      refresh(); // UnifiedData 새로고침
+      refresh();
+      
     } catch (error) {
       logger.error('스태프 일괄 삭제 실패', error instanceof Error ? error : new Error(String(error)));
-      showError('스태프 삭제 중 오류가 발생했습니다.');
+      showError('스태프 일괄 삭제 중 오류가 발생했습니다.');
     }
   };
   
@@ -724,23 +1082,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               />
             </div>
             
-            {/* 선택 모드 활성화 시 일괄 작업 버튼 */}
-            {multiSelectMode && selectedStaff.size > 0 && canEdit && (
-              <div className="flex justify-center space-x-2">
-                <button
-                  onClick={handleBulkActions}
-                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                >
-                  일괄 작업 ({selectedStaff.size})
-                </button>
-                <button
-                  onClick={() => setIsBulkTimeEditOpen(true)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                >
-                  시간 수정
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -784,7 +1125,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
-                      onDeleteStaff={deleteStaff}
+                      onDeleteStaff={deleteStaffWrapper}
                       getStaffAttendanceStatus={getStaffAttendanceStatus}
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
@@ -814,7 +1155,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
-                      onDeleteStaff={deleteStaff}
+                      onDeleteStaff={deleteStaffWrapper}
                       getStaffAttendanceStatus={getStaffAttendanceStatus}
                       attendanceRecords={attendanceRecords}
                       formatTimeDisplay={formatTimeDisplay}
@@ -858,15 +1199,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       />
 
 
-      {/* 일괄 작업 모달 */}
-      <BulkActionsModal
-        isOpen={isBulkActionsOpen}
-        onClose={() => setIsBulkActionsOpen(false)}
-        selectedStaff={selectedStaffData as any}
-        onBulkDelete={handleBulkDelete}
-        onBulkMessage={handleBulkMessage}
-        onBulkStatusUpdate={handleBulkStatusUpdate}
-      />
       
       {/* 스태프 프로필 모달 */}
       <StaffProfileModal
@@ -925,7 +1257,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           onSelectAll={() => selectAll(staffData.map(s => s.id))}
           onDeselectAll={deselectAll}
           onBulkEdit={() => setIsBulkTimeEditOpen(true)}
-          onBulkStatusChange={() => setIsBulkActionsOpen(true)}
+          onBulkDelete={() => {
+            if (selectedStaff.size === 0) return;
+            const confirmDelete = window.confirm(`선택된 ${selectedStaff.size}명의 스태프를 삭제하시겠습니까?`);
+            if (confirmDelete) {
+              handleBulkDelete(Array.from(selectedStaff));
+            }
+          }}
           onCancel={() => {
             deselectAll();
             toggleMultiSelectMode();
@@ -943,6 +1281,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             className="bg-white text-blue-600 px-4 py-1 rounded-full text-sm font-medium hover:bg-blue-50 transition-colors"
           >
             일괄 수정
+          </button>
+          <button
+            onClick={() => handleBulkDelete(Array.from(selectedStaff))}
+            className="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+          >
+            삭제
           </button>
           <button
             onClick={() => {

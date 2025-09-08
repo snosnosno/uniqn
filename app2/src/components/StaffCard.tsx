@@ -207,17 +207,17 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
           onSelect 
             ? isSelected 
               ? 'border-primary-500 bg-primary-50 staff-card-selected' 
-              : 'border-dashed hover:border-gray-400 hover:bg-gray-50'
+              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
             : ''
         } touch-none select-none`}
         aria-label={`스태프 카드: ${memoizedStaffData.displayName}`}
         aria-describedby={`staff-${staff.id}-details`}
       >
-        <CardHeader className="p-0" id={`staff-${staff.id}-header`}>
+        <CardHeader className="px-3 py-1.5" id={`staff-${staff.id}-header`}>
           <div className="flex flex-col">
             {/* 첫 번째 줄: 이름과 메뉴 버튼 */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
                 <StaffCardHeader
                   name={memoizedStaffData.displayName}
                   {...(staff.role && { role: staff.role })}
@@ -233,7 +233,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               {/* 모바일: 메뉴 버튼을 이름과 같은 줄에 */}
               <button
                 onClick={toggleActions}
-                className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors sm:hidden"
+                className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors sm:hidden"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -243,19 +243,21 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
             
             {/* 두 번째 줄: 시간과 출석상태를 한 줄에 */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 flex-1">
-                <StaffCardTimeSection
-                  displayStartTime={memoizedTimeData.displayStartTime}
-                  displayEndTime={memoizedTimeData.displayEndTime}
-                  startTimeColor={memoizedTimeData.startTimeColor}
-                  endTimeColor={memoizedTimeData.endTimeColor}
-                  canEdit={canEdit}
-                  multiSelectMode={multiSelectMode}
-                  onEditWorkTime={onEditWorkTime}
-                  staffId={staff.id}
-                />
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <StaffCardTimeSection
+                    displayStartTime={memoizedTimeData.displayStartTime}
+                    displayEndTime={memoizedTimeData.displayEndTime}
+                    startTimeColor={memoizedTimeData.startTimeColor}
+                    endTimeColor={memoizedTimeData.endTimeColor}
+                    canEdit={canEdit}
+                    multiSelectMode={multiSelectMode}
+                    onEditWorkTime={onEditWorkTime}
+                    staffId={staff.id}
+                  />
+                </div>
                 
-                <div className="relative">
+                <div className="flex-1 min-w-0">
                   <AttendanceStatusPopover
                     workLogId={memoizedAttendanceData.realWorkLogId || memoizedAttendanceData.attendanceRecord?.workLogId || memoizedAttendanceData.workLogId}
                     currentStatus={optimisticAttendanceStatus || memoizedAttendanceData.attendanceRecord?.status || 'not_started'}
@@ -263,7 +265,6 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                     staffName={staff.name || ''}
                     eventId={eventId || ''}
                     size="sm"
-                    className="scale-90"
                     scheduledStartTime={memoizedTimeData.displayStartTime}
                     scheduledEndTime={memoizedTimeData.displayEndTime}
                     canEdit={!!canEdit && !multiSelectMode}
@@ -283,7 +284,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               {/* 데스크톱: 메뉴 버튼 */}
               <button
                 onClick={toggleActions}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -302,7 +303,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
                     <span className="hidden sm:inline">선택됨</span>
                   </div>
                 ) : (
-                  <div className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                  <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium border border-gray-200">
                     <span className="hidden sm:inline">선택</span>
                   </div>
                 )}

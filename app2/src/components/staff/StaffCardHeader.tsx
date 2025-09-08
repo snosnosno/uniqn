@@ -40,8 +40,8 @@ const StaffCardHeader: React.FC<StaffCardHeaderProps> = React.memo(({
   };
   
   return (
-    <div className="flex-1 min-w-0 mb-2 sm:mb-0">
-      <div className="flex items-center space-x-2">
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-1.5 flex-wrap">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -50,18 +50,20 @@ const StaffCardHeader: React.FC<StaffCardHeaderProps> = React.memo(({
             }
           }}
           disabled={multiSelectMode}
-          className={`text-base sm:text-lg font-semibold text-gray-900 truncate px-2 sm:px-3 py-1 rounded-md border transition-all duration-200 text-left inline-flex items-center gap-2 ${
+          className={`inline-flex items-center gap-2 text-lg font-bold text-gray-800 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition-all duration-200 ${
             multiSelectMode 
-              ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-50' 
-              : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-sm'
+              ? 'cursor-not-allowed opacity-50' 
+              : 'hover:bg-gray-200 hover:border-gray-300'
           }`}
         >
           <span>{displayName}</span>
-          <span className="text-xs font-normal text-gray-500">({roleDisplay})</span>
+          <span className="text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-medium">
+            {roleDisplay}
+          </span>
         </button>
         
         {showDate && date && (
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+          <span className="text-xs text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 font-medium">
             {formatDateShort(date)}
           </span>
         )}

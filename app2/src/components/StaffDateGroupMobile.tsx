@@ -75,25 +75,25 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
       {/* 날짜 헤더 */}
       <div 
-        className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 cursor-pointer active:from-blue-600 active:to-purple-700 transition-all duration-150"
+        className="bg-blue-600 px-4 py-3 cursor-pointer hover:bg-blue-700 active:bg-blue-800 transition-colors duration-150"
         onClick={handleHeaderClick}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="text-white">
               {date === '날짜 미정' ? (
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">📅</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">📅</span>
                   <div>
-                    <div className="text-base font-bold">날짜 미정</div>
-                    <div className="text-xs text-blue-100">일정 조정 필요</div>
+                    <div className="text-lg font-semibold">날짜 미정</div>
+                    <div className="text-xs text-blue-200">일정 조정 필요</div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">📅</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">📅</span>
                   <div>
-                    <div className="text-base font-bold">
+                    <div className="text-lg font-semibold">
                       {(() => {
                         try {
                           // yy-MM-dd 형식에서 MM-dd(요일) 형식으로 변환
@@ -120,8 +120,8 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
             </div>
             
             <div className="flex items-center space-x-2">
-              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-full px-3 py-1">
-                <span className="text-white text-sm font-medium">
+              <div className="bg-white bg-opacity-25 rounded-full px-3 py-1.5">
+                <span className="text-white text-sm font-semibold">
                   {staffCount}명
                 </span>
               </div>
@@ -129,17 +129,17 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               {multiSelectMode && (
                 <>
                   {selectedCount > 0 && (
-                    <div className="bg-yellow-400 bg-opacity-90 rounded-full px-3 py-1">
-                      <span className="text-yellow-900 text-sm font-medium">
+                    <div className="bg-yellow-400 rounded-full px-3 py-1.5">
+                      <span className="text-yellow-900 text-sm font-semibold">
                         {selectedCount}개 선택
                       </span>
                     </div>
                   )}
                   <button
                     onClick={handleGroupSelect}
-                    className="bg-blue-500 bg-opacity-90 rounded-full px-3 py-1 hover:bg-opacity-100 transition-opacity"
+                    className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full px-3 py-1.5 transition-all"
                   >
-                    <span className="text-white text-sm font-medium">
+                    <span className="text-white text-sm font-semibold">
                       {selectedCount === staffList.length ? '그룹 해제' : '그룹 선택'}
                     </span>
                   </button>
@@ -159,7 +159,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
       
       {/* 스태프 카드 리스트 */}
       {isExpanded && (
-        <div className="p-4 space-y-3 bg-gray-50">
+        <div className="p-4 space-y-3 bg-white">
           {staffList.map((staff) => (
             <StaffCard
               key={staff.id}
@@ -183,7 +183,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
           {staffList.length === 0 && (
             <div className="text-center py-8">
               <div className="text-gray-400 text-4xl mb-2">👥</div>
-              <div className="text-gray-500 text-sm">이 날짜에 할당된 스태프가 없습니다</div>
+              <div className="text-gray-600 text-sm font-medium">이 날짜에 할당된 스태프가 없습니다</div>
             </div>
           )}
         </div>

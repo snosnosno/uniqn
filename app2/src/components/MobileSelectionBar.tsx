@@ -7,7 +7,7 @@ interface MobileSelectionBarProps {
   onSelectAll: () => void;
   onDeselectAll: () => void;
   onBulkEdit: () => void;
-  onBulkStatusChange: () => void;
+  onBulkDelete: () => void;
   onCancel: () => void;
   isAllSelected: boolean;
 }
@@ -18,7 +18,7 @@ const MobileSelectionBar: React.FC<MobileSelectionBarProps> = ({
   onSelectAll,
   onDeselectAll,
   onBulkEdit,
-  onBulkStatusChange,
+  onBulkDelete,
   onCancel,
   isAllSelected
 }) => {
@@ -65,13 +65,13 @@ const MobileSelectionBar: React.FC<MobileSelectionBarProps> = ({
           <Button 
             size="sm" 
             variant="secondary"
-            onClick={onBulkStatusChange}
-            className="flex items-center justify-center space-x-1"
+            onClick={onBulkDelete}
+            className="flex items-center justify-center space-x-1 bg-red-600 text-white hover:bg-red-700"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            <span>상태 변경</span>
+            <span>삭제</span>
           </Button>
         </div>
         

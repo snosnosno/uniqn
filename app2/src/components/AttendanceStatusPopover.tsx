@@ -144,7 +144,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'px-2 py-1 text-xs';
+        return 'px-2 py-2 text-sm';
       case 'lg':
         return 'px-4 py-2.5 text-base';
       default:
@@ -387,20 +387,25 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         }}
         disabled={isUpdating || !canEdit}
         className={`
-          inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200
+          w-full inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all duration-200 border border-gray-200
           ${currentOption.bgColor} ${currentOption.color}
           ${getSizeClasses()}
-          ${isUpdating || !canEdit ? 'opacity-50 cursor-not-allowed' : 'hover:ring-2 hover:ring-offset-1 hover:ring-gray-300 cursor-pointer'}
+          ${isUpdating || !canEdit ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-80 hover:border-gray-300 cursor-pointer'}
           ${className}
         `}
         title={!canEdit ? '수정 권한이 없습니다' : ''}
       >
         {currentOption.icon}
         <div className="flex flex-col items-start">
-          <span>{currentOption.label}</span>
-          {currentStatus === 'checked_in' && actualStartTime && (
-            <span className="text-xs opacity-75">출근: {formatTime(actualStartTime)}</span>
-          )}
+          <div className="flex items-center space-x-2">
+            <span>{currentOption.label}</span>
+            {currentStatus === 'checked_in' && actualStartTime && (
+              <span className="text-xs opacity-75">{formatTime(actualStartTime)}</span>
+            )}
+            {currentStatus === 'checked_out' && actualEndTime && (
+              <span className="text-xs opacity-75">{formatTime(actualEndTime)}</span>
+            )}
+          </div>
           {currentStatus === 'checked_out' && (() => {
             // scheduled 시간으로 근무시간 계산 (급여 정산용)
             const totalMinutes = calculateMinutes(scheduledStartTime, scheduledEndTime);
@@ -411,17 +416,12 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
               const timeString = `${hours}:${minutes.toString().padStart(2, '0')}`;
               
               return (
-                <div className="text-xs opacity-75">
-                  {actualEndTime && <div>퇴근: {formatTime(actualEndTime)}</div>}
-                  <div className="font-semibold text-blue-600">근무: {timeString}</div>
+                <div className="text-xs opacity-75 font-semibold text-blue-600 mt-1">
+                  근무: {timeString}
                 </div>
               );
             }
-            return actualEndTime ? (
-              <div className="text-xs opacity-75">
-                {actualEndTime && <div>퇴근: {formatTime(actualEndTime)}</div>}
-              </div>
-            ) : null;
+            return null;
           })()}
         </div>
       </button>
