@@ -98,7 +98,7 @@ export interface EventWorkLog {
   hoursWorked?: number;    // 정산용 최종 시간
   
   // 상태
-  status: 'scheduled' | 'checked_in' | 'checked_out' | 'completed';
+  status: 'not_started' | 'checked_in' | 'checked_out' | 'completed';
   
   // 정산 정보 (선택, 캐시용)
   payroll?: {

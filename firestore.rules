@@ -179,10 +179,28 @@ service cloud.firestore {
     // --- Staff Collection --- [DEPRECATED - Use /persons collection instead]
     // Removed - All staff operations should use /persons collection with type='staff' or 'both'
 
-    // --- Work Logs Collection ---
+    // --- Work Logs Collection (통합 스태프 정보 포함) ---
     match /workLogs/{workLogId} {
-      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.dealerId);
-      allow create, update: if isSignedIn() && hasValidRole();
+      // 모든 인증된 사용자가 읽기 가능 (본인 WorkLog 또는 관리자)
+      allow read: if isSignedIn() && (
+        hasValidRole() || 
+        request.auth.uid == resource.data.staffInfo.userId ||
+        request.auth.uid == resource.data.dealerId  // 하위 호환성
+      );
+      
+      // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
+      // WorkLog 생성 시 staffInfo와 assignmentInfo 필수 검증
+      allow create: if isSignedIn() && hasValidRole() &&
+        request.resource.data.keys().hasAll(['staffId', 'eventId', 'date', 'staffInfo', 'assignmentInfo']) &&
+        request.resource.data.staffInfo is map &&
+        request.resource.data.assignmentInfo is map &&
+        request.resource.data.staffInfo.keys().hasAll(['userId', 'name']) &&
+        request.resource.data.assignmentInfo.keys().hasAll(['role', 'postingId']);
+      
+      // 관리자 및 유효한 역할을 가진 사용자가 수정 가능
+      allow update: if isSignedIn() && hasValidRole();
+      
+      // 관리자만 삭제 가능
       allow delete: if isPrivileged();
     }
 
@@ -258,12 +276,14 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
     
-    // --- Persons Collection (통합 인원 관리) ---
+    // --- Persons Collection --- [DEPRECATED - Use WorkLog.staffInfo instead]
+    // Persons 컬렉션이 WorkLog.staffInfo로 통합됨 
+    // 하위 호환성을 위해 읽기만 허용, 새로운 생성/수정은 제한
     match /persons/{personId} {
-      // 모든 로그인 사용자 읽기 가능
+      // 기존 데이터 읽기만 허용 (마이그레이션 및 하위 호환성용)
       allow read: if isSignedIn();
-      // 관리자만 생성/수정/삭제 가능
-      allow create, update, delete: if isPrivileged();
+      // 새로운 생성/수정/삭제는 제한 - WorkLog 사용 권장
+      allow create, update, delete: if false;
     }
     
     // --- Applicants Collection --- [DEPRECATED - Use /persons collection instead]

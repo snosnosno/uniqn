@@ -312,7 +312,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
           scheduledEndTime: scheduledEndTime as any,
           actualStartTime: null,
           actualEndTime: null,
-          status: 'scheduled' as const,
+          status: 'not_started' as const,
           isVirtual: true,
           assignedTime: timeSlot,
           displayKey: `${staff.userId}_${staff.role}`

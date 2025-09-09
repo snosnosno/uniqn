@@ -36,71 +36,98 @@ const useScheduleData = (): UseScheduleDataReturn => {
         return;
       }
 
+      setLoading(true);
+
       try {
         const mergedEvents: ScheduleEvent[] = [];
         const processedKeys = new Set<string>();
 
-        // 1. WorkLogs 처리 (우선순위 높음)
+        // 1. WorkLogs 처리 (우선순위 높음) - 병렬 처리
         const userWorkLogs = Array.from(workLogs.values())
-          .filter((log): log is WorkLog => 
-            (log as WorkLog).staffId === currentUser.uid
-          );
+          .filter((log): log is WorkLog => {
+            const workLog = log as WorkLog;
+            // staffId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
+            return workLog.staffId === currentUser.uid || 
+                   workLog.staffId?.startsWith(currentUser.uid + '_');
+          });
         
-        for (const workLog of userWorkLogs) {
-          const event = await processWorkLogData(workLog.id || '', workLog);
+        logger.info(`필터링된 WorkLogs: ${userWorkLogs.length}개 [${userWorkLogs.map(log => log.staffId).join(',')}]`, {
+          component: 'useScheduleData',
+          userId: currentUser.uid,
+          operation: 'filterWorkLogs'
+        });
+
+        // WorkLog 비동기 처리를 병렬로 실행
+        const workLogPromises = userWorkLogs.map(workLog => 
+          processWorkLogData(workLog.id || '', workLog)
+        );
+        const workLogEvents = await Promise.all(workLogPromises);
+        
+        // WorkLog 이벤트 추가
+        workLogEvents.forEach(event => {
           mergedEvents.push(event);
           
           // 중복 방지 키 생성
           if (event.eventId && event.date) {
-            const timeKey = event.startTime ? 
+            const timeKey = event.startTime && 'seconds' in event.startTime ? 
               new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
             const key = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
             processedKeys.add(key);
             processedKeys.add(basicKey);
           }
-        }
+        });
 
-        // 2. Applications 처리 (중복 제외)
+        // 2. Applications 처리 (중복 제외) - 병렬 처리
         const userApplications = Array.from(applications.values())
-          .filter((app): app is Application => 
-            (app as Application).applicantId === currentUser.uid
-          );
-        
-        for (const application of userApplications) {
-          const events = await processApplicationData(application.id || '', application);
+          .filter((app): app is Application => {
+            const application = app as Application;
+            // applicantId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우  
+            return application.applicantId === currentUser.uid ||
+                   application.applicantId?.startsWith(currentUser.uid + '_');
+          });
           
-          for (const event of events) {
-            if (event.eventId && event.date) {
-              const timeKey = event.startTime ?
-                new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
-              const preciseKey = `${event.eventId}_${event.date}_${timeKey}`;
-              const basicKey = `${event.eventId}_${event.date}`;
-              
-              // 중복 체크
-              if (!processedKeys.has(preciseKey) && !processedKeys.has(basicKey)) {
-                mergedEvents.push(event);
-                processedKeys.add(preciseKey);
-                processedKeys.add(basicKey);
-              }
-            } else {
-              // eventId나 date가 없는 경우 그냥 추가
+        logger.info(`필터링된 Applications: ${userApplications.length}개 [${userApplications.map(app => app.applicantId).join(',')}]`, {
+          component: 'useScheduleData',
+          userId: currentUser.uid,
+          operation: 'filterApplications'
+        });
+        
+        // Application 비동기 처리를 병렬로 실행
+        const applicationPromises = userApplications.map(application =>
+          processApplicationData(application.id || '', application)
+        );
+        const applicationEventArrays = await Promise.all(applicationPromises);
+        
+        // Application 이벤트 추가 (중복 체크)
+        applicationEventArrays.flat().forEach(event => {
+          if (event.eventId && event.date) {
+            const timeKey = event.startTime && 'seconds' in event.startTime ?
+              new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
+            const preciseKey = `${event.eventId}_${event.date}_${timeKey}`;
+            const basicKey = `${event.eventId}_${event.date}`;
+            
+            // 중복 체크
+            if (!processedKeys.has(preciseKey) && !processedKeys.has(basicKey)) {
               mergedEvents.push(event);
+              processedKeys.add(preciseKey);
+              processedKeys.add(basicKey);
             }
-          }
-        }
-
-        logger.info('스케줄 데이터 병합 완료', {
-          data: {
-            totalEvents: mergedEvents.length,
-            workLogs: userWorkLogs.length,
-            applications: userApplications.length
+          } else {
+            // eventId나 date가 없는 경우 그냥 추가
+            mergedEvents.push(event);
           }
         });
 
+        logger.info(`스케줄 데이터 병합 완료: 총 ${mergedEvents.length}개 이벤트 (WorkLog: ${workLogEvents.length}, 지원서: ${applicationEventArrays.flat().length})`, {
+          component: 'useScheduleData',
+          userId: currentUser.uid,
+          operation: 'loadSchedules'
+        });
+
         setSchedules(mergedEvents);
-        setLoading(contextLoading.initial);
-        setError(contextError.global);
+        setLoading(false);
+        setError(null);
       } catch (err) {
         const errorMessage = handleError(err, {
           component: 'useScheduleData',
@@ -113,8 +140,35 @@ const useScheduleData = (): UseScheduleDataReturn => {
       }
     };
 
-    loadSchedules();
-  }, [currentUser, applications, workLogs, contextLoading.initial, contextError.global]);
+    // 데이터가 존재하면 처리 (contextLoading.initial 의존성 제거)
+    if (currentUser && (workLogs.size > 0 || applications.size > 0)) {
+      loadSchedules();
+    } else if (currentUser) {
+      // 사용자는 로그인했지만 데이터가 없는 경우
+      logger.info('사용자 데이터 대기 중...', {
+        component: 'useScheduleData',
+        userId: currentUser.uid,
+        data: { workLogsCount: workLogs.size, applicationsCount: applications.size }
+      });
+      
+      // 일정 시간 후에도 데이터가 없으면 빈 상태로 설정
+      const timeoutId = setTimeout(() => {
+        if (workLogs.size === 0 && applications.size === 0) {
+          setSchedules([]);
+          setLoading(false);
+          logger.info('데이터 없음으로 빈 스케줄 설정', {
+            component: 'useScheduleData',
+            userId: currentUser.uid
+          });
+        }
+      }, 3000);
+
+      return () => clearTimeout(timeoutId);
+    }
+    
+    // 기본 반환 (TypeScript 오류 방지)
+    return undefined;
+  }, [currentUser, applications, workLogs]);
 
   // 필터링된 스케줄
   const filteredSchedules = useMemo(() => {

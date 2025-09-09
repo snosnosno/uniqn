@@ -730,7 +730,7 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     return {
       totalStaff: state.staff.size,
       activeWorkLogs: Array.from(state.workLogs.values()).filter(wl => 
-        wl.status === 'scheduled' || wl.status === 'checked_in'
+        wl.status === 'not_started' || wl.status === 'checked_in'
       ).length,
       pendingApplications: Array.from(state.applications.values()).filter(app => 
         app.status === 'applied'

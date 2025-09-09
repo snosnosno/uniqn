@@ -142,7 +142,7 @@ export class BulkOperationService {
               staffName: staff.name,
               role: staff.role || '',
               date: dateString as string,
-              status: status as 'scheduled' | 'checked_in' | 'completed' | 'absent'
+              status: status as 'not_started' | 'checked_in' | 'completed' | 'absent'
             };
             
             const newWorkLogData = createWorkLog(workLogInput);

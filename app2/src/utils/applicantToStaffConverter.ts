@@ -74,7 +74,7 @@ export async function createStaffFromApplicant(
         role: applicant.role || '',
         date: applicant.date,
         timeSlot: applicant.timeSlot,
-        status: 'scheduled'
+        status: 'not_started'
       };
       
       workLogData = createWorkLog(workLogInput);

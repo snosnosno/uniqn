@@ -12,6 +12,7 @@ import {
 import { db } from '../firebase';
 import { startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns';
 import { logger } from '../utils/logger';
+import { useUnifiedData } from './useUnifiedData';
 
 interface TopDealer {
   id: string;
@@ -90,6 +91,10 @@ export const useCEODashboardOptimized = () => {
   const unsubscribersRef = useRef<(() => void)[]>([]);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
+  
+  // 🚀 WorkLog 데이터 가져오기 (persons 컬렉션 통합)
+  const { state } = useUnifiedData();
+  const workLogs = Array.from(state.workLogs.values());
 
   // 캐시된 데이터 반환
   const getCachedData = useCallback(() => {
@@ -157,29 +162,24 @@ export const useCEODashboardOptimized = () => {
         .sort((a, b) => b.averageRating - a.averageRating)
         .slice(0, 5);
 
-      // 딜러 정보 조회 - persons 컬렉션 사용
+      // 🚀 딜러 정보 조회 - WorkLog에서 검색 (persons 컬렉션 통합)
       for (const dealer of sortedDealers) {
-        // persons 컬렉션에서 staff 타입 검색
-        let staffDoc = await getDocs(
-          query(
-            collection(db, 'persons'), 
-            where('type', 'in', ['staff', 'both']),
-            where('id', '==', dealer.id), 
-            limit(1)
-          )
-        );
-        
-        // id로 찾지 못한 경우 (레거시 dealerId 검색 제거)
-
-        if (!staffDoc.empty && staffDoc.docs[0]) {
-          const staffData = staffDoc.docs[0].data();
-          dealers.push({
-            id: dealer.id,
-            name: staffData.name || '이름 없음',
-            role: staffData.role || '딜러',
-            rating: dealer.averageRating,
-            ratingCount: dealer.ratingCount
-          });
+        // WorkLog에서 해당 딜러 정보 찾기
+        if (workLogs) {
+          const dealerWorkLog = workLogs.find((wl: any) => 
+            (wl.staffInfo?.userId === dealer.id || wl.staffId === dealer.id) &&
+            wl.staffInfo?.isActive !== false
+          );
+          
+          if (dealerWorkLog) {
+            dealers.push({
+              id: dealer.id,
+              name: dealerWorkLog.staffInfo?.name || dealerWorkLog.staffName || '이름 없음',
+              role: dealerWorkLog.staffInfo?.jobRole?.[0] || dealerWorkLog.role || '딜러',
+              rating: dealer.averageRating,
+              ratingCount: dealer.ratingCount
+            });
+          }
         }
       }
 
@@ -381,30 +381,49 @@ export const useCEODashboardOptimized = () => {
         });
         unsubscribers.push(payrollUnsubscribe);
 
-        // 구독 4: 스태프 + 사용자 통합 쿼리 - persons 컬렉션 사용
-        const staffQuery = query(
-          collection(db, 'persons'),
-          where('type', 'in', ['staff', 'both'])
-        );
-        const staffUnsubscribe = onSnapshot(staffQuery, async (snapshot) => {
-          const totalStaff = snapshot.size;
+        // 🚀 구독 4: 스태프 통계 - WorkLog 기반 계산 (persons 컬렉션 통합)
+        // WorkLog 변경 시마다 스태프 통계 재계산
+        const calculateStaffStats = () => {
+          if (!workLogs) return { totalStaff: 0, activeCount: 0, newThisMonth: 0 };
+          
+          const staffMap = new Map<string, any>();
+          
+          // WorkLog에서 고유한 스태프 추출
+          workLogs.forEach((workLog: any) => {
+            const staffId = workLog.staffInfo?.userId || workLog.staffId;
+            if (staffId && !staffMap.has(staffId)) {
+              staffMap.set(staffId, {
+                isActive: workLog.staffInfo?.isActive !== false,
+                createdAt: workLog.createdAt,
+                staffInfo: workLog.staffInfo
+              });
+            }
+          });
+          
+          const totalStaff = staffMap.size;
           let activeCount = 0;
           let newThisMonth = 0;
-
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.status === 'active' || !data.status) {
+          
+          staffMap.forEach((staff) => {
+            if (staff.isActive) {
               activeCount++;
             }
-
-            if (data.createdAt) {
-              const createdDate = data.createdAt.toDate();
+            
+            if (staff.createdAt && staff.createdAt.toDate) {
+              const createdDate = staff.createdAt.toDate();
               if (createdDate >= monthStart && createdDate <= monthEnd) {
                 newThisMonth++;
               }
             }
           });
+          
+          return { totalStaff, activeCount, newThisMonth };
+        };
 
+        // 🚀 WorkLog 기반 스태프 통계 계산 및 업데이트
+        const updateStaffStats = async () => {
+          const { totalStaff, activeCount, newThisMonth } = calculateStaffStats();
+          
           // 승인 대기 사용자 수도 함께 조회
           const pendingUsersSnapshot = await getDocs(
             query(collection(db, 'users'), where('status', '==', 'pending'))
@@ -415,14 +434,16 @@ export const useCEODashboardOptimized = () => {
           dashboardData.activeStaff = activeCount;
           dashboardData.newStaffThisMonth = newThisMonth;
 
-          logger.debug('스태프 및 사용자 현황', { 
+          logger.debug('스태프 및 사용자 현황 (WorkLog 기반)', { 
             component: 'useCEODashboardOptimized', 
             data: { totalStaff, activeCount, newThisMonth, pendingRegistrations: dashboardData.pendingRegistrations }
           });
           
           setData({ ...dashboardData });
-        });
-        unsubscribers.push(staffUnsubscribe);
+        };
+        
+        // 초기 로드 및 workLogs 변경 시 업데이트
+        updateStaffStats();
 
         // 구독 5: 구인공고 (지원자 수는 캐시 활용)
         const activeJobsQuery = query(

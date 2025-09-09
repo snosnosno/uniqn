@@ -50,22 +50,56 @@ export interface Staff {
 export interface WorkLog {
   id: string;
   staffId: string;
-  staffName: string;
+  staffName: string; // 호환성을 위해 유지
   eventId: string;
   date: string;
+  
+  // 🚀 persons 컬렉션 통합 - 스태프 정보
+  staffInfo: {
+    userId: string;      // 실제 사용자 ID (Firebase Auth UID)
+    name: string;        // 사용자 이름
+    email?: string;      // 이메일
+    phone?: string;      // 전화번호
+    userRole?: string;   // 사용자 권한 (staff, manager, admin)
+    jobRole?: string[];  // 직무 역할들 (['dealer', 'manager'])
+    isActive?: boolean;  // 활성 상태
+    // 은행 정보
+    bankName?: string;   
+    accountNumber?: string;
+    // 추가 개인정보
+    gender?: string;     
+    age?: number;        
+    experience?: string; 
+    nationality?: string;
+    region?: string;     
+  };
+  
+  // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
+  assignmentInfo: {
+    role: string;           // 할당된 역할
+    assignedRole?: string;  // 지원자에서 확정된 역할
+    assignedTime?: string;  // 지원자에서 확정된 시간
+    assignedDate?: string;  // 지원자에서 확정된 날짜
+    postingId: string;      // 구인공고 ID
+    managerId?: string;     // 관리자 ID
+    type?: 'staff' | 'applicant' | 'both'; // 타입 정보
+  };
+  
+  // 기존 근무 관련 필드
   scheduledStartTime?: Timestamp;
   scheduledEndTime?: Timestamp;
   actualStartTime?: Timestamp;
   actualEndTime?: Timestamp;
-  role?: string;
-  assignedTime?: string; // 🔥 UI에서 사용하는 시간 표시 필드
+  role?: string; // 호환성을 위해 유지 (assignmentInfo.role과 동일)
+  assignedTime?: string; // 호환성을 위해 유지 (UI에서 사용하는 시간 표시 필드)
   hoursWorked?: number;
   overtimeHours?: number;
   earlyLeaveHours?: number;
   notes?: string;
-  status?: 'scheduled' | 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
+  status?: 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  createdBy?: string;  // 생성자 ID
 }
 
 export interface AttendanceRecord {

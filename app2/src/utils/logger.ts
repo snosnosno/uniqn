@@ -69,6 +69,23 @@ export interface LogContext {
   dateHeaders?: (string | undefined)[];
   memoryUsageMB?: number;
   newLevel?: string;
+  
+  // WorkLog 관련 필드 (useApplicantActions.ts에서 사용)
+  workLogId?: string;
+  applicantName?: string;
+  applicantUserId?: string;
+  jobRole?: string;
+  assignedDate?: string;
+  postingId?: string;
+  hasRequiredFields?: Record<string, boolean>;
+  isFirebasePermissionError?: boolean;
+  suggestion?: string;
+  staffInfo_userId?: string;
+  assignmentInfo_role?: string;
+  assignmentInfo_postingId?: string;
+  errorDetails?: Record<string, unknown>;
+  staffInfoKeys?: string[];
+  assignmentInfoKeys?: string[];
 }
 
 // 로그 엔트리 인터페이스

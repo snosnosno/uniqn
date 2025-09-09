@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
-import { db, promoteToStaff } from '../../../../firebase';
+import { db } from '../../../../firebase';
 import { JobPostingUtils, JobPosting } from '../../../../types/jobPosting';
 import { Assignment } from '../../../../types/application';
 import { Applicant } from '../types';
@@ -14,6 +14,139 @@ interface UseApplicantActionsProps {
   currentUser?: any;
   onRefresh: () => void;
 }
+
+/**
+ * 확정된 스태프를 위한 WorkLog 직접 생성 함수
+ * promoteToStaff를 대체하여 persons 컬렉션 없이 WorkLog에 모든 정보를 embedded
+ */
+const createWorkLogsForConfirmedStaff = async (
+  staffId: string,
+  applicantName: string,
+  applicantUserId: string,
+  jobRole: string,
+  assignment: Assignment,
+  assignedDate: string,
+  postingId: string,
+  managerId: string,
+  email: string = '',
+  phone: string = ''
+) => {
+  try {
+    logger.info('🚀 WorkLog 직접 생성 시작', {
+      component: 'createWorkLogsForConfirmedStaff',
+      staffId,
+      applicantName,
+      applicantUserId,
+      jobRole,
+      assignedDate,
+      postingId
+    });
+
+    // WorkLog ID 생성 패턴: ${postingId}_${staffId}_${date}
+    const workLogId = `${postingId}_${staffId}_${assignedDate}`;
+    
+    logger.info('생성할 WorkLog ID:', {
+      component: 'createWorkLogsForConfirmedStaff',
+      workLogId
+    });
+    
+    // WorkLog 문서 생성 (persons 데이터를 모두 embedded)
+    const workLogData = {
+      id: workLogId,
+      staffId: staffId,
+      staffName: applicantName, // 호환성을 위해 유지
+      eventId: postingId,
+      date: assignedDate,
+      
+      // 🚀 persons 컬렉션 통합 - 스태프 정보를 WorkLog에 embedded
+      staffInfo: {
+        userId: applicantUserId,
+        name: applicantName,
+        email: email || '',
+        phone: phone || '',
+        userRole: 'staff',
+        jobRole: [jobRole],
+        isActive: true
+        // undefined 필드 제거 - 필요시 나중에 업데이트로 추가
+      },
+      
+      // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
+      assignmentInfo: {
+        role: jobRole,
+        assignedRole: assignment.role,
+        assignedTime: assignment.timeSlot,
+        assignedDate: assignedDate,
+        postingId: postingId,
+        managerId: managerId,
+        type: 'staff' as const,
+      },
+      
+      // 기존 근무 관련 필드 (호환성 유지)
+      role: jobRole,
+      assignedTime: assignment.timeSlot,
+      status: 'not_started' as const,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      createdBy: managerId,
+    };
+
+    // 🔍 Firebase Security Rules 검증을 위한 데이터 구조 로깅
+    logger.info('WorkLog 데이터 구조 검증:', {
+      component: 'createWorkLogsForConfirmedStaff',
+      hasRequiredFields: {
+        staffId: !!workLogData.staffId,
+        eventId: !!workLogData.eventId, 
+        date: !!workLogData.date,
+        staffInfo: !!workLogData.staffInfo,
+        assignmentInfo: !!workLogData.assignmentInfo
+      },
+      staffInfoKeys: workLogData.staffInfo ? Object.keys(workLogData.staffInfo) : [],
+      assignmentInfoKeys: workLogData.assignmentInfo ? Object.keys(workLogData.assignmentInfo) : []
+    });
+
+    // WorkLog 문서 생성
+    await setDoc(doc(db, 'workLogs', workLogId), workLogData);
+    
+    logger.info('✅ WorkLog 직접 생성 완료', {
+      component: 'createWorkLogsForConfirmedStaff',
+      workLogId,
+      staffInfo_userId: workLogData.staffInfo?.userId,
+      assignmentInfo_role: workLogData.assignmentInfo?.role,
+      assignmentInfo_postingId: workLogData.assignmentInfo?.postingId
+    });
+
+  } catch (error) {
+    // 🔍 더 자세한 에러 정보 로깅
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isFirebaseError = errorMessage.includes('PERMISSION_DENIED') || 
+                          errorMessage.includes('permission-denied') ||
+                          errorMessage.includes('Missing or insufficient permissions');
+    
+    logger.error('❌ WorkLog 직접 생성 실패:', 
+      error instanceof Error ? error : new Error(String(error)), 
+      { 
+        component: 'createWorkLogsForConfirmedStaff',
+        isFirebasePermissionError: isFirebaseError,
+        errorDetails: {
+          workLogId: `${postingId}_${staffId}_${assignedDate}`,
+          attemptedStaffId: staffId,
+          attemptedPostingId: postingId,
+          attemptedDate: assignedDate
+        }
+      }
+    );
+
+    // Firebase 권한 오류인 경우 특별한 메시지 표시
+    if (isFirebaseError) {
+      logger.warn('🚨 Firebase Security Rules 위반 의심', {
+        component: 'createWorkLogsForConfirmedStaff',
+        suggestion: 'hasValidRole() 함수 또는 필수 필드 검증 실패 가능성'
+      });
+    }
+    
+    throw error;
+  }
+};
 
 /**
  * 지원자 확정/취소 액션을 관리하는 Custom Hook
@@ -30,103 +163,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
   
   // canEdit 값 확인
 
-  /**
-   * WorkLog 사전 생성 함수 (스태프 확정 시 모든 근무일에 대해 생성)
-   */
-  const createWorkLogsForConfirmedStaff = useCallback(async (
-    staffName: string, 
-    eventId: string, 
-    assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[]  // ✅ assignment와 staffDocId 배열
-  ) => {
-    try {
-      for (const { assignment, staffDocId } of assignmentsWithStaffIds) {
-        const { dates, timeSlot, role } = assignment;
-        
-        for (const date of dates) {
-          if (!date || date.trim() === '') continue;
-          
-          // WorkLog ID 패턴: eventId_staffDocId_date (staffDocId에 이미 _숫자 포함)
-          const workLogId = `${eventId}_${staffDocId}_${date}`;
-          const workLogRef = doc(db, 'workLogs', workLogId);
-          
-          // 이미 존재하는지 확인
-          const existingDoc = await getDoc(workLogRef);
-          if (existingDoc.exists()) {
-            continue;
-          }
-          
-          // 시간 문자열을 Timestamp로 변환
-          let scheduledStartTime: Timestamp | null = null;
-          let scheduledEndTime: Timestamp | null = null;
-          
-          if (timeSlot && timeSlot.includes('~')) {
-            const [startTime, endTime] = timeSlot.split('~');
-            const baseDate = new Date(`${date}T00:00:00`);
-            
-            if (startTime && startTime.trim()) {
-              const timeParts = startTime.split(':');
-              if (timeParts.length >= 2) {
-                const hours = parseInt(timeParts[0] || '0', 10);
-                const minutes = parseInt(timeParts[1] || '0', 10);
-                if (!isNaN(hours) && !isNaN(minutes)) {
-                  const startDate = new Date(baseDate);
-                  startDate.setHours(hours, minutes, 0, 0);
-                  scheduledStartTime = Timestamp.fromDate(startDate);
-                }
-              }
-            }
-            
-            if (endTime && endTime.trim()) {
-              const timeParts = endTime.split(':');
-              if (timeParts.length >= 2) {
-                const hours = parseInt(timeParts[0] || '0', 10);
-                const minutes = parseInt(timeParts[1] || '0', 10);
-                if (!isNaN(hours) && !isNaN(minutes)) {
-                  const endDate = new Date(baseDate);
-                  endDate.setHours(hours, minutes, 0, 0);
-                
-                  // 종료 시간이 시작 시간보다 이전이면 다음날로 처리
-                  if (scheduledStartTime && endDate.getTime() <= scheduledStartTime.toDate().getTime()) {
-                    endDate.setDate(endDate.getDate() + 1);
-                  }
-                
-                  scheduledEndTime = Timestamp.fromDate(endDate);
-                }
-              }
-            }
-          }
-          
-          // WorkLog 데이터 생성
-          const workLogData = {
-            id: workLogId,
-            staffId: staffDocId,  // ✅ staffDocId 사용 (assignmentIndex 포함)
-            staffName,
-            eventId,
-            date,
-            role: role || '',
-            type: 'schedule',
-            status: 'scheduled',
-            scheduledStartTime,
-            scheduledEndTime,
-            actualStartTime: null,
-            actualEndTime: null,
-            assignedTime: timeSlot || '',
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-            createdBy: 'system'
-          };
-          
-          // Firestore에 WorkLog 생성
-          await setDoc(workLogRef, workLogData);
-        }
-      }
-    } catch (error) {
-      logger.error('WorkLog 사전 생성 중 오류:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'useApplicantActions'
-      });
-      throw error; // 상위에서 처리할 수 있도록 에러 전파
-    }
-  }, []);
 
   /**
    * 지원자를 확정하는 함수
@@ -230,9 +266,12 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // 각 assignment마다 별도의 스태프 문서 생성 (다중 날짜/시간대 지원)
       const assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[] = []; // ✅ staffDocId 수집용 배열
       
-      if (currentUser && assignments.length > 0) {
+      if (assignments.length > 0) {
+        logger.info('🚀 [확정] WorkLog 생성 시작', {
+          component: 'useApplicantActions'
+        });
         
-        // 각 assignment의 각 날짜에 대해 개별적으로 promoteToStaff 호출
+        // 각 assignment의 각 날짜에 대해 개별적으로 WorkLog 생성
         let assignmentIndex = 0;
         for (let i = 0; i < assignments.length; i++) {
           const assignment = assignments[i];
@@ -262,53 +301,47 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
             
           
             try {
-              await promoteToStaff(
-                staffDocId, // 고유한 문서 ID 사용
-                applicant.applicantName, 
-                jobRole, 
-                jobPosting.id, 
-                currentUser.uid,
-                assignment?.role || '',      // assignedRole - 지원자에서 확정된 역할
-                assignment?.timeSlot || '',  // assignedTime - 지원자에서 확정된 시간
-                applicant.email || '', // email 정보
-                applicant.phone || '',  // phone 정보
-                finalAssignedDate, // assignedDate - 지원자에서 확정된 날짜 (기본값 포함)
-                applicant.applicantId // 실제 사용자 ID
+              // 🚀 WorkLog 직접 생성 (promoteToStaff 대신)
+              await createWorkLogsForConfirmedStaff(
+                staffDocId,
+                applicant.applicantName,
+                applicant.applicantId,
+                jobRole,
+                assignment,
+                finalAssignedDate,
+                jobPosting.id,
+                currentUser?.uid || 'system',
+                applicant.email || '',
+                applicant.phone || ''
               );
               
               // ✅ WorkLog 생성용으로 assignment와 staffDocId 저장
               assignmentsWithStaffIds.push({ assignment, staffDocId });
-            } catch (promoteError) {
-              logger.error(`❌ promoteToStaff 오류 ${assignmentIndex + 1}:`, 
-                promoteError instanceof Error ? promoteError : new Error(String(promoteError)), 
+              
+              logger.info(`✅ WorkLog 생성 성공: ${staffDocId} for date ${finalAssignedDate}`, {
+                component: 'useApplicantActions'
+              });
+              
+            } catch (workLogError) {
+              logger.error(`❌ WorkLog 생성 오류 ${assignmentIndex + 1}:`, 
+                workLogError instanceof Error ? workLogError : new Error(String(workLogError)), 
                 { component: 'useApplicantActions' }
               );
-              // 개별 promoteToStaff 실패해도 전체 프로세스는 계속 진행
+              // 개별 WorkLog 생성 실패해도 전체 프로세스는 계속 진행
             }
             
+            // 🔧 각 날짜마다 assignmentIndex 증가 (중복 ID 방지)
             assignmentIndex++;
           }
         }
         
       }
 
-      // 🚀 스태프 확정 시 WorkLog 일괄 생성 (Option 2 구현)
-
-      try {
-        await createWorkLogsForConfirmedStaff(
-          applicant.applicantName,
-          jobPosting.id,
-          assignmentsWithStaffIds  // ✅ assignment와 staffDocId 배열 전달
-        );
-      } catch (workLogError) {
-        logger.error('WorkLog 일괄 생성 중 오류 (확정은 성공):', workLogError instanceof Error ? workLogError : new Error(String(workLogError)), {
-          component: 'useApplicantActions'
-        });
-        // WorkLog 생성 실패해도 확정은 성공했으므로 계속 진행
-      }
+      // 🚀 WorkLog 직접 생성 완료
+      // assignmentsWithStaffIds는 이미 createWorkLogsForConfirmedStaff 호출 시 WorkLog가 생성됨
       
       const totalAssignments = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
-      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 사전 생성 완료)`);
+      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 자동 생성 완료)`);
       
       // 자동 마감 로직 체크
       await checkAutoCloseJobPosting(jobPostingRef);
@@ -648,21 +681,10 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
   const deleteStaffDocuments = async (applicantId: string, postingId: string) => {
     try {
       
-      // persons 컬렉션에서 해당 지원자와 관련된 모든 문서 찾기
-      const staffQuery = query(
-        collection(db, 'persons'), 
-        where('userId', '==', applicantId),
-        where('postingId', '==', postingId)
-      );
-      
-      const staffSnapshot = await getDocs(staffQuery);
-      
-      // 각 스태프 문서 개별 삭제
-      const deletePromises = staffSnapshot.docs.map(async (staffDoc) => {
-        return deleteDoc(doc(db, 'persons', staffDoc.id));
+      // 🚫 persons 컬렉션 삭제 로직 제거 (WorkLog 통합으로 인해 불필요)
+      logger.info(`persons 삭제 스킵 (WorkLog 통합): applicantId=${applicantId}, postingId=${postingId}`, { 
+        component: 'useApplicantActions'
       });
-      
-      await Promise.all(deletePromises);
     } catch (err) {
       logger.error('staff 컬렉션 자동 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
         component: 'useApplicantActions' 

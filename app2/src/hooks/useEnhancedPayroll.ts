@@ -523,7 +523,7 @@ export const useEnhancedPayroll = ({
             scheduledEndTime,
             actualStartTime: null,
             actualEndTime: null,
-            status: 'scheduled',
+            status: 'not_started',
             isVirtual: true,
             assignedTime: timeSlot,
             displayKey: `${staff.userId}_${staff.role}` // 같은 역할은 한 행으로 합쳐짐

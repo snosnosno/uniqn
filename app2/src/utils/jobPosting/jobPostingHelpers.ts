@@ -128,7 +128,13 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
     ...(formData.district && { district: formData.district }),
     ...(formData.salaryType && { salaryType: formData.salaryType }),
     ...(formData.salaryAmount && { salaryAmount: formData.salaryAmount }),
-    ...(formData.benefits && Object.keys(formData.benefits).length > 0 && { benefits: formData.benefits }),
+    // benefits 객체에서 undefined, null, 빈 문자열 값을 제거하고 유효한 필드만 저장
+    ...(formData.benefits && (() => {
+      const cleanedBenefits = Object.entries(formData.benefits)
+        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+      return Object.keys(cleanedBenefits).length > 0 ? { benefits: cleanedBenefits } : {};
+    })()),
     // 역할별 급여 정보 추가
     ...(formData.useRoleSalary && { useRoleSalary: formData.useRoleSalary }),
     ...(formData.roleSalaries && Object.keys(formData.roleSalaries).length > 0 && { roleSalaries: formData.roleSalaries })

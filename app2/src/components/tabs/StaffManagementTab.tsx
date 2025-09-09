@@ -25,7 +25,6 @@ import { useVirtualization } from '../../hooks/useVirtualization';
 import { BulkOperationService } from '../../services/BulkOperationService';
 import BulkActionsModal from '../BulkActionsModal';
 import BulkTimeEditModal from '../BulkTimeEditModal';
-import PerformanceMonitor from '../PerformanceMonitor';
 import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
 import StaffDateGroup from '../StaffDateGroup';
 import StaffDateGroupMobile from '../StaffDateGroupMobile';
@@ -65,43 +64,58 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   } = useUnifiedData();
 
 
-  // 스태프 데이터 변환 및 메모이제이션
+  // 🚀 WorkLog.staffInfo 기반 스태프 데이터 변환 및 메모이제이션
   const staffData = useMemo(() => {
-    if (!state.staff || state.staff.size === 0) return [];
+    if (!state.workLogs || state.workLogs.size === 0) return [];
     
-    return Array.from(state.staff.values()).map(staff => {
-      return {
-        id: staff.staffId,
-        userId: staff.userId || staff.staffId, // userId 추가 (하위 호환성)
-        staffId: staff.staffId,
-        name: staff.name || '이름 미정',
-        role: staff.role || '',
-        // 연락처 정보
-        phone: staff.phone,
-        email: staff.email,
-        // 지원자 확정 정보
-        assignedRole: staff.assignedRole || '',
-        assignedTime: staff.assignedTime || '',
-        assignedDate: staff.assignedDate || '',
-        // 원래 지원 정보
-        postingId: staff.postingId,
-        postingTitle: '', // TODO: jobPosting 정보와 연결 필요
-        // 추가 개인정보
-        gender: staff.gender,
-        age: staff.age,
-        experience: staff.experience,
-        nationality: staff.nationality,
-        region: staff.region,
-        history: staff.history,
-        notes: staff.notes,
-        // 은행 정보
-        bankName: staff.bankName,
-        bankAccount: staff.bankAccount,
-        // 기타
-        status: 'active' // 기본값
-      };
+    // WorkLog에서 고유한 스태프 정보 추출 (중복 제거)
+    const staffMap = new Map();
+    
+    Array.from(state.workLogs.values()).forEach(workLog => {
+      const staffInfo = workLog.staffInfo;
+      const assignmentInfo = workLog.assignmentInfo;
+      
+      if (!staffInfo || !assignmentInfo) return;
+      
+      const staffId = workLog.staffId;
+      
+      // 이미 존재하는 스태프라면 추가 정보만 업데이트
+      if (!staffMap.has(staffId)) {
+        staffMap.set(staffId, {
+          id: staffId,
+          userId: staffInfo.userId || staffId,
+          staffId: staffId,
+          name: staffInfo.name || '이름 미정',
+          role: assignmentInfo.role || '',
+          // 연락처 정보 (WorkLog.staffInfo에서)
+          phone: staffInfo.phone,
+          email: staffInfo.email,
+          // 지원자 확정 정보 (WorkLog.assignmentInfo에서)
+          assignedRole: assignmentInfo.assignedRole || assignmentInfo.role || '',
+          assignedTime: assignmentInfo.assignedTime || '',
+          assignedDate: assignmentInfo.assignedDate || workLog.date || '',
+          // 원래 지원 정보
+          postingId: assignmentInfo.postingId,
+          postingTitle: '', // TODO: jobPosting 정보와 연결 필요
+          // 추가 개인정보 (WorkLog.staffInfo에서)
+          gender: staffInfo.gender,
+          age: staffInfo.age,
+          experience: staffInfo.experience,
+          nationality: staffInfo.nationality,
+          region: staffInfo.region,
+          history: undefined, // WorkLog.staffInfo에 없음
+          notes: undefined, // WorkLog.staffInfo에 없음
+          // 은행 정보 (WorkLog.staffInfo에서)
+          bankName: staffInfo.bankName,
+          bankAccount: staffInfo.accountNumber,
+          // 기타
+          status: staffInfo.isActive ? 'active' : 'inactive'
+        });
+      }
     });
-  }, [state.staff]);
+    
+    return Array.from(staffMap.values());
+  }, [state.workLogs]);
 
   // 🎯 고유한 스태프 수 계산 (중복 제거)
   const uniqueStaffCount = useMemo(() => {
@@ -365,7 +379,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     if (workLog) {
       // attendanceRecord 구조로 반환 (StaffRow가 기대하는 형태)
       return {
-        status: workLog.status === 'scheduled' ? 'not_started' : workLog.status,
+        status: workLog.status,
         workLog: workLog,
         workLogId: workLog.id
       };
@@ -623,19 +637,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         });
       });
       
-      // 4. persons 문서 삭제 (staffId 필드로 수정)
-      const personsQuery = query(
-        collection(db, 'persons'),
-        where('staffId', '==', staffId),
-        where('postingId', '==', jobPosting?.id),
-        where('assignedDate', '==', date)
-      );
-      
-      const personsSnapshot = await getDocs(personsQuery);
-      for (const personDoc of personsSnapshot.docs) {
-        await deleteDoc(personDoc.ref);
-        logger.info(`persons 문서 삭제: ${personDoc.id}`, { component: 'StaffManagementTab' });
-      }
+      // 4. 🚫 persons 문서 삭제 비활성화 (WorkLog 통합으로 인해 불필요)
+      // persons 정보는 이제 WorkLog의 staffInfo에 포함되어 관리됩니다.
+      logger.info(`persons 삭제 스킵 (WorkLog 통합): staffId=${staffId}, date=${date}`, { 
+        component: 'StaffManagementTab'
+      });
       
       // 5. WorkLog 삭제 (scheduled/not_started만)
       const workLogQuery = query(
@@ -799,21 +805,14 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             }
           });
           
-          // persons, workLogs, attendanceRecords 삭제
+          // workLogs, attendanceRecords 삭제 (persons는 WorkLog 통합으로 불필요)
           const deletionPromises = [];
           
-          // persons 삭제
-          const personsQuery = query(
-            collection(db, 'persons'),
-            where('staffId', '==', staffId),
-            where('postingId', '==', jobPosting?.id),
-            where('assignedDate', '==', date)
-          );
-          deletionPromises.push(
-            getDocs(personsQuery).then(snapshot => {
-              return Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
-            })
-          );
+          // 🚫 persons 삭제 비활성화 (WorkLog 통합으로 인해 불필요)
+          // persons 정보는 이제 WorkLog의 staffInfo에 포함되어 관리됩니다.
+          logger.info(`persons 삭제 스킵 (일괄 삭제): staffId=${staffId}, date=${date}`, { 
+            component: 'StaffManagementTab'
+          });
           
           // WorkLog 삭제 (scheduled/not_started만)
           const workLogQuery = query(
@@ -955,13 +954,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   return (
     <>
-      <PerformanceMonitor
-        componentName="StaffManagementTab"
-        isVirtualized={mobileVirtualization.shouldVirtualize || desktopVirtualization.shouldVirtualize}
-        totalItems={filteredStaffCount}
-        visibleItems={mobileVirtualization.shouldVirtualize ? mobileVirtualization.maxVisibleItems : desktopVirtualization.shouldVirtualize ? desktopVirtualization.maxVisibleItems : filteredStaffCount}
-      >
-        <div className="p-1 sm:p-4">
+      <div className="p-1 sm:p-4">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
           
@@ -1175,7 +1168,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           </div>
         )}
         </div>
-      </PerformanceMonitor>
 
 
       {/* QR 코드 생성 모달 */}

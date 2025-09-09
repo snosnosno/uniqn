@@ -124,7 +124,7 @@ export interface SimpleWorkLogInput {
   role: string;
   date: string;
   timeSlot?: string | null;  // "HH:mm-HH:mm" 또는 "HH:mm" 형식
-  status?: 'scheduled' | 'checked_in' | 'completed' | 'absent';
+  status?: 'not_started' | 'checked_in' | 'completed' | 'absent';
 }
 
 /**
@@ -136,7 +136,7 @@ export interface SimpleWorkLogInput {
  * - 불필요한 변환 로직 제거
  */
 export const createWorkLog = (input: SimpleWorkLogInput) => {
-  const { eventId, staffId, staffName, role, date, timeSlot, status = 'scheduled' } = input;
+  const { eventId, staffId, staffName, role, date, timeSlot, status = 'not_started' } = input;
   const now = Timestamp.now();
   
   // 시간 파싱 및 변환

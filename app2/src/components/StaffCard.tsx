@@ -83,11 +83,25 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
     
     const actualStaffId = staff.id.replace(/_\d+$/, '');
     
-    // 🚀 실제 WorkLog ID 사용 (virtual_ 프리픽스 제거)
-    const realWorkLogId = eventId ? createWorkLogId(eventId, actualStaffId, dateString) : `${actualStaffId}_${dateString}`;
+    // getStaffAttendanceStatus 먼저 호출 (데스크톱 뷰와 동일하게 staff.id 사용)
+    const attendanceRecord = getStaffAttendanceStatus(staff.id, dateString);
     
-    // getStaffAttendanceStatus에 실제 WorkLog ID 전달
-    const attendanceRecord = getStaffAttendanceStatus(actualStaffId, dateString);
+    // 🚀 실제 WorkLog ID 사용 (데스크톱 뷰와 동일한 로직)
+    let realWorkLogId;
+    if (eventId) {
+      // attendanceRecord가 있으면 실제 Firebase의 workLogId 사용
+      if (attendanceRecord && attendanceRecord.workLogId) {
+        realWorkLogId = attendanceRecord.workLogId;
+      } else {
+        // attendanceRecord가 없으면 eventId를 포함한 형식으로 생성 (조건부 _0_ 패턴)
+        const hasNumberSuffix = /_\d+$/.test(actualStaffId);
+        realWorkLogId = hasNumberSuffix ? 
+          `${eventId}_${actualStaffId}_${dateString}` : 
+          `${eventId}_${actualStaffId}_0_${dateString}`;
+      }
+    } else {
+      realWorkLogId = `${actualStaffId}_${dateString}`;
+    }
     const workLogRecord = attendanceRecords.find(r => r.staffId === staff.id);
     
     return {

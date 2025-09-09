@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 import { DashboardCard } from '../../components/DashboardCard';
+import { useUnifiedData } from '../../hooks/useUnifiedData';
+import { WorkLog } from '../../types/unifiedData';
 import { auth, db } from '../../firebase'; // Import auth and db
 
 interface DashboardStats {
@@ -27,6 +29,10 @@ const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 🚀 WorkLog 데이터 가져오기 (persons 컬렉션 통합)
+  const { state } = useUnifiedData();
+  const workLogs = Array.from(state.workLogs.values());
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -69,18 +75,26 @@ const DashboardPage: React.FC = () => {
           logger.warn('events 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
         }
 
-        // 전체 딜러 수 - persons 컬렉션 사용
+        // 🚀 전체 딜러 수 - WorkLog에서 계산 (persons 컬렉션 통합)
         try {
-          const dealersQuery = query(
-            collection(db, 'persons'),
-            where('type', 'in', ['staff', 'both']),
-            where('role', '==', 'dealer'),
-            where('isActive', '==', true)
-          );
-          dealersSnapshot = await getDocs(dealersQuery);
-          totalDealersCount = dealersSnapshot.size;
+          if (workLogs) {
+            // WorkLog에서 고유한 딜러들 추출
+            const dealerIds = new Set<string>();
+            
+            workLogs.forEach((workLog: WorkLog) => {
+              const staffInfo = workLog.staffInfo;
+              if (staffInfo?.isActive !== false && // 활성 상태 (기본값 true)
+                  (staffInfo?.jobRole?.includes('dealer') || // jobRole에 dealer 포함
+                   workLog.role === 'dealer' || // 기존 role 필드가 dealer
+                   workLog.role === '딜러')) { // 한글 딜러
+                dealerIds.add(staffInfo?.userId || workLog.staffId);
+              }
+            });
+            
+            totalDealersCount = dealerIds.size;
+          }
         } catch (err) {
-          logger.warn('persons 컬렉션 권한 오류', { component: 'DashboardPage', error: String(err) });
+          logger.warn('WorkLog에서 딜러 수 계산 오류', { component: 'DashboardPage', error: String(err) });
         }
 
         // 오늘 체크인한 스태프 수
@@ -164,7 +178,7 @@ const DashboardPage: React.FC = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [workLogs]); // 🚀 workLogs 의존성 추가
 
   if (loading) {
     return <div className="p-6 text-center font-semibold">{t('dashboard.loading')}</div>;

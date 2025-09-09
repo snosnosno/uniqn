@@ -17,7 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { formatTime } from '../../utils/dateUtils';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { useScheduleData } from '../../hooks/useUnifiedData';
+import useScheduleData from '../../hooks/useScheduleData';
 import { CalendarView, ScheduleEvent, ATTENDANCE_STATUS_COLORS } from '../../types/schedule';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import { prepareWorkLogForCreate, prepareWorkLogForUpdate } from '../../utils/workLogMapper';
@@ -30,6 +30,7 @@ import ScheduleCalendar from './components/ScheduleCalendar';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
 import ScheduleFilters from './components/ScheduleFilters';
 import ScheduleStats from './components/ScheduleStats';
+import ConfirmModal from './components/ConfirmModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Firebase 함수
@@ -67,6 +68,19 @@ const MySchedulePage: React.FC = () => {
   // 모달 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    isDangerous: false
+  });
   
   // 데이터 가져오기 (현재 사용자의 스케줄만)
   const {
@@ -77,37 +91,11 @@ const MySchedulePage: React.FC = () => {
     filters,
     setFilters,
     refreshData
-  } = useScheduleData(currentUser?.uid ? {
-    userId: currentUser.uid
-  } : undefined);
+  } = useScheduleData();
 
   // VirtualListItem은 핸들러들이 정의된 후에 정의됩니다
   
-  // 스케줄 데이터 디버깅
-  useEffect(() => {
-    // logger.debug('\n🎯 ========== MySchedulePage 렌더링 ==========', { component: 'index' });
-    // logger.debug('현재 스케줄 수:', { component: 'index', data: schedules.length });
-    // logger.debug('로딩 상태:', { component: 'index', data: loading });
-    // logger.debug('에러:', { component: 'index', data: error });
-    // logger.debug('필터:', { component: 'index', data: filters });
-    // logger.debug('통계:', { component: 'index', data: stats });
-    // logger.debug('사용자 ID:', { component: 'index', data: currentUser?.uid });
-    
-    if (schedules.length > 0) {
-      // logger.debug('스케줄 샘플:', { component: 'index' });
-      schedules.slice(0, 3).forEach((schedule, index) => {
-        // logger.debug(`  [${index}]`, { component: 'index', data: {
-        //   id: schedule.id,
-        //   date: schedule.date,
-        //   eventName: schedule.eventName,
-        //   type: schedule.type,
-        //   status: schedule.status,
-        //   sourceCollection: schedule.sourceCollection
-        // } });
-      });
-    }
-    // logger.debug('========================================\n', { component: 'index' });
-  }, [schedules, loading, error, filters, stats, currentUser?.uid]);
+  // 개발 완료 후 디버깅 코드 제거됨
 
   // 이벤트 클릭 핸들러 (메모이제이션)
   const handleEventClick = useCallback((event: ScheduleEvent) => {
@@ -128,12 +116,11 @@ const MySchedulePage: React.FC = () => {
       // workLogs 업데이트 - 통합 시스템 사용
       const updateData = prepareWorkLogForUpdate({
         actualEndTime: Timestamp.now(),
-        status: 'completed' // checked_out 대신 completed 사용
+        status: 'checked_out' // AttendanceStatus 타입과 일치
       });
       await updateDoc(doc(db, 'workLogs', schedule.workLogId), updateData);
 
       showSuccess('퇴근 처리되었습니다.');
-      // logger.debug('✅ 퇴근 처리 완료:', { component: 'index', data: scheduleId });
     } catch (error) {
       logger.error('❌ 퇴근 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('퇴근 처리 중 오류가 발생했습니다.');
@@ -149,29 +136,10 @@ const MySchedulePage: React.FC = () => {
         throw new Error('지원 정보를 찾을 수 없습니다.');
       }
 
-      // logger.debug('🔄 MySchedulePage 지원 취소 시작:', {
-      //   component: 'MySchedulePage', 
-      //   data: {
-      //     scheduleId,
-      //     applicationId: schedule.applicationId,
-      //     eventName: schedule.eventName,
-      //     type: schedule.type,
-      //     status: schedule.status
-      //   }
-      // });
-
       // ApplicationHistory 서비스를 통한 지원 취소 (데이터 일관성 보장)
       await ApplicationHistoryService.cancelApplication(schedule.applicationId);
 
       showSuccess('지원이 취소되었습니다.');
-      // logger.debug('✅ MySchedulePage 지원 취소 완료:', { 
-      //   component: 'MySchedulePage', 
-      //   data: { 
-      //     scheduleId, 
-      //     applicationId: schedule.applicationId,
-      //     eventName: schedule.eventName
-      //   } 
-      // });
       
       // 🔄 자동 새로고침으로 즉시 UI 업데이트
       refreshData();
@@ -196,13 +164,6 @@ const MySchedulePage: React.FC = () => {
         throw new Error('스케줄 정보를 찾을 수 없습니다.');
       }
 
-      // logger.debug('🗑️ 일정 삭제 시작:', { component: 'index', data: {
-      //   scheduleId,
-      //   eventName: schedule.eventName,
-      //   type: schedule.type,
-      //   status: schedule.status,
-      //   sourceCollection: schedule.sourceCollection
-      // } });
 
       // 삭제 가능한 일정인지 확인 (완료된 일정은 삭제 불가)
       if (schedule.type === 'completed') {
@@ -216,18 +177,33 @@ const MySchedulePage: React.FC = () => {
         return;
       }
 
-      // 사용자 확인
-      const confirmed = window.confirm(`"${schedule.eventName}" 일정을 삭제하시겠습니까?\n\n삭제된 일정은 복구할 수 없습니다.`);
-      if (!confirmed) {
-        // logger.debug('ℹ️ 사용자가 삭제를 취소했습니다.', { component: 'index' });
-        return;
-      }
+      // 사용자 확인 (커스텀 모달 사용)
+      const confirmDeletion = () => {
+        performDelete(schedule);
+      };
+
+      setConfirmModal({
+        isOpen: true,
+        title: '일정 삭제',
+        message: `"${schedule.eventName}" 일정을 삭제하시겠습니까?\n\n삭제된 일정은 복구할 수 없습니다.`,
+        onConfirm: confirmDeletion,
+        isDangerous: true
+      });
+
+    } catch (error) {
+      logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
+      showError('일정 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 실제 삭제 수행 함수
+  const performDelete = async (schedule: ScheduleEvent) => {
+    try {
 
       // 소스 컬렉션에 따른 삭제 처리
       if (schedule.sourceCollection === 'applications' && schedule.applicationId) {
         // applications: 완전 삭제
         await deleteDoc(doc(db, 'applications', schedule.applicationId));
-        // logger.debug('✅ applications 문서 삭제 완료:', { component: 'index', data: schedule.applicationId });
         
       } else if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
         // workLogs: 이력 보존을 위해 상태만 변경
@@ -236,12 +212,10 @@ const MySchedulePage: React.FC = () => {
           cancelledAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         });
-        // logger.debug('✅ workLogs 상태 변경 완료:', { component: 'index', data: schedule.workLogId });
         
       } else if (schedule.sourceCollection === 'staff' && schedule.sourceId) {
         // staff: 해당 일정 정보만 제거 (전체 문서는 보존)
         // 실제 구현은 staff 문서 구조에 따라 달라질 수 있음
-        // logger.debug('⚠️ staff 컬렉션 삭제는 추가 구현이 필요합니다:', { component: 'index', data: schedule.sourceId });
         showError('직원 일정 삭제는 관리자에게 문의하세요.');
         return;
         
@@ -250,11 +224,6 @@ const MySchedulePage: React.FC = () => {
       }
 
       showSuccess('일정이 삭제되었습니다.');
-      // logger.debug('✅ 일정 삭제 완료:', { component: 'index', data: {
-      //   scheduleId,
-      //   eventName: schedule.eventName,
-      //   sourceCollection: schedule.sourceCollection
-      // } });
 
     } catch (error) {
       logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
@@ -262,13 +231,21 @@ const MySchedulePage: React.FC = () => {
     }
   };
 
-  // 가상화된 리스트 아이템 컴포넌트 (React.memo로 최적화)
+  // 가상화된 리스트 높이 계산 (메모이제이션)
+  const listHeight = useMemo(() => {
+    const viewportHeight = window.innerHeight * 0.6;
+    const contentHeight = schedules.length * 150;
+    return Math.min(contentHeight, viewportHeight, 600); // 최대 600px
+  }, [schedules.length]);
+
+  // 가상화된 리스트 아이템 컴포넌트 (최적화된 의존성)
   const VirtualListItem = useMemo(() => 
     React.memo(({ index, style }: { index: number; style: React.CSSProperties }) => {
       const schedule = schedules[index];
       if (!schedule) return null;
       
-      const isToday = schedule.date === getTodayString();
+      const todayString = getTodayString();
+      const isToday = schedule.date === todayString;
       const statusColorClass = ATTENDANCE_STATUS_COLORS[schedule.status];
       
       return (
@@ -351,7 +328,7 @@ const MySchedulePage: React.FC = () => {
         </div>
       );
     }), 
-  [schedules, getTodayString, handleEventClick, handleCheckOut]);
+  [handleEventClick, handleCheckOut]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -448,9 +425,9 @@ const MySchedulePage: React.FC = () => {
               <p className="text-gray-600">등록된 일정이 없습니다.</p>
             </div>
           ) : (
-            <div style={{ height: '60vh', minHeight: '400px' }}>
+            <div style={{ height: `${listHeight}px`, minHeight: '400px' }}>
               <List
-                height={Math.min(schedules.length * 150, window.innerHeight * 0.6)}
+                height={listHeight}
                 width="100%"
                 itemCount={schedules.length}
                 itemSize={150}
@@ -482,6 +459,16 @@ const MySchedulePage: React.FC = () => {
         onCheckOut={handleCheckOut}
         onCancel={handleCancelApplication}
         onDelete={handleDeleteSchedule}
+      />
+
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        isDangerous={confirmModal.isDangerous || false}
       />
 
     </div>

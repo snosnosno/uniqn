@@ -189,36 +189,13 @@ export const useJobPostingStore = create<JobPostingState>()(
         },
         
         refreshStaff: async () => {
-          // persons 컬렉션에서 스태프 데이터 실시간 구독 설정
-          const staffQuery = query(
-            collection(db, 'persons'),
-            where('type', 'in', ['staff', 'both']),
-            orderBy('name')
-          );
+          // 🚫 persons 컬렉션 구독 비활성화 - WorkLog 통합
+          logger.info('refreshStaff 비활성화 (WorkLog 통합)', {
+            component: 'jobPostingStore'
+          });
           
-          const unsubscribeStaff = onSnapshot(
-            staffQuery,
-            (snapshot) => {
-              const staffList = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-              } as Staff));
-              
-              set({ staff: staffList });
-            },
-            (error) => {
-              logger.error('스태프 데이터 로딩 오류:', error instanceof Error ? error : new Error(String(error)), { 
-                component: 'jobPostingStore' 
-              });
-            }
-          );
-          
-          set((state) => ({
-            unsubscribers: {
-              ...state.unsubscribers,
-              staff: unsubscribeStaff
-            }
-          }));
+          // 빈 배열로 설정
+          set({ staff: [] });
         },
         
         cleanup: () => {

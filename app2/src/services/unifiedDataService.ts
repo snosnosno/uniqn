@@ -149,18 +149,50 @@ const transformWorkLogData = (doc: DocumentData): WorkLog => ({
   staffName: doc.staffName || '',
   eventId: doc.eventId || '',
   date: doc.date || '',
+  
+  // 🚀 새로 추가된 필드들
+  staffInfo: doc.staffInfo || {
+    userId: doc.userId || '',
+    name: doc.staffName || '',
+    email: '',
+    phone: '',
+    userRole: 'staff',
+    jobRole: [],
+    isActive: true,
+    bankName: '',
+    accountNumber: '',
+    gender: '',
+    age: undefined,
+    experience: '',
+    nationality: '',
+    region: ''
+  },
+  
+  assignmentInfo: doc.assignmentInfo || {
+    role: doc.role || '',
+    assignedRole: doc.assignedRole || doc.role || '',
+    assignedTime: doc.assignedTime || '',
+    assignedDate: doc.assignedDate || doc.date || '',
+    postingId: doc.eventId || '',
+    managerId: '',
+    type: 'staff'
+  },
+  
+  // 기존 필드들
   scheduledStartTime: doc.scheduledStartTime,
   scheduledEndTime: doc.scheduledEndTime,
   actualStartTime: doc.actualStartTime,
   actualEndTime: doc.actualEndTime,
   role: doc.role,
+  assignedTime: doc.assignedTime,
   hoursWorked: doc.hoursWorked,
   overtimeHours: doc.overtimeHours,
   earlyLeaveHours: doc.earlyLeaveHours,
   notes: doc.notes,
-  status: doc.status === 'scheduled' ? 'not_started' : (doc.status || 'not_started'),
+  status: doc.status || 'not_started',
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
+  createdBy: doc.createdBy
 });
 
 const transformAttendanceData = (doc: DocumentData): AttendanceRecord => ({
@@ -407,44 +439,20 @@ export class UnifiedDataService {
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'staff', loading: true });
 
-      // persons 컬렉션에서 staff 타입의 데이터만 가져옴
-      const staffQuery = query(
-        collection(db, 'persons'),
-        where('type', 'in', ['staff', 'both']),
-        orderBy('name', 'asc')
-      );
+      // 🚫 persons 컬렉션 비활성화 - WorkLog의 staffInfo를 사용
+      // WorkLog에서 고유한 스태프 정보를 추출하여 사용
+      
+      logger.info('Staff 구독 비활성화 (WorkLog 통합)', {
+        component: 'unifiedDataService'
+      });
 
-      this.subscriptions.staff = onSnapshot(
-        staffQuery,
-        (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
-          // Staff 데이터 업데이트 처리
-
-          const staffData: Staff[] = [];
-          snapshot.forEach((doc) => {
-            try {
-              staffData.push(transformStaffData({ id: doc.id, ...doc.data() }));
-            } catch (error) {
-              logger.warn('Staff 데이터 변환 오류', { component: 'unifiedDataService', data: { docId: doc.id, error } });
-            }
-          });
-
-          if (this.dispatcher) {
-            this.dispatcher({ type: 'SET_STAFF', data: staffData });
-            this.dispatcher({ type: 'SET_LOADING', collection: 'staff', loading: false });
-            this.dispatcher({ type: 'SET_ERROR', collection: 'staff', error: null });
-            this.dispatcher({ type: 'UPDATE_LAST_UPDATED', collection: 'staff' });
-          }
-        },
-        (error) => {
-          this.performanceTracker.incrementErrors();
-          logger.error('Staff 구독 오류', error, { component: 'unifiedDataService' });
-          if (this.dispatcher) {
-            this.dispatcher({ type: 'SET_ERROR', collection: 'staff', error: error.message });
-            this.dispatcher({ type: 'SET_LOADING', collection: 'staff', loading: false });
-          }
-        }
-      );
+      // 빈 배열로 설정하여 WorkLog 기반 데이터를 사용하도록 함
+      if (this.dispatcher) {
+        this.dispatcher({ type: 'SET_STAFF', data: [] });
+        this.dispatcher({ type: 'SET_LOADING', collection: 'staff', loading: false });
+        this.dispatcher({ type: 'SET_ERROR', collection: 'staff', error: null });
+        this.dispatcher({ type: 'UPDATE_LAST_UPDATED', collection: 'staff' });
+      }
 
       this.performanceTracker.incrementSubscriptions();
     } catch (error) {

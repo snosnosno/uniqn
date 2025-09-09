@@ -155,100 +155,23 @@ export const useStaffManagement = (
     setError(null);
 
 
-    // 실시간 구독 설정 - persons 컬렉션 사용
-    const staffQuery = query(
-      collection(db, 'persons'), 
-      where('type', 'in', ['staff', 'both']),
-      where('managerId', '==', currentUser.uid),
-      where('postingId', '==', eventId)
-    );
+    // 🚫 실시간 구독 비활성화 - persons 컬렉션 통합으로 인해 불필요
+    // WorkLog의 staffInfo에서 스태프 정보를 가져와 사용합니다.
+    
+    logger.info('useStaffManagement 구독 비활성화 (WorkLog 통합)', {
+      component: 'useStaffManagement',
+      data: { eventId }
+    });
 
-    const unsubscribe = onSnapshot(
-      staffQuery,
-      (snapshot) => {
-        
-        const staffList: StaffData[] = [];
-        
-        // 기존 데이터와 비교하여 실제로 변경된 것만 처리
-        const currentStaffMap = new Map(staffData.map(staff => [staff.id, staff]));
-        
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          const docId = doc.id;
-          
-          // 기존 데이터와 비교
-          const existingStaff = currentStaffMap.get(docId);
-          
-          // assignedDate를 문자열로 변환 (메모이제이션 적용)
-          let assignedDateString = data.assignedDate;
-          if (data.assignedDate) {
-            if (typeof data.assignedDate === 'object' && 'seconds' in data.assignedDate) {
-              const date = new Date(data.assignedDate.seconds * 1000);
-              assignedDateString = date.toISOString().split('T')[0] || '';
-            }
-            else if (typeof data.assignedDate === 'string' && data.assignedDate.startsWith('Timestamp(')) {
-              const match = data.assignedDate.match(/seconds=(\d+)/);
-              if (match?.[1]) {
-                const seconds = parseInt(match[1], 10);
-                assignedDateString = new Date(seconds * 1000).toISOString().split('T')[0] || '';
-              }
-            }
-            else if (typeof data.assignedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.assignedDate)) {
-              assignedDateString = data.assignedDate;
-            }
-          }
-          
-          // 데이터가 실제로 변경되었는지 확인
-          const hasChanged = !existingStaff ||
-            existingStaff.name !== data.name ||
-            existingStaff.assignedDate !== assignedDateString ||
-            existingStaff.assignedTime !== data.assignedTime ||
-            existingStaff.role !== (data.jobRole?.[0] || data.role);
-          
-          if (hasChanged || !existingStaff) {
-            // 변경된 경우에만 새 객체 생성
-            const staffDataItem: StaffData = {
-              id: docId,
-              userId: data.userId,
-              name: data.name,
-              email: data.email,
-              phone: data.phone,
-              role: (data.jobRole && Array.isArray(data.jobRole) ? data.jobRole[0] : data.role) as JobRole,
-              userRole: data.userRole,
-              gender: data.gender,
-              age: data.age,
-              experience: data.experience,
-              nationality: data.nationality,
-              history: data.history,
-              notes: data.notes,
-              postingId: data.postingId,
-              postingTitle: data.postingTitle || '제목 없음',
-              assignedEvents: data.assignedEvents,
-              assignedRole: data.assignedRole,
-              assignedTime: data.assignedTime,
-              assignedDate: assignedDateString
-            };
-            
-            staffList.push(staffDataItem);
-          } else {
-            // 변경되지 않은 경우 기존 객체 재사용
-            staffList.push(existingStaff);
-          }
-        });
-        
-        setStaffData(staffList);
-        setLoading(false);
-      },
-      (error) => {
-        logger.error('스태프 데이터 실시간 구독 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement' });
-        setError(t('staffListPage.fetchError'));
-        setLoading(false);
-      }
-    );
-
-    // 클린업 함수
+    // 🚫 onSnapshot 구독 비활성화 - 빈 데이터로 설정
+    // WorkLog 기반 데이터 사용을 위해 비활성화됨
+    
+    setStaffData([]);
+    setLoading(false);
+    
+    // 클린업 함수 (빈 함수로 대체)
     return () => {
-      unsubscribe();
+      // No unsubscribe needed
     };
   }, [currentUser, eventId]); // groupByDate는 데이터 구독에 영향을 주지 않으므로 제외
 
@@ -334,27 +257,17 @@ export const useStaffManagement = (
     return 'bg-gray-100 text-gray-700'; // 심야/새벽
   }, []);
 
-  // 메모이제이션된 스태프 삭제 - persons 컬렉션 사용
+  // 🚫 메모이제이션된 스태프 삭제 비활성화 - WorkLog 통합
   const deleteStaff = useCallback(async (staffId: string): Promise<void> => {
-    if (!window.confirm(t('staffManagement.deleteConfirm'))) {
-      return;
-    }
+    logger.info('deleteStaff 호출됨 (비활성화됨 - WorkLog 통합)', {
+      component: 'useStaffManagement',
+      data: { staffId }
+    });
     
-    try {
-      // Firebase에서 삭제 - persons 컬렉션 사용
-      const personDocRef = doc(db, 'persons', staffId);
-      await deleteDoc(personDocRef);
-      
-      // 로컬 상태에서 삭제
-      setStaffData(prevData => prevData.filter(staff => staff.id !== staffId));
-      
-      showSuccess(t('staffManagement.deleteSuccess'));
-      setError('');
-    } catch (error) {
-      logger.error('스태프 삭제 오류', error instanceof Error ? error : new Error(String(error)), { component: 'useStaffManagement' });
-      setError(t('staffManagement.deleteError'));
-      showError(t('staffManagement.deleteError'));
-    }
+    // 🚫 실제 삭제 로직 비활성화
+    // WorkLog 기반 시스템에서는 StaffManagementTab에서 처리됩니다.
+    
+    return Promise.resolve(); // 빈 Promise 반환
   }, [t, showSuccess, showError]);
 
   // 메모이제이션된 필터링된 스태프 데이터

@@ -1,13 +1,14 @@
 import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
-import { useCollection } from 'react-firebase-hooks/firestore';
 import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle } from '../components/Icons/ReactIconsReplacement';
 
 import ShiftGridComponent from '../components/ShiftGridComponent';
 import TimeIntervalSelector from '../components/TimeIntervalSelector';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedData } from '../hooks/useUnifiedData';
+import { WorkLog } from '../types/unifiedData';
 import { db } from '../firebase';
 import { useShiftSchedule, ShiftDealer } from '../hooks/useShiftSchedule';
 import useTables from '../hooks/useTables';
@@ -28,13 +29,10 @@ const ShiftSchedulePage: React.FC = () => {
   // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)
   const [selectedEventId] = useState<string>('default-event');
   
-  // persons 컬렉션에서 스태프 데이터 가져오기 (staff와 both 타입만)
-  const staffQuery = useMemo(() => query(
-    collection(db, 'persons'),
-    where('type', 'in', ['staff', 'both'])
-  ), []);
-  
-  const [staffSnap, staffLoading] = useCollection(staffQuery);
+  // 🚀 WorkLog에서 스태프 데이터 가져오기 (persons 컬렉션 통합)
+  const { state, loading: loadingState } = useUnifiedData();
+  const workLogs = Array.from(state.workLogs.values());
+  const workLogsLoading = loadingState.workLogs;
   const { tables, loading: tablesLoading } = useTables();
   
   // 교대 스케줄 데이터
@@ -53,11 +51,30 @@ const ShiftSchedulePage: React.FC = () => {
     checkWorkLogsExist
   } = useShiftSchedule(selectedEventId, selectedDate);
   
-  // 스태프 데이터 처리
-  const allStaff = useMemo(() => 
-    staffSnap?.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ShiftDealer[] | undefined, 
-    [staffSnap]
-  );
+  // 🚀 WorkLog에서 스태프 데이터 처리 (중복 제거)
+  const allStaff = useMemo(() => {
+    if (!workLogs) return [];
+    
+    // WorkLog에서 고유한 스태프 정보만 추출
+    const staffMap = new Map<string, ShiftDealer>();
+    
+    workLogs.forEach((workLog: WorkLog) => {
+      const staffId = workLog.staffInfo?.userId || workLog.staffId;
+      if (staffId && !staffMap.has(staffId)) {
+        staffMap.set(staffId, {
+          id: staffId,
+          name: workLog.staffInfo?.name || workLog.staffName || '이름 없음',
+          role: workLog.staffInfo?.jobRole?.[0] || workLog.role || '딜러',
+          phone: workLog.staffInfo?.phone || '',
+          email: workLog.staffInfo?.email || '',
+          isActive: workLog.staffInfo?.isActive !== false, // 기본값 true
+          type: 'staff'
+        } as ShiftDealer);
+      }
+    });
+    
+    return Array.from(staffMap.values());
+  }, [workLogs]);
   
   const availableDealers = useMemo(() =>
     (allStaff?.filter(s => Array.isArray(s.jobRole) && s.jobRole.includes('Dealer')) as ShiftDealer[] || []), 
@@ -71,7 +88,7 @@ const ShiftSchedulePage: React.FC = () => {
     return availableDealers.filter(dealer => !scheduledDealerIds.includes(dealer.id));
   }, [availableDealers, schedule]);
   
-  const loading = staffLoading || tablesLoading || scheduleLoading;
+  const loading = workLogsLoading || tablesLoading || scheduleLoading;
   
   // 근무기록 상태
   const [isGeneratingWorkLogs, setIsGeneratingWorkLogs] = useState(false);

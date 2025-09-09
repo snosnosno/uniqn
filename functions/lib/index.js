@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -530,5 +530,70 @@ exports.logActionHttp = functions.https.onRequest((request, response) => {
             response.status(200).send({ success: false, error: error.message });
         }
     });
+});
+// --- Performance Optimization Triggers ---
+/**
+ * Automatically updates applicantCount in job postings when applications are created/deleted
+ */
+exports.updateJobPostingApplicantCount = functions.firestore
+    .document('applications/{applicationId}')
+    .onWrite(async (change, context) => {
+    const applicationData = change.after.exists ? change.after.data() : null;
+    const previousData = change.before.exists ? change.before.data() : null;
+    // Get job posting ID from either new or old data
+    const jobPostingId = (applicationData === null || applicationData === void 0 ? void 0 : applicationData.jobPostingId) || (previousData === null || previousData === void 0 ? void 0 : previousData.jobPostingId);
+    if (!jobPostingId) {
+        functions.logger.warn('No jobPostingId found in application document');
+        return;
+    }
+    try {
+        // Count total applications for this job posting
+        const applicationsSnapshot = await db
+            .collection('applications')
+            .where('jobPostingId', '==', jobPostingId)
+            .get();
+        const applicantCount = applicationsSnapshot.size;
+        // Update the job posting with the new count
+        await db.collection('jobPostings').doc(jobPostingId).update({
+            applicantCount,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        });
+        functions.logger.info(`Updated applicantCount for job posting ${jobPostingId}: ${applicantCount}`);
+    }
+    catch (error) {
+        functions.logger.error('Error updating applicant count:', error);
+    }
+});
+/**
+ * Automatically updates participantCount in events when participants are added/removed
+ */
+exports.updateEventParticipantCount = functions.firestore
+    .document('participants/{participantId}')
+    .onWrite(async (change, context) => {
+    const participantData = change.after.exists ? change.after.data() : null;
+    const previousData = change.before.exists ? change.before.data() : null;
+    // Get event ID from either new or old data
+    const eventId = (participantData === null || participantData === void 0 ? void 0 : participantData.eventId) || (previousData === null || previousData === void 0 ? void 0 : previousData.eventId);
+    if (!eventId) {
+        functions.logger.warn('No eventId found in participant document');
+        return;
+    }
+    try {
+        // Count total participants for this event
+        const participantsSnapshot = await db
+            .collection('participants')
+            .where('eventId', '==', eventId)
+            .get();
+        const participantCount = participantsSnapshot.size;
+        // Update the event with the new count
+        await db.collection('events').doc(eventId).update({
+            participantCount,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        });
+        functions.logger.info(`Updated participantCount for event ${eventId}: ${participantCount}`);
+    }
+    catch (error) {
+        functions.logger.error('Error updating participant count:', error);
+    }
 });
 //# sourceMappingURL=index.js.map

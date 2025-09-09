@@ -151,10 +151,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     
     // workLog의 status 필드가 있으면 우선 사용 (수동 출석 상태 변경을 반영)
     if (workLog.status) {
-      // 'scheduled' 상태는 'not_started'로 매핑
-      if (workLog.status === 'scheduled') {
-        status = 'not_started';
-      } else if (['not_started', 'checked_in', 'checked_out'].includes(workLog.status)) {
+      if (['not_started', 'checked_in', 'checked_out'].includes(workLog.status)) {
         status = workLog.status as AttendanceStatus;
       }
     } else {

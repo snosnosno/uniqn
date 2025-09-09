@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaClock, FaCheckCircle } from './Icons/ReactIconsReplacement';
-import { doc, Timestamp, runTransaction } from 'firebase/firestore';
+import { doc, Timestamp, runTransaction, getDoc } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { useToast } from '../hooks/useToast';
@@ -262,8 +262,24 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         realWorkLogId = createWorkLogId(eventId, actualStaffId, date);
       }
       
-      // 🚀 통합 workLog 업데이트 - 트랜잭션 사용
+      // 🚀 단일 WorkLog ID 사용 (모바일/데스크톱 뷰 통일)
       const workLogRef = doc(db, 'workLogs', realWorkLogId);
+      const docSnap = await getDoc(workLogRef);
+      const foundWorkLog = docSnap.exists();
+      
+      if (!foundWorkLog) {
+        logger.error('AttendanceStatusPopover: WorkLog를 찾을 수 없습니다', new Error('WorkLog not found'), {
+          component: 'AttendanceStatusPopover',
+          data: {
+            realWorkLogId,
+            staffId,
+            staffName,
+            eventId,
+            workLogDate
+          }
+        });
+        throw new Error(`${staffName}님의 근무 기록을 찾을 수 없습니다. 스태프 확정 시 자동 생성되어야 합니다.`);
+      }
       
       // 트랜잭션을 사용하여 원자적 업데이트 보장
       await runTransaction(db, async (transaction) => {
@@ -285,7 +301,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           if (newStatus === 'checked_out') {
             updateData.actualEndTime = now;
             // actualStartTime이 없으면 현재 시간으로 설정
-            const existingData = docSnap.data();
+            const existingData = docSnap.data() as any;
             if (!existingData?.actualStartTime) {
               updateData.actualStartTime = now;
             }
@@ -299,20 +315,8 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           transaction.update(workLogRef, updateData);
           
         } else {
-          // 🚀 WorkLog가 존재하지 않으면 에러 처리 (fallback 생성 제거)
-          logger.error('AttendanceStatusPopover: WorkLog를 찾을 수 없습니다', new Error('WorkLog not found'), {
-            component: 'AttendanceStatusPopover',
-            data: {
-              realWorkLogId,
-              staffId,
-              staffName,
-              eventId,
-              workLogDate
-            }
-          });
-          
-          // 트랜잭션 롤백을 위해 에러 throw
-          throw new Error(`${staffName}님의 근무 기록을 찾을 수 없습니다. 스태프 확정 시 자동 생성되어야 합니다.`);
+          // 이미 위에서 체크했으므로 이 블록에 도달하면 안 됨
+          throw new Error('Unexpected: WorkLog not found in transaction');
         }
       });
 

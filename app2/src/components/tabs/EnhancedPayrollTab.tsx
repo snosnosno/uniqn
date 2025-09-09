@@ -56,7 +56,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       ...workLog,
       // 상태 변환 통일 - UnifiedWorkLog 타입과 호환 (조건문 최적화)
       status: workLog.status === 'absent' ? 'cancelled' as const : 
-              (workLog.status || 'scheduled') as 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'scheduled'
+              (workLog.status || 'not_started') as 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'not_started'
     }));
   }, [state.workLogs, eventId]);
 

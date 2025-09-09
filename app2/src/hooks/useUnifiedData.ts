@@ -32,6 +32,14 @@ export const useUnifiedData = () => {
     loading: context.state.loading,
     error: context.state.error,
     
+    // 주요 컴렉션 데이터 (직접 접근용)
+    staff: Array.from(context.state.staff.values()),
+    workLogs: Array.from(context.state.workLogs.values()),
+    applications: Array.from(context.state.applications.values()),
+    jobPostings: Array.from(context.state.jobPostings.values()),
+    attendanceRecords: Array.from(context.state.attendanceRecords.values()),
+    tournaments: Array.from(context.state.tournaments.values()),
+    
     // 기본 getter 함수들
     getStaffById: context.getStaffById,
     getWorkLogsByStaffId: context.getWorkLogsByStaffId,
