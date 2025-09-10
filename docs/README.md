@@ -1,6 +1,6 @@
 # 📚 T-HOLDEM 문서 센터
 
-**버전**: v4.1 | **업데이트**: 2025년 9월 8일 | **상태**: 🏆 Production Ready
+**버전**: v4.1.0 | **업데이트**: 2025년 9월 10일 | **상태**: 🏆 Production Ready
 
 ## 🎯 빠른 시작
 
@@ -44,10 +44,20 @@ docs/archive/
 └── 2025-01/           # 기존 아카이브 (유지)
 ```
 
+### 📋 새로 추가된 문서 (2025.09.10)
+- **[BUSINESS_CASE.md](./BUSINESS_CASE.md)** - 💼 ROI 분석 및 시장 전략
+- **[ONBOARDING.md](./ONBOARDING.md)** - 🚀 신규 사용자 온보딩 가이드
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - 🧪 테스트 가이드 (100% E2E 커버리지)
+- **[MONITORING.md](./MONITORING.md)** - 📈 시스템 모니터링 (Critical)
+- **[SECURITY.md](./SECURITY.md)** - 🔒 보안 가이드 (Critical)
+
 ## 🎉 문서 개편 성과
 
-### ✅ 통합 완료
-- **20개 → 8개 문서**로 60% 감소
+### ✅ 3차 개편 완료 (2025.09.10)
+- **기존 문서 통합**: DATA_FLOW_COMPLETE.md → ARCHITECTURE.md 통합
+- **중복 문서 정리**: archive 폴더 5개 문서 정리
+- **신규 문서 추가**: 비즈니스/온보딩/모니터링/보안 문서 완성
+- **최종 문서 수**: 15개 (핵심 12개 + 모바일 2개 + 보관 1개)
 - **중복 내용 100% 제거**
 - **데이터 흐름 중심 재구성**
 

@@ -138,10 +138,10 @@ app2/src/
 ### TypeScript 규칙
 
 ```typescript
-// ✅ 올바른 타입 정의
+// ✅ 올바른 타입 정의 (표준 필드명 사용)
 interface Staff {
   id: string;
-  staffId: string;        // 표준 필드명 사용
+  staffId: string;        // 표준 필드명 ✅
   name: string;
   role: 'dealer' | 'server' | 'manager';  // 유니언 타입 활용
   createdAt?: Timestamp;  // 선택적 필드
@@ -157,13 +157,9 @@ const processStaff = (staff: Staff): ProcessedStaff => {
 
 // ❌ 금지: any 타입
 const badFunction = (data: any) => { /* ... */ };
-
-// ❌ 금지: 레거시 필드명
-interface BadStaff {
-  dealerId: string;    // ❌ 사용 금지
-  jobPostingId: string; // ❌ 사용 금지
-}
 ```
+
+> 📋 **표준 필드명 상세 정보**: [DATA_SCHEMA.md](./DATA_SCHEMA.md#-스키마-개요)에서 모든 컬렉션의 표준 필드명과 레거시 필드 매핑을 확인하세요.
 
 ### React 컴포넌트 규칙
 

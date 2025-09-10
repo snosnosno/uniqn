@@ -124,17 +124,19 @@ You don't have to ever use `eject`. The curated feature set is suitable for smal
 
 ### Quick Links
 
-- **[최적화 가이드](./docs/OPTIMIZATION_GUIDE.md)**: 번들 최적화, 성능 개선 전략
-- **[마이그레이션 가이드](./docs/MIGRATION_GUIDES.md)**: 라이브러리 교체, TypeScript Strict Mode
-- **[기술 보고서](./docs/TECHNICAL_REPORTS.md)**: 성능 분석, 기술 스택 평가, 로드맵
+- **[아키텍처 문서](../docs/ARCHITECTURE.md)**: 시스템 설계, 데이터 플로우
+- **[개발 가이드](../docs/DEVELOPMENT.md)**: 개발 환경 설정, 워크플로우
+- **[테스트 가이드](../docs/TESTING_GUIDE.md)**: 테스트 전략, E2E 테스트
 
 ### Documentation Structure
 
 ```
 docs/
-├── OPTIMIZATION_GUIDE.md      # 번들 분석, 최적화 전략, 성능 측정
-├── MIGRATION_GUIDES.md        # 라이브러리 마이그레이션, TypeScript 가이드
-├── TECHNICAL_REPORTS.md       # 기술 분석, 성능 보고서, 향후 계획
+├── ARCHITECTURE.md            # 시스템 아키텍처, 데이터 플로우
+├── DEVELOPMENT.md             # 개발 환경 설정, 워크플로우  
+├── TESTING_GUIDE.md           # 테스트 전략, E2E 테스트
+├── SECURITY.md                # 보안 가이드, 인증 시스템
+├── DEPLOYMENT.md              # 배포 가이드, Firebase 설정
 └── archive/                   # 이전 개별 문서들 (참고용)
 ```
 

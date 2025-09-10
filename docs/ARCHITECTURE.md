@@ -134,6 +134,47 @@ app2/src/
 
 ## 🌊 데이터 흐름
 
+### 📈 전체 데이터 플로우 다이어그램
+
+구인공고 생성부터 급여 정산까지의 완전한 데이터 흐름:
+
+```mermaid
+graph TD
+    A[1. 구인공고 작성] --> B[2. 구인공고 등록]
+    B --> C[3. 지원서 제출]
+    C --> D[4. 지원자 검토]
+    D --> E[5. 스태프 확정]
+    E --> F[6. WorkLog 생성]
+    F --> G[7. 스태프탭 관리]
+    G --> H[8. 출석 관리]
+    H --> I[9. 근무 기록]
+    I --> J[10. 급여 정산]
+    J --> K[11. 데이터 동기화]
+    K --> L[12. 내 스케줄 표시]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#bbf,stroke:#333,stroke-width:2px
+    style J fill:#bfb,stroke:#333,stroke-width:2px
+    style L fill:#fbf,stroke:#333,stroke-width:2px
+```
+
+### 🔄 상세 프로세스 플로우
+
+#### 1️⃣ **구인공고 생성 단계**
+- **JobPostingForm** → **Firestore/jobPostings** 컬렉션
+- 다중 날짜, 역할별 인원, 급여 정보 포함
+- 실시간으로 **JobBoard** 페이지에 표시
+
+#### 2️⃣ **지원자 관리 단계**
+- **지원서 제출** → **applications** 컬렉션
+- **지원자 검토** → **ApplicantTab**에서 관리
+- **스태프 확정** → **staff** 컬렉션 + **WorkLog** 사전 생성
+
+#### 3️⃣ **운영 관리 단계**
+- **출석 관리** → **attendanceRecords** 컬렉션
+- **근무 시간 수정** → **WorkLog** 업데이트
+- **급여 정산** → **payrollCalculations** 유틸리티
+
 ### 1. 전체 데이터 흐름 아키텍처
 
 ```

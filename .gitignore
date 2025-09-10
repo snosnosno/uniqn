@@ -195,3 +195,31 @@ app2/src/utils/errorHandler.ts
 # Package lock files (optional, team preference)
 package-lock.json
 yarn.lock
+
+# BFG report files (Git history cleanup tool)
+..bfg-report/
+**/bfg-report/
+
+# Scripts folder temporary files
+scripts/node_modules/
+checkWorkLogs.js
+browser-test.js
+complete-login-test.js
+debug-user-role.html
+deploy_functions.bat
+
+# Firestore indexes (auto-generated, environment specific)
+firestore.indexes.json
+
+# Documentation archives (outdated docs)
+docs/archive/
+
+# Security-related files  
+SECURITY.md
+
+# Cursor AI rules (IDE-specific, auto-generated)
+.cursor/rules/
+
+# Test and debug HTML files
+*.html.debug
+debug-*.html

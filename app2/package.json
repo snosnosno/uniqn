@@ -63,7 +63,11 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:verbose": "E2E_DEBUG=true playwright test",
     "test:e2e:debug-verbose": "E2E_DEBUG=true playwright test --debug",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "docs:update": "node ../scripts/update-docs.js",
+    "docs:check": "node ../scripts/check-docs.js",
+    "docs:changelog": "node ../scripts/generate-changelog.js",
+    "setup-hooks": "node ../scripts/setup-git-hooks.js"
   },
   "jest": {
     "transformIgnorePatterns": [
