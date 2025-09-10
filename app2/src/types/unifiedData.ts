@@ -341,6 +341,9 @@ export interface UnifiedDataContextType {
   // 새로고침 메서드
   refresh: (collection?: keyof CacheKeys) => Promise<void>;
   
+  // 필터링 설정 메서드
+  setCurrentEventId: (eventId: string | null) => void;
+  
   // 성능 메트릭
   getPerformanceMetrics: () => {
     subscriptionCount: number;

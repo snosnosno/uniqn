@@ -1,242 +1,67 @@
-# T-HOLDEM Tournament Management Platform
+# T-HOLDEM 토너먼트 관리 플랫폼
 
-## 🎯 프로젝트 개요
+[![Status](https://img.shields.io/badge/status-In%20Development-orange.svg)](./CHANGELOG.md)
 
-**T-HOLDEM**은 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼입니다.
-
-- **프로젝트 ID**: tholdem-ebc18
-- **배포 URL**: https://tholdem-ebc18.web.app
-- **상태**: 🚧 **개발 진행중 (MVP 75% 완성)** 
-- **버전**: 0.1.0 (개발 단계 - Core 기능 구현 중)
-
-## 🚧 **개발 진행 현황**
-
-### 📊 **개발 진행률**
-```
-전체 진행률: ████████░░ 75%
-
-🟢 완성된 기능:
-├── 사용자 인증 시스템 (100%)
-├── 구인공고 CRUD (90%) 
-├── 지원자 관리 (85%)
-├── 스태프 출석 관리 (80%)
-└── 기본 급여 계산 (75%)
-
-🟡 개발 중인 기능:
-├── 실시간 알림 시스템 (60%)
-├── 대시보드 분석 (50%)
-├── 모바일 최적화 (40%)
-└── 다국어 지원 (30%)
-
-🔴 예정된 기능:
-├── 결제 시스템 통합
-├── 고급 분석 리포트  
-├── API 문서 자동 생성
-└── 성능 모니터링 도구
-```
-
-## ✅ **구현 완료된 주요 기능**
-
-### 🚀 **UnifiedDataContext 아키텍처**
-- 단일 컨텍스트로 모든 데이터 통합 관리
-- 5개 Firebase 구독 → 1개 통합 구독 (80% 성능 향상)
-- 77% 운영비 절약 (월 30만원 → 7만원)
-- 실시간 성능 모니터링 및 최적화
-
-### ⚡ **성능 최적화 시스템**
-- **Web Workers**: 급여 계산 백그라운드 처리 (메인 스레드 블로킹 제거)
-- **가상화**: 1000+ 아이템 리스트 99% 성능 개선
-- **스마트 캐싱**: 92% 히트율, IndexedDB 기반 영구 캐시
-- **지연 로딩**: 모든 탭 컴포넌트 코드 스플리팅 (13% 번들 크기 감소)
-
-### 👥 **스태프 관리** ✅
-- QR 코드 출퇴근 시스템 (GPS 위치 추적)
-- 실시간 출석 상태 관리 (UnifiedDataContext 기반)
-- Web Worker 급여 자동 계산 (2-5초 → 0초)
-- 가상화된 대용량 스태프 목록
-- **🆕 스태프 삭제 시 인원 카운트 정확 반영** (confirmedStaff 데이터 일관성)
-
-### 📢 **구인공고 시스템** ✅
-- 다중 역할 및 시간 지원
-- 지원자 통합 관리 (타입 안전한 데이터 변환)
-- 확정 스태프 자동 연동
-- 실시간 지원서 상태 업데이트
-
-### 📊 관리자 대시보드
-- 실시간 운영 현황
-- 통계 분석 및 리포트
-- 성능 모니터링 (Web Vitals)
-- 급여 정산 시스템
-
-## 🧪 **품질 보증**
-
-### 🔒 **보안 강화**
-- Firebase Admin SDK 키 완전 보호
-- 환경 변수 파일 gitignore 관리
-- 포괄적인 보안 파일 패턴 적용
-
-### 🧪 **테스트 자동화**
-- Playwright 기반 E2E 테스트 (85% 커버리지)
-- 모든 탭 간 데이터 일관성 자동 검증
-- 크로스 브라우저 테스트
-
-### 🛡️ **타입 안전성**
-- TypeScript strict mode (에러 0개)
-- 100% 타입 안전한 데이터 처리
-- 레거시 필드 완전 제거
-
-## 🛠️ **기술 스택**
-
-### Frontend
-- **React** 18 + **TypeScript** (Strict Mode)
-- **Tailwind CSS** 3.3
-- **Zustand** (상태 관리)
-- **@tanstack/react-table** (테이블)
-- **@heroicons/react** (아이콘)
-- **date-fns** (날짜 처리)
-
-### Backend
-- **Firebase** 11.9
-  - Firestore (실시간 DB)
-  - Authentication (인증)
-  - Functions (서버리스)
-  - Storage (파일)
-  - Performance (모니터링)
-
-### 개발 도구
-- **Sentry** (에러 모니터링)
-- **Jest** + **React Testing Library** (테스팅)
-- **ESLint** + **Prettier** (코드 품질)
-
-## 🚀 시작하기
-
-### 필수 요구사항
-- Node.js 18.0.0 이상
-- npm 9.0.0 이상
-- Firebase CLI 13.0.0 이상
-
-### 설치
-```bash
-# 의존성 설치
-cd app2
-npm install
-
-# Firebase CLI 설치 (전역)
-npm install -g firebase-tools
-```
-
-### 개발 서버 실행
-```bash
-# 개발 서버 시작
-npm start
-
-# Firebase 에뮬레이터와 함께 실행
-npm run dev
-```
-
-### 빌드 및 배포
-```bash
-# 프로덕션 빌드
-npm run build
-
-# Firebase 배포
-npm run deploy:all
-```
-
-## 📁 프로젝트 구조
-
-```
-T-HOLDEM/
-├── app2/                 # React 애플리케이션
-│   ├── src/
-│   │   ├── components/   # UI 컴포넌트
-│   │   ├── hooks/       # 커스텀 React 훅
-│   │   ├── pages/       # 페이지 컴포넌트
-│   │   ├── stores/      # Zustand 스토어
-│   │   ├── types/       # TypeScript 타입 정의
-│   │   └── utils/       # 유틸리티 함수
-│   └── public/          # 정적 파일
-├── functions/           # Firebase Functions
-├── docs/               # 프로젝트 문서
-└── scripts/            # 유틸리티 스크립트
-```
-
-## 📊 현재 상태
-
-| 항목 | 상태 | 설명 |
-|------|------|------|
-| 빌드 | ✅ | Production 빌드 성공 |
-| TypeScript | ✅ | 컴파일 에러 0개 |
-| 번들 크기 | ✅ | 278KB (gzipped) |
-| E2E 테스트 | ✅ | 100% 통과 (32/32) |
-| 테스트 커버리지 | ✅ | 85% 달성 |
-| ESLint | ✅ | 에러 0개 |
-
-## 🔒 환경 변수
-
-`.env` 파일 생성:
-```env
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-auth-domain
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-REACT_APP_FIREBASE_APP_ID=your-app-id
-```
-
-## 📝 주요 스크립트
-
-| 명령어 | 설명 |
-|--------|------|
-| `npm start` | 개발 서버 시작 |
-| `npm run build` | 프로덕션 빌드 |
-| `npm run test` | 테스트 실행 |
-| `npm run lint` | ESLint 실행 |
-| `npm run type-check` | TypeScript 타입 체크 |
-| `npm run deploy:all` | Firebase 전체 배포 |
-
-## 🤝 기여하기
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 🚧 **현재 개발 상태**
-
-**🔄 MVP 단계 (v0.1.0)**
-- **핵심 기능**: 75% 완성 
-- **테스트 커버리지**: 65% (목표: 85%)
-- **TypeScript 안정성**: 진행 중 (any 타입 제거 작업)
-- **성능 최적화**: 50% 완성 (Web Workers 구현 중)
-- **문서화**: 80% 완성
-
-### 🚨 **알려진 이슈 (개발 중)**
-- [ ] **메모리 누수**: 장시간 사용 시 성능 저하
-- [ ] **모바일 호환성**: 일부 기능이 모바일에서 완전하지 않음
-- [ ] **실시간 동기화**: 네트워크 불안정 시 데이터 불일치
-- [ ] **에러 핸들링**: 일부 예외 상황 처리 미완성
-- [ ] **접근성**: 스크린 리더 지원 부분적
-
-### 🎯 **다음 마일스톤 (v0.2.0 - 예정: 2025년 12월)**
-- 실시간 알림 시스템 완성
-- 결제 모듈 통합
-- 성능 최적화 완료
-- 테스트 커버리지 85% 달성
-- 모바일 PWA 완전 지원
-
-### 📋 **개발 참여 방법**
-자세한 내용은 **[ROADMAP.md](./ROADMAP.md)** 및 **[TODO.md](./TODO.md)** 참조
-
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스를 따릅니다.
-
-## 📞 연락처
-
-프로젝트 관련 문의사항은 이슈 트래커를 이용해주세요.
+**T-HOLDEM**은 홀덤 포커 토너먼트 운영의 모든 과정을 디지털화하여, 운영 효율성을 극대화하는 것을 목표로 하는 종합 관리 플랫폼입니다.
 
 ---
 
-*마지막 업데이트: 2025년 9월 10일*
+## 🚧 현재 상태 (v0.1.0)
+
+- **버전**: `0.1.0` (MVP)
+- **상태**: **개발 진행 중 (MVP 75% 완성)**
+- **핵심 목표**: 토너먼트 운영에 필요한 핵심 기능(구인, 스태프 관리, 기본 정산)을 안정적으로 제공하는 것.
+
+### ✅ 구현된 주요 기능 (MVP v0.1.0)
+
+- **사용자 인증**: 이메일 기반 회원가입 및 로그인
+- **구인공고 관리**: 구인공고 CRUD 기능
+- **지원자 관리**: 공고 지원 및 지원자 목록 관리
+- **스태프 관리**: 지원자 확정을 통한 스태프 전환
+- **기본 출석 관리**: 출석 상태 수동 변경
+- **기본 급여 계산**: 근무 기록 기반 급여 계산 로직
+- **핵심 아키텍처**: `UnifiedDataContext`를 사용한 중앙 데이터 관리 구조
+
+### 🚀 향후 로드맵 (Roadmap)
+
+- **고급 기능 안정화**: Web Worker 기반 급여 계산, 스마트 캐싱 등 이미 코드가 구현된 기능들의 테스트 및 안정화
+- **신규 기능 개발**: 실시간 알림, QR코드 출퇴근, 관리자 대시보드 통계 기능
+- **품질 개선**: E2E 테스트 커버리지 확대, 모바일 최적화 및 PWA 고도화
+
+## 🛠️ 기술 스택
+
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend & DB**: Firebase (Authentication, Firestore, Functions)
+- **State Management**: Context API, Zustand
+- **Testing**: Jest, React Testing Library
+
+## 🚀 시작하기
+
+```bash
+# 1. 프로젝트 클론
+git clone <repository-url>
+cd T-HOLDEM/app2
+
+# 2. 의존성 설치
+npm install
+
+# 3. 개발 서버 실행 (Firebase 에뮬레이터와 함께)
+npm run dev
+```
+
+더 자세한 개발 환경 설정은 `docs/DEVELOPMENT.md` 문서를 참고하세요.
+
+## 📚 문서
+
+프로젝트의 모든 상세 문서는 `docs/` 폴더에서 관리됩니다.
+
+- **아키텍처**: `docs/ARCHITECTURE.md`
+- **개발 가이드**: `docs/DEVELOPMENT.md`
+- **API 명세**: `docs/API_REFERENCE.md`
+- **데이터베이스 스키마**: `docs/DATA_SCHEMA.md`
+- **배포 가이드**: `docs/DEPLOYMENT.md`
+- **문제 해결 가이드**: `docs/TROUBLESHOOTING.md`
+
+## 🤝 기여하기
+
+이 프로젝트에 기여하고 싶으신가요? `CONTRIBUTING.md` 파일을 참고하여 기여 규칙을 확인해주세요.

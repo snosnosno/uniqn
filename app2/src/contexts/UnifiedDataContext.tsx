@@ -805,6 +805,30 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     });
   }, [refresh]);
 
+  // setCurrentEventId 메서드 구현
+  const setCurrentEventId = useCallback((eventId: string | null) => {
+    logger.info('UnifiedDataContext: setCurrentEventId 호출', { 
+      component: 'UnifiedDataContext', 
+      data: { eventId } 
+    });
+    
+    // UnifiedDataService에 현재 eventId 설정
+    unifiedDataService.setCurrentEventId(eventId);
+    
+    // 필터 상태도 업데이트 (UI 반영용)
+    if (eventId) {
+      dispatch({
+        type: 'SET_FILTERS',
+        filters: { eventId }
+      });
+    } else {
+      dispatch({
+        type: 'SET_FILTERS',
+        filters: {}
+      });
+    }
+  }, []);
+
   // Context value
   const contextValue: UnifiedDataContextType = {
     state,
@@ -823,6 +847,7 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     updateWorkLogOptimistic,
     updateAttendanceOptimistic,
     updateStaffOptimistic,
+    setCurrentEventId,
   };
 
   return (

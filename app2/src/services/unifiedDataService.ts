@@ -287,6 +287,7 @@ export class UnifiedDataService {
   private dispatcher: React.Dispatch<UnifiedDataAction> | null = null;
   private performanceTracker = new PerformanceTracker();
   private currentUserId: string | null = null;
+  private currentEventId: string | null = null;
   private userRole: string | null = null;
 
   /**
@@ -311,6 +312,24 @@ export class UnifiedDataService {
     // 사용자가 변경되었다면 캐시 무효화 및 구독 재시작
     if (wasChanged && this.dispatcher) {
       this.invalidateAllCaches();
+      this.restartUserSpecificSubscriptions();
+    }
+  }
+
+  /**
+   * 현재 이벤트 ID 설정 (공고별 데이터 필터링)
+   */
+  setCurrentEventId(eventId: string | null): void {
+    const wasChanged = this.currentEventId !== eventId;
+    this.currentEventId = eventId;
+    
+    logger.info('UnifiedDataService: 이벤트 ID 설정', { 
+      component: 'unifiedDataService',
+      data: { eventId, hasEventId: !!eventId, wasChanged }
+    });
+
+    // eventId가 변경되면 WorkLogs 구독을 재시작하여 필터링 적용
+    if (wasChanged && this.dispatcher) {
       this.restartUserSpecificSubscriptions();
     }
   }
@@ -539,17 +558,26 @@ export class UnifiedDataService {
               const rawData = { id: doc.id, ...doc.data() };
               const workLog = transformWorkLogData(rawData);
               
-              // 🔥 클라이언트 측 필터링: staffId가 userId로 시작하는지 확인
+              // 🔥 클라이언트 측 필터링: staffId가 userId로 시작하는지 확인 + eventId 필터링
               if (this.currentUserId && !this.isAdmin()) {
-                if (workLog.staffId && workLog.staffId.startsWith(this.currentUserId)) {
+                // 사용자별 필터링: staffId가 현재 userId로 시작하는지 확인
+                const matchesUser = workLog.staffId && workLog.staffId.startsWith(this.currentUserId);
+                // 공고별 필터링: currentEventId가 설정된 경우 해당 공고의 WorkLog만 포함
+                const matchesEvent = !this.currentEventId || workLog.eventId === this.currentEventId;
+                
+                if (matchesUser && matchesEvent) {
                   workLogsData.push(workLog);
                   filteredCount++;
                 }
-                // userId와 매칭되지 않는 WorkLog는 제외
+                // 조건에 맞지 않는 WorkLog는 제외
               } else {
-                // 관리자이거나 userId가 없으면 모든 데이터 포함
-                workLogsData.push(workLog);
-                filteredCount++;
+                // 관리자이거나 userId가 없으면 eventId 필터링만 적용
+                const matchesEvent = !this.currentEventId || workLog.eventId === this.currentEventId;
+                
+                if (matchesEvent) {
+                  workLogsData.push(workLog);
+                  filteredCount++;
+                }
               }
             } catch (error) {
               logger.warn('WorkLog 데이터 변환 오류', { component: 'unifiedDataService', data: { docId: doc.id, error } });
@@ -562,10 +590,23 @@ export class UnifiedDataService {
               component: 'unifiedDataService',
               data: {
                 userId: this.currentUserId,
+                eventId: this.currentEventId,
                 totalWorkLogs: totalCount,
                 filteredWorkLogs: filteredCount,
                 workLogsMapSize: workLogsData.length,
+                filteringMode: this.currentEventId ? 'user+event' : 'user-only',
                 sampleWorkLogIds: workLogsData.slice(0, 3).map(wl => wl.id)
+              }
+            });
+          } else if (this.currentEventId) {
+            // 관리자 모드에서도 eventId 필터링이 적용된 경우 로깅
+            logger.info('🔍 WorkLog eventId 필터링 결과 (관리자)', {
+              component: 'unifiedDataService',
+              data: {
+                eventId: this.currentEventId,
+                totalWorkLogs: totalCount,
+                filteredWorkLogs: filteredCount,
+                workLogsMapSize: workLogsData.length
               }
             });
           }
