@@ -10,6 +10,7 @@ import DetailEditModal from '../payroll/DetailEditModal';
 import RoleSalarySettings from '../payroll/RoleSalarySettings';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, RoleSalaryConfig } from '../../types/payroll';
 import { usePayrollWorker } from '../../hooks/usePayrollWorker';
+import { filterWorkLogsByRole, normalizeRole } from '../../utils/workLogHelpers';
 
 interface EnhancedPayrollTabProps {
   jobPosting?: JobPosting | null;
@@ -46,10 +47,38 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   const workLogs = useMemo(() => {
     const workLogsArray = Array.from(state.workLogs.values());
     
-    // eventId 필터링을 먼저 수행하여 처리할 데이터 양 감소
-    const filteredWorkLogs = eventId 
-      ? workLogsArray.filter(workLog => workLog.eventId === eventId)
-      : workLogsArray;
+    // jobPosting.id를 우선 사용, 없으면 eventId 사용
+    const postingId = jobPosting?.id || eventId;
+    
+    // postingId가 있을 때만 필터링
+    if (!postingId) {
+      logger.warn('정산탭: jobPosting.id와 eventId 모두 없음', {
+        component: 'EnhancedPayrollTab',
+        data: { jobPostingExists: !!jobPosting, eventId }
+      });
+      return [];
+    }
+    
+    const filteredWorkLogs = workLogsArray.filter(
+      workLog => workLog.eventId === postingId
+    );
+    
+    logger.info(`정산탭 WorkLog 필터링: ${filteredWorkLogs.length}개 (공고: ${postingId})`, {
+      component: 'EnhancedPayrollTab', 
+      data: { 
+        postingId, 
+        totalWorkLogs: workLogsArray.length,
+        filteredCount: filteredWorkLogs.length,
+        workLogDetails: filteredWorkLogs.map(log => ({
+          id: log.id,
+          staffId: log.staffId,
+          date: log.date,
+          role: log.role,
+          eventId: log.eventId,
+          staffName: log.staffName
+        }))
+      }
+    });
     
     // 상태 변환은 한 번에 수행
     return filteredWorkLogs.map(workLog => ({
@@ -58,7 +87,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       status: workLog.status === 'absent' ? 'cancelled' as const : 
               (workLog.status || 'not_started') as 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'not_started'
     }));
-  }, [state.workLogs, eventId]);
+  }, [state.workLogs, jobPosting?.id, eventId]);
 
   // 정산 기간 설정 (현재 월 기준)
   const { startDate, endDate } = useMemo((): { startDate: string; endDate: string } => {
@@ -75,26 +104,43 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     };
   }, []);
 
-  // 역할 목록 (UnifiedData에서 추출, jobPosting은 보조) - 메모이제이션 강화
+  // 역할 목록 (UnifiedData에서 추출, jobPosting은 보조) - normalizeRole 적용
   const availableRoles = useMemo(() => {
     const roleSet = new Set<string>();
     
-    // 1. WorkLogs에서 역할 추출 (이미 필터링된 workLogs 사용)
+    // 1. WorkLogs에서 역할 추출 (정규화된 형태로 저장)
     workLogs.forEach(workLog => {
       if (workLog.role) {
-        roleSet.add(workLog.role);
+        const normalizedRole = normalizeRole(workLog.role);
+        if (normalizedRole) {
+          roleSet.add(normalizedRole);
+        }
       }
     });
     
-    // 2. jobPosting의 confirmedStaff에서 추가
+    // 2. jobPosting의 confirmedStaff에서 추가 (정규화된 형태로)
     jobPosting?.confirmedStaff?.forEach(staff => {
       if (staff.role) {
-        roleSet.add(staff.role);
+        const normalizedRole = normalizeRole(staff.role);
+        if (normalizedRole) {
+          roleSet.add(normalizedRole);
+        }
       }
     });
     
     // Set을 Array로 변환하면서 정렬까지 한 번에 수행
-    return roleSet.size > 0 ? Array.from(roleSet).sort() : [];
+    const roles = roleSet.size > 0 ? Array.from(roleSet).sort() : [];
+    
+    logger.info('정산탭 역할 목록', {
+      component: 'EnhancedPayrollTab',
+      data: { 
+        roles,
+        workLogsCount: workLogs.length,
+        confirmedStaffCount: jobPosting?.confirmedStaff?.length || 0
+      }
+    });
+    
+    return roles;
   }, [workLogs, jobPosting?.confirmedStaff]);
 
   // 수당 및 급여 오버라이드 상태 관리
@@ -156,8 +202,25 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
   // 정산 계산 실행 (메모이제이션으로 무한루프 방지)
   const memoizedCalculatePayroll = useCallback(() => {
+    logger.info('정산 계산 조건 확인', {
+      component: 'EnhancedPayrollTab',
+      data: {
+        hasConfirmedStaff: !!confirmedStaff,
+        confirmedStaffLength: confirmedStaff?.length || 0,
+        workLogsLength: workLogs.length,
+        jobPostingId: jobPosting?.id || 'none'
+      }
+    });
+
     if (!confirmedStaff || confirmedStaff.length === 0 || workLogs.length === 0) {
-      // 데이터가 없을 때는 로그 출력하지 않음 (성능 최적화)
+      logger.warn('정산 계산 건너뛰기 - 필수 데이터 부족', {
+        component: 'EnhancedPayrollTab',
+        data: {
+          hasConfirmedStaff: !!confirmedStaff,
+          confirmedStaffLength: confirmedStaff?.length || 0,
+          workLogsLength: workLogs.length
+        }
+      });
       return;
     }
 
@@ -183,16 +246,41 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [workLogs, confirmedStaff, jobPosting, startDate, endDate, memoizedRoleSalaryOverrides, memoizedStaffAllowanceOverrides, calculatePayroll]);
 
   useEffect(() => {
-    // 계산 중이 아니고, 데이터가 있고, 이전 계산과 다를 때만 실행
+    logger.info('useEffect 정산 계산 조건 체크', {
+      component: 'EnhancedPayrollTab',
+      data: {
+        calculationLoading,
+        workLogsLength: workLogs.length,
+        confirmedStaffCount,
+        currentCalculationKey: calculationKey,
+        lastCalculationKey: lastCalculationKey.current,
+        keyChanged: lastCalculationKey.current !== calculationKey
+      }
+    });
+
+    // 임시로 조건을 단순화 - 디버깅용
     if (
       !calculationLoading && 
-      workLogs.length > 0 && 
-      confirmedStaffCount > 0 &&
-      lastCalculationKey.current !== calculationKey
+      workLogs.length > 0
+      // confirmedStaffCount > 0 &&  // 임시로 주석 처리
+      // lastCalculationKey.current !== calculationKey  // 임시로 주석 처리
     ) {
+      logger.info('정산 계산 실행 조건 충족', {
+        component: 'EnhancedPayrollTab'
+      });
       lastCalculationKey.current = calculationKey;
       hasCalculated.current = true;
       memoizedCalculatePayroll();
+    } else {
+      logger.warn('정산 계산 실행 조건 불충족', {
+        component: 'EnhancedPayrollTab',
+        data: {
+          calculationLoading,
+          workLogsLength: workLogs.length,
+          confirmedStaffCount,
+          keyChanged: lastCalculationKey.current !== calculationKey
+        }
+      });
     }
   }, [calculationLoading, calculationKey, memoizedCalculatePayroll]);
 

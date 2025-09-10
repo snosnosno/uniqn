@@ -5,6 +5,7 @@ import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import { calculateWorkHours, parseTimeToString } from '../../utils/workLogMapper';
 import { getStaffIdentifier, matchStaffIdentifier } from '../../utils/staffIdMapper';
+import { findTargetWorkLog, filterWorkLogsByRole, normalizeRole } from '../../utils/workLogHelpers';
 
 import { UnifiedWorkLog } from '../../types/unified/workLog';
 
@@ -61,42 +62,66 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
   // 역할 추론 함수 제거 - 정확한 역할 정보만 사용
 
-  // 날짜별 근무 내역 계산 - 실시간 WorkLog 데이터 사용
+  // getTargetWorkLog 패턴 적용 - ScheduleDetailModal 참고
+  const getTargetWorkLog = useCallback((date: string) => {
+    if (!staff) return null;
+    
+    const staffId = getStaffIdentifier(staff);
+    
+    // 1. 우선 정확한 조건으로 WorkLog 찾기
+    let targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
+      staffId,
+      date,
+      role: staff.role
+    });
+    
+    // 2. 못찾으면 role 없이 찾기
+    if (!targetWorkLog) {
+      targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
+        staffId,
+        date
+      });
+    }
+    
+    return targetWorkLog;
+  }, [staff, realTimeWorkLogs]);
+
+  // 날짜별 근무 내역 계산 - getTargetWorkLog 패턴 사용
   const workHistory = useMemo(() => {
     if (!staff) return [];
     
-    // 실시간 WorkLog 데이터에서 해당 스태프의 WorkLog 필터링 및 병합
     const staffId = getStaffIdentifier(staff);
     
-    // 1. 스태프의 모든 WorkLog 가져오기 (역할 구분 없이)
+    // 1. 스태프의 모든 WorkLog 가져오기
     const allStaffWorkLogs = realTimeWorkLogs.filter(log => {
       const matches = matchStaffIdentifier(log, [staffId]);
       return matches;
     });
     
-    // 2. 날짜별로 그룹화하여 모든 관련 WorkLog 포함 (role 체크 완화)
+    // 2. filterWorkLogsByRole 유틸리티 사용
+    const staffRoleWorkLogs = filterWorkLogsByRole(allStaffWorkLogs, staff.role);
+
+    // 3. 날짜별로 그룹화하여 중복 제거 (기존 로직 유지)
     const mergedLogsMap = new Map<string, any>();
     
-    // 해당 스태프의 모든 WorkLog를 날짜별로 처리 (role 제한 완화)
-    allStaffWorkLogs.forEach(log => {
-      const logRole = log.role || staff.role; // role이 없으면 staff.role 사용
-      const key = `${log.date}_${logRole}`;
+    staffRoleWorkLogs.forEach(log => {
+      const key = `${log.date}`;
       
       if (!mergedLogsMap.has(key)) {
-        // 새로운 날짜-역할 조합인 경우 추가
-        mergedLogsMap.set(key, { ...log, role: logRole });
+        // 새로운 날짜인 경우 추가
+        mergedLogsMap.set(key, { ...log, role: log.role || staff.role });
       } else {
-        // 기존 데이터가 있는 경우 병합
+        // 기존 데이터가 있는 경우 병합 (더 완전한 데이터 우선)
         const existingLog = mergedLogsMap.get(key);
         mergedLogsMap.set(key, {
           ...existingLog,
           // 실제 시간 정보가 있으면 우선 사용
           actualStartTime: log.actualStartTime || existingLog.actualStartTime,
           actualEndTime: log.actualEndTime || existingLog.actualEndTime,
-          // 예정 시간 정보 우선순위: 현재 log → 기존 log
+          // 예정 시간 정보 우선순위: 더 완전한 데이터
           scheduledStartTime: log.scheduledStartTime || existingLog.scheduledStartTime,
           scheduledEndTime: log.scheduledEndTime || existingLog.scheduledEndTime,
-          // 상태 정보 (checked_out, checked_in 등) 우선 사용
+          // 상태 정보 (더 진행된 상태 우선)
           status: log.status || existingLog.status,
           // 기타 정보 병합 (타입 안전성을 위해 any로 캐스팅)
           timeSlot: (log as any).timeSlot || (existingLog as any).timeSlot,
@@ -105,11 +130,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
       }
     });
     
-    // 현재 선택된 역할과 일치하는 것만 필터링 (선택사항)
-    const uniqueWorkLogs = Array.from(mergedLogsMap.values()).filter(log => 
-      !log.role || log.role === staff.role || !staff.role
-    );
-    
+    const uniqueWorkLogs = Array.from(mergedLogsMap.values());
     
     if (uniqueWorkLogs.length === 0) return [];
     

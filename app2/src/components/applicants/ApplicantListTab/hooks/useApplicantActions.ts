@@ -73,7 +73,7 @@ const createWorkLogsForConfirmedStaff = async (
       // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
       assignmentInfo: {
         role: jobRole,
-        assignedRole: assignment.role,
+        assignedRole: assignment.role?.toLowerCase() || '',
         assignedTime: assignment.timeSlot,
         assignedDate: assignedDate,
         postingId: postingId,

@@ -469,7 +469,6 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
  * @deprecated 새로운 코드에서는 payrollCalculations.ts의 calculateWorkHours 사용 권장
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  // 새로운 통합 계산 함수와 동일한 로직으로 변경
   const startTime = workLog.scheduledStartTime;
   const endTime = workLog.scheduledEndTime;
   
@@ -487,8 +486,44 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
       return 0;
     }
     
-    const hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-    return Math.max(0, Math.round(hoursWorked * 100) / 100); // 소수점 2자리
+    // 심야 근무 케이스 처리: 종료시간이 시작시간보다 이전인 경우
+    let adjustedEndDate = new Date(endDate);
+    
+    // 시간만 비교해서 다음날 근무인지 판단 (09:00 → 08:00 케이스)
+    const startHour = startDate.getHours();
+    const endHour = endDate.getHours();
+    
+    if (endHour < startHour || (endHour === startHour && endDate.getMinutes() < startDate.getMinutes())) {
+      // 다음날 종료: 종료시간에 24시간 추가
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+      
+      logger.debug('심야 근무 감지', {
+        component: 'workLogMapper',
+        data: {
+          workLogId: workLog.id,
+          startTime: startDate.toTimeString().slice(0, 8),
+          endTime: endDate.toTimeString().slice(0, 8),
+          adjustedEndTime: adjustedEndDate.toTimeString().slice(0, 8),
+          nextDay: true
+        }
+      });
+    }
+    
+    const hoursWorked = (adjustedEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    const result = Math.max(0, Math.round(hoursWorked * 100) / 100);
+    
+    logger.debug('근무시간 계산 완료', {
+      component: 'workLogMapper',
+      data: {
+        workLogId: workLog.id,
+        startTime: startDate.toTimeString().slice(0, 8),
+        originalEndTime: endDate.toTimeString().slice(0, 8),
+        adjustedEndTime: adjustedEndDate.toTimeString().slice(0, 8),
+        hoursWorked: result
+      }
+    });
+    
+    return result;
   } catch (error) {
     logger.error('근무시간 계산 실패', error as Error, {
       component: 'workLogMapper',

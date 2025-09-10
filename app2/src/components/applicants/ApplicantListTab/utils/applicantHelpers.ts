@@ -654,17 +654,17 @@ export const getDateSelectionStats = (
 };
 
 /**
- * 역할 이름을 한글로 변환하는 맵
+ * 역할 이름을 소문자로 통일 변환하는 맵
  */
 export const jobRoleMap: { [key: string]: string } = {
-  'dealer': 'Dealer',
-  'floor': 'Floor',
-  'serving': 'Server',
-  'tournament_director': 'Tournament Director',
-  'chip_master': 'Chip Master', 
-  'registration': 'Registration',
-  'security': 'Security',
-  'other': 'Other'
+  'dealer': 'dealer',
+  'floor': 'floor',
+  'serving': 'server',
+  'tournament_director': 'tournament_director',
+  'chip_master': 'chip_master', 
+  'registration': 'registration',
+  'security': 'security',
+  'other': 'other'
 };
 
 /**

@@ -2,6 +2,7 @@ import { JobPosting } from '../types/jobPosting';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { logger } from './logger';
+import { parseTimeToString, calculateWorkHours as calculateWorkHoursFromMapper } from './workLogMapper';
 
 /**
  * 통합 급여 계산 유틸리티
@@ -62,87 +63,11 @@ export function getRoleSalaryInfo(
 }
 
 /**
- * 근무 시간 계산 (시간 단위)
+ * 근무 시간 계산 (시간 단위) - workLogMapper의 검증된 로직 사용
  */
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
-  // 예정 시간 사용 (정산 기준)
-  const startTime = workLog.scheduledStartTime;
-  const endTime = workLog.scheduledEndTime;
-  
-  if (!startTime || !endTime) {
-    return 0;
-  }
-  
-  try {
-    // 디버그: 시간 데이터 로깅
-    logger.info('근무시간 계산 시작', {
-      component: 'payrollCalculations',
-      data: {
-        workLogId: workLog.id,
-        startTime: startTime,
-        endTime: endTime,
-        startTimeType: typeof startTime,
-        endTimeType: typeof endTime,
-        hasSecondsInStart: startTime && typeof startTime === 'object' && 'seconds' in startTime,
-        hasSecondsInEnd: endTime && typeof endTime === 'object' && 'seconds' in endTime
-      }
-    });
-    
-    // Firebase Timestamp 형태 처리 개선
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-    
-    // startTime 처리
-    if (startTime) {
-      if (typeof startTime === 'object' && 'toDate' in startTime) {
-        // Firebase Timestamp 객체 (toDate 메서드 있음)
-        startDate = startTime.toDate();
-        logger.info('startTime: toDate() 사용', { component: 'payrollCalculations', data: { startDate } });
-      } else if (typeof startTime === 'object' && 'seconds' in startTime) {
-        // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
-        startDate = new Date((startTime as any).seconds * 1000);
-        logger.info('startTime: seconds 사용', { component: 'payrollCalculations', data: { seconds: (startTime as any).seconds, startDate } });
-      } else if (typeof startTime === 'string') {
-        // 문자열 형태 시간
-        startDate = new Date(startTime);
-        logger.info('startTime: 문자열 사용', { component: 'payrollCalculations', data: { startTime, startDate } });
-      }
-    }
-    
-    // endTime 처리
-    if (endTime) {
-      if (typeof endTime === 'object' && 'toDate' in endTime) {
-        // Firebase Timestamp 객체 (toDate 메서드 있음)
-        endDate = endTime.toDate();
-        logger.info('endTime: toDate() 사용', { component: 'payrollCalculations', data: { endDate } });
-      } else if (typeof endTime === 'object' && 'seconds' in endTime) {
-        // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
-        endDate = new Date((endTime as any).seconds * 1000);
-        logger.info('endTime: seconds 사용', { component: 'payrollCalculations', data: { seconds: (endTime as any).seconds, endDate } });
-      } else if (typeof endTime === 'string') {
-        // 문자열 형태 시간
-        endDate = new Date(endTime);
-        logger.info('endTime: 문자열 사용', { component: 'payrollCalculations', data: { endTime, endDate } });
-      }
-    }
-      
-    if (!startDate || !endDate) {
-      logger.warn('시작/종료 시간 파싱 실패', {
-        component: 'payrollCalculations',
-        data: { startDate, endDate, startTime, endTime }
-      });
-      return 0;
-    }
-    
-    const hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-    return Math.max(0, Math.round(hoursWorked * 100) / 100); // 소수점 2자리
-  } catch (error) {
-    logger.error('근무시간 계산 실패', error instanceof Error ? error : new Error(String(error)), {
-      component: 'payrollCalculations',
-      data: { workLogId: workLog.id }
-    });
-    return 0;
-  }
+  // workLogMapper에서 완벽하게 작동하는 로직을 그대로 사용
+  return calculateWorkHoursFromMapper(workLog);
 }
 
 /**
@@ -195,13 +120,63 @@ export function calculatePayroll(
   roleSalaryOverrides?: Record<string, any>
 ): PayrollCalculationResult {
   try {
+    // 48시간 문제 디버깅을 위한 WorkLog 분석
+    logger.debug('급여 계산 시작', {
+      component: 'payrollCalculations',
+      data: {
+        role,
+        workLogsCount: workLogs.length,
+        workLogIds: workLogs.map(log => ({ 
+          id: log.id, 
+          staffId: log.staffId, 
+          date: log.date, 
+          role: log.role 
+        }))
+      }
+    });
+
+    // 중복 WorkLog 검사
+    const workLogIds = workLogs.map(log => log.id);
+    const uniqueIds = new Set(workLogIds);
+    if (workLogIds.length !== uniqueIds.size) {
+      logger.warn('중복 WorkLog 감지', {
+        component: 'payrollCalculations',
+        data: {
+          role,
+          totalWorkLogs: workLogIds.length,
+          uniqueWorkLogs: uniqueIds.size,
+          duplicateIds: workLogIds.filter((id, index) => workLogIds.indexOf(id) !== index)
+        }
+      });
+    }
+    
     // 역할별 급여 정보 가져오기
     const { salaryType, salaryAmount } = getRoleSalaryInfo(role, jobPosting, roleSalaryOverrides);
     
-    // 총 근무 시간 계산
+    // 총 근무 시간 계산 (각 WorkLog별 상세 추적)
+    const hoursPerLog: { id: string; hours: number; date: string }[] = [];
     const totalHours = workLogs.reduce((sum, log) => {
-      return sum + calculateWorkHours(log);
+      const hours = calculateWorkHours(log);
+      hoursPerLog.push({ id: log.id, hours, date: log.date });
+      return sum + hours;
     }, 0);
+
+    // 48시간 이상인 경우 상세 분석
+    if (totalHours >= 48) {
+      logger.warn('48시간 이상 근무시간 감지 - 상세 분석', {
+        component: 'payrollCalculations',
+        data: {
+          role,
+          totalHours,
+          workLogsAnalysis: hoursPerLog,
+          abnormalLogs: hoursPerLog.filter(log => log.hours >= 24),
+          dateDistribution: hoursPerLog.reduce((acc, log) => {
+            acc[log.date] = (acc[log.date] || 0) + log.hours;
+            return acc;
+          }, {} as Record<string, number>)
+        }
+      });
+    }
     
     // 총 근무 일수 계산
     const uniqueDates = new Set(workLogs.map(log => log.date));
@@ -227,7 +202,8 @@ export function calculatePayroll(
         totalDays,
         basePayment,
         totalAllowances,
-        totalPayment
+        totalPayment,
+        hoursBreakdown: hoursPerLog
       }
     });
     

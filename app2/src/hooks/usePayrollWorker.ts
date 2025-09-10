@@ -24,6 +24,7 @@ import {
   calculateWorkHours
 } from '../utils/payrollCalculations';
 import { matchStaffIdentifier } from '../utils/staffIdMapper';
+import { groupWorkLogsByStaff, filterWorkLogsByRole } from '../utils/workLogHelpers';
 
 interface PayrollWorkerState {
   payrollData: EnhancedPayrollCalculation[];
@@ -190,6 +191,8 @@ export const usePayrollWorker = () => {
           workLogs: params.workLogs.map(log => ({
             id: log.id,
             staffId: log.staffId,
+            staffName: log.staffName,
+            role: log.role,
             date: log.date,
             hasScheduledStart: !!log.scheduledStartTime,
             hasScheduledEnd: !!log.scheduledEndTime
@@ -197,25 +200,63 @@ export const usePayrollWorker = () => {
         }
       });
 
-      // 1단계: 모든 WorkLog를 스태프별로 그룹화
+      // 1단계: 날짜 필터링된 WorkLog만 선별
+      const dateFilteredWorkLogs = params.workLogs.filter(log => 
+        log.date >= params.startDate && log.date <= params.endDate
+      );
+
+      logger.info('날짜 필터링 완료', {
+        component: 'usePayrollWorker',
+        data: {
+          totalWorkLogs: params.workLogs.length,
+          dateFilteredCount: dateFilteredWorkLogs.length,
+          startDate: params.startDate,
+          endDate: params.endDate
+        }
+      });
+
+      // 2단계: workLogHelpers의 groupWorkLogsByStaff 사용 (성능 최적화)
+      const groupedWorkLogs = groupWorkLogsByStaff(dateFilteredWorkLogs);
+      
+      // 3단계: confirmedStaff와 매칭되는 WorkLog만 추출
       const staffWorkLogsMap = new Map<string, UnifiedWorkLog[]>();
       
-      for (const log of params.workLogs) {
-        if (log.date >= params.startDate && log.date <= params.endDate) {
-          // 모든 confirmedStaff와 매칭되는지 확인
-          for (const staff of params.confirmedStaff) {
-            if (matchStaffIdentifier(log, [staff.userId])) {
-              if (!staffWorkLogsMap.has(staff.userId)) {
-                staffWorkLogsMap.set(staff.userId, []);
-              }
-              staffWorkLogsMap.get(staff.userId)!.push(log);
-              break; // 중복 추가 방지
+      for (const staff of params.confirmedStaff) {
+        const staffId = staff.userId;
+        const roleKey = `${staffId}_${staff.role?.toLowerCase() || ''}`;
+        
+        // 그룹화된 데이터에서 해당 스태프 찾기
+        const staffWorkLogs = groupedWorkLogs.get(roleKey) || [];
+        
+        // 추가로 matchStaffIdentifier로 더 정확한 매칭 확인
+        const matchedWorkLogs = dateFilteredWorkLogs.filter(log => 
+          matchStaffIdentifier(log, [staffId])
+        );
+        
+        // 두 결과를 합치고 중복 제거
+        const allStaffLogs = [...staffWorkLogs, ...matchedWorkLogs];
+        const uniqueStaffLogs = Array.from(
+          new Map(allStaffLogs.map(log => [log.id, log])).values()
+        );
+        
+        if (uniqueStaffLogs.length > 0) {
+          staffWorkLogsMap.set(staffId, uniqueStaffLogs);
+          
+          logger.info('스태프 WorkLog 매칭 완료', {
+            component: 'usePayrollWorker',
+            data: {
+              staffId,
+              staffName: staff.name,
+              role: staff.role,
+              groupedCount: staffWorkLogs.length,
+              matchedCount: matchedWorkLogs.length,
+              finalCount: uniqueStaffLogs.length
             }
-          }
+          });
         }
       }
 
-      logger.info('스태프별 WorkLog 그룹화 완료', {
+      logger.info('최적화된 스태프별 WorkLog 그룹화 완료', {
         component: 'usePayrollWorker',
         data: {
           staffCount: staffWorkLogsMap.size,
@@ -243,10 +284,15 @@ export const usePayrollWorker = () => {
         // 해당 스태프의 WorkLog 가져오기
         const staffWorkLogs = staffWorkLogsMap.get(staffId) || [];
         
-        // 역할별 필터링 (해당 역할의 WorkLog만)
-        const roleWorkLogs = staffWorkLogs.filter(log => log.role === staff.role);
+        // workLogHelpers의 filterWorkLogsByRole 사용
+        const roleWorkLogs = filterWorkLogsByRole(staffWorkLogs, staff.role);
 
-        logger.info('스태프 처리 중', {
+        // 날짜별 중복 제거 (같은 날짜에 동일한 역할의 WorkLog가 여러 개인 경우)
+        const uniqueWorkLogs = Array.from(
+          new Map(roleWorkLogs.map(log => [`${log.date}_${log.staffId}_${staff.role}`, log])).values()
+        );
+        
+        logger.info('스태프-역할별 WorkLog 할당', {
           component: 'usePayrollWorker',
           data: {
             staffId,
@@ -254,13 +300,16 @@ export const usePayrollWorker = () => {
             role: staff.role,
             key,
             totalStaffWorkLogs: staffWorkLogs.length,
-            roleWorkLogs: roleWorkLogs.length
+            roleFilteredWorkLogs: roleWorkLogs.length,
+            uniqueWorkLogs: uniqueWorkLogs.length,
+            workLogDates: uniqueWorkLogs.map(log => log.date),
+            workLogRoles: staffWorkLogs.map(log => ({ id: log.id, role: log.role, hasRole: !!log.role }))
           }
         });
 
         const entry = staffRoleMap.get(key);
         if (entry) {
-          entry.workLogs = roleWorkLogs; // 중복 방지를 위해 직접 할당
+          entry.workLogs = uniqueWorkLogs; // 중복 제거된 WorkLog 할당
         }
       }
 
@@ -284,17 +333,35 @@ export const usePayrollWorker = () => {
         const uniqueDates = new Set<string>();
 
         // WorkLog 기반 실제 근무시간 계산
+        logger.info('해당 스태프-역할의 WorkLog 배열 확인', {
+          component: 'usePayrollWorker',
+          data: {
+            key: key,
+            staffId: data.staffId,
+            role: data.role,
+            workLogsCount: data.workLogs.length,
+            workLogIds: data.workLogs.map(log => log.id)
+          }
+        });
+        
         for (const log of data.workLogs) {
           logger.info('WorkLog 데이터 구조 확인', {
             component: 'usePayrollWorker',
             data: {
               logId: log.id,
+              staffId: log.staffId,
+              staffName: log.staffName,
+              date: log.date,
               scheduledStartTime: log.scheduledStartTime,
               scheduledEndTime: log.scheduledEndTime,
+              actualStartTime: log.actualStartTime,
+              actualEndTime: log.actualEndTime,
+              assignedTime: log.assignedTime,
               startTimeType: typeof log.scheduledStartTime,
               endTimeType: typeof log.scheduledEndTime,
               hasStartTime: !!log.scheduledStartTime,
-              hasEndTime: !!log.scheduledEndTime
+              hasEndTime: !!log.scheduledEndTime,
+              allFields: Object.keys(log)
             }
           });
           
