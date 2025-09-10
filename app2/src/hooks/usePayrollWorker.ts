@@ -452,8 +452,11 @@ export const usePayrollWorker = () => {
         salaryTypeStats[data.salaryType as keyof typeof salaryTypeStats] += data.totalAmount;
       }
 
+      // 유니크한 스태프 수 계산 (같은 사람이 여러 역할을 가져도 1명으로 계산)
+      const uniqueStaffIds = new Set(payrollData.map(data => data.staffId));
+
       const summary: PayrollSummary = {
-        totalStaff: payrollData.length,
+        totalStaff: uniqueStaffIds.size,
         totalHours: payrollData.reduce((sum, data) => sum + data.totalHours, 0),
         totalDays: payrollData.reduce((sum, data) => sum + data.totalDays, 0),
         totalAmount: payrollData.reduce((sum, data) => sum + data.totalAmount, 0),
