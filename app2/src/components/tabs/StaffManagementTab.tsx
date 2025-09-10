@@ -66,12 +66,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   // 🚀 WorkLog.staffInfo 기반 스태프 데이터 변환 및 메모이제이션
   const staffData = useMemo(() => {
-    if (!state.workLogs || state.workLogs.size === 0) return [];
+    if (!state.workLogs || state.workLogs.size === 0 || !jobPosting?.id) return [];
     
     // WorkLog에서 고유한 스태프 정보 추출 (중복 제거)
     const staffMap = new Map();
     
     Array.from(state.workLogs.values()).forEach(workLog => {
+      // ✅ eventId 필터링 추가 - 현재 공고의 WorkLog만 처리
+      if (workLog.eventId !== jobPosting.id) return;
+      
       const staffInfo = workLog.staffInfo;
       const assignmentInfo = workLog.assignmentInfo;
       
@@ -93,7 +96,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           // 지원자 확정 정보 (WorkLog.assignmentInfo에서)
           assignedRole: assignmentInfo.assignedRole || assignmentInfo.role || '',
           assignedTime: assignmentInfo.assignedTime || '',
-          assignedDate: assignmentInfo.assignedDate || workLog.date || '',
+          // 🔧 assignedDate 대신 workLog.date 사용 (더 정확한 날짜)
+          assignedDate: workLog.date || assignmentInfo.assignedDate || '',
           // 원래 지원 정보
           postingId: assignmentInfo.postingId,
           postingTitle: '', // TODO: jobPosting 정보와 연결 필요
@@ -115,7 +119,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
     
     return Array.from(staffMap.values());
-  }, [state.workLogs]);
+  }, [state.workLogs, jobPosting?.id]);
 
   // 🎯 고유한 스태프 수 계산 (중복 제거)
   const uniqueStaffCount = useMemo(() => {
@@ -446,30 +450,43 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     // 이전: 로딩 중에는 null을 반환하여 업데이트 차단
     // 현재: 로딩 중에도 현재 캐시된 데이터를 반환하여 즉시 반영
     
-    // ✅ fallback 로직으로 여러 ID 패턴 시도
-    const candidates = generateWorkLogIdCandidates(jobPosting.id, staffId, date);
-    let workLog = null;
-    let foundWithId = null;
+    // ✅ 정확한 WorkLog ID로 먼저 조회
+    const expectedWorkLogId = createWorkLogId(jobPosting.id, staffId, date);
+    let workLog = state.workLogs?.get(expectedWorkLogId);
+    let foundWithId = workLog ? expectedWorkLogId : null;
     
-    // 모든 후보 ID에 대해 WorkLog 검색
+    // 🔍 eventId 일치 검증 (정확한 ID로 찾은 경우)
+    if (workLog && workLog.eventId === jobPosting.id) {
+      return workLog; // 정확한 매칭 - 즉시 반환
+    }
+    
+    // ✅ fallback 로직으로 여러 ID 패턴 시도 + eventId 검증
+    const candidates = generateWorkLogIdCandidates(jobPosting.id, staffId, date);
+    workLog = undefined;
+    foundWithId = null;
+    
+    // 모든 후보 ID에 대해 WorkLog 검색하되 eventId 일치하는 것만 선택
     for (const candidateId of candidates) {
       const candidateLog = state.workLogs?.get(candidateId);
-      if (candidateLog) {
+      if (candidateLog && candidateLog.eventId === jobPosting.id) {
         workLog = candidateLog;
         foundWithId = candidateId;
         break;
       }
     }
     
-    // 🔍 WorkLog 조회 결과 디버깅 정보
+    // 🔍 WorkLog 조회 결과 디버깅 정보 (eventId 검증 포함)
     const debugInfo: any = {
       requestedStaffId: staffId,
       requestedDate: date,
       jobPostingId: jobPosting.id,
+      expectedWorkLogId: expectedWorkLogId,
       candidateIds: candidates,
       foundWorkLogId: foundWithId,
       workLogFound: !!workLog,
       actualWorkLogId: workLog?.id,
+      workLogEventId: workLog?.eventId,
+      eventIdMatches: workLog ? workLog.eventId === jobPosting.id : null,
     };
     
     // WorkLog를 찾지 못한 경우 추가 디버깅 정보
@@ -479,8 +496,21 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         id.includes(staffId) || id.includes(staffId.replace(/_\d+$/, ''))
       );
       
+      // eventId가 일치하지 않는 WorkLog가 있는지 확인
+      const conflictingWorkLogs = Array.from(state.workLogs.values()).filter(wl => 
+        wl.staffId === staffId && 
+        wl.date === date && 
+        wl.eventId !== jobPosting.id
+      );
+      
       debugInfo.totalWorkLogsCount = state.workLogs.size;
       debugInfo.matchingWorkLogIds = matchingIds.slice(0, 5); // 처음 5개만
+      debugInfo.conflictingWorkLogs = conflictingWorkLogs.map(wl => ({
+        id: wl.id,
+        eventId: wl.eventId,
+        staffId: wl.staffId,
+        date: wl.date
+      }));
       debugInfo.sampleWorkLogIds = allWorkLogIds.slice(0, 3); // 샘플 3개
     }
     
