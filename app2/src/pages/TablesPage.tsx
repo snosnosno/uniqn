@@ -5,11 +5,11 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPlus, FaThList, FaUserPlus } from '../components/Icons/ReactIconsReplacement';
 
-import MoveSeatModal from '../components/MoveSeatModal';
-import ParticipantDetailModal from '../components/ParticipantDetailModal';
-import PlayerActionModal from '../components/PlayerActionModal';
-import TableCard from '../components/TableCard';
-import TableDetailModal from '../components/TableDetailModal';
+import MoveSeatModal from '../components/modals/MoveSeatModal';
+import ParticipantDetailModal from '../components/modals/ParticipantDetailModal';
+import PlayerActionModal from '../components/modals/PlayerActionModal';
+import TableCard from '../components/tables/TableCard';
+import TableDetailModal from '../components/modals/TableDetailModal';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useSettings } from '../hooks/useSettings';

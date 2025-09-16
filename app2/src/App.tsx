@@ -7,11 +7,11 @@ import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 
-import FirebaseErrorBoundary from './components/FirebaseErrorBoundary';
-import ErrorBoundary from './components/ErrorBoundary';
-import { Layout } from './components/Layout';
-import PrivateRoute from './components/PrivateRoute';
-import RoleBasedRoute from './components/RoleBasedRoute';
+import FirebaseErrorBoundary from './components/errors/FirebaseErrorBoundary';
+import ErrorBoundary from './components/errors/ErrorBoundary';
+import { Layout } from './components/layout/Layout';
+import PrivateRoute from './components/auth/PrivateRoute';
+import RoleBasedRoute from './components/auth/RoleBasedRoute';
 import { ToastContainer } from './components/Toast';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';

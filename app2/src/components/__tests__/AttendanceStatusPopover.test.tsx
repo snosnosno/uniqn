@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AttendanceStatusPopover from '../AttendanceStatusPopover';
+import AttendanceStatusPopover from '../attendance/AttendanceStatusPopover';
 import { customRender as render } from '../../__tests__/setup/test-utils';
 import { updateDoc, Timestamp } from 'firebase/firestore';
 

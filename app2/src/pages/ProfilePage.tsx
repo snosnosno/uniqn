@@ -106,7 +106,7 @@ const ProfilePage = () => {
                 const docSnap = await getDoc(profileRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data() as ProfileData;
-                    logger.debug('Profile data loaded:', { component: 'ProfilePage', data: data }); // 디버깅용 로그
+                    logger.debug('Profile data loaded:', { component: 'ProfilePage' });
                     setProfile(data);
                 } else {
                     logger.debug('No profile document found for the given user ID.', { component: 'ProfilePage' });

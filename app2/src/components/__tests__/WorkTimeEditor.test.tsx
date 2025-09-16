@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WorkTimeEditor from '../WorkTimeEditor';
+import WorkTimeEditor from '../staff/WorkTimeEditor';
 import { render } from '../../test-utils/test-utils';
 import { updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 

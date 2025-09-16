@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import AuthLayout from '../components/AuthLayout';
+import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
 import { useAuth } from '../contexts/AuthContext';
 

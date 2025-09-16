@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import EditUserModal from '../../components/EditUserModal';
+import EditUserModal from '../../components/modals/EditUserModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
 import { callFunctionLazy } from '../../utils/firebase-dynamic';

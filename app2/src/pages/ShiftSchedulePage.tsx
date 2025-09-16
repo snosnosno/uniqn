@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle } from '../components/Icons/ReactIconsReplacement';
 
 import ShiftGridComponent from '../components/ShiftGridComponent';
-import TimeIntervalSelector from '../components/TimeIntervalSelector';
+import TimeIntervalSelector from '../components/time/TimeIntervalSelector';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnifiedData } from '../hooks/useUnifiedData';
 import { WorkLog } from '../types/unifiedData';

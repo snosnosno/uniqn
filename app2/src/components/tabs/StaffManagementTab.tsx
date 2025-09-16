@@ -23,14 +23,14 @@ import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLo
 import { useResponsive } from '../../hooks/useResponsive';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { BulkOperationService } from '../../services/BulkOperationService';
-import BulkActionsModal from '../BulkActionsModal';
-import BulkTimeEditModal from '../BulkTimeEditModal';
-import QRCodeGeneratorModal from '../QRCodeGeneratorModal';
-import StaffDateGroup from '../StaffDateGroup';
-import StaffDateGroupMobile from '../StaffDateGroupMobile';
-import WorkTimeEditor from '../WorkTimeEditor';
-import StaffProfileModal from '../StaffProfileModal';
-import MobileSelectionBar from '../MobileSelectionBar';
+import BulkActionsModal from '../modals/BulkActionsModal';
+import BulkTimeEditModal from '../modals/BulkTimeEditModal';
+import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
+import StaffDateGroup from '../staff/StaffDateGroup';
+import StaffDateGroupMobile from '../staff/StaffDateGroupMobile';
+import WorkTimeEditor from '../staff/WorkTimeEditor';
+import StaffProfileModal from '../modals/StaffProfileModal';
+import MobileSelectionBar from '../layout/MobileSelectionBar';
 import '../../styles/staffSelection.css';
 
 interface StaffData {
@@ -100,7 +100,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           assignedDate: workLog.date || assignmentInfo.assignedDate || '',
           // 원래 지원 정보
           postingId: assignmentInfo.postingId,
-          postingTitle: '', // TODO: jobPosting 정보와 연결 필요
+          postingTitle: state.jobPostings.get(assignmentInfo.postingId)?.title || '알 수 없는 공고',
           // 추가 개인정보 (WorkLog.staffInfo에서)
           gender: staffInfo.gender,
           age: staffInfo.age,

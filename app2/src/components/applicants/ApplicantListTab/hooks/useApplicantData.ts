@@ -19,36 +19,14 @@ export const useApplicantData = (eventId?: string) => {
   // eventId에 해당하는 applications 필터링 및 Applicant 타입으로 변환
   const applicants = useMemo(() => {
     if (!eventId) {
-      // logger.debug('🔍 useApplicantData: eventId가 없습니다', { component: 'useApplicantData' });
       return [];
     }
     
-    // logger.debug('🔍 useApplicantData: 지원서 필터링 시작', {
-    //   component: 'useApplicantData',
-    //   data: {
-    //     eventId,
-    //     totalApplications: applications.length,
-    //     applicationsById: applications.map(app => ({ id: app.id, postId: app.postId }))
-    //   }
-    // });
     
     const filteredApplications = applications.filter(app => 
       app.eventId === eventId || app.postId === eventId
     );
     
-    // logger.info('✅ useApplicantData: 지원서 필터링 완료', {
-    //   component: 'useApplicantData',
-    //   data: {
-    //     eventId,
-    //     filteredCount: filteredApplications.length,
-    //     filteredApplications: filteredApplications.map(app => ({ 
-    //       id: app.id, 
-    //       postId: app.postId, 
-    //       applicantName: app.applicantName,
-    //       status: app.status
-    //     }))
-    //   }
-    // });
     
     return filteredApplications.map((app: Application) => {
       // Application 타입을 Applicant 타입으로 매핑

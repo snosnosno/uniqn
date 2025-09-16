@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
-import { AttendanceStatus } from '../components/AttendanceStatusCard';
+import { AttendanceStatus } from '../components/attendance/AttendanceStatusCard';
 import { formatTime } from '../utils/dateUtils';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { getTodayString } from '../utils/jobPosting/dateUtils';

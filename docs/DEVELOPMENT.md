@@ -1,17 +1,18 @@
 # 💻 T-HOLDEM 개발 가이드
 
 **최종 업데이트**: 2025년 9월 16일  
-**버전**: v0.2.0 (Production Ready)  
+**버전**: v0.2.1 (Production Ready + 코드 정리)  
 **대상**: 개발자 및 기여자
 
 > [!NOTE]
-> **안내**: 이 문서는 v0.2.0 Production Ready 버전 기준으로 작성되었습니다. 5단계 체계적 개선을 통해 TypeScript strict mode, 성능 최적화, 코드 품질이 Enterprise 수준으로 향상되었습니다.
+> **안내**: 이 문서는 v0.2.1 Production Ready 버전 기준으로 작성되었습니다. 6단계 체계적 개선을 통해 TypeScript strict mode, 성능 최적화, 코드 품질과 폴더 구조 체계화가 Enterprise 수준으로 향상되었습니다.
 
 ## 📋 목차
 
 1. [개발 환경 설정](#-개발-환경-설정)
 2. [프로젝트 구조](#-프로젝트-구조)
-3. [코딩 규칙](#-코딩-규칙)
+3. **[컴포넌트 구조 가이드](#-컴포넌트-구조-가이드)** ✨ *새로운 섹션*
+4. [코딩 규칙](#-코딩-규칙)
 4. [UnifiedDataContext 사용법](#-unifieddatacontext-사용법)
 5. [성능 최적화 가이드](#-성능-최적화-가이드)
 6. [테스트 전략](#-테스트-전략)
@@ -74,11 +75,33 @@ npm run format
 
 ```
 app2/src/
-├── components/          # 재사용 가능한 UI 컴포넌트
-│   ├── common/         # 공통 컴포넌트 (버튼, 입력 등)
-│   ├── tables/         # 테이블 관련 컴포넌트
-│   ├── modals/         # 모달 컴포넌트
-│   └── tabs/           # 탭 컴포넌트
+├── components/          # 재사용 가능한 UI 컴포넌트 (체계화됨)
+│   ├── 🔍 전문 카테고리 폴더들 (v0.2.1 신규)
+│   │   ├── attendance/     # 출석 관리 (2개)
+│   │   ├── auth/           # 인증 관리 (4개)
+│   │   ├── charts/         # 차트 관리 (2개)
+│   │   ├── errors/         # 에러 처리 (3개)
+│   │   ├── layout/         # 레이아웃 (3개)
+│   │   ├── modals/         # 모달 관리 (12개)
+│   │   ├── staff/          # 스태프 관리 (9개)
+│   │   ├── tables/         # 테이블 관리 (2개)
+│   │   ├── time/           # 시간 관리 (2개)
+│   │   └── upload/         # 업로드 (1개)
+│   │
+│   ├── 📁 기존 카테곤리 폴더들
+│   │   ├── applicants/     # 지원자 관리
+│   │   ├── common/         # 공통 컴포넌트
+│   │   ├── dev/            # 개발 도구
+│   │   ├── jobPosting/     # 구인공고
+│   │   ├── navigation/     # 네비게이션
+│   │   ├── payroll/        # 급여 관리
+│   │   ├── tabs/           # 탭 컴포넌트
+│   │   └── ui/             # UI 컴포넌트
+│   │
+│   └── 🔧 유틸리티 파일들 (루트 레벨)
+│       ├── DashboardCard.tsx
+│       ├── FormField.tsx
+│       └── LoadingSpinner.tsx
 │
 ├── contexts/           # React Context 
 │   ├── UnifiedDataContext.tsx  # 🎯 통합 데이터 관리
@@ -135,6 +158,172 @@ app2/src/
 | **유틸리티** | camelCase | `payrollCalculations.ts` |
 | **타입** | camelCase | `unifiedData.ts` |
 | **상수** | UPPER_CASE | `API_ENDPOINTS.ts` |
+
+## 🏢 컴포넌트 구조 가이드
+
+> **v0.2.1 주요 개선**: 코드 정리를 통해 47개 컴포넌트를 17개로 정리하고 10개 카테고리로 체계화했습니다.
+
+### 📊 컴포넌트 카테고리 전략
+
+#### 카테고리별 역할 정의
+
+| 카테고리 | 주요 역할 | 사용 예시 |
+|----------|-----------|----------|
+| **attendance** | 출석 및 근무 관리 | 출석 체크, 근무시간 처리 |
+| **auth** | 인증 및 권한 관리 | 로그인, 채도 보호, 권한 제어 |
+| **charts** | 차트 및 데이터 시각화 | 대시보드, 성과 그래프 |
+| **errors** | 에러 처리 및 예외 관리 | 전역 에러 수집, 폴백 처리 |
+| **layout** | 페이지 레이아웃 및 구조 | 네비게이션, 사이드바, 헤더 |
+| **modals** | 모달 및 팝업 | 지원서, 상세정보, 확인 대화상자 |
+| **staff** | 스태프 관리 전반 | 스태프 목록, 정보 카드, 검색 |
+| **tables** | 테이블 및 사용자 좌석 관리 | 대전 테이블, 좌석 배치 |
+| **time** | 시간 및 날짜 관리 | 날짜 선택, 시간 간격 설정 |
+| **upload** | 파일 업로드 및 처리 | CSV 업로드, 이미지 처리 |
+
+### 🔄 Import 경로 규칙
+
+#### 올바른 Import 패턴
+
+```typescript
+// ✅ 카테고리별 import (바람직한 형태)
+import AttendanceStatusPopover from '../attendance/AttendanceStatusPopover';
+import ErrorBoundary from '../errors/ErrorBoundary';
+import { Seat } from '../tables/Seat';
+import DateDropdownSelector from '../time/DateDropdownSelector';
+
+// ✅ 같은 카테고리 내에서 import
+import StaffCard from './StaffCard';             // staff/ 내에서
+import VirtualizedStaffTable from './VirtualizedStaffTable';
+
+// ✅ 상위 디렉토리에서 import
+import { useUnifiedData } from '../../hooks/useUnifiedData';
+import { logger } from '../../utils/logger';
+
+// ❌ 이전 패턴 (사용 금지)
+import AttendanceStatusPopover from '../AttendanceStatusPopover';
+import ErrorBoundary from '../ErrorBoundary';
+```
+
+#### 경로 깊이 규칙
+
+```typescript
+// 같은 카테고리 내에서
+'./ComponentName'
+
+// 다른 카테고리에서
+'../category/ComponentName'
+
+// 상위 디렉토리에서
+'../../hooks/hookName'
+'../../utils/utilName'
+'../../types/typeName'
+```
+
+### 🔨 새 컴포넌트 추가 가이드
+
+#### 1번: 적절한 카테고리 선택
+
+```bash
+# 예시: 새로운 출석 관리 컴포넌트
+mkdir -p src/components/attendance
+touch src/components/attendance/AttendanceChart.tsx
+
+# 예시: 새로운 인증 컴포넌트
+touch src/components/auth/TwoFactorAuth.tsx
+
+# 예시: 새로운 카테고리 생성 (예: 알림)
+mkdir -p src/components/notifications
+touch src/components/notifications/NotificationBell.tsx
+```
+
+#### 2번: 컴포넌트 생성 템플릿
+
+```typescript
+// src/components/[category]/NewComponent.tsx
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+
+// 타입 정의
+interface NewComponentProps {
+  // props 정의
+}
+
+// 컴포넌트 정의
+const NewComponent: React.FC<NewComponentProps> = ({
+  // props
+}) => {
+  const { t } = useTranslation();
+  
+  return (
+    <div className="">
+      {/* JSX 내용 */}
+    </div>
+  );
+};
+
+export default NewComponent;
+```
+
+#### 3번: 테스트 파일 생성
+
+```typescript
+// src/components/[category]/__tests__/NewComponent.test.tsx
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import NewComponent from '../NewComponent';
+
+describe('NewComponent', () => {
+  test('renders correctly', () => {
+    render(<NewComponent />);
+    // 테스트 코드
+  });
+});
+```
+
+### 🔄 컴포넌트 이동 가이드
+
+#### 이동 처리 체크리스트
+
+```bash
+# 1. 컴포넌트 파일 이동
+mv src/components/OldComponent.tsx src/components/newCategory/
+
+# 2. import 경로 업데이트 (대량 처리 시 sed 사용)
+find src -name "*.tsx" -o -name "*.ts" | xargs sed -i "s|from '../OldComponent'|from '../newCategory/OldComponent'|g"
+
+# 3. 테스트 파일 import 경로 수정
+find src -name "*.test.*" | xargs sed -i "s|from '../OldComponent'|from '../newCategory/OldComponent'|g"
+
+# 4. TypeScript 에러 확인
+npm run type-check
+
+# 5. 테스트 실행
+npm test
+
+# 6. 빌드 테스트
+npm run build
+```
+
+### 📋 컴포넌트 구조 베스트 프랙티스
+
+#### 할 일
+- **역할에 맞는 카테고리 사용**: 컴포넌트의 주요 역할에 따라 배치
+- **일관된 import 경로 사용**: 카테고리 기반 경로 유지
+- **채형화된 폴더 구조 유지**: 새 컴포넌트도 체계적으로 배치
+- **테스트 파일 동기화**: 컴포넌트 이동 시 테스트도 함께 업데이트
+
+#### 하지 말 일
+- **루트 레벨에 컴포넌트 배치**: components/ 직하에 컴포넌트 생성 금지
+- **임의의 경로 사용**: '../../../' 같은 깊은 상대 경로 피하기
+- **여러 역할 혼합**: 한 컴포넌트가 여러 카테고리 역할 하는 것 피하기
+
+### 📈 마이그레이션 도구
+
+v0.2.0에서 v0.2.1로 마이그레이션 시 참고:
+- **마이그레이션 가이드**: `docs/MIGRATION_GUIDE.md`
+- **코드 정리 리포트**: `docs/CLEANUP_REPORT.md`
+
+---
 
 ## 📏 코딩 규칙
 

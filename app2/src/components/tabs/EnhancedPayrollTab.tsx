@@ -17,7 +17,6 @@ interface EnhancedPayrollTabProps {
 }
 
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eventId }) => {
-  // const { i18n } = useTranslation(); // 현재 미사용
   
   // 계산 중복 방지를 위한 ref
   const hasCalculated = useRef(false);

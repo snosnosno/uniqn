@@ -5,7 +5,7 @@ import { useTemplateManager } from '../../../hooks/useTemplateManager';
 import { LOCATIONS } from '../../../utils/jobPosting/jobPostingHelpers';
 import Modal from '../../ui/Modal';
 import Button from '../../common/Button';
-import { Input } from '../../common/Input';
+import Input from '../../ui/Input';
 import { Select } from '../../common/Select';
 import DateSpecificRequirementsNew from '../DateSpecificRequirementsNew'; 
 import PreQuestionManager from '../PreQuestionManager';

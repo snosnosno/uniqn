@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
 import { useNavigate, Link } from "react-router-dom";
 
-import AuthLayout from '../components/AuthLayout';
+import AuthLayout from '../components/auth/AuthLayout';
 import FormField from "../components/FormField";
 import { useAuth } from "../contexts/AuthContext";
 

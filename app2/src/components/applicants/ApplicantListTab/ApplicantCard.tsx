@@ -6,7 +6,7 @@ import {
   getApplicantSelections, 
   formatDateDisplay
 } from './utils/applicantHelpers';
-import StaffProfileModal from '../../StaffProfileModal';
+import StaffProfileModal from '../../modals/StaffProfileModal';
 import { StaffData } from '../../../hooks/useStaffManagement';
 
 interface ApplicantCardProps {

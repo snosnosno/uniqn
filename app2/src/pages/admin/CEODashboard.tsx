@@ -16,8 +16,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { DashboardCard } from '../../components/DashboardCard';
-import { SimpleBarChart } from '../../components/SimpleChart';
-import { AnimatedNumber } from '../../components/AnimatedNumber';
+import { SimpleBarChart } from '../../components/charts/SimpleChart';
+import { AnimatedNumber } from '../../components/charts/AnimatedNumber';
 import { useCEODashboardOptimized } from '../../hooks/useCEODashboardOptimized';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { withPerformanceMonitoring, usePerformanceMeasure } from '../../utils/performanceMonitor';

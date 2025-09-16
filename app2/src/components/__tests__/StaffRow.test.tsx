@@ -1,12 +1,12 @@
 import React from 'react';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import StaffRow from '../StaffRow';
+import StaffRow from '../staff/StaffRow';
 import { render } from '../../test-utils/test-utils';
 import type { StaffData } from '../../hooks/useStaffManagement';
 
 // AttendanceStatusCard 컴포넌트 모킹
-jest.mock('../AttendanceStatusCard', () => ({
+jest.mock('../attendance/AttendanceStatusCard', () => ({
   __esModule: true,
   default: ({ status, onEdit }: any) => (
     <div data-testid="attendance-status-card">
@@ -17,7 +17,7 @@ jest.mock('../AttendanceStatusCard', () => ({
 }));
 
 // AttendanceStatusPopover 컴포넌트 모킹
-jest.mock('../AttendanceStatusPopover', () => ({
+jest.mock('../attendance/AttendanceStatusPopover', () => ({
   __esModule: true,
   default: ({ children, onStatusChange }: any) => (
     <div data-testid="attendance-popover">

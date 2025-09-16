@@ -6,8 +6,8 @@ import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 
 import Modal from '../components/ui/Modal';
-import BulkAddParticipantsModal from '../components/BulkAddParticipantsModal';
-import CSVUploadButton from '../components/CSVUploadButton';
+import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsModal';
+import CSVUploadButton from '../components/upload/CSVUploadButton';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
 import { ParsedParticipant, downloadCSV, generateSampleCSV } from '../utils/csvParser';

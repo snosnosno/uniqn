@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-import StaffCard from '../StaffCard';
+import StaffCard from '../staff/StaffCard';
 import { StaffData } from '../../hooks/useStaffManagement';
 import { render } from '../../test-utils/test-utils';
 

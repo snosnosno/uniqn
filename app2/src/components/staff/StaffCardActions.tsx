@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import AttendanceStatusPopover from '../AttendanceStatusPopover';
+import AttendanceStatusPopover from '../attendance/AttendanceStatusPopover';
 import { UnifiedWorkLog } from '../../types/unified/workLog';
 
 type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
