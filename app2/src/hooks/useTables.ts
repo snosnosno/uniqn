@@ -1,5 +1,6 @@
 import { collection, onSnapshot, doc, runTransaction, DocumentData, QueryDocumentSnapshot, getDocs, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 import { useState, useEffect, useCallback } from 'react';
 
 import { db } from '../firebase';
@@ -251,7 +252,7 @@ export const useTables = () => {
   
   const rebalanceAndAssignAll = useCallback(async (participants: Participant[]) => {
     if (participants.length === 0) {
-        alert("배정할 참가자가 없습니다.");
+        toast.warning("배정할 참가자가 없습니다.");
         return;
     }
     setLoading(true);
@@ -324,7 +325,7 @@ export const useTables = () => {
       };
       logAction('action_failed', errorContext);
       logger.error('좌석 자동 재배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
-      alert(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
+      toast.error(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
       setError(e as Error);
       throw e;
     } finally {
@@ -464,7 +465,7 @@ export const useTables = () => {
     // 활성 참가자만 필터링
     const activeParticipants = participants.filter(p => p.status === 'active');
     if (activeParticipants.length === 0) {
-      alert("칩 균형 재배치할 활성 참가자가 없습니다.");
+      toast.warning("칩 균형 재배치할 활성 참가자가 없습니다.");
       return;
     }
 
@@ -838,7 +839,7 @@ export const useTables = () => {
       };
       logAction('action_failed', errorContext);
       logger.error('칩 균형 재배치 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
-      alert(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
+      toast.error(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
       setError(e as Error);
       throw e;
     } finally {

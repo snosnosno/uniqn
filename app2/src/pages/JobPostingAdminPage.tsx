@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useJobPostingOperations } from '../hooks/useJobPostingOperations';
 import { usePermissions } from '../hooks/usePermissions';
+import { toast } from '../utils/toast';
 import Button from '../components/common/Button';
 import JobPostingForm from '../components/jobPosting/JobPostingForm';
 import JobPostingList from '../components/jobPosting/JobPostingList';
@@ -28,10 +29,10 @@ const JobPostingAdminPage = () => {
   const handleCreate = async (formData: any) => {
     try {
       await handleCreateJobPosting(formData);
-      alert('공고가 성공적으로 등록되었습니다.');
+      toast.success('공고가 성공적으로 등록되었습니다.');
       setIsCreateFormVisible(false);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '공고 등록 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '공고 등록 중 오류가 발생했습니다.');
       throw error; // JobPostingForm에서 로딩 상태 해제를 위해
     }
   };
@@ -40,9 +41,9 @@ const JobPostingAdminPage = () => {
   const handleUpdate = async (postId: string, formData: any) => {
     try {
       await handleUpdateJobPosting(postId, formData);
-      alert('공고가 성공적으로 수정되었습니다.');
+      toast.success('공고가 성공적으로 수정되었습니다.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
       throw error;
     }
   };
@@ -53,11 +54,11 @@ const JobPostingAdminPage = () => {
     try {
       const success = await handleDeleteJobPosting(postId, title);
       if (success) {
-        alert('공고가 성공적으로 삭제되었습니다.');
+        toast.success('공고가 성공적으로 삭제되었습니다.');
       }
       return success;
     } catch (error) {
-      alert(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
       throw error;
     } finally {
       _setIsDeleting(null);

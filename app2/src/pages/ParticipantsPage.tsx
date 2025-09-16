@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { writeBatch, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 
 import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/BulkAddParticipantsModal';
@@ -127,7 +128,7 @@ const ParticipantsPage: React.FC = () => {
   // 선택 삭제 함수
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) {
-      alert('삭제할 참가자를 선택해주세요.');
+      toast.warning('삭제할 참가자를 선택해주세요.');
       return;
     }
 
@@ -164,14 +165,14 @@ const ParticipantsPage: React.FC = () => {
       });
       
       setSelectedIds(new Set());
-      alert(`${selectedIds.size}명의 참가자가 삭제되었습니다.`);
+      toast.success(`${selectedIds.size}명의 참가자가 삭제되었습니다.`);
     } catch (error) {
       logger.error('선택 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'ParticipantsPage',
         operation: 'handleDeleteSelected',
         data: { selectedCount: selectedIds.size }
       });
-      alert('삭제 중 오류가 발생했습니다.');
+      toast.error('삭제 중 오류가 발생했습니다.');
     } finally {
       setIsDeleting(false);
     }
@@ -205,14 +206,14 @@ const ParticipantsPage: React.FC = () => {
         }
       });
       
-      alert(`${participants.length}명의 참가자가 모두 삭제되었습니다.`);
+      toast.success(`${participants.length}명의 참가자가 모두 삭제되었습니다.`);
     } catch (error) {
       logger.error('전체 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'ParticipantsPage',
         operation: 'handleDeleteAll',
         data: { totalCount: participants.length }
       });
-      alert('전체 삭제 중 오류가 발생했습니다.');
+      toast.error('전체 삭제 중 오류가 발생했습니다.');
     } finally {
       setIsDeleting(false);
     }

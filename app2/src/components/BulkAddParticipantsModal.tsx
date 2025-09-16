@@ -3,6 +3,7 @@ import Modal, { ModalFooter } from './ui/Modal';
 import { parseParticipantsText, ParsedParticipant } from '../utils/csvParser';
 import { FaCheckCircle, FaExclamationTriangle } from './Icons/ReactIconsReplacement';
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 
 interface BulkAddParticipantsModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
   const handleConfirm = async () => {
     const validParticipants = parsedData.filter(p => p.isValid);
     if (validParticipants.length === 0) {
-      alert('추가할 유효한 참가자가 없습니다.');
+      toast.warning('추가할 유효한 참가자가 없습니다.');
       return;
     }
 
@@ -46,7 +47,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
         component: 'BulkAddParticipantsModal',
         data: { count: validParticipants.length }
       });
-      alert('참가자 추가 중 오류가 발생했습니다.');
+      toast.error('참가자 추가 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
     }

@@ -2,6 +2,7 @@ import React from 'react';
 import Modal from '../../ui/Modal';
 import Button from '../../common/Button';
 import { Input } from '../../common/Input';
+import { toast } from '../../../utils/toast';
 
 interface TemplateModalProps {
   isOpen: boolean;
@@ -28,14 +29,14 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
     e.preventDefault();
     
     if (!templateName.trim()) {
-      alert('템플릿 이름을 입력해주세요.');
+      toast.warning('템플릿 이름을 입력해주세요.');
       return;
     }
 
     try {
       await onSave();
     } catch (error) {
-      alert(error instanceof Error ? error.message : '템플릿 저장 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '템플릿 저장 중 오류가 발생했습니다.');
     }
   };
 

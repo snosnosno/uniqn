@@ -906,7 +906,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   };
   
   const handleBulkMessage = async (staffIds: string[], message: string) => {
-    alert(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
+    showSuccess(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
   };
   
   const handleBulkStatusUpdate = async (staffIds: string[], status: string) => {

@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import useUnifiedData from '../../hooks/useUnifiedData';
 import { useToast } from '../../hooks/useToast';
+import { JobPosting } from '../../types/unifiedData';
+import { Application } from '../../types/application';
 
 // 🔧 통합 타입 정의 (Application + Applicant 호환)
 interface UnifiedApplicant {
@@ -40,14 +42,14 @@ interface UnifiedApplicant {
   assignedRoles?: string[];
   assignedTime?: string;
   assignedTimes?: string[];
-  assignedDate?: any;
-  assignedDates?: any[];
+  assignedDate?: string | Date | { seconds: number };
+  assignedDates?: Array<string | Date | { seconds: number }>;
   
   // 메타데이터
-  appliedAt?: any;
-  confirmedAt?: any;
-  createdAt?: any;
-  updatedAt?: any;
+  appliedAt?: string | Date | { seconds: number };
+  confirmedAt?: string | Date | { seconds: number };
+  createdAt?: string | Date | { seconds: number };
+  updatedAt?: string | Date | { seconds: number };
   
   // 추가 정보
   gender?: string | undefined;
@@ -65,7 +67,7 @@ interface UnifiedApplicant {
 }
 
 interface ApplicantListTabUnifiedProps {
-  jobPosting?: any;
+  jobPosting?: JobPosting;
 }
 
 // 가상화된 지원자 아이템 타입
@@ -138,7 +140,15 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
                   <p>⏰ 시간: {applicant.assignedTime}</p>
                 )}
                 {applicant.appliedAt && (
-                  <p>📅 지원일: {new Date(applicant.appliedAt.toDate?.() || applicant.appliedAt).toLocaleDateString('ko-KR')}</p>
+                  <p>📅 지원일: {new Date(
+                    applicant.appliedAt && typeof applicant.appliedAt === 'object' && 'toDate' in applicant.appliedAt 
+                      ? (applicant.appliedAt.toDate as () => Date)() 
+                      : applicant.appliedAt instanceof Date 
+                        ? applicant.appliedAt 
+                        : typeof applicant.appliedAt === 'string' 
+                          ? applicant.appliedAt 
+                          : new Date()
+                  ).toLocaleDateString('ko-KR')}</p>
                 )}
               </div>
               
@@ -220,24 +230,16 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
     
     const applications = getApplicationsByPostId(jobPosting.id);
     
-    return applications.map((app: any) => {
+    return applications.map((app: Application) => {
       // Application 타입을 UnifiedApplicant로 안전하게 변환
-      const unified: UnifiedApplicant = {
+      const unified = {
         // 기본 필드 매핑
         id: app.id,
         applicantId: app.applicantId,
         applicantName: app.applicantName || '이름 없음',
         
-        // 상태 통합 (다양한 상태값 호환)
-        status: (() => {
-          switch (app.status) {
-            case 'pending': return 'applied';
-            case 'confirmed': return 'confirmed';
-            case 'rejected': return 'rejected';
-            case 'completed': return 'confirmed';
-            default: return 'applied';
-          }
-        })(),
+        // 상태 통합 (Application 타입 기준)
+        status: app.status === 'cancelled' ? 'rejected' : app.status,
         
         // 연락처 정보 통합
         email: app.applicantEmail,
@@ -250,14 +252,14 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
         eventId: app.postId, // postId를 eventId로도 사용
         postTitle: app.postTitle,
         
-        // 역할 및 시간 정보
-        role: app.role,
-        assignedRole: app.assignedRole,
-        assignedRoles: app.assignedRoles,
-        assignedTime: app.assignedTime,
-        assignedTimes: app.assignedTimes,
-        assignedDate: app.assignedDate,
-        assignedDates: app.assignedDates,
+        // 역할 및 시간 정보 (assignments 배열에서 추출)
+        role: app.assignments?.[0]?.role || app.assignments?.[0]?.roles?.[0] || '',
+        assignedRole: app.assignments?.[0]?.role || app.assignments?.[0]?.roles?.[0] || '',
+        assignedRoles: app.assignments?.flatMap(a => a.roles || (a.role ? [a.role] : [])) || [],
+        assignedTime: app.assignments?.[0]?.timeSlot || '',
+        assignedTimes: app.assignments?.map(a => a.timeSlot).filter(Boolean) || [],
+        assignedDate: app.assignments?.[0]?.dates?.[0] || '',
+        assignedDates: app.assignments?.flatMap(a => a.dates) || [],
         
         // 시간 정보
         appliedAt: app.appliedAt || app.createdAt,
@@ -275,7 +277,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
         preQuestionAnswers: (app as any).preQuestionAnswers
       };
       
-      return unified;
+      return unified as UnifiedApplicant;
     });
   }, [jobPosting?.id, getApplicationsByPostId]);
   

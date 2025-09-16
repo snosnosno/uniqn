@@ -17,6 +17,14 @@ interface SelectedStaff {
   workLogId?: string;
 }
 
+interface WorkLogUpdateData {
+  [key: string]: any;
+  updatedAt: Timestamp;
+  scheduledStartTime?: Timestamp | null;
+  scheduledEndTime?: Timestamp | null;
+  status?: string;
+}
+
 interface BulkTimeEditModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -186,18 +194,23 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             const endTime = combineTime(endHour, endMinute);
             const baseDate = parseToDate(dateString) || new Date();
             
-            const updateData: any = {
+            const updateData: WorkLogUpdateData = {
               updatedAt: now
             };
             
-            // 시작 시간이 설정된 경우에만 업데이트
+            // 시간이 설정된 경우에만 업데이트
             if (startTime) {
-              updateData.scheduledStartTime = parseTimeString(startTime, baseDate, false);
+              const parsedStartTime = parseTimeString(startTime, baseDate, false);
+              if (parsedStartTime) {
+                updateData.scheduledStartTime = parsedStartTime;
+              }
             }
             
-            // 종료 시간이 설정된 경우에만 업데이트
             if (endTime) {
-              updateData.scheduledEndTime = parseTimeString(endTime, baseDate, true, startTime);
+              const parsedEndTime = parseTimeString(endTime, baseDate, true, startTime);
+              if (parsedEndTime) {
+                updateData.scheduledEndTime = parsedEndTime;
+              }
             }
             
             // workLog가 없는 경우 새로 생성
@@ -222,7 +235,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             }
           } else {
             // 출석 상태 업데이트
-            const updateData: any = {
+            const updateData: WorkLogUpdateData = {
               status: attendanceStatus,
               updatedAt: now
             };

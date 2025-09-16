@@ -6,6 +6,7 @@ import Modal from '../../ui/Modal';
 import Button from '../../common/Button';
 import LoadingSpinner from '../../LoadingSpinner';
 import { EmptyState, Badge, InfoCard } from '../../common';
+import { toast } from '../../../utils/toast';
 
 interface LoadTemplateModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
     try {
       await onLoadTemplate(template);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '템플릿 불러오기 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '템플릿 불러오기 중 오류가 발생했습니다.');
     }
   };
 
@@ -38,7 +39,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
     try {
       await onDeleteTemplate(templateId, templateName);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '템플릿 삭제 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '템플릿 삭제 중 오류가 발생했습니다.');
     }
   };
 

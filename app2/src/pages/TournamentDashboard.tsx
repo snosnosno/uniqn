@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
+import { toast } from '../utils/toast';
 import { IconType, FaUsers, FaClock, FaTrophy } from '../components/Icons/ReactIconsReplacement';
 
 import { TournamentContext, Participant } from '../contexts/TournamentContext';
@@ -24,19 +25,19 @@ const TournamentDashboard = () => {
             const result = await setupTestData();
             switch (result) {
                 case 'SUCCESS':
-                    alert(t('tournamentDashboard.seeding.success'));
+                    toast.success(t('tournamentDashboard.seeding.success'));
                     window.location.reload();
                     break;
                 case 'SKIPPED':
-                    alert(t('tournamentDashboard.seeding.skipped'));
+                    toast.info(t('tournamentDashboard.seeding.skipped'));
                     break;
                 case 'ERROR':
-                    alert(t('tournamentDashboard.seeding.error'));
+                    toast.error(t('tournamentDashboard.seeding.error'));
                     break;
             }
         } catch (error) {
             logger.error('Error setting up test data:', error instanceof Error ? error : new Error(String(error)), { component: 'TournamentDashboard' });
-            alert(t('tournamentDashboard.seeding.unexpectedError'));
+            toast.error(t('tournamentDashboard.seeding.unexpectedError'));
         } finally {
             setIsSeeding(false);
         }

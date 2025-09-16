@@ -137,7 +137,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     try {
       // 실시간 WorkLogs를 날짜별로 정렬
       const sortedLogs = [...uniqueWorkLogs].sort((a, b) => {
-        const getDateValue = (date: any) => {
+        const getDateValue = (date: string | Date | { seconds: number } | null | undefined) => {
           if (!date) return 0;
           try {
             if (typeof date === 'object' && 'seconds' in date) {
@@ -181,7 +181,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           }
           
           // 시간 데이터 파싱 - workLogMapper의 함수 사용
-          const parseTime = (timeValue: any): string => {
+          const parseTime = (timeValue: string | Date | { seconds: number } | null | undefined): string => {
             const result = parseTimeToString(timeValue);
             
             if (result) {

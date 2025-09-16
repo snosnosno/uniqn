@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from '../utils/toast';
 
 import { useTournament } from '../contexts/TournamentContextAdapter';
 
@@ -56,7 +57,7 @@ const PrizesPage: React.FC = () => {
   const handleSave = () => {
     const payoutsToSave = isManual ? manualPayouts : calculatedPayouts;
     // SAVE_PAYOUTS action not yet implemented
-    alert(t('prizes.alertSaved'));
+    toast.success(t('prizes.alertSaved'));
   }
 
   const formatCurrency = (amount: number) => {

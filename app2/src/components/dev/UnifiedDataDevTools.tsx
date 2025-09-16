@@ -10,6 +10,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useUnifiedData from '../../hooks/useUnifiedData';
 import { logger } from '../../utils/logger';
+import { toast } from '../../utils/toast';
 import smartCache from '../../utils/smartCache';
 
 interface DevToolsProps {
@@ -171,12 +172,12 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
       logger.info('개발자 도구에서 캐시 초기화', {
         component: 'UnifiedDataDevTools'
       });
-      alert('캐시가 초기화되었습니다.');
+      toast.success('캐시가 초기화되었습니다.');
     } catch (error) {
       logger.error('캐시 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'UnifiedDataDevTools'
       });
-      alert('캐시 초기화 중 오류가 발생했습니다.');
+      toast.error('캐시 초기화 중 오류가 발생했습니다.');
     }
   }, []);
 

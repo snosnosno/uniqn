@@ -6,6 +6,7 @@ import { convertToDateString } from '../../utils/jobPosting/dateUtils';
 import Button from '../common/Button';
 import DateDropdownSelector from '../DateDropdownSelector';
 import { Select } from '../common/Select';
+import { toast } from '../../utils/toast';
 
 interface DateSpecificRequirementsProps {
   requirements: DateSpecificRequirement[];
@@ -57,7 +58,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
     // 최대 날짜 개수 제한 (30개)
     if (requirements.length >= 30) {
-      alert('최대 30개의 날짜까지만 추가할 수 있습니다.');
+      toast.warning('최대 30개의 날짜까지만 추가할 수 있습니다.');
       return;
     }
 
@@ -71,14 +72,14 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     
     // 과거 날짜 체크 (오늘은 선택 가능)
     if (selectedMidnight < todayMidnight) {
-      alert('과거 날짜는 선택할 수 없습니다.');
+      toast.error('과거 날짜는 선택할 수 없습니다.');
       return;
     }
     
     // 1년 이후 날짜 체크
     const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
     if (selectedMidnight > oneYearLater) {
-      alert('1년 이후의 날짜는 선택할 수 없습니다.');
+      toast.error('1년 이후의 날짜는 선택할 수 없습니다.');
       return;
     }
     
@@ -88,7 +89,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     );
     
     if (isDuplicate) {
-      alert('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
+      toast.warning('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
       return;
     }
     
@@ -129,14 +130,14 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     
     // 과거 날짜 체크 (오늘은 선택 가능)
     if (selectedMidnight < todayMidnight) {
-      alert('과거 날짜는 선택할 수 없습니다.');
+      toast.error('과거 날짜는 선택할 수 없습니다.');
       return;
     }
     
     // 1년 이후 날짜 체크
     const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
     if (selectedMidnight > oneYearLater) {
-      alert('1년 이후의 날짜는 선택할 수 없습니다.');
+      toast.error('1년 이후의 날짜는 선택할 수 없습니다.');
       return;
     }
     
@@ -146,7 +147,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     );
     
     if (isDuplicate) {
-      alert('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
+      toast.warning('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
       return;
     }
     
@@ -165,7 +166,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   // 날짜 제거
   const removeDateRequirement = (index: number) => {
     if (requirements.length === 1) {
-      alert('최소 하나의 날짜는 필요합니다.');
+      toast.warning('최소 하나의 날짜는 필요합니다.');
       return;
     }
     
@@ -234,14 +235,14 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       
       // 종료일 검증
       if (endDateObj <= startDate) {
-        alert('종료일은 시작일보다 이후여야 합니다.');
+        toast.error('종료일은 시작일보다 이후여야 합니다.');
         return;
       }
       
       // 날짜 범위 검증 (최대 30일)
       const daysDiff = Math.ceil((endDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
       if (daysDiff > 30) {
-        alert('날짜 범위는 최대 30일까지만 선택할 수 있습니다.');
+        toast.warning('날짜 범위는 최대 30일까지만 선택할 수 있습니다.');
         return;
       }
       
@@ -277,7 +278,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     if (requirement && timeSlot) {
       // 최대 역할 개수 제한 (10개)
       if (timeSlot.roles.length >= 10) {
-        alert('한 시간대에 최대 10개의 역할까지만 추가할 수 있습니다.');
+        toast.warning('한 시간대에 최대 10개의 역할까지만 추가할 수 있습니다.');
         return;
       }
       
@@ -573,7 +574,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                   
                                   // 인원수 범위 검증 (1-50명)
                                   if (isNaN(numValue) || numValue < 1 || numValue > 50) {
-                                    alert('인원수는 1명에서 50명 사이로 입력해주세요.');
+                                    toast.error('인원수는 1명에서 50명 사이로 입력해주세요.');
                                     return;
                                   }
                                   

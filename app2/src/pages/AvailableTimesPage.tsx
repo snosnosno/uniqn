@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-
+import { toast } from '../utils/toast';
 
 import { logger } from '../utils/logger';
 const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -54,17 +54,17 @@ const AvailableTimesPage = () => {
 
   const handleSubmit = async () => {
     if (!availabilityRef) {
-      alert(t('availableTimes.alerts.notLoggedIn'));
+      toast.error(t('availableTimes.alerts.notLoggedIn'));
       return;
     }
     try {
       // Before saving, translate keys back to a neutral format (English keys) if needed, or store keys directly.
       // Storing keys is better for i18n.
       await setDoc(availabilityRef, availability);
-      alert(t('availableTimes.alerts.updateSuccess'));
+      toast.success(t('availableTimes.alerts.updateSuccess'));
     } catch (err) {
       logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AvailableTimesPage' });
-      alert(t('availableTimes.alerts.updateFailed'));
+      toast.error(t('availableTimes.alerts.updateFailed'));
     }
   };
 

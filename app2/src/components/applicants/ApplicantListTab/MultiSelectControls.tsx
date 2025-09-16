@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../utils/logger';
+import { toast } from '../../../utils/toast';
 import { Applicant, Assignment } from './types';
 import { 
   getApplicantSelectionsByDate, 
@@ -256,7 +257,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   const _handleTimeChange = async (_index: number, _newTime: string) => {
     // 시간 변경 기능은 현재 비활성화됨
     // 향후 필요시 구현 예정
-    alert('시간 변경 기능은 준비 중입니다.');
+    toast.info('시간 변경 기능은 준비 중입니다.');
   };
   
   /**

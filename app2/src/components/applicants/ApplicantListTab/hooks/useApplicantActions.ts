@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
+import { toast } from '../../../../utils/toast';
 import { db } from '../../../../firebase';
 import { JobPostingUtils, JobPosting } from '../../../../types/jobPosting';
 import { Assignment } from '../../../../types/application';
@@ -170,13 +171,13 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
   const handleConfirmApplicant = useCallback(async (applicant: Applicant, assignments: Assignment[]) => {
     // 권한 체크
     if (!canEdit) {
-      alert('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+      toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
       return;
     }
     
     
     if (!assignments || assignments.length === 0) {
-      alert(t('jobPostingAdmin.alerts.selectRoleToAssign'));
+      toast.warning(t('jobPostingAdmin.alerts.selectRoleToAssign'));
       return;
     }
     if (!jobPosting) return;
@@ -204,7 +205,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
         if (existingConfirmations.length > 0) {
           const duplicateDates = existingConfirmations.map((s: any) => s.date).join(', ');
-          alert(`같은 날짜에 중복 확정할 수 없습니다.\n중복 날짜: ${duplicateDates}`);
+          toast.warning(`같은 날짜에 중복 확정할 수 없습니다.\n중복 날짜: ${duplicateDates}`);
           return;
         }
       }
@@ -228,7 +229,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           const assignmentDate = assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
           return `${assignmentDate ? `${assignmentDate} ` : ''}${assignment.timeSlot} - ${assignment.role || ''}`;
         }).join(', ');
-        alert(`다음 역할은 이미 마감되어 확정할 수 없습니다:\n${fullRoleMessages}`);
+        toast.warning(`다음 역할은 이미 마감되어 확정할 수 없습니다:\n${fullRoleMessages}`);
         return;
       }
 
@@ -341,7 +342,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // assignmentsWithStaffIds는 이미 createWorkLogsForConfirmedStaff 호출 시 WorkLog가 생성됨
       
       const totalAssignments = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
-      alert(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 자동 생성 완료)`);
+      toast.success(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 자동 생성 완료)`);
       
       // 자동 마감 로직 체크
       await checkAutoCloseJobPosting(jobPostingRef);
@@ -353,7 +354,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       logger.error('Error confirming applicant: ', error instanceof Error ? error : new Error(String(error)), { 
         component: 'useApplicantActions' 
       });
-      alert(t('jobPostingAdmin.alerts.applicantConfirmFailed'));
+      toast.error(t('jobPostingAdmin.alerts.applicantConfirmFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -367,7 +368,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     
     // 권한 체크
     if (!canEdit) {
-      alert('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+      toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
       return;
     }
 
@@ -430,7 +431,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // 🔍 취소 후 데이터 정합성 검증
       await verifyDataIntegrityAfterCancel(jobPostingRef, applicant.applicantId);
 
-      alert(`${applicant.applicantName}님의 확정이 취소되었습니다. (WorkLog도 함께 삭제됨)`);
+      toast.success(`${applicant.applicantName}님의 확정이 취소되었습니다. (WorkLog도 함께 삭제됨)`);
 
       // 지원자 목록 새로고침
       onRefresh();
@@ -439,7 +440,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       logger.error('Error cancelling confirmation:', error instanceof Error ? error : new Error(String(error)), { 
         component: 'useApplicantActions' 
       });
-      alert('확정 취소 중 오류가 발생했습니다.');
+      toast.error('확정 취소 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
     }
@@ -490,7 +491,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         // 공고 상태 업데이트
         if (shouldClose && updatedPost.status === 'open') {
           await updateDoc(jobPostingRef, { status: 'closed' });
-          alert(closeMessage);
+          toast.info(closeMessage);
         }
       }
     } catch (err) {
@@ -543,14 +544,14 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         // 공고 상태 업데이트
         if (shouldReopen && updatedPost.status === 'closed') {
           await updateDoc(jobPostingRef, { status: 'open' });
-          alert(reopenMessage);
+          toast.info(reopenMessage);
         }
       }
     } catch (err) {
       logger.error('자동 마감 해제 처리 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
         component: 'useApplicantActions' 
       });
-      alert('자동 마감 해제 처리 중 오류가 발생했습니다.');
+      toast.error('자동 마감 해제 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -689,7 +690,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       logger.error('staff 컬렉션 자동 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
         component: 'useApplicantActions' 
       });
-      alert('staff 컬렉션 자동 삭제 중 오류가 발생했습니다.');
+      toast.error('staff 컬렉션 자동 삭제 중 오류가 발생했습니다.');
     }
   };
 

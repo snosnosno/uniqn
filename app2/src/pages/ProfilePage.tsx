@@ -7,6 +7,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 
 interface ProfileData {
   name: string;
@@ -136,7 +137,7 @@ const ProfilePage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!profileRef) {
-            alert(t('profilePage.loginRequired'));
+            toast.error(t('profilePage.loginRequired'));
             return;
         }
         try {
@@ -152,13 +153,13 @@ const ProfilePage = () => {
             }
 
             setIsEditing(false);
-            alert(t('profilePage.updateSuccess'));
+            toast.success(t('profilePage.updateSuccess'));
         } catch (err: any) {
             logger.error("Error updating profile", err instanceof Error ? err : new Error(String(err)), { 
                 operation: 'updateProfile',
                 ...(profileId && { userId: profileId })
             });
-            alert(t('profilePage.updateFailed', { message: err.message }));
+            toast.error(t('profilePage.updateFailed', { message: err.message }));
         }
     };
 

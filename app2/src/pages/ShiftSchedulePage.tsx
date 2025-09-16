@@ -196,7 +196,7 @@ const ShiftSchedulePage: React.FC = () => {
   // 근무기록 생성 핸들러
   const handleGenerateWorkLogs = async () => {
     if (!schedule || !selectedEventId || !selectedDate) {
-      alert('스케줄 정보가 없습니다.');
+      showError('스케줄 정보가 없습니다.');
       return;
     }
 
@@ -209,10 +209,10 @@ const ShiftSchedulePage: React.FC = () => {
     try {
       const logs = await generateWorkLogs();
       setWorkLogsGenerated(true);
-      alert(`${logs.length}개의 근무기록이 성공적으로 생성되었습니다.`);
+      showSuccess(`${logs.length}개의 근무기록이 성공적으로 생성되었습니다.`);
     } catch (error) {
       logger.error('Error generating work logs:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-      alert('근무기록 생성에 실패했습니다.');
+      showError('근무기록 생성에 실패했습니다.');
     } finally {
       setIsGeneratingWorkLogs(false);
     }
