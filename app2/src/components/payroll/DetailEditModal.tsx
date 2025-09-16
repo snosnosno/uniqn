@@ -5,7 +5,7 @@ import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import { calculateWorkHours, parseTimeToString } from '../../utils/workLogMapper';
 import { getStaffIdentifier, matchStaffIdentifier } from '../../utils/staffIdMapper';
-import { findTargetWorkLog, filterWorkLogsByRole, normalizeRole } from '../../utils/workLogHelpers';
+import { findTargetWorkLog, filterWorkLogsByRole } from '../../utils/workLogHelpers';
 
 import { UnifiedWorkLog } from '../../types/unified/workLog';
 

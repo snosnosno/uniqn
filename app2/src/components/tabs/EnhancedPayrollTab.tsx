@@ -3,14 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 import { JobPosting } from '../../types/jobPosting';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
-import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
 import DetailEditModal from '../payroll/DetailEditModal';
 import RoleSalarySettings from '../payroll/RoleSalarySettings';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, RoleSalaryConfig } from '../../types/payroll';
 import { usePayrollWorker } from '../../hooks/usePayrollWorker';
-import { filterWorkLogsByRole, normalizeRole } from '../../utils/workLogHelpers';
+import { normalizeRole } from '../../utils/workLogHelpers';
 
 interface EnhancedPayrollTabProps {
   jobPosting?: JobPosting | null;
@@ -18,7 +17,7 @@ interface EnhancedPayrollTabProps {
 }
 
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eventId }) => {
-  const { i18n } = useTranslation();
+  // const { i18n } = useTranslation(); // 현재 미사용
   
   // 계산 중복 방지를 위한 ref
   const hasCalculated = useRef(false);

@@ -209,8 +209,6 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
                 {children}
               </div>
             );
-            
-            return null;
           })()}
         </div>
       </div>

@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { logger } from './utils/logger';
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, doc, collection, getDocs, writeBatch, getDoc, setDoc, updateDoc, arrayUnion, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
+import { getFirestore, doc, collection, getDocs, writeBatch, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
 // Storage와 Functions는 동적 import를 위해 직접 import하지 않음
 
 import type { JobPostingFilters } from './hooks/useJobPostings';

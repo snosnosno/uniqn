@@ -1,8 +1,7 @@
 import { logger } from '../../../../utils/logger';
 import { Applicant } from '../types';
 import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
-import { ApplicationGroup, ApplicationAssignment, DateBasedAssignment, DateBasedSelection } from '../../../../types/unifiedData';
-import { JobPosting, DateSpecificRequirement, TimeSlot, RoleRequirement } from '../../../../types/jobPosting';
+import { JobPosting, DateSpecificRequirement, TimeSlot } from '../../../../types/jobPosting';
 
 /**
  * 구인공고에서 특정 시간대의 역할 정보를 가져오는 함수

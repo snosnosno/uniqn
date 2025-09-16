@@ -200,6 +200,9 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
   );
 };
 
+// ApplicantRow를 메모이제이션
+const MemoizedApplicantRow = React.memo(ApplicantRow);
+
 /**
  * 통합된 지원자 목록 탭
  * 타입 호환성 문제 해결 및 UnifiedDataContext 활용
@@ -493,4 +496,4 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
   );
 };
 
-export default ApplicantListTabUnified;
+export default React.memo(ApplicantListTabUnified);

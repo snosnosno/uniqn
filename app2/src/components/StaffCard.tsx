@@ -9,10 +9,8 @@ import { StaffData } from '../hooks/useStaffManagement';
 import AttendanceStatusPopover, { AttendanceStatus } from './AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../utils/dateUtils';
 import { UnifiedWorkLog } from '../types/unified/workLog';
-import { createWorkLogId } from '../utils/workLogSimplified';
-
 // BaseCard 및 하위 컴포넌트들 import
-import BaseCard, { CardHeader, CardBody, CardFooter } from './ui/BaseCard';
+import BaseCard, { CardHeader, CardBody } from './ui/BaseCard';
 import StaffCardHeader from './staff/StaffCardHeader';
 import StaffCardTimeSection from './staff/StaffCardTimeSection';
 import StaffCardActions from './staff/StaffCardActions';

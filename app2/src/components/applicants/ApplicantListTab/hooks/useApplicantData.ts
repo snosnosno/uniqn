@@ -11,10 +11,10 @@ import { Application } from '../../../../types/unifiedData';
  * 지원자 데이터를 관리하는 Custom Hook (UnifiedDataContext 통합)
  */
 export const useApplicantData = (eventId?: string) => {
-  const { t } = useTranslation();
+  // const { t } = useTranslation(); // 현재 미사용
   
   // UnifiedDataContext에서 applications 데이터 가져오기
-  const { applications, loading, error, refresh } = useApplicationData();
+  const { applications, loading, error: _error, refresh } = useApplicationData();
   
   // eventId에 해당하는 applications 필터링 및 Applicant 타입으로 변환
   const applicants = useMemo(() => {
