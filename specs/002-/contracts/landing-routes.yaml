@@ -1,0 +1,138 @@
+openapi: 3.0.0
+info:
+  title: T-HOLDEM Landing Page Routes
+  version: 1.0.0
+  description: 랜딩페이지 라우팅 및 사용자 상호작용 계약
+
+paths:
+  /:
+    get:
+      summary: 랜딩페이지 메인 경로
+      description: T-HOLDEM 랜딩페이지의 메인 진입점
+      responses:
+        '200':
+          description: 랜딩페이지 성공적으로 로드됨
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<!DOCTYPE html>..."
+
+  /landing:
+    get:
+      summary: 랜딩페이지 대체 경로
+      description: 명시적 랜딩페이지 경로
+      responses:
+        '200':
+          description: 랜딩페이지 성공적으로 로드됨
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/analytics/interaction:
+    post:
+      summary: 사용자 상호작용 로깅
+      description: 랜딩페이지에서의 사용자 상호작용 데이터 수집
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - section
+                - action
+                - element
+              properties:
+                section:
+                  type: string
+                  enum: [hero, features, targets, cta]
+                  description: 상호작용한 섹션
+                action:
+                  type: string
+                  enum: [click, scroll, hover]
+                  description: 상호작용 유형
+                element:
+                  type: string
+                  description: 상호작용한 요소 ID
+                timestamp:
+                  type: number
+                  description: Unix 타임스탬프
+                userAgent:
+                  type: string
+                  description: 사용자 브라우저 정보
+                viewport:
+                  type: object
+                  properties:
+                    width:
+                      type: number
+                    height:
+                      type: number
+                    isMobile:
+                      type: boolean
+      responses:
+        '200':
+          description: 상호작용 로깅 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  id:
+                    type: string
+                    description: 로그 ID
+        '400':
+          description: 잘못된 요청 데이터
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid section or action"
+
+components:
+  schemas:
+    UserInteraction:
+      type: object
+      required:
+        - section
+        - action
+        - element
+        - timestamp
+      properties:
+        section:
+          type: string
+          enum: [hero, features, targets, cta]
+        action:
+          type: string
+          enum: [click, scroll, hover]
+        element:
+          type: string
+        timestamp:
+          type: number
+        userAgent:
+          type: string
+        viewport:
+          $ref: '#/components/schemas/Viewport'
+
+    Viewport:
+      type: object
+      properties:
+        width:
+          type: number
+          minimum: 320
+          maximum: 3840
+        height:
+          type: number
+          minimum: 240
+          maximum: 2160
+        isMobile:
+          type: boolean
+        isTablet:
+          type: boolean

@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 import { JobPosting } from '../../types/jobPosting';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
