@@ -1,29 +1,33 @@
 # T-HOLDEM 토너먼트 관리 플랫폼
 
-[![Status](https://img.shields.io/badge/status-In%20Development-orange.svg)](./CHANGELOG.md)
+[![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)](./CHANGELOG.md)
 
 **T-HOLDEM**은 홀덤 포커 토너먼트 운영의 모든 과정을 디지털화하여, 운영 효율성을 극대화하는 것을 목표로 하는 종합 관리 플랫폼입니다.
 
 ---
 
-## 🚀 현재 상태 (v0.2.0)
+## 🚀 현재 상태 (v0.2.1)
 
-- **버전**: `0.2.0` (Production Ready)
-- **상태**: **Production Ready (90% 완성)**
-- **핵심 성과**: 체계적인 5단계 개선을 통해 Enterprise 수준의 코드 품질과 성능 최적화를 달성.
+- **버전**: `0.2.1` (Production Ready + 코드 정리)
+- **상태**: **Production Ready (95% 완성)**
+- **핵심 성과**: 6단계 체계적 개선을 통해 Enterprise 수준의 코드 품질과 폴더 구조 체계화를 달성.
 
-### ✅ 구현된 주요 기능 (v0.2.0)
+### ✅ 구현된 주요 기능 (v0.2.1)
 
+#### 핵심 비즈니스 기능
 - **사용자 인증**: 이메일 기반 회원가입 및 로그인
 - **구인공고 관리**: 구인공고 CRUD 기능
 - **지원자 관리**: 공고 지원 및 지원자 목록 관리
 - **스태프 관리**: 지원자 확정을 통한 스태프 전환
-- **기본 출석 관리**: 출석 상태 수동 변경
-- **기본 급여 계산**: 근무 기록 기반 급여 계산 로직
-- **핵심 아키텍처**: `UnifiedDataContext`를 사용한 중앙 데이터 관리 구조
-- **코드 품질**: TypeScript strict mode 100% 준수, any 타입 0개
+- **출석 관리**: 출석 상태 수동 변경 및 실시간 추적
+- **급여 계산**: 근무 기록 기반 급여 계산 로직
+
+#### 기술적 성과
+- **코드 체계화**: 47개 컴포넌트 → 17개 (65% 감소), 10개 카테고리 분류
+- **코드 품질**: TypeScript strict mode 100% 준수, any 타입 0개, TODO/FIXME 0개
 - **성능 최적화**: React.memo 적용, 번들 크기 279KB 달성
-- **현대화**: 레거시 필드 제거, Toast 시스템 도입
+- **현대화**: 레거시 필드 제거, Toast 시스템 도입 (77개 alert → Toast)
+- **아키텍처**: `UnifiedDataContext`를 사용한 중앙 데이터 관리 구조
 
 ### 🚀 향후 로드맵 (v0.3.0+)
 
@@ -56,19 +60,45 @@ npm run dev
 
 ## 📚 문서
 
-프로젝트의 모든 상세 문서는 `docs/` 폴더에서 관리됩니다.
+프로젝트의 모든 상세 문서는 `docs/` 폴더에서 체계적으로 관리됩니다.
+
+### 📁 문서 구조 (v0.2.1 체계화)
+```
+📁 docs/
+├── 📁 guides/          # 개발 및 배포 가이드
+│   ├── DEPLOYMENT.md    # 배포 가이드
+│   ├── MIGRATION_GUIDE.md # 마이그레이션 가이드
+│   └── PERFORMANCE.md   # 성능 최적화 가이드
+├── 📁 reference/        # 기술 레퍼런스
+│   ├── API_REFERENCE.md # API 명세
+│   ├── ARCHITECTURE.md  # 시스템 아키텍처
+│   ├── BUSINESS_CASE.md # 비즈니스 케이스
+│   └── DATA_SCHEMA.md   # 데이터베이스 스키마
+├── 📁 operations/       # 운영 및 관리
+│   ├── MONITORING.md    # 모니터링 가이드
+│   ├── SECURITY.md      # 보안 가이드
+│   └── TROUBLESHOOTING.md # 문제 해결
+├── 📁 user/            # 사용자 가이드
+│   ├── ADMIN_GUIDE.md   # 관리자 가이드
+│   ├── ONBOARDING.md    # 온보딩 가이드
+│   └── USER_MANUAL.md   # 사용자 매뉴얼
+└── 📁 mobile/          # 모바일 개발 (향후)
+    ├── MOBILE_API_SPEC.md
+    └── MOBILE_DEVELOPMENT.md
+```
 
 ### 🎯 **핵심 문서**
-- **프로젝트 현황**: `docs/PROJECT_STATUS.md` (최신 개선 현황)
-- **아키텍처**: `docs/ARCHITECTURE.md`
-- **개발 가이드**: `docs/DEVELOPMENT.md`
-- **테스트 가이드**: `docs/TESTING_GUIDE.md`
+- **아키텍처**: `docs/reference/ARCHITECTURE.md` (폴더 구조 체계화 포함)
+- **마이그레이션**: `docs/guides/MIGRATION_GUIDE.md` (v0.2.1 폴더 구조 변경)
+- **성능 최적화**: `docs/guides/PERFORMANCE.md` (번들 279KB, React.memo 적용)
+- **배포 가이드**: `docs/guides/DEPLOYMENT.md` (Production Ready)
 
 ### 📖 **참고 문서**
-- **API 명세**: `docs/API_REFERENCE.md`
-- **데이터베이스 스키마**: `docs/DATA_SCHEMA.md`
-- **배포 가이드**: `docs/DEPLOYMENT.md`
-- **문제 해결 가이드**: `docs/TROUBLESHOOTING.md`
+- **API 명세**: `docs/reference/API_REFERENCE.md`
+- **데이터베이스 스키마**: `docs/reference/DATA_SCHEMA.md`
+- **문제 해결 가이드**: `docs/operations/TROUBLESHOOTING.md`
+- **사용자 가이드**: `docs/user/USER_MANUAL.md`, `docs/user/ADMIN_GUIDE.md`
+- **보안 가이드**: `docs/operations/SECURITY.md`
 
 ## 🤝 기여하기
 

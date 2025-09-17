@@ -8,13 +8,7 @@ import { logAction } from './useLogger';
 
 export interface TournamentSettings {
   minWorkMinutesForClockOut?: number;
-  gpsClockInEnabled?: boolean;
   qrClockInEnabled?: boolean;
-  allowedLocation?: {
-    latitude: number;
-    longitude: number;
-    radius: number;
-  };
   qrCodeValue?: string;
   maxSeatsPerTable?: number;
 }
@@ -36,7 +30,6 @@ export const useSettings = () => {
           // Default settings if the document doesn't exist
           setSettings({
             minWorkMinutesForClockOut: 60,
-            gpsClockInEnabled: true,
             qrClockInEnabled: true,
             maxSeatsPerTable: 9,
           });
