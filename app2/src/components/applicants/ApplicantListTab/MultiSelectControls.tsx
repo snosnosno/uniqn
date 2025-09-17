@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { logger } from '../../../utils/logger';
 import { toast } from '../../../utils/toast';
 import { Applicant, Assignment } from './types';
 import { 
@@ -39,37 +38,12 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   const { t } = useTranslation();
   
   // 디버깅: applications 배열 확인
-  logger.debug('📋 MultiSelectControls applications 데이터', {
-    component: 'MultiSelectControls', 
-    data: {
-      applicationsCount: applications.length,
-      confirmedCount: applications.filter(app => app.status === 'confirmed').length,
-      applicationsIds: applications.map(app => ({ id: app.id, status: app.status }))
-    }
-  });
   
   // 🔥 새로운 checkMethod 기반 그룹화 로직 - 날짜 범위 유지
   const groupedSelections = useMemo(() => {
     const allSelections = getApplicantSelections(applicant, jobPosting);
     
     // 디버깅용 로그 추가
-    logger.debug('📊 getApplicantSelections 결과:', {
-      component: 'MultiSelectControls',
-      data: {
-        applicantId: applicant.id,
-        totalSelections: allSelections.length,
-        selectionsWithCheckMethod: allSelections.filter((s: any) => s.checkMethod).length,
-        groupSelections: allSelections.filter((s: any) => s.checkMethod === 'group').length,
-        individualSelections: allSelections.filter((s: any) => s.checkMethod === 'individual').length,
-        firstFewSelections: allSelections.slice(0, 3).map((s: any) => ({
-          role: s.role,
-          time: s.time,
-          dates: s.dates,
-          checkMethod: s.checkMethod,
-          isGrouped: s.isGrouped
-        }))
-      }
-    });
     
     // checkMethod 기반으로 분류
     const groupSelections: any[] = [];
