@@ -172,9 +172,6 @@ const ProfilePage = () => {
         return t(`gender.${genderKey.toLowerCase()}`, genderKey);
     };
 
-    // 딜러인지 확인 (role이 dealer이거나 staff인 경우)
-    const isDealer = profile.role === 'dealer' || profile.role === 'staff';
-    const canViewPayroll = (isOwnProfile && isDealer) || isAdmin;
 
     return (
         <div className="container">
@@ -195,12 +192,6 @@ const ProfilePage = () => {
                             </div>
                         </div>
                         <div className="mt-4 md:mt-0 flex gap-2">
-                            {canViewPayroll ? <Link
-                                    to={`/payroll${userId ? `/${userId}` : ''}`}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                >
-                                    {t('profilePage.viewPayroll', '급여 내역')}
-                                </Link> : null}
                             {isOwnProfile ? <button onClick={handleEditClick} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                     {isEditing ? t('profilePage.cancel') : t('profilePage.editProfile')}
                                 </button> : null}

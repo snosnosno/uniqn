@@ -1,6 +1,5 @@
 import React from 'react';
 import { useJobPostingForm } from '../../../hooks/useJobPostingForm';
-import { useDateUtils } from '../../../hooks/useDateUtils';
 import { useTemplateManager } from '../../../hooks/useTemplateManager';
 import { LOCATIONS } from '../../../utils/jobPosting/jobPostingHelpers';
 import Modal from '../../ui/Modal';

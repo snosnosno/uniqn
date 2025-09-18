@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { useTranslation } from 'react-i18next';
 import { logger } from '../../../../utils/logger';
 import { db } from '../../../../firebase';
 import { Applicant } from '../types';

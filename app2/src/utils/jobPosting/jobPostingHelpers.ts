@@ -1,6 +1,6 @@
 import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting, Benefits } from '../../types/jobPosting';
-import { logger } from '../logger';
 import { convertToTimestamp, getTodayString } from './dateUtils';
+import { logger } from '../logger';
 
 /**
  * 초기 시간대 객체 생성

@@ -1,0 +1,184 @@
+/**
+ * LandingPage 전용 CSS 스타일
+ *
+ * 성능 최적화:
+ * - GPU 가속을 위한 transform3d 사용
+ * - will-change 속성으로 최적화 힌트 제공
+ * - contain 속성으로 렌더링 범위 제한
+ */
+
+/* GPU 가속 애니메이션을 위한 기본 설정 */
+.landing-page {
+  contain: layout style paint;
+  will-change: scroll-position;
+}
+
+/* Hero 섹션 배경 최적화 */
+.hero-background {
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* 카드 호버 효과 최적화 */
+.feature-card,
+.target-card {
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.feature-card:hover,
+.target-card:hover {
+  transform: translateZ(0) scale(1.05);
+}
+
+/* 부드러운 스크롤 최적화 */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+}
+
+/* 성능 집약적인 애니메이션 최적화 */
+.floating-nav {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.floating-nav-dot {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, background-color;
+}
+
+.floating-nav-dot:hover,
+.floating-nav-dot.active {
+  transform: translateZ(0) scale(1.25);
+}
+
+/* 스크롤 다운 인디케이터 */
+.scroll-indicator {
+  animation: smoothBounce 3s ease-in-out infinite;
+  will-change: transform;
+  cursor: pointer;
+}
+
+.scroll-indicator:hover {
+  animation-duration: 1.5s;
+}
+
+@keyframes smoothBounce {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(0, -8px, 0);
+  }
+  50% {
+    transform: translate3d(0, 0, 0);
+  }
+  75% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+/* 버튼 애니메이션 최적화 */
+.cta-button {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
+}
+
+.cta-button:hover {
+  transform: translateZ(0) scale(1.05);
+}
+
+/* 이미지 lazy loading 최적화 */
+.lazy-image {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.lazy-image.loaded {
+  opacity: 1;
+}
+
+/* 스켈레톤 로더 */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+  .feature-card,
+  .target-card {
+    will-change: auto;
+  }
+
+  .feature-card:hover,
+  .target-card:hover {
+    transform: none;
+  }
+
+  .cta-button:hover {
+    transform: none;
+  }
+}
+
+/* 프린트 최적화 */
+@media print {
+  .floating-nav,
+  .scroll-indicator {
+    display: none;
+  }
+
+  .hero-background {
+    background: none;
+  }
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+  .feature-card,
+  .target-card {
+    border: 2px solid currentColor;
+  }
+}
+
+/* 모션 감소 선호 사용자 지원 */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-indicator {
+    animation: none;
+  }
+
+  .feature-card,
+  .target-card,
+  .cta-button {
+    transition: none;
+  }
+
+  .smooth-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* Focus 표시기 개선 */
+.focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

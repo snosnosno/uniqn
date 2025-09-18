@@ -130,27 +130,11 @@ const ShiftSchedulePage: React.FC = () => {
     loadSettings();
   }, []);
 
-  // 설정 저장 함수
+  // 설정 저장 함수 - 업데이트 예정
   const handleSaveSettings = async () => {
-    try {
-      // 로컬 스토리지에 저장
-      localStorage.setItem('shiftScheduleSettings', JSON.stringify(settings));
-      
-      // Firebase에 사용자 설정 저장 (선택적)
-      if (currentUser) {
-        const userSettingsRef = doc(db, 'userSettings', currentUser.uid);
-        await setDoc(userSettingsRef, {
-          shiftScheduleSettings: settings,
-          updatedAt: new Date()
-        }, { merge: true });
-      }
-      
-      showSuccess(t('shiftSchedule.settingsSaved'));
-      setIsSettingsModalOpen(false);
-    } catch (error) {
-      logger.error('설정 저장 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-      showError(t('shiftSchedule.settingsSaveError'));
-    }
+    showError('이 기능은 현재 업데이트 중입니다.');
+    setIsSettingsModalOpen(false);
+    return;
   };
 
   // 설정 변경 핸들러
@@ -166,56 +150,22 @@ const ShiftSchedulePage: React.FC = () => {
     setSelectedDate(newDate);
   };
   
-  // 스태프 추가 핸들러
+  // 스태프 추가 핸들러 - 업데이트 예정
   const handleAddStaff = async (staffId: string, staffName: string) => {
-    if (!schedule) return;
-    
-    try {
-      await addDealer(staffId, staffName, schedule.startTime);
-    } catch (error) {
-      logger.error('Error adding dealer:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-    }
+    showError('이 기능은 현재 업데이트 중입니다.');
+    return;
   };
   
-  // 스태프 제거 핸들러 (스케줄에서 모든 할당 제거)
+  // 스태프 제거 핸들러 - 업데이트 예정
   const handleRemoveStaff = async (staffId: string) => {
-    if (!schedule) return;
-    
-    try {
-      const scheduleId = `${selectedEventId}_${selectedDate}`;
-      const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
-      await updateDoc(scheduleRef, {
-        [`scheduleData.${staffId}`]: deleteField(),
-        updatedAt: serverTimestamp()
-      });
-    } catch (error) {
-      logger.error('Error removing dealer:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-    }
+    showError('이 기능은 현재 업데이트 중입니다.');
+    return;
   };
   
-  // 근무기록 생성 핸들러
+  // 근무기록 생성 핸들러 - 업데이트 예정
   const handleGenerateWorkLogs = async () => {
-    if (!schedule || !selectedEventId || !selectedDate) {
-      showError('스케줄 정보가 없습니다.');
-      return;
-    }
-
-    if (workLogsGenerated) {
-      const confirmed = window.confirm('이미 근무기록이 생성되었습니다. 다시 생성하시겠습니까?');
-      if (!confirmed) return;
-    }
-
-    setIsGeneratingWorkLogs(true);
-    try {
-      const logs = await generateWorkLogs();
-      setWorkLogsGenerated(true);
-      showSuccess(`${logs.length}개의 근무기록이 성공적으로 생성되었습니다.`);
-    } catch (error) {
-      logger.error('Error generating work logs:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-      showError('근무기록 생성에 실패했습니다.');
-    } finally {
-      setIsGeneratingWorkLogs(false);
-    }
+    showError('이 기능은 현재 업데이트 중입니다.');
+    return;
   };
   
   // 사용자 확인 모달 (스태프 제거용)
@@ -225,24 +175,16 @@ const ShiftSchedulePage: React.FC = () => {
     }
   };
   
-  // 새 스케줄 생성 핸들러
+  // 새 스케줄 생성 핸들러 - 업데이트 예정
   const handleCreateSchedule = async () => {
-    try {
-      await createSchedule(selectedEventId, selectedDate);
-    } catch (error) {
-      logger.error('Error creating schedule:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-    }
+    showError('이 기능은 현재 업데이트 중입니다.');
+    return;
   };
   
-  // 시간 간격 변경 핸들러
+  // 시간 간격 변경 핸들러 - 업데이트 예정
   const handleIntervalChange = async (newInterval: number) => {
-    if (!schedule) return;
-    
-    try {
-      await updateScheduleSettings(newInterval);
-    } catch (error) {
-      logger.error('Error updating interval:', error instanceof Error ? error : new Error(String(error)), { component: 'ShiftSchedulePage' });
-    }
+    showError('이 기능은 현재 업데이트 중입니다.');
+    return;
   };
   
   // 날짜 포맷팅
@@ -360,12 +302,27 @@ const ShiftSchedulePage: React.FC = () => {
   return (
     <>
     <div className="p-6 bg-gray-50 min-h-screen">
+      {/* 업데이트 예정 배너 */}
+      <div className="mb-6 bg-orange-100 border border-orange-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <div className="text-orange-600">
+            <FaCog className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-orange-800 font-semibold">업데이트 예정</h3>
+            <p className="text-orange-700 text-sm">
+              이 페이지는 현재 업데이트 중입니다. 빠른 시일 내에 개선된 기능으로 찾아뵙겠습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 헤더 섹션 */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+      <div className="mb-6 opacity-75">
+        <h1 className="text-3xl font-bold text-gray-600 mb-2">
           {t('shiftSchedule.title')}
         </h1>
-        <p className="text-gray-600">{t('shiftSchedule.subtitle')}</p>
+        <p className="text-gray-500">{t('shiftSchedule.subtitle')}</p>
       </div>
 
       {/* 날짜 선택 및 컨트롤 바 */}
@@ -379,69 +336,58 @@ const ShiftSchedulePage: React.FC = () => {
                 {t('shiftSchedule.selectDate')}:
               </label>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 opacity-50">
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={true}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
               />
               <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">({formatDate(selectedDate)})</span>
             </div>
           </div>
           
-          {/* 시간 간격 선택 */}
-          {schedule ? <div className="flex items-center gap-4">
+          {/* 시간 간격 선택 - 비활성화됨 */}
+          {schedule ? <div className="flex items-center gap-4 opacity-50">
               <div className="flex items-center gap-2">
-                <FaClock className="w-5 h-5 text-purple-600" />
-                <label className="font-semibold text-gray-700">
+                <FaClock className="w-5 h-5 text-gray-400" />
+                <label className="font-semibold text-gray-500">
                   {t('shiftSchedule.timeInterval')}:
                 </label>
               </div>
               <div className="w-64">
-                <TimeIntervalSelector
-                  selectedInterval={schedule.timeInterval}
-                  onIntervalChange={handleIntervalChange}
-                  size="sm"
-                />
+                <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 text-sm cursor-not-allowed">
+                  업데이트 예정
+                </div>
               </div>
             </div> : null}
           
-          {/* 컨트롤 버튼들 */}
-          <div className="flex flex-wrap items-center gap-2">
-            {schedule && dealers.length > 0 ? <button 
-                onClick={handleGenerateWorkLogs}
-                disabled={isGeneratingWorkLogs}
-                className={`btn btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${
-                  workLogsGenerated ? 'btn-outline' : 'btn-secondary'
-                } ${isGeneratingWorkLogs ? 'loading' : ''}`}
+          {/* 컨트롤 버튼들 - 비활성화됨 */}
+          <div className="flex flex-wrap items-center gap-2 opacity-50">
+            {schedule && dealers.length > 0 ? <button
+                disabled={true}
+                className="btn btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm btn-outline cursor-not-allowed"
               >
                 <FaClock className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">
-                  {isGeneratingWorkLogs ? t('shiftSchedule.generating') : 
-                   workLogsGenerated ? t('shiftSchedule.regenerateWorkLogs') : t('shiftSchedule.generateWorkLogs')}
-                </span>
-                <span className="sm:hidden">
-                  {isGeneratingWorkLogs ? '생성중' : 
-                   workLogsGenerated ? '재생성' : '생성'}
-                </span>
+                <span className="hidden sm:inline">업데이트 예정</span>
+                <span className="sm:hidden">업데이트 예정</span>
               </button> : null}
-            <button 
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="btn btn-outline btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+            <button
+              disabled={true}
+              className="btn btn-outline btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm cursor-not-allowed"
             >
               <FaCog className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">{t('shiftSchedule.settings')}</span>
-              <span className="sm:hidden">설정</span>
+              <span className="hidden sm:inline">업데이트 예정</span>
+              <span className="sm:hidden">업데이트 예정</span>
             </button>
             {!schedule && (
-              <button 
-                onClick={handleCreateSchedule}
-                className="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+              <button
+                disabled={true}
+                className="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm cursor-not-allowed opacity-60"
               >
                 <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{t('shiftSchedule.createSchedule')}</span>
-                <span className="sm:hidden">생성</span>
+                <span className="hidden sm:inline">업데이트 예정</span>
+                <span className="sm:hidden">업데이트 예정</span>
               </button>
             )}
           </div>
@@ -494,15 +440,17 @@ const ShiftSchedulePage: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* 엑셀형 교대 스케줄 그리드 */}
-                <ShiftGridComponent
-                  dealers={dealers}
-                  tables={tables}
-                  timeSlots={timeSlots}
-                  onCellChange={updateDealerAssignment}
-                  readonly={false}
-                  height={500}
-                />
+                {/* 엑셀형 교대 스케줄 그리드 - 읽기 전용 모드 */}
+                <div className="opacity-60">
+                  <ShiftGridComponent
+                    dealers={dealers}
+                    tables={tables}
+                    timeSlots={timeSlots}
+                    onCellChange={updateDealerAssignment}
+                    readonly={true}
+                    height={500}
+                  />
+                </div>
               </div>
             ) : (
               <div className="text-center py-12">
@@ -545,10 +493,10 @@ const ShiftSchedulePage: React.FC = () => {
                       <p className="font-semibold text-gray-800">{dealer.staffName}</p>
                       <p className="text-sm text-gray-500">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
                     </div>
-                    <button 
-                      onClick={() => confirmRemoveStaff(dealer.id, dealer.staffName)}
-                      className="btn btn-sm btn-outline btn-error"
-                      title={t('shiftSchedule.removeFromSchedule')}
+                    <button
+                      disabled={true}
+                      className="btn btn-sm btn-outline btn-error opacity-50 cursor-not-allowed"
+                      title="업데이트 예정"
                     >
                       <FaTrash className="w-3 h-3" />
                     </button>
@@ -575,12 +523,12 @@ const ShiftSchedulePage: React.FC = () => {
                     <p className="font-semibold text-gray-800">{dealer.name}</p>
                     <p className="text-sm text-gray-500">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
                   </div>
-                  {schedule ? <button 
-                      onClick={() => handleAddStaff(dealer.id, dealer.name)}
-                      className="btn btn-sm btn-outline btn-success"
+                  {schedule ? <button
+                      disabled={true}
+                      className="btn btn-sm btn-outline btn-success opacity-50 cursor-not-allowed"
                     >
                       <FaPlus className="w-3 h-3 mr-1" />
-                      {t('shiftSchedule.addToSchedule')}
+                      업데이트 예정
                     </button> : null}
                 </div>
               ))}

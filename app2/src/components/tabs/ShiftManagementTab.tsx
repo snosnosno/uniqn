@@ -109,28 +109,28 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
       {/* 메인 콘텐츠 영역 */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* 스케줄 그리드 영역 (3/4) */}
+
+        {/* 교대관리 메인 영역 (3/4) */}
         <div className="xl:col-span-3">
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-              <FaTable className="w-5 h-5 mr-2"/> 
-              {t('shiftSchedule.scheduleGrid', '스케줄 그리드')}
+              <FaTable className="w-5 h-5 mr-2"/>
+              교대관리
             </h4>
-            
+
             <div className="text-center py-12">
               <FaCalendarAlt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h5 className="text-lg font-semibold text-gray-600 mb-2">
-                시프트 스케줄 관리 기능
+                교대관리 기능
               </h5>
               <p className="text-gray-500 mb-4">
-                스태프들의 교대 근무 스케줄을 시간대별로 관리하는 기능이 이곳에 추가될 예정입니다.
+                스태프들의 교대 근무 관리 기능이 향후 업데이트될 예정입니다.
               </p>
               <div className="space-y-2 text-sm text-gray-600">
-                <p>• 시간대별 스태프 배정</p>
-                <p>• 테이블별 딜러 로테이션</p>
-                <p>• 근무 시간 추적</p>
-                <p>• 자동 교대 알림</p>
+                <p>• 교대 일정 관리</p>
+                <p>• 근무 시간 자동 기록</p>
+                <p>• 교대 알림 시스템</p>
+                <p>• 스태프 출석 추적</p>
               </div>
             </div>
           </div>
@@ -138,11 +138,11 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
         {/* 사이드바 - 스태프 목록 및 정보 (1/4) */}
         <div className="space-y-6">
-          
+
           {/* 할당된 스태프 */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-              <FaUsers className="w-5 h-5 mr-2"/> 
+              <FaUsers className="w-5 h-5 mr-2"/>
               할당된 스태프 ({staff.length})
             </h4>
             <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -171,7 +171,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 시간대 정보 */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
-              <FaClock className="w-5 h-5 mr-2"/> 
+              <FaClock className="w-5 h-5 mr-2"/>
               시간대 정보 ({selectedDate})
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -187,7 +187,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                     return false;
                   }
                 });
-                
+
                 if (dateReq && dateReq.timeSlots?.length > 0) {
                   return dateReq.timeSlots.map((timeSlot: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -210,42 +210,42 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             </div>
           </div>
 
-          {/* 테이블 정보 */}
+          {/* 교대 상태 */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
-              <FaTable className="w-5 h-5 mr-2"/> 
-              테이블 정보
+              <FaTable className="w-5 h-5 mr-2"/>
+              교대 상태
             </h4>
             <div className="text-center py-8">
-              <div className="text-gray-400 text-4xl mb-3">🎯</div>
+              <div className="text-gray-400 text-4xl mb-3">🔄</div>
               <p className="text-sm text-gray-500">
-                게임 테이블 관리 기능이<br/>향후 추가될 예정입니다.
+                교대 상태 추적 기능이<br/>향후 추가될 예정입니다.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 시프트 관리 기능 소개 */}
+      {/* 교대관리 기능 소개 */}
       <div className="mt-6 bg-white p-6 rounded-lg shadow">
-        <h4 className="text-lg font-medium text-gray-900 mb-4">예정된 시프트 관리 기능</h4>
+        <h4 className="text-lg font-medium text-gray-900 mb-4">예정된 교대관리 기능</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 border border-gray-200 rounded-lg">
-            <h5 className="font-medium text-gray-800 mb-2">📅 스케줄 관리</h5>
+            <h5 className="font-medium text-gray-800 mb-2">🔄 교대 일정</h5>
             <p className="text-sm text-gray-600">
-              일일/주간 단위로 스태프 근무 스케줄을 생성하고 관리합니다.
+              스태프들의 교대 일정을 체계적으로 관리합니다.
             </p>
           </div>
           <div className="p-4 border border-gray-200 rounded-lg">
-            <h5 className="font-medium text-gray-800 mb-2">🔄 자동 교대</h5>
+            <h5 className="font-medium text-gray-800 mb-2">⏰ 자동 기록</h5>
             <p className="text-sm text-gray-600">
-              설정된 시간에 따라 자동으로 교대 알림을 발송하고 관리합니다.
+              교대 시간에 맞춰 자동으로 근무 시간을 기록합니다.
             </p>
           </div>
           <div className="p-4 border border-gray-200 rounded-lg">
-            <h5 className="font-medium text-gray-800 mb-2">⏰ 근무 추적</h5>
+            <h5 className="font-medium text-gray-800 mb-2">📋 출석 관리</h5>
             <p className="text-sm text-gray-600">
-              실시간으로 스태프 근무 시간을 추적하고 기록합니다.
+              실시간으로 스태프 출석 상황을 추적하고 관리합니다.
             </p>
           </div>
         </div>
