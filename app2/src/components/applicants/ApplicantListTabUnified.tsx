@@ -90,6 +90,7 @@ interface ApplicantRowProps {
 }
 
 const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
+  const { t } = useTranslation();
   const { items, selectedApplicants, onApplicantSelect, onStatusChange } = data;
   const item = items[index];
 
@@ -121,8 +122,8 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
                     ? 'bg-red-100 text-red-800'
                     : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {applicant.status === 'confirmed' ? '✅ 승인됨' :
-                   applicant.status === 'rejected' ? '❌ 거절됨' : '⏳ 지원중'}
+                  {applicant.status === 'confirmed' ? `✅ ${t('approve')}` :
+                   applicant.status === 'rejected' ? `❌ ${t('reject')}` : `⏳ ${t('common.applying')}`}
                 </span>
               </div>
               
@@ -175,13 +176,13 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
                   onClick={() => onStatusChange(applicant.id, 'confirmed')}
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                 >
-                  승인
+                  {t('approve')}
                 </button>
                 <button
                   onClick={() => onStatusChange(applicant.id, 'rejected')}
                   className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
                 >
-                  거절
+                  {t('reject')}
                 </button>
               </>
             )}
@@ -190,7 +191,7 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
                 onClick={() => onStatusChange(applicant.id, 'applied')}
                 className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
               >
-                승인 취소
+                {t('approve')} 취소
               </button>
             )}
           </div>
@@ -208,7 +209,7 @@ const MemoizedApplicantRow = React.memo(ApplicantRow);
  * 타입 호환성 문제 해결 및 UnifiedDataContext 활용
  */
 const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPosting }) => {
-  const { t: _t } = useTranslation();
+  const { t } = useTranslation();
   const { currentUser: _currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
   
@@ -239,7 +240,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
         // 기본 필드 매핑
         id: app.id,
         applicantId: app.applicantId,
-        applicantName: app.applicantName || '이름 없음',
+        applicantName: app.applicantName || t('common.noName'),
         
         // 상태 통합 (Application 타입 기준)
         status: app.status === 'cancelled' ? 'rejected' : app.status,
@@ -345,7 +346,7 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
       });
       
       // 대량 작업 구현 (현재는 UI 피드백만 제공)
-      const actionText = action === 'confirm' ? '승인' : '거절';
+      const actionText = action === 'confirm' ? t('approve') : t('reject');
       showSuccess(`${selectedApplicants.size}명의 지원자가 ${actionText}되었습니다.`);
       setSelectedApplicants(new Set());
       
@@ -413,10 +414,10 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
                 지원: {stats.applied}명
               </span>
               <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                승인: {stats.confirmed}명
+                {t('approve')}: {stats.confirmed}명
               </span>
               <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
-                거절: {stats.rejected}명
+                {t('reject')}: {stats.rejected}명
               </span>
             </div>
           </div>
@@ -428,10 +429,10 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
-              <option value="all">전체</option>
-              <option value="applied">지원중</option>
-              <option value="confirmed">승인됨</option>
-              <option value="rejected">거절됨</option>
+              <option value="all">{t('common.all')}</option>
+              <option value="applied">{t('common.applying')}</option>
+              <option value="confirmed">{t('approve')}됨</option>
+              <option value="rejected">{t('reject')}됨</option>
             </select>
             
             {selectedApplicants.size > 0 && (
@@ -440,13 +441,13 @@ const ApplicantListTabUnified: React.FC<ApplicantListTabUnifiedProps> = ({ jobPo
                   onClick={() => handleBulkAction('confirm')}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                 >
-                  일괄 승인 ({selectedApplicants.size})
+                  일괄 {t('approve')} ({selectedApplicants.size})
                 </button>
                 <button
                   onClick={() => handleBulkAction('reject')}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                 >
-                  일괄 거절 ({selectedApplicants.size})
+                  일괄 {t('reject')} ({selectedApplicants.size})
                 </button>
               </div>
             )}

@@ -174,7 +174,7 @@ const TablesPage: React.FC = () => {
                             className="btn btn-secondary bg-green-600 hover:bg-green-700 text-white"
                             disabled={tablesLoading || participantsLoading}
                         >
-                            칩 균형 재배치
+                            {t('common.chipRebalance')}
                         </button>
                         <button onClick={openNewTable} className="btn btn-primary">
                             <FaPlus className="w-4 h-4 mr-2"/>{t('tables.buttonAddTable')}
@@ -213,7 +213,7 @@ const TablesPage: React.FC = () => {
                                 table={table}
                                 onTableClick={() => setDetailModalTable(table)}
                                 isMobile={isMobile}
-                                getDealerName={(staffId) => staffId || '미정'}
+                                getDealerName={(staffId) => staffId || t('common.undecided')}
                                 participants={participants}
                             />
                         ))}

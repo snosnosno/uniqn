@@ -35,7 +35,7 @@ const JobCard: React.FC<JobCardProps> = ({
           className="flex-1 sm:w-full bg-blue-600 text-white py-2 px-3 rounded hover:bg-blue-700 text-sm font-medium"
           aria-label={`${post.title} 상세정보 보기`}
         >
-          자세히보기
+          {t('jobBoard.viewDetails')}
         </button>
         
         {/* 지원하기 버튼 */}
@@ -55,7 +55,7 @@ const JobCard: React.FC<JobCardProps> = ({
           className="w-full bg-gray-300 text-gray-500 py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="로그인이 필요합니다"
         >
-          로그인 필요
+          {t('jobBoard.loginRequired')}
         </button>
       );
     }
@@ -67,7 +67,7 @@ const JobCard: React.FC<JobCardProps> = ({
           className="w-full bg-gray-500 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="이미 지원완료한 공고입니다"
         >
-          지원완료
+          {t('jobBoard.applied')}
         </button>
       );
     }
@@ -79,7 +79,7 @@ const JobCard: React.FC<JobCardProps> = ({
           className="w-full bg-green-600 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="지원이 확정된 공고입니다"
         >
-          확정됨
+          {t('jobBoard.confirmed')}
         </button>
       );
     }
@@ -91,13 +91,13 @@ const JobCard: React.FC<JobCardProps> = ({
         className="w-full bg-green-600 text-white py-2 px-3 rounded hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
         aria-label={`${post.title}에 지원하기`}
       >
-        {isProcessing 
-          ? t('jobBoard.applying') 
-          : post.preQuestions && post.preQuestions.length > 0 
+        {isProcessing
+          ? t('jobBoard.applying')
+          : post.preQuestions && post.preQuestions.length > 0
             ? (
               <div className="text-center">
-                <div>지원하기</div>
-                <div className="text-xs">(사전질문)</div>
+                <div>{t('jobBoard.apply')}</div>
+                <div className="text-xs">{t('jobBoard.preQuestions')}</div>
               </div>
             )
             : t('jobBoard.apply')}

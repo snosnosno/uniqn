@@ -250,7 +250,19 @@
     "none": "없음",
     "refresh": "새로고침",
     "loading": "로딩 중...",
-    "comingSoon": "향후 업데이트 예정"
+    "comingSoon": "향후 업데이트 예정",
+    "closeNotification": "알림 닫기",
+    "requiredField": "필수 항목",
+    "noName": "이름 없음",
+    "chipRebalance": "칩 균형 재배치",
+    "undecided": "미정",
+    "timeUndecided": "시간 미정",
+    "dateUndecided": "날짜 미정",
+    "jobManagement": "공고 관리",
+    "viewList": "목록 보기",
+    "createPost": "공고 작성",
+    "preQuestionAnswer": "사전질문 답변",
+    "applying": "지원중"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -504,6 +516,9 @@
     "cancelling": "취소 중...",
     "confirmed": "확정",
     "viewDetails": "자세히 보기",
+    "loginRequired": "로그인 필요",
+    "applied": "지원완료",
+    "preQuestions": "(사전질문)",
     "preQuestion": {
       "checkButton": "📝 사전질문 확인",
       "completeFirst": "사전질문을 먼저 작성해주세요",
@@ -731,6 +746,9 @@
     "loginRequired": "프로필을 업데이트하려면 로그인해야 합니다.",
     "updateSuccess": "프로필이 성공적으로 업데이트되었습니다!",
     "updateFailed": "프로필 업데이트 실패: {{message}}",
+    "profileImage": "프로필 사진",
+    "imageUpdateFailed": "프로필 사진 업데이트에 실패했습니다.",
+    "requiredFields": "다음 필수 정보를 입력해주세요: {{fields}}",
     "loadingProfile": "프로필 로딩 중...",
     "error": "오류: {{message}}",
     "viewProfileLogin": "프로필을 보려면 로그인해주세요.",
@@ -771,6 +789,13 @@
     "residentId": "주민등록번호:",
     "gender": "성별:",
     "viewPayroll": "급여 내역"
+  },
+  "profileImage": {
+    "uploadSuccess": "프로필 사진이 업로드되었습니다.",
+    "deleteSuccess": "프로필 사진이 삭제되었습니다.",
+    "currentImage": "현재 프로필 사진",
+    "uploadError": "프로필 사진 업로드에 실패했습니다.",
+    "deleteError": "프로필 사진 삭제에 실패했습니다."
   },
   "payrollPage": {
     "title": "급여 내역",

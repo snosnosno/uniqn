@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useJobPostingOperations } from '../hooks/useJobPostingOperations';
 import { usePermissions } from '../hooks/usePermissions';
 import { toast } from '../utils/toast';
@@ -8,6 +9,7 @@ import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';
 
 const JobPostingAdminPage = () => {
+  const { t } = useTranslation();
   const { canCreateJobPostings } = usePermissions();
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
   const [_isDeleting, _setIsDeleting] = useState<string | null>(null);
@@ -72,7 +74,7 @@ const JobPostingAdminPage = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">공고 관리</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('common.jobManagement')}</h1>
             </div>
             
             {canCreateJobPostings && (
@@ -80,7 +82,7 @@ const JobPostingAdminPage = () => {
                 variant="primary"
                 onClick={() => setIsCreateFormVisible(!isCreateFormVisible)}
               >
-                {isCreateFormVisible ? '목록 보기' : '공고 작성'}
+                {isCreateFormVisible ? t('common.viewList') : t('common.createPost')}
               </Button>
             )}
           </div>

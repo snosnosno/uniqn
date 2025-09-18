@@ -240,6 +240,7 @@
     "cashier": "Cashier"
   },
   "common": {
+    "close": "Close",
     "cancel": "Cancel",
     "save": "Save",
     "saving": "Saving...",
@@ -248,7 +249,19 @@
     "none": "None",
     "refresh": "Refresh",
     "loading": "Loading...",
-    "comingSoon": "Coming Soon"
+    "comingSoon": "Coming Soon",
+    "closeNotification": "Close notification",
+    "requiredField": "Required field",
+    "noName": "No name",
+    "chipRebalance": "Chip rebalance",
+    "undecided": "Undecided",
+    "timeUndecided": "Time undecided",
+    "dateUndecided": "Date undecided",
+    "jobManagement": "Job Management",
+    "viewList": "View List",
+    "createPost": "Create Post",
+    "preQuestionAnswer": "Pre-question answer",
+    "applying": "Applying"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -486,8 +499,10 @@
     "applyNow": "Apply",
     "cancelApplication": "Cancel Application",
     "viewDetails": "View Details",
-    "unknownApplicant": "Unknown Applicant",
+    "loginRequired": "Login Required",
     "confirmed": "Confirmed",
+    "preQuestions": "(Pre-screening)",
+    "unknownApplicant": "Unknown Applicant",
     "preQuestion": {
       "checkButton": "📝 Pre-screening Questions",
       "completeFirst": "Please complete the pre-screening questions first",
@@ -709,6 +724,9 @@
     "loginRequired": "You must be logged in to update your profile.",
     "updateSuccess": "Profile updated successfully!",
     "updateFailed": "Profile update failed: {{message}}",
+    "profileImage": "Profile Image",
+    "imageUpdateFailed": "Failed to update profile image.",
+    "requiredFields": "Please fill in the following required fields: {{fields}}",
     "loadingProfile": "Loading profile...",
     "error": "Error: {{message}}",
     "viewProfileLogin": "Please log in to view your profile.",
@@ -749,6 +767,13 @@
     "residentId": "Resident ID:",
     "gender": "Gender:",
     "viewPayroll": "Payroll History"
+  },
+  "profileImage": {
+    "uploadSuccess": "Profile image uploaded successfully.",
+    "deleteSuccess": "Profile image deleted successfully.",
+    "currentImage": "Current profile image",
+    "uploadError": "Failed to upload profile image.",
+    "deleteError": "Failed to delete profile image."
   },
   "payrollPage": {
     "title": "Payroll History",

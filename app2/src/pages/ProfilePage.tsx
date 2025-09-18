@@ -178,7 +178,7 @@ const ProfilePage = () => {
                 operation: 'updateProfileImage',
                 ...(profileId && { userId: profileId })
             });
-            toast.error(t('profilePage.imageUpdateFailed', '프로필 사진 업데이트에 실패했습니다.'));
+            toast.error(t('profilePage.imageUpdateFailed'));
         }
     };
 
@@ -205,7 +205,7 @@ const ProfilePage = () => {
 
         if (missingFields.length > 0) {
             const missingFieldNames = missingFields.map(({ label }) => label).join(', ');
-            toast.error(`다음 필수 정보를 입력해주세요: ${missingFieldNames}`);
+            toast.error(t('profilePage.requiredFields', { fields: missingFieldNames }));
             return;
         }
 
@@ -254,7 +254,7 @@ const ProfilePage = () => {
                                 {profile.profileImageUrl ? (
                                     <img
                                         src={profile.profileImageUrl}
-                                        alt={t('profilePage.profileImage', '프로필 사진')}
+                                        alt={t('profilePage.profileImage')}
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
@@ -287,7 +287,7 @@ const ProfilePage = () => {
                     {/* 프로필 사진 업로드 (편집 모드에서만 표시) */}
                     {isEditing && isOwnProfile && (
                         <div className="mt-6 border-t pt-6">
-                            <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('profilePage.profileImage', '프로필 사진')}</h3>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('profilePage.profileImage')}</h3>
                             <ProfileImageUpload
                                 currentImageUrl={profile.profileImageUrl || null}
                                 onImageUpdate={handleImageUpdate}
