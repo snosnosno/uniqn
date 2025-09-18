@@ -82,7 +82,7 @@ describe('App Component Routing', () => {
     });
 
     render(
-        <MemoryRouter initialEntries={['/admin/dashboard']}>
+        <MemoryRouter initialEntries={['/app/admin/ceo-dashboard']}>
             <App />
         </MemoryRouter>
     );

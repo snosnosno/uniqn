@@ -26,6 +26,21 @@ const ParticipantsPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 전화번호 포맷팅 함수
+  const formatPhoneNumber = (value: string) => {
+    // 숫자만 추출
+    const numbers = value.replace(/\D/g, '');
+
+    // 길이에 따라 포맷 적용
+    if (numbers.length <= 3) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
+
   const participantLocations = useMemo(() => {
     const locations = new Map<string, string>();
     tables.forEach((table: Table) => {
@@ -351,7 +366,17 @@ const ParticipantsPage: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">{t('participants.modalLabelPhone')}</label>
-            <input type="text" value={newParticipant.phone} onChange={e => setNewParticipant(p => ({ ...p, phone: e.target.value }))} className="input-field w-full" />
+            <input
+              type="text"
+              value={newParticipant.phone}
+              onChange={e => {
+                const formattedValue = formatPhoneNumber(e.target.value);
+                setNewParticipant(p => ({ ...p, phone: formattedValue }));
+              }}
+              placeholder="010-1234-5678"
+              maxLength={13}
+              className="input-field w-full"
+            />
           </div>
            <div>
             <label className="block text-sm font-medium mb-1">{t('participants.modalLabelChips')}</label>

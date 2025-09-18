@@ -29,6 +29,21 @@ const SignUp: React.FC = () => {
     isOpen: false,
   });
 
+  // 전화번호 포맷팅 함수
+  const formatPhoneNumber = (value: string) => {
+    // 숫자만 추출
+    const numbers = value.replace(/\D/g, '');
+
+    // 길이에 따라 포맷 적용
+    if (numbers.length <= 3) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -117,7 +132,15 @@ const SignUp: React.FC = () => {
           </div>
 
           <FormField id="name" label={t('signUp.nameLabel')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('signUp.namePlaceholder')} required />
-          <FormField id="phone" label={t('signUp.phoneLabel')} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('signUp.phonePlaceholder')} />
+          <FormField
+            id="phone"
+            label={t('signUp.phoneLabel')}
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
+            placeholder="010-1234-5678"
+            maxLength={13}
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('signUp.genderLabel', '성별')}</label>

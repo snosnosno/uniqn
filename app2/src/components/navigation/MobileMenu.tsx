@@ -94,7 +94,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       ),
       adminOnly: true,
       children: [
-        { path: '/app/admin/dashboard', label: 'CEO 대시보드', adminOnly: true },
+        { path: '/app/admin/ceo-dashboard', label: 'CEO 대시보드', adminOnly: true },
         { path: '/app/admin/staff', label: '스태프 관리', adminOnly: true },
         { path: '/app/admin/job-postings', label: '구인공고 관리', adminOnly: true },
         { path: '/app/admin/users', label: '사용자 관리', adminOnly: true },

@@ -27,7 +27,6 @@ import { initializePerformance } from './utils/firebasePerformance';
 // Lazy load admin pages
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
 const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));
-const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 
 // Lazy load main pages
@@ -49,7 +48,7 @@ const TablesPage = lazy(() => import('./pages/TablesPage'));
 // A component to handle role-based redirection for authenticated users
 const AppRedirect: React.FC = () => {
   const { isAdmin } = useAuth(); // isAdmin is kept for compatibility
-  return isAdmin ? <Navigate to="/app/admin/dashboard" replace /> : <Navigate to="/app/profile" replace />;
+  return isAdmin ? <Navigate to="/app/admin/ceo-dashboard" replace /> : <Navigate to="/app/profile" replace />;
 };
 
 // Create a client with optimized cache settings
@@ -116,7 +115,6 @@ const App: React.FC = () => {
 
                       {/* Admin & Manager Routes */}
                       <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
-                        <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>} />
                         <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
                         <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
                         <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />

@@ -129,9 +129,31 @@ const ProfilePage = () => {
         setIsEditing(!isEditing);
     };
 
+    // 전화번호 포맷팅 함수
+    const formatPhoneNumber = (value: string) => {
+        // 숫자만 추출
+        const numbers = value.replace(/\D/g, '');
+
+        // 길이에 따라 포맷 적용
+        if (numbers.length <= 3) {
+            return numbers;
+        } else if (numbers.length <= 7) {
+            return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+        } else {
+            return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+        }
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+
+        // 전화번호 필드인 경우 포맷팅 적용
+        if (name === 'phone') {
+            const formattedValue = formatPhoneNumber(value);
+            setFormData(prev => ({ ...prev, [name]: formattedValue }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -303,7 +325,16 @@ const ProfilePage = () => {
                                 </div>
                                 <div>
                                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700">{t('profilePage.phone')}</label>
-                                    <input type="text" name="phone" id="phone" value={formData.phone || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                                    <input
+                                        type="text"
+                                        name="phone"
+                                        id="phone"
+                                        value={formData.phone || ''}
+                                        onChange={handleChange}
+                                        placeholder="010-1234-5678"
+                                        maxLength={13}
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <label htmlFor="gender" className="block text-sm font-medium text-gray-700">{t('profilePage.gender')}</label>
