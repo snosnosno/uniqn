@@ -53,6 +53,7 @@
     "emailPlaceholder": "이메일 주소",
     "passwordPlaceholder": "비밀번호",
     "loginButton": "로그인",
+    "rememberMe": "로그인 상태 유지",
     "forgotPassword": "비밀번호를 잊으셨나요?",
     "orContinueWith": "또는 다음으로 계속",
     "googleSignIn": "Google 계정으로 로그인",
@@ -905,6 +906,9 @@
   },
   "tournament": {
     "initialName": "T-Holdem 초기 토너먼트"
+  },
+  "kakaoLogin": {
+    "button": "카카오로 로그인"
   },
   "shiftSchedule": {
     "title": "교대 스케줄 관리",

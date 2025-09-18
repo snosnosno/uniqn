@@ -313,12 +313,12 @@ service cloud.firestore {
 
     // --- Login Attempts Collection (보안 기능) ---
     match /loginAttempts/{attemptId} {
-      // 모든 인증된 사용자가 자신의 IP 기록 읽기 가능
-      allow read: if isSignedIn();
-      // 모든 인증된 사용자가 로그인 시도 기록 생성/수정 가능
-      allow create, update: if isSignedIn();
-      // 자동 정리를 위해 삭제도 허용
-      allow delete: if isSignedIn();
+      // 읽기는 모두 허용 (로그인 전에도 차단 여부 확인 가능)
+      allow read: if true;
+      // 쓰기는 모두 허용 (로그인 시도 기록 가능)
+      allow create, update: if true;
+      // 삭제는 관리자만 가능
+      allow delete: if isPrivileged();
     }
 
     // Fallback rule: deny all other access

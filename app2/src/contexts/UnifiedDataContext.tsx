@@ -30,7 +30,7 @@ import {
   PerformanceMetrics,
 } from '../types/unifiedData';
 import { ScheduleEvent } from '../types/schedule';
-import { parseTimeString, safeDateToString } from '../utils/scheduleUtils';
+import { parseTimeString, safeDateToString as _safeDateToString } from '../utils/scheduleUtils';
 
 // 메모이제이션 헬퍼 함수
 const memoize = <T extends (...args: any[]) => any>(fn: T, keyGenerator: (...args: Parameters<T>) => string): T => {
@@ -422,11 +422,23 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     });
   }, [currentUser, role]);
 
-  // 서비스 초기화 (중복 초기화 방지)
+  // 서비스 초기화 (로그인 상태 확인 후 구독 시작)
   useEffect(() => {
+    // 로그인하지 않은 경우 구독하지 않음
+    if (!currentUser) {
+      logger.info('UnifiedDataProvider: 로그인 대기 중', {
+        component: 'UnifiedDataContext',
+        data: { userStatus: 'not_logged_in' }
+      });
+      return;
+    }
+
     let isSubscribed = true;
-    
-    logger.info('UnifiedDataProvider: 초기화 시작', { component: 'UnifiedDataContext' });
+
+    logger.info('UnifiedDataProvider: 로그인된 사용자 초기화 시작', {
+      component: 'UnifiedDataContext',
+      data: { userId: currentUser.uid, email: currentUser.email }
+    });
 
     // 디스패처 설정
     unifiedDataService.setDispatcher(dispatch);
@@ -434,15 +446,19 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     // 구독 시작 (중복 호출 방지)
     const initializeSubscriptions = async () => {
       if (!isSubscribed) return;
-      
+
       try {
-        logger.info('🚀 Firebase 구독 시작...', { component: 'UnifiedDataContext' });
+        logger.info('🚀 Firebase 구독 시작...', {
+          component: 'UnifiedDataContext',
+          data: { userId: currentUser.uid }
+        });
         await unifiedDataService.startAllSubscriptions();
-        
+
         if (isSubscribed) {
-          logger.info('✅ UnifiedDataProvider: 초기화 완료', { 
+          logger.info('✅ UnifiedDataProvider: 초기화 완료', {
             component: 'UnifiedDataContext',
             data: {
+              userId: currentUser.uid,
               timestamp: new Date().toISOString()
             }
           });
@@ -450,7 +466,8 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
       } catch (error) {
         if (isSubscribed) {
           logger.error('❌ UnifiedDataProvider: 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
-            component: 'UnifiedDataContext'
+            component: 'UnifiedDataContext',
+            data: { userId: currentUser.uid }
           });
         }
       }
@@ -465,11 +482,17 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
       if (initializeTimeoutRef.current) {
         clearTimeout(initializeTimeoutRef.current);
       }
-      logger.info('UnifiedDataProvider: 클린업 시작', { component: 'UnifiedDataContext' });
+      logger.info('UnifiedDataProvider: 클린업 시작', {
+        component: 'UnifiedDataContext',
+        data: { userId: currentUser.uid }
+      });
       unifiedDataService.stopAllSubscriptions();
-      logger.info('UnifiedDataProvider: 클린업 완료', { component: 'UnifiedDataContext' });
+      logger.info('UnifiedDataProvider: 클린업 완료', {
+        component: 'UnifiedDataContext',
+        data: { userId: currentUser.uid }
+      });
     };
-  }, []);
+  }, [currentUser]); // currentUser를 의존성에 추가
 
   // 메모이제이션된 getter 함수들
   const getStaffById = useMemo(
@@ -623,12 +646,9 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
 
     return events;
   }, [
-    state.workLogs, 
-    state.applications, 
-    state.attendanceRecords, 
-    state.cacheKeys.workLogs, 
-    state.cacheKeys.applications, 
-    state.cacheKeys.attendanceRecords
+    state.workLogs,
+    state.applications,
+    state.attendanceRecords
   ]);
 
   // 필터링된 스케줄 이벤트
