@@ -3,6 +3,8 @@
  * Core Web Vitals 및 실시간 성능 지표 수집
  */
 
+import { logger } from '../../../utils/logger';
+
 interface PerformanceMetrics {
   // Core Web Vitals
   lcp?: number; // Largest Contentful Paint
@@ -113,7 +115,7 @@ class PerformanceMonitor {
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.push(lcpObserver);
       } catch (e) {
-        console.warn('LCP observer setup failed:', e);
+        logger.warn('LCP observer setup failed', e instanceof Error ? e : new Error(String(e)));
       }
 
       // FID (First Input Delay)
@@ -130,7 +132,7 @@ class PerformanceMonitor {
         fidObserver.observe({ entryTypes: ['first-input'] });
         this.observers.push(fidObserver);
       } catch (e) {
-        console.warn('FID observer setup failed:', e);
+        logger.warn('FID observer setup failed', e instanceof Error ? e : new Error(String(e)));
       }
 
       // CLS (Cumulative Layout Shift)
@@ -148,7 +150,7 @@ class PerformanceMonitor {
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.observers.push(clsObserver);
       } catch (e) {
-        console.warn('CLS observer setup failed:', e);
+        logger.warn('CLS observer setup failed', e instanceof Error ? e : new Error(String(e)));
       }
     }
   }

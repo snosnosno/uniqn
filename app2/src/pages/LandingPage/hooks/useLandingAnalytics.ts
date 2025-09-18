@@ -139,7 +139,7 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
     // 입력 검증
     if (!eventName || eventName.trim() === '') {
-      console.warn('Invalid event name provided to analytics');
+      logger.warn('Invalid event name provided to analytics', { data: { eventName } });
       return;
     }
 

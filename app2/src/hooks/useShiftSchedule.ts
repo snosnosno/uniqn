@@ -135,7 +135,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
   // 딜러 할당 업데이트
   const updateDealerAssignment = useCallback(async (
-    staffId: string, // dealerId 대신 staffId 사용
+    staffId: string, // 스태프 ID
     timeSlot: string,
     assignment: string
   ) => {

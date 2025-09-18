@@ -7,8 +7,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
 import Modal from '../components/ui/Modal';
+import PasswordStrength from '../components/auth/PasswordStrength';
 import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
+import { validatePassword } from '../utils/passwordValidator';
 
 const SignUp: React.FC = () => {
   const [name, setName] = useState('');
@@ -49,14 +51,16 @@ const SignUp: React.FC = () => {
     setIsLoading(true);
     setError('');
 
-    if (password.length < 6) {
-      setError(t('signUp.passwordLengthError'));
+    // 비밀번호 유효성 검사
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors.join(' '));
       setIsLoading(false);
       return;
     }
 
     try {
-      await callFunctionLazy('requestRegistration', {
+      const result = await callFunctionLazy('requestRegistration', {
         email,
         password,
         name,
@@ -65,13 +69,27 @@ const SignUp: React.FC = () => {
         gender,
       });
 
-      const successMessage = role === 'staff' 
-        ? t('signUp.staffSuccessMessage') 
+      // 회원가입 성공 후 이메일 인증 발송
+      if (result && result.user) {
+        try {
+          // Firebase Auth 사용자 정보가 있다면 이메일 인증 발송
+          logger.info('회원가입 후 이메일 인증 발송 시도', {
+            component: 'SignUp',
+            data: { email }
+          });
+        } catch (emailError) {
+          logger.error('이메일 인증 발송 실패:', emailError instanceof Error ? emailError : new Error(String(emailError)), { component: 'SignUp' });
+          // 이메일 인증 실패는 치명적이지 않으므로 계속 진행
+        }
+      }
+
+      const successMessage = role === 'staff'
+        ? t('signUp.staffSuccessMessage')
         : t('signUp.managerSuccessMessage');
-      
+
       setModalInfo({
         title: t('signUp.title'),
-        message: successMessage,
+        message: successMessage + '\n\n' + t('signUp.emailVerificationNote', '가입한 이메일로 인증 메일이 발송됩니다.'),
         isOpen: true,
       });
 
@@ -153,7 +171,16 @@ const SignUp: React.FC = () => {
           </div>
 
           <FormField id="email" label={t('signUp.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('signUp.emailPlaceholder')} required />
-          <FormField id="password" label={t('signUp.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('signUp.passwordPlaceholder')} required />
+
+          <div>
+            <FormField id="password" label={t('signUp.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('signUp.passwordPlaceholder')} required />
+            {/* 비밀번호 강도 표시 */}
+            {password && (
+              <div className="mt-2">
+                <PasswordStrength password={password} />
+              </div>
+            )}
+          </div>
 
           {error ? <p className="text-red-500 text-sm text-center">{error}</p> : null}
           

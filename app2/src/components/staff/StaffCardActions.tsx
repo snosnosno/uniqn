@@ -27,21 +27,21 @@ interface StaffCardActionsProps {
 const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
   showActions,
   setShowActions,
-  workLogId,
-  currentStatus,
+  workLogId: _workLogId,
+  currentStatus: _currentStatus,
   staffId,
-  staffName,
-  eventId,
-  scheduledStartTime,
-  scheduledEndTime,
+  staffName: _staffName,
+  eventId: _eventId,
+  scheduledStartTime: _scheduledStartTime,
+  scheduledEndTime: _scheduledEndTime,
   canEdit,
-  multiSelectMode,
+  multiSelectMode: _multiSelectMode,
   onEditWorkTime,
   onDeleteStaff,
-  onStatusChange,
+  onStatusChange: _onStatusChange,
   lightImpact,
   workLog,
-  assignedDate
+  assignedDate: _assignedDate
 }) => {
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();

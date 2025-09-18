@@ -205,7 +205,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         hasConfirmedStaff: !!confirmedStaff,
         confirmedStaffLength: confirmedStaff?.length || 0,
         workLogsLength: workLogs.length,
-        jobPostingId: jobPosting?.id || 'none'
+        eventId: jobPosting?.id || 'none'
       }
     });
 

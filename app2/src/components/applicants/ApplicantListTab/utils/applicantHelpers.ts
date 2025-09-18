@@ -164,9 +164,9 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
   // 🚀 최우선: dateAssignments 사용 (날짜 기반 구조 - 최신 버전)
   if (applicant.dateAssignments && Array.isArray(applicant.dateAssignments) && applicant.dateAssignments.length > 0) {
     
-    const selections = applicant.dateAssignments.flatMap((dateAssignment, index) => {
-      
-      return dateAssignment.selections.map((selection, selIndex) => {
+    const selections = applicant.dateAssignments.flatMap((dateAssignment, _index) => {
+
+      return dateAssignment.selections.map((selection, _selIndex) => {
         // 🔥 역할 정보 복원 로직 추가 (dateAssignments용)
         let effectiveRole = selection.role || '';
         
@@ -438,13 +438,6 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
     const rolesArray = applicant.assignedRoles ?? [];
     const timesArray = applicant.assignedTimes ?? [];
     const datesArray = applicant.assignedDates ?? [];
-    
-    // ✅ 1:1:1 매칭 보장: 역할, 시간, 날짜가 정확히 매칭되도록 처리
-    const maxLength = Math.min(
-      Math.max(rolesArray.length, 1), // 최소 1개는 보장
-      Math.max(timesArray.length, 1),
-      Math.max(datesArray.length || 1, 1) // datesArray가 비어있어도 처리
-    );
     
     // 실제 데이터가 있는 경우의 최대 길이 계산
     const actualLength = Math.max(

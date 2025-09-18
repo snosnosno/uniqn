@@ -246,7 +246,7 @@ export const createTestJobPostings = async (): Promise<string[]> => {
     logger.info('테스트 구인공고 생성 시작', { component: 'TestSetup' });
 
     const batch = writeBatch(db);
-    const jobPostingIds: string[] = [];
+    const eventIds: string[] = [];
 
     for (let i = 0; i < TEST_JOB_POSTINGS.length; i++) {
       const jobData = TEST_JOB_POSTINGS[i];
@@ -259,13 +259,13 @@ export const createTestJobPostings = async (): Promise<string[]> => {
         eventId: docRef.id
       });
 
-      jobPostingIds.push(docRef.id);
+      eventIds.push(docRef.id);
     }
 
     await batch.commit();
 
-    logger.info(`테스트 구인공고 ${jobPostingIds.length}개 생성 완료`, { component: 'TestSetup' });
-    return jobPostingIds;
+    logger.info(`테스트 구인공고 ${eventIds.length}개 생성 완료`, { component: 'TestSetup' });
+    return eventIds;
   } catch (error) {
     logger.error('테스트 구인공고 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
     throw error;
@@ -275,7 +275,7 @@ export const createTestJobPostings = async (): Promise<string[]> => {
 /**
  * 테스트 지원서 생성
  */
-export const createTestApplications = async (jobPostingIds: string[]): Promise<void> => {
+export const createTestApplications = async (eventIds: string[]): Promise<void> => {
   try {
     logger.info('테스트 지원서 생성 시작', { component: 'TestSetup' });
 
@@ -283,7 +283,7 @@ export const createTestApplications = async (jobPostingIds: string[]): Promise<v
     const applicantUsers = TEST_USERS.filter(user => user.role === 'applicant');
 
     // 각 구인공고에 무작위로 지원자들이 지원
-    for (const jobId of jobPostingIds) {
+    for (const eventId of eventIds) {
       const numApplicants = Math.floor(Math.random() * applicantUsers.length) + 1;
       const selectedApplicants = applicantUsers
         .sort(() => 0.5 - Math.random())
@@ -293,7 +293,7 @@ export const createTestApplications = async (jobPostingIds: string[]): Promise<v
         const applicationRef = doc(collection(db, 'applications'));
 
         batch.set(applicationRef, {
-          eventId: jobId,
+          eventId: eventId,
           applicantId: applicant.uid,
           applicantEmail: applicant.email,
           applicantName: applicant.name,
@@ -361,7 +361,7 @@ export const createTestAttendanceRecords = async (): Promise<void> => {
  */
 export const setupTestData = async (): Promise<{
   success: boolean;
-  jobPostingIds: string[];
+  eventIds: string[];
   userCount: number;
 }> => {
   try {
@@ -380,10 +380,10 @@ export const setupTestData = async (): Promise<{
     await createTestUsers();
 
     // 4. 테스트 구인공고 생성
-    const jobPostingIds = await createTestJobPostings();
+    const eventIds = await createTestJobPostings();
 
     // 5. 테스트 지원서 생성
-    await createTestApplications(jobPostingIds);
+    await createTestApplications(eventIds);
 
     // 6. 테스트 출석 기록 생성
     await createTestAttendanceRecords();
@@ -391,19 +391,19 @@ export const setupTestData = async (): Promise<{
     logger.info('테스트 데이터 설정 완료', {
       component: 'TestSetup',
       userCount: TEST_USERS.length,
-      jobPostingCount: jobPostingIds.length
+      jobPostingCount: eventIds.length
     });
 
     return {
       success: true,
-      jobPostingIds,
+      eventIds,
       userCount: TEST_USERS.length
     };
   } catch (error) {
     logger.error('테스트 데이터 설정 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
     return {
       success: false,
-      jobPostingIds: [],
+      eventIds: [],
       userCount: 0
     };
   }

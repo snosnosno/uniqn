@@ -201,8 +201,7 @@ const ApplicantRow: React.FC<ApplicantRowProps> = ({ index, style, data }) => {
   );
 };
 
-// ApplicantRow를 메모이제이션
-const MemoizedApplicantRow = React.memo(ApplicantRow);
+// Note: ApplicantRow 메모이제이션은 필요시 추가 가능
 
 /**
  * 통합된 지원자 목록 탭

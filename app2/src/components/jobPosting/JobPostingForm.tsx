@@ -3,6 +3,7 @@ import { useJobPostingForm } from '../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
 import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
+import { JobPosting, DateSpecificRequirement, JobPostingTemplate } from '../../types/jobPosting';
 import Button from '../common/Button';
 import Input from '../ui/Input';
 import { Select } from '../common/Select';
@@ -12,7 +13,7 @@ import TemplateModal from './modals/TemplateModal';
 import LoadTemplateModal from './modals/LoadTemplateModal';
 
 interface JobPostingFormProps {
-  onSubmit: (formData: any) => Promise<void>;
+  onSubmit: (formData: Partial<JobPosting>) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -20,7 +21,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   onSubmit,
   isSubmitting = false
 }) => {
-  const { toDropdownValue } = useDateUtils();
+  const { toDropdownValue: _toDropdownValue } = useDateUtils();
   const {
     formData,
     handleFormChange,
@@ -35,8 +36,8 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     removePreQuestion,
     addPreQuestionOption,
     removePreQuestionOption,
-    handleStartDateChange,
-    handleEndDateChange,
+    handleStartDateChange: _handleStartDateChange,
+    handleEndDateChange: _handleEndDateChange,
     resetForm,
     setFormDataFromTemplate,
     setFormData,
@@ -87,14 +88,14 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     await handleSaveTemplate(formData);
   };
 
-  const handleLoadTemplateWrapper = async (template: any) => {
+  const handleLoadTemplateWrapper = async (template: JobPostingTemplate) => {
     const templateFormData = await handleLoadTemplate(template);
     setFormDataFromTemplate(templateFormData);
     return templateFormData;
   };
 
-  const handleDateSpecificRequirementsChange = (requirements: any[]) => {
-    setFormData((prev: any) => ({ ...prev, dateSpecificRequirements: requirements }));
+  const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
+    setFormData((prev: Partial<JobPosting>) => ({ ...prev, dateSpecificRequirements: requirements }));
   };
 
   return (

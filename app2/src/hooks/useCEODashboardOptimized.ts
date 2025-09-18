@@ -140,7 +140,7 @@ export const useCEODashboardOptimized = () => {
 
       ratingsSnapshot.forEach((doc) => {
         const data = doc.data();
-        // staffId만 사용 (레거시 dealerId 제거)
+        // staffId 사용
         const staffId = data.staffId;
         
         if (!dealerRatings.has(staffId)) {

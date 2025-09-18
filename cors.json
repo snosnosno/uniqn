@@ -1,11 +1,12 @@
 [
   {
-    "origin": ["http://localhost:3000"],
-    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
-    "responseHeader": [
-      "Content-Type",
-      "Access-Control-Allow-Origin"
+    "origin": [
+      "http://localhost:3000",
+      "https://tholdem-ebc18.web.app",
+      "https://tholdem-ebc18.firebaseapp.com"
     ],
-    "maxAgeSeconds": 3600
+    "method": ["GET", "POST", "PUT", "DELETE"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization"]
   }
-] 
+]

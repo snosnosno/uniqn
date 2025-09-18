@@ -34,7 +34,10 @@ export const mockAuthContextValue = {
   signOut: jest.fn(),
   signIn: jest.fn(),
   sendPasswordReset: jest.fn(),
-  signInWithGoogle: jest.fn()
+  signInWithGoogle: jest.fn(),
+  signInWithKakao: jest.fn(),
+  sendEmailVerification: jest.fn(),
+  reloadUser: jest.fn()
 };
 
 // Custom render function with providers

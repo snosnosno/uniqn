@@ -6,6 +6,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { logger } from './logger';
 import { DEFAULT_VALUES, TIME_REGEX } from '../constants';
+import type { Staff, WorkLog } from '../types/unifiedData';
 
 /**
  * WorkLog와 Staff 데이터를 병합하는 통합 함수
@@ -20,19 +21,19 @@ export interface StaffWorkLogData {
   scheduledEndTime?: Timestamp | null;
   actualStartTime?: Timestamp | null;
   actualEndTime?: Timestamp | null;
-  assignedTime?: string;
-  role?: string;
-  contact?: string;
-  status?: string;
-  isVirtual?: boolean;
+  assignedTime?: string | undefined;
+  role?: string | undefined;
+  contact?: string | undefined;
+  status?: string | undefined;
+  isVirtual?: boolean | undefined;
 }
 
 /**
  * Staff 데이터와 WorkLog 데이터를 병합
  */
 export function mergeStaffWithWorkLog(
-  staff: any,
-  workLog?: any,
+  staff: Partial<Staff>,
+  workLog?: Partial<WorkLog>,
   options: {
     useStaffAsFallback?: boolean;
     includeVirtualData?: boolean;
@@ -41,11 +42,11 @@ export function mergeStaffWithWorkLog(
   const { useStaffAsFallback = true, includeVirtualData = true } = options;
 
   const baseData: StaffWorkLogData = {
-    id: workLog?.id || `virtual_${staff.id}_${staff.date || DEFAULT_VALUES.TODAY}`,
-    staffId: staff.staffId || staff.id,
-    staffName: staff.name || staff.staffName || '이름 없음',
-    eventId: workLog?.eventId || staff.eventId || '',
-    date: workLog?.date || staff.date || DEFAULT_VALUES.TODAY,
+    id: workLog?.id || `virtual_${staff.id || 'unknown'}_${staff.assignedDate || DEFAULT_VALUES.TODAY}`,
+    staffId: staff.staffId || staff.id || 'unknown',
+    staffName: (staff.name ?? '이름 없음') as string,
+    eventId: workLog?.eventId || '',
+    date: (workLog?.date ?? staff.assignedDate ?? DEFAULT_VALUES.TODAY) as string,
     scheduledStartTime: workLog?.scheduledStartTime || null,
     scheduledEndTime: workLog?.scheduledEndTime || null,
     actualStartTime: workLog?.actualStartTime || null,
@@ -55,9 +56,9 @@ export function mergeStaffWithWorkLog(
 
   // Staff 데이터를 fallback으로 사용
   if (useStaffAsFallback) {
-    baseData.assignedTime = staff.assignedTime || DEFAULT_VALUES.TIME_PENDING;
-    baseData.role = staff.role || workLog?.role;
-    baseData.contact = staff.contact || staff.phone;
+    baseData.assignedTime = (staff.assignedTime || DEFAULT_VALUES.TIME_PENDING) as string;
+    baseData.role = (staff.role || workLog?.role) as string | undefined;
+    baseData.contact = staff.phone;
   }
 
   // 가상 데이터 표시
@@ -270,7 +271,7 @@ export function generateId(prefix: string, ...parts: string[]): string {
 }
 
 /**
- * staffId와 dealerId 매칭 확인 (하위 호환성)
+ * staffId 매칭 확인
  */
 export function isStaffIdMatch(recordStaffId: string, targetStaffId: string): boolean {
   if (!recordStaffId || !targetStaffId) return false;
@@ -288,7 +289,7 @@ export function isStaffIdMatch(recordStaffId: string, targetStaffId: string): bo
 /**
  * 데이터 정규화 헬퍼 (undefined, null, 빈 문자열 처리)
  */
-export function normalizeString(value: any, defaultValue = ''): string {
+export function normalizeString(value: unknown, defaultValue = ''): string {
   if (value === null || value === undefined) return defaultValue;
   if (typeof value === 'string') return value.trim();
   return String(value);
@@ -297,7 +298,7 @@ export function normalizeString(value: any, defaultValue = ''): string {
 /**
  * 숫자 정규화 헬퍼
  */
-export function normalizeNumber(value: any, defaultValue = 0): number {
+export function normalizeNumber(value: unknown, defaultValue = 0): number {
   if (value === null || value === undefined || value === '') return defaultValue;
   const num = Number(value);
   return isNaN(num) ? defaultValue : num;
@@ -306,7 +307,7 @@ export function normalizeNumber(value: any, defaultValue = 0): number {
 /**
  * 불린 정규화 헬퍼
  */
-export function normalizeBoolean(value: any, defaultValue = false): boolean {
+export function normalizeBoolean(value: unknown, defaultValue = false): boolean {
   if (value === null || value === undefined) return defaultValue;
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {

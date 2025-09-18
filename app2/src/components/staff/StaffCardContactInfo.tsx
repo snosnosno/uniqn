@@ -10,8 +10,8 @@ interface StaffCardContactInfoProps {
 const StaffCardContactInfo: React.FC<StaffCardContactInfoProps> = React.memo(({
   phone,
   email,
-  postingTitle,
-  postingId
+  postingTitle: _postingTitle,
+  postingId: _postingId
 }) => {
   const hasContactInfo = phone || email;
   

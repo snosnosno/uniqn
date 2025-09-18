@@ -11,15 +11,7 @@ interface FirebaseTimestamp {
 
 type DateValue = string | Date | FirebaseTimestamp;
 
-// 날짜/시간 포맷팅 유틸 함수
-const formatDateTimeValue = (value: string | DateValue): string => {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && 'seconds' in value) {
-    return formatDateUtil(value as FirebaseTimestamp);
-  }
-  return String(value);
-};
+// Note: formatDateTimeValue 함수는 필요시 추가 가능
 
 const formatDateOnly = (value: DateValue): string => {
   return value ? formatDateUtil(value) : '날짜 미정';

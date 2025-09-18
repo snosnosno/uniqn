@@ -6,6 +6,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import EmailVerification from './components/auth/EmailVerification';
+import RequireEmailVerification from './components/auth/RequireEmailVerification';
 
 import FirebaseErrorBoundary from './components/errors/FirebaseErrorBoundary';
 import ErrorBoundary from './components/errors/ErrorBoundary';
@@ -101,7 +103,11 @@ const App: React.FC = () => {
 
                   {/* Authenticated Routes */}
                   <Route path="/app" element={<PrivateRoute />}>
-                    <Route path="/app" element={<Layout />}>
+                    <Route path="/app" element={
+                      <RequireEmailVerification>
+                        <Layout />
+                      </RequireEmailVerification>
+                    }>
                       <Route index element={<AppRedirect />} />
                       <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
                       <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />

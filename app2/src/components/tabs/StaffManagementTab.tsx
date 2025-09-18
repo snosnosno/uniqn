@@ -9,7 +9,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { doc, getDoc, Timestamp, collection, query, where, getDocs, deleteDoc, updateDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, query, where, getDocs, deleteDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';

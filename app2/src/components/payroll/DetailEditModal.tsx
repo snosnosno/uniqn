@@ -63,7 +63,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   // 역할 추론 함수 제거 - 정확한 역할 정보만 사용
 
   // getTargetWorkLog 패턴 적용 - ScheduleDetailModal 참고
-  const getTargetWorkLog = useCallback((date: string) => {
+  const _getTargetWorkLog = useCallback((date: string) => {
     if (!staff) return null;
     
     const staffId = getStaffIdentifier(staff);

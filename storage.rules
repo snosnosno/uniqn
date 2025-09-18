@@ -1,10 +1,15 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+// Firebase Storage 보안 규칙
 service firebase.storage {
   match /b/{bucket}/o {
+    // 프로필 이미지 - 인증된 사용자만 자신의 이미지 관리 가능
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true;  // 모든 사용자가 프로필 사진 볼 수 있음
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 그 외 모든 경로는 차단
     match /{allPaths=**} {
       allow read, write: if false;
     }

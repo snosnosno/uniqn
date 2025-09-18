@@ -305,12 +305,22 @@ service cloud.firestore {
     // --- Backup Collections (와일드카드 패턴) ---
     // staff_backup_YYYY-MM-DD 형식의 모든 백업 컬렉션
     match /{backupCollection}/{documentId} {
-      allow read, write: if request.auth.token.role == 'admin' && 
-        (backupCollection.matches('staff_backup_.*') || 
+      allow read, write: if request.auth.token.role == 'admin' &&
+        (backupCollection.matches('staff_backup_.*') ||
          backupCollection.matches('applicants_backup_.*') ||
          backupCollection.matches('persons_backup_.*'));
     }
-    
+
+    // --- Login Attempts Collection (보안 기능) ---
+    match /loginAttempts/{attemptId} {
+      // 모든 인증된 사용자가 자신의 IP 기록 읽기 가능
+      allow read: if isSignedIn();
+      // 모든 인증된 사용자가 로그인 시도 기록 생성/수정 가능
+      allow create, update: if isSignedIn();
+      // 자동 정리를 위해 삭제도 허용
+      allow delete: if isSignedIn();
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;

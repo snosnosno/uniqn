@@ -38,7 +38,7 @@ interface CacheStats {
  * 실시간 성능 모니터링, 캐시 상태, 데이터 플로우 추적
  */
 const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const { state, loading, error, refresh } = useUnifiedData();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'data' | 'cache' | 'performance' | 'logs'>('overview');
