@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PermissionGuardProps } from '../../types/permissions';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,6 +17,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 }) => {
   const { checkPermission } = usePermissions();
   const { currentUser, loading } = useAuth();
+  const navigate = useNavigate();
   
   // 로딩 중인 경우
   if (loading) {
@@ -50,14 +51,14 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
           <p className="text-red-600 mb-4">
             이 페이지에 접근할 권한이 없습니다. 관리자에게 문의하세요.
           </p>
-          <button 
-            onClick={() => window.history.back()}
+          <button
+            onClick={() => navigate(-1)}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 mr-2"
           >
             이전 페이지로
           </button>
-          <button 
-            onClick={() => window.location.href = '/'}
+          <button
+            onClick={() => navigate('/')}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
           >
             홈으로 이동

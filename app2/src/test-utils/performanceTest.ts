@@ -3,16 +3,24 @@
  * 애플리케이션 성능 측정 및 검증
  */
 
+import React from 'react';
 import { performance } from 'perf_hooks';
+
+// 메모리 정보 타입 정의
+interface MemoryInfo {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
 
 // 성능 메트릭 타입 정의
 export interface PerformanceMetrics {
   loadTime: number;
   renderTime: number;
-  memoryUsage?: MemoryInfo;
-  bundleSize?: number;
-  apiResponseTime?: number;
-  databaseQueryTime?: number;
+  memoryUsage?: MemoryInfo | undefined;
+  bundleSize?: number | undefined;
+  apiResponseTime?: number | undefined;
+  databaseQueryTime?: number | undefined;
 }
 
 export interface LoadTestResult {
@@ -271,8 +279,8 @@ export const measureRenderingPerformance = (
  */
 export const testDatabaseQueryPerformance = async (
   queries: Array<{ name: string; query: () => Promise<any> }>
-): Promise<Record<string, { responseTime: number; recordCount?: number }>> => {
-  const results: Record<string, { responseTime: number; recordCount?: number }> = {};
+): Promise<Record<string, { responseTime: number; recordCount?: number | undefined }>> => {
+  const results: Record<string, { responseTime: number; recordCount?: number | undefined }> = {};
 
   for (const { name, query } of queries) {
     const startTime = performance.now();
@@ -430,7 +438,8 @@ export const measureCoreWebVitals = (): Promise<{
       // First Input Delay
       new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        vitals.FID = entries[0]?.processingStart - entries[0]?.startTime || 0;
+        const entry = entries[0] as any; // PerformanceEventTiming 타입 캐스팅
+        vitals.FID = (entry?.processingStart - entry?.startTime) || 0;
       }).observe({ entryTypes: ['first-input'] });
 
       // Cumulative Layout Shift

@@ -20,11 +20,11 @@ const ResponsiveNav: React.FC = () => {
   // 데스크톱 네비게이션 아이템
   const desktopNavItems = [
     { path: '/', label: '홈' },
-    { path: '/tables', label: '테이블', requiresAuth: true },
-    { path: '/jobs', label: '구인구직' },
-    { path: '/participants', label: '참가자', requiresAuth: true, adminOnly: true },
-    { path: '/schedule', label: '스케줄', requiresAuth: true },
-    { path: '/admin', label: '관리자', adminOnly: true },
+    { path: '/app/tables', label: '테이블', requiresAuth: true },
+    { path: '/app/jobs', label: '구인구직' },
+    { path: '/app/participants', label: '참가자', requiresAuth: true, adminOnly: true },
+    { path: '/app/schedule', label: '스케줄', requiresAuth: true },
+    { path: '/app/admin', label: '관리자', adminOnly: true },
   ];
 
   const filteredNavItems = desktopNavItems.filter(item => {
@@ -89,7 +89,7 @@ const ResponsiveNav: React.FC = () => {
               {currentUser ? (
                 <div className="flex items-center space-x-3">
                   <Link
-                    to="/profile"
+                    to="/app/profile"
                     className="flex items-center space-x-2 text-base text-gray-700 hover:text-gray-900"
                   >
                     <div className="w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">

@@ -36,6 +36,7 @@ const AvailableTimesPage = lazy(() => import('./pages/AvailableTimesPage'));
 const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
 const JobPostingAdminPage = lazy(() => import('./pages/JobPostingAdminPage'));
 const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const MySchedulePage = lazy(() => import('./pages/MySchedulePage'));
 const ParticipantsPage = lazy(() => import('./pages/ParticipantsPage'));
 const PrizesPage = lazy(() => import('./pages/PrizesPage'));
@@ -45,10 +46,10 @@ const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 
 
-// A component to handle role-based redirection
-const HomeRedirect: React.FC = () => {
+// A component to handle role-based redirection for authenticated users
+const AppRedirect: React.FC = () => {
   const { isAdmin } = useAuth(); // isAdmin is kept for compatibility
-  return isAdmin ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/profile" replace />;
+  return isAdmin ? <Navigate to="/app/admin/dashboard" replace /> : <Navigate to="/app/profile" replace />;
 };
 
 // Create a client with optimized cache settings
@@ -94,14 +95,15 @@ const App: React.FC = () => {
               <TournamentProvider>
               <Routes>
                 {/* Public Routes */}
+                <Route path="/" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
                 <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
-                  
+
                   {/* Authenticated Routes */}
-                  <Route element={<PrivateRoute />}>
-                    <Route path="/" element={<Layout />}>
-                      <Route index element={<HomeRedirect />} />
+                  <Route path="/app" element={<PrivateRoute />}>
+                    <Route path="/app" element={<Layout />}>
+                      <Route index element={<AppRedirect />} />
                       <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
                       <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
                       

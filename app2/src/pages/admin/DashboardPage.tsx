@@ -2,6 +2,7 @@ import { StarIcon } from '@heroicons/react/24/solid';
 import { logger } from '../../utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 import { DashboardCard } from '../../components/DashboardCard';
@@ -203,8 +204,8 @@ const DashboardPage: React.FC = () => {
 
         <DashboardCard title={t('dashboard.quickLinks')}>
             <div className="flex flex-col space-y-2">
-                <a href="/admin/events" className="text-blue-500 hover:underline">{t('dashboard.manageEventsLink')}</a>
-                <a href="/admin/payroll" className="text-blue-500 hover:underline">{t('dashboard.processPayrollLink')}</a>
+                <Link to="/app/admin/events" className="text-blue-500 hover:underline">{t('dashboard.manageEventsLink')}</Link>
+                <Link to="/app/admin/payroll" className="text-blue-500 hover:underline">{t('dashboard.processPayrollLink')}</Link>
             </div>
         </DashboardCard>
         

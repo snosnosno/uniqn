@@ -22,7 +22,7 @@ const Login: React.FC = () => {
     setError("");
     try {
       await signIn(email, password);
-      navigate("/");
+      navigate("/app");
     } catch (err: any) {
       if (err.code === 'auth/user-disabled') {
         setError(t('adminLogin.approvalPending'));
@@ -37,7 +37,7 @@ const Login: React.FC = () => {
     setError('');
     try {
       await signInWithGoogle();
-      navigate('/');
+      navigate('/app');
     } catch (err: any) {
       setError(t('googleSignIn.error'));
       logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });

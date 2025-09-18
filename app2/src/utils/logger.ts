@@ -86,6 +86,32 @@ export interface LogContext {
   errorDetails?: Record<string, unknown>;
   staffInfoKeys?: string[];
   assignmentInfoKeys?: string[];
+
+  // Analytics 관련 필드 (useLandingAnalytics.ts에서 사용)
+  eventCount?: number;
+  events?: unknown[];
+  sessionId?: string;
+  alerts?: string[];
+  args?: unknown[];
+  featureId?: string;
+
+  // GA4 Analytics 관련 필드 (analyticsIntegration.ts에서 사용)
+  event_name?: string;
+  event_category?: string | undefined;
+  event_label?: string | undefined;
+  event_value?: number | undefined;
+  custom_parameters?: Record<string, any> | undefined;
+  page_url?: string;
+  user_agent?: string;
+
+  // Conversion 관련 필드
+  conversion_type?: string;
+  conversion_value?: number | undefined;
+  conversion_context?: Record<string, any>;
+
+  // 테스트 관련 필드
+  userCount?: number;
+  jobPostingCount?: number;
 }
 
 // 로그 엔트리 인터페이스

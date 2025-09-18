@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { FaQrcode } from '../Icons/ReactIconsReplacement';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 
@@ -12,7 +12,7 @@ export const Layout = memo(() => {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const handleAttendanceClick = () => {
-    navigate('/attendance');
+    navigate('/app/attendance');
   };
 
   return (
@@ -22,8 +22,10 @@ export const Layout = memo(() => {
         <div className="flex items-center justify-between px-2 sm:px-4 md:px-6 py-3 h-16">
           {/* 로고 및 제목 */}
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-800">{t('layout.title', 'T-HOLDEM')}</h1>
-            <span className="ml-2 text-sm text-gray-500 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
+            <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+              <h1 className="text-xl font-bold text-gray-800">{t('layout.title', 'T-HOLDEM')}</h1>
+              <span className="ml-2 text-sm text-gray-500 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
+            </Link>
           </div>
           
           {/* 헤더 버튼들 */}

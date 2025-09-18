@@ -85,7 +85,7 @@ const SignUp: React.FC = () => {
     setError('');
     try {
       await signInWithGoogle();
-      navigate('/');
+      navigate('/app');
     } catch (err: any) {
       setError(t('googleSignIn.error'));
       logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });

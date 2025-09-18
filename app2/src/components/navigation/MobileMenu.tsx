@@ -44,7 +44,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       ),
     },
     {
-      path: '/tables',
+      path: '/app/tables',
       label: '테이블 관리',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,13 +56,13 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       requiresAuth: true,
     },
     {
-      path: '/participants',
+      path: '/app/participants',
       label: '참가자 관리',
       requiresAuth: true,
       adminOnly: true,
     },
     {
-      path: '/jobs',
+      path: '/app/jobs',
       label: '구인구직',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,17 +73,17 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       ),
     },
     {
-      path: '/schedule',
+      path: '/app/schedule',
       label: '스케줄',
       requiresAuth: true,
     },
     {
-      path: '/simple-payroll',
+      path: '/app/simple-payroll',
       label: '급여 조회',
       requiresAuth: true,
     },
     {
-      path: '/admin',
+      path: '/app/admin',
       label: '관리자',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,10 +94,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       ),
       adminOnly: true,
       children: [
-        { path: '/admin/dashboard', label: 'CEO 대시보드', adminOnly: true },
-        { path: '/admin/staff', label: '스태프 관리', adminOnly: true },
-        { path: '/admin/job-postings', label: '구인공고 관리', adminOnly: true },
-        { path: '/admin/users', label: '사용자 관리', adminOnly: true },
+        { path: '/app/admin/dashboard', label: 'CEO 대시보드', adminOnly: true },
+        { path: '/app/admin/staff', label: '스태프 관리', adminOnly: true },
+        { path: '/app/admin/job-postings', label: '구인공고 관리', adminOnly: true },
+        { path: '/app/admin/users', label: '사용자 관리', adminOnly: true },
       ],
     },
   ];

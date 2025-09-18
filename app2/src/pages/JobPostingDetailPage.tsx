@@ -208,7 +208,7 @@ const JobPostingDetailPageContent: React.FC = () => {
             이 공고에 접근할 권한이 없습니다. 본인이 작성한 공고만 관리할 수 있습니다.
           </p>
           <button 
-            onClick={() => navigate('/admin/job-postings')}
+            onClick={() => navigate('/app/admin/job-postings')}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             뒤로
@@ -228,7 +228,7 @@ const JobPostingDetailPageContent: React.FC = () => {
             이 공고에 대한 관리 권한이 제한되어 있습니다.
           </p>
           <button 
-            onClick={() => navigate('/admin/job-postings')}
+            onClick={() => navigate('/app/admin/job-postings')}
             className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
           >
             공고 목록으로 이동
@@ -255,7 +255,7 @@ const JobPostingDetailPageContent: React.FC = () => {
           <h2 className="text-xl font-bold text-red-800 mb-2">오류 발생</h2>
           <p className="text-red-600 mb-4">{error || '공고를 찾을 수 없습니다.'}</p>
           <button 
-            onClick={() => navigate('/admin/job-postings')}
+            onClick={() => navigate('/app/admin/job-postings')}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             뒤로
@@ -271,7 +271,7 @@ const JobPostingDetailPageContent: React.FC = () => {
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-4">
             <button 
-              onClick={() => navigate('/admin/job-postings')}
+              onClick={() => navigate('/app/admin/job-postings')}
               className="flex items-center text-gray-600 hover:text-gray-800 flex-shrink-0"
             >
             <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

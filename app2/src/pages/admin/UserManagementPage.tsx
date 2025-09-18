@@ -93,7 +93,7 @@ const UserManagementPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">{t('userManagement.title')}</h1>
-                <Link to="/admin/staff/new" className="btn btn-primary">
+                <Link to="/app/admin/staff/new" className="btn btn-primary">
                     {t('userManagement.addNew')}
                 </Link>
             </div>

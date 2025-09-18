@@ -51,22 +51,22 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
   };
 
   const handleDashboardClick = () => {
-    navigate('/profile');
+    navigate('/app/profile');
     setIsMobileMenuOpen(false);
   };
 
   const handleAdminDashboardClick = () => {
-    navigate('/admin/ceo-dashboard');
+    navigate('/app/admin/ceo-dashboard');
     setIsMobileMenuOpen(false);
   };
 
   const handleJobPostingsClick = () => {
-    navigate('/admin/job-postings');
+    navigate('/app/admin/job-postings');
     setIsMobileMenuOpen(false);
   };
 
   const handleJobBoardClick = () => {
-    navigate('/jobs');
+    navigate('/app/jobs');
     setIsMobileMenuOpen(false);
   };
 

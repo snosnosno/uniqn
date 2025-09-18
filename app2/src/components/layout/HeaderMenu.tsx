@@ -170,10 +170,10 @@ export const HeaderMenu: React.FC = () => {
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
               {/* 기본 메뉴 (모든 사용자) */}
-              <NavItem to={isAdmin ? "/admin/dashboard" : "/profile"} label={t('nav.dashboard', 'Dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to={isAdmin ? "/app/admin/dashboard" : "/app/profile"} label={t('nav.dashboard', 'Dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
               
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
               {!authLoading && currentUser && (
@@ -181,16 +181,16 @@ export const HeaderMenu: React.FC = () => {
                   <hr className="my-2 border-t border-gray-200" />
                   
                   {/* Job Posting Management - 모든 역할에서 표시 (권한은 개별 확인) */}
-                  <NavItem to="/admin/job-postings" label={t('nav.managePostings', 'Manage Postings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/app/admin/job-postings" label={t('nav.managePostings', 'Manage Postings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
 
                   {/* Admin and Manager 메뉴 */}
                   {(role === 'admin' || role === 'manager') && (
                     <>
-                      <NavItem to="/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                       <hr className="my-2 border-t border-gray-200" />
-                      <NavItem to="/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}
 
@@ -198,9 +198,9 @@ export const HeaderMenu: React.FC = () => {
                   {role === 'admin' && (
                     <>
                       <hr className="my-2 border-t border-gray-200" />
-                      <NavItem to="/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}
                 </>

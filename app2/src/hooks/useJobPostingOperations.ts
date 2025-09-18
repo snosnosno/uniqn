@@ -119,7 +119,7 @@ export const useJobPostingOperations = () => {
 
   // 상세 페이지로 이동
   const handleNavigateToDetail = useCallback((postId: string) => {
-    navigate(`/admin/job-posting/${postId}`);
+    navigate(`/app/admin/job-posting/${postId}`);
   }, [navigate]);
 
   // 수정 모달 열기

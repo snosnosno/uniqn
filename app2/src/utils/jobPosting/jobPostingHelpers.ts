@@ -32,7 +32,7 @@ export const createInitialFormData = () => {
     usesPreQuestions: false,
     startDate: today,
     endDate: today,
-    salaryType: undefined,
+    salaryType: 'hourly',
     salaryAmount: '',
     benefits: {} as Benefits
   };
@@ -126,7 +126,7 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
     })) || [],
     // 새로운 필드들 추가 (undefined 값은 Firebase에 저장되지 않음)
     ...(formData.district && { district: formData.district }),
-    ...(formData.salaryType && { salaryType: formData.salaryType }),
+    salaryType: formData.salaryType || 'hourly',
     ...(formData.salaryAmount && { salaryAmount: formData.salaryAmount }),
     // benefits 객체에서 undefined, null, 빈 문자열 값을 제거하고 유효한 필드만 저장
     ...(formData.benefits && (() => {
@@ -176,7 +176,7 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     })),
     preQuestions: data.preQuestions,
     requiredRoles: data.requiredRoles,
-    salaryType: data.salaryType,
+    salaryType: data.salaryType || 'hourly',
     salaryAmount: data.salaryAmount,
     benefits: data.benefits,
     useRoleSalary: data.useRoleSalary,

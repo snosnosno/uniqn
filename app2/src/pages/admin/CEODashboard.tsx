@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { 
   ChartBarIcon, 
   UserGroupIcon, 
@@ -233,9 +234,9 @@ const CEODashboard: React.FC = () => {
               <span className="text-2xl font-bold text-orange-600">{data.pendingRoleChanges}</span>
             </div>
             <div className="pt-2 border-t">
-              <a href="/admin/approval" className="text-blue-500 hover:underline text-sm">
+              <Link to="/app/admin/approval" className="text-blue-500 hover:underline text-sm">
                 {t('dashboard.ceo.viewAll', '전체 보기')} →
-              </a>
+              </Link>
             </div>
           </div>
         </DashboardCard>
@@ -343,22 +344,22 @@ const CEODashboard: React.FC = () => {
       <div className="mt-8 bg-white p-6 rounded-xl shadow-md">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">{t('dashboard.ceo.quickActions', '빠른 실행')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <a href="/admin/events" className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+          <Link to="/app/admin/events" className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
             <CalendarDaysIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">{t('dashboard.ceo.manageEvents', '토너먼트 관리')}</span>
-          </a>
-          <a href="/admin/payroll" className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+          </Link>
+          <Link to="/app/admin/payroll" className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
             <CurrencyDollarIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">{t('dashboard.ceo.processPayroll', '급여 처리')}</span>
-          </a>
-          <a href="/job-posting-admin" className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+          </Link>
+          <Link to="/app/admin/job-postings" className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
             <BriefcaseIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">{t('dashboard.ceo.manageJobs', '구인공고 관리')}</span>
-          </a>
-          <a href="/admin/users" className="text-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+          </Link>
+          <Link to="/app/admin/users" className="text-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
             <UserGroupIcon className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">{t('dashboard.ceo.manageUsers', '사용자 관리')}</span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

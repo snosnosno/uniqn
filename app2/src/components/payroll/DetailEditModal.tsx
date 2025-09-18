@@ -536,6 +536,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                                  history.status === 'checked_in' ? '출근' :
                                  history.status === 'scheduled' ? '예정' :
                                  history.status === 'absent' ? '결석' :
+                                 history.status === 'not_started' ? '출근전' :
                                  history.status}
                               </span>
                             </td>
