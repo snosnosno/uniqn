@@ -170,7 +170,6 @@ export const HeaderMenu: React.FC = () => {
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
               {/* 기본 메뉴 (모든 사용자) */}
-              <NavItem to={isAdmin ? "/app/admin/ceo-dashboard" : "/app/profile"} label={t('nav.dashboard', 'Dashboard')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />

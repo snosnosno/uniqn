@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
+import ProfileImageUpload from '../components/profile/ProfileImageUpload';
 
 interface ProfileData {
   name: string;
@@ -26,6 +27,7 @@ interface ProfileData {
   bankAccount?: string;
   residentId?: string;
   gender?: string;
+  profileImageUrl?: string;
 }
 
 const ProfilePage = () => {
@@ -156,19 +158,64 @@ const ProfilePage = () => {
         }
     };
 
+    const handleImageUpdate = async (imageUrl: string | null) => {
+        if (!profileRef) return;
+
+        try {
+            await setDoc(profileRef, { profileImageUrl: imageUrl }, { merge: true });
+
+            const updatedDoc = await getDoc(profileRef);
+            if(updatedDoc.exists()) {
+                setProfile(updatedDoc.data() as ProfileData);
+            }
+
+            logger.info('프로필 이미지 업데이트 완료', {
+                component: 'ProfilePage',
+                data: { imageUrl }
+            });
+        } catch (err: any) {
+            logger.error("프로필 이미지 업데이트 실패", err instanceof Error ? err : new Error(String(err)), {
+                operation: 'updateProfileImage',
+                ...(profileId && { userId: profileId })
+            });
+            toast.error(t('profilePage.imageUpdateFailed', '프로필 사진 업데이트에 실패했습니다.'));
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!profileRef) {
             toast.error(t('profilePage.loginRequired'));
             return;
         }
+
+        // 필수 필드 검증
+        const requiredFields = [
+            { field: 'nationality', label: '국적' },
+            { field: 'region', label: '지역' },
+            { field: 'phone', label: '연락처' },
+            { field: 'age', label: '나이' },
+            { field: 'experience', label: '경력' }
+        ];
+
+        const missingFields = requiredFields.filter(({ field }) => {
+            const value = formData[field as keyof ProfileData];
+            return !value || value === '';
+        });
+
+        if (missingFields.length > 0) {
+            const missingFieldNames = missingFields.map(({ label }) => label).join(', ');
+            toast.error(`다음 필수 정보를 입력해주세요: ${missingFieldNames}`);
+            return;
+        }
+
         try {
             const dataToSave = { ...formData };
             delete dataToSave.name; // 이름 필드 저장 제외
             delete dataToSave.gender; // 성별 필드 저장 제외
 
             await setDoc(profileRef, dataToSave, { merge: true });
-            
+
             const updatedDoc = await getDoc(profileRef);
             if(updatedDoc.exists()) {
                 setProfile(updatedDoc.data() as ProfileData);
@@ -177,7 +224,7 @@ const ProfilePage = () => {
             setIsEditing(false);
             toast.success(t('profilePage.updateSuccess'));
         } catch (err: any) {
-            logger.error("Error updating profile", err instanceof Error ? err : new Error(String(err)), { 
+            logger.error("Error updating profile", err instanceof Error ? err : new Error(String(err)), {
                 operation: 'updateProfile',
                 ...(profileId && { userId: profileId })
             });
@@ -201,13 +248,30 @@ const ProfilePage = () => {
                 {/* Profile Section */}
                 <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
                     <div className="flex flex-col md:flex-row items-center md:items-start">
-                        <div className="md:ml-6 flex-1">
+                        {/* 프로필 사진 섹션 */}
+                        <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-6">
+                            <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                {profile.profileImageUrl ? (
+                                    <img
+                                        src={profile.profileImageUrl}
+                                        alt={t('profilePage.profileImage', '프로필 사진')}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex-1 text-center md:text-left">
                             <h1 className="text-3xl font-bold text-gray-800">{profile.name}</h1>
                             <div className="mt-1">
                                 <span className="text-lg text-gray-600">{getNationalityDisplay(profile.nationality)}</span>
                             </div>
-                            
-                            <div className="flex items-center mt-2">
+
+                            <div className="flex items-center justify-center md:justify-start mt-2">
                                 <StarIcon className="h-6 w-6 text-yellow-400 mr-1" />
                                 <span className="text-lg font-semibold text-gray-700">{profile.rating?.toFixed(1) || t('profilePage.notAvailable')}</span>
                                 <span className="text-sm text-gray-500 ml-2">({profile.ratingCount || 0} {t('profilePage.ratings')})</span>
@@ -219,6 +283,18 @@ const ProfilePage = () => {
                                 </button> : null}
                         </div>
                     </div>
+
+                    {/* 프로필 사진 업로드 (편집 모드에서만 표시) */}
+                    {isEditing && isOwnProfile && (
+                        <div className="mt-6 border-t pt-6">
+                            <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('profilePage.profileImage', '프로필 사진')}</h3>
+                            <ProfileImageUpload
+                                currentImageUrl={profile.profileImageUrl || null}
+                                onImageUpdate={handleImageUpdate}
+                                className="max-w-md mx-auto md:mx-0"
+                            />
+                        </div>
+                    )}
 
                     {!isEditing || !isOwnProfile ? (
                         <div className="mt-6 border-t pt-6">
@@ -290,12 +366,15 @@ const ProfilePage = () => {
                                     <input type="text" name="name" id="name" value={formData.name || ''} readOnly className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-100" />
                                 </div>
                                 <div>
-                                    <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">{t('profilePage.nationality', '국적')}</label>
+                                    <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">
+                                        {t('profilePage.nationality', '국적')} <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                         name="nationality"
                                         id="nationality"
                                         value={formData.nationality || ''}
                                         onChange={handleChange}
+                                        required
                                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     >
                                         <option value="">{t('profilePage.selectNationality', '국적을 선택하세요')}</option>
@@ -307,12 +386,15 @@ const ProfilePage = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="region" className="block text-sm font-medium text-gray-700">{t('profile.region')}</label>
+                                    <label htmlFor="region" className="block text-sm font-medium text-gray-700">
+                                        {t('profile.region')} <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                         name="region"
                                         id="region"
                                         value={formData.region || ''}
                                         onChange={handleChange}
+                                        required
                                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     >
                                         <option value="">{t('profile.selectRegion')}</option>
@@ -324,7 +406,9 @@ const ProfilePage = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">{t('profilePage.phone')}</label>
+                                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                                        {t('profilePage.phone')} <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="phone"
@@ -333,6 +417,7 @@ const ProfilePage = () => {
                                         onChange={handleChange}
                                         placeholder="010-1234-5678"
                                         maxLength={13}
+                                        required
                                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     />
                                 </div>
@@ -341,16 +426,21 @@ const ProfilePage = () => {
                                     <input type="text" name="gender" id="gender" value={genderDisplay(formData.gender)} readOnly className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-100" />
                                 </div>
                                 <div>
-                                    <label htmlFor="age" className="block text-sm font-medium text-gray-700">{t('profilePage.age', '나이')}</label>
-                                    <input type="number" name="age" id="age" value={formData.age ? formData.age.toString() : ''} onChange={handleChange} min="18" max="100" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                                    <label htmlFor="age" className="block text-sm font-medium text-gray-700">
+                                        {t('profilePage.age', '나이')} <span className="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" name="age" id="age" value={formData.age ? formData.age.toString() : ''} onChange={handleChange} min="18" max="100" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                                 </div>
                                 <div>
-                                    <label htmlFor="experience" className="block text-sm font-medium text-gray-700">{t('profilePage.experience')}</label>
+                                    <label htmlFor="experience" className="block text-sm font-medium text-gray-700">
+                                        {t('profilePage.experience')} <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                         name="experience"
                                         id="experience"
                                         value={formData.experience || ''}
                                         onChange={handleChange}
+                                        required
                                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     >
                                         <option value="">{t('profilePage.selectExperience', '경력을 선택하세요')}</option>
