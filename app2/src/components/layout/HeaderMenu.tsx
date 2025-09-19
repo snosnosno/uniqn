@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
-import { 
-    FaTachometerAlt, FaUsers, FaTable, FaClock, 
+import {
+    FaTachometerAlt, FaUsers, FaTable, FaClock,
     FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList,
-    FaSignOutAlt, FaUserCheck, FaCalendarAlt
+    FaSignOutAlt, FaUserCheck, FaCalendarAlt, FaQuestionCircle,
+    FaEnvelope
 } from '../Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -173,7 +174,8 @@ export const HeaderMenu: React.FC = () => {
               <NavItem to="/app/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
-              
+              <NavItem to="/app/support" label={t('nav.support', '고객지원')} Icon={FaQuestionCircle} isOpen={true} onNavigate={closeMenu} />
+
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
               {!authLoading && currentUser && (
                 <>
@@ -199,6 +201,7 @@ export const HeaderMenu: React.FC = () => {
                       <hr className="my-2 border-t border-gray-200" />
                       <NavItem to="/app/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/inquiries" label={t('nav.inquiryManagement', '문의 관리')} Icon={FaEnvelope} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}

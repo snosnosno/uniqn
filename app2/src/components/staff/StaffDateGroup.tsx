@@ -23,6 +23,7 @@ interface StaffDateGroupProps {
   multiSelectMode?: boolean;
   selectedStaff?: Set<string>;
   onStaffSelect?: (staffId: string) => void;
+  onReport?: (staffId: string, staffName: string) => void;
 }
 
 const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
@@ -43,7 +44,8 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
   applyOptimisticUpdate,
   multiSelectMode = false,
   selectedStaff = new Set(),
-  onStaffSelect
+  onStaffSelect,
+  onReport
 }) => {
   const staffCount = staffList.length;
   const selectedInGroup = staffList.filter(staff => selectedStaff.has(staff.id)).length;
@@ -166,6 +168,7 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                   multiSelectMode={multiSelectMode}
                   isSelected={selectedStaff.has(staff.id)}
                   {...(onStaffSelect && { onSelect: onStaffSelect })}
+                  {...(onReport && { onReport })}
                 />
               ))}
             </tbody>

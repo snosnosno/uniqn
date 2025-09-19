@@ -22,6 +22,7 @@ interface StaffCardActionsProps {
   // 새로 추가된 props
   workLog?: UnifiedWorkLog | null;
   assignedDate?: string;
+  onReport?: (staffId: string, staffName: string) => void;
 }
 
 const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
@@ -30,7 +31,7 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
   workLogId: _workLogId,
   currentStatus: _currentStatus,
   staffId,
-  staffName: _staffName,
+  staffName,
   eventId: _eventId,
   scheduledStartTime: _scheduledStartTime,
   scheduledEndTime: _scheduledEndTime,
@@ -41,7 +42,8 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
   onStatusChange: _onStatusChange,
   lightImpact,
   workLog,
-  assignedDate: _assignedDate
+  assignedDate: _assignedDate,
+  onReport
 }) => {
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -99,8 +101,8 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
               onClick={(e) => handleActionClick(e, () => canEdit && onEditWorkTime(staffId))}
               disabled={!canEdit}
               className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                canEdit 
-                  ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' 
+                canEdit
+                  ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
                   : 'text-gray-400 bg-gray-50 cursor-not-allowed'
               }`}
               title={!canEdit ? "수정 권한이 없습니다" : "근무 시간 수정"}
@@ -110,19 +112,32 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(({
               </svg>
               시간
             </button>
+
+            {/* 신고 버튼 - 모든 구인자가 사용 가능 */}
+            <button
+              onClick={(e) => handleActionClick(e, () => onReport && onReport(staffId, staffName))}
+              className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors text-orange-600 bg-orange-50 hover:bg-orange-100"
+              title="스태프 신고하기"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              신고
+            </button>
+
             <button
               onClick={(e) => handleActionClick(e, () => canEdit && canDelete.allowed && onDeleteStaff(staffId))}
               disabled={!canEdit || !canDelete.allowed}
               className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
                 canEdit && canDelete.allowed
-                  ? 'text-red-600 bg-red-50 hover:bg-red-100' 
+                  ? 'text-red-600 bg-red-50 hover:bg-red-100'
                   : 'text-gray-400 bg-gray-50 cursor-not-allowed opacity-50'
               }`}
               title={
-                !canEdit 
-                  ? "수정 권한이 없습니다" 
-                  : !canDelete.allowed 
-                    ? canDelete.reason 
+                !canEdit
+                  ? "수정 권한이 없습니다"
+                  : !canDelete.allowed
+                    ? canDelete.reason
                     : "스태프 삭제"
               }
             >

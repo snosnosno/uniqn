@@ -25,6 +25,7 @@ interface StaffRowProps {
   multiSelectMode?: boolean; // 선택 모드 활성화 여부
   isSelected?: boolean; // 현재 행이 선택되었는지
   onSelect?: (staffId: string) => void; // 선택 핸들러
+  onReport?: (staffId: string, staffName: string) => void; // 신고 핸들러
 }
 
 const StaffRow: React.FC<StaffRowProps> = React.memo(({
@@ -43,7 +44,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   applyOptimisticUpdate,
   multiSelectMode = false,
   isSelected = false,
-  onSelect
+  onSelect,
+  onReport
 }) => {
   useTranslation();
   
@@ -398,12 +400,25 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       {/* 작업 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
         <div className="flex space-x-1">
+          {/* 신고 버튼 - 모든 구인자가 사용 가능 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onReport) {
+                onReport(staff.id, staff.name || '알 수 없는 사용자');
+              }
+            }}
+            className="px-2 py-1 text-xs font-medium rounded transition-colors text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+            title="스태프 신고하기"
+          >
+            신고
+          </button>
           <button
             onClick={handleDeleteStaff}
             disabled={!canEdit}
             className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-              canEdit 
-                ? 'text-red-600 hover:text-red-800 hover:bg-red-50' 
+              canEdit
+                ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                 : 'text-gray-400 cursor-not-allowed'
             }`}
             title={canEdit ? "스태프 삭제" : "수정 권한이 없습니다"}

@@ -1,10 +1,11 @@
+import { useCallback } from 'react';
 import { useToastStore, Toast } from '../stores/toastStore';
 
 export const useToast = () => {
   const { addToast, removeToast, clearAllToasts } = useToastStore();
 
-  // Convenience methods for different toast types
-  const showSuccess = (message: string, title?: string, duration?: number) => {
+  // Convenience methods for different toast types - memoized to prevent infinite re-renders
+  const showSuccess = useCallback((message: string, title?: string, duration?: number) => {
     const toastData: Omit<Toast, 'id'> = {
       type: 'success',
       message,
@@ -12,9 +13,9 @@ export const useToast = () => {
     if (title) toastData.title = title;
     if (duration) toastData.duration = duration;
     addToast(toastData);
-  };
+  }, [addToast]);
 
-  const showError = (message: string, title?: string, duration?: number) => {
+  const showError = useCallback((message: string, title?: string, duration?: number) => {
     const toastData: Omit<Toast, 'id'> = {
       type: 'error',
       message,
@@ -22,9 +23,9 @@ export const useToast = () => {
     };
     if (title) toastData.title = title;
     addToast(toastData);
-  };
+  }, [addToast]);
 
-  const showInfo = (message: string, title?: string, duration?: number) => {
+  const showInfo = useCallback((message: string, title?: string, duration?: number) => {
     const toastData: Omit<Toast, 'id'> = {
       type: 'info',
       message,
@@ -32,9 +33,9 @@ export const useToast = () => {
     if (title) toastData.title = title;
     if (duration) toastData.duration = duration;
     addToast(toastData);
-  };
+  }, [addToast]);
 
-  const showWarning = (message: string, title?: string, duration?: number) => {
+  const showWarning = useCallback((message: string, title?: string, duration?: number) => {
     const toastData: Omit<Toast, 'id'> = {
       type: 'warning',
       message,
@@ -42,12 +43,12 @@ export const useToast = () => {
     if (title) toastData.title = title;
     if (duration) toastData.duration = duration;
     addToast(toastData);
-  };
+  }, [addToast]);
 
   // Generic method for custom toasts
-  const show = (toast: Omit<Toast, 'id'>) => {
+  const show = useCallback((toast: Omit<Toast, 'id'>) => {
     addToast(toast);
-  };
+  }, [addToast]);
 
   return {
     show,

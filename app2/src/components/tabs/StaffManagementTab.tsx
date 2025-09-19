@@ -26,6 +26,7 @@ import { BulkOperationService } from '../../services/BulkOperationService';
 import BulkActionsModal from '../modals/BulkActionsModal';
 import BulkTimeEditModal from '../modals/BulkTimeEditModal';
 import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
+import ReportModal from '../modals/ReportModal';
 import StaffDateGroup from '../staff/StaffDateGroup';
 import StaffDateGroupMobile from '../staff/StaffDateGroupMobile';
 import WorkTimeEditor from '../staff/WorkTimeEditor';
@@ -138,6 +139,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffData | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   
   // 🎯 선택 모드 관리 - 내장 상태로 단순화 (useStaffSelection 훅 제거)
   const [multiSelectMode, setMultiSelectMode] = useState(false);
@@ -746,7 +752,18 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     toggleMultiSelectMode();
   }, [toggleMultiSelectMode]);
 
-  
+  // 신고 핸들러
+  const handleReport = useCallback((staffId: string, staffName: string) => {
+    setReportTarget({ id: staffId, name: staffName });
+    setIsReportModalOpen(true);
+  }, []);
+
+  const handleReportModalClose = useCallback(() => {
+    setIsReportModalOpen(false);
+    setReportTarget(null);
+  }, []);
+
+
   const handleBulkActions = () => {
     setIsBulkActionsOpen(true);
   };
@@ -1159,6 +1176,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
                       getStaffWorkLog={getStaffWorkLog as any}
+                      onReport={handleReport}
                     />
                 );
               })
@@ -1191,6 +1209,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       multiSelectMode={multiSelectMode}
                       selectedStaff={selectedStaff}
                       onStaffSelect={handleStaffSelect}
+                      onReport={handleReport}
                     />
                 );
               })
@@ -1270,6 +1289,21 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           // 실시간 구독으로 자동 업데이트됨
         }}
       />
+
+      {/* Report Modal */}
+      {isReportModalOpen && reportTarget && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={handleReportModalClose}
+          targetUser={reportTarget}
+          event={{
+            id: jobPosting?.id || '',
+            title: jobPosting?.title || '',
+            date: getTodayString()
+          }}
+          reporterType="employer"
+        />
+      )}
 
       {/* 모바일 선택 바 */}
       {multiSelectMode && selectedStaff.size > 0 && canEdit && (isMobile || isTablet) && (

@@ -54,6 +54,9 @@ export interface LogContext {
   workLogsDataLength?: number;
   attendanceDataLength?: number;
   staffId?: string;
+  inquiryId?: string;
+  newStatus?: string;
+  docCount?: number;
   date?: unknown;
   name?: unknown;
   keys?: string[];
@@ -112,6 +115,13 @@ export interface LogContext {
   // 테스트 관련 필드
   userCount?: number;
   jobPostingCount?: number;
+
+  // SupportPage 관련 필드 (문의 디버깅용)
+  id?: string;
+  docId?: string;
+  count?: number;
+  rawData?: unknown;
+  inquiries?: unknown[];
 }
 
 // 로그 엔트리 인터페이스

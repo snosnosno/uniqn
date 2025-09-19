@@ -321,6 +321,58 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
+    // --- Inquiries Collection (고객 문의) ---
+    match /inquiries/{inquiryId} {
+      // 읽기: 본인의 문의는 볼 수 있고, 관리자는 모든 문의를 볼 수 있음
+      allow read: if isSignedIn() && (
+        isPrivileged() ||
+        request.auth.uid == resource.data.userId
+      );
+
+      // 생성: 로그인한 사용자가 본인 이름으로 문의 생성 가능
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['userId', 'userEmail', 'userName', 'category', 'subject', 'message', 'status']) &&
+        isSafeText(request.resource.data.subject, 200) &&
+        isSafeText(request.resource.data.message, 2000) &&
+        request.resource.data.category in ['general', 'account', 'technical', 'payment', 'other', 'report'] &&
+        request.resource.data.status == 'open' &&
+        request.resource.data.userEmail is string &&
+        request.resource.data.userName is string;
+
+      // 수정: 관리자만 문의 상태 변경 및 답변 가능
+      allow update: if isPrivileged();
+
+      // 삭제: 관리자만 가능
+      allow delete: if isPrivileged();
+    }
+
+    // --- Reports Collection (신고) ---
+    match /reports/{reportId} {
+      // 읽기: 관리자는 모든 신고, 일반 사용자는 본인 신고만
+      allow read: if isSignedIn() && (
+        isPrivileged() ||
+        request.auth.uid == resource.data.reporterId
+      );
+
+      // 생성: 로그인한 사용자가 신고 생성 가능
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.reporterId &&
+        request.resource.data.keys().hasAll(['reporterId', 'reporterName', 'targetId', 'targetName', 'eventId', 'eventTitle', 'type', 'description']) &&
+        isSafeText(request.resource.data.description, 2000) &&
+        request.resource.data.type in ['tardiness', 'negligence', 'no_show', 'inappropriate_behavior', 'other'] &&
+        request.resource.data.reporterId is string &&
+        request.resource.data.reporterName is string &&
+        request.resource.data.targetId is string &&
+        request.resource.data.targetName is string;
+
+      // 수정: 관리자만 가능 (상태 변경 등)
+      allow update: if isPrivileged();
+
+      // 삭제: 관리자만 가능
+      allow delete: if isPrivileged();
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;

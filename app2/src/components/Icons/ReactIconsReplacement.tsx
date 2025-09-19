@@ -40,7 +40,12 @@ import {
   CameraIcon,
   ListBulletIcon,
   MapPinIcon,
-  XCircleIcon
+  XCircleIcon,
+  QuestionMarkCircleIcon,
+  PaperAirplaneIcon,
+  ArrowUturnLeftIcon,
+  CheckIcon,
+  Bars3BottomLeftIcon
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleIconSolid,
@@ -112,6 +117,11 @@ export const FaMapMarkerAlt = createIconWrapper(MapPinIcon);
 export const FaTimesCircle = createIconWrapper(XCircleIcon);
 export const FaHourglassHalf = createIconWrapper(HourglassIcon);
 export const FaCalendarCheck = createIconWrapper(CalendarDaysIcon);  // 캘린더 체크 아이콘 대체
+export const FaQuestionCircle = createIconWrapper(QuestionMarkCircleIcon);
+export const FaPaperPlane = createIconWrapper(PaperAirplaneIcon);
+export const FaReply = createIconWrapper(ArrowUturnLeftIcon);
+export const FaCheck = createIconWrapper(CheckIcon);
+export const FaSort = createIconWrapper(Bars3BottomLeftIcon);
 
 // Solid 버전 (필요한 경우)
 export const FaCheckCircleSolid = createIconWrapper(CheckCircleIconSolid);

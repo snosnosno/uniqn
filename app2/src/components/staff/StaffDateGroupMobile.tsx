@@ -22,6 +22,7 @@ interface StaffDateGroupMobileProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  onReport?: (staffId: string, staffName: string) => void;
 }
 
 const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
@@ -40,7 +41,8 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   multiSelectMode = false,
   onShowProfile,
   eventId,
-  getStaffWorkLog
+  getStaffWorkLog,
+  onReport
 }) => {
   const staffCount = staffList.length;
   const selectedCount = multiSelectMode ? Array.from(selectedStaff).filter(id => 
@@ -177,6 +179,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               {...(onShowProfile && { onShowProfile })}
               {...(eventId && { eventId })}
               {...(getStaffWorkLog && { getStaffWorkLog })}
+              {...(onReport && { onReport })}
             />
           ))}
           

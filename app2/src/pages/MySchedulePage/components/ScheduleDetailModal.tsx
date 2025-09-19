@@ -16,6 +16,7 @@ import { db } from '../../../firebase';
 import { logger } from '../../../utils/logger';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UnifiedWorkLog } from '../../../types/unified/workLog';
+import ReportModal from '../../../components/modals/ReportModal';
 
 interface ScheduleDetailModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [_loadingJobPosting, setLoadingJobPosting] = useState(false);
   const [realTimeWorkLogs, setRealTimeWorkLogs] = useState<UnifiedWorkLog[]>([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null);
 
   // JobPosting 데이터 조회
   useEffect(() => {
@@ -138,6 +141,25 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       other: '기타'
     };
     return labels[type] || type;
+  }, []);
+
+  // 신고 핸들러
+  const handleReport = useCallback(() => {
+    if (!jobPosting?.createdBy) {
+      logger.warn('신고 대상 정보가 없습니다', { component: 'ScheduleDetailModal' });
+      return;
+    }
+
+    setReportTarget({
+      id: jobPosting.createdBy,
+      name: '구인자' // JobPosting에서 사용자 이름 정보가 없으므로 기본값 사용
+    });
+    setIsReportModalOpen(true);
+  }, [jobPosting]);
+
+  const handleReportModalClose = useCallback(() => {
+    setIsReportModalOpen(false);
+    setReportTarget(null);
   }, []);
 
   // 통합 급여 계산 유틸리티 사용
@@ -810,7 +832,21 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               지원 취소
             </button>
           )}
-          
+
+          {/* 신고 버튼 */}
+          {jobPosting?.createdBy && (
+            <button
+              onClick={handleReport}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center gap-2"
+              title="구인자 신고하기"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              신고
+            </button>
+          )}
+
           {/* 삭제 버튼 */}
           {canDelete && (
             <button
@@ -833,6 +869,19 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             닫기
           </button>
         </div>
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={handleReportModalClose}
+          targetUser={reportTarget || { id: '', name: '구인자' }}
+          event={{
+            id: schedule?.eventId || '',
+            title: jobPosting?.title || schedule?.eventName || '',
+            date: schedule?.date || getTodayString()
+          }}
+          reporterType="employee"
+        />
       </div>
     </div>
   );

@@ -30,6 +30,7 @@ import { initializePerformance } from './utils/firebasePerformance';
 const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
 const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
+const InquiryManagementPage = lazy(() => import('./pages/admin/InquiryManagementPage'));
 
 // Lazy load main pages
 const AttendancePage = lazy(() => import('./pages/AttendancePage'));
@@ -44,6 +45,7 @@ const PrizesPage = lazy(() => import('./pages/PrizesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
 const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 
 
@@ -118,6 +120,7 @@ const App: React.FC = () => {
                       <Route path="schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
                       <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><AttendancePage /></Suspense>} />
                       <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
+                      <Route path="support" element={<Suspense fallback={<LoadingSpinner />}><SupportPage /></Suspense>} />
 
                       {/* Admin & Manager Routes */}
                       <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
@@ -139,6 +142,7 @@ const App: React.FC = () => {
                           <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
                           <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                           <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
+                          <Route path="inquiries" element={<Suspense fallback={<LoadingSpinner />}><InquiryManagementPage /></Suspense>} />
                       </Route>
                     </Route>
                   </Route>

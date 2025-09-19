@@ -31,6 +31,7 @@ interface StaffCardProps {
   canEdit?: boolean;
   getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
   multiSelectMode?: boolean;
+  onReport?: (staffId: string, staffName: string) => void;
 }
 
 const StaffCard: React.FC<StaffCardProps> = React.memo(({
@@ -48,6 +49,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
   eventId,
   canEdit = true,
   getStaffWorkLog,
+  onReport,
   multiSelectMode = false
 }) => {
   useTranslation();
@@ -353,6 +355,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
             onDeleteStaff={onDeleteStaff}
             onStatusChange={() => {}}
             lightImpact={lightImpact}
+            {...(onReport && { onReport })}
           />
         </CardBody>
         
