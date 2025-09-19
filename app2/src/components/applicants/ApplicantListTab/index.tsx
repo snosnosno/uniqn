@@ -55,17 +55,27 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   }, [applicants]);
 
   /**
-   * 다중 선택용 체크박스 토글 함수 (날짜별 중복 방지 강화)
+   * 다중 선택용 체크박스 토글 함수 (그룹/개별 선택 지원)
    */
   const handleMultipleAssignmentToggle = useCallback((applicantId: string, value: string, isChecked: boolean) => {
-    
-    // 날짜별 형식: date__timeSlot__role (3부분) 또는 기존 형식: timeSlot__role (2부분)
+
+    // 형식: group__dates__timeSlot__role__groupId (5부분) 또는 date__timeSlot__role (3부분) 또는 timeSlot__role (2부분)
     const parts = value.split('__');
-    let timeSlot = '', role = '', date = '';
-    
-    if (parts.length === 3) {
-      // 날짜별 요구사항: date__timeSlot__role
-      date = parts[0] || '';
+    let timeSlot = '', role = '', dates: string[] = [], isGrouped = false, groupId = '', checkMethod: 'group' | 'individual' = 'individual';
+
+    if (parts.length === 5 && parts[0] === 'group') {
+      // 그룹 선택: group__dates__timeSlot__role__groupId
+      const dateString = parts[1] || '';
+      dates = dateString.split(',').filter(d => d.trim() !== '');
+      timeSlot = parts[2] || '';
+      role = parts[3] || '';
+      groupId = parts[4] || '';
+      isGrouped = true;
+      checkMethod = 'group';
+    } else if (parts.length === 3) {
+      // 개별 날짜 선택: date__timeSlot__role
+      const date = parts[0] || '';
+      dates = date.trim() ? [date.trim()] : [];
       timeSlot = parts[1] || '';
       role = parts[2] || '';
     } else if (parts.length === 2) {
@@ -73,61 +83,102 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       timeSlot = parts[0] || '';
       role = parts[1] || '';
     }
-    
-    const newAssignment: Assignment = { 
-      timeSlot: timeSlot.trim(), 
-      role: role.trim(), 
-      dates: date.trim() ? [date.trim()] : [],
-      isGrouped: false,
-      checkMethod: 'individual', // 개별 선택으로 마킹
+
+    const newAssignment: Assignment = {
+      timeSlot: timeSlot.trim(),
+      role: role.trim(),
+      dates: dates,
+      isGrouped: isGrouped,
+      checkMethod: checkMethod,
+      ...(groupId && { groupId: groupId }),
       duration: {
-        type: 'single',
-        startDate: date.trim()
+        type: isGrouped ? 'consecutive' : 'single',
+        startDate: dates.length > 0 ? (dates[0] || '') : ''
       }
     };
     
     setSelectedAssignment(prev => {
       const currentAssignments = prev[applicantId] || [];
-      
+
       if (isChecked) {
-        // 체크됨: 같은 날짜에 이미 선택된 항목이 있는지 확인
-        const sameDate = newAssignment.dates[0] || '';
-        const alreadySelectedInSameDate = currentAssignments.some(assignment => 
-          assignment.dates.length > 0 && assignment.dates[0] === sameDate && sameDate.trim() !== ''
-        );
-        
-        if (alreadySelectedInSameDate && sameDate.trim() !== '') {
-          // 사용자에게 알림 없이 조용히 차단 (UI에서 이미 시각적으로 표시됨)
-          return prev;
+        // 체크됨: 중복 체크 및 충돌 방지
+        if (isGrouped) {
+          // 그룹 선택: 각 날짜에 다른 선택이 있는지 확인
+          const hasConflict = dates.some(date =>
+            currentAssignments.some(assignment =>
+              assignment.dates.includes(date) &&
+              !(assignment.timeSlot === timeSlot && assignment.role === role && assignment.isGrouped === isGrouped)
+            )
+          );
+
+          if (hasConflict) {
+            return prev; // 충돌 시 무시
+          }
+
+          // 날짜 세트 중복 체크
+          const dateSetKey = dates.sort().join(',');
+          const isDuplicate = currentAssignments.some(assignment => {
+            const assignmentDateSet = assignment.dates.sort().join(',');
+            return assignment.timeSlot === timeSlot &&
+                   assignment.role === role &&
+                   assignmentDateSet === dateSetKey &&
+                   assignment.isGrouped === isGrouped;
+          });
+
+          if (isDuplicate) {
+            return prev;
+          }
+        } else {
+          // 개별 선택: 같은 날짜에 다른 선택이 있는지 확인
+          const targetDate = dates.length > 0 ? (dates[0] || '') : '';
+          if (targetDate.trim() !== '') {
+            const hasConflictInDate = currentAssignments.some(assignment =>
+              assignment.dates.includes(targetDate) &&
+              !(assignment.timeSlot === timeSlot && assignment.role === role)
+            );
+
+            if (hasConflictInDate) {
+              return prev; // 충돌 시 무시
+            }
+          }
+
+          // 완전 중복 체크
+          const isDuplicate = currentAssignments.some(assignment =>
+            assignment.timeSlot === timeSlot &&
+            assignment.role === role &&
+            assignment.dates.length === dates.length &&
+            dates.every(date => assignment.dates.includes(date))
+          );
+
+          if (isDuplicate) {
+            return prev;
+          }
         }
-        
-        // 완전 중복 체크
-        const isDuplicate = currentAssignments.some(assignment => 
-          assignment.timeSlot === newAssignment.timeSlot && 
-          assignment.role === newAssignment.role && 
-          assignment.dates.length > 0 && newAssignment.dates.length > 0 &&
-          assignment.dates[0] === newAssignment.dates[0]
-        );
-        
-        if (isDuplicate) {
-          return prev;
-        }
-        
-        
+
         return {
           ...prev,
           [applicantId]: [...currentAssignments, newAssignment]
         };
       } else {
-        // 체크 해제됨: 배열에서 제거
-        const filtered = currentAssignments.filter(assignment => 
-          !(assignment.timeSlot === newAssignment.timeSlot && 
-            assignment.role === newAssignment.role && 
-            assignment.dates.length > 0 && newAssignment.dates.length > 0 &&
-            assignment.dates[0] === newAssignment.dates[0])
-        );
-        
-        
+        // 체크 해제됨: 정확한 매칭으로 제거
+        const filtered = currentAssignments.filter(assignment => {
+          if (isGrouped) {
+            // 그룹 선택 제거: 날짜 세트와 그룹 정보가 일치하는지 확인
+            const assignmentDateSet = assignment.dates.sort().join(',');
+            const targetDateSet = dates.sort().join(',');
+            return !(assignment.timeSlot === timeSlot &&
+                     assignment.role === role &&
+                     assignmentDateSet === targetDateSet &&
+                     assignment.isGrouped === isGrouped);
+          } else {
+            // 개별 선택 제거: 날짜와 역할, 시간이 일치하는지 확인
+            return !(assignment.timeSlot === timeSlot &&
+                     assignment.role === role &&
+                     assignment.dates.length === dates.length &&
+                     dates.every(date => assignment.dates.includes(date)));
+          }
+        });
+
         return {
           ...prev,
           [applicantId]: filtered

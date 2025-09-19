@@ -235,42 +235,59 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   };
   
   /**
-   * 다중일 그룹의 특정 시간대-역할이 모두 선택되었는지 확인
+   * 다중일 그룹의 특정 시간대-역할이 모두 선택되었는지 확인 (그룹 단위 비교)
    */
   const isMultiDayRoleSelected = (dates: string[], timeSlot: string, role: string): boolean => {
-    return dates.every((date: string) => 
-      selectedAssignments.some(assignment => 
-        assignment.timeSlot === timeSlot && 
-        assignment.role === role && 
-        (assignment.dates?.[0] || '') === date
-      )
-    );
+    // 날짜 배열을 정렬하여 비교용 키 생성
+    const targetDateSet = dates.filter(d => d).sort().join(',');
+
+    // 같은 날짜 세트를 가진 그룹 assignment가 있는지 확인
+    return selectedAssignments.some(assignment => {
+      const assignmentDateSet = (assignment.dates || []).sort().join(',');
+      return assignment.timeSlot === timeSlot &&
+             assignment.role === role &&
+             assignmentDateSet === targetDateSet &&
+             assignment.isGrouped === true; // 그룹 선택인지 확인
+    });
   };
   
   /**
-   * 다중일 그룹의 특정 시간대-역할 전체 선택/해제
+   * 다중일 그룹의 특정 시간대-역할 전체 선택/해제 (그룹 단위 처리)
    */
   const handleMultiDayRoleToggle = (dates: string[], timeSlot: string, role: string, isChecked: boolean) => {
-    // 각 날짜에 대해 중복 체크 후 선택/해제
-    dates.forEach((date: string) => {
-      if (isChecked) {
-        // 체크하려는 경우: 해당 날짜에 이미 다른 선택이 있는지 확인
-        const hasOtherSelection = selectedAssignments.some(assignment => 
-          (assignment.dates?.[0] || '') === date && 
+    // 그룹 선택을 하나의 단위로 처리
+    if (isChecked) {
+      // 체크: 각 날짜에 다른 선택이 있는지 확인
+      const hasConflict = dates.some(date =>
+        selectedAssignments.some(assignment =>
+          assignment.dates && assignment.dates.includes(date) &&
           !(assignment.timeSlot === timeSlot && assignment.role === role)
-        );
-        
-        if (!hasOtherSelection) {
-          // 다른 선택이 없을 때만 추가
-          const value = `${date}__${timeSlot}__${role}`;
-          onAssignmentToggle(value, true);
-        }
-      } else {
-        // 체크 해제하는 경우: 그냥 제거
-        const value = `${date}__${timeSlot}__${role}`;
+        )
+      );
+
+      if (!hasConflict) {
+        // 충돌이 없으면 그룹 전체를 하나의 assignment로 추가
+        const groupId = `group_${dates.sort().join('_')}_${timeSlot}_${role}`;
+        const value = `group__${dates.join(',')}__${timeSlot}__${role}__${groupId}`;
+        onAssignmentToggle(value, true);
+      }
+    } else {
+      // 체크 해제: 해당 그룹 assignment 제거
+      const targetDateSet = dates.sort().join(',');
+      const targetAssignment = selectedAssignments.find(assignment => {
+        const assignmentDateSet = (assignment.dates || []).sort().join(',');
+        return assignment.timeSlot === timeSlot &&
+               assignment.role === role &&
+               assignmentDateSet === targetDateSet &&
+               assignment.isGrouped === true;
+      });
+
+      if (targetAssignment) {
+        const groupId = targetAssignment.groupId || `group_${dates.sort().join('_')}_${timeSlot}_${role}`;
+        const value = `group__${dates.join(',')}__${timeSlot}__${role}__${groupId}`;
         onAssignmentToggle(value, false);
       }
-    });
+    }
   };
 
 
@@ -323,12 +340,16 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                   <div className="space-y-2">
                     {timeGroup.roles.map((role: string, roleIndex: number) => {
                       const isRoleSelected = isMultiDayRoleSelected(dateGroup.dates, timeGroup.timeSlot, role);
-                      // 날짜별 중복 체크: 하나라도 다른 선택이 있으면 비활성화
-                      const hasConflict = dateGroup.dates.some((date: string) => 
-                        selectedAssignments.some(assignment => 
-                          (assignment.dates?.[0] || '') === date && 
-                          !(assignment.timeSlot === timeGroup.timeSlot && assignment.role === role)
-                        )
+                      // 그룹 선택 충돌 체크: 같은 날짜를 포함하는 다른 선택이 있는지 확인 (그룹/개별 구분)
+                      const hasConflict = dateGroup.dates.some((date: string) =>
+                        selectedAssignments.some(assignment => {
+                          // 이 그룹과 다른 assignment가 같은 날짜를 포함하는지 확인
+                          const isOtherAssignment = !(assignment.timeSlot === timeGroup.timeSlot && assignment.role === role);
+                          const hasSameDate = assignment.dates && assignment.dates.includes(date);
+
+                          // 다른 assignment가 같은 날짜를 포함하고 있다면 충돌
+                          return isOtherAssignment && hasSameDate;
+                        })
                       );
                       
                       return (
@@ -422,12 +443,16 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                           
                           const isSelected = isAssignmentSelected(selection.time, selection.role, safeDateString);
                           
-                          // 같은 날짜에 이미 다른 항목이 선택되었는지 확인
-                          const hasOtherSelectionInSameDate = safeDateString.trim() !== '' && 
-                            selectedAssignments.some(assignment => 
-                              (assignment.dates?.[0] || '') === safeDateString && 
-                              !(assignment.timeSlot === selection.time && assignment.role === selection.role)
-                            );
+                          // 개별 선택 충돌 체크: 같은 날짜를 포함하는 다른 assignment가 있는지 확인
+                          const hasOtherSelectionInSameDate = safeDateString.trim() !== '' &&
+                            selectedAssignments.some(assignment => {
+                              // 다른 assignment인지 확인
+                              const isOtherAssignment = !(assignment.timeSlot === selection.time && assignment.role === selection.role);
+                              // 같은 날짜를 포함하는지 확인
+                              const hasSameDate = assignment.dates && assignment.dates.includes(safeDateString);
+
+                              return isOtherAssignment && hasSameDate;
+                            });
                           
                           return (
                             <label key={`${timeGroup.time}-${role}-unified-${roleIndex}`} 
