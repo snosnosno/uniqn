@@ -5,41 +5,23 @@
   "locations": {
     "seoul": "Seoul",
     "gyeonggi": "Gyeonggi",
-    "경기": "Gyeonggi",
     "incheon": "Incheon",
-    "인천": "Incheon",
     "gangwon": "Gangwon",
-    "강원": "Gangwon",
     "daejeon": "Daejeon",
-    "대전": "Daejeon",
     "sejong": "Sejong",
-    "세종": "Sejong",
     "chungnam": "Chungnam",
-    "충남": "Chungnam",
     "chungbuk": "Chungbuk",
-    "충북": "Chungbuk",
     "gwangju": "Gwangju",
-    "광주": "Gwangju",
     "jeonnam": "Jeonnam",
-    "전남": "Jeonnam",
     "jeonbuk": "Jeonbuk",
-    "전북": "Jeonbuk",
     "daegu": "Daegu",
-    "대구": "Daegu",
     "gyeongbuk": "Gyeongbuk",
-    "경북": "Gyeongbuk",
     "busan": "Busan",
-    "부산": "Busan",
     "ulsan": "Ulsan",
-    "울산": "Ulsan",
     "gyeongnam": "Gyeongnam",
-    "경남": "Gyeongnam",
     "jeju": "Jeju",
-    "제주": "Jeju",
     "overseas": "Overseas",
-    "해외": "Overseas",
-    "other": "Other",
-    "기타": "Other"
+    "other": "Other"
   },
   "gender": {
     "male": "Male",
@@ -52,6 +34,7 @@
     "emailPlaceholder": "Email Address",
     "passwordPlaceholder": "Password",
     "loginButton": "Sign In",
+    "rememberMe": "Remember me",
     "forgotPassword": "Forgot your password?",
     "orContinueWith": "Or continue with",
     "googleSignIn": "Sign in with Google",
@@ -131,7 +114,9 @@
     "history": "History",
     "logout": "Logout",
     "approvals": "Approvals",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "inquiryManagement": "Inquiry Management",
+    "support": "Support"
   },
   "layout": {
     "title": "T-Holdem",
@@ -1018,6 +1003,153 @@
       "overtime": "Overtime",
       "exceptions": "Exceptions",
       "totalPay": "Total Pay"
+    }
+  },
+  "support": {
+    "title": "Customer Support",
+    "subtitle": "Check our FAQ or submit your inquiry",
+    "tabs": {
+      "faq": "FAQ",
+      "inquiry": "Submit Inquiry",
+      "myInquiries": "My Inquiries"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "all": "All",
+      "noResults": "No FAQs found for this category."
+    },
+    "inquiry": {
+      "title": "Submit Inquiry",
+      "loginRequired": "Login Required",
+      "loginMessage": "Please login first to submit an inquiry.",
+      "category": "Inquiry Category",
+      "subject": "Subject",
+      "subjectPlaceholder": "Enter inquiry subject",
+      "message": "Message",
+      "messagePlaceholder": "Please describe your inquiry in detail",
+      "submit": "Submit Inquiry",
+      "submitting": "Submitting...",
+      "success": "Your inquiry has been submitted successfully!",
+      "error": "An error occurred while submitting your inquiry."
+    },
+    "myInquiries": {
+      "title": "My Inquiries",
+      "loading": "Loading inquiry history...",
+      "empty": "No inquiries found",
+      "emptyMessage": "Feel free to contact us if you have any questions.",
+      "response": "Response"
+    }
+  },
+  "report": {
+    "title": "Submit Report",
+    "targetInfo": "Report Target",
+    "targetName": "Name",
+    "eventTitle": "Event",
+    "eventDate": "Date",
+    "type": "Report Type",
+    "types": {
+      "tardiness": {
+        "label": "Tardiness",
+        "description": "Arriving late to scheduled time"
+      },
+      "negligence": {
+        "label": "Work Negligence",
+        "description": "Neglecting duties or lacking responsibility"
+      },
+      "no_show": {
+        "label": "No Show",
+        "description": "Not showing up without prior notice"
+      },
+      "inappropriate_behavior": {
+        "label": "Inappropriate Behavior",
+        "description": "Improper conduct or inappropriate language"
+      },
+      "other": {
+        "label": "Other",
+        "description": "Other issues not listed above"
+      }
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "description": "Detailed Description",
+    "descriptionPlaceholder": {
+      "default": "Please describe the situation in detail",
+      "other": "Please describe the specific situation and issues in detail (minimum 10 characters)"
+    },
+    "otherTypeNotice": "Other type requires at least 10 characters of detailed description.",
+    "characterCount": "Character Count",
+    "minCharacters": "Minimum 10 characters",
+    "warning": {
+      "title": "Important Notice",
+      "falseReport": "False reports may result in penalties.",
+      "evidence": "Please provide specific and objective facts when possible.",
+      "processing": "Reports will be reviewed and processed by administrators."
+    },
+    "submit": "Submit Report",
+    "submitting": "Submitting...",
+    "status": {
+      "pending": "Pending",
+      "reviewed": "Under Review",
+      "resolved": "Resolved",
+      "dismissed": "Dismissed"
+    }
+  },
+  "inquiry": {
+    "categories": {
+      "general": {
+        "label": "General Inquiry"
+      },
+      "technical": {
+        "label": "Technical Support"
+      },
+      "payment": {
+        "label": "Payment Inquiry"
+      },
+      "account": {
+        "label": "Account Inquiry"
+      },
+      "other": {
+        "label": "Other"
+      }
+    },
+    "status": {
+      "open": "Open",
+      "in_progress": "In Progress",
+      "closed": "Closed"
+    }
+  },
+  "faq": {
+    "general": {
+      "q1": {
+        "question": "How do I sign up?",
+        "answer": "Click the 'Sign Up' button at the top to register as Staff or Admin. Admin registration requires operator approval."
+      },
+      "q2": {
+        "question": "I forgot my password.",
+        "answer": "Click 'Forgot Password' on the login page to receive a reset link via email."
+      }
+    },
+    "account": {
+      "q1": {
+        "question": "How do I apply for job postings?",
+        "answer": "Browse the Job Board, click on desired postings, and click the 'Apply' button to submit your application."
+      }
+    },
+    "payment": {
+      "q1": {
+        "question": "When will I receive payment?",
+        "answer": "Payment is typically processed after work completion and admin approval. Contact your administrator for specific details."
+      }
+    },
+    "technical": {
+      "q1": {
+        "question": "How do I check attendance?",
+        "answer": "Use the Attendance page to scan QR codes or have an administrator manually record your attendance."
+      }
     }
   }
 }

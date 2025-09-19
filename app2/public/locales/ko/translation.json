@@ -4,43 +4,24 @@
   "loading": "로딩 중...",
   "locations": {
     "seoul": "서울",
-    "서울": "서울",
     "gyeonggi": "경기",
-    "경기": "경기",
     "incheon": "인천",
-    "인천": "인천",
     "gangwon": "강원",
-    "강원": "강원",
     "daejeon": "대전",
-    "대전": "대전",
     "sejong": "세종",
-    "세종": "세종",
     "chungnam": "충남",
-    "충남": "충남",
     "chungbuk": "충북",
-    "충북": "충북",
     "gwangju": "광주",
-    "광주": "광주",
     "jeonnam": "전남",
-    "전남": "전남",
     "jeonbuk": "전북",
-    "전북": "전북",
     "daegu": "대구",
-    "대구": "대구",
     "gyeongbuk": "경북",
-    "경북": "경북",
     "busan": "부산",
-    "부산": "부산",
     "ulsan": "울산",
-    "울산": "울산",
     "gyeongnam": "경남",
-    "경남": "경남",
     "jeju": "제주",
-    "제주": "제주",
     "overseas": "해외",
-    "해외": "해외",
-    "other": "기타",
-    "기타": "기타"
+    "other": "기타"
   },
   "gender": {
     "male": "남성",
@@ -100,6 +81,7 @@
     "googleSignUp": "Google 계정으로 가입",
     "haveAccount": "이미 계정이 있으신가요? 로그인",
     "staffSuccessMessage": "스태프로 회원가입이 성공적으로 완료되었습니다.",
+    "dealerSuccessMessage": "딜러로 회원가입이 성공적으로 완료되었습니다.",
     "managerSuccessMessage": "가입 요청이 제출되었습니다. 관리자 승인 후 로그인할 수 있습니다.",
     "errorMessage": "가입 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     "passwordLengthError": "비밀번호는 6자 이상이어야 합니다.",
@@ -107,7 +89,6 @@
     "invalidEmailError": "유효하지 않은 이메일 주소 형식입니다.",
     "weakPasswordError": "비밀번호가 너무 취약합니다. 더 강력한 비밀번호를 사용해주세요.",
     "backToLogin": "로그인으로 돌아가기",
-    
     "genderLabel": "성별",
     "genderMale": "남성",
     "genderFemale": "여성"
@@ -133,7 +114,9 @@
     "history": "기록",
     "logout": "로그아웃",
     "approvals": "가입 승인",
-    "userManagement": "사용자 관리"
+    "userManagement": "사용자 관리",
+    "inquiryManagement": "문의 관리",
+    "support": "고객지원"
   },
   "layout": {
     "title": "T-홀덤",
@@ -485,6 +468,16 @@
   "jobBoard": {
     "title": "구인구직 게시판",
     "noJobsAvailable": "구인 공고가 없습니다.",
+    "alerts": {
+      "applicationFailed": "지원에 실패했습니다.",
+      "applicationSuccess": "지원이 완료되었습니다!",
+      "cancelFailed": "지원 취소에 실패했습니다.",
+      "cancelSuccess": "지원이 취소되었습니다.",
+      "confirmCancel": "정말로 지원을 취소하시겠습니까?",
+      "loginRequired": "로그인이 필요합니다.",
+      "profileNotFound": "프로필을 찾을 수 없습니다.",
+      "selectAssignment": "시간대와 역할을 선택해주세요."
+    },
     "search": {
       "label": "검색",
       "placeholder": "공고 제목, 설명으로 검색...",
@@ -498,11 +491,16 @@
       "role": "역할",
       "allRoles": "전체 역할",
       "startDate": "시작일",
+      "endDate": "종료일",
       "month": "월",
       "allMonths": "전체",
       "day": "일",
       "allDays": "전체",
-      "reset": "초기화"
+      "reset": "초기화",
+      "search": {
+        "label": "검색",
+        "placeholder": "공고 제목, 설명으로 검색..."
+      }
     },
     "types": {
       "application": "지원",
@@ -549,7 +547,8 @@
       "loginRequired": "지원하려면 로그인이 필요합니다."
     },
     "error": "공고를 불러오는 중 오류가 발생했습니다.",
-    "loading": "공고를 불러오는 중..."
+    "loading": "공고를 불러오는 중...",
+    "unknownApplicant": "알 수 없는 지원자"
   },
   "jobPosting": {
     "info": {
@@ -957,6 +956,8 @@
     "status": {
       "not_started": "출근 전",
       "notStarted": "출근 전",
+      "checked_in": "출근",
+      "checked_out": "퇴근",
       "checkedIn": "출근",
       "checkedOut": "퇴근",
       "absent": "결근"
@@ -987,26 +988,26 @@
       "attendanceError": "출석 기록 중 오류가 발생했습니다.",
       "timeUpdated": "시간이 성공적으로 수정되었습니다.",
       "updateError": "시간 수정 중 오류가 발생했습니다."
-      },
-      "editWorkTime": "출퇴근 시간 수정",
-      "date": "날짜",
-      "eventId": "이벤트 ID",
-      "scheduledTimes": "예정 시간",
-      "scheduledStartTime": "예정 출근시간",
-      "scheduledEndTime": "예정 퇴근시간",
-      "actualTimes": "실제 시간",
-      "actualStartTime": "실제 출근시간",
-      "actualEndTime": "실제 퇴근시간",
-      "workTimeSummary": "근무시간 요약",
-      "scheduledMinutes": "예정 근무시간",
-      "actualMinutes": "실제 근무시간",
-      "validation": {
+    },
+    "editWorkTime": "출퇴근 시간 수정",
+    "date": "날짜",
+    "eventId": "이벤트 ID",
+    "scheduledTimes": "예정 시간",
+    "scheduledStartTime": "예정 출근시간",
+    "scheduledEndTime": "예정 퇴근시간",
+    "actualTimes": "실제 시간",
+    "actualStartTime": "실제 출근시간",
+    "actualEndTime": "실제 퇴근시간",
+    "workTimeSummary": "근무시간 요약",
+    "scheduledMinutes": "예정 근무시간",
+    "actualMinutes": "실제 근무시간",
+    "validation": {
       "startTimeRequired": "출근시간을 입력해주세요.",
       "endTimeRequired": "퇴근시간을 입력해주세요.",
       "invalidTimeFormat": "올바른 시간 형식(HH:MM)을 입력해주세요.",
       "endTimeAfterStart": "퇴근시간은 출근시간보다 늦어야 합니다."
-      }
-      },
+    }
+  },
   "errors": {
     "title": "오류가 발생했습니다",
     "general": "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
@@ -1016,8 +1017,8 @@
     "retry": "다시 시도",
     "refresh": "페이지 새로고침",
     "details": "개발자 정보 보기"
-    },
-    "exceptions": {
+  },
+  "exceptions": {
     "late": {
       "description": "지각 ({{minutes}}분 늦음)"
     },
@@ -1036,29 +1037,180 @@
     "note": "메모",
     "updateSuccess": "예외 상황이 업데이트되었습니다",
     "updateError": "예외 상황 업데이트에 실패했습니다"
+  },
+  "payroll": {
+    "calculate": "급여 계산",
+    "generating": "급여 계산중...",
+    "export": "급여 CSV 내보내기",
+    "noDataToExport": "내보낼 급여 데이터가 없습니다.",
+    "summary": {
+      "title": "급여 계산 요약",
+      "totalHours": "총 근무시간",
+      "regularHours": "정규",
+      "overtimeHours": "초과",
+      "totalPay": "총 급여",
+      "basePay": "기본급",
+      "exceptions": "예외 사항",
+      "deductions": "공제액"
     },
-    "payroll": {
-      "calculate": "급여 계산",
-      "generating": "급여 계산중...",
-      "export": "급여 CSV 내보내기",
-      "noDataToExport": "내보낼 급여 데이터가 없습니다.",
-      "summary": {
-        "title": "급여 계산 요약",
-        "totalHours": "총 근무시간",
-        "regularHours": "정규",
-        "overtimeHours": "초과",
-        "totalPay": "총 급여",
-        "basePay": "기본급",
-        "exceptions": "예외 사항",
-        "deductions": "공제액"
+    "details": {
+      "title": "스태프별 급여 상세",
+      "staffName": "스태프명",
+      "workHours": "근무시간",
+      "overtime": "초과근무",
+      "exceptions": "예외사항",
+      "totalPay": "총 급여"
+    }
+  },
+  "support": {
+    "title": "고객지원",
+    "subtitle": "FAQ를 확인하거나 문의사항을 보내주세요",
+    "tabs": {
+      "faq": "FAQ",
+      "inquiry": "문의하기",
+      "myInquiries": "내 문의"
+    },
+    "faq": {
+      "title": "자주 묻는 질문",
+      "all": "전체",
+      "noResults": "해당 카테고리에 FAQ가 없습니다."
+    },
+    "inquiry": {
+      "title": "문의하기",
+      "loginRequired": "로그인이 필요합니다",
+      "loginMessage": "문의를 작성하려면 먼저 로그인해주세요.",
+      "category": "문의 분류",
+      "subject": "제목",
+      "subjectPlaceholder": "문의 제목을 입력해주세요",
+      "message": "내용",
+      "messagePlaceholder": "문의 내용을 자세히 작성해주세요",
+      "submit": "문의 제출",
+      "submitting": "제출 중...",
+      "success": "문의가 성공적으로 제출되었습니다!",
+      "error": "문의 제출 중 오류가 발생했습니다."
+    },
+    "myInquiries": {
+      "title": "내 문의 내역",
+      "loading": "문의 내역을 불러오는 중...",
+      "empty": "문의 내역이 없습니다",
+      "emptyMessage": "문의사항이 있으시면 언제든지 문의해주세요.",
+      "response": "답변"
+    }
+  },
+  "report": {
+    "title": "신고하기",
+    "targetInfo": "신고 대상",
+    "targetName": "이름",
+    "eventTitle": "이벤트",
+    "eventDate": "날짜",
+    "type": "신고 유형",
+    "types": {
+      "tardiness": {
+        "label": "지각",
+        "description": "약속된 시간에 늦게 도착하는 경우"
       },
-      "details": {
-        "title": "스태프별 급여 상세",
-        "staffName": "스태프명",
-        "workHours": "근무시간",
-        "overtime": "초과근무",
-        "exceptions": "예외사항",
-        "totalPay": "총 급여"
+      "negligence": {
+        "label": "근무태만",
+        "description": "업무를 소홀히 하거나 책임감이 부족한 경우"
+      },
+      "no_show": {
+        "label": "노쇼",
+        "description": "사전 연락 없이 나타나지 않는 경우"
+      },
+      "inappropriate_behavior": {
+        "label": "부적절한 행동",
+        "description": "예의에 어긋나거나 부적절한 언행"
+      },
+      "other": {
+        "label": "기타",
+        "description": "위에 해당하지 않는 기타 문제"
+      }
+    },
+    "severity": {
+      "low": "낮음",
+      "medium": "보통",
+      "high": "높음",
+      "critical": "심각"
+    },
+    "description": "상세 설명",
+    "descriptionPlaceholder": {
+      "default": "발생한 상황을 구체적으로 설명해주세요",
+      "other": "구체적인 상황과 문제점을 자세히 설명해주세요 (최소 10자)"
+    },
+    "otherTypeNotice": "기타 유형은 10자 이상의 자세한 설명이 필요합니다.",
+    "characterCount": "현재 글자 수",
+    "minCharacters": "최소 10자",
+    "warning": {
+      "title": "신고 전 확인사항",
+      "falseReport": "허위 신고 시 제재를 받을 수 있습니다.",
+      "evidence": "가능한 한 구체적이고 객관적인 사실을 기재해주세요.",
+      "processing": "신고 접수 후 관리자가 검토하여 처리합니다."
+    },
+    "submit": "신고 제출",
+    "submitting": "제출 중...",
+    "status": {
+      "pending": "대기중",
+      "reviewed": "검토중",
+      "resolved": "해결됨",
+      "dismissed": "기각됨"
+    }
+  },
+  "inquiry": {
+    "categories": {
+      "general": {
+        "label": "일반 문의"
+      },
+      "technical": {
+        "label": "기술 문의"
+      },
+      "payment": {
+        "label": "결제 문의"
+      },
+      "account": {
+        "label": "계정 문의"
+      },
+      "report": {
+        "label": "신고",
+        "description": "스태프 신고 관련 문의"
+      },
+      "other": {
+        "label": "기타"
+      }
+    },
+    "status": {
+      "open": "열림",
+      "in_progress": "처리중",
+      "closed": "완료"
+    }
+  },
+  "faq": {
+    "general": {
+      "q1": {
+        "question": "회원가입은 어떻게 하나요?",
+        "answer": "상단의 '회원가입' 버튼을 클릭하여 스태프 또는 관리자로 가입할 수 있습니다. 관리자 가입은 운영자의 승인이 필요합니다."
+      },
+      "q2": {
+        "question": "비밀번호를 잊어버렸어요.",
+        "answer": "로그인 페이지에서 '비밀번호 찾기'를 클릭하여 이메일로 재설정 링크를 받을 수 있습니다."
+      }
+    },
+    "account": {
+      "q1": {
+        "question": "구인공고는 어떻게 지원하나요?",
+        "answer": "구인구직 게시판에서 원하는 공고를 클릭하고 '지원하기' 버튼을 눌러 지원할 수 있습니다."
+      }
+    },
+    "payment": {
+      "q1": {
+        "question": "급여는 언제 지급되나요?",
+        "answer": "일반적으로 근무 완료 후 관리자의 급여 계산 및 승인 후 지급됩니다. 자세한 사항은 관리자에게 문의하세요."
+      }
+    },
+    "technical": {
+      "q1": {
+        "question": "출석 체크는 어떻게 하나요?",
+        "answer": "출석 페이지에서 QR 코드를 스캔하거나 관리자가 수동으로 출석을 체크할 수 있습니다."
       }
     }
-    }
+  }
+}
