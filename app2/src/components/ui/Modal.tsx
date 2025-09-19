@@ -5,21 +5,23 @@ export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  
+
   // 구조적 props
   title?: React.ReactNode;
   footer?: React.ReactNode;
-  
+
   // 스타일 props
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   centered?: boolean;
-  
+
   // 동작 props
   closeOnEsc?: boolean;
   closeOnBackdrop?: boolean;
   showCloseButton?: boolean;
   preventScroll?: boolean;
-  
+  autoFocus?: boolean;
+  disableFocusTrap?: boolean;
+
   // 접근성 props
   'aria-label'?: string;
   'aria-describedby'?: string;
@@ -41,6 +43,8 @@ const Modal: React.FC<ModalProps> = ({
   closeOnBackdrop = true,
   showCloseButton = true,
   preventScroll = true,
+  autoFocus = true,
+  disableFocusTrap = false,
   'aria-label': ariaLabel,
   'aria-describedby': ariaDescribedBy,
 }) => {
@@ -75,14 +79,21 @@ const Modal: React.FC<ModalProps> = ({
     }
   };
 
-  // 포커스 트랩 구현
+  // 포커스 트랩 구현 (textarea/input 편집 중에는 완전 비활성화)
   const handleTabKey = useCallback((e: KeyboardEvent) => {
     if (!modalRef.current) return;
+
+    // textarea나 input이 포커스되어 있는 경우 포커스 트랩 완전 비활성화
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT')) {
+      // 모든 텍스트 입력 요소에서 포커스 트랩 비활성화
+      return;
+    }
 
     const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
       'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -97,13 +108,38 @@ const Modal: React.FC<ModalProps> = ({
     }
   }, []);
 
-  // 키보드 이벤트 핸들러
+  // 키보드 이벤트 핸들러 (텍스트 입력 중에는 완전 비활성화)
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // 포커스 트랩이 비활성화된 경우 ESC 키만 처리
+    if (disableFocusTrap) {
+      if (closeOnEsc && e.key === 'Escape') {
+        handleEscKey(e);
+      }
+      return; // 포커스 트랩 비활성화 시 다른 키 이벤트 무시
+    }
+
+    // 텍스트 입력 요소가 포커스되어 있으면 모든 키보드 이벤트 무시
+    const activeElement = document.activeElement;
+    if (activeElement && (
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'INPUT' ||
+      (activeElement as HTMLElement).contentEditable === 'true'
+    )) {
+      return; // 텍스트 입력 중에는 모든 키보드 이벤트 무시
+    }
+
+    // IME 구성 중인지 확인 (한글 입력 중)
+    if ((e as any).isComposing) {
+      return; // IME 입력 중에는 모든 키보드 이벤트 무시
+    }
+
     if (e.key === 'Tab') {
       handleTabKey(e);
     }
-    handleEscKey(e);
-  }, [handleTabKey, handleEscKey]);
+    if (closeOnEsc) {
+      handleEscKey(e);
+    }
+  }, [handleTabKey, handleEscKey, closeOnEsc, disableFocusTrap]);
 
   // 모달 열림/닫힘 처리
   useEffect(() => {
@@ -119,15 +155,37 @@ const Modal: React.FC<ModalProps> = ({
         document.body.style.overflow = 'hidden';
       }
 
-      // 모달에 포커스 설정
-      setTimeout(() => {
-        modalRef.current?.focus();
-      }, 100);
+      // 자동 포커스 설정 (포커스 트랩이 활성화된 경우에만)
+      if (autoFocus && !disableFocusTrap && modalRef.current) {
+        setTimeout(() => {
+          // 현재 활성 요소가 입력 요소인지 확인
+          const activeElement = document.activeElement;
+          const isInputElement = activeElement && (
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'INPUT' ||
+            (activeElement as HTMLElement).contentEditable === 'true'
+          );
+
+          // 입력 요소가 포커스되어 있지 않은 경우에만 모달에 포커스
+          if (!isInputElement && modalRef.current) {
+            // 첫 번째 포커스 가능한 요소를 찾아 포커스
+            const focusableElement = modalRef.current.querySelector<HTMLElement>(
+              'textarea, input[type="text"], input[type="email"], input[type="password"], button:not([disabled])'
+            );
+
+            if (focusableElement) {
+              focusableElement.focus();
+            } else {
+              modalRef.current.focus();
+            }
+          }
+        }, 150); // 지연시간을 늘려서 다른 컴포넌트 초기화 완료 대기
+      }
 
       return () => {
         // 클린업
         document.removeEventListener('keydown', handleKeyDown);
-        
+
         if (preventScroll) {
           document.body.style.overflow = '';
         }
@@ -136,9 +194,9 @@ const Modal: React.FC<ModalProps> = ({
         previousActiveElement.current?.focus();
       };
     }
-    
+
     return undefined;
-  }, [isOpen, handleKeyDown, preventScroll]);
+  }, [isOpen, handleKeyDown, preventScroll, autoFocus, disableFocusTrap]);
 
   if (!isOpen) return null;
 
