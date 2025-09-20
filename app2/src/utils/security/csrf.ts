@@ -79,7 +79,7 @@ export function clearCsrfToken(): void {
   try {
     sessionStorage.removeItem(CSRF_TOKEN_KEY);
     sessionStorage.removeItem(CSRF_TOKEN_EXPIRY_KEY);
-    logger.debug('CSRF 토큰이 삭제되었습니다', { component: 'csrf' });
+
   } catch (error) {
     logger.error('CSRF 토큰 삭제 오류', error instanceof Error ? error : new Error(String(error)), { 
       component: 'csrf' 

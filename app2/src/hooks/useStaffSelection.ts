@@ -35,7 +35,7 @@ export const useStaffSelection = ({
       if (prev) {
         // 선택 모드 종료 시 선택 초기화
         setSelectedStaff(new Set());
-        logger.debug('선택 모드 종료, 선택 초기화', { component: 'useStaffSelection' });
+
       }
       return !prev;
     });
@@ -47,7 +47,7 @@ export const useStaffSelection = ({
       const newSet = new Set(prev);
       if (newSet.has(staffId)) {
         newSet.delete(staffId);
-        logger.debug('스태프 선택 해제', { component: 'useStaffSelection', data: { staffId } });
+
       } else {
         // 대량 선택 경고
         if (newSet.size >= 100) {
@@ -57,7 +57,7 @@ export const useStaffSelection = ({
           });
         }
         newSet.add(staffId);
-        logger.debug('스태프 선택', { component: 'useStaffSelection', data: { staffId } });
+
       }
       return newSet;
     });
@@ -82,7 +82,7 @@ export const useStaffSelection = ({
   // 전체 해제
   const deselectAll = useCallback(() => {
     setSelectedStaff(new Set());
-    logger.debug('전체 선택 해제', { component: 'useStaffSelection' });
+
   }, []);
 
   // 선택 여부 확인
@@ -100,7 +100,7 @@ export const useStaffSelection = ({
   const resetSelection = useCallback(() => {
     setSelectedStaff(new Set());
     setMultiSelectMode(false);
-    logger.debug('선택 상태 초기화', { component: 'useStaffSelection' });
+
   }, []);
 
   // 선택 변경 시 콜백 호출

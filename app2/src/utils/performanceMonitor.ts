@@ -242,7 +242,7 @@ class PerformanceMonitor {
 
   // 콘솔에 보고서 출력
   logReport(): void {
-    logger.debug('Log output', { component: 'performanceMonitor', data: this.generateReport() });
+
   }
 
   // 정리

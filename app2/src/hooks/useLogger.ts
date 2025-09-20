@@ -60,8 +60,8 @@ export const logAction = async (action: ActionType, details: Record<string, any>
 // 새로운 구조화된 로깅 훅
 export const useStructuredLogger = () => {
   return {
-    debug: (message: string, context?: Partial<LogContext>) => {
-      logger.debug(message, context);
+    debug: (_message: string, _context?: Partial<LogContext>) => {
+      // Debug 로그는 프로덕션에서 제거됨
     },
     info: (message: string, context?: Partial<LogContext>) => {
       logger.info(message, context);

@@ -33,14 +33,14 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
       
       if (dateIndex >= 0 && data.assignedRoles[dateIndex]) {
         const confirmedRole = data.assignedRoles[dateIndex];
-        logger.debug(`  ✅ 확정 상태 - 날짜별 역할 (${targetDate}):`, { component: 'useScheduleData', data: confirmedRole });
+
         return confirmedRole;
       }
     }
     
     // 날짜별 매칭 실패 시 기본 확정 역할 사용
     const confirmedRole = data.assignedRole || data.confirmedRole || data.role || '';
-    logger.debug('  ✅ 확정 상태 - 기본 역할:', { component: 'useScheduleData', data: confirmedRole });
+
     return confirmedRole;
   }
   
@@ -99,12 +99,12 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
   // 거절된 경우
   if (data.status === 'rejected') {
     const rejectedRole = data.assignedRole || data.role || '';
-    logger.debug('  ❌ 거절 상태 - 역할:', { component: 'useScheduleData', data: rejectedRole });
+
     return rejectedRole;
   }
   
   // 기타 상태
   const defaultRole = data.assignedRole || data.confirmedRole || data.role || '';
-  logger.debug('  ❓ 기타 상태 - 기본 역할:', { component: 'useScheduleData', data: defaultRole });
+
   return defaultRole;
 };

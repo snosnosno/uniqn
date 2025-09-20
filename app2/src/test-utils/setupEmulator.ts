@@ -221,10 +221,10 @@ export const createTestUsers = async (): Promise<void> => {
         // 로그아웃
         await signOut(auth);
 
-        logger.debug(`테스트 사용자 생성: ${user.email}`, { component: 'TestSetup' });
+
       } catch (error: any) {
         if (error?.code === 'auth/email-already-in-use') {
-          logger.debug(`사용자 이미 존재: ${user.email}`, { component: 'TestSetup' });
+
         } else {
           logger.error(`사용자 생성 실패: ${user.email}`, error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
         }

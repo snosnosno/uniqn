@@ -345,8 +345,8 @@ class AnalyticsIntegration {
         'Conversions': this.conversions.length,
         'Bounce Rate': `${(bounceRate * 100)}%`
       });
-      logger.debug('Detailed Events', { data: { events: this.events } });
-      logger.debug('Conversions', { data: { conversions: this.conversions } });
+
+
       console.groupEnd();
     }
 

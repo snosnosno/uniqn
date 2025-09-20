@@ -17,23 +17,6 @@ interface JobPostingDetailContentProps {
 const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPosting, hideTitle = false }) => {
   const { t } = useTranslation();
 
-  // 날짜 변환 처리
-  const formatDate = (date: any): string => {
-    if (!date) return '미정';
-    
-    // Firebase Timestamp
-    if (date && typeof date === 'object' && 'toDate' in date) {
-      return formatDateUtil(date.toDate());
-    }
-    
-    // seconds 형식 (Firebase에서 가져온 데이터)
-    if (date && typeof date === 'object' && 'seconds' in date) {
-      return formatDateUtil(new Date(date.seconds * 1000));
-    }
-    
-    // 일반 Date 객체나 문자열
-    return formatDateUtil(date);
-  };
 
   // 날짜 범위 표시 개선
   const getDateRangeDisplay = () => {

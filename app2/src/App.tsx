@@ -6,7 +6,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
-import EmailVerification from './components/auth/EmailVerification';
 import RequireEmailVerification from './components/auth/RequireEmailVerification';
 
 import FirebaseErrorBoundary from './components/errors/FirebaseErrorBoundary';

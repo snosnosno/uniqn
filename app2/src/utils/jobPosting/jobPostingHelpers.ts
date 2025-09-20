@@ -112,7 +112,7 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
   }
 
   const requiredRolesArray = Array.from(requiredRoles);
-  logger.debug('✅ 최종 requiredRoles:', { component: 'jobPostingHelpers', data: requiredRolesArray });
+
 
   const result = {
     ...formData,

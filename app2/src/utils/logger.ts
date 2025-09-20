@@ -375,8 +375,8 @@ class StructuredLogger {
 export const logger = new StructuredLogger();
 
 // 편의 함수들
-export const logDebug = (message: string, context?: Partial<LogContext>) => {
-  logger.debug(message, context);
+export const logDebug = (_message: string, _context?: Partial<LogContext>) => {
+  // Debug 로그는 프로덕션에서 제거됨
 };
 export const logInfo = (message: string, context?: Partial<LogContext>) => logger.info(message, context);
 export const logWarn = (message: string, context?: Partial<LogContext>) => logger.warn(message, context);

@@ -100,7 +100,7 @@ export const useCEODashboardOptimized = () => {
   const getCachedData = useCallback(() => {
     const now = Date.now();
     if (dashboardCache.data && (now - dashboardCache.timestamp) < dashboardCache.TTL) {
-      logger.debug('캐시된 대시보드 데이터 사용', { component: 'useCEODashboardOptimized' });
+
       return dashboardCache.data;
     }
     return null;
@@ -125,7 +125,7 @@ export const useCEODashboardOptimized = () => {
     }
 
     try {
-      logger.debug('폴링 데이터 가져오기 시작', { component: 'useCEODashboardOptimized' });
+
 
       // 1. 최우수 딜러 (캐시된 데이터 사용)
       const dealers: TopDealer[] = [];
@@ -524,7 +524,7 @@ export const useCEODashboardOptimized = () => {
 
     // Cleanup
     return () => {
-      logger.debug('CEO 대시보드 최적화 버전 구독 해제', { component: 'useCEODashboardOptimized' });
+
       unsubscribersRef.current.forEach(unsubscribe => unsubscribe());
       unsubscribersRef.current = [];
       

@@ -104,7 +104,7 @@ class FirebaseConnectionManager {
 
     // Firebase 내부 상태 정리를 위한 대기 시간
     setTimeout(() => {
-      logger.debug('⚠️ Firebase internal assertion error - not retrying to prevent recursion', { component: 'firebaseConnectionManager' });
+
       if (errorCallback) {
         errorCallback(new Error('Firebase internal assertion error occurred. Please refresh the page.'));
       }

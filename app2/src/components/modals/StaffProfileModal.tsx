@@ -138,7 +138,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
       // staff 데이터에 추가 정보가 없으면 users 컬렉션에서 조회
       const userId = staff.userId || staff.id;
       if (!userId) {
-        logger.debug('userId를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: staff });
+
         setUserProfile(staff as ProfileData);
         return;
       }
@@ -170,7 +170,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             ratingCount: userData.ratingCount
           } as ProfileData);
         } else {
-          logger.debug('사용자 프로필 문서를 찾을 수 없습니다:', { component: 'StaffProfileModal', data: userId });
+
           setUserProfile(staff as ProfileData);
         }
 

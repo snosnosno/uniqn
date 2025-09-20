@@ -23,7 +23,6 @@ import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLo
 import { useResponsive } from '../../hooks/useResponsive';
 import { useVirtualization } from '../../hooks/useVirtualization';
 import { BulkOperationService } from '../../services/BulkOperationService';
-import BulkActionsModal from '../modals/BulkActionsModal';
 import BulkTimeEditModal from '../modals/BulkTimeEditModal';
 import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
 import ReportModal from '../modals/ReportModal';

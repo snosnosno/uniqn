@@ -16,7 +16,7 @@ export const useSecurity = () => {
     // 토큰 갱신 주기 설정 (50분마다)
     const tokenRefreshInterval = setInterval(() => {
       csrfTokenRef.current = refreshCsrfToken();
-      logger.debug('CSRF 토큰이 갱신되었습니다', { component: 'useSecurity' });
+
     }, 50 * 60 * 1000);
     
     return () => {

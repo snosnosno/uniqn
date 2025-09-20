@@ -67,7 +67,7 @@ export const useStaffWorkData = ({
     confirmedStaff = jobPosting?.confirmedStaff || [];
   } catch (error) {
     // Context가 없는 환경 (Provider 밖에서 사용)
-    logger.debug('JobPostingContext not available, will use direct subscription', { component: 'useStaffWorkData' });
+
   }
   
   // Context에서 WorkLogs 사용 (직접 구독 완전 제거)
