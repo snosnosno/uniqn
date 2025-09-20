@@ -4,7 +4,7 @@ import { toast } from '../utils/toast';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPlus, FaThList, FaUserPlus } from '../components/Icons/ReactIconsReplacement';
+import { FaThList, FaUserPlus } from '../components/Icons/ReactIconsReplacement';
 
 import MoveSeatModal from '../components/modals/MoveSeatModal';
 import ParticipantDetailModal from '../components/modals/ParticipantDetailModal';
@@ -15,6 +15,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useSettings } from '../hooks/useSettings';
 import { useTables, Table } from '../hooks/useTables';
+import { exportTablesToExcel } from '../utils/excelExport';
 
 const TablesPage: React.FC = () => {
     const { t } = useTranslation();
@@ -139,6 +140,16 @@ const TablesPage: React.FC = () => {
         }
         handleCloseActionMenu();
     };
+
+    const handleExportToExcel = () => {
+        try {
+            exportTablesToExcel(tables, participants, t);
+            toast.success(t('tables.exportExcelSuccess'));
+        } catch (error) {
+            logger.error('엑셀 내보내기 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+            toast.error(t('tables.exportExcelError'));
+        }
+    };
     
     const onPlayerSelectInModal = (participantId: string, tableId: string, seatIndex: number, event: React.MouseEvent) => {
         const participant = participants.find(p => p.id === participantId);
@@ -161,25 +172,32 @@ const TablesPage: React.FC = () => {
         <div className="p-4 bg-gray-100 min-h-screen" onClick={handleCloseActionMenu}>
             {/* Header */}
             <div className="mb-6 bg-white p-4 rounded-lg shadow">
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-3xl font-bold text-gray-800">{t('tables.title')}</h1>
-                    <div className="flex items-center space-x-3">
-                        <button 
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+                    <h1 className="text-3xl font-bold text-gray-800 mb-3 md:mb-0">{t('tables.title')}</h1>
+                    <div className="flex flex-wrap items-center gap-2 md:space-x-3 md:gap-0">
+                        <button
+                            onClick={handleExportToExcel}
+                            className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                            disabled={tablesLoading || participantsLoading || tables.length === 0}
+                        >
+                            {t('tables.exportExcel')}
+                        </button>
+                        <button
                             onClick={() => autoAssignSeats(participants.filter(p => p.status === 'active'))}
-                            className="btn btn-secondary"
+                            className="btn btn-secondary text-sm"
                             disabled={tablesLoading || participantsLoading}
                         >
                             {t('tables.buttonAutoAssign')}
                         </button>
-                        <button 
+                        <button
                             onClick={() => autoBalanceByChips(participants)}
-                            className="btn btn-secondary bg-green-600 hover:bg-green-700 text-white"
+                            className="btn btn-secondary bg-green-600 hover:bg-green-700 text-white text-sm"
                             disabled={tablesLoading || participantsLoading}
                         >
                             {t('common.chipRebalance')}
                         </button>
-                        <button onClick={openNewTable} className="btn btn-primary">
-                            <FaPlus className="w-4 h-4 mr-2"/>{t('tables.buttonAddTable')}
+                        <button onClick={openNewTable} className="btn btn-primary text-sm">
+                            {t('tables.buttonAddTable')}
                         </button>
                     </div>
                 </div>

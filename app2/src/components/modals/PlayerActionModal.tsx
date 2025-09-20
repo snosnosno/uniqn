@@ -22,16 +22,25 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
+        // 모바일에서는 터치 이벤트 후 잠시 대기
+        if (event.type === 'touchstart') {
+          setTimeout(() => onClose(), 100);
+        } else {
+          onClose();
+        }
       }
     };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isOpen, onClose]);
 
@@ -49,20 +58,18 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
   }
 
   return (
-    <>
-        <div className="fixed inset-0 z-40" onClick={onClose} />
-        <div
-            ref={modalRef}
-            className="absolute z-50"
-            style={{ top: `${adjustedPosition.top}px`, left: `${adjustedPosition.left}px` }}
-            onClick={(e) => e.stopPropagation()}
-        >
-            <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-48">
+    <div
+        ref={modalRef}
+        className="fixed z-[70]"
+        style={{ top: `${adjustedPosition.top}px`, left: `${adjustedPosition.left}px` }}
+        onClick={(e) => e.stopPropagation()}
+    >
+            <div className="bg-white rounded-lg shadow-2xl border-2 border-gray-300 w-48">
                 <ul className="divide-y divide-gray-200">
                     <li>
                         <button
                             onClick={onShowDetails}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            className="w-full text-left px-4 py-4 text-base text-gray-700 hover:bg-gray-100 flex items-center touch-manipulation"
                         >
                             {t('playerActionModal.showDetails')}
                         </button>
@@ -70,7 +77,7 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
                     <li>
                         <button
                             onClick={onMoveSeat}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            className="w-full text-left px-4 py-4 text-base text-gray-700 hover:bg-gray-100 flex items-center touch-manipulation"
                         >
                             {t('playerActionModal.moveSeat')}
                         </button>
@@ -78,15 +85,14 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
                     <li>
                         <button
                             onClick={_onBustOut}
-                            className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center font-semibold"
+                            className="w-full text-left px-4 py-4 text-base text-red-600 hover:bg-red-50 flex items-center font-semibold touch-manipulation"
                         >
                             {t('playerActionModal.bustOut')}
                         </button>
                     </li>
                 </ul>
             </div>
-        </div>
-    </>
+    </div>
   );
 };
 

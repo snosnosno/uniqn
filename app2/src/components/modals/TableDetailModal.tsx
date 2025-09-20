@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, pointerWithin } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
 
 import { Table } from '../../hooks/useTables';
@@ -60,18 +59,6 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
 
   if (!table) return null;
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (over && active.data.current && over.data.current) {
-      const { participantId, from } = active.data.current;
-      const { tableId, seatIndex } = over.data.current;
-      
-      if (participantId && from && tableId !== undefined && seatIndex !== undefined) {
-        onMoveSeat(participantId, from, { tableId, seatIndex });
-      }
-    }
-  };
 
   const handleMaxSeatsChange = async (newMaxSeats: number) => {
     if (table) {
@@ -115,31 +102,57 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
   const filledSeats = (table.seats || []).filter(s => s !== null).length;
   const emptySeatCount = totalSeats - filledSeats;
 
+  const modalTitle = (
+    <div className="flex items-center justify-between w-full">
+      <span className="text-lg font-semibold text-gray-900">
+        {`${table.name || t('tableDetailModal.defaultTableName', { number: table.tableNumber })} (${filledSeats}/${totalSeats}, ${t('tableDetailModal.infoEmptySeats')} ${emptySeatCount})`}
+      </span>
+      {isEditingName ? (
+        <input
+          type="text"
+          value={tableName}
+          onChange={(e) => {e.stopPropagation(); setTableName(e.target.value);}}
+          onBlur={handleNameUpdate}
+          onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate(e)}
+          className="w-32 px-2 py-1 ml-3 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoFocus
+          onClick={(e) => e.stopPropagation()}
+          placeholder={t('tableDetailModal.defaultTableName', { number: table.tableNumber })}
+        />
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); setIsEditingName(true); }}
+          className="flex items-center gap-1 px-2 py-1 ml-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+          title="테이블 이름 수정"
+        >
+          ✏️ 편집
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      title=""
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={modalTitle}
       size="xl"
       showCloseButton={true}
       aria-label="테이블 세부정보"
     >
-      <DndContext 
-        onDragEnd={handleDragEnd}
-        collisionDetection={pointerWithin}
-      >
-        <div className="relative">
+      <div className="relative">
           {isDimmed ? <div className="absolute inset-0 bg-black bg-opacity-50 z-10 rounded-md" aria-hidden="true"></div> : null}
           
           <div className="flex justify-between items-center mb-4 pb-4 border-b">
             <div className="flex items-center gap-2">
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
                 <button
                     onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
                     className="w-6 h-6 rounded-full"
                     style={{ backgroundColor: table.borderColor || '#cccccc' }}
                     title={t('tableDetailModal.changeBorderColorTitle')}
                 />
+                <span className="text-sm text-gray-600">색 편집</span>
                 {showColorPicker ? <div className="absolute z-30 top-8 left-0 bg-white p-2 rounded-md shadow-lg flex gap-2">
                         {PRESET_COLORS.map(color => (
                             <button
@@ -151,31 +164,8 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
                         ))}
                     </div> : null}
               </div>
-              {isEditingName ? (
-                <input
-                  type="text"
-                  value={tableName}
-                  onChange={(e) => {e.stopPropagation(); setTableName(e.target.value);}}
-                  onBlur={handleNameUpdate}
-                  onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate(e)}
-                  className="font-bold text-xl text-gray-800 border-b-2 border-blue-500 focus:outline-none"
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <h2
-                  className="text-xl font-bold text-gray-800 cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); setIsEditingName(true); }}
-                >
-                  {table.name || t('tableDetailModal.defaultTableName', { number: table.tableNumber })}
-                </h2>
-              )}
             </div>
             <div className="flex items-center gap-2">
-                <div className="text-sm text-gray-600 space-x-4 mr-2">
-                    <span>{t('tableDetailModal.infoParticipants')} {filledSeats}/{totalSeats}</span>
-                    <span>{t('tableDetailModal.infoEmptySeats')} {emptySeatCount}</span>
-                </div>
                 <div className="flex items-center space-x-2">
                     <label htmlFor="max-seats-modal" className="text-sm font-semibold">{t('tableDetailModal.labelMaxSeats')}</label>
                     <select
@@ -211,31 +201,21 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
             {(table.seats || []).map((participantId, i) => {
               const participant = participantId ? participants?.find(p => p.id === participantId) : undefined;
               return (
-                <div 
-                  key={i} 
-                  onClick={(e) => {
-                    if (participantId) {
-                      e.stopPropagation();
-                      onPlayerSelect(participantId, table.id, i, e);
-                    }
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Seat
-                    table={table}
-                    seatIndex={i}
-                    participantId={participantId}
-                    {...(participant && { participant })}
-                    getParticipantName={getParticipantName}
-                    onMoveSeat={onMoveSeat}
-                    _onBustOut={() => participantId && _onBustOut(participantId, table.id)}
-                  />
-                </div>
+                <Seat
+                  key={i}
+                  table={table}
+                  seatIndex={i}
+                  participantId={participantId}
+                  {...(participant && { participant })}
+                  getParticipantName={getParticipantName}
+                  onMoveSeat={onMoveSeat}
+                  _onBustOut={() => participantId && _onBustOut(participantId, table.id)}
+                  onPlayerSelect={onPlayerSelect}
+                />
               );
             })}
           </div>
         </div>
-      </DndContext>
     </Modal>
   );
 };

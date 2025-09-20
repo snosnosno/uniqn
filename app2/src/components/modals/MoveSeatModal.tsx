@@ -97,9 +97,6 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
                   >
                     <span className="font-bold text-sm mb-1">{seatIndex + 1}</span>
                     <span className="font-semibold">{getParticipantName(participantId)}</span>
-                    {participantId ? <span className="text-xs text-gray-500">{t('moveSeatModal.statusOccupied')}</span> : null}
-                    {!participantId && table.status === 'open' && <span className="text-xs text-green-600">{t('moveSeatModal.statusEmpty')}</span>}
-                    {!participantId && table.status !== 'open' && <span className="text-xs text-gray-500">{t('moveSeatModal.statusUnavailable')}</span>}
                   </div>
                 );
               })}
