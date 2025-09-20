@@ -183,8 +183,6 @@ const ReportModal: React.FC<ReportModalProps> = ({
       closeOnEsc={false}        // ESC 키 완전 비활성화
       closeOnBackdrop={false}   // 배경 클릭 비활성화
       showCloseButton={false}   // 기본 닫기 버튼 비활성화
-      autoFocus={false}         // 자동 포커스 비활성화 (textarea 입력 방해 방지)
-      disableFocusTrap={true}   // 포커스 트랩 완전 비활성화 (입력 중 포커스 이동 방지)
     >
       <div className="p-6">
         {/* 헤더 */}

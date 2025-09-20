@@ -27,7 +27,7 @@ const ParticipantsPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // 전화번호 포맷팅 함수
-  const formatPhoneNumber = (value: string) => {
+  const formatPhoneNumber = useCallback((value: string) => {
     // 숫자만 추출
     const numbers = value.replace(/\D/g, '');
 
@@ -39,7 +39,7 @@ const ParticipantsPage: React.FC = () => {
     } else {
       return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
     }
-  };
+  }, []);
 
   const participantLocations = useMemo(() => {
     const locations = new Map<string, string>();
@@ -252,35 +252,41 @@ const ParticipantsPage: React.FC = () => {
       <h1 className="text-3xl font-bold mb-6 text-gray-800">{t('participants.title')}</h1>
       <div className="mb-4 space-y-2">
         <div className="flex gap-2 flex-wrap">
-          <input 
+          <input
             type="text"
             placeholder={t('participants.searchPlaceholder')}
             className="input-field flex-1 md:max-w-md"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={isModalOpen || isBulkModalOpen}
+            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           />
-          <CSVUploadButton onFileRead={handleCSVContent} disabled={isDeleting} />
-          <button 
-            onClick={() => setIsBulkModalOpen(true)} 
+          <CSVUploadButton onFileRead={handleCSVContent} disabled={isDeleting || isModalOpen || isBulkModalOpen} />
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
             className="btn btn-secondary flex items-center gap-2"
-            disabled={isDeleting}
+            disabled={isDeleting || isModalOpen || isBulkModalOpen}
+            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           >
             <FaPlus className="w-4 h-4" />
             대량 추가
           </button>
-          <button 
-            onClick={() => handleOpenModal(null)} 
+          <button
+            onClick={() => handleOpenModal(null)}
             className="btn btn-primary flex items-center gap-2"
-            disabled={isDeleting}
+            disabled={isDeleting || isModalOpen || isBulkModalOpen}
+            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           >
             <FaPlus className="w-4 h-4" />
             참가자 추가
           </button>
         </div>
         <div className="flex gap-2 items-center">
-          <button 
+          <button
             onClick={handleDownloadTemplate}
             className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            disabled={isModalOpen || isBulkModalOpen}
+            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           >
             <FaFileExport className="w-3 h-3" />
             CSV 템플릿 다운로드
@@ -288,10 +294,11 @@ const ParticipantsPage: React.FC = () => {
           <span className="text-gray-400">|</span>
           {selectedIds.size > 0 && (
             <>
-              <button 
+              <button
                 onClick={handleDeleteSelected}
                 className="btn btn-danger btn-sm flex items-center gap-2"
-                disabled={isDeleting}
+                disabled={isDeleting || isModalOpen || isBulkModalOpen}
+                tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
               >
                 <FaTrash className="w-3 h-3" />
                 선택 삭제 ({selectedIds.size}명)
@@ -299,10 +306,11 @@ const ParticipantsPage: React.FC = () => {
               <span className="text-gray-400">|</span>
             </>
           )}
-          <button 
+          <button
             onClick={handleDeleteAll}
             className="btn btn-danger btn-sm flex items-center gap-2"
-            disabled={isDeleting || participants.length === 0}
+            disabled={isDeleting || participants.length === 0 || isModalOpen || isBulkModalOpen}
+            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           >
             <FaTrash className="w-3 h-3" />
             전체 삭제
@@ -320,7 +328,8 @@ const ParticipantsPage: React.FC = () => {
                   checked={isAllSelected}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                   className="w-4 h-4"
-                  disabled={isDeleting}
+                  disabled={isDeleting || isModalOpen || isBulkModalOpen}
+                  tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                 />
               </th>
               <th className="px-4 py-2">{t('participants.tableHeaderName')}</th>
@@ -340,7 +349,8 @@ const ParticipantsPage: React.FC = () => {
                     checked={selectedIds.has(p.id)}
                     onChange={(e) => handleSelectOne(p.id, e.target.checked)}
                     className="w-4 h-4"
-                    disabled={isDeleting}
+                    disabled={isDeleting || isModalOpen || isBulkModalOpen}
+                    tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                   />
                 </td>
                 <td className="px-4 py-2">{p.name}</td>
@@ -349,8 +359,22 @@ const ParticipantsPage: React.FC = () => {
                 <td className="px-4 py-2">{p.chips}</td>
                 <td className="px-4 py-2">{getParticipantLocation(p.id)}</td>
                 <td className="px-4 py-2">
-                  <button onClick={() => handleOpenModal(p)} className="btn btn-secondary btn-xs mr-2">{t('participants.actionEdit')}</button>
-                  <button onClick={() => handleDelete(p.id)} className="btn btn-danger btn-xs">{t('participants.actionDelete')}</button>
+                  <button
+                    onClick={() => handleOpenModal(p)}
+                    className="btn btn-secondary btn-xs mr-2"
+                    disabled={isModalOpen || isBulkModalOpen}
+                    tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+                  >
+                    {t('participants.actionEdit')}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="btn btn-danger btn-xs"
+                    disabled={isModalOpen || isBulkModalOpen}
+                    tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+                  >
+                    {t('participants.actionDelete')}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -358,18 +382,39 @@ const ParticipantsPage: React.FC = () => {
         </table>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingParticipant ? t('participants.modalTitleEdit') : t('participants.modalTitleAdd')}>
-        <form onSubmit={handleAddOrUpdateParticipant} className="space-y-4">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingParticipant ? t('participants.modalTitleEdit') : t('participants.modalTitleAdd')}
+        closeOnEsc={true}
+        closeOnBackdrop={true}
+        showCloseButton={true}
+        preventScroll={true}
+      >
+        <form
+          onSubmit={handleAddOrUpdateParticipant}
+          className="space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium mb-1">{t('participants.modalLabelName')}</label>
-            <input type="text" value={newParticipant.name} onChange={e => setNewParticipant(p => ({ ...p, name: e.target.value }))} className="input-field w-full" required />
+            <input
+              key="participant-name-input"
+              type="text"
+              value={newParticipant.name}
+              onChange={e => setNewParticipant(p => ({ ...p, name: e.target.value }))}
+              className="input-field w-full"
+              autoFocus
+              required
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">{t('participants.modalLabelPhone')}</label>
             <input
+              key="participant-phone-input"
               type="text"
               value={newParticipant.phone}
-              onChange={e => {
+              onChange={e => setNewParticipant(p => ({ ...p, phone: e.target.value }))}
+              onBlur={e => {
                 const formattedValue = formatPhoneNumber(e.target.value);
                 setNewParticipant(p => ({ ...p, phone: formattedValue }));
               }}
@@ -380,7 +425,13 @@ const ParticipantsPage: React.FC = () => {
           </div>
            <div>
             <label className="block text-sm font-medium mb-1">{t('participants.modalLabelChips')}</label>
-            <input type="number" value={newParticipant.chips} onChange={e => setNewParticipant(p => ({ ...p, chips: Number(e.target.value) }))} className="input-field w-full" />
+            <input
+              key="participant-chips-input"
+              type="number"
+              value={newParticipant.chips}
+              onChange={e => setNewParticipant(p => ({ ...p, chips: Number(e.target.value) }))}
+              className="input-field w-full"
+            />
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">{t('participants.modalButtonCancel')}</button>
