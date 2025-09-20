@@ -1,5 +1,6 @@
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -124,9 +125,10 @@ const TablesPage: React.FC = () => {
                     { tableId: toTableId, seatIndex: toSeatIndex }
                 );
                 handleCloseMoveSeatModal();
+                toast.success('참가자가 성공적으로 이동되었습니다.');
             } catch (error) {
                 logger.error('Failed to move participant:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
-                alert(`${t('tables.errorMoveFailed')} ${error instanceof Error ? error.message : String(error)}`);
+                toast.error('참가자 이동 중 오류가 발생했습니다.');
             }
         }
     };

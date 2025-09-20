@@ -10,8 +10,8 @@ import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsMo
 import CSVUploadButton from '../components/upload/CSVUploadButton';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
-import { ParsedParticipant, downloadCSV, generateSampleCSV } from '../utils/csvParser';
-import { FaTrash, FaPlus, FaFileExport } from '../components/Icons/ReactIconsReplacement';
+import { ParsedParticipant, downloadCSV, generateParticipantsCSV } from '../utils/csvParser';
+import { FaTrash, FaPlus } from '../components/Icons/ReactIconsReplacement';
 
 const ParticipantsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -234,10 +234,20 @@ const ParticipantsPage: React.FC = () => {
     }
   };
 
-  // 템플릿 다운로드
-  const handleDownloadTemplate = () => {
-    const csvContent = generateSampleCSV();
-    downloadCSV(csvContent);
+  // 참가자 데이터 CSV 내보내기
+  const handleExportParticipants = () => {
+    const participantsData = filteredParticipants.map(p => ({
+      name: p.name,
+      phone: p.phone || '',
+      chips: p.chips,
+      status: p.status,
+      location: getParticipantLocation(p.id)
+    }));
+
+    const csvContent = generateParticipantsCSV(participantsData);
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `participants_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   if (participantsLoading || tablesLoading) return <div>{t('participants.loading')}</div>;
@@ -261,7 +271,6 @@ const ParticipantsPage: React.FC = () => {
             disabled={isModalOpen || isBulkModalOpen}
             tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           />
-          <CSVUploadButton onFileRead={handleCSVContent} disabled={isDeleting || isModalOpen || isBulkModalOpen} />
           <button
             onClick={() => setIsBulkModalOpen(true)}
             className="btn btn-secondary flex items-center gap-2"
@@ -282,14 +291,15 @@ const ParticipantsPage: React.FC = () => {
           </button>
         </div>
         <div className="flex gap-2 items-center">
+          <CSVUploadButton onFileRead={handleCSVContent} disabled={isDeleting || isModalOpen || isBulkModalOpen} />
+          <span className="text-gray-400">|</span>
           <button
-            onClick={handleDownloadTemplate}
-            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-            disabled={isModalOpen || isBulkModalOpen}
+            onClick={handleExportParticipants}
+            className="btn btn-primary"
+            disabled={isModalOpen || isBulkModalOpen || filteredParticipants.length === 0}
             tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           >
-            <FaFileExport className="w-3 h-3" />
-            CSV 템플릿 다운로드
+            엑셀 내보내기 ({filteredParticipants.length}명)
           </button>
           <span className="text-gray-400">|</span>
           {selectedIds.size > 0 && (
@@ -334,10 +344,10 @@ const ParticipantsPage: React.FC = () => {
               </th>
               <th className="px-4 py-2">{t('participants.tableHeaderName')}</th>
               <th className="px-4 py-2">{t('participants.tableHeaderPhone')}</th>
-              <th className="px-4 py-2">{t('participants.tableHeaderStatus')}</th>
               <th className="px-4 py-2">{t('participants.tableHeaderChips')}</th>
-              <th className="px-4 py-2">{t('participants.tableHeaderLocation')}</th>
+              <th className="px-4 py-2 whitespace-nowrap">{t('participants.tableHeaderLocation')}</th>
               <th className="px-4 py-2">{t('participants.tableHeaderActions')}</th>
+              <th className="px-4 py-2">{t('participants.tableHeaderStatus')}</th>
             </tr>
           </thead>
           <tbody>
@@ -355,9 +365,8 @@ const ParticipantsPage: React.FC = () => {
                 </td>
                 <td className="px-4 py-2">{p.name}</td>
                 <td className="px-4 py-2">{p.phone}</td>
-                <td className="px-4 py-2">{p.status}</td>
                 <td className="px-4 py-2">{p.chips}</td>
-                <td className="px-4 py-2">{getParticipantLocation(p.id)}</td>
+                <td className="px-4 py-2 whitespace-nowrap">{getParticipantLocation(p.id)}</td>
                 <td className="px-4 py-2">
                   <button
                     onClick={() => handleOpenModal(p)}
@@ -376,6 +385,7 @@ const ParticipantsPage: React.FC = () => {
                     {t('participants.actionDelete')}
                   </button>
                 </td>
+                <td className="px-4 py-2">{p.status}</td>
               </tr>
             ))}
           </tbody>

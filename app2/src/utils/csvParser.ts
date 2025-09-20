@@ -121,17 +121,42 @@ export function generateSampleCSV(): string {
 }
 
 /**
+ * 참가자 데이터를 CSV 형태로 변환
+ */
+export function generateParticipantsCSV(
+  participants: Array<{
+    name: string;
+    phone: string;
+    chips: number;
+    status: string;
+    location?: string;
+  }>
+): string {
+  const header = '이름,연락처,칩,위치,상태';
+  const rows = participants.map(p => {
+    const escapedName = `"${p.name.replace(/"/g, '""')}"`;
+    const escapedPhone = `"${p.phone.replace(/"/g, '""')}"`;
+    const escapedLocation = `"${(p.location || '대기중').replace(/"/g, '""')}"`;
+    const escapedStatus = `"${p.status.replace(/"/g, '""')}"`;
+
+    return `${escapedName},${escapedPhone},${p.chips},${escapedLocation},${escapedStatus}`;
+  });
+
+  return [header, ...rows].join('\n');
+}
+
+/**
  * CSV 다운로드
  */
 export function downloadCSV(content: string, filename: string = 'participants_template.csv') {
   const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

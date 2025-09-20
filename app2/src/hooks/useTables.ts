@@ -81,10 +81,11 @@ export const useTables = () => {
     try {
       await updateDoc(tableRef, data);
       logAction('table_details_updated', { tableId, ...data });
+      toast.success('테이블 정보가 성공적으로 업데이트되었습니다.');
     } catch (e) {
       logger.error('Error updating table details:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
-      throw e;
+      toast.error('테이블 정보 업데이트 중 오류가 발생했습니다.');
     }
   }, []);
 
@@ -95,7 +96,7 @@ export const useTables = () => {
     } catch (e) {
       logger.error('Error updating table position:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
-      throw e;
+      toast.error('테이블 위치 업데이트 중 오류가 발생했습니다.');
     }
   }, []);
 
@@ -111,7 +112,7 @@ export const useTables = () => {
     } catch (e) {
         logger.error('Error updating table order:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
         setError(e as Error);
-        throw e;
+        toast.error('테이블 순서 업데이트 중 오류가 발생했습니다.');
     }
   }, []);
 
@@ -131,6 +132,7 @@ export const useTables = () => {
     } catch (e) {
       logger.error('Error opening new table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
+      toast.error('새 테이블 생성 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -144,7 +146,7 @@ export const useTables = () => {
     } catch (e) {
       logger.error('Error activating table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
-      throw e;
+      toast.error('테이블 활성화 중 오류가 발생했습니다.');
     }
   }, []);
   
@@ -154,14 +156,16 @@ export const useTables = () => {
       const balancingResult: BalancingResult[] = [];
       const movedParticipantsDetails: any[] = [];
 
-      await runTransaction(db, async (transaction) => {
+      const transactionResult = await runTransaction(db, async (transaction) => {
         const tablesSnapshot = await getDocs(tablesCollection);
         const allTables: Table[] = tablesSnapshot.docs
           .map(d => ({ id: d.id, ...d.data() } as Table));
 
         const tableToClose = allTables.find(t => t.id === tableIdToClose);
         if (!tableToClose) {
-          throw new Error(`Table with id ${tableIdToClose} not found.`);
+          logger.error('Table not found for closing', new Error(`Table with id ${tableIdToClose} not found`), { component: 'useTables' });
+          toast.error('닫으려는 테이블을 찾을 수 없습니다.');
+          return { balancingResult: [], movedParticipantsDetails: [] };
         }
 
         const participantsToMove = (tableToClose.seats || [])
@@ -177,7 +181,9 @@ export const useTables = () => {
 
         const openTables = allTables.filter(t => t.id !== tableIdToClose && t.status === 'open');
         if (openTables.length === 0) {
-            throw new Error("참가자를 이동시킬 수 있는 활성화된 테이블이 없습니다.");
+            logger.error('No open tables available for participant relocation', new Error('No open tables'), { component: 'useTables' });
+            toast.error('참가자를 이동시킬 수 있는 활성화된 테이블이 없습니다.');
+            return { balancingResult: [], movedParticipantsDetails: [] };
         }
         
         const mutableOpenTables = openTables.map(t => ({
@@ -196,7 +202,11 @@ export const useTables = () => {
 
           if (emptySeatIndexes.length === 0) {
              const alternativeTables = mutableOpenTables.filter(t => t.id !== targetTable?.id && t.seats.some(s => s === null));
-             if(alternativeTables.length === 0) throw new Error(`Balancing failed: No seats available.`);
+             if(alternativeTables.length === 0) {
+               logger.error('Balancing failed: No seats available', new Error('No seats available'), { component: 'useTables' });
+               toast.error('참가자를 배치할 빈 좌석이 없습니다.');
+               return { balancingResult: [], movedParticipantsDetails: [] };
+             }
              
              targetTable = alternativeTables[Math.floor(Math.random() * alternativeTables.length)];
              if (!targetTable) continue;
@@ -232,9 +242,11 @@ export const useTables = () => {
         logAction('participants_moved', {
             details: movedParticipantsDetails
         });
+
+        return { balancingResult, movedParticipantsDetails };
       });
 
-      return balancingResult;
+      return transactionResult?.balancingResult || [];
     } catch (e) {
       const errorContext = {
         failedAction: 'close_table',
@@ -244,7 +256,8 @@ export const useTables = () => {
       logAction('action_failed', errorContext);
       logger.error('Error closing table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
-      throw e;
+      toast.error('테이블 닫기 중 오류가 발생했습니다.');
+      return [];
     } finally {
       setLoading(false);
     }
@@ -265,12 +278,16 @@ export const useTables = () => {
         .filter(t => t.status === 'open');
 
       if (openTables.length === 0) {
-        throw new Error("좌석을 배정할 수 있는 활성화된 테이블이 없습니다.");
+        logger.error('No open tables for seat assignment', new Error('No open tables'), { component: 'useTables' });
+        toast.error('좌석을 배정할 수 있는 활성화된 테이블이 없습니다.');
+        return;
       }
 
       const totalSeats = openTables.reduce((sum, table) => sum + (table.seats?.length || maxSeatsSetting), 0);
       if (participants.length > totalSeats) {
-        throw new Error(`참가자 수(${participants.length})가 전체 좌석 수(${totalSeats})보다 많아 배정할 수 없습니다.`);
+        logger.error('Too many participants for available seats', new Error(`Participants: ${participants.length}, Seats: ${totalSeats}`), { component: 'useTables' });
+        toast.error(`참가자 수(${participants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`);
+        return;
       }
 
       const shuffledParticipants = shuffleArray(participants);
@@ -325,9 +342,8 @@ export const useTables = () => {
       };
       logAction('action_failed', errorContext);
       logger.error('좌석 자동 재배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
-      toast.error(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
+      toast.error('좌석 자동 배정 중 오류가 발생했습니다.');
       setError(e as Error);
-      throw e;
     } finally {
       setLoading(false);
     }
@@ -346,13 +362,17 @@ export const useTables = () => {
                 // Same table move
                 const tableRef = doc(db, 'tables', from.tableId);
                 const tableSnap = await transaction.get(tableRef);
-                if (!tableSnap.exists()) throw new Error("Table not found.");
-                
+                if (!tableSnap.exists()) {
+                  logger.error('Table not found during seat move', new Error('Table not found'), { component: 'useTables' });
+                  toast.error('테이블을 찾을 수 없습니다.');
+                  return;
+                }
+
                 const seats = [...tableSnap.data().seats];
                 if (seats[to.seatIndex] !== null) {
-                  // This case should be prevented by UI (canDrop in Seat.tsx)
-                  // but as a safeguard:
-                  throw new Error("Target seat is already occupied.");
+                  logger.error('Target seat already occupied', new Error('Seat occupied'), { component: 'useTables' });
+                  toast.error('해당 좌석에 이미 참가자가 있습니다.');
+                  return;
                 }
                 
                 seats[to.seatIndex] = participantId;
@@ -371,15 +391,18 @@ export const useTables = () => {
                 ]);
 
                 if (!fromTableSnap.exists() || !toTableSnap.exists()) {
-                    throw new Error("Table information could not be found.");
+                    logger.error('Table information not found during cross-table move', new Error('Table not found'), { component: 'useTables' });
+                    toast.error('테이블 정보를 찾을 수 없습니다.');
+                    return;
                 }
                 
                 const fromSeats = [...fromTableSnap.data().seats];
                 const toSeats = [...toTableSnap.data().seats];
 
                 if (toSeats[to.seatIndex] !== null) {
-                  // This case should be prevented by UI (canDrop in Seat.tsx)
-                  throw new Error("Target seat is already occupied.");
+                  logger.error('Target seat already occupied in cross-table move', new Error('Seat occupied'), { component: 'useTables' });
+                  toast.error('해당 좌석에 이미 참가자가 있습니다.');
+                  return;
                 }
 
                 fromSeats[from.seatIndex] = null;
@@ -396,7 +419,7 @@ export const useTables = () => {
     } catch (e) {
         logger.error('An error occurred while moving the seat:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
         setError(e as Error);
-        throw e;
+        toast.error('좌석 이동 중 오류가 발생했습니다.');
     }
   }, [tables]);
 
@@ -417,6 +440,7 @@ export const useTables = () => {
     } catch (e) {
       logger.error('탈락 처리 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
+      toast.error('참가자 탈락 처리 중 오류가 발생했습니다.');
     }
   }, [tables]);
 
@@ -426,7 +450,9 @@ export const useTables = () => {
         const tableRef = doc(db, 'tables', tableId);
         const tableSnap = await transaction.get(tableRef);
         if (!tableSnap.exists()) {
-          throw new Error("테이블을 찾을 수 없습니다.");
+          logger.error('Table not found for max seats update', new Error('Table not found'), { component: 'useTables' });
+          toast.error('테이블을 찾을 수 없습니다.');
+          return;
         }
 
         const table = tableSnap.data() as Table;
@@ -441,7 +467,9 @@ export const useTables = () => {
 
           if (occupiedSeatsToRemove.length > 0) {
             const playerInfo = occupiedSeatsToRemove.map(s => `${s.seatNum}번(${getParticipantName(s.pId!)})`).join(', ');
-            throw new Error(`좌석 수를 줄이려면 먼저 다음 플레이어를 이동시켜야 합니다: ${playerInfo}`);
+            logger.error('Cannot reduce seats with occupied positions', new Error('Occupied seats'), { component: 'useTables' });
+            toast.error(`좌석 수를 줄이려면 먼저 다음 플레이어를 이동시켜야 합니다: ${playerInfo}`);
+            return;
           }
         }
 
@@ -457,7 +485,7 @@ export const useTables = () => {
     } catch (e) {
       logger.error('최대 좌석 수 변경 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       setError(e as Error);
-      throw e; // Rethrow to be caught by the UI
+      toast.error('최대 좌석 수 변경 중 오류가 발생했습니다.');
     }
   }, []);
 
@@ -480,28 +508,37 @@ export const useTables = () => {
         .sort((a, b) => a.tableNumber - b.tableNumber);
 
       if (openTables.length === 0) {
-        throw new Error("칩 균형 재배치를 할 수 있는 활성화된 테이블이 없습니다.");
+        logger.error('No open tables for chip balance', new Error('No open tables'), { component: 'useTables' });
+        toast.error('칩 균형 재배치를 할 수 있는 활성화된 테이블이 없습니다.');
+        return;
       }
 
       const totalSeats = openTables.reduce((sum, table) => sum + (table.seats?.length || maxSeatsSetting), 0);
       if (activeParticipants.length > totalSeats) {
-        throw new Error(`활성 참가자 수(${activeParticipants.length})가 전체 좌석 수(${totalSeats})보다 많아 배정할 수 없습니다.`);
+        logger.error('Too many active participants for chip balance', new Error(`Participants: ${activeParticipants.length}, Seats: ${totalSeats}`), { component: 'useTables' });
+        toast.error(`활성 참가자 수(${activeParticipants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`);
+        return;
       }
 
       // 참가자를 칩 수 기준으로 정렬 (내림차순)
       const sortedParticipants = [...activeParticipants].sort((a, b) => (b.chips || 0) - (a.chips || 0));
 
-      // Snake Draft 방식: 칩 레벨별 그룹 분류
+      // 테이블 개수 기반 그룹 분류 + 나머지 참가자
       const totalPlayers = sortedParticipants.length;
       const totalTables = openTables.length;
 
-      // 그룹 크기 계산 (상위/중간/하위로 최대한 균등 분할)
-      const groupSize = Math.ceil(totalPlayers / 3);
-      const topGroup = sortedParticipants.slice(0, groupSize);
-      const middleGroup = sortedParticipants.slice(groupSize, groupSize * 2);
-      const bottomGroup = sortedParticipants.slice(groupSize * 2);
+      // 각 테이블에 상위/중간/하위 1명씩 필수 배치용 그룹
+      const topGroup = sortedParticipants.slice(0, totalTables); // 상위 N명 (N = 테이블 수)
+      const middleStart = Math.floor(totalPlayers / 3);
+      const middleGroup = sortedParticipants.slice(middleStart, middleStart + totalTables); // 중간 N명
+      const bottomGroup = sortedParticipants.slice(-totalTables); // 하위 N명
 
-      logger.info(`칩 그룹 분류 완료: 상위그룹 ${topGroup.length}명, 중간그룹 ${middleGroup.length}명, 하위그룹 ${bottomGroup.length}명`, {
+      // 나머지 참가자들 (필수 배치에 포함되지 않은 사람들)
+      const remainingParticipants = sortedParticipants.filter(p =>
+        !topGroup.includes(p) && !middleGroup.includes(p) && !bottomGroup.includes(p)
+      );
+
+      logger.info(`💎 그룹 분류 완료: 상위 ${topGroup.length}명, 중간 ${middleGroup.length}명, 하위 ${bottomGroup.length}명 (각 테이블 1명씩), 나머지 ${remainingParticipants.length}명`, {
         component: 'useTables'
       });
 
@@ -524,8 +561,8 @@ export const useTables = () => {
         chipGroups: { top: 0, middle: 0, bottom: 0 }
       }));
 
-      // Smart Balance 헬퍼 함수들 - 인원수 우선 고려
-      const findBestTable = (tables: TableState[], preferLowChips: boolean): TableState | null => {
+      // 간단하고 직관적인 칩 균형 헬퍼 함수
+      const findBestTableForBalance = (tables: TableState[], participantChips: number): TableState | null => {
         const availableTables = tables.filter(table => table.participants.length < table.maxSeats);
         if (availableTables.length === 0) return null;
 
@@ -533,16 +570,44 @@ export const useTables = () => {
         const minPlayers = Math.min(...availableTables.map(t => t.participants.length));
         const tablesWithMinPlayers = availableTables.filter(t => t.participants.length === minPlayers);
 
-        // 2단계: 그 중에서 칩 기준으로 선택
-        if (preferLowChips) {
-          return tablesWithMinPlayers.reduce((lowest, current) =>
-            current.totalChips < lowest.totalChips ? current : lowest
-          );
-        } else {
-          return tablesWithMinPlayers.reduce((highest, current) =>
-            current.totalChips > highest.totalChips ? current : highest
-          );
+        if (tablesWithMinPlayers.length === 1) {
+          return tablesWithMinPlayers[0] || null;
         }
+
+        // 2단계: 각 테이블에 참가자를 배치했을 때의 표준편차 계산 (단순화)
+        const tableScores = tablesWithMinPlayers.map(table => {
+          // 이 테이블에 참가자를 배치했을 때의 새로운 칩 총량
+          const newChips = table.totalChips + participantChips;
+
+          // 모든 테이블의 새로운 칩 분포 계산
+          const otherTables = tables.filter(t => t.id !== table.id);
+          const allNewChips = [...otherTables.map(t => t.totalChips), newChips];
+
+          // 평균 계산
+          const avgChips = allNewChips.reduce((sum, chips) => sum + chips, 0) / allNewChips.length;
+
+          // 표준편차 계산 (간단한 방식)
+          const variance = allNewChips.reduce((sum, chips) => sum + Math.pow(chips - avgChips, 2), 0) / allNewChips.length;
+          const standardDeviation = Math.sqrt(variance);
+
+          return {
+            table,
+            standardDeviation,
+            newChips
+          };
+        });
+
+        // 3단계: 표준편차가 가장 낮은 테이블 선택
+        const minStdDev = Math.min(...tableScores.map(score => score.standardDeviation));
+        const bestTables = tableScores.filter(score => score.standardDeviation === minStdDev);
+
+        // 4단계: 동일한 표준편차면 랜덤 선택
+        if (bestTables.length > 1) {
+          const randomIndex = Math.floor(Math.random() * bestTables.length);
+          return bestTables[randomIndex]?.table || null;
+        }
+
+        return bestTables[0]?.table || null;
       };
 
       // 균형 검증 헬퍼 함수
@@ -552,77 +617,96 @@ export const useTables = () => {
         return maxDiff <= 1;
       };
 
-      // Smart Balance 알고리즘: 칩 균형 + 그룹 균등 분포
-      let topIndex = 0, middleIndex = 0, bottomIndex = 0;
-
-      logger.info(`🎯 Smart Balance 알고리즘 시작: 칩 균형과 그룹 균등 분포를 동시에 고려`, {
+      logger.info(`🎯 Guaranteed Balance 알고리즘 시작: 필수 분산 배치 + 균형 최적화`, {
         component: 'useTables'
       });
 
-      // 라운드별로 각 그룹에서 한 명씩 선택하여 배치
-      while (topIndex < topGroup.length || middleIndex < middleGroup.length || bottomIndex < bottomGroup.length) {
+      // 1단계: 필수 분산 배치 - 각 테이블에 상위/중간/하위 1명씩
+      logger.info(`📍 1단계: 필수 분산 배치 (각 테이블에 상위/중간/하위 1명씩)`, {
+        component: 'useTables'
+      });
 
-        // Round 1: 상위 그룹에서 한 명 배치 (인원 최소 + 칩 최소 테이블)
-        if (topIndex < topGroup.length) {
-          const participant = topGroup[topIndex];
-          const targetTable = findBestTable(tableStates, true); // preferLowChips = true
-          if (targetTable && participant) {
-            targetTable.participants.push(participant.id);
-            targetTable.totalChips += participant.chips || 0;
-            targetTable.chipGroups.top++;
+      for (let i = 0; i < totalTables; i++) {
+        const table = tableStates[i];
+        if (!table) continue;
 
-            logger.debug(`상위그룹 ${participant.name} (${(participant.chips || 0).toLocaleString()}칩) → 테이블 ${targetTable.tableNumber} (인원: ${targetTable.participants.length}명, 총칩: ${targetTable.totalChips.toLocaleString()})`, {
-              component: 'useTables'
-            });
-            topIndex++;
-          }
+        // 상위 그룹 배치
+        const topParticipant = topGroup[i];
+        if (topParticipant) {
+          table.participants.push(topParticipant.id);
+          table.totalChips += topParticipant.chips || 0;
+          table.chipGroups.top++;
+          logger.debug(`필수배치 - 상위 ${topParticipant.name} (${(topParticipant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
+            component: 'useTables'
+          });
         }
 
-        // Round 2: 하위 그룹에서 한 명 배치 (인원 최소 + 칩 최대 테이블 - 균형 맞추기)
-        if (bottomIndex < bottomGroup.length) {
-          const participant = bottomGroup[bottomIndex];
-          const targetTable = findBestTable(tableStates, false); // preferLowChips = false
-          if (targetTable && participant) {
-            targetTable.participants.push(participant.id);
-            targetTable.totalChips += participant.chips || 0;
-            targetTable.chipGroups.bottom++;
-
-            logger.debug(`하위그룹 ${participant.name} (${(participant.chips || 0).toLocaleString()}칩) → 테이블 ${targetTable.tableNumber} (인원: ${targetTable.participants.length}명, 총칩: ${targetTable.totalChips.toLocaleString()})`, {
-              component: 'useTables'
-            });
-            bottomIndex++;
-          }
+        // 중간 그룹 배치
+        const middleParticipant = middleGroup[i];
+        if (middleParticipant) {
+          table.participants.push(middleParticipant.id);
+          table.totalChips += middleParticipant.chips || 0;
+          table.chipGroups.middle++;
+          logger.debug(`필수배치 - 중간 ${middleParticipant.name} (${(middleParticipant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
+            component: 'useTables'
+          });
         }
 
-        // Round 3: 중간 그룹에서 한 명 배치 (인원 최소 + 칩 최소 테이블)
-        if (middleIndex < middleGroup.length) {
-          const participant = middleGroup[middleIndex];
-          const targetTable = findBestTable(tableStates, true); // preferLowChips = true
-          if (targetTable && participant) {
-            targetTable.participants.push(participant.id);
-            targetTable.totalChips += participant.chips || 0;
-            targetTable.chipGroups.middle++;
-
-            logger.debug(`중간그룹 ${participant.name} (${(participant.chips || 0).toLocaleString()}칩) → 테이블 ${targetTable.tableNumber} (인원: ${targetTable.participants.length}명, 총칩: ${targetTable.totalChips.toLocaleString()})`, {
-              component: 'useTables'
-            });
-            middleIndex++;
-          }
+        // 하위 그룹 배치
+        const bottomParticipant = bottomGroup[i];
+        if (bottomParticipant) {
+          table.participants.push(bottomParticipant.id);
+          table.totalChips += bottomParticipant.chips || 0;
+          table.chipGroups.bottom++;
+          logger.debug(`필수배치 - 하위 ${bottomParticipant.name} (${(bottomParticipant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
+            component: 'useTables'
+          });
         }
       }
+
+      // 2단계: 나머지 참가자 균형 배치
+      logger.info(`⚖️ 2단계: 나머지 ${remainingParticipants.length}명 균형 배치 (표준편차 최소화)`, {
+        component: 'useTables'
+      });
+
+      for (const participant of remainingParticipants) {
+        const targetTable = findBestTableForBalance(tableStates, participant.chips || 0);
+        if (targetTable && participant) {
+          targetTable.participants.push(participant.id);
+          targetTable.totalChips += participant.chips || 0;
+
+          // 참가자의 칩 레벨에 따라 그룹 카운터 증가
+          const participantChips = participant.chips || 0;
+          const topThreshold = topGroup[topGroup.length - 1]?.chips || 0;
+          const bottomThreshold = bottomGroup[0]?.chips || 0;
+
+          if (participantChips >= topThreshold) {
+            targetTable.chipGroups.top++;
+          } else if (participantChips <= bottomThreshold) {
+            targetTable.chipGroups.bottom++;
+          } else {
+            targetTable.chipGroups.middle++;
+          }
+
+          logger.debug(`균형배치 - ${participant.name} (${participantChips.toLocaleString()}칩) → 테이블 ${targetTable.tableNumber} (인원: ${targetTable.participants.length}명, 총칩: ${targetTable.totalChips.toLocaleString()})`, {
+            component: 'useTables'
+          });
+        }
+      }
+
 
       // 각 테이블의 좌석 배치
       for (const tableState of tableStates) {
         const table = openTables.find(t => t.id === tableState.id);
         if (!table) continue;
-        
+
         const seatCount = table.seats?.length || maxSeatsSetting;
         const newSeats: (string | null)[] = Array(seatCount).fill(null);
-        
+
         // 랜덤하게 좌석 배치
         const availableSeatIndexes = Array.from({ length: seatCount }, (_, i) => i);
         const shuffledIndexes = shuffleArray(availableSeatIndexes);
-        
+
         tableState.participants.forEach((participantId, i) => {
           if (i < shuffledIndexes.length) {
             const seatIndex = shuffledIndexes[i];
@@ -631,7 +715,7 @@ export const useTables = () => {
             }
           }
         });
-        
+
         const tableRef = doc(db, 'tables', table.id);
         batch.update(tableRef, { seats: newSeats });
       }
@@ -667,7 +751,7 @@ export const useTables = () => {
       const playerCountDiff = maxPlayers - minPlayers;
 
       const chipPercentDiff = avgChips > 0 ? (chipRange / avgChips * 100).toFixed(1) : '0';
-      logger.info(`🎯 Smart Balance 칩 균형 재배치 완료`, {
+      logger.info(`🎯 Guaranteed Balance 칩 균형 재배치 완료 (필수 분산 + 표준편차 최적화)`, {
         component: 'useTables'
       });
       logger.info(`📊 균형 성과 분석:`, {
@@ -738,12 +822,8 @@ export const useTables = () => {
       // 사용자 피드백 메시지
       if (!playerCountBalanced) {
         toast.warning(`⚠️ 인원 불균형: 테이블 간 최대 ${playerCountDiff}명 차이가 발생했습니다.`);
-      } else if (overallScore >= 85) {
-        toast.success(`🎉 균형 재배치 완료! 전체 점수: ${overallScore.toFixed(1)}점 (우수)`);
-      } else if (overallScore >= 70) {
-        toast.success(`✅ 균형 재배치 완료! 전체 점수: ${overallScore.toFixed(1)}점 (양호)`);
       } else {
-        toast.warning(`⚠️ 균형 재배치 완료하였으나 점수가 낮습니다: ${overallScore.toFixed(1)}점`);
+        toast.success(`✅ 칩 균형 재배치가 완료되었습니다.`);
       }
 
       logAction('seats_reassigned_with_balancing', {
@@ -762,9 +842,8 @@ export const useTables = () => {
       };
       logAction('action_failed', errorContext);
       logger.error('칩 균형 재배치 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
-      toast.error(`오류 발생: ${e instanceof Error ? e.message : String(e)}`);
+      toast.error('칩 균형 재배치 중 오류가 발생했습니다.');
       setError(e as Error);
-      throw e;
     } finally {
       setLoading(false);
     }

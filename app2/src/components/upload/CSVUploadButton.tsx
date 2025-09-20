@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { FaFileExport } from '../Icons/ReactIconsReplacement';
 import { readCSVFile } from '../../utils/csvParser';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
@@ -55,10 +54,9 @@ const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled 
       <button
         onClick={handleClick}
         disabled={disabled}
-        className="btn btn-secondary flex items-center gap-2"
+        className="btn btn-secondary"
       >
-        <FaFileExport className="w-4 h-4" />
-        CSV 업로드
+        엑셀 업로드
       </button>
     </>
   );
