@@ -238,8 +238,13 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
       await ApplicationHistoryService.confirmApplication(applicant.id, assignments);
       
-      // 🔄 jobPosting의 confirmedStaff 배열 업데이트
+      // 🔄 jobPosting의 confirmedStaff 배열 업데이트 (v2.1: 지원서 메타데이터 추가)
       await runTransaction(db, async (transaction) => {
+        // 🆕 지원 타입 판별 (날짜 수에 따라)
+        const totalDates = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
+        const applicationType: 'single' | 'multi' = totalDates > 1 ? 'multi' : 'single';
+        const applicationGroupId = applicationType === 'multi' ? `${applicant.id}_group_${Date.now()}` : null;
+
         assignments.forEach(assignment => {
           const { timeSlot, role, dates } = assignment;
           // dates 배열의 각 날짜에 대해 staffEntry 생성
@@ -249,14 +254,23 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
               name: applicant.applicantName,
               role,
               timeSlot,
-              confirmedAt: new Date()
+              confirmedAt: new Date(),
+
+              // 🆕 v2.1: 지원서 구분 메타데이터
+              applicationId: applicant.id,
+              applicationType
             };
-            
+
+            // 🔧 멀티데이일 때만 applicationGroupId 추가 (undefined 방지)
+            if (applicationType === 'multi' && applicationGroupId) {
+              staffEntry.applicationGroupId = applicationGroupId;
+            }
+
             // date가 존재하고 유효한 값일 때만 추가
             if (date && date.trim() !== '') {
               staffEntry.date = date;
             }
-            
+
             transaction.update(jobPostingRef, {
               confirmedStaff: arrayUnion(staffEntry)
             });

@@ -153,32 +153,46 @@ export interface DateSpecificRequirement {
 /**
  * 확정된 스태프 정보
  * @description 구인공고에 확정된 스태프 정보를 저장합니다.
- * 
+ *
  * 필드 표준화:
  * - userId 필드는 다른 컬렉션의 staffId와 동일한 의미입니다.
  * - 구인공고 컨텍스트에서는 userId를 사용하지만, 실제로는 스태프 ID를 의미합니다.
+ *
+ * v2.1 업데이트:
+ * - 지원서별 구분을 위한 메타데이터 필드 추가
+ * - 멀티데이/단일일 지원 구분 기능 추가
  */
 export interface ConfirmedStaff {
-  /** 
+  /**
    * 사용자 ID (실제로는 스태프 ID와 동일한 의미)
    * @description 다른 컬렉션의 staffId와 동일한 값을 가집니다.
    */
   userId: string;
-  
+
   /** 스태프 이름 */
   name: string;
-  
+
   /** 역할 */
   role: string;
-  
+
   /** 시간대 */
   timeSlot: string;
-  
+
   /** 날짜 (특정 날짜에만 적용되는 경우) */
   date?: string;
-  
+
   /** 확정 시간 */
   confirmedAt: Timestamp;
+
+  // 🆕 v2.1: 지원서 구분 메타데이터
+  /** 원본 지원서 ID (중복 확정 방지용) */
+  applicationId?: string;
+
+  /** 지원 타입 (단일일 vs 멀티데이) */
+  applicationType?: 'single' | 'multi';
+
+  /** 멀티데이 그룹 ID (연속 날짜 지원 시) */
+  applicationGroupId?: string;
 }
 
 /**
