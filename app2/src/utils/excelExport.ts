@@ -24,12 +24,10 @@ export const exportTablesToExcel = (
     // 통계 데이터 계산
     const stats = calculateStatistics(tables, participants);
 
-    // 통계 정보를 워크시트 최상단에 추가
-    worksheetData.push(['전체 칩', formatChips(stats.totalChips)]);
-    worksheetData.push(['평균 칩', formatChips(Math.round(stats.averageChips))]);
-    worksheetData.push(['테이블 평균 칩', formatChips(Math.round(stats.tableAverageChips))]);
-    worksheetData.push(['최대 테이블 칩', formatChips(stats.maxTableChips)]);
-    worksheetData.push(['최소 테이블 칩', formatChips(stats.minTableChips)]);
+    // 통계 정보를 워크시트 최상단에 그리드 형식으로 추가
+    worksheetData.push(['전체 칩', formatChips(stats.totalChips), '총 인원', stats.totalParticipants]);
+    worksheetData.push(['평균 칩', formatChips(Math.round(stats.averageChips)), '총 테이블 수', stats.totalTables]);
+    worksheetData.push(['테이블 평균 칩', formatChips(Math.round(stats.tableAverageChips)), '빈자리', stats.totalEmptySeats]);
 
     // 통계와 테이블 데이터 구분을 위한 빈 행 2개 추가
     worksheetData.push([]);
@@ -171,8 +169,9 @@ interface Statistics {
   totalChips: number;
   averageChips: number;
   tableAverageChips: number;
-  maxTableChips: number;
-  minTableChips: number;
+  totalParticipants: number;
+  totalTables: number;
+  totalEmptySeats: number;
   tableChips: { [tableId: string]: number };
 }
 
@@ -198,20 +197,25 @@ const calculateStatistics = (tables: Table[], participants: Participant[]): Stat
 
   // 전체 통계 계산
   const totalChips = Object.values(tableChips).reduce((sum, chips) => sum + chips, 0);
-  const activeParticipants = participants.filter(p => p.status === 'active').length;
-  const averageChips = activeParticipants > 0 ? totalChips / activeParticipants : 0;
+  const totalParticipants = participants.filter(p => p.status === 'active').length;
+  const averageChips = totalParticipants > 0 ? totalChips / totalParticipants : 0;
   const tableAverageChips = tables.length > 0 ? totalChips / tables.length : 0;
 
-  const tableChipValues = Object.values(tableChips);
-  const maxTableChips = tableChipValues.length > 0 ? Math.max(...tableChipValues) : 0;
-  const minTableChips = tableChipValues.length > 0 ? Math.min(...tableChipValues) : 0;
+  // 총 테이블 수
+  const totalTables = tables.length;
+
+  // 빈 자리 계산
+  const totalEmptySeats = tables
+    .filter(t => t.status === 'open')
+    .reduce((sum, table) => sum + table.seats.filter(seat => seat === null).length, 0);
 
   return {
     totalChips,
     averageChips,
     tableAverageChips,
-    maxTableChips,
-    minTableChips,
+    totalParticipants,
+    totalTables,
+    totalEmptySeats,
     tableChips
   };
 };
