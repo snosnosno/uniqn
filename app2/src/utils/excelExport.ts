@@ -44,7 +44,6 @@ export const exportTablesToExcel = (
       // 테이블 헤더 행 추가 (Table 1, 총칩 XXX, Table 2, 총칩 XXX)
       const headerRow: (string | null)[] = [];
       group.forEach((table, index) => {
-        if (index > 0) headerRow.push(null); // 테이블 간 구분 열
         const tableChips = stats.tableChips[table.id] || 0;
         headerRow.push(`Table ${table.tableNumber}`, formatChips(tableChips), null);
       });
@@ -52,8 +51,7 @@ export const exportTablesToExcel = (
 
       // 컬럼 헤더 행 추가 (번호, 이름, 칩)
       const columnHeaderRow: (string | null)[] = [];
-      group.forEach((_, index) => {
-        if (index > 0) columnHeaderRow.push(null); // 테이블 간 구분 열
+      group.forEach(() => {
         columnHeaderRow.push('번호', '이름', '칩');
       });
       worksheetData.push(columnHeaderRow);
@@ -65,9 +63,7 @@ export const exportTablesToExcel = (
       for (let seatIndex = 0; seatIndex < maxSeats; seatIndex++) {
         const dataRow: (string | number | null)[] = [];
 
-        group.forEach((table, tableIndex) => {
-          if (tableIndex > 0) dataRow.push(null); // 테이블 간 구분 열
-
+        group.forEach((table) => {
           const seatNumber = seatIndex + 1;
           const participantId = table.seats[seatIndex];
 
@@ -106,15 +102,19 @@ export const exportTablesToExcel = (
 
     // 열 너비 설정
     const columnWidths: XLSX.ColInfo[] = [];
-    const tablesPerRow = Math.min(3, tables.length);
 
-    for (let i = 0; i < tablesPerRow; i++) {
-      if (i > 0) {
-        columnWidths.push({ width: 2 }); // 구분 열
-      }
-      columnWidths.push({ width: 8 });  // 번호 열
-      columnWidths.push({ width: 15 }); // 이름 열
-      columnWidths.push({ width: 12 }); // 칩 열
+    // 상단 통계 영역을 위한 열 너비 설정 (4열)
+    columnWidths.push({ width: 12 }); // 1열: 통계 항목명
+    columnWidths.push({ width: 12 }); // 2열: 통계 값 (천단위 구분자 포함)
+    columnWidths.push({ width: 12 }); // 3열: 통계 항목명
+    columnWidths.push({ width: 12 }); // 4열: 통계 값 (세자리수 여유 공간)
+
+    // 테이블 데이터 영역을 위한 추가 열 설정
+    const tablesPerRow = Math.min(3, tables.length);
+    const additionalColumns = Math.max(0, (tablesPerRow * 3) - 4); // 테이블 3개씩 배치시 필요한 추가 열 (구분열 제거)
+
+    for (let i = 0; i < additionalColumns; i++) {
+      columnWidths.push({ width: 12 }); // 모든 열 통일
     }
 
     worksheet['!cols'] = columnWidths;
