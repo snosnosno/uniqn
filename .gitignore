@@ -1,6 +1,7 @@
 # Dependencies
 /node_modules
 /app2/node_modules
+/functions/node_modules
 
 # Build artifacts
 /build
