@@ -21,6 +21,20 @@ export const exportTablesToExcel = (
     // 워크시트 데이터 생성
     const worksheetData: (string | number | null)[][] = [];
 
+    // 통계 데이터 계산
+    const stats = calculateStatistics(tables, participants);
+
+    // 통계 정보를 워크시트 최상단에 추가
+    worksheetData.push(['전체 칩', formatChips(stats.totalChips)]);
+    worksheetData.push(['평균 칩', formatChips(Math.round(stats.averageChips))]);
+    worksheetData.push(['테이블 평균 칩', formatChips(Math.round(stats.tableAverageChips))]);
+    worksheetData.push(['최대 테이블 칩', formatChips(stats.maxTableChips)]);
+    worksheetData.push(['최소 테이블 칩', formatChips(stats.minTableChips)]);
+
+    // 통계와 테이블 데이터 구분을 위한 빈 행 2개 추가
+    worksheetData.push([]);
+    worksheetData.push([]);
+
     // 테이블을 3개씩 그룹화
     const tableGroups: Table[][] = [];
     for (let i = 0; i < tables.length; i += 3) {
@@ -29,11 +43,12 @@ export const exportTablesToExcel = (
 
     // 각 테이블 그룹 처리
     tableGroups.forEach((group, groupIndex) => {
-      // 테이블 헤더 행 추가 (Table 1, Table 2, Table 3)
+      // 테이블 헤더 행 추가 (Table 1, 총칩 XXX, Table 2, 총칩 XXX)
       const headerRow: (string | null)[] = [];
       group.forEach((table, index) => {
         if (index > 0) headerRow.push(null); // 테이블 간 구분 열
-        headerRow.push(`Table ${table.tableNumber}`, null, null);
+        const tableChips = stats.tableChips[table.id] || 0;
+        headerRow.push(`Table ${table.tableNumber}`, formatChips(tableChips), null);
       });
       worksheetData.push(headerRow);
 
@@ -147,4 +162,56 @@ const formatTime = (date: Date): string => {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${hours}${minutes}`;
+};
+
+/**
+ * 통계 데이터 계산 인터페이스
+ */
+interface Statistics {
+  totalChips: number;
+  averageChips: number;
+  tableAverageChips: number;
+  maxTableChips: number;
+  minTableChips: number;
+  tableChips: { [tableId: string]: number };
+}
+
+/**
+ * 전체 통계 데이터 계산
+ */
+const calculateStatistics = (tables: Table[], participants: Participant[]): Statistics => {
+  // 각 테이블별 칩 합계 계산
+  const tableChips: { [tableId: string]: number } = {};
+
+  tables.forEach(table => {
+    let tableTotal = 0;
+    table.seats.forEach(participantId => {
+      if (participantId) {
+        const participant = participants.find(p => p.id === participantId);
+        if (participant && participant.chips) {
+          tableTotal += participant.chips;
+        }
+      }
+    });
+    tableChips[table.id] = tableTotal;
+  });
+
+  // 전체 통계 계산
+  const totalChips = Object.values(tableChips).reduce((sum, chips) => sum + chips, 0);
+  const activeParticipants = participants.filter(p => p.status === 'active').length;
+  const averageChips = activeParticipants > 0 ? totalChips / activeParticipants : 0;
+  const tableAverageChips = tables.length > 0 ? totalChips / tables.length : 0;
+
+  const tableChipValues = Object.values(tableChips);
+  const maxTableChips = tableChipValues.length > 0 ? Math.max(...tableChipValues) : 0;
+  const minTableChips = tableChipValues.length > 0 ? Math.min(...tableChipValues) : 0;
+
+  return {
+    totalChips,
+    averageChips,
+    tableAverageChips,
+    maxTableChips,
+    minTableChips,
+    tableChips
+  };
 };
