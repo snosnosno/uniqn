@@ -847,8 +847,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             </button>
           )}
 
-          {/* 삭제 버튼 */}
-          {canDelete && (
+          {/* 삭제 버튼 - 추후 업데이트 예정 */}
+          {/* {canDelete && (
             <button
               onClick={() => {
                 onDelete(schedule.id);
@@ -860,7 +860,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               <FaTrash className="w-4 h-4" />
               삭제
             </button>
-          )}
+          )} */}
           
           <button
             onClick={onClose}
