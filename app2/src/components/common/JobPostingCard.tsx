@@ -322,19 +322,17 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                             // 다중일인 경우 모든 날짜의 확정 인원 합산
                             let confirmedCount = 0;
                             let confirmedCountPerDay = 0;
-                            
+
                             if (expandedDates.length > 0) {
-                              // 다중일인 경우 각 날짜별 확정 인원 합산
-                              expandedDates.forEach(date => {
-                                confirmedCount += JobPostingUtils.getConfirmedStaffCount(
-                                  post,
-                                  date,
-                                  ts.time,
-                                  r.name
-                                );
-                              });
-                              // 일당 평균 확정 인원 계산
-                              confirmedCountPerDay = Math.floor(confirmedCount / expandedDates.length);
+                              // 다중일 근무는 첫 날 기준으로만 확정 인원 계산
+                              // (같은 사람이 여러 날 근무하는 개념)
+                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                post,
+                                expandedDates[0] || '', // 첫 날짜만 사용
+                                ts.time,
+                                r.name
+                              );
+                              confirmedCountPerDay = confirmedCount;
                             } else {
                               // 단일 날짜
                               const dateString = timestampToLocalDateString(dateReq.date);
@@ -390,19 +388,17 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                             // 다중일인 경우 모든 날짜의 확정 인원 합산
                             let confirmedCount = 0;
                             let confirmedCountPerDay = 0;
-                            
+
                             if (expandedDates.length > 0) {
-                              // 다중일인 경우 각 날짜별 확정 인원 합산
-                              expandedDates.forEach(date => {
-                                confirmedCount += JobPostingUtils.getConfirmedStaffCount(
-                                  post,
-                                  date,
-                                  ts.time,
-                                  r.name
-                                );
-                              });
-                              // 일당 평균 확정 인원 계산
-                              confirmedCountPerDay = Math.floor(confirmedCount / expandedDates.length);
+                              // 다중일 근무는 첫 날 기준으로만 확정 인원 계산
+                              // (같은 사람이 여러 날 근무하는 개념)
+                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                post,
+                                expandedDates[0] || '', // 첫 날짜만 사용
+                                ts.time,
+                                r.name
+                              );
+                              confirmedCountPerDay = confirmedCount;
                             } else {
                               // 단일 날짜
                               const dateString = timestampToLocalDateString(dateReq.date);
