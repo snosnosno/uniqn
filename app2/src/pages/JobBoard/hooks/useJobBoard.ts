@@ -188,19 +188,8 @@ export const useJobBoard = () => {
         assignedDates: application.assignments?.flatMap(a => a.dates || []) || [],
         preQuestionAnswers: (application as any).preQuestionAnswers,
         jobPosting: jobPosting ? {
-          id: jobPosting.id,
-          title: jobPosting.title,
-          location: jobPosting.location,
-          district: jobPosting.district,
-          detailedAddress: jobPosting.detailedAddress,
-          startDate: jobPosting.startDate,
-          endDate: jobPosting.endDate,
-          dateSpecificRequirements: jobPosting.dateSpecificRequirements,
-          salaryType: (jobPosting as any).salaryType,
-          salaryAmount: (jobPosting as any).salaryAmount,
-          benefits: (jobPosting as any).benefits,
-          useRoleSalary: (jobPosting as any).useRoleSalary,
-          roleSalaries: (jobPosting as any).roleSalaries
+          ...jobPosting,  // 모든 필드를 그대로 복사
+          recruitmentType: (jobPosting as any).recruitmentType || 'application'  // 기본값 설정
         } : null
       };
     });
@@ -468,9 +457,24 @@ export const useJobBoard = () => {
     setIsPreQuestionModalOpen(true);
   };
   
-  // 상세보기 모달 열기
-  const handleOpenDetailModal = (post: JobPosting) => {
-    setSelectedDetailPost(post);
+  // 상세보기 모달 열기 - JobPosting 객체 또는 postId를 받아서 처리
+  const handleOpenDetailModal = (postOrId: JobPosting | string) => {
+    let fullJobPosting: JobPosting | null = null;
+
+    if (typeof postOrId === 'string') {
+      // postId가 전달된 경우, jobPostings 배열에서 완전한 데이터 찾기
+      fullJobPosting = jobPostings.find(job => job.id === postOrId) || null;
+      if (!fullJobPosting) {
+        logger.warn('JobPosting not found for postId', { component: 'useJobBoard', value: postOrId });
+        showError('구인공고 정보를 찾을 수 없습니다.');
+        return;
+      }
+    } else {
+      // JobPosting 객체가 전달된 경우
+      fullJobPosting = postOrId;
+    }
+
+    setSelectedDetailPost(fullJobPosting);
     setIsDetailModalOpen(true);
   };
   

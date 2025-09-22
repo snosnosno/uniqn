@@ -4,9 +4,9 @@ import LoadingSpinner from '../../../components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
 import { logger } from '../../../utils/logger';
 import AssignmentDisplay from '../../../components/common/AssignmentDisplay';
-import { 
-  Application, 
-  Assignment 
+import {
+  Application,
+  Assignment
 } from '../../../types/application';
 
 interface FirebaseTimestamp {
@@ -229,7 +229,7 @@ const ApplicationCard: React.FC<{
         <div className="mt-3 flex flex-col sm:flex-row gap-2">
           {onViewDetail && application.jobPosting && (
             <button
-              onClick={() => onViewDetail(application.jobPosting)}
+              onClick={() => onViewDetail(application.postId)}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex-1 sm:flex-initial"
               aria-label="공고 상세정보 보기"
             >
