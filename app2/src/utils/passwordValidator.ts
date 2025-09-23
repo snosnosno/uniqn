@@ -41,8 +41,8 @@ export const validatePassword = (
     length: password.length >= requirements.minLength,
     hasEnglish: requirements.requireEnglish ? /[a-zA-Z]/.test(password) : true,
     hasNumbers: requirements.requireNumbers ? /[0-9]/.test(password) : true,
-    validChars: /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(password), // 특수문자 허용
-    hasSpecialChars: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    validChars: /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/.test(password), // 특수문자 허용
+    hasSpecialChars: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
   };
 
   const errors: string[] = [];

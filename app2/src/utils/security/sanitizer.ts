@@ -84,6 +84,7 @@ export function isSafeUrl(url: string): boolean {
     }
     
     // JavaScript URL 차단
+    // eslint-disable-next-line no-script-url
     if (url.toLowerCase().includes('javascript:')) {
       logger.warn('JavaScript URL 시도가 차단되었습니다', { 
         component: 'sanitizer',
@@ -177,7 +178,7 @@ export function sanitizeFormData<T extends Record<string, any>>(formData: T): T 
 }
 
 // 기본 export
-export default {
+const sanitizerUtils = {
   sanitizeHtml,
   sanitizeText,
   isSafeUrl,
@@ -185,3 +186,5 @@ export default {
   safeJsonParse,
   sanitizeFormData
 };
+
+export default sanitizerUtils;

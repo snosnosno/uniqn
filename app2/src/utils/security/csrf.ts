@@ -193,7 +193,7 @@ if (typeof window !== 'undefined') {
 }
 
 // 기본 export
-export default {
+const csrfUtils = {
   generateCsrfToken,
   storeCsrfToken,
   getCsrfToken,
@@ -204,3 +204,5 @@ export default {
   addCsrfHeader,
   addCsrfToAxiosConfig
 };
+
+export default csrfUtils;

@@ -454,7 +454,7 @@ export const measureCoreWebVitals = (): Promise<{
   });
 };
 
-export default {
+const performanceTestUtils = {
   measurePageLoadTime,
   measureRenderTime,
   measureMemoryUsage,
@@ -471,3 +471,5 @@ export default {
   PerformanceMonitor,
   PERFORMANCE_THRESHOLDS,
 };
+
+export default performanceTestUtils;
