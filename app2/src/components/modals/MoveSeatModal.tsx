@@ -95,20 +95,26 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
   );
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title={t('moveSeatModal.title', { name: movingParticipant.name })}
       size="xl"
       footer={footerButtons}
       aria-label={t('moveSeatModal.title', { name: movingParticipant.name })}
     >
-      <div className="mb-4 bg-blue-50 p-3 rounded-lg">
+      <div
+        className="mb-4 bg-blue-50 p-3 rounded-lg"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
         <h4 className="font-bold text-blue-800">{t('moveSeatModal.sectionTitle')}</h4>
         <p><strong>{t('moveSeatModal.labelName')}</strong> {movingParticipant.name}</p>
         <p><strong>{t('moveSeatModal.labelCurrentLocation')}</strong> {currentLocation}</p>
       </div>
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+      <div
+        className="space-y-4 max-h-[60vh] overflow-y-auto p-1"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
         {tables.map(table => (
           <div key={table.id} className={`border rounded-lg p-3 ${table.status !== 'open' ? 'bg-gray-100 opacity-70' : ''}`}>
             <h4 className="font-bold text-lg mb-2">

@@ -103,6 +103,9 @@ const TablesPage: React.FC = () => {
     };
 
     const handleCloseActionMenu = () => {
+        // 자리 이동 모달이 열려있을 때는 액션 메뉴를 닫지 않음
+        if (isMoveSeatModalOpen) return;
+
         setActionMenu(null);
         setSelectedPlayer(null);
     };
@@ -167,9 +170,9 @@ const TablesPage: React.FC = () => {
         handleCloseActionMenu();
     };
 
-    const handleExportToExcel = () => {
+    const handleExportToExcel = async () => {
         try {
-            exportTablesToExcel(tables, participants, t);
+            await exportTablesToExcel(tables, participants, t);
             toast.success(t('tables.exportExcelSuccess'));
         } catch (error) {
             logger.error('엑셀 내보내기 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
@@ -194,8 +197,14 @@ const TablesPage: React.FC = () => {
     
     const currentDetailTable = tables.find(t => t.id === detailModalTable?.id) || null;
 
+    const handleContainerClick = (e: React.MouseEvent) => {
+        // 자리 이동 모달이나 다른 모달이 열려있을 때는 이벤트 무시
+        if (isMoveSeatModalOpen || detailModalParticipant || currentDetailTable) return;
+        handleCloseActionMenu();
+    };
+
     return (
-        <div className="p-4 bg-gray-100 min-h-screen" onClick={handleCloseActionMenu}>
+        <div className="p-4 bg-gray-100 min-h-screen" onClick={handleContainerClick}>
             {/* Header */}
             <div className="mb-6 bg-white p-4 rounded-lg shadow">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
