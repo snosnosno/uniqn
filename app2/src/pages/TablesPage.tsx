@@ -270,6 +270,7 @@ const TablesPage: React.FC = () => {
                                 isMobile={isMobile}
                                 getDealerName={(staffId) => staffId || t('common.undecided')}
                                 participants={participants}
+                                onPlayerSelect={handlePlayerSelect}
                             />
                         ))}
                     </div>

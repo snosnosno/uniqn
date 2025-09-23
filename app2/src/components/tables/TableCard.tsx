@@ -13,6 +13,7 @@ interface TableCardProps {
   isMobile: boolean;
   getDealerName: (staffId: string | null) => string;
   participants?: Participant[];
+  onPlayerSelect?: (participant: Participant | null, table: Table, seatIndex: number, event?: React.MouseEvent) => void;
 }
 
 const TableCard: React.FC<TableCardProps> = ({
@@ -21,6 +22,7 @@ const TableCard: React.FC<TableCardProps> = ({
   isMobile,
   getDealerName,
   participants,
+  onPlayerSelect,
 }) => {
   const { t } = useTranslation();
   const {
@@ -59,12 +61,13 @@ const TableCard: React.FC<TableCardProps> = ({
   const seatInfo = useMemo(() => {
     if (!table.seats) return [];
     return table.seats.map((participantId, index) => {
-      if (!participantId) return { seatNumber: index + 1, name: null, chips: 0 };
+      if (!participantId) return { seatNumber: index + 1, name: null, chips: 0, participant: null };
       const participant = participants?.find(p => p.id === participantId);
       return {
         seatNumber: index + 1,
         name: participant?.name || 'Unknown',
-        chips: participant?.chips || 0
+        chips: participant?.chips || 0,
+        participant: participant || null
       };
     });
   }, [participants, table.seats]);
@@ -126,9 +129,12 @@ const TableCard: React.FC<TableCardProps> = ({
                 className="border rounded p-1 bg-gray-50 cursor-pointer hover:bg-blue-50 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation(); // 테이블 카드 클릭 방지
-                  // 여기서 참가자 정보를 부모로 전달해야 하지만, 현재 props에 onPlayerSelect가 없음
-                  // 일단 테이블 디테일 모달을 열도록 하자
-                  onTableClick();
+                  if (onPlayerSelect && seat.participant) {
+                    onPlayerSelect(seat.participant, table, seat.seatNumber - 1, e);
+                  } else {
+                    // fallback으로 테이블 디테일 모달 열기
+                    onTableClick();
+                  }
                 }}
               >
                 <div className="text-xs font-medium truncate">
