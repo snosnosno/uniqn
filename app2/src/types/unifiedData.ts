@@ -235,6 +235,35 @@ export interface UnifiedFilters {
   role?: string;
 }
 
+// Smart Hybrid Context를 위한 구독 옵션
+export interface UnifiedDataOptions {
+  // 사용자 역할
+  role?: 'admin' | 'manager' | 'staff' | 'user';
+
+  // 컬렉션별 구독 설정
+  subscriptions?: {
+    staff?: boolean | 'myData';      // true: 전체, 'myData': 자신만, false: 구독 안함
+    workLogs?: boolean | 'myData';
+    applications?: boolean | 'myData';
+    jobPostings?: boolean;
+    attendance?: boolean | 'myData';
+    tournaments?: boolean;
+  };
+
+  // 캐싱 전략
+  cacheStrategy?: 'aggressive' | 'moderate' | 'minimal';
+
+  // 성능 옵션
+  performance?: {
+    maxDocuments?: number;      // 최대 문서 수 제한
+    realtimeUpdates?: boolean;  // 실시간 업데이트 활성화
+    batchSize?: number;         // 배치 크기
+  };
+
+  // 사용자 ID (myData 구독용)
+  userId?: string;
+}
+
 // 통합 데이터 상태
 export interface UnifiedDataState {
   // 원시 데이터

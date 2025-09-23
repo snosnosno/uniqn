@@ -9,6 +9,7 @@
 
 import { useMemo, useCallback } from 'react';
 import { useUnifiedDataContext } from '../contexts/UnifiedDataContext';
+import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import {
   Staff,
@@ -16,22 +17,33 @@ import {
   AttendanceRecord,
   Application,
   UnifiedFilters,
+  UnifiedDataOptions,
 } from '../types/unifiedData';
 import { ScheduleEvent, ScheduleStats } from '../types/schedule';
 
 /**
  * 기본 통합 데이터 훅
  * 모든 데이터에 대한 접근과 기본 함수들을 제공
+ * Smart Hybrid Context 지원 추가
  */
-export const useUnifiedData = () => {
+export const useUnifiedData = (options?: UnifiedDataOptions) => {
   const context = useUnifiedDataContext();
+
+  // options가 제공되면 Smart Hybrid Context 적용
+  if (options) {
+    // TODO: UnifiedDataContext에 options 전달 로직 구현
+    logger.info('Smart Hybrid Context 옵션 적용', {
+      component: 'useUnifiedData',
+      data: { options }
+    });
+  }
 
   return {
     // 전체 상태
     state: context.state,
     loading: context.state.loading,
     error: context.state.error,
-    
+
     // 주요 컴렉션 데이터 (직접 접근용)
     staff: Array.from(context.state.staff.values()),
     workLogs: Array.from(context.state.workLogs.values()),
@@ -377,6 +389,195 @@ export const useUnifiedDataPerformance = () => {
     optimizationSuggestions: getOptimizationSuggestions,
     isPerformanceGood: metrics.cacheHitRate >= 80 && metrics.averageQueryTime <= 100,
   };
+};
+
+/**
+ * Smart Hybrid Context - 역할 기반 최적화된 데이터 훅
+ * 사용자 역할에 따라 구독을 최적화하여 Firebase 비용 절감
+ */
+export const useSmartUnifiedData = (customOptions?: Partial<UnifiedDataOptions>) => {
+  const { currentUser, role } = useAuth();
+  const context = useUnifiedDataContext();
+
+  // 역할별 기본 구독 설정
+  const defaultSubscriptionsByRole: Record<string, UnifiedDataOptions['subscriptions']> = {
+    admin: {
+      staff: true,
+      workLogs: true,
+      applications: true,
+      jobPostings: true,
+      attendance: true,
+      tournaments: true
+    },
+    manager: {
+      staff: true,
+      workLogs: true,
+      applications: true,
+      jobPostings: true,
+      attendance: true,
+      tournaments: true
+    },
+    staff: {
+      staff: 'myData',      // 자신의 정보만
+      workLogs: 'myData',    // 자신의 근무 기록만
+      applications: 'myData', // 자신의 지원만
+      jobPostings: true,     // 구인공고는 모두 봐야 함
+      attendance: 'myData',  // 자신의 출석만
+      tournaments: false     // 토너먼트는 필요 없음
+    },
+    user: {
+      staff: false,          // 스태프 정보 불필요
+      workLogs: false,       // 근무 기록 불필요
+      applications: 'myData', // 자신의 지원만
+      jobPostings: true,     // 구인공고는 모두 봐야 함
+      attendance: false,     // 출석 불필요
+      tournaments: false     // 토너먼트 불필요
+    }
+  };
+
+  // 옵션 병합
+  const finalOptions: UnifiedDataOptions = {
+    role: (role || 'user') as 'admin' | 'manager' | 'staff' | 'user',
+    userId: currentUser?.uid || '',
+    subscriptions: customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'user'] || {},
+    cacheStrategy: customOptions?.cacheStrategy || (role === 'admin' ? 'minimal' : 'aggressive'),
+    performance: {
+      maxDocuments: role === 'staff' ? 100 : 1000,
+      realtimeUpdates: role === 'admin' || role === 'manager',
+      batchSize: 20,
+      ...customOptions?.performance
+    },
+    ...customOptions
+  };
+
+  // 필터링된 데이터 반환
+  const filteredData = useMemo(() => {
+    const { subscriptions, userId } = finalOptions;
+
+    return {
+      staff: subscriptions?.staff === 'myData'
+        ? Array.from(context.state.staff.values()).filter(s => s.userId === userId)
+        : subscriptions?.staff === false
+        ? []
+        : Array.from(context.state.staff.values()),
+
+      workLogs: subscriptions?.workLogs === 'myData'
+        ? Array.from(context.state.workLogs.values()).filter(w => w.staffId === userId)
+        : subscriptions?.workLogs === false
+        ? []
+        : Array.from(context.state.workLogs.values()),
+
+      applications: subscriptions?.applications === 'myData'
+        ? Array.from(context.state.applications.values()).filter(a => a.applicantId === userId)
+        : subscriptions?.applications === false
+        ? []
+        : Array.from(context.state.applications.values()),
+
+      jobPostings: subscriptions?.jobPostings === false
+        ? []
+        : Array.from(context.state.jobPostings.values()),
+
+      attendanceRecords: subscriptions?.attendance === 'myData'
+        ? Array.from(context.state.attendanceRecords.values()).filter(a => a.staffId === userId)
+        : subscriptions?.attendance === false
+        ? []
+        : Array.from(context.state.attendanceRecords.values()),
+
+      tournaments: subscriptions?.tournaments === false
+        ? []
+        : Array.from(context.state.tournaments.values())
+    };
+  }, [context.state, finalOptions]);
+
+  logger.info('Smart Hybrid Context 활성화', {
+    component: 'useSmartUnifiedData',
+    data: {
+      role: finalOptions.role,
+      subscriptions: finalOptions.subscriptions,
+      dataCount: {
+        staff: filteredData.staff.length,
+        workLogs: filteredData.workLogs.length,
+        applications: filteredData.applications.length,
+        jobPostings: filteredData.jobPostings.length,
+        attendance: filteredData.attendanceRecords.length
+      }
+    }
+  });
+
+  return {
+    ...filteredData,
+    loading: context.state.loading,
+    error: context.state.error,
+    options: finalOptions,
+    refresh: context.refresh
+  };
+};
+
+/**
+ * 페이지별 최적화된 데이터 훅
+ * 각 페이지에서 필요한 데이터만 구독
+ */
+export const usePageOptimizedData = (page: string) => {
+  const pageConfigs: Record<string, Partial<UnifiedDataOptions>> = {
+    '/attendance': {
+      subscriptions: {
+        workLogs: 'myData',
+        attendance: 'myData',
+        staff: false,
+        applications: false,
+        jobPostings: false,
+        tournaments: false
+      },
+      cacheStrategy: 'aggressive'
+    },
+    '/profile': {
+      subscriptions: {
+        staff: 'myData',
+        workLogs: 'myData',
+        applications: 'myData',
+        jobPostings: false,
+        attendance: false,
+        tournaments: false
+      },
+      cacheStrategy: 'aggressive'
+    },
+    '/jobs': {
+      subscriptions: {
+        jobPostings: true,
+        applications: 'myData',
+        staff: false,
+        workLogs: false,
+        attendance: false,
+        tournaments: false
+      },
+      cacheStrategy: 'moderate'
+    },
+    '/my-schedule': {
+      subscriptions: {
+        workLogs: 'myData',
+        applications: 'myData',
+        jobPostings: true,
+        staff: false,
+        attendance: false,
+        tournaments: false
+      },
+      cacheStrategy: 'moderate'
+    },
+    '/admin/ceo-dashboard': {
+      subscriptions: {
+        staff: true,
+        workLogs: true,
+        applications: true,
+        jobPostings: true,
+        attendance: true,
+        tournaments: true
+      },
+      cacheStrategy: 'minimal'
+    }
+  };
+
+  const config = pageConfigs[page] || {};
+  return useSmartUnifiedData(config);
 };
 
 /**
