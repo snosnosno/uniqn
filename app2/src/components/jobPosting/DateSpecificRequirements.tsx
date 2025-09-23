@@ -2,7 +2,7 @@ import React from 'react';
 import { DateSpecificRequirement } from '../../types/jobPosting';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { createNewDateSpecificRequirement, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
-import Button from '../common/Button';
+import Button from '../ui/Button';
 import DateDropdownSelector from '../time/DateDropdownSelector';
 import { Select } from '../common/Select';
 

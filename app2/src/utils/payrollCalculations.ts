@@ -2,7 +2,7 @@ import { JobPosting } from '../types/jobPosting';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { logger } from './logger';
-import { parseTimeToString, calculateWorkHours as calculateWorkHoursFromMapper } from './workLogMapper';
+import { calculateWorkHours as calculateWorkHoursFromMapper } from './workLogMapper';
 
 /**
  * 통합 급여 계산 유틸리티

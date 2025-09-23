@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useJobPostingOperations } from '../hooks/useJobPostingOperations';
 import { usePermissions } from '../hooks/usePermissions';
 import { toast } from '../utils/toast';
-import Button from '../components/common/Button';
+import Button from '../components/ui/Button';
 import JobPostingForm from '../components/jobPosting/JobPostingForm';
 import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';

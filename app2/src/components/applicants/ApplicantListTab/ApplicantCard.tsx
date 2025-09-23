@@ -18,7 +18,7 @@ interface ApplicantCardProps {
 /**
  * 개별 지원자 정보를 표시하는 카드 컴포넌트 (2x2 그리드 레이아웃)
  */
-const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, children }) => {
+const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, jobPosting, children }) => {
   const { t } = useTranslation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -221,6 +221,24 @@ const ApplicantCard: React.FC<ApplicantCardProps> = ({ applicant, jobPosting, ch
       />
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 지원자 기본 정보 비교
+  return (
+    prevProps.applicant.id === nextProps.applicant.id &&
+    prevProps.applicant.applicantId === nextProps.applicant.applicantId &&
+    prevProps.applicant.applicantName === nextProps.applicant.applicantName &&
+    prevProps.applicant.status === nextProps.applicant.status &&
+    prevProps.applicant.email === nextProps.applicant.email &&
+    prevProps.applicant.phone === nextProps.applicant.phone &&
+    prevProps.applicant.gender === nextProps.applicant.gender &&
+    prevProps.applicant.age === nextProps.applicant.age &&
+    prevProps.applicant.experience === nextProps.applicant.experience &&
+    prevProps.applicant.assignedRole === nextProps.applicant.assignedRole &&
+    prevProps.applicant.assignedDate === nextProps.applicant.assignedDate &&
+    prevProps.applicant.assignedTime === nextProps.applicant.assignedTime &&
+    prevProps.children === nextProps.children &&
+    JSON.stringify(prevProps.jobPosting) === JSON.stringify(nextProps.jobPosting)
+  );
+});
 
 export default ApplicantCard;

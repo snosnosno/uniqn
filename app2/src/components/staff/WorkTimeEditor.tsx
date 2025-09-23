@@ -16,7 +16,7 @@ import type { WorkLog } from '../../types/unifiedData';
 import Modal from '../ui/Modal';
 
 // WorkTimeEditor에서 사용할 WorkLog 타입 (Firebase에서 가져온 실제 데이터 또는 가상 데이터)
-interface WorkLogWithTimestamp {
+export interface WorkLogWithTimestamp {
   id: string;
   eventId: string;
   staffId: string;

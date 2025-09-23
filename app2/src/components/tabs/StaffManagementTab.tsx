@@ -15,6 +15,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import useUnifiedData from '../../hooks/useUnifiedData';
 import type { WorkLog } from '../../types/unifiedData';
+import type { JobPosting } from '../../types/jobPosting/jobPosting';
+import type { ConfirmedStaff } from '../../types/jobPosting/base';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLogSimplified';
 // createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
@@ -28,7 +30,7 @@ import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
 import ReportModal from '../modals/ReportModal';
 import StaffDateGroup from '../staff/StaffDateGroup';
 import StaffDateGroupMobile from '../staff/StaffDateGroupMobile';
-import WorkTimeEditor from '../staff/WorkTimeEditor';
+import WorkTimeEditor, { WorkLogWithTimestamp } from '../staff/WorkTimeEditor';
 import StaffProfileModal from '../modals/StaffProfileModal';
 import MobileSelectionBar from '../layout/MobileSelectionBar';
 import '../../styles/staffSelection.css';
@@ -45,7 +47,7 @@ interface StaffData {
 }
 
 interface StaffManagementTabProps {
-  jobPosting?: any;
+  jobPosting?: JobPosting | null;
 }
 
 const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) => {
@@ -306,10 +308,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, [canEdit, staffData, jobPosting?.id, showError]);
   
   // WorkTimeEditor의 onUpdate 콜백 처리
-  const handleWorkTimeUpdate = useCallback((updatedWorkLog: any) => {
+  const handleWorkTimeUpdate = useCallback((updatedWorkLog: WorkLogWithTimestamp) => {
     
     // 🚀 1단계: UnifiedDataContext를 통한 즉시 UI 업데이트
-    updateWorkLogOptimistic(updatedWorkLog);
+    updateWorkLogOptimistic(updatedWorkLog as WorkLog);
     
     // 2단계: 업데이트된 데이터로 selectedWorkLog 갱신 (모달은 열어둠)
     setSelectedWorkLog(updatedWorkLog);
@@ -430,7 +432,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     }
   }, [state.workLogs, updateWorkLogOptimistic]);
   
-  const formatTimeDisplay = useCallback((timeValue: any) => {
+  const formatTimeDisplay = useCallback((timeValue: string | number | undefined) => {
     if (!timeValue) return '';
     if (typeof timeValue === 'string') return timeValue;
     // Firebase Timestamp 처리 등 추가 로직
@@ -481,7 +483,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     }
     
     // 🔍 WorkLog 조회 결과 디버깅 정보 (eventId 검증 포함)
-    const debugInfo: any = {
+    const debugInfo: Record<string, unknown> = {
       requestedStaffId: staffId,
       requestedDate: date,
       jobPostingId: jobPosting.id,
@@ -623,7 +625,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       
       if (jobPosting?.confirmedStaff) {
         const targetStaff = jobPosting.confirmedStaff.find(
-          (staff: any) => (staff.userId || staff.staffId) === baseStaffId && staff.date === date
+          (staff: ConfirmedStaff) => (staff.userId) === baseStaffId && staff.date === date
         );
         staffRole = targetStaff?.role || '';
         staffTimeSlot = targetStaff?.timeSlot || '';
@@ -656,8 +658,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         
         // 해당 스태프의 해당 날짜 항목만 필터링 (userId와 staffId 모두 체크)
         const filteredConfirmedStaff = confirmedStaffArray.filter(
-          (staff: any) => {
-            const staffUserId = staff.userId || staff.staffId;
+          (staff: ConfirmedStaff) => {
+            const staffUserId = staff.userId;
             return !(staffUserId === baseStaffId && staff.date === date);
           }
         );
@@ -713,7 +715,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       if (staffRole && staffTimeSlot) {
         // 삭제 후 해당 역할의 현재 인원 수 계산
         const currentCount = jobPosting?.confirmedStaff?.filter(
-          (staff: any) => staff.role === staffRole && 
+          (staff: ConfirmedStaff) => staff.role === staffRole &&
                          staff.timeSlot === staffTimeSlot && 
                          staff.date === date
         ).length || 0;
@@ -839,8 +841,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               const baseStaffId = staffId.replace(/_\d+$/, '');
               
               const filteredConfirmedStaff = confirmedStaffArray.filter(
-                (staff: any) => {
-                  const staffUserId = staff.userId || staff.staffId;
+                (staff: ConfirmedStaff) => {
+                  const staffUserId = staff.userId;
                   return !(staffUserId === baseStaffId && staff.date === date);
                 }
               );

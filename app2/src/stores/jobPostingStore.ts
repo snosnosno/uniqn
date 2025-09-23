@@ -5,7 +5,6 @@ import { db } from '../firebase';
 import { JobPosting } from '../types/jobPosting';
 import { Applicant } from '../types/applicant';
 import { Staff } from '../types/common';
-import { ConfirmedStaff } from '../types/jobPosting/base';
 import { logger } from '../utils/logger';
 
 interface JobPostingState {

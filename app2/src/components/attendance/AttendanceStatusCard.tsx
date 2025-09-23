@@ -13,7 +13,7 @@ interface AttendanceStatusCardProps {
   className?: string;
 }
 
-const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
+const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = React.memo(({
   status,
   actualStartTime,
   actualEndTime,
@@ -101,6 +101,15 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 출석 상태 카드의 주요 props 비교
+  return (
+    prevProps.status === nextProps.status &&
+    prevProps.actualStartTime === nextProps.actualStartTime &&
+    prevProps.actualEndTime === nextProps.actualEndTime &&
+    prevProps.size === nextProps.size &&
+    prevProps.className === nextProps.className
+  );
+});
 
 export default AttendanceStatusCard;

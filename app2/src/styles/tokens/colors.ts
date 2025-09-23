@@ -168,8 +168,6 @@ export const colors = {
 // 색상 유틸리티 함수
 export const getContrastColor = (backgroundColor: string): string => {
   // 간단한 대비 색상 선택 로직
-  const darkColors = ['#000000', '#111827', '#1f2937'];
-  const lightColors = ['#ffffff', '#f9fafb'];
   
   // 어두운 배경에는 밝은 텍스트
   if (backgroundColor.startsWith('#1') || backgroundColor.startsWith('#2') || backgroundColor.startsWith('#3')) {

@@ -15,7 +15,7 @@ export interface DateDropdownSelectorProps {
   maxDate?: string; // yyyy-MM-dd format
 }
 
-const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
+const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
   value,
   onChange,
   includeYear = true,
@@ -151,6 +151,18 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 날짜 드롭다운 셀렉터의 주요 props 비교
+  return (
+    JSON.stringify(prevProps.value) === JSON.stringify(nextProps.value) &&
+    prevProps.includeYear === nextProps.includeYear &&
+    prevProps.label === nextProps.label &&
+    prevProps.className === nextProps.className &&
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.minDate === nextProps.minDate &&
+    prevProps.maxDate === nextProps.maxDate &&
+    prevProps.onChange === nextProps.onChange
+  );
+});
 
 export default DateDropdownSelector;

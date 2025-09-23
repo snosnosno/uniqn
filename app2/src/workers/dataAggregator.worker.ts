@@ -84,7 +84,7 @@ const getStaffIdentifier = (staff: any): string => {
   return staff.userId || staff.staffId || '';
 };
 
-const matchStaffIdentifier = (log: any, identifiers: string[]): boolean => {
+const _matchStaffIdentifier = (log: any, identifiers: string[]): boolean => {
   const logId = getStaffIdentifier(log);
   return identifiers.includes(logId);
 };
@@ -153,7 +153,7 @@ const aggregateData = async (data: DataAggregationMessage['payload']): Promise<D
     startDate,
     endDate,
     groupBy,
-    metrics
+    metrics: _metrics
   } = data;
 
   // 날짜 필터링
@@ -358,6 +358,7 @@ const aggregateData = async (data: DataAggregationMessage['payload']): Promise<D
 };
 
 // Web Worker 메시지 핸들러
+// eslint-disable-next-line no-restricted-globals
 self.onmessage = async (event: MessageEvent<DataAggregationMessage>) => {
   try {
     if (event.data.type === 'AGGREGATE_DATA') {
@@ -368,6 +369,7 @@ self.onmessage = async (event: MessageEvent<DataAggregationMessage>) => {
         payload: result
       };
 
+      // eslint-disable-next-line no-restricted-globals
       self.postMessage(response);
     }
   } catch (error) {
@@ -384,6 +386,7 @@ self.onmessage = async (event: MessageEvent<DataAggregationMessage>) => {
       payload
     };
 
+    // eslint-disable-next-line no-restricted-globals
     self.postMessage(errorResponse);
   }
 };

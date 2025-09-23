@@ -4,7 +4,7 @@ import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
 import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { JobPosting, DateSpecificRequirement, JobPostingTemplate } from '../../types/jobPosting';
-import Button from '../common/Button';
+import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Select } from '../common/Select';
 import DateSpecificRequirementsNew from './DateSpecificRequirementsNew';

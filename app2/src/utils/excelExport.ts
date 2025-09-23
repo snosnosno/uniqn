@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import { logger } from './logger';
 import { Table } from '../hooks/useTables';
 import { Participant } from '../hooks/useParticipants';
@@ -7,13 +6,16 @@ import { Participant } from '../hooks/useParticipants';
  * 테이블 데이터를 엑셀로 내보내기
  * 3개 테이블씩 한 행에 배치하고, 각 테이블은 번호-이름-칩 형식으로 표시
  */
-export const exportTablesToExcel = (
+export const exportTablesToExcel = async (
   tables: Table[],
   participants: Participant[],
   _t: (key: string) => string
-): void => {
+): Promise<void> => {
   try {
     logger.info('테이블 엑셀 내보내기 시작', { data: { tableCount: tables.length } });
+
+    // xlsx 패키지를 동적으로 import
+    const XLSX = await import('xlsx');
 
     // 워크북 생성
     const workbook = XLSX.utils.book_new();
@@ -43,7 +45,7 @@ export const exportTablesToExcel = (
     tableGroups.forEach((group, groupIndex) => {
       // 테이블 헤더 행 추가 (Table 1, 총칩 XXX, Table 2, 총칩 XXX)
       const headerRow: (string | null)[] = [];
-      group.forEach((table, index) => {
+      group.forEach((table, _index) => {
         const tableChips = stats.tableChips[table.id] || 0;
         headerRow.push(`Table ${table.tableNumber}`, formatChips(tableChips), null);
       });
@@ -101,7 +103,7 @@ export const exportTablesToExcel = (
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
     // 열 너비 설정
-    const columnWidths: XLSX.ColInfo[] = [];
+    const columnWidths: { width: number }[] = [];
 
     // 상단 통계 영역을 위한 열 너비 설정 (4열)
     columnWidths.push({ width: 12 }); // 1열: 통계 항목명

@@ -3,7 +3,7 @@ import { JobPostingTemplate } from '../../../types/jobPosting';
 import { useDateUtils } from '../../../hooks/useDateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames } from '../../../utils/jobPosting/jobPostingHelpers';
 import Modal from '../../ui/Modal';
-import Button from '../../common/Button';
+import Button from '../../ui/Button';
 import LoadingSpinner from '../../LoadingSpinner';
 import { EmptyState, Badge, InfoCard } from '../../common';
 import { toast } from '../../../utils/toast';

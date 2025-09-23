@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '../../ui/Modal';
-import Button from '../../common/Button';
+import Button from '../../ui/Button';
 import Input from '../../ui/Input';
 import { toast } from '../../../utils/toast';
 

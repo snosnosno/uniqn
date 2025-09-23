@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'link';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   fullWidth?: boolean;
   loading?: boolean;
@@ -82,6 +82,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       'focus:ring-green-500',
       'active:bg-green-800',
       isActive && 'bg-green-800',
+    ],
+    link: [
+      'text-blue-600 bg-transparent',
+      'hover:text-blue-800 hover:underline',
+      'focus:ring-blue-500',
+      'active:text-blue-900',
+      isActive && 'text-blue-900 underline',
     ],
   };
 

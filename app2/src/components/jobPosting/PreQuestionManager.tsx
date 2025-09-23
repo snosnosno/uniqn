@@ -1,6 +1,6 @@
 import React from 'react';
 import { PreQuestion } from '../../types/jobPosting';
-import Button from '../common/Button';
+import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Select } from '../common/Select';
 import { EmptyState } from '../common';

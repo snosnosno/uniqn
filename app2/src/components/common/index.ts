@@ -1,6 +1,4 @@
 // 기존 컴포넌트
-export { default as Button } from './Button';
-export { default as Card } from './Card';
 // Input 컴포넌트는 ui/Input으로 이동됨
 export { Select } from './Select';
 
