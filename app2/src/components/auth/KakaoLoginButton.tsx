@@ -1,3 +1,24 @@
+// TODO: 카카오 로그인 기능 - 나중에 다시 활성화 예정
+// 전체 기능이 주석처리됨
+
+import React from 'react';
+
+interface KakaoLoginButtonProps {
+  onSuccess?: any;
+  onError?: any;
+  className?: string;
+  disabled?: boolean;
+}
+
+// 임시 더미 컴포넌트 (나중에 활성화할 때까지)
+const KakaoLoginButton: React.FC<KakaoLoginButtonProps> = () => {
+  return null; // 아무것도 렌더링하지 않음
+};
+
+export default KakaoLoginButton;
+
+/*
+// 원본 카카오 로그인 컴포넌트 (나중에 활성화 예정)
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
@@ -94,7 +115,6 @@ const KakaoLoginButton: React.FC<KakaoLoginButtonProps> = ({
         borderColor: disabled || isLoading ? '#D1D5DB' : '#FEE500'
       }}
     >
-      {/* 카카오 로고 */}
       <svg
         className="w-5 h-5 mr-2"
         viewBox="0 0 24 24"
@@ -119,3 +139,4 @@ const KakaoLoginButton: React.FC<KakaoLoginButtonProps> = ({
 };
 
 export default KakaoLoginButton;
+*/

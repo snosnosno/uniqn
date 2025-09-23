@@ -6,9 +6,10 @@ import { useNavigate, Link } from "react-router-dom";
 
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from "../components/FormField";
-import KakaoLoginButton from '../components/auth/KakaoLoginButton';
+// TODO: 카카오 로그인 기능 - 나중에 다시 활성화 예정
+// import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 import { useAuth } from "../contexts/AuthContext";
-import { KakaoUserInfo, KakaoAuthResponse } from '../utils/kakaoSdk';
+// import { KakaoUserInfo, KakaoAuthResponse } from '../utils/kakaoSdk';
 import { recordLoginAttempt, isLoginBlocked, formatBlockTime } from '../services/authSecurity';
 
 
@@ -22,7 +23,7 @@ const Login: React.FC = () => {
   const [blockTime, setBlockTime] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle, signInWithKakao } = useAuth();
+  const { signIn, signInWithGoogle /* , signInWithKakao */ } = useAuth();
 
   // 컴포넌트 마운트 시 이전 설정 불러오기 및 차단 상태 확인
   useEffect(() => {
@@ -122,6 +123,8 @@ const Login: React.FC = () => {
     }
   };
 
+  // TODO: 카카오 로그인 핸들러 - 나중에 다시 활성화 예정
+  /*
   const handleKakaoSignIn = async (userInfo: KakaoUserInfo, authResponse: KakaoAuthResponse) => {
     setError('');
     try {
@@ -137,6 +140,7 @@ const Login: React.FC = () => {
     setError(t('kakaoSignIn.error', '카카오 로그인에 실패했습니다.'));
     logger.error('Kakao Sign-In Error:', error, { component: 'Login' });
   };
+  */
 
   return (
     <AuthLayout title={t('login.title')}>
@@ -243,11 +247,14 @@ const Login: React.FC = () => {
             <span className="ml-2">{t('login.googleSignIn')}</span>
           </button>
 
+          {/* TODO: 카카오 로그인 버튼 - 나중에 다시 활성화 예정 */}
+          {/*
           <KakaoLoginButton
             onSuccess={handleKakaoSignIn}
             onError={handleKakaoSignInError}
             disabled={isBlocked}
           />
+          */}
         </div>
       </div>
 
