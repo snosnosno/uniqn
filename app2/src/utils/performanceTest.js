@@ -3,6 +3,8 @@
  * 브라우저에서 실행하여 실제 성능 메트릭 측정
  */
 
+import { logger } from './logger';
+
 const performanceTest = {
   // Core Web Vitals 측정
   measureCoreWebVitals() {
@@ -13,7 +15,7 @@ const performanceTest = {
       const entries = list.getEntries();
       const lcpEntry = entries[entries.length - 1];
       vitals.LCP = lcpEntry.startTime;
-      console.log('LCP:', vitals.LCP.toFixed(2), 'ms');
+      logger.info(`LCP: ${vitals.LCP.toFixed(2)} ms`);
     }).observe({ entryTypes: ['largest-contentful-paint'] });
 
     // First Input Delay (FID) - 사용자 상호작용 시 측정됨
@@ -21,7 +23,7 @@ const performanceTest = {
       const entries = list.getEntries();
       entries.forEach((entry) => {
         vitals.FID = entry.processingStart - entry.startTime;
-        console.log('FID:', vitals.FID.toFixed(2), 'ms');
+        logger.info(`FID: ${vitals.FID.toFixed(2)} ms`);
       });
     }).observe({ entryTypes: ['first-input'] });
 
@@ -34,7 +36,7 @@ const performanceTest = {
         }
       }
       vitals.CLS = clsValue;
-      console.log('CLS:', vitals.CLS.toFixed(4));
+      logger.info(`CLS: ${vitals.CLS.toFixed(4)}`);
     }).observe({ entryTypes: ['layout-shift'] });
 
     return vitals;
@@ -73,9 +75,9 @@ const performanceTest = {
         ttfb: navigation.responseStart - navigation.fetchStart
       };
 
-      console.log('=== 페이지 로딩 성능 ===');
+      logger.info('=== 페이지 로딩 성능 ===');
       Object.entries(metrics).forEach(([key, value]) => {
-        console.log(`${key}:`, value.toFixed(2), 'ms');
+        logger.info(`${key}: ${value.toFixed(2)} ms`);
       });
 
       return metrics;
@@ -115,11 +117,11 @@ const performanceTest = {
       }
     });
 
-    console.log('=== 리소스 분석 ===');
-    console.log('Scripts:', analysis.scripts.length, '개');
-    console.log('Stylesheets:', analysis.stylesheets.length, '개');
-    console.log('Images:', analysis.images.length, '개');
-    console.log('Fonts:', analysis.fonts.length, '개');
+    logger.info('=== 리소스 분석 ===');
+    logger.info(`Scripts: ${analysis.scripts.length}개`);
+    logger.info(`Stylesheets: ${analysis.stylesheets.length}개`);
+    logger.info(`Images: ${analysis.images.length}개`);
+    logger.info(`Fonts: ${analysis.fonts.length}개`);
 
     // 가장 큰 리소스들
     const allResources = [...analysis.scripts, ...analysis.stylesheets, ...analysis.images, ...analysis.others];
@@ -128,9 +130,9 @@ const performanceTest = {
       .sort((a, b) => b.size - a.size)
       .slice(0, 5);
 
-    console.log('=== 가장 큰 리소스 5개 ===');
+    logger.info('=== 가장 큰 리소스 5개 ===');
     largestResources.forEach(resource => {
-      console.log(`${resource.name}: ${(resource.size / 1024).toFixed(2)} KB (${resource.loadTime.toFixed(2)}ms)`);
+      logger.info(`${resource.name}: ${(resource.size / 1024).toFixed(2)} KB (${resource.loadTime.toFixed(2)}ms)`);
     });
 
     return analysis;
@@ -146,22 +148,22 @@ const performanceTest = {
         limit: (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)
       };
 
-      console.log('=== 메모리 사용량 ===');
-      console.log(`사용 중: ${usage.used} MB`);
-      console.log(`할당됨: ${usage.total} MB`);
-      console.log(`한계: ${usage.limit} MB`);
+      logger.info('=== 메모리 사용량 ===');
+      logger.info(`사용 중: ${usage.used} MB`);
+      logger.info(`할당됨: ${usage.total} MB`);
+      logger.info(`한계: ${usage.limit} MB`);
 
       return usage;
     } else {
-      console.log('메모리 정보를 사용할 수 없습니다.');
+      logger.warn('메모리 정보를 사용할 수 없습니다.');
       return null;
     }
   },
 
   // 전체 성능 테스트 실행
   runFullTest() {
-    console.log('🚀 T-HOLDEM 랜딩페이지 성능 테스트 시작');
-    console.log('=====================================');
+    logger.info('🚀 T-HOLDEM 랜딩페이지 성능 테스트 시작');
+    logger.info('=====================================');
 
     // 페이지 로드 완료 후 측정
     if (document.readyState === 'complete') {
@@ -180,8 +182,8 @@ const performanceTest = {
       });
     }
 
-    console.log('=====================================');
-    console.log('✅ 성능 테스트 완료');
+    logger.info('=====================================');
+    logger.info('✅ 성능 테스트 완료');
   }
 };
 

@@ -203,7 +203,6 @@ const transformAttendanceData = (doc: DocumentData): AttendanceRecord => ({
   status: doc.status || 'not_started',
   checkInTime: doc.checkInTime,
   checkOutTime: doc.checkOutTime,
-  location: doc.location,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
 });

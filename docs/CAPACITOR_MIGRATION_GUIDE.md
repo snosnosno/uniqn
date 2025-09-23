@@ -17,16 +17,16 @@
 ### **0.1 프로젝트 분석 및 정리** ✅ 체크리스트
 
 #### **불필요한 문서 정리**
-- [ ] `/docs/EXPO_MOBILE_PLAN.md` - 사용하지 않는 Expo 계획 (삭제 대상)
-- [ ] `/docs/SUBSCRIPTION_MODEL.md` - 미구현 구독 모델 (보관 또는 삭제)
-- [ ] `/docs/mobile/` 디렉토리 - 빈 디렉토리 (삭제)
-- [ ] 기타 미사용 문서 확인 및 정리
+- [x] `/docs/EXPO_MOBILE_PLAN.md` - 사용하지 않는 Expo 계획 (삭제 완료)
+- [x] `/docs/SUBSCRIPTION_MODEL.md` - 미구현 구독 모델 (보관으로 복구 완료)
+- [x] `/docs/mobile/` 디렉토리 - 빈 디렉토리 (삭제 완료)
+- [x] 기타 미사용 문서 확인 및 정리
 
 #### **코드 최적화**
-- [ ] 사용하지 않는 import 제거
-- [ ] Dead code 제거
-- [ ] Console.log → logger로 완전 교체 확인
-- [ ] TypeScript any 타입 최종 점검
+- [x] 사용하지 않는 import 제거
+- [x] Dead code 제거 (QRScannerModal.tsx 등)
+- [x] Console.log → logger로 완전 교체 확인 (performanceTest.js)
+- [x] TypeScript any 타입 최종 점검 (빌드 에러 수정)
 
 #### **패키지 정리**
 ```bash
@@ -35,8 +35,8 @@ npm ls --depth=0  # 설치된 패키지 목록
 npm outdated      # 오래된 패키지 확인
 ```
 
-- [ ] 미사용 패키지 확인
-  - [ ] `react-qr-scanner` - QR 스캔 사용 여부 확인
+- [x] 미사용 패키지 확인
+  - [x] `react-qr-scanner` - QR 스캔 사용 안함 (제거 완료)
   - [ ] `xlsx` - 엑셀 처리 필요성 검토
   - [ ] `@dnd-kit` - 드래그앤드롭 사용 여부
 - [ ] 패키지 버전 업데이트
