@@ -59,9 +59,10 @@ const UserManagementPage: React.FC = () => {
     try {
         await callFunctionLazy('deleteUser', { uid: userId });
         alert(t('userManagement.deleteSuccess'));
-    } catch (err: any) {
+    } catch (err: unknown) {
         logger.error('Error deleting user:', err instanceof Error ? err : new Error(String(err)), { component: 'UserManagementPage' });
-        setError(err.message || t('userManagement.deleteError'));
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setError(errorMessage || t('userManagement.deleteError'));
     }
   };
 

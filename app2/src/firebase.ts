@@ -7,16 +7,15 @@ import { getFirestore, doc, collection, getDocs, writeBatch, query, where, order
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
 import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || '',
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || '',
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || '',
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || '',
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || ''
-};
+// Import centralized config
+import { firebaseConfig, emulatorConfig, validateConfig } from './config/firebase.config';
+
+// Validate configuration on load
+if (!validateConfig()) {
+  logger.warn('Firebase configuration validation failed', {
+    component: 'firebase.ts'
+  });
+}
 
 const app = initializeApp(firebaseConfig);
 export { app }; // Export app for Firebase Performance
@@ -27,7 +26,7 @@ export const db = getFirestore(app); // Export db as a named export
 // firebase-dynamic.ts의 getStorageLazy(), getFunctionsLazy() 사용
 
 // Connect to Firebase Emulators for local development
-const isEmulator = process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true';
+const { useEmulator: isEmulator } = emulatorConfig;
 
 if (isEmulator) {
   try {
@@ -40,8 +39,8 @@ if (isEmulator) {
     // Set additional emulator-specific settings
     if (typeof window !== 'undefined') {
       // Disable token refresh for emulator mode
-      (window as any).__FIREBASE_DEFAULTS__ = {
-        ...((window as any).__FIREBASE_DEFAULTS__ || {}),
+      window.__FIREBASE_DEFAULTS__ = {
+        ...(window.__FIREBASE_DEFAULTS__ || {}),
         emulatorHosts: {
           auth: 'localhost:9099',
           firestore: 'localhost:8080'

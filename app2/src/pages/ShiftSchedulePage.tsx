@@ -138,7 +138,7 @@ const ShiftSchedulePage: React.FC = () => {
   };
 
   // 설정 변경 핸들러
-  const handleSettingChange = (key: string, value: any) => {
+  const handleSettingChange = (key: string, value: string | number | boolean) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
@@ -188,7 +188,7 @@ const ShiftSchedulePage: React.FC = () => {
   };
   
   // 날짜 포맷팅
-  const formatDate = (dateInput: any) => {
+  const formatDate = (dateInput: string | Date | null | undefined) => {
     if (!dateInput) return '';
     
     try {
@@ -197,7 +197,7 @@ const ShiftSchedulePage: React.FC = () => {
       // Handle Firebase Timestamp object
       if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
         // Firebase Timestamp object
-        date = new Date(dateInput.seconds * 1000);
+        date = new Date((dateInput as any).seconds * 1000);
       } else if (dateInput instanceof Date) {
         // Already a Date object
         date = dateInput;

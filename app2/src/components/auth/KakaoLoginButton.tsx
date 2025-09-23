@@ -4,8 +4,8 @@
 import React from 'react';
 
 interface KakaoLoginButtonProps {
-  onSuccess?: any;
-  onError?: any;
+  onSuccess?: (userInfo: unknown, authResponse: unknown) => void;
+  onError?: (error: Error) => void;
   className?: string;
   disabled?: boolean;
 }

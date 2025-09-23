@@ -486,7 +486,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     const debugInfo: Record<string, unknown> = {
       requestedStaffId: staffId,
       requestedDate: date,
-      jobPostingId: jobPosting.id,
+      eventId: jobPosting.id,
       expectedWorkLogId: expectedWorkLogId,
       candidateIds: candidates,
       foundWorkLogId: foundWithId,

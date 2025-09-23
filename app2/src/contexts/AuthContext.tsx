@@ -1,5 +1,6 @@
 import {
   User as FirebaseUser,
+  UserCredential,
   signInWithEmailAndPassword,
   onAuthStateChanged,
   GoogleAuthProvider,
@@ -30,8 +31,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<any>;
   sendPasswordReset: (email: string) => Promise<void>;
-  signInWithGoogle: () => Promise<any>;
-  signInWithKakao: (kakaoToken: string, userInfo: any) => Promise<any>;
+  signInWithGoogle: () => Promise<UserCredential>;
+  signInWithKakao: (kakaoToken: string, userInfo: unknown) => Promise<UserCredential>;
   sendEmailVerification: () => Promise<void>;
   reloadUser: () => Promise<void>;
 }
@@ -137,13 +138,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return signInWithPopup(auth, provider);
   };
 
-  const signInWithKakao = async (kakaoToken: string, userInfo: any) => {
+  const signInWithKakao = async (kakaoToken: string, userInfo: unknown) => {
     try {
       logger.info('카카오 토큰으로 Firebase Custom Auth 시도', {
         component: 'AuthContext',
         data: {
-          kakaoUserId: userInfo.id,
-          hasEmail: !!userInfo.kakao_account?.email
+          kakaoUserId: (userInfo as any)?.id,
+          hasEmail: !!(userInfo as any)?.kakao_account?.email
         }
       });
 

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { lazy, Suspense } from 'react';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Auth pages - load immediately for better UX
@@ -25,27 +26,27 @@ import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 
 
-// Lazy load admin pages
-const ApprovalPage = lazy(() => import('./pages/admin/Approval'));
-const CEODashboard = lazy(() => import('./pages/admin/CEODashboard'));
-const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
-const InquiryManagementPage = lazy(() => import('./pages/admin/InquiryManagementPage'));
+// Lazy load admin pages with retry mechanism
+const ApprovalPage = lazyWithRetry(() => import('./pages/admin/Approval'));
+const CEODashboard = lazyWithRetry(() => import('./pages/admin/CEODashboard'));
+const UserManagementPage = lazyWithRetry(() => import('./pages/admin/UserManagementPage'));
+const InquiryManagementPage = lazyWithRetry(() => import('./pages/admin/InquiryManagementPage'));
 
-// Lazy load main pages
-const AttendancePage = lazy(() => import('./pages/AttendancePage'));
-const AvailableTimesPage = lazy(() => import('./pages/AvailableTimesPage'));
-const JobBoardPage = lazy(() => import('./pages/JobBoardPage'));
-const JobPostingAdminPage = lazy(() => import('./pages/JobPostingAdminPage'));
-const JobPostingDetailPage = lazy(() => import('./pages/JobPostingDetailPage'));
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const MySchedulePage = lazy(() => import('./pages/MySchedulePage'));
-const ParticipantsPage = lazy(() => import('./pages/ParticipantsPage'));
-const PrizesPage = lazy(() => import('./pages/PrizesPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const ShiftSchedulePage = lazy(() => import('./pages/ShiftSchedulePage'));
-const StaffNewPage = lazy(() => import('./pages/StaffNewPage'));
-const SupportPage = lazy(() => import('./pages/SupportPage'));
-const TablesPage = lazy(() => import('./pages/TablesPage'));
+// Lazy load main pages with retry mechanism
+const AttendancePage = lazyWithRetry(() => import('./pages/AttendancePage'));
+const AvailableTimesPage = lazyWithRetry(() => import('./pages/AvailableTimesPage'));
+const JobBoardPage = lazyWithRetry(() => import('./pages/JobBoardPage'));
+const JobPostingAdminPage = lazyWithRetry(() => import('./pages/JobPostingAdminPage'));
+const JobPostingDetailPage = lazyWithRetry(() => import('./pages/JobPostingDetailPage'));
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'));
+const MySchedulePage = lazyWithRetry(() => import('./pages/MySchedulePage'));
+const ParticipantsPage = lazyWithRetry(() => import('./pages/ParticipantsPage'));
+const PrizesPage = lazyWithRetry(() => import('./pages/PrizesPage'));
+const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
+const ShiftSchedulePage = lazyWithRetry(() => import('./pages/ShiftSchedulePage'));
+const StaffNewPage = lazyWithRetry(() => import('./pages/StaffNewPage'));
+const SupportPage = lazyWithRetry(() => import('./pages/SupportPage'));
+const TablesPage = lazyWithRetry(() => import('./pages/TablesPage'));
 
 
 // A component to handle role-based redirection for authenticated users

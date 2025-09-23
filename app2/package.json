@@ -73,7 +73,7 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|react-dnd|@dnd-kit|dnd-core|@react-dnd/.*|react-dnd-html5-backend)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|react-dnd|@dnd-kit|dnd-core|@react-dnd/.*|react-dnd-html5-backend|@firebase|firebase|web-vitals)"
     ],
     "moduleNameMapper": {
       "^react$": "<rootDir>/node_modules/react",

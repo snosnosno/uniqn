@@ -6,12 +6,12 @@ import { UnifiedWorkLog } from '../types/unified/workLog';
 
 // 기존 컨텍스트 타입 유지 + workLogs 추가
 interface JobPostingContextType {
-  jobPosting: any | null;
+  jobPosting: unknown | null;
   loading: boolean;
   error: string | null;
   refreshJobPosting: () => Promise<void>;
-  applicants: any[];
-  staff: any[];
+  applicants: unknown[];
+  staff: unknown[];
   refreshApplicants: () => Promise<void>;
   refreshStaff: () => void;
   // WorkLogs 관련 추가

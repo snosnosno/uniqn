@@ -93,12 +93,13 @@ const SignUp: React.FC = () => {
         isOpen: true,
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('Registration request failed:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });
-      if (err.code === 'functions/already-exists') {
+      const error = err as any;
+      if (error.code === 'functions/already-exists') {
         setError(t('signUp.emailInUseError'));
-      } else if (err.code === 'functions/invalid-argument') {
-        const originalCode = err.details?.originalCode;
+      } else if (error.code === 'functions/invalid-argument') {
+        const originalCode = error.details?.originalCode;
         if (originalCode === 'auth/invalid-email') {
           setError(t('signUp.invalidEmailError'));
         } else if (originalCode === 'auth/weak-password') {
@@ -119,7 +120,7 @@ const SignUp: React.FC = () => {
     try {
       await signInWithGoogle();
       navigate('/app');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(t('googleSignIn.error'));
       logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });
     }

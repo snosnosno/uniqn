@@ -29,4 +29,11 @@ interface Navigator {
 // Window 타입 확장
 interface Window {
   gtag?: typeof gtag;
+  __FIREBASE_DEFAULTS__?: {
+    emulatorHosts?: {
+      auth?: string;
+      firestore?: string;
+    };
+    [key: string]: unknown;
+  };
 }

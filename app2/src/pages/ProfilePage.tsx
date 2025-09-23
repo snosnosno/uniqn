@@ -114,8 +114,9 @@ const ProfilePage = () => {
 
                     setErrorProfile(new Error(t('profilePage.userNotFound')));
                 }
-            } catch (err: any) {
-                setErrorProfile(err);
+            } catch (err: unknown) {
+                const error = err instanceof Error ? err : new Error(String(err));
+                setErrorProfile(error);
             } finally {
                 setLoadingProfile(false);
             }
@@ -173,7 +174,7 @@ const ProfilePage = () => {
                 component: 'ProfilePage',
                 data: { imageUrl }
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.error("프로필 이미지 업데이트 실패", err instanceof Error ? err : new Error(String(err)), {
                 operation: 'updateProfileImage',
                 ...(profileId && { userId: profileId })
@@ -223,12 +224,13 @@ const ProfilePage = () => {
 
             setIsEditing(false);
             toast.success(t('profilePage.updateSuccess'));
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.error("Error updating profile", err instanceof Error ? err : new Error(String(err)), {
                 operation: 'updateProfile',
                 ...(profileId && { userId: profileId })
             });
-            toast.error(t('profilePage.updateFailed', { message: err.message }));
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            toast.error(t('profilePage.updateFailed', { message: errorMessage }));
         }
     };
 

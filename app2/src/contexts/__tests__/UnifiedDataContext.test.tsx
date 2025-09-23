@@ -89,7 +89,7 @@ describe('UnifiedDataContext', () => {
     
     // Firebase onSnapshot 모킹
     mockOnSnapshot = require('../../firebase').onSnapshot;
-    mockOnSnapshot.mockImplementation((query: any, callback: Function) => {
+    mockOnSnapshot.mockImplementation((query: unknown, callback: Function) => {
       // 초기 데이터로 콜백 호출
       setTimeout(() => {
         callback(mockFirebaseSnapshot([]));
@@ -161,7 +161,7 @@ describe('UnifiedDataContext', () => {
         { id: 'staff-2', staffId: 'staff-2', name: '테스트 스태프 2' }
       ];
 
-      mockOnSnapshot.mockImplementationOnce((query: any, callback: Function) => {
+      mockOnSnapshot.mockImplementationOnce((query: unknown, callback: Function) => {
         setTimeout(() => {
           callback(mockFirebaseSnapshot(mockStaffData));
         }, 0);
@@ -186,7 +186,7 @@ describe('UnifiedDataContext', () => {
         { id: 'log-2', staffId: 'staff-2', eventId: 'event-1', date: '2025-02-02' }
       ];
 
-      mockOnSnapshot.mockImplementation((query: any, callback: Function) => {
+      mockOnSnapshot.mockImplementation((query: unknown, callback: Function) => {
         // 첫 번째 호출은 staff, 두 번째 호출은 workLogs
         const callCount = mockOnSnapshot.mock.calls.length;
         if (callCount === 1) {
@@ -209,7 +209,7 @@ describe('UnifiedDataContext', () => {
     });
 
     it('Firebase 에러를 올바르게 처리해야 함', async () => {
-      mockOnSnapshot.mockImplementationOnce((query: any, callback: Function, errorCallback: Function) => {
+      mockOnSnapshot.mockImplementationOnce((query: unknown, callback: Function, errorCallback: Function) => {
         setTimeout(() => {
           errorCallback(new Error('Firebase 연결 실패'));
         }, 0);
@@ -260,7 +260,7 @@ describe('UnifiedDataContext', () => {
         { id: 'staff-1', staffId: 'staff-1', name: '새 스태프' }
       ];
 
-      mockOnSnapshot.mockImplementationOnce((query: any, callback: Function) => {
+      mockOnSnapshot.mockImplementationOnce((query: unknown, callback: Function) => {
         setTimeout(() => {
           callback(mockFirebaseSnapshot(mockStaffData));
         }, 0);
@@ -373,7 +373,7 @@ describe('UnifiedDataContext', () => {
         { id: 'invalid', invalidField: 'should not exist' }
       ];
 
-      mockOnSnapshot.mockImplementationOnce((query: any, callback: Function) => {
+      mockOnSnapshot.mockImplementationOnce((query: unknown, callback: Function) => {
         setTimeout(() => {
           callback(mockFirebaseSnapshot(invalidData));
         }, 0);
@@ -402,7 +402,7 @@ describe('UnifiedDataContext', () => {
         { id: 'staff-1', staffId: 'staff-1', name: '스태프 1' }
       ];
 
-      mockOnSnapshot.mockImplementationOnce((query: any, callback: Function) => {
+      mockOnSnapshot.mockImplementationOnce((query: unknown, callback: Function) => {
         setTimeout(() => {
           callback(mockFirebaseSnapshot(mockStaffData));
         }, 0);
@@ -476,7 +476,7 @@ describe('UnifiedDataContext', () => {
   describe('에러 복구', () => {
     it('일시적 네트워크 에러에서 자동 복구해야 함', async () => {
       let callCount = 0;
-      mockOnSnapshot.mockImplementation((query: any, callback: Function, errorCallback: Function) => {
+      mockOnSnapshot.mockImplementation((query: unknown, callback: Function, errorCallback: Function) => {
         callCount++;
         if (callCount === 1) {
           // 첫 번째 호출에서는 에러

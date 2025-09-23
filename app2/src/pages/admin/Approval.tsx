@@ -42,7 +42,7 @@ const ApprovalPage: React.FC = () => {
         try {
             await callFunctionLazy('processRegistration', { targetUid, action });
             // The onSnapshot listener will automatically update the list
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.error(`Error processing ${action} for ${targetUid}:`, err instanceof Error ? err : new Error(String(err)), { component: 'Approval' });
             // Use a more specific error message from the 'approvalPage' namespace
             alert(t('approvalPage.processError', { action: t(action) }));
