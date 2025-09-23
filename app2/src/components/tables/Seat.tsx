@@ -2,6 +2,7 @@ import React from 'react';
 
 import { Table } from '../../hooks/useTables';
 import { Participant } from '../../hooks/useParticipants';
+import { logger } from '../../utils/logger';
 
 export interface SeatProps {
   table: Table;
@@ -30,9 +31,30 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, par
 
   const handleClick = (event: React.MouseEvent) => {
     if (participantId && onPlayerSelect) {
+      logger.info('좌석에서 참가자가 클릭되었습니다', {
+        component: 'Seat',
+        additionalData: {
+          participantId,
+          participantName: participantName,
+          tableId: table.id,
+          tableName: table.name,
+          seatIndex,
+          hasOnPlayerSelect: !!onPlayerSelect
+        }
+      });
+
       event.preventDefault();
       event.stopPropagation();
       onPlayerSelect(participantId, table.id, seatIndex, event);
+    } else {
+      logger.debug('좌석 클릭이 무시되었습니다', {
+        component: 'Seat',
+        additionalData: {
+          hasParticipant: !!participantId,
+          hasOnPlayerSelect: !!onPlayerSelect,
+          participantName: participantName
+        }
+      });
     }
   };
 

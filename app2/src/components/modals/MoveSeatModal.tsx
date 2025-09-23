@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Participant } from '../../hooks/useParticipants';
 import { Table } from '../../hooks/useTables';
+import { logger } from '../../utils/logger';
 
 import Modal, { ModalFooter } from '../ui/Modal';
 
@@ -30,16 +31,49 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
   if (!isOpen || !movingParticipant) return null;
 
   const handleSeatSelect = (tableId: string, seatIndex: number, participantId: string | null, tableStatus?: string) => {
+    logger.info('자리 선택을 시도합니다', {
+      component: 'MoveSeatModal',
+      additionalData: {
+        tableId,
+        seatIndex,
+        participantId,
+        tableStatus,
+        isEmpty: !participantId,
+        isTableOpen: tableStatus === 'open'
+      }
+    });
+
     // FIX: Use a looser check for empty seat (!participantId) to handle both null and undefined.
     if (!participantId && tableStatus === 'open') {
       setSelectedSeat({ tableId, seatIndex });
+      logger.info('자리 선택 성공', { component: 'MoveSeatModal', additionalData: { tableId, seatIndex } });
+    } else {
+      logger.warn('자리 선택 불가능', {
+        component: 'MoveSeatModal',
+        additionalData: {
+          reason: participantId ? '이미 점유된 자리' : '테이블이 열려있지 않음',
+          tableId,
+          seatIndex,
+          participantId,
+          tableStatus
+        }
+      });
     }
   };
 
   const handleConfirm = () => {
     if (selectedSeat) {
+      logger.info('자리 이동 확정 버튼 클릭', {
+        component: 'MoveSeatModal',
+        additionalData: {
+          selectedSeat,
+          movingParticipant: movingParticipant?.id
+        }
+      });
       onConfirmMove(selectedSeat.tableId, selectedSeat.seatIndex);
       setSelectedSeat(null);
+    } else {
+      logger.warn('자리 이동 확정 실패: 선택된 자리가 없음', { component: 'MoveSeatModal' });
     }
   };
   
@@ -84,19 +118,25 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
             <div className="grid grid-cols-5 gap-2">
               {table.seats.map((participantId, seatIndex) => {
                 const isSelected = selectedSeat?.tableId === table.id && selectedSeat?.seatIndex === seatIndex;
-                const isSelectable = !participantId && table.status === 'open';
+                const isCurrentSeat = participantId === movingParticipant.id;
+                const isSelectable = !participantId && table.status === 'open' && !isCurrentSeat;
 
                 return (
                   <div
                     key={seatIndex}
                     onClick={() => handleSeatSelect(table.id, seatIndex, participantId, table.status)}
                     className={`relative p-2 rounded-md h-16 flex flex-col justify-center items-center text-xs group
-                      ${isSelectable ? 'cursor-pointer bg-green-100 text-green-800 border-2 border-dashed border-green-400' : 'bg-gray-300 text-gray-600'}
+                      ${isCurrentSeat ? 'bg-yellow-200 text-yellow-800 border-2 border-yellow-500' :
+                        isSelectable ? 'cursor-pointer bg-green-100 text-green-800 border-2 border-dashed border-green-400 hover:bg-green-200' :
+                        'bg-gray-300 text-gray-600'}
                       ${isSelected ? 'ring-4 ring-blue-500' : ''}
                     `}
+                    title={isCurrentSeat ? '현재 위치' : isSelectable ? '이동 가능한 자리' : '이동 불가능한 자리'}
                   >
                     <span className="font-bold text-sm mb-1">{seatIndex + 1}</span>
-                    <span className="font-semibold">{getParticipantName(participantId)}</span>
+                    <span className="font-semibold truncate w-full text-center">
+                      {isCurrentSeat ? `${getParticipantName(participantId)} (현재)` : getParticipantName(participantId)}
+                    </span>
                   </div>
                 );
               })}

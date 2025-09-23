@@ -122,7 +122,15 @@ const TableCard: React.FC<TableCardProps> = ({
         {seatInfo.map((seat) => (
           <div key={seat.seatNumber} className="text-center">
             {seat.name ? (
-              <div className="border rounded p-1 bg-gray-50">
+              <div
+                className="border rounded p-1 bg-gray-50 cursor-pointer hover:bg-blue-50 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation(); // 테이블 카드 클릭 방지
+                  // 여기서 참가자 정보를 부모로 전달해야 하지만, 현재 props에 onPlayerSelect가 없음
+                  // 일단 테이블 디테일 모달을 열도록 하자
+                  onTableClick();
+                }}
+              >
                 <div className="text-xs font-medium truncate">
                   {seat.seatNumber}. {seat.name}
                 </div>

@@ -110,10 +110,6 @@ export interface AttendanceRecord {
   status: 'not_started' | 'checked_in' | 'checked_out';
   checkInTime?: Timestamp;
   checkOutTime?: Timestamp;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

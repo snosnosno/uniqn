@@ -87,6 +87,7 @@ const TablesPage: React.FC = () => {
 
     const handlePlayerSelect = (participant: Participant | null, table: Table, seatIndex: number, event?: React.MouseEvent) => {
         if (participant && event) {
+            logger.info('참가자가 선택되었습니다', { component: 'TablesPage', additionalData: { participantId: participant.id, participantName: participant.name, tableId: table.id, seatIndex } });
             event.preventDefault();
             event.stopPropagation();
             setActionMenu({ x: event.clientX, y: event.clientY });
@@ -108,7 +109,10 @@ const TablesPage: React.FC = () => {
     
     const handleOpenMoveSeatModal = () => {
         if (selectedPlayer?.participant) {
+            logger.info('자리 이동 모달 열기 시도', { component: 'TablesPage', additionalData: { participantId: selectedPlayer.participant.id, participantName: selectedPlayer.participant.name } });
             setMoveSeatModalOpen(true);
+        } else {
+            logger.warn('자리 이동 모달 열기 실패: selectedPlayer가 없음', { component: 'TablesPage' });
         }
         setActionMenu(null);
     };
@@ -120,6 +124,18 @@ const TablesPage: React.FC = () => {
 
     const handleConfirmMove = async (toTableId: string, toSeatIndex: number) => {
         if (selectedPlayer?.participant && selectedPlayer.table) {
+            logger.info('자리 이동 확정 시도', {
+                component: 'TablesPage',
+                additionalData: {
+                    participantId: selectedPlayer.participant.id,
+                    participantName: selectedPlayer.participant.name,
+                    fromTableId: selectedPlayer.table.id,
+                    fromSeatIndex: selectedPlayer.seatIndex,
+                    toTableId,
+                    toSeatIndex
+                }
+            });
+
             try {
                 await moveSeat(selectedPlayer.participant.id,
                     { tableId: selectedPlayer.table.id, seatIndex: selectedPlayer.seatIndex },
@@ -127,10 +143,20 @@ const TablesPage: React.FC = () => {
                 );
                 handleCloseMoveSeatModal();
                 toast.success('참가자가 성공적으로 이동되었습니다.');
+                logger.info('자리 이동 성공', { component: 'TablesPage', additionalData: { participantId: selectedPlayer.participant.id } });
             } catch (error) {
-                logger.error('Failed to move participant:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+                logger.error('참가자 이동 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
                 toast.error('참가자 이동 중 오류가 발생했습니다.');
             }
+        } else {
+            logger.warn('자리 이동 확정 실패: 필요한 정보가 없음', {
+                component: 'TablesPage',
+                additionalData: {
+                    hasSelectedPlayer: !!selectedPlayer,
+                    hasParticipant: !!selectedPlayer?.participant,
+                    hasTable: !!selectedPlayer?.table
+                }
+            });
         }
     };
 

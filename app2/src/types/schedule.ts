@@ -192,10 +192,6 @@ export interface AttendanceRequest {
   scheduleId: string;
   action: 'checkIn' | 'checkOut';
   timestamp: Timestamp;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
 }
 
 /**
