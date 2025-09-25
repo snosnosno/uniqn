@@ -2,7 +2,8 @@ import { StarIcon } from '@heroicons/react/24/solid';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+// Link - 향후 사용 예정
 
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
@@ -32,7 +33,8 @@ interface ProfileData {
 
 const ProfilePage = () => {
     const { t } = useTranslation();
-    const { currentUser, isAdmin } = useAuth();
+    const { currentUser } = useAuth();
+    // isAdmin - 향후 사용 예정
     const { userId } = useParams<{ userId: string }>();
     const profileId = userId || currentUser?.uid;
 

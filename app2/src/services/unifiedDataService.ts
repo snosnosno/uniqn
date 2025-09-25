@@ -11,16 +11,16 @@ import {
   collection,
   onSnapshot,
   query,
-  // where, // TODO: 미래 필터링 기능용 - 현재 미사용
   orderBy,
   Unsubscribe,
   QuerySnapshot,
   DocumentData,
 } from 'firebase/firestore';
+// where - 미래 필터링 기능용 (현재 미사용)
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import {
-  Staff,
+  // Staff, // 미래 사용용
   WorkLog,
   AttendanceRecord,
   JobPosting,
@@ -30,8 +30,8 @@ import {
 } from '../types/unifiedData';
 import {
   Application,
-  // LegacyApplication // TODO: 레거시 지원용 타입 - 현재 미사용
 } from '../types/application';
+// LegacyApplication - 레거시 지원용 타입 (현재 미사용)
 // Application types imported from types/application
 
 // 구독 관리 인터페이스

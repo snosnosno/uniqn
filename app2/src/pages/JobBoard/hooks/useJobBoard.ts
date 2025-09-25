@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { serverTimestamp, addDoc, collection, doc, deleteDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
-import useUnifiedData, { useJobPostingData } from '../../../hooks/useUnifiedData';
+import useUnifiedData from '../../../hooks/useUnifiedData';
+// { useJobPostingData } - 향후 사용 예정
 import { useUnifiedDataContext } from '../../../contexts/UnifiedDataContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -122,8 +123,8 @@ export const useJobBoard = () => {
     setAppliedJobs(appliedMap);
   }, [jobPostings, currentUser, unifiedContext.state.applications]);
   
-  // UnifiedDataContext에서 지원 현황 가져오기
-  const { jobPostings: allJobPostings } = useJobPostingData();
+  // UnifiedDataContext에서 지원 현황 가져오기 (향후 사용 예정)
+  // const { jobPostings: allJobPostings } = useJobPostingData();
   
   // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
   const myApplications = useMemo(() => {
@@ -293,7 +294,7 @@ export const useJobBoard = () => {
       });
       
       // 2단계: 그룹화된 assignments를 통합 assignment로 변환
-      const assignments = Array.from(groupedAssignments.entries()).map(([groupKey, items]) => {
+      const assignments = Array.from(groupedAssignments.entries()).map(([_groupKey, items]) => {
         // 🔒 안전 검사: items 배열이 비어있으면 스킵
         if (!items.length) return null;
         

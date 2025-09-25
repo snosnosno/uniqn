@@ -81,9 +81,10 @@ const TablesPage: React.FC = () => {
         return p ? p.name : t('tables.participantUnknown');
     };
 
-    const getStaffName = (_staffId: string | null): string => {
-        return t('tables.dealerNotApplicable');
-    };
+    // getStaffName - 향후 사용 예정
+    // const getStaffName = (_staffId: string | null): string => {
+    //     return t('tables.dealerNotApplicable');
+    // };
 
     const handlePlayerSelect = (participant: Participant | null, table: Table, seatIndex: number, event?: React.MouseEvent) => {
         if (participant && event) {
@@ -197,7 +198,7 @@ const TablesPage: React.FC = () => {
     
     const currentDetailTable = tables.find(t => t.id === detailModalTable?.id) || null;
 
-    const handleContainerClick = (e: React.MouseEvent) => {
+    const handleContainerClick = (_e: React.MouseEvent) => {
         // 자리 이동 모달이나 다른 모달이 열려있을 때는 이벤트 무시
         if (isMoveSeatModalOpen || detailModalParticipant || currentDetailTable) return;
         handleCloseActionMenu();

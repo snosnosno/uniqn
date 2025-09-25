@@ -1,30 +1,32 @@
-import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc, where } from 'firebase/firestore';
+// Firebase imports - 향후 사용 예정
+// import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle } from '../components/Icons/ReactIconsReplacement';
 
 import ShiftGridComponent from '../components/ShiftGridComponent';
-import TimeIntervalSelector from '../components/time/TimeIntervalSelector';
-import { useAuth } from '../contexts/AuthContext';
+// import TimeIntervalSelector from '../components/time/TimeIntervalSelector'; // 향후 사용 예정
+// import { useAuth } from '../contexts/AuthContext'; // 향후 사용 예정
 import { useUnifiedData } from '../hooks/useUnifiedData';
 import { WorkLog } from '../types/unifiedData';
-import { db } from '../firebase';
+// import { db } from '../firebase'; // 향후 사용 예정
 import { useShiftSchedule, ShiftDealer } from '../hooks/useShiftSchedule';
 import useTables from '../hooks/useTables';
 import { useToast } from '../hooks/useToast';
 
 const ShiftSchedulePage: React.FC = () => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
+  // const { currentUser } = useAuth(); // 향후 사용 예정
+  const { showError } = useToast();
   
   // 현재 선택된 날짜 상태
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
+  const [selectedDate] = useState<string>(() => {
     const today = new Date();
     const datePart = today.toISOString().split('T')[0];
     return datePart || ''; // YYYY-MM-DD 형식
   });
+  // setSelectedDate - 향후 사용 예정
   
   // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)
   const [selectedEventId] = useState<string>('default-event');
@@ -36,18 +38,14 @@ const ShiftSchedulePage: React.FC = () => {
   const { tables, loading: tablesLoading } = useTables();
   
   // 교대 스케줄 데이터
-  const { 
-    schedule, 
-    loading: scheduleLoading, 
+  const {
+    schedule,
+    loading: scheduleLoading,
     error: scheduleError,
     timeSlots,
     dealers,
     validationResult,
-    createSchedule,
     updateDealerAssignment,
-    addDealer,
-    updateScheduleSettings,
-    generateWorkLogs,
     checkWorkLogsExist
   } = useShiftSchedule(selectedEventId, selectedDate);
   
@@ -90,8 +88,8 @@ const ShiftSchedulePage: React.FC = () => {
   
   const loading = workLogsLoading || tablesLoading || scheduleLoading;
   
-  // 근무기록 상태
-  const [isGeneratingWorkLogs, setIsGeneratingWorkLogs] = useState(false);
+  // 근무기록 상태 (향후 사용 예정)
+  // const [isGeneratingWorkLogs, setIsGeneratingWorkLogs] = useState(false);
   const [workLogsGenerated, setWorkLogsGenerated] = useState(false);
   
   // 설정 모달 상태
@@ -145,35 +143,35 @@ const ShiftSchedulePage: React.FC = () => {
     }));
   };
   
-  // 날짜 변경 핸들러
-  const handleDateChange = (newDate: string) => {
-    setSelectedDate(newDate);
-  };
+  // 날짜 변경 핸들러 (향후 사용 예정)
+  // const handleDateChange = (newDate: string) => {
+  //   setSelectedDate(newDate);
+  // };
   
   // 스태프 추가 핸들러 - 업데이트 예정
-  const handleAddStaff = async (staffId: string, staffName: string) => {
+  const handleAddStaff = async (_staffId: string, _staffName: string) => {
     showError('이 기능은 현재 업데이트 중입니다.');
     return;
   };
   
   // 스태프 제거 핸들러 - 업데이트 예정
-  const handleRemoveStaff = async (staffId: string) => {
+  const handleRemoveStaff = async (_staffId: string) => {
     showError('이 기능은 현재 업데이트 중입니다.');
     return;
   };
   
   // 근무기록 생성 핸들러 - 업데이트 예정
-  const handleGenerateWorkLogs = async () => {
-    showError('이 기능은 현재 업데이트 중입니다.');
-    return;
-  };
+  // const handleGenerateWorkLogs = async () => {
+  //   showError('이 기능은 현재 업데이트 중입니다.');
+  //   return;
+  // };
   
-  // 사용자 확인 모달 (스태프 제거용)
-  const confirmRemoveStaff = (staffId: string, staffName: string) => {
-    if (window.confirm(t('shiftSchedule.confirmRemoveStaff', { staffName: staffName }))) {
-      handleRemoveStaff(staffId);
-    }
-  };
+  // 사용자 확인 모달 (스태프 제거용) - 향후 사용 예정
+  // const confirmRemoveStaff = (staffId: string, staffName: string) => {
+  //   if (window.confirm(t('shiftSchedule.confirmRemoveStaff', { staffName: staffName }))) {
+  //     handleRemoveStaff(staffId);
+  //   }
+  // };
   
   // 새 스케줄 생성 핸들러 - 업데이트 예정
   const handleCreateSchedule = async () => {
@@ -182,10 +180,10 @@ const ShiftSchedulePage: React.FC = () => {
   };
   
   // 시간 간격 변경 핸들러 - 업데이트 예정
-  const handleIntervalChange = async (newInterval: number) => {
-    showError('이 기능은 현재 업데이트 중입니다.');
-    return;
-  };
+  // const handleIntervalChange = async (_newInterval: number) => {
+  //   showError('이 기능은 현재 업데이트 중입니다.');
+  //   return;
+  // };
   
   // 날짜 포맷팅
   const formatDate = (dateInput: string | Date | null | undefined) => {

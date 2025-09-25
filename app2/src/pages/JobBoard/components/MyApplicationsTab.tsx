@@ -6,7 +6,7 @@ import { logger } from '../../../utils/logger';
 import AssignmentDisplay from '../../../components/common/AssignmentDisplay';
 import {
   Application,
-  Assignment
+  // Assignment // 미래 사용 예정
 } from '../../../types/application';
 
 interface FirebaseTimestamp {
@@ -17,15 +17,15 @@ interface FirebaseTimestamp {
 
 type DateValue = string | Date | FirebaseTimestamp;
 
-// 날짜/시간 포맷팅 유틸 함수들
-const formatDateTimeValue = (value: string | DateValue): string => {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && 'seconds' in value) {
-    return formatDateUtil(value as FirebaseTimestamp);
-  }
-  return String(value);
-};
+// 날짜/시간 포맷팅 유틸 함수들 (향후 사용 예정)
+// const formatDateTimeValue = (value: string | DateValue): string => {
+//   if (!value) return '';
+//   if (typeof value === 'string') return value;
+//   if (typeof value === 'object' && 'seconds' in value) {
+//     return formatDateUtil(value as FirebaseTimestamp);
+//   }
+//   return String(value);
+// };
 
 const formatDateOnly = (value: DateValue): string => {
   return value ? formatDateUtil(value) : '날짜 미정';
@@ -63,7 +63,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 
-// 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성) - TODO: 현재 미사용
+// 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성) - 현재 미사용
 /*
 const MultipleAssignmentsDisplay: React.FC<{
   assignedTimes: string[];

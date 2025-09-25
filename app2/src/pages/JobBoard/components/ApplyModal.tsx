@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '../../../types/jobPosting';
-import { formatDate as formatDateUtil, generateDateRange, formatDateRangeDisplay } from '../../../utils/jobPosting/dateUtils';
+import { formatDate as formatDateUtil, generateDateRange } from '../../../utils/jobPosting/dateUtils';
+// formatDateRangeDisplay - 향후 사용 예정
 import { logger } from '../../../utils/logger';
 import { Assignment } from '../../../types/application';
 

@@ -18,13 +18,12 @@ import { logger } from '../utils/logger';
 import {
   collection,
   addDoc,
-  getDocs,
   query,
   where,
-  orderBy,
   onSnapshot,
   Timestamp
 } from 'firebase/firestore';
+// getDocs, orderBy - 향후 사용 예정
 import { db } from '../firebase';
 import {
   Inquiry,

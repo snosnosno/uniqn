@@ -6,7 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from "../components/FormField";
-// TODO: 카카오 로그인 기능 - 나중에 다시 활성화 예정
+// 카카오 로그인 기능 - 나중에 다시 활성화 예정
 // import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 import { useAuth } from "../contexts/AuthContext";
 // import { KakaoUserInfo, KakaoAuthResponse } from '../utils/kakaoSdk';
@@ -123,7 +123,7 @@ const Login: React.FC = () => {
     }
   };
 
-  // TODO: 카카오 로그인 핸들러 - 나중에 다시 활성화 예정
+  // 카카오 로그인 핸들러 - 나중에 다시 활성화 예정
   /*
   const handleKakaoSignIn = async (userInfo: KakaoUserInfo, authResponse: KakaoAuthResponse) => {
     setError('');
@@ -247,7 +247,7 @@ const Login: React.FC = () => {
             <span className="ml-2">{t('login.googleSignIn')}</span>
           </button>
 
-          {/* TODO: 카카오 로그인 버튼 - 나중에 다시 활성화 예정 */}
+          {/* 카카오 로그인 버튼 - 나중에 다시 활성화 예정 */}
           {/*
           <KakaoLoginButton
             onSuccess={handleKakaoSignIn}
