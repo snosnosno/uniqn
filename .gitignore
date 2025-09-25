@@ -1,109 +1,80 @@
-# Dependencies
-/node_modules
-/app2/node_modules
-/functions/node_modules
+# ========================================
+# DEPENDENCIES
+# ========================================
+node_modules/
+*/node_modules/
+**/.pnp
+.pnp.js
 
-# Build artifacts
-/build
-/app2/build
-/functions/lib
+# ========================================
+# BUILD ARTIFACTS
+# ========================================
+build/
+*/build/
+lib/
+dist/
+*/dist/
 
-# Cache
-.cache
-/app2/.cache
+# ========================================
+# CACHE & TEMPORARY FILES
+# ========================================
+.cache/
+*/.cache/
 .eslintcache
+*.tmp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
 
-# Logs
+# ========================================
+# LOGS
+# ========================================
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/logs
-*.log
-build.log
-app2/build.log
+logs/
+*/logs/
 
-# IDE settings
+# ========================================
+# IDE & OS
+# ========================================
 .vscode/
 .idea/
 .vs/
 .cursor/
-
-# OS-specific
 .DS_Store
 Thumbs.db
 
-# Environment variables (보안상 중요!)
+# ========================================
+# ENVIRONMENT VARIABLES (보안상 중요!)
+# ========================================
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-/app2/.env
-app2/.env.local
+.env.*
+!.env.example
 */.env
 **/.env
-**/.env.local
+**/.env.*
 
-# Firebase Service Account (보안상 중요!)
-serviceAccountKey.json
-**/serviceAccountKey.json
-
-# Git internal files that should not be committed
-FETCH_HEAD
-ORIG_HEAD
-.git/index
-.git/info/refs
-.git/logs/
-*.pack
-*.pack.old
-commit-graph
-/SHRIMP/memory/
-/SHRIMP/templates_en/
-/SHRIMP/templates_zh/
-SHRIMP/
-
-# Documents
-개발로그/*.pdf
-
-.git/
-.gitignore
-
-# Firebase
-firebase-debug.log
-firestore-debug.log
+# ========================================
+# FIREBASE & SECURITY (보안상 중요!)
+# ========================================
 .firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+pubsub-debug.log*
+database-debug.log*
 
-# Python venv
-/functions/venv/
-venv/
-__pycache__/
-*.pyc
-
-# Deleted files from status
-.git/objects/
-
-# SHRIMP memory
-/SHRIMP/memory/*
-!/SHRIMP/memory/tasks.json
-
-# SHRIMP templates (if not needed in repo)
-/SHRIMP/templates_en/*
-/SHRIMP/templates_zh/*
-
-# Firebase service account key
-# IMPORTANT: These files should NEVER be committed to Git.
-firebase-service-account.json
-serviceAccountKey.json
+# Firebase Service Account Keys - 절대 커밋하지 말 것!
 serviceAccountKey*.json
-*-service-account.json
-*-service-account-*.json
+*-service-account*.json
 *-adminsdk-*.json
-/scripts/*-service-account.json
-/scripts/*-adminsdk-*.json
-
-# 특정 Firebase Admin SDK 키 파일들 (발견된 실제 파일명)
-tholdem-ebc18-firebase-adminsdk-*.json
-scripts/firebase-adminsdk-key.json
+firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
 
 # Security certificates and keys
 *.key
@@ -112,115 +83,55 @@ scripts/firebase-adminsdk-key.json
 *.crt
 *.p12
 *.pfx
-
-# 추가 보안 파일들
 *.keystore
 *.jks
 *.jwt
 *secret*
 *secrets*
 *credentials*
-auth.json
-auth-*.json
-config/production.json
-config/development.json
-config/local.json
+auth*.json
 
-# Firebase 설정 및 키 파일들 (추가)
-.firebaserc.local
-firebase-adminsdk-key.json
-*firebase-adminsdk*.json
-google-services.json
-GoogleService-Info.plist
-
-# AWS 관련 파일들
-.aws/
-aws-exports.js
-amplify-export-*/
-
-# Windows-specific files
-nul
-*/nul
-
-# Claude Code settings (local only)
-.claude/
-
-# Claude Set folder (local development tools)
-claude_set/
-
-# Backup files from refactoring
-*.backup
-
-# Windows executables (installers)
-*.exe
-
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*.swo
-*~
-
-# Additional log files and debug files
-pglite-debug.log
-app2/pglite-debug.log
-**/pglite-debug.log
-firebase-debug.log*
-firestore-debug.log*
-functions/firestore-debug.log
-ui-debug.log
-pubsub-debug.log
-database-debug.log
-
-# Playwright MCP files (local development)
-.playwright-mcp/
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.webp
-
-# Test output and coverage
+# ========================================
+# TESTING & COVERAGE
+# ========================================
 coverage/
-app2/coverage/
+*/coverage/
 .nyc_output/
 test-results/
+*/test-results/
 playwright-report/
+*/playwright-report/
 test-report/
+.playwright-mcp/
 
-# Runtime generated files
-app2/src/types/application.ts
-app2/src/utils/applicationMigration.ts  
-app2/src/utils/errorHandler.ts
+# ========================================
+# PYTHON ENVIRONMENT
+# ========================================
+venv/
+*/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Package lock files (optional, team preference)
-package-lock.json
-yarn.lock
-
-# BFG report files (Git history cleanup tool)
-..bfg-report/
-**/bfg-report/
-
-# Scripts folder temporary files
-scripts/node_modules/
-checkWorkLogs.js
-browser-test.js
-complete-login-test.js
-debug-user-role.html
-deploy_functions.bat
-
-# Firestore indexes (auto-generated, environment specific)
-firestore.indexes.json
-
-# Documentation archives (outdated docs)
-docs/archive/
-
-# Security-related files  
-SECURITY.md
-
-# Cursor AI rules (IDE-specific, auto-generated)
+# ========================================
+# DEVELOPMENT TOOLS
+# ========================================
+.claude/
+claude_set/
 .cursor/rules/
 
-# Test and debug HTML files
-*.html.debug
+# ========================================
+# GENERATED/TEMPORARY FILES
+# ========================================
+*.exe
+nul
+*/nul
 debug-*.html
+*.html.debug
+docs/archive/
+
+# ========================================
+# PROJECT SPECIFIC
+# ========================================
+SHRIMP/
