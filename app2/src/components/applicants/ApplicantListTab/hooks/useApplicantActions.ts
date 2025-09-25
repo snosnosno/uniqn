@@ -9,6 +9,7 @@ import { Assignment } from '../../../../types/application';
 import { Applicant } from '../types';
 import { jobRoleMap } from '../utils/applicantHelpers';
 import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
+import { timestampToLocalDateString } from '../../../../utils/dateUtils';
 
 interface UseApplicantActionsProps {
   jobPosting?: any;
@@ -150,6 +151,47 @@ const createWorkLogsForConfirmedStaff = async (
 };
 
 /**
+ * 단일일 여러 개인지 확인하는 헬퍼 함수
+ * @param assignments 배정 정보 배열
+ * @param jobPosting 공고 정보
+ * @returns 독립적인 단일일들인지 여부
+ */
+const checkIfIndependentDates = (assignments: Assignment[], jobPosting: JobPosting): boolean => {
+  if (!jobPosting.dateSpecificRequirements) return true;
+
+  // 모든 날짜 수집
+  const allDates = assignments
+    .flatMap(assignment => assignment.dates)
+    .filter(date => date && date.trim() !== '')
+    .sort();
+
+  if (allDates.length <= 1) return true;
+
+  // 각 날짜가 독립적인 dateSpecificRequirement를 가지고 있는지 확인
+  const independentDates = allDates.every(date => {
+    const dateReq = jobPosting.dateSpecificRequirements?.find(req => {
+      const reqDateStr = timestampToLocalDateString(req.date);
+      return reqDateStr === date;
+    });
+
+    if (!dateReq) return false;
+
+    // 해당 날짜의 timeSlots이 multi duration을 가지지 않는지 확인
+    const hasMultiDuration = dateReq.timeSlots.some(ts =>
+      ts.duration?.type === 'multi'
+    );
+
+    return !hasMultiDuration; // multi duration이 없으면 독립적인 단일일
+  });
+
+  logger.info(`🔍 단일일 여러 개 판별 결과: ${independentDates ? '독립적 단일일' : '멀티데이'} (날짜: ${allDates.join(', ')})`, {
+    component: 'useApplicantActions'
+  });
+
+  return independentDates;
+};
+
+/**
  * 지원자 확정/취소 액션을 관리하는 Custom Hook
  */
 export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseApplicantActionsProps) => {
@@ -240,10 +282,19 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       
       // 🔄 jobPosting의 confirmedStaff 배열 업데이트 (v2.1: 지원서 메타데이터 추가)
       await runTransaction(db, async (transaction) => {
-        // 🆕 지원 타입 판별 (날짜 수에 따라)
+        // 🆕 지원 타입 판별 개선 (단일일 여러 개 vs 멀티데이 구분)
         const totalDates = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
-        const applicationType: 'single' | 'multi' = totalDates > 1 ? 'multi' : 'single';
+
+        // 🛠️ 임시 해결책: 단일일 여러 개는 항상 'single'로 처리
+        const isIndependentDates = checkIfIndependentDates(assignments, jobPosting);
+        const applicationType: 'single' | 'multi' = isIndependentDates ? 'single' :
+          (totalDates > 1 ? 'multi' : 'single');
+
         const applicationGroupId = applicationType === 'multi' ? `${applicant.id}_group_${Date.now()}` : null;
+
+        logger.info(`🎯 지원 타입 판별 결과: ${applicationType} (총 ${totalDates}개 날짜, 독립적: ${isIndependentDates})`, {
+          component: 'useApplicantActions'
+        });
 
         assignments.forEach(assignment => {
           const { timeSlot, role, dates } = assignment;
