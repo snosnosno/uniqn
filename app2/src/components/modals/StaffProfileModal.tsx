@@ -136,9 +136,28 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
       }
       
       // staff 데이터에 추가 정보가 없으면 users 컬렉션에서 조회
-      const userId = staff.userId || staff.id;
-      if (!userId) {
+      // 🔧 userId 추출 로직 개선 (복합 ID 처리)
+      // userId_sequenceNumber 형식에서 뒤의 숫자 제거
+      let userId = staff.userId || staff.id;
 
+      // 확실히 _숫자 패턴 제거
+      if (userId && userId.includes('_')) {
+        userId = userId.replace(/_\d+$/, '');
+      }
+
+      logger.debug('🔍 Users 컬렉션 조회 userId 확인:', {
+        component: 'StaffProfileModal',
+        data: {
+          originalStaffId: staff.id,
+          originalUserId: staff.userId,
+          finalUserId: userId,
+          hasUnderscore: staff.id?.includes('_'),
+          patternRemoved: staff.id?.includes('_') && staff.id !== userId
+        }
+      });
+
+      if (!userId) {
+        logger.warn('⚠️ userId를 찾을 수 없음', { component: 'StaffProfileModal', data: staff });
         setUserProfile(staff as ProfileData);
         return;
       }
@@ -151,7 +170,18 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          logger.debug('🔍 사용자 프로필 데이터 로드:', { component: 'StaffProfileModal', data: userData });
+          logger.debug('✅ 사용자 프로필 데이터 로드 성공:', {
+            component: 'StaffProfileModal',
+            data: {
+              userId: userId,
+              hasGender: !!userData.gender,
+              hasAge: !!userData.age,
+              hasNationality: !!userData.nationality,
+              hasRegion: !!userData.region,
+              hasExperience: !!userData.experience,
+              fullUserData: userData
+            }
+          });
           setUserProfile({
             ...staff,
             // userData의 값들을 우선 사용 (staff에 없는 경우)
@@ -170,7 +200,15 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             ratingCount: userData.ratingCount
           } as ProfileData);
         } else {
-
+          logger.warn('❌ 사용자 프로필 문서 없음:', {
+            component: 'StaffProfileModal',
+            data: {
+              userId: userId,
+              docPath: `users/${userId}`,
+              staffId: staff.id,
+              staffName: staff.name
+            }
+          });
           setUserProfile(staff as ProfileData);
         }
 

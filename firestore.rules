@@ -60,6 +60,18 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
       allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // Subcollection: myApplications (사용자의 지원 내역)
+      match /myApplications/{appId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
+      }
+
+      // Subcollection: myWorkSessions (사용자의 근무 세션)
+      match /myWorkSessions/{sessionId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
+      }
     }
 
     // --- Events Collection ---
@@ -117,7 +129,7 @@ service cloud.firestore {
         isSafeText(request.resource.data.title, 200) &&
         isSafeText(request.resource.data.description, 2000) &&
         isSafeText(request.resource.data.location, 200) &&
-        request.resource.data.status in ['open', 'closed'] &&
+        request.resource.data.status in ['open', 'closed', 'in_progress', 'completed'] &&
         (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
@@ -139,67 +151,136 @@ service cloud.firestore {
       // Staff subcollection
       match /staff/{userId} {
         allow read: if isSignedIn();
-        allow write: if isPrivileged() || 
+        allow write: if isPrivileged() ||
           (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid);
       }
-      
+
       // WorkLogs subcollection
       match /workLogs/{workLogId} {
         allow read: if isSignedIn();
-        allow write: if isPrivileged() || 
+        allow write: if isPrivileged() ||
           (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid);
+      }
+
+      // Hybrid Architecture: Applications subcollection (공고별 지원서)
+      match /applications/{appId} {
+        allow read: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+        allow write: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+      }
+
+      // Hybrid Architecture: WorkSessions subcollection (공고별 근무 세션)
+      match /workSessions/{sessionId} {
+        allow read: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+        allow write: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+      }
+
+      // Hybrid Architecture: Attendance subcollection (공고별 출석)
+      match /attendance/{recordId} {
+        allow read: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+        allow write: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+      }
+
+      // Hybrid Architecture: Payroll subcollection (공고별 정산)
+      match /payroll/{payrollId} {
+        allow read: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
+        allow write: if isSignedIn() && (
+          isPrivileged() ||
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+        );
       }
     }
 
-    // --- Applications Collection ---
+    // --- Applications Collection (표준 필드명 + 최적화 지원) ---
     match /applications/{applicationId} {
-      // All signed-in users can read applications (simplified for better UX)
-      // Client-side filtering handles privacy concerns
+      // 인증된 사용자가 읽기 가능 (역할별 필터링은 클라이언트에서 처리)
       allow read: if isSignedIn();
-      
-      // Users can create applications for themselves (using postId)
+
+      // 사용자는 본인 지원서 생성 가능 (표준 필드명 지원: eventId)
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
-        request.resource.data.keys().hasAll(['applicantId', 'postId', 'status']) &&
+        request.resource.data.keys().hasAll(['applicantId', 'status']) &&
+        (request.resource.data.keys().hasAny(['postId', 'eventId'])) &&  // postId 또는 eventId 중 하나 필수
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
-      
-      // Admin can update any application, job posting owners can update applications to their posts
-      allow update: if isPrivileged() || 
-        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid);
-      
-      // Users can delete their own applications, admin and job posting owners can delete applications
+
+      // 관리자 및 구인공고 작성자가 지원서 수정 가능
+      allow update: if isPrivileged() ||
+        (hasValidRole() && (
+          (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
+          (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+        ));
+
+      // 사용자는 본인 지원서 삭제 가능, 관리자 및 구인공고 작성자도 삭제 가능
       allow delete: if isSignedIn() && (
         request.auth.uid == resource.data.applicantId ||
         isPrivileged() ||
-        (hasValidRole() && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid)
+        (hasValidRole() && (
+          (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
+          (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+        ))
       );
     }
 
-    // --- Staff Collection --- [DEPRECATED - Use /persons collection instead]
-    // Removed - All staff operations should use /persons collection with type='staff' or 'both'
-
-    // --- Work Logs Collection (통합 스태프 정보 포함) ---
-    match /workLogs/{workLogId} {
-      // 모든 인증된 사용자가 읽기 가능 (본인 WorkLog 또는 관리자)
+    // --- Staff Collection (최적화 서비스 지원) ---
+    match /staff/{staffId} {
+      // 인증된 사용자가 스태프 정보 읽기 가능
       allow read: if isSignedIn() && (
-        hasValidRole() || 
-        request.auth.uid == resource.data.staffInfo.userId ||
-        request.auth.uid == resource.data.dealerId  // 하위 호환성
+        hasValidRole() ||
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == staffId
       );
-      
+
+      // 관리자 및 유효한 역할을 가진 사용자가 스태프 정보 생성/수정 가능
+      allow create, update: if isSignedIn() && hasValidRole();
+
+      // 관리자만 삭제 가능
+      allow delete: if isPrivileged();
+    }
+
+    // --- Work Logs Collection (표준 필드명 + 최적화 지원) ---
+    match /workLogs/{workLogId} {
+      // 표준 필드명 기반 권한 체크 (최적화 쿼리 지원)
+      allow read: if isSignedIn() && (
+        hasValidRole() ||
+        request.auth.uid == resource.data.staffId ||  // 표준 필드명 사용
+        (resource.data.keys().hasAny(['staffInfo']) && request.auth.uid == resource.data.staffInfo.userId) ||  // 하위 호환성
+        request.auth.uid == resource.data.dealerId  // 레거시 필드 하위 호환성
+      );
+
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
-      // WorkLog 생성 시 staffInfo와 assignmentInfo 필수 검증
+      // 표준 필드명 기반 검증 (staffId, eventId 필수)
       allow create: if isSignedIn() && hasValidRole() &&
-        request.resource.data.keys().hasAll(['staffId', 'eventId', 'date', 'staffInfo', 'assignmentInfo']) &&
-        request.resource.data.staffInfo is map &&
-        request.resource.data.assignmentInfo is map &&
-        request.resource.data.staffInfo.keys().hasAll(['userId', 'name']) &&
-        request.resource.data.assignmentInfo.keys().hasAll(['role', 'postingId']);
-      
+        request.resource.data.keys().hasAll(['staffId', 'eventId', 'date']) &&
+        request.resource.data.staffId is string &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string;
+
       // 관리자 및 유효한 역할을 가진 사용자가 수정 가능
       allow update: if isSignedIn() && hasValidRole();
-      
+
       // 관리자만 삭제 가능
       allow delete: if isPrivileged();
     }
@@ -269,9 +350,14 @@ service cloud.firestore {
       allow create, update, delete: if isPrivileged();
     }
     
-    // --- Attendance Records Collection ---
+    // --- Attendance Records Collection (표준 필드명 지원) ---
     match /attendanceRecords/{recordId} {
-      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.dealerId);
+      // 표준 필드명 기반 권한 체크
+      allow read: if isSignedIn() && (
+        hasValidRole() ||
+        request.auth.uid == resource.data.staffId ||  // 표준 필드명
+        request.auth.uid == resource.data.dealerId    // 하위 호환성
+      );
       allow create, update: if isSignedIn() && hasValidRole();
       allow delete: if isPrivileged();
     }

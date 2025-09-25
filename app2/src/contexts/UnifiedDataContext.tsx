@@ -15,7 +15,8 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { logger } from '../utils/logger';
-import { unifiedDataService } from '../services/unifiedDataService';
+// import { unifiedDataService } from '../services/unifiedDataService'; // 백업용 (향후 제거 예정)
+import { optimizedUnifiedDataService } from '../services/OptimizedUnifiedDataService';
 import { useAuth } from './AuthContext';
 import {
   UnifiedDataState,
@@ -402,97 +403,119 @@ interface UnifiedDataProviderProps {
   children: React.ReactNode;
 }
 
-// Provider 컴포넌트
+// Provider 컴포넌트 - 최적화된 버전
 export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(unifiedDataReducer, initialUnifiedDataState);
   const initializeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const subscriptionsRef = useRef<any>(null);
   const { currentUser, role } = useAuth(); // 현재 로그인한 사용자와 role 정보
 
-  // 사용자별 데이터 구독 설정 (사용자 ID와 role 모두 전달)
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    // 현재 사용자 ID와 role을 서비스에 설정
-    unifiedDataService.setCurrentUserId(currentUser.uid);
-    unifiedDataService.setUserRole(role);
-    
-    logger.info('UnifiedDataProvider: 사용자별 필터링 활성화', { 
-      component: 'UnifiedDataContext',
-      data: { userId: currentUser.uid, role, isAdmin: role === 'admin' || role === 'manager' }
-    });
-  }, [currentUser, role]);
-
-  // 서비스 초기화 (로그인 상태 확인 후 구독 시작)
+  // 🚀 최적화된 서비스 초기화 (로그인 상태 확인 후 구독 시작)
   useEffect(() => {
     // 로그인하지 않은 경우 구독하지 않음
-    if (!currentUser) {
-      logger.info('UnifiedDataProvider: 로그인 대기 중', {
-        component: 'UnifiedDataContext',
-        data: { userStatus: 'not_logged_in' }
+    if (!currentUser || !role) {
+      logger.info('🔐 UnifiedDataProvider: 로그인 및 역할 대기 중', {
+        component: 'OptimizedUnifiedDataContext',
+        data: {
+          hasUser: !!currentUser,
+          hasRole: !!role,
+          userStatus: 'waiting_for_auth'
+        }
       });
       return;
     }
 
     let isSubscribed = true;
 
-    logger.info('UnifiedDataProvider: 로그인된 사용자 초기화 시작', {
-      component: 'UnifiedDataContext',
-      data: { userId: currentUser.uid, email: currentUser.email }
+    logger.info('🚀 최적화된 UnifiedDataProvider: 초기화 시작', {
+      component: 'OptimizedUnifiedDataContext',
+      data: {
+        userId: currentUser.uid,
+        email: currentUser.email,
+        role,
+        optimizationType: 'server-side-filtering + memory-caching'
+      }
     });
 
-    // 디스패처 설정
-    unifiedDataService.setDispatcher(dispatch);
-
-    // 구독 시작 (중복 호출 방지)
-    const initializeSubscriptions = async () => {
+    // 🎯 최적화된 구독 시작 (중복 호출 방지)
+    const initializeOptimizedSubscriptions = async () => {
       if (!isSubscribed) return;
 
       try {
-        logger.info('🚀 Firebase 구독 시작...', {
-          component: 'UnifiedDataContext',
-          data: { userId: currentUser.uid }
+        // 초기 로딩 시작
+        dispatch({ type: 'SET_LOADING', collection: 'initial', loading: true });
+
+        logger.info('⚡ 최적화된 Firebase 구독 시작...', {
+          component: 'OptimizedUnifiedDataContext',
+          data: {
+            userId: currentUser.uid,
+            role,
+            expectedSavings: '60%'
+          }
         });
-        await unifiedDataService.startAllSubscriptions();
+
+        // 🔥 최적화된 서비스로 구독 시작
+        subscriptionsRef.current = await optimizedUnifiedDataService.subscribeOptimized(
+          dispatch,
+          currentUser.uid,
+          role
+        );
 
         if (isSubscribed) {
-          logger.info('✅ UnifiedDataProvider: 초기화 완료', {
-            component: 'UnifiedDataContext',
+          dispatch({ type: 'SET_LOADING', collection: 'initial', loading: false });
+
+          logger.info('✅ 최적화된 UnifiedDataProvider: 초기화 완료', {
+            component: 'OptimizedUnifiedDataContext',
             data: {
               userId: currentUser.uid,
-              timestamp: new Date().toISOString()
+              role,
+              timestamp: new Date().toISOString(),
+              performance: optimizedUnifiedDataService.getPerformanceMetrics()
             }
           });
         }
       } catch (error) {
         if (isSubscribed) {
-          logger.error('❌ UnifiedDataProvider: 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
-            component: 'UnifiedDataContext',
-            data: { userId: currentUser.uid }
+          dispatch({ type: 'SET_LOADING', collection: 'initial', loading: false });
+          dispatch({ type: 'SET_ERROR', collection: 'global', error: '데이터 로드 실패' });
+
+          logger.error('❌ 최적화된 UnifiedDataProvider: 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
+            component: 'OptimizedUnifiedDataContext',
+            data: { userId: currentUser.uid, role }
           });
         }
       }
     };
 
     // 약간의 지연으로 React 렌더링 완료 대기
-    initializeTimeoutRef.current = setTimeout(initializeSubscriptions, 100);
+    initializeTimeoutRef.current = setTimeout(initializeOptimizedSubscriptions, 100);
 
-    // 클린업 함수 (메모리 누수 방지)
+    // 🧹 클린업 함수 (메모리 누수 방지)
     return () => {
       isSubscribed = false;
       if (initializeTimeoutRef.current) {
         clearTimeout(initializeTimeoutRef.current);
       }
-      logger.info('UnifiedDataProvider: 클린업 시작', {
-        component: 'UnifiedDataContext',
-        data: { userId: currentUser.uid }
+
+      logger.info('🧹 최적화된 UnifiedDataProvider: 클린업 시작', {
+        component: 'OptimizedUnifiedDataContext',
+        data: {
+          userId: currentUser.uid,
+          finalMetrics: optimizedUnifiedDataService.getPerformanceMetrics()
+        }
       });
-      unifiedDataService.stopAllSubscriptions();
-      logger.info('UnifiedDataProvider: 클린업 완료', {
-        component: 'UnifiedDataContext',
+
+      if (subscriptionsRef.current) {
+        optimizedUnifiedDataService.unsubscribeAll(subscriptionsRef.current);
+        subscriptionsRef.current = null;
+      }
+
+      logger.info('✅ 최적화된 UnifiedDataProvider: 클린업 완료', {
+        component: 'OptimizedUnifiedDataContext',
         data: { userId: currentUser.uid }
       });
     };
-  }, [currentUser]); // currentUser를 의존성에 추가
+  }, [currentUser, role]); // role도 의존성에 추가
 
   // 메모이제이션된 getter 함수들
   const getStaffById = useMemo(
@@ -778,11 +801,11 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     cacheHitRate: number;
     averageQueryTime: number;
   } => {
-    const serviceMetrics = unifiedDataService.getPerformanceMetrics();
+    const serviceMetrics = optimizedUnifiedDataService.getPerformanceMetrics();
     return {
       ...serviceMetrics,
-      cacheHitRate: unifiedDataService.getCacheHitRate(),
-      averageQueryTime: unifiedDataService.getAverageQueryTime(),
+      cacheHitRate: serviceMetrics.cacheHitRate || 0,
+      averageQueryTime: serviceMetrics.avgQueryTime || 0,
     };
   }, []);
 
@@ -832,8 +855,8 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
       data: { eventId } 
     });
     
-    // UnifiedDataService에 현재 eventId 설정
-    unifiedDataService.setCurrentEventId(eventId);
+    // 최적화된 서비스에서는 eventId 필터링이 쿼리 레벨에서 처리됨
+    // setCurrentEventId는 더 이상 필요하지 않음
     
     // 필터 상태도 업데이트 (UI 반영용)
     if (eventId) {

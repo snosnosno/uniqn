@@ -86,9 +86,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       
       // 이미 존재하는 스태프라면 추가 정보만 업데이트
       if (!staffMap.has(staffId)) {
+        // 🔧 staffId에서 실제 userId 추출 (복합 ID인 경우)
+        // userId_sequenceNumber 형식에서 뒤의 숫자 제거
+        const extractedUserId = staffId.includes('_') ?
+          staffId.replace(/_\d+$/, '') : // 끝의 _숫자 패턴 제거
+          staffId;
+
         staffMap.set(staffId, {
           id: staffId,
-          userId: staffInfo.userId || staffId,
+          userId: staffInfo.userId || extractedUserId,
           staffId: staffId,
           name: staffInfo.name || '이름 미정',
           role: assignmentInfo.role || '',

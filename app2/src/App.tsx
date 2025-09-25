@@ -25,12 +25,6 @@ import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 
-// 개발 도구 (개발 모드에서만 로드)
-const SmartContextDevTools = lazy(() =>
-  process.env.NODE_ENV === 'development'
-    ? import('./components/dev/SmartContextDevTools')
-    : Promise.resolve({ default: () => null })
-);
 
 
 // Lazy load admin pages with retry mechanism
@@ -154,12 +148,6 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
-                {/* Smart Context DevTools (개발 모드) */}
-                {process.env.NODE_ENV === 'development' && (
-                  <Suspense fallback={null}>
-                    <SmartContextDevTools />
-                  </Suspense>
-                )}
               </TournamentProvider>
             </UnifiedDataProvider>
           </AuthProvider>
