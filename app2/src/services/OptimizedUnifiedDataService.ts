@@ -324,7 +324,7 @@ const transformApplicationData = (doc: DocumentData): Application => ({
   applicantPhone: doc.applicantPhone || '',
   applicantEmail: doc.applicantEmail || '',
   experience: doc.experience || '',
-  status: doc.status || 'pending',
+  status: doc.status || 'applied',
   appliedAt: doc.appliedAt || doc.createdAt,
   processedAt: doc.processedAt,
   notes: doc.notes || '',
@@ -431,7 +431,7 @@ class OptimizedUnifiedDataService {
       // 관리자/매니저는 최근 활성 지원만 (applied 상태 포함하여 확정 취소된 지원서도 표시)
       return query(
         baseQuery,
-        where('status', 'in', ['pending', 'confirmed', 'applied']),
+        where('status', 'in', ['applied', 'confirmed']),
         orderBy('appliedAt', 'desc'),
         limit(100)
       );

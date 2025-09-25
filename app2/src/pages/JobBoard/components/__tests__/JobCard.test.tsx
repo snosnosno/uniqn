@@ -105,12 +105,12 @@ describe('JobCard Component', () => {
   });
 
   test('shows applied status when user has applied', () => {
-    render(<JobCard {...defaultProps} appliedStatus="pending" />);
-    expect(screen.getByText('jobBoard.applicationStatus.pending')).toBeInTheDocument();
+    render(<JobCard {...defaultProps} appliedStatus="applied" />);
+    expect(screen.getByText('jobBoard.applicationStatus.applied')).toBeInTheDocument();
   });
 
   test('apply button is disabled when already applied', () => {
-    render(<JobCard {...defaultProps} appliedStatus="pending" />);
+    render(<JobCard {...defaultProps} appliedStatus="applied" />);
     const applyButton = screen.getByRole('button', { name: 'jobBoard.alreadyApplied' });
     expect(applyButton).toBeDisabled();
   });

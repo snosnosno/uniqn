@@ -77,7 +77,6 @@ export const processApplicationData = async (
     
     // 상태별 type 매핑 (통일된 상태 사용)
     const typeMap: Record<string, ScheduleEvent['type']> = {
-      'pending': 'applied',
       'applied': 'applied',
       'confirmed': 'confirmed',
       'rejected': 'cancelled',
@@ -98,7 +97,7 @@ export const processApplicationData = async (
       ...(jobPostingData?.detailedAddress && { detailedAddress: jobPostingData.detailedAddress }),
       role: getRoleForApplicationStatus(data, baseDate),
       status: 'not_started' as AttendanceStatus, // 지원 상태에서는 출석 상태가 not_started
-      applicationStatus: data.status as 'pending' | 'confirmed' | 'rejected' | 'completed',
+      applicationStatus: data.status as 'applied' | 'confirmed' | 'rejected' | 'completed',
       notes: '',
       sourceCollection: 'applications' as const,
       sourceId: docId,
@@ -419,7 +418,7 @@ export const calculateStats = (events: ScheduleEvent[]): {
   
   events.forEach(event => {
     // 상태별 카운트 - applicationStatus 사용
-    if (event.applicationStatus === 'pending') {
+    if (event.applicationStatus === 'applied') {
       stats.pendingCount++;
     } else if (event.applicationStatus === 'confirmed') {
       stats.confirmedCount++;

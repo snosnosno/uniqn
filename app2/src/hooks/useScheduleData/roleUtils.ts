@@ -45,7 +45,7 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
   }
   
   // 지원중인 경우: 해당 날짜에 지원한 역할만 표시
-  if (data.status === 'pending' || data.status === 'applied' || !data.status) {
+  if (data.status === 'applied' || !data.status) {
     
     // 날짜별 역할 매칭 시도
     if (targetDate && data.assignedDates && data.assignedRoles && 

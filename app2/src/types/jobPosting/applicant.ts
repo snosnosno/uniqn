@@ -14,7 +14,7 @@ export interface Applicant {
   date?: string; // 지원 날짜 (기존 호환성)
   assignedDate?: string; // yyyy-MM-dd format - 확정된 스태프 할당 날짜
   createdAt: Timestamp; // Firebase Timestamp
-  status: 'pending' | 'confirmed' | 'rejected';
+  status: 'applied' | 'confirmed' | 'rejected';
   eventId: string;
   additionalInfo?: string;
   
@@ -30,7 +30,7 @@ export interface Applicant {
 export interface ApplicantStats {
   total: number;
   byStatus: {
-    pending: number;
+    applied: number;
     confirmed: number;
     rejected: number;
   };

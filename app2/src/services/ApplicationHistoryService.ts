@@ -148,7 +148,7 @@ export class ApplicationHistoryService {
 
         // 🎯 새 구조로 지원서 상태를 'applied'로 복원 (v2.0)
         const restoredData: Partial<Application> = {
-          status: 'pending',  // 확정 취소 시 대기 상태로 복원
+          status: 'applied',  // 확정 취소 시 지원 상태로 복원
           
           // 원본 assignments 완전 복원
           assignments: originalApplication.assignments,

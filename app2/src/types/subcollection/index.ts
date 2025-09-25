@@ -61,7 +61,7 @@ export interface EventStaff {
   assignedAt: Timestamp;   // 할당 시각
   
   // 상태
-  status: 'confirmed' | 'pending' | 'cancelled';
+  status: 'confirmed' | 'applied' | 'cancelled';
   attendanceStatus?: 'present' | 'absent' | 'late';
   
   // 지원 정보 (선택)
