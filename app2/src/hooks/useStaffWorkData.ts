@@ -2,7 +2,8 @@ import { useMemo, useCallback, useState } from 'react';
 import { useJobPostingContext } from '../contexts/JobPostingContextAdapter';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
-import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, RoleSalaryConfig, RolePayrollInfo } from '../types/payroll';
+import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, RoleSalaryConfig } from '../types/payroll';
+// import { RolePayrollInfo } from '../types/payroll'; // TODO: 미래 급여 정보 타입용
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { calculateWorkHours } from '../utils/workLogMapper';
 import { matchStaffIdentifier } from '../utils/staffIdMapper';

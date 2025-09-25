@@ -95,7 +95,7 @@ export const useSystemPerformance = (options?: {
   
   // 성능 지표 계산
   const calculateMetrics = useCallback((): SystemPerformanceMetrics => {
-    const unifiedMetrics = unifiedData.performanceMetrics;
+    const _unifiedMetrics = unifiedData.performanceMetrics; // 성능 추적용
     const cacheHitRate = 85; // 임시 값
     const averageQueryTime = 95; // 임시 값
     

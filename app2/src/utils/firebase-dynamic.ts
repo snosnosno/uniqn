@@ -26,7 +26,7 @@ export const getStorageLazy = async () => {
     
     storageModule = await import('firebase/storage');
     
-    const loadTime = performance.now() - startTime;
+    const _loadTime = performance.now() - startTime; // 성능 측정용
     // logger.debug(`✅ Firebase Storage 로드 완료 (${loadTime.toFixed(2)}ms)`, { component: 'firebase-dynamic' });
   }
   
@@ -67,7 +67,7 @@ export const uploadFileLazy = async (file: File, path: string) => {
       'state_changed',
       (snapshot: any) => {
         // 진행률 계산
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const _progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100; // 진행률 추적용
         // logger.debug(`📤 업로드 진행률: ${progress.toFixed(0)}%`, { component: 'firebase-dynamic' });
       },
       (error: any) => {
@@ -95,7 +95,7 @@ export const getFunctionsLazy = async () => {
     
     functionsModule = await import('firebase/functions');
     
-    const loadTime = performance.now() - startTime;
+    const _loadTime = performance.now() - startTime; // 성능 측정용
     // logger.debug(`✅ Firebase Functions 로드 완료 (${loadTime.toFixed(2)}ms)`, { component: 'firebase-dynamic' });
   }
   

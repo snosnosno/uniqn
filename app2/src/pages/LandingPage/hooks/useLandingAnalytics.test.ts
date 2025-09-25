@@ -274,7 +274,7 @@ describe('useLandingAnalytics', () => {
       const { result } = renderHook(() => useLandingAnalytics());
 
       // Analytics 오류 시뮬레이션
-      const mockError = new Error('Analytics service unavailable');
+      const _mockError = new Error('Analytics service unavailable'); // 테스트용 에러
       jest.spyOn(console, 'error').mockImplementation(() => {});
 
       await act(async () => {
@@ -385,7 +385,7 @@ describe('useLandingAnalytics', () => {
     });
 
     it('메모리 사용량을 최적화해야 한다', () => {
-      const { result, unmount } = renderHook(() => useLandingAnalytics());
+      const { result: _result, unmount } = renderHook(() => useLandingAnalytics()); // 메모리 테스트용
 
       // 훅 사용 후 정리
       unmount();

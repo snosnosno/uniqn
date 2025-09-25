@@ -70,14 +70,14 @@ class SmartCache {
   }
 
   private async initDB(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const request = indexedDB.open(this.config.dbName, this.config.version);
 
       request.onerror = () => {
         logger.error('IndexedDB 초기화 실패', new Error(request.error?.message), {
           component: 'SmartCache'
         });
-        reject(request.error);
+        _reject(request.error);
       };
 
       request.onsuccess = (event) => {
@@ -173,14 +173,14 @@ class SmartCache {
       const transaction = this.db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
       
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, _reject) => {
         const request = store.put(entry);
         request.onsuccess = () => {
           this.stats.writes++;
           this.stats.totalSize += size;
           resolve();
         };
-        request.onerror = () => reject(request.error);
+        request.onerror = () => _reject(request.error);
       });
 
       logger.debug('캐시 저장 완료', {
@@ -214,12 +214,12 @@ class SmartCache {
       const transaction = this.db.transaction([this.config.storeName], 'readonly');
       const store = transaction.objectStore(this.config.storeName);
       
-      const entry = await new Promise<CacheEntry<T> | null>((resolve, reject) => {
+      const entry = await new Promise<CacheEntry<T> | null>((resolve, _reject) => {
         const request = store.get(cacheId);
         request.onsuccess = () => {
           resolve(request.result || null);
         };
-        request.onerror = () => reject(request.error);
+        request.onerror = () => _reject(request.error);
       });
 
       if (!entry) {
@@ -271,13 +271,13 @@ class SmartCache {
       const store = transaction.objectStore(this.config.storeName);
 
       // 먼저 기존 엔트리 크기 확인
-      const existingEntry = await new Promise<CacheEntry | null>((resolve, reject) => {
+      const existingEntry = await new Promise<CacheEntry | null>((resolve, _reject) => {
         const request = store.get(cacheId);
         request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => _reject(request.error);
       });
 
-      const success = await new Promise<boolean>((resolve, reject) => {
+      const success = await new Promise<boolean>((resolve, _reject) => {
         const request = store.delete(cacheId);
         request.onsuccess = () => {
           this.stats.deletes++;
@@ -321,14 +321,14 @@ class SmartCache {
       
       for (const tag of tags) {
         const range = IDBKeyRange.only(tag);
-        const entries = await new Promise<CacheEntry[]>((resolve, reject) => {
+        const entries = await new Promise<CacheEntry[]>((resolve, _reject) => {
           const request = index.getAll(range);
           request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
+          request.onerror = () => _reject(request.error);
         });
 
         for (const entry of entries) {
-          const success = await new Promise<boolean>((resolve, reject) => {
+          const success = await new Promise<boolean>((resolve, _reject) => {
             const deleteRequest = store.delete(entry.id);
             deleteRequest.onsuccess = () => {
               this.stats.totalSize -= entry.size;
@@ -396,10 +396,10 @@ class SmartCache {
       const store = transaction.objectStore(this.config.storeName);
       
       // 만료된 엔트리들 찾기
-      const allEntries = await new Promise<CacheEntry[]>((resolve, reject) => {
+      const allEntries = await new Promise<CacheEntry[]>((resolve, _reject) => {
         const request = store.getAll();
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => _reject(request.error);
       });
 
       const expiredEntries = allEntries.filter(entry => 
@@ -423,7 +423,7 @@ class SmartCache {
       let deletedCount = 0;
 
       for (const entry of toDelete) {
-        const success = await new Promise<boolean>((resolve, reject) => {
+        const success = await new Promise<boolean>((resolve, _reject) => {
           const deleteRequest = store.delete(entry.id);
           deleteRequest.onsuccess = () => {
             this.stats.totalSize -= entry.size;
@@ -471,14 +471,14 @@ class SmartCache {
       const transaction = this.db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
       
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, _reject) => {
         const request = store.clear();
         request.onsuccess = () => {
           this.stats.totalSize = 0;
           logger.info('전체 캐시 삭제 완료', { component: 'SmartCache' });
           resolve();
         };
-        request.onerror = () => reject(request.error);
+        request.onerror = () => _reject(request.error);
       });
     } catch (error) {
       logger.error('전체 캐시 삭제 실패', error instanceof Error ? error : new Error(String(error)), {

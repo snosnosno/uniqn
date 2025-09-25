@@ -121,13 +121,13 @@ export function toTimestamp(input: any): Timestamp {
   return Timestamp.fromDate(date);
 }
 
-/**
- * 오늘 날짜를 yyyy-MM-dd 형식으로 반환
- * @returns 오늘 날짜 문자열
- */
-export function getTodayString(): string {
-  return toDateString(new Date());
-}
+// 🔄 MIGRATED: getTodayString은 utils/jobPosting/dateUtils.ts로 이동됨
+// 더 많은 기능과 캐싱이 포함된 버전을 사용하세요
+//
+// 기존 함수:
+// export function getTodayString(): string {
+//   return toDateString(new Date());
+// }
 
 /**
  * yy-MM-dd(요일) 형식의 문자열을 yyyy-MM-dd로 변환

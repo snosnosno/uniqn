@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, query, where, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+// import { collection, query, where, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useJobPostingContext } from '../contexts/JobPostingContextAdapter';
 import { useToast } from '../hooks/useToast';
-import { db } from '../firebase';
+// import { db } from '../firebase'; // 현재 사용하지 않음 - WorkLog 통합 시스템 사용
 import { formatDate } from '../utils/jobPosting/dateUtils';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { logger } from '../utils/logger';

@@ -37,7 +37,7 @@ import {
 } from '../types/unifiedData';
 import {
   Application,
-  LegacyApplication
+  // LegacyApplication // TODO: 레거시 지원용 타입 - 현재 미사용
 } from '../types/application';
 // formatDate 함수 로컬 구현
 const formatDate = (date: Date): string => {

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  limit,
-  onSnapshot, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  // limit, // 현재 사용하지 않음
+  onSnapshot,
   QueryConstraint,
   DocumentData,
   CollectionReference,

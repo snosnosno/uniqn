@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Assignment } from '../../types/application';
+import { Assignment } from '../../types/application'; // 실제 사용 중
 import { formatDate as formatDateUtil } from '../../utils/jobPosting/dateUtils';
 
 interface FirebaseTimestamp {
@@ -102,7 +102,7 @@ const AssignmentDisplay: React.FC<AssignmentDisplayProps> = ({ assignments, stat
 
       } else {
         // 개별선택: 각 날짜별로 분리하여 표시
-        assignment.dates.forEach(date => {
+        assignment.dates.forEach((date: DateValue) => {
           const dateDisplay = formatDateOnly(date || '');
           const dateKey = `individual-${date}`;
           

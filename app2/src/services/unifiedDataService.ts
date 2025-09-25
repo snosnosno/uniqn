@@ -11,7 +11,7 @@ import {
   collection,
   onSnapshot,
   query,
-  where,
+  // where, // TODO: 미래 필터링 기능용 - 현재 미사용
   orderBy,
   Unsubscribe,
   QuerySnapshot,
@@ -28,9 +28,9 @@ import {
   UnifiedDataAction,
   PerformanceMetrics,
 } from '../types/unifiedData';
-import { 
+import {
   Application,
-  LegacyApplication
+  // LegacyApplication // TODO: 레거시 지원용 타입 - 현재 미사용
 } from '../types/application';
 // Application types imported from types/application
 
@@ -107,7 +107,8 @@ class PerformanceTracker {
   }
 }
 
-// 데이터 변환 유틸리티
+// 데이터 변환 유틸리티 - TODO: 미래 데이터 변환 로직용 - 현재 미사용
+/*
 const transformStaffData = (doc: DocumentData): Staff => ({
   id: doc.id,
   staffId: doc.staffId || doc.id,
@@ -121,13 +122,13 @@ const transformStaffData = (doc: DocumentData): Staff => ({
   assignedDate: doc.assignedDate,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
-  
+
   // users 컬렉션 연결용
   userId: doc.userId || doc.id, // userId가 없으면 id 사용 (하위 호환성)
-  
+
   // 원래 지원 정보
   postingId: doc.postingId,
-  
+
   // 추가 개인정보 (persons에서 가져온 경우)
   gender: doc.gender,
   age: typeof doc.age === 'string' ? parseInt(doc.age, 10) : doc.age,
@@ -136,12 +137,13 @@ const transformStaffData = (doc: DocumentData): Staff => ({
   region: doc.region,
   history: doc.history,
   notes: doc.notes,
-  
+
   // 은행 정보
   bankName: doc.bankName,
   bankAccount: doc.bankAccount,
   residentId: doc.residentId,
 });
+*/
 
 const transformWorkLogData = (doc: DocumentData): WorkLog => ({
   id: doc.id,
@@ -452,7 +454,7 @@ export class UnifiedDataService {
   private async subscribeToStaff(): Promise<void> {
     if (!this.dispatcher) return;
 
-    const endTimer = this.performanceTracker.startTimer();
+    const _endTimer = this.performanceTracker.startTimer(); // 성능 추적용
     
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'staff', loading: true });
@@ -491,7 +493,7 @@ export class UnifiedDataService {
   private async subscribeToWorkLogs(): Promise<void> {
     if (!this.dispatcher) return;
 
-    const endTimer = this.performanceTracker.startTimer();
+    const _endTimer = this.performanceTracker.startTimer(); // 성능 추적용
     
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'workLogs', loading: true });
@@ -527,7 +529,7 @@ export class UnifiedDataService {
         workLogsQuery,
         { includeMetadataChanges: true }, // 🔥 메타데이터 변경도 감지하여 실시간성 강화
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = _endTimer(); // 성능 추적용
           
           // 🔥 변경된 문서만 효율적으로 처리
           const changes = snapshot.docChanges({ includeMetadataChanges: true });
@@ -646,7 +648,7 @@ export class UnifiedDataService {
   private async subscribeToAttendanceRecords(): Promise<void> {
     if (!this.dispatcher) return;
 
-    const endTimer = this.performanceTracker.startTimer();
+    const _endTimer = this.performanceTracker.startTimer(); // 성능 추적용
     
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'attendanceRecords', loading: true });
@@ -678,7 +680,7 @@ export class UnifiedDataService {
       this.subscriptions.attendanceRecords = onSnapshot(
         attendanceQuery,
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = _endTimer(); // 성능 추적용
           // AttendanceRecords 데이터 업데이트 처리
           const attendanceData: AttendanceRecord[] = [];
           let filteredCount = 0;
@@ -755,7 +757,7 @@ export class UnifiedDataService {
   private async subscribeToJobPostings(): Promise<void> {
     if (!this.dispatcher) return;
 
-    const endTimer = this.performanceTracker.startTimer();
+    const _endTimer = this.performanceTracker.startTimer(); // 성능 추적용
     
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'jobPostings', loading: true });
@@ -768,7 +770,7 @@ export class UnifiedDataService {
       this.subscriptions.jobPostings = onSnapshot(
         jobPostingsQuery,
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = _endTimer(); // 성능 추적용
           // JobPostings 데이터 업데이트 처리
 
           const jobPostingsData: JobPosting[] = [];
@@ -816,7 +818,7 @@ export class UnifiedDataService {
   private async subscribeToApplications(): Promise<void> {
     if (!this.dispatcher) return;
 
-    const endTimer = this.performanceTracker.startTimer();
+    const _endTimer = this.performanceTracker.startTimer(); // 성능 추적용
     
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'applications', loading: true });
@@ -830,7 +832,7 @@ export class UnifiedDataService {
       this.subscriptions.applications = onSnapshot(
         applicationsQuery,
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = _endTimer(); // 성능 추적용
           
           // 더 자세한 디버깅 정보 추가
           // Applications 데이터 업데이트 처리
@@ -932,7 +934,7 @@ export class UnifiedDataService {
   private async subscribeToTournaments(): Promise<void> {
     if (!this.dispatcher) return;
 
-    const endTimer = this.performanceTracker.startTimer();
+    const _endTimer = this.performanceTracker.startTimer(); // 성능 추적용
     
     try {
       this.dispatcher({ type: 'SET_LOADING', collection: 'tournaments', loading: true });
@@ -945,7 +947,7 @@ export class UnifiedDataService {
       this.subscriptions.tournaments = onSnapshot(
         tournamentsQuery,
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = _endTimer(); // 성능 추적용
           // Tournaments 데이터 업데이트 처리
 
           const tournamentsData: Tournament[] = [];

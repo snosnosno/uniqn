@@ -7,26 +7,26 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaSearch,
-  FaFilter,
-  FaSort,
+  // FaFilter, // TODO: 미래 필터링 UI용
+  // FaSort, // TODO: 미래 정렬 UI용
   FaEye,
   FaReply,
   FaCheck,
   FaClock,
   FaEnvelope,
-  FaChevronDown
+  // FaChevronDown // TODO: 미래 드롭다운 UI용
 } from '../../components/Icons/ReactIconsReplacement';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { logger } from '../../utils/logger';
 import {
   collection,
-  getDocs,
+  // getDocs, // TODO: 미래 배치 조회용
   doc,
   updateDoc,
   query,
   orderBy,
-  where,
+  // where, // TODO: 미래 필터링용
   onSnapshot,
   Timestamp
 } from 'firebase/firestore';

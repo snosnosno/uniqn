@@ -63,7 +63,8 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 
-// 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성)
+// 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성) - TODO: 현재 미사용
+/*
 const MultipleAssignmentsDisplay: React.FC<{
   assignedTimes: string[];
   assignedRoles: string[];
@@ -73,25 +74,25 @@ const MultipleAssignmentsDisplay: React.FC<{
 }> = ({ assignedTimes, assignedRoles, assignedDates, status, t }) => {
   // 날짜별로 그룹화
   const groupedByDate: Record<string, Array<{time: string, role: string, index: number}>> = {};
-  
+
   assignedTimes.forEach((time: string, index: number) => {
     const dateValue = assignedDates?.[index];
     const dateString = formatDateOnly(dateValue || '');
-    
+
     if (!groupedByDate[dateString]) {
       groupedByDate[dateString] = [];
     }
-    
+
     groupedByDate[dateString]!.push({
       time: formatDateTimeValue(time),
       role: assignedRoles[index] || '',
       index
     });
   });
-  
+
   // 날짜 정렬
   const sortedDates = Object.keys(groupedByDate).sort();
-  
+
   return (
     <div className="space-y-2">
       {sortedDates.map((date) => (
@@ -130,8 +131,10 @@ const MultipleAssignmentsDisplay: React.FC<{
     </div>
   );
 };
+*/
 
-// 단일 지원 시간대 표시 컴포넌트
+// 단일 지원 시간대 표시 컴포넌트 - TODO: 현재 미사용
+/*
 const SingleAssignmentDisplay: React.FC<{
   assignedTime?: string | DateValue | undefined;
   assignedRole?: string | undefined;
@@ -149,13 +152,13 @@ const SingleAssignmentDisplay: React.FC<{
       // 대기 상태: 기존 표시 방식 유지
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-          {/* 날짜 - 모바일에서 첫 줄 */}
+          // 날짜 - 모바일에서 첫 줄
           {assignedDate && (
             <div className="text-blue-600 font-medium">
               📅 {formatDateOnly(assignedDate)}
             </div>
           )}
-          {/* 시간과 역할 - 모바일에서 둘째 줄 */}
+          // 시간과 역할 - 모바일에서 둘째 줄
           <div className="flex items-center space-x-2 text-gray-700">
             <span>⏰ {formatDateTimeValue(assignedTime || '')}</span>
             {assignedRole && (
@@ -169,6 +172,7 @@ const SingleAssignmentDisplay: React.FC<{
     )}
   </div>
 );
+*/
 
 // 지원 카드 컴포넌트
 const ApplicationCard: React.FC<{
@@ -177,7 +181,7 @@ const ApplicationCard: React.FC<{
   onCancel: (postId: string) => void;
   isProcessing: string | null;
   t: (key: string) => string;
-}> = ({ application, onViewDetail, onCancel, isProcessing, t }) => (
+}> = ({ application, onViewDetail, onCancel, isProcessing, t: _t }) => (
   <div className="bg-white rounded-lg shadow-md p-4 border">
     <div className="flex justify-between items-start mb-3">
       <div>

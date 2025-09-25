@@ -102,17 +102,17 @@ export const setupTestData = async () => {
 // persons 컬렉션은 WorkLog의 staffInfo 필드로 완전히 통합되었습니다.
 // 이 함수는 더 이상 사용되지 않으며, WorkLog 생성은 useApplicantActions에서 직접 처리됩니다.
 export const promoteToStaff = async (
-  documentId: string, 
-  userName: string, 
-  jobRole: string, 
-  postingId: string, 
-  managerId: string, 
-  assignedRole?: string, 
-  assignedTime?: string,
-  email?: string,
-  phone?: string,
-  assignedDate?: string,
-  actualUserId?: string
+  documentId: string,
+  userName: string,
+  jobRole: string,
+  postingId: string,
+  _managerId: string,
+  _assignedRole?: string,
+  _assignedTime?: string,
+  _email?: string,
+  _phone?: string,
+  _assignedDate?: string,
+  _actualUserId?: string
 ) => {
   // 🚫 함수 완전 비활성화 - 더 이상 사용하지 않음
   logger.warn('⚠️ promoteToStaff 함수는 deprecated되었습니다. WorkLog 생성은 useApplicantActions에서 직접 처리됩니다.', {

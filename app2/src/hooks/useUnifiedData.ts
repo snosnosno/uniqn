@@ -12,7 +12,7 @@ import { useUnifiedDataContext } from '../contexts/UnifiedDataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import {
-  Staff,
+  // Staff, // TODO: 미래 타입 사용용
   WorkLog,
   AttendanceRecord,
   Application,
@@ -118,8 +118,8 @@ export const useScheduleData = (options?: { userId?: string }) => {
   const stats = useMemo((): ScheduleStats => {
     const allEvents = schedules;
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const _currentMonth = now.getMonth(); // 미래 월별 통계용
+    const _currentYear = now.getFullYear(); // 미래 년별 통계용
 
     return {
       totalSchedules: allEvents.length,

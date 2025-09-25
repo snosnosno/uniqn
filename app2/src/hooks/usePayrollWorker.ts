@@ -7,10 +7,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { 
-  PayrollCalculationMessage, 
-  PayrollCalculationResult, 
-  PayrollCalculationError 
+import {
+  // PayrollCalculationMessage, // 현재 사용하지 않음
+  PayrollCalculationResult,
+  PayrollCalculationError
 } from '../workers/payrollCalculator.worker';
 import { EnhancedPayrollCalculation, PayrollSummary } from '../types/payroll';
 import { UnifiedWorkLog } from '../types/unified/workLog';

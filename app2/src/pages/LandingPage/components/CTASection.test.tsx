@@ -63,7 +63,7 @@ describe('CTASection', () => {
     });
 
     it('Secondary CTA가 없어도 정상 렌더링되어야 한다', () => {
-      const { secondaryCTA, ...contentWithoutSecondaryCTA } = mockCTAContent;
+      const { secondaryCTA: _secondaryCTA, ...contentWithoutSecondaryCTA } = mockCTAContent;
 
       render(<CTASection content={contentWithoutSecondaryCTA} onCtaClick={mockOnCtaClick} />);
 

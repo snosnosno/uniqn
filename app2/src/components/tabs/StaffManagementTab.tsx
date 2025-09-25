@@ -23,8 +23,8 @@ import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLo
 
 // 유틸리티 imports
 import { useResponsive } from '../../hooks/useResponsive';
-import { useVirtualization } from '../../hooks/useVirtualization';
-import { BulkOperationService } from '../../services/BulkOperationService';
+// import { useVirtualization } from '../../hooks/useVirtualization'; // 향후 성능 최적화 기능
+// import { BulkOperationService } from '../../services/BulkOperationService'; // 향후 일괄 작업 기능
 import BulkTimeEditModal from '../modals/BulkTimeEditModal';
 import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
 import ReportModal from '../modals/ReportModal';
@@ -195,7 +195,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return staffIds.length > 0 && staffIds.every(id => selectedStaff.has(id));
   }, [selectedStaff]);
   
-  const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
   const [isBulkTimeEditOpen, setIsBulkTimeEditOpen] = useState(false);
   
   // 🎯 필터링 상태 - 내장 상태로 관리 (복잡한 훅 제거)
@@ -284,7 +283,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         setIsWorkTimeEditorOpen(true);
       } else {
         // staff.assignedTime이 없으면 timeSlot 사용
-        const timeValue = staff.assignedTime || (staff as any).timeSlot || null;
         
         // 디버깅: staff의 시간 값 확인
         // 🚀 스태프 확정 시 사전 생성된 WorkLog를 찾아서 에러 메시지 표시
@@ -360,25 +358,26 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   
   const filteredStaffCount = groupedStaffData.uniqueCount;
   
-  const selectedStaffData = useMemo(() => {
-    if (selectedStaff.size === 0) return [];
-    return staffData.filter(staff => selectedStaff.has(staff.id));
-  }, [staffData, selectedStaff]);
+  // TODO: 향후 대량 선택 기능을 위해 준비됨
+  // const selectedStaffData = useMemo(() => {
+  //   if (selectedStaff.size === 0) return [];
+  //   return staffData.filter(staff => selectedStaff.has(staff.id));
+  // }, [staffData, selectedStaff]);
 
-  // 가상화 설정
-  const mobileVirtualization = useVirtualization({
-    itemCount: filteredStaffCount,
-    threshold: 30,
-    mobileThreshold: 20,
-    isMobile: true
-  });
+  // TODO: 향후 가상화 기능을 위해 준비됨
+  // const mobileVirtualization = useVirtualization({
+  //   itemCount: filteredStaffCount,
+  //   threshold: 30,
+  //   mobileThreshold: 20,
+  //   isMobile: true
+  // });
 
-  const desktopVirtualization = useVirtualization({
-    itemCount: filteredStaffCount,
-    threshold: 50,
-    mobileThreshold: 30,
-    isMobile: false
-  });
+  // const desktopVirtualization = useVirtualization({
+  //   itemCount: filteredStaffCount,
+  //   threshold: 50,
+  //   mobileThreshold: 30,
+  //   isMobile: false
+  // });
   
   // 🎯 출석 상태 관련 헬퍼 함수들 - createWorkLogId 사용으로 통일
   const getStaffAttendanceStatus = useCallback((staffId: string, targetDate?: string) => {
@@ -771,9 +770,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
 
 
-  const handleBulkActions = () => {
-    setIsBulkActionsOpen(true);
-  };
+  // TODO: 향후 대량 작업 기능을 위해 준비됨
+  // const handleBulkActions = () => {
+  //   // 대량 작업 UI 열기
+  // };
   
   const handleBulkDelete = async (staffIds: string[]) => {
     try {
@@ -929,10 +929,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     }
   };
   
-  const handleBulkMessage = async (staffIds: string[], message: string) => {
-    showSuccess(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
-  };
+  // TODO: 향후 대량 메시지 기능을 위해 준비됨
+  // const handleBulkMessage = async (staffIds: string[], message: string) => {
+  //   showSuccess(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
+  // };
   
+  // TODO: 향후 대량 상태 변경 기능을 위해 준비됨
+  /*
   const handleBulkStatusUpdate = async (staffIds: string[], status: string) => {
     if (!canEdit) {
       showError('이 공고를 수정할 권한이 없습니다.');
@@ -972,6 +975,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       showError('출석 상태 변경 중 오류가 발생했습니다.');
     }
   };
+  */
   
   // 프로필 모달 핸들러
   const handleShowProfile = (staffId: string) => {

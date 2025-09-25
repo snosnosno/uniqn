@@ -10,7 +10,7 @@ import {
   Timestamp,
   getDocs,
   query,
-  where
+  // where // TODO: 미래 필터링용
 } from 'firebase/firestore';
 import {
   createUserWithEmailAndPassword,
@@ -148,7 +148,7 @@ export const TEST_JOB_POSTINGS: Omit<TestJobPosting, 'id' | 'createdAt'>[] = [
 export const checkEmulatorConnection = async (): Promise<boolean> => {
   try {
     // Firestore 연결 테스트
-    const testDoc = doc(db, 'test', 'connection');
+    const _testDoc = doc(db, 'test', 'connection'); // 연결 테스트용
     await getDocs(query(collection(db, 'test')));
 
     logger.info('Emulator 연결 성공', { component: 'TestSetup' });

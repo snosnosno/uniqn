@@ -6,7 +6,7 @@
  * @since 2025-02-02 (Week 4)
  */
 
-import React from 'react';
+// import React from 'react'; // 현재 테스트에서 사용하지 않음
 import { renderHook, act } from '@testing-library/react';
 import { usePayrollWorker } from '../usePayrollWorker';
 
@@ -244,7 +244,7 @@ describe('usePayrollWorker', () => {
         result.current.calculatePayroll(testParams as any);
       });
 
-      const performanceMetrics = {
+      const _performanceMetrics = {
         calculationTime: 250,
         complexity: 'medium',
         memoryUsage: 1024,
@@ -281,7 +281,7 @@ describe('usePayrollWorker', () => {
         result.current.calculatePayroll(testParams as any);
       });
 
-      const performanceMetrics = {
+      const _performanceMetrics = {
         calculationTime: 1500,
         complexity: 'high',
         itemsProcessed: 100,

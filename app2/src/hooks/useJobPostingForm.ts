@@ -5,9 +5,10 @@ import {
   createNewPreQuestion,
   PREDEFINED_ROLES
 } from '../utils/jobPosting/jobPostingHelpers';
-import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils';
+// import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
 
-import { JobPosting, JobPostingFormData } from '../types/jobPosting';
+import { JobPosting } from '../types/jobPosting';
+// import { JobPostingFormData } from '../types/jobPosting'; // 현재 사용하지 않음
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   const [formData, setFormData] = useState<any>(() => 
@@ -140,11 +141,11 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   // 날짜 관련 핸들러들 (레거시 호환성을 위해 유지하지만 사용하지 않음)
-  const handleStartDateChange = useCallback((value: { year?: string; month?: string; day?: string }) => {
+  const handleStartDateChange = useCallback((_value: { year?: string; month?: string; day?: string }) => {
     // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
   }, []);
 
-  const handleEndDateChange = useCallback((value: { year?: string; month?: string; day?: string }) => {
+  const handleEndDateChange = useCallback((_value: { year?: string; month?: string; day?: string }) => {
     // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
   }, []);
 
@@ -242,7 +243,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
 
   const handleRemoveRoleFromSalary = useCallback((role: string) => {
     setFormData((prev: any) => {
-      const { [role]: removed, ...rest } = prev.roleSalaries || {};
+      const { [role]: _removed, ...rest } = prev.roleSalaries || {};
       return {
         ...prev,
         roleSalaries: rest

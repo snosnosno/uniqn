@@ -17,7 +17,7 @@ const AttendancePage: React.FC = () => {
     const { currentUser: _currentUser, role } = useAuth();
 
     // Smart Hybrid Context 사용 - 자신의 출석 데이터만 구독
-    const { workLogs, attendanceRecords, loading } = usePageOptimizedData(location.pathname);
+    const { workLogs, attendanceRecords, loading: _loading } = usePageOptimizedData(location.pathname); // loading은 미래 로딩 상태용
 
     // 성능 최적화 로그
     React.useEffect(() => {

@@ -49,7 +49,7 @@ export const recordLoginAttempt = async (
   try {
     const ip = await getClientIP();
     const userAgent = getUserAgent();
-    const attemptId = `${ip}_${Date.now()}`;
+    const _attemptId = `${ip}_${Date.now()}`; // 보안 로깅용
 
     const attemptData: Partial<LoginAttempt> = {
       ip,

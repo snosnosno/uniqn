@@ -18,7 +18,7 @@ import { filterSchedules, createDefaultFilters } from './filterUtils';
 const useScheduleData = (): UseScheduleDataReturn => {
   const { currentUser } = useAuth();
   const context = useUnifiedDataContext();
-  const { staff, workLogs, applications, loading: contextLoading, error: contextError } = context.state;
+  const { staff: _staff, workLogs, applications, loading: _contextLoading, error: _contextError } = context.state;
   const [filters, setFilters] = useState(createDefaultFilters());
   const [_lastRefresh, _setLastRefresh] = useState(Date.now());
 

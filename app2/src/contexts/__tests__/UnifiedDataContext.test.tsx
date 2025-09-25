@@ -9,7 +9,6 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { UnifiedDataProvider } from '../UnifiedDataContext';
-import useUnifiedData from '../UnifiedDataContext';
 import { logger } from '../../utils/logger';
 
 // Firebase 모킹

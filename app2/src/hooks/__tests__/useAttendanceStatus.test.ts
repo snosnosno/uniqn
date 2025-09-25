@@ -5,7 +5,7 @@ import type { AttendanceStatus } from '../../types/schedule';
 // Firebase 모킹 - jest.mock 내부에서 정의
 jest.mock('../../firebase', () => {
   const mockFirestore: any = {
-    collection: jest.fn((path) => mockFirestore),
+    collection: jest.fn((_path) => mockFirestore),
     doc: jest.fn(() => mockFirestore),
     where: jest.fn(() => mockFirestore),
     orderBy: jest.fn(() => mockFirestore),
@@ -40,7 +40,7 @@ jest.mock('../../firebase', () => {
 // firebaseConnectionManager 모킹
 jest.mock('../../utils/firebaseConnectionManager', () => ({
   firebaseConnectionManager: {
-    safeOnSnapshot: jest.fn((path, callback, errorCallback) => {
+    safeOnSnapshot: jest.fn((path, callback, _errorCallback) => {
       // 즉시 빈 데이터로 콜백 실행
       if (typeof callback === 'function') {
         callback([]);
@@ -48,7 +48,7 @@ jest.mock('../../utils/firebaseConnectionManager', () => ({
       return jest.fn(); // unsubscribe 함수
     })
   },
-  safeOnSnapshot: jest.fn((path, callback, errorCallback) => {
+  safeOnSnapshot: jest.fn((path, callback, _errorCallback) => {
     if (typeof callback === 'function') {
       callback([]);
     }
@@ -96,7 +96,7 @@ jest.mock('firebase/firestore', () => ({
 describe('useAttendanceStatus', () => {
   const mockStaffId = 'test-staff-id';
   const mockDate = '2024-07-25';
-  const mockWorkLog = {
+  const _mockWorkLog = {
     id: 'work-log-1',
     staffId: mockStaffId,
     date: mockDate,
@@ -107,7 +107,7 @@ describe('useAttendanceStatus', () => {
     status: 'checked_in' as AttendanceStatus
   };
 
-  const mockAttendanceRecord = {
+  const _mockAttendanceRecord = {
     id: 'attendance-1',
     staffId: mockStaffId,
     date: mockDate,

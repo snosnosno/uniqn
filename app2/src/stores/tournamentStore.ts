@@ -274,7 +274,7 @@ export const useTournamentStore = create<TournamentState>()(
         balanceTables: () => set((state) => {
           const activeTables = state.tables.filter(t => t.players.length > 0);
           const totalPlayers = activeTables.reduce((sum, t) => sum + t.players.length, 0);
-          const targetPlayersPerTable = Math.ceil(totalPlayers / activeTables.length);
+          const _targetPlayersPerTable = Math.ceil(totalPlayers / activeTables.length); // 미래 재분배 로직용
 
           // 재분배 로직은 복잡하므로 여기서는 기본 구조만 제공
           // Table balancing calculation completed

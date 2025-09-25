@@ -593,7 +593,7 @@ export const useEnhancedPayroll = ({
     // });
     
     // 역할 기반 workLogs를 staffId + role로 그룹화
-    roleBasedWorkLogs.forEach((log, index) => {
+    roleBasedWorkLogs.forEach((log, _index) => {
       // workLog에 role이 있으면 우선 사용
       let role = (log as any).role;
       let staffName = (log as any).staffName || '';
@@ -723,8 +723,8 @@ export const useEnhancedPayroll = ({
           
           // 중복 처리 방지 - WorkLog ID를 처리된 목록에 추가
           processedWorkLogIds.add(log.id);
-          
-          const previousTotalHours = totalHours;
+
+          const _previousTotalHours = totalHours;
           totalHours += hours;
           
           // 디버깅: 시간 계산 결과 확인

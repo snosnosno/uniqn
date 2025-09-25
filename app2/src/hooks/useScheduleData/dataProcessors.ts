@@ -2,10 +2,10 @@ import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { ScheduleEvent, AttendanceStatus } from '../../types/schedule';
-import { 
-  safeDateToString, 
-  parseTimeString, 
-  extractDateFromFields 
+import {
+  // safeDateToString, // 현재 사용하지 않음
+  // parseTimeString, // 현재 사용하지 않음
+  extractDateFromFields
 } from '../../utils/scheduleUtils';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { parseAssignedTime, convertTimeToTimestamp } from '../../utils/workLogUtils';
@@ -158,7 +158,7 @@ export const processApplicationData = async (
       
       assignments.forEach((assignment: any, assignmentIndex: number) => {
         if (assignment.dates && Array.isArray(assignment.dates)) {
-          assignment.dates.forEach((dateStr: string, dateIndex: number) => {
+          assignment.dates.forEach((dateStr: string, _dateIndex: number) => {
             const timeStr = assignment.timeSlot || '';
             const { startTime, endTime } = parseAssignedTime(timeStr);
             const startTimestamp = startTime ? convertTimeToTimestamp(startTime, dateStr) : null;
@@ -225,7 +225,7 @@ export const processApplicationData = async (
       
       // 여러 날짜가 있으면 각 날짜마다 이벤트 생성
       if (convertedDates.length > 0) {
-        convertedDates.forEach((date, index) => {
+        convertedDates.forEach((date, _index) => {
           const assignment = (data as any).assignments.find((a: any) => a.dates && a.dates.includes(date));
           const timeStr = assignment?.timeSlot || '';
           const { startTime, endTime } = parseAssignedTime(timeStr);
