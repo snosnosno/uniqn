@@ -392,7 +392,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   type="text"
                   value={formData.benefits.guaranteedHours}
                   onChange={(e) => handleBenefitChange('guaranteedHours', e.target.value)}
-                  placeholder="보장시간 정보 입력"
+                  placeholder="예시: 6시간"
                   maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
@@ -418,7 +418,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   type="text"
                   value={formData.benefits.clothing}
                   onChange={(e) => handleBenefitChange('clothing', e.target.value)}
-                  placeholder="복장 정보 입력"
+                  placeholder="예시: 검은셔츠,슬랙스,운동화"
                   maxLength={25}
                   className="flex-1"
                   disabled={isSubmitting}
@@ -463,18 +463,21 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-transportation" className="text-sm text-gray-700 whitespace-nowrap">
-                교통비
+                교통비 (일당)
               </label>
               {formData.benefits?.transportation !== undefined && (
-                <Input
-                  type="text"
-                  value={formData.benefits.transportation}
-                  onChange={(e) => handleBenefitChange('transportation', e.target.value)}
-                  placeholder="교통비 정보 입력"
-                  maxLength={25}
-                  className="flex-1"
-                  disabled={isSubmitting}
-                />
+                <>
+                  <Input
+                    type="text"
+                    value={formData.benefits.transportation}
+                    onChange={(e) => handleBenefitChange('transportation', e.target.value)}
+                    placeholder="일당 5,000원"
+                    maxLength={25}
+                    className="flex-1"
+                    disabled={isSubmitting}
+                  />
+                  <span className="text-sm text-gray-500">원/일</span>
+                </>
               )}
             </div>
 
@@ -489,18 +492,21 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-mealAllowance" className="text-sm text-gray-700 whitespace-nowrap">
-                식비
+                식비 (일당)
               </label>
               {formData.benefits?.mealAllowance !== undefined && (
-                <Input
-                  type="text"
-                  value={formData.benefits.mealAllowance}
-                  onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
-                  placeholder="식비 정보 입력"
-                  maxLength={25}
-                  className="flex-1"
-                  disabled={isSubmitting}
-                />
+                <>
+                  <Input
+                    type="text"
+                    value={formData.benefits.mealAllowance}
+                    onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
+                    placeholder="일당 10,000원"
+                    maxLength={25}
+                    className="flex-1"
+                    disabled={isSubmitting}
+                  />
+                  <span className="text-sm text-gray-500">원/일</span>
+                </>
               )}
             </div>
 
@@ -515,18 +521,21 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-accommodation" className="text-sm text-gray-700 whitespace-nowrap">
-                숙소
+                숙소 (일당)
               </label>
               {formData.benefits?.accommodation !== undefined && (
-                <Input
-                  type="text"
-                  value={formData.benefits.accommodation}
-                  onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
-                  placeholder="숙소 정보 입력"
-                  maxLength={25}
-                  className="flex-1"
-                  disabled={isSubmitting}
-                />
+                <>
+                  <Input
+                    type="text"
+                    value={formData.benefits.accommodation}
+                    onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
+                    placeholder="일당 15,000원"
+                    maxLength={25}
+                    className="flex-1"
+                    disabled={isSubmitting}
+                  />
+                  <span className="text-sm text-gray-500">원/일</span>
+                </>
               )}
             </div>
           </div>

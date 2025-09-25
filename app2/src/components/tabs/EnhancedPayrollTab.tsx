@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { JobPosting } from '../../types/jobPosting';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
+import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
 import DetailEditModal from '../payroll/DetailEditModal';
@@ -384,44 +385,124 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [payrollData, startDate, endDate]);
 
   // 대량 수당 적용 구현
-  const applyBulkAllowances = useCallback((settings: BulkAllowanceSettings) => {
+  const applyBulkAllowances = useCallback(async (settings: BulkAllowanceSettings) => {
     if (!payrollData || payrollData.length === 0) {
       logger.warn('적용할 정산 데이터가 없습니다.', { component: 'EnhancedPayrollTab' });
       return;
     }
 
-    logger.info('대량 수당 적용 시작', { 
-      component: 'EnhancedPayrollTab', 
+    if (!jobPosting?.id) {
+      logger.warn('JobPosting ID가 없어 Firebase에 저장할 수 없습니다.', { component: 'EnhancedPayrollTab' });
+      return;
+    }
+
+    logger.info('대량 수당 적용 시작', {
+      component: 'EnhancedPayrollTab',
       data: { settings, targetCount: payrollData.length }
     });
 
-    // 적용 대상 결정 (전체 또는 선택된 스태프)
-    const targetStaffIds = selectedStaffIds.length > 0 ? selectedStaffIds : payrollData.map(data => data.staffId);
-    
-    // 수당 정보 업데이트
-    const updates: Record<string, any> = {};
-    
-    targetStaffIds.forEach(staffId => {
-      // 기존 수당과 새 설정 병합
-      const existingAllowances = staffAllowanceOverrides[staffId] || {};
-      updates[staffId] = {
-        ...existingAllowances,
-        meal: (settings.allowances.meal?.enabled ? settings.allowances.meal.amount : 0) ?? existingAllowances.meal ?? 0,
-        transportation: (settings.allowances.transportation?.enabled ? settings.allowances.transportation.amount : 0) ?? existingAllowances.transportation ?? 0,
-        accommodation: (settings.allowances.accommodation?.enabled ? settings.allowances.accommodation.amount : 0) ?? existingAllowances.accommodation ?? 0,
-        bonus: (settings.allowances.bonus?.enabled ? settings.allowances.bonus.amount : 0) ?? existingAllowances.bonus ?? 0,
-        other: (settings.allowances.other?.enabled ? settings.allowances.other.amount : 0) ?? existingAllowances.other ?? 0
-      };
-    });
+    try {
+      // 적용 대상 결정 (전체 또는 선택된 스태프)
+      const targetStaffIds = selectedStaffIds.length > 0 ? selectedStaffIds : payrollData.map(data => data.staffId);
 
-    // 상태 업데이트
-    setStaffAllowanceOverrides(prev => ({ ...prev, ...updates }));
-    
-    logger.info('대량 수당 적용 완료', { 
-      component: 'EnhancedPayrollTab',
-      data: { updatedStaff: targetStaffIds.length }
-    });
-  }, [payrollData, selectedStaffIds, staffAllowanceOverrides]);
+      // 수당 정보 업데이트
+      const updates: Record<string, any> = {};
+
+      targetStaffIds.forEach(staffId => {
+        // 해당 스태프의 근무일수 찾기
+        const staffData = payrollData.find(data => data.staffId === staffId);
+        const workDays = staffData?.totalDays || 1;
+
+        // 기존 수당과 새 설정 병합
+        const existingAllowances = staffAllowanceOverrides[staffId] || {};
+
+        // 일당으로 설정된 수당들의 총액 계산
+        const mealTotal = settings.allowances.meal?.enabled ? settings.allowances.meal.amount * workDays : 0;
+        const transportationTotal = settings.allowances.transportation?.enabled ? settings.allowances.transportation.amount * workDays : 0;
+        const accommodationTotal = settings.allowances.accommodation?.enabled ? settings.allowances.accommodation.amount * workDays : 0;
+
+        updates[staffId] = {
+          ...existingAllowances,
+          meal: mealTotal || existingAllowances.meal || 0,
+          transportation: transportationTotal || existingAllowances.transportation || 0,
+          accommodation: accommodationTotal || existingAllowances.accommodation || 0,
+          bonus: (settings.allowances.bonus?.enabled ? settings.allowances.bonus.amount : 0) ?? existingAllowances.bonus ?? 0,
+          other: (settings.allowances.other?.enabled ? settings.allowances.other.amount : 0) ?? existingAllowances.other ?? 0,
+
+          // 일당 정보도 함께 저장 (DetailEditModal에서 사용)
+          dailyRates: {
+            meal: settings.allowances.meal?.enabled ? settings.allowances.meal.amount : undefined,
+            transportation: settings.allowances.transportation?.enabled ? settings.allowances.transportation.amount : undefined,
+            accommodation: settings.allowances.accommodation?.enabled ? settings.allowances.accommodation.amount : undefined
+          },
+          workDays: workDays,
+          isManualEdit: false
+        };
+      });
+
+      // Firebase에 저장하기 위한 benefits 업데이트
+      const updatedBenefits = {
+        ...jobPosting.benefits,
+        // 일당 설정 저장
+        mealAllowance: settings.allowances.meal?.enabled ? settings.allowances.meal.amount.toString() : jobPosting.benefits?.mealAllowance || '',
+        transportation: settings.allowances.transportation?.enabled ? settings.allowances.transportation.amount.toString() : jobPosting.benefits?.transportation || '',
+        accommodation: settings.allowances.accommodation?.enabled ? settings.allowances.accommodation.amount.toString() : jobPosting.benefits?.accommodation || '',
+        isPerDay: true // 일당 기반으로 설정
+      };
+
+      // JobPosting 업데이트 (Firebase에 저장)
+      const postRef = doc(db, 'jobPostings', jobPosting.id);
+      await updateDoc(postRef, {
+        benefits: updatedBenefits,
+        updatedAt: new Date()
+      });
+
+      // 상태 업데이트
+      setStaffAllowanceOverrides(prev => ({ ...prev, ...updates }));
+
+      logger.info('대량 수당 적용 완료 - Firebase 저장 성공', {
+        component: 'EnhancedPayrollTab',
+        data: { updatedStaff: targetStaffIds.length, benefits: updatedBenefits }
+      });
+
+    } catch (error) {
+      logger.error('대량 수당 적용 중 오류 발생', error instanceof Error ? error : new Error(String(error)), {
+        component: 'EnhancedPayrollTab'
+      });
+
+      // 오류 발생 시에도 로컬 상태는 업데이트 (사용자 경험 개선)
+      const targetStaffIds = selectedStaffIds.length > 0 ? selectedStaffIds : payrollData.map(data => data.staffId);
+      const updates: Record<string, any> = {};
+
+      targetStaffIds.forEach(staffId => {
+        const staffData = payrollData.find(data => data.staffId === staffId);
+        const workDays = staffData?.totalDays || 1;
+        const existingAllowances = staffAllowanceOverrides[staffId] || {};
+
+        const mealTotal = settings.allowances.meal?.enabled ? settings.allowances.meal.amount * workDays : 0;
+        const transportationTotal = settings.allowances.transportation?.enabled ? settings.allowances.transportation.amount * workDays : 0;
+        const accommodationTotal = settings.allowances.accommodation?.enabled ? settings.allowances.accommodation.amount * workDays : 0;
+
+        updates[staffId] = {
+          ...existingAllowances,
+          meal: mealTotal || existingAllowances.meal || 0,
+          transportation: transportationTotal || existingAllowances.transportation || 0,
+          accommodation: accommodationTotal || existingAllowances.accommodation || 0,
+          bonus: (settings.allowances.bonus?.enabled ? settings.allowances.bonus.amount : 0) ?? existingAllowances.bonus ?? 0,
+          other: (settings.allowances.other?.enabled ? settings.allowances.other.amount : 0) ?? existingAllowances.other ?? 0,
+          dailyRates: {
+            meal: settings.allowances.meal?.enabled ? settings.allowances.meal.amount : undefined,
+            transportation: settings.allowances.transportation?.enabled ? settings.allowances.transportation.amount : undefined,
+            accommodation: settings.allowances.accommodation?.enabled ? settings.allowances.accommodation.amount : undefined
+          },
+          workDays: workDays,
+          isManualEdit: false
+        };
+      });
+
+      setStaffAllowanceOverrides(prev => ({ ...prev, ...updates }));
+    }
+  }, [payrollData, selectedStaffIds, staffAllowanceOverrides, jobPosting]);
   
   const updateStaffAllowances = useCallback((uniqueKey: string, allowances: any) => {
     logger.info('스태프 수당 업데이트', { 
@@ -589,6 +670,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         availableRoles={availableRoles}
         onApply={applyBulkAllowances}
         selectedStaffCount={selectedStaffIds.length}
+        jobPostingBenefits={jobPosting?.benefits}
       />
 
       {/* 상세 내역 테이블 */}

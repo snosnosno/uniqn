@@ -395,9 +395,9 @@ export const usePayrollWorker = () => {
         const basePay = calculateBasePay(salaryType, salaryAmount, totalHours, totalDays);
         
         // 수당 계산
-        const staffAllowanceOverride = params.staffAllowanceOverrides?.[key] || 
+        const staffAllowanceOverride = params.staffAllowanceOverrides?.[key] ||
                                       params.staffAllowanceOverrides?.[data.staffId];
-        const defaultAllowances = calculateAllowances(params.jobPosting);
+        const defaultAllowances = calculateAllowances(params.jobPosting, totalDays);
         const allowances = staffAllowanceOverride || defaultAllowances;
 
         const allowanceTotal = 

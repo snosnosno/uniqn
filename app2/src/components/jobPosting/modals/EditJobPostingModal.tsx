@@ -401,7 +401,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   type="text"
                   value={formData.benefits.guaranteedHours}
                   onChange={(e) => handleBenefitChange('guaranteedHours', e.target.value)}
-                  placeholder="보장시간 정보 입력"
+                  placeholder="예시: 6시간"
                   maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
@@ -427,7 +427,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   type="text"
                   value={formData.benefits.clothing}
                   onChange={(e) => handleBenefitChange('clothing', e.target.value)}
-                  placeholder="복장 정보 입력"
+                  placeholder="예시: 검은셔츠,슬랙스,운동화"
                   maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
@@ -479,7 +479,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   type="text"
                   value={formData.benefits.transportation}
                   onChange={(e) => handleBenefitChange('transportation', e.target.value)}
-                  placeholder="교통비 정보 입력"
+                  placeholder="예시: 10000"
                   maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
@@ -505,7 +505,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   type="text"
                   value={formData.benefits.mealAllowance}
                   onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
-                  placeholder="식비 정보 입력"
+                  placeholder="예시: 10000"
                   maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}
@@ -531,7 +531,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   type="text"
                   value={formData.benefits.accommodation}
                   onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
-                  placeholder="숙소 정보 입력"
+                  placeholder="예시: 제공 또는 숙소비"
                   maxLength={25}
                   className="flex-1"
                   disabled={isUpdating}

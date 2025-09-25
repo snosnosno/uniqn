@@ -62,21 +62,24 @@ export interface PreQuestionAnswer {
 export interface Benefits {
   /** 보장시간 */
   guaranteedHours?: string;
-  
+
   /** 복장 관련 지원 */
   clothing?: string;
-  
+
   /** 식사 제공 여부 */
   meal?: string;
-  
-  /** 교통비 지원 */
+
+  /** 교통비 지원 (일당) */
   transportation?: string;
-  
-  /** 식비 지원 */
+
+  /** 식비 지원 (일당) */
   mealAllowance?: string;
-  
-  /** 숙소 제공 여부 */
+
+  /** 숙소 제공 여부 (일당) */
   accommodation?: string;
+
+  /** 일당 기반 계산 여부 (기본값: true) */
+  isPerDay?: boolean;
 }
 
 /**

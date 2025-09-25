@@ -204,16 +204,58 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     return { salaryType, salaryAmount };
   };
 
-  // 기본 수당 가져오기
-  const getDefaultAllowances = () => {
+  // 기본 수당 가져오기 (일당 계산 로직 추가)
+  const getDefaultAllowances = (totalDays: number): {
+    meal: number;
+    transportation: number;
+    accommodation: number;
+    bonus: number;
+    other: number;
+    dailyRates?: { meal?: number; transportation?: number; accommodation?: number };
+    workDays?: number;
+    isManualEdit?: boolean;
+  } => {
     const benefits = jobPosting?.benefits;
-    return {
-      meal: benefits?.mealAllowance ? (parseInt(benefits.mealAllowance) || 0) : 0,
-      transportation: benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0,
-      accommodation: benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0,
+    const isPerDay = benefits?.isPerDay !== false; // 기본값은 true (일당 계산)
+
+    // 일당 정보 추출
+    const mealDaily = benefits?.mealAllowance ? (parseInt(benefits.mealAllowance) || 0) : 0;
+    const transportationDaily = benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0;
+    const accommodationDaily = benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0;
+
+    console.log('🍽️ Web Worker getDefaultAllowances 호출됨', {
+      totalDays,
+      benefits,
+      isPerDay,
+      mealDaily,
+      transportationDaily,
+      accommodationDaily
+    });
+
+    const baseAllowances = {
+      meal: isPerDay ? mealDaily * totalDays : mealDaily,
+      transportation: isPerDay ? transportationDaily * totalDays : transportationDaily,
+      accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily,
       bonus: 0,
-      other: 0
+      other: 0,
+      isManualEdit: false
     };
+
+    // 일당 정보가 있을 때만 추가
+    if (isPerDay) {
+      const dailyRates: { meal?: number; transportation?: number; accommodation?: number } = {};
+      if (mealDaily > 0) dailyRates.meal = mealDaily;
+      if (transportationDaily > 0) dailyRates.transportation = transportationDaily;
+      if (accommodationDaily > 0) dailyRates.accommodation = accommodationDaily;
+
+      return {
+        ...baseAllowances,
+        dailyRates,
+        workDays: totalDays
+      };
+    }
+
+    return baseAllowances;
   };
 
   // 기본 급여 계산
@@ -358,7 +400,6 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
 
   // 정산 계산
   const results: EnhancedPayrollCalculation[] = [];
-  const defaultAllowances = getDefaultAllowances();
 
   for (const [key, data] of Array.from(staffRoleMap)) {
     let totalHours = 0;
@@ -375,10 +416,43 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     const totalDays = uniqueDates.size;
     const { salaryType, salaryAmount } = getSalaryInfo(data.role);
     const basePay = calculateBasePay(salaryType, salaryAmount, totalHours, totalDays);
-    
-    const allowances = staffAllowanceOverrides[key] || 
-                      staffAllowanceOverrides[data.staffId] || 
-                      defaultAllowances;
+
+    // 각 스태프의 totalDays에 맞게 개별적으로 계산
+    const defaultAllowances = getDefaultAllowances(totalDays);
+    const baseAllowances = staffAllowanceOverrides[key] ||
+                          staffAllowanceOverrides[data.staffId] ||
+                          defaultAllowances;
+
+    // 김승호 디버깅 로그
+    if (data.staffName === '김승호') {
+      console.log('🔍 김승호 Web Worker 수당 계산 디버깅', {
+        staffName: data.staffName,
+        totalDays,
+        defaultAllowances,
+        baseAllowances,
+        hasOverride: !!(staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId])
+      });
+    }
+
+    // 일당 정보는 항상 유지 (수동 편집 시에도)
+    const allowances = { ...baseAllowances };
+
+    // 일당 정보가 있을 때만 추가
+    if (defaultAllowances.dailyRates) {
+      allowances.dailyRates = defaultAllowances.dailyRates;
+    }
+    if (defaultAllowances.workDays) {
+      allowances.workDays = defaultAllowances.workDays;
+    }
+
+    // 김승호 최종 allowances 로그
+    if (data.staffName === '김승호') {
+      console.log('🎯 김승호 Web Worker 최종 allowances', {
+        allowances,
+        hasDailyRates: !!allowances.dailyRates,
+        hasWorkDays: !!allowances.workDays
+      });
+    }
 
     const allowanceTotal = 
       allowances.meal +

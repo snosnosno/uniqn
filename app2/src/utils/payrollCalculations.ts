@@ -19,6 +19,13 @@ export interface PayrollCalculationResult {
     accommodation: number;
     bonus: number;
     other: number;
+    // 일당 계산 과정 표시용 (선택적)
+    dailyRates?: {
+      meal?: number;
+      transportation?: number;
+      accommodation?: number;
+    };
+    workDays?: number;
   };
   totalPayment: number;
   salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
@@ -98,16 +105,54 @@ export function calculateBasePay(
 /**
  * 수당 계산
  */
-export function calculateAllowances(jobPosting?: JobPosting | null): PayrollCalculationResult['allowances'] {
+export function calculateAllowances(jobPosting?: JobPosting | null, totalDays: number = 1): PayrollCalculationResult['allowances'] {
   const benefits = jobPosting?.benefits;
-  
-  return {
-    meal: benefits?.mealAllowance ? (parseInt(benefits.mealAllowance) || 0) : 0,
-    transportation: benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0,
-    accommodation: benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0,
+  const isPerDay = benefits?.isPerDay !== false; // 기본값은 true (일당 계산)
+
+  // 일당 정보 추출
+  const mealDaily = benefits?.mealAllowance ? (parseInt(benefits.mealAllowance) || 0) : 0;
+  const transportationDaily = benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0;
+  const accommodationDaily = benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0;
+
+  logger.info('수당 계산', {
+    component: 'payrollCalculations',
+    data: {
+      totalDays,
+      isPerDay,
+      dailyRates: {
+        meal: mealDaily,
+        transportation: transportationDaily,
+        accommodation: accommodationDaily
+      },
+      calculatedAllowances: {
+        meal: isPerDay ? mealDaily * totalDays : mealDaily,
+        transportation: isPerDay ? transportationDaily * totalDays : transportationDaily,
+        accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily
+      }
+    }
+  });
+
+  const result: PayrollCalculationResult['allowances'] = {
+    meal: isPerDay ? mealDaily * totalDays : mealDaily,
+    transportation: isPerDay ? transportationDaily * totalDays : transportationDaily,
+    accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily,
     bonus: 0,
     other: 0
   };
+
+  // 일당 계산 정보 추가 (일당 계산 과정 표시용)
+  if (isPerDay && totalDays > 0 && (mealDaily > 0 || transportationDaily > 0 || accommodationDaily > 0)) {
+    const dailyRates: { meal?: number; transportation?: number; accommodation?: number } = {};
+
+    if (mealDaily > 0) dailyRates.meal = mealDaily;
+    if (transportationDaily > 0) dailyRates.transportation = transportationDaily;
+    if (accommodationDaily > 0) dailyRates.accommodation = accommodationDaily;
+
+    result.dailyRates = dailyRates;
+    result.workDays = totalDays;
+  }
+
+  return result;
 }
 
 /**
@@ -186,8 +231,8 @@ export function calculatePayroll(
     const basePayment = calculateBasePay(salaryType, salaryAmount, totalHours, totalDays);
     
     // 수당 계산
-    const allowances = calculateAllowances(jobPosting);
-    const totalAllowances = Object.values(allowances).reduce((sum, amount) => sum + amount, 0);
+    const allowances = calculateAllowances(jobPosting, totalDays);
+    const totalAllowances = allowances.meal + allowances.transportation + allowances.accommodation + allowances.bonus + allowances.other;
     
     // 총 급여 계산
     const totalPayment = basePayment + totalAllowances;

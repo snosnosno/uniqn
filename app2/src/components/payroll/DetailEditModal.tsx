@@ -24,13 +24,13 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   workLogs,  // props로 받은 workLogs 사용
   onSave
 }) => {
-  const [allowances, setAllowances] = useState({
+  const [allowances, setAllowances] = useState<EnhancedPayrollCalculation['allowances']>({
     meal: 0,
     transportation: 0,
     accommodation: 0,
     bonus: 0,
     other: 0,
-    otherDescription: ''
+    isManualEdit: false
   });
 
   // 탭 상태 관리
@@ -49,14 +49,52 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   // staff 데이터가 변경될 때 allowances 초기화
   useEffect(() => {
     if (staff) {
-      setAllowances({
+      // 디버깅 로그 추가
+      logger.info('🔍 DetailEditModal staff 데이터 확인', {
+        component: 'DetailEditModal',
+        data: {
+          staffId: staff.staffId,
+          staffName: staff.staffName,
+          allowances: staff.allowances,
+          hasDailyRates: !!staff.allowances.dailyRates,
+          hasWorkDays: !!staff.allowances.workDays,
+          meal: staff.allowances.meal,
+          transportation: staff.allowances.transportation,
+          dailyRates: staff.allowances.dailyRates,
+          workDays: staff.allowances.workDays
+        }
+      });
+
+      // useEnhancedPayroll에서 이미 총액(일당×일수)으로 계산되어 온 값을 그대로 사용
+      const newAllowances: EnhancedPayrollCalculation['allowances'] = {
         meal: staff.allowances.meal || 0,
         transportation: staff.allowances.transportation || 0,
         accommodation: staff.allowances.accommodation || 0,
         bonus: staff.allowances.bonus || 0,
         other: staff.allowances.other || 0,
-        otherDescription: staff.allowances.otherDescription || ''
+        isManualEdit: staff.allowances.isManualEdit || false,
+        // 일당 계산 정보를 조건부로 보존 (일당 계산 과정 표시용)
+        ...(staff.allowances.dailyRates && { dailyRates: staff.allowances.dailyRates }),
+        ...(staff.allowances.workDays !== undefined && { workDays: staff.allowances.workDays })
+      };
+
+      // 선택적 필드들은 조건부로 추가
+      if (staff.allowances.otherDescription) {
+        newAllowances.otherDescription = staff.allowances.otherDescription;
+      }
+
+      logger.info('🎯 DetailEditModal allowances 설정 결과', {
+        component: 'DetailEditModal',
+        data: {
+          originalMeal: staff.allowances.meal,
+          calculatedMeal: newAllowances.meal,
+          originalTransportation: staff.allowances.transportation,
+          calculatedTransportation: newAllowances.transportation,
+          newAllowances
+        }
       });
+
+      setAllowances(newAllowances);
     }
   }, [staff]);
 
@@ -307,14 +345,16 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     const numValue = parseInt(value) || 0;
     setAllowances(prev => ({
       ...prev,
-      [type]: numValue
+      [type]: numValue,
+      isManualEdit: true // 수동으로 수정됨을 표시
     }));
   }, []);
 
   const handleDescriptionChange = useCallback((value: string) => {
     setAllowances(prev => ({
       ...prev,
-      otherDescription: value
+      otherDescription: value,
+      isManualEdit: true // 수동으로 수정됨을 표시
     }));
   }, []);
 
@@ -598,6 +638,42 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               {/* 수당 설정 */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">🎁 수당 설정</h4>
+
+                {/* 일당 계산 정보 표시 */}
+                {allowances.dailyRates && allowances.workDays && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-blue-800">일당 기반 계산</span>
+                      <span className="text-sm text-blue-600">{allowances.workDays}일 근무</span>
+                    </div>
+                    <div className="space-y-1 text-sm text-blue-700">
+                      {allowances.dailyRates.meal && (
+                        <div className="flex justify-between">
+                          <span>식비: {allowances.dailyRates.meal.toLocaleString()}원/일</span>
+                          <span>= {(allowances.dailyRates.meal * allowances.workDays).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {allowances.dailyRates.transportation && (
+                        <div className="flex justify-between">
+                          <span>교통비: {allowances.dailyRates.transportation.toLocaleString()}원/일</span>
+                          <span>= {(allowances.dailyRates.transportation * allowances.workDays).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {allowances.dailyRates.accommodation && (
+                        <div className="flex justify-between">
+                          <span>숙소비: {allowances.dailyRates.accommodation.toLocaleString()}원/일</span>
+                          <span>= {(allowances.dailyRates.accommodation * allowances.workDays).toLocaleString()}원</span>
+                        </div>
+                      )}
+                    </div>
+                    {allowances.isManualEdit && (
+                      <div className="mt-2 text-xs text-orange-600">
+                        ⚠️ 수동으로 수정됨
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {/* 식비 */}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -609,18 +685,33 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                           if (!e.target.checked) {
                             handleAmountChange('meal', '0');
                           } else if (allowances.meal === 0) {
-                            handleAmountChange('meal', '10000');
+                            // 일당 기본값 × 근무일수로 계산
+                            const dailyAmount = allowances.dailyRates?.meal || 12000;
+                            const workDays = allowances.workDays || staff.totalDays;
+                            const totalAmount = dailyAmount * workDays;
+                            handleAmountChange('meal', totalAmount.toString());
                           }
                         }}
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700">식비</span>
+                      {allowances.dailyRates?.meal && allowances.workDays && (
+                        <span className="ml-2 text-xs text-blue-600">
+                          ({allowances.dailyRates.meal.toLocaleString()}원/일 × {allowances.workDays}일)
+                        </span>
+                      )}
                     </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        value={allowances.meal}
-                        onChange={(e) => handleAmountChange('meal', e.target.value)}
+                        value={allowances.dailyRates?.meal && allowances.workDays ? allowances.dailyRates.meal : allowances.meal}
+                        onChange={(e) => {
+                          const inputValue = parseInt(e.target.value) || 0;
+                          const finalValue = allowances.dailyRates?.meal && allowances.workDays
+                            ? inputValue * allowances.workDays  // 일당 입력 시 총액으로 변환
+                            : inputValue;
+                          handleAmountChange('meal', finalValue.toString());
+                        }}
                         disabled={allowances.meal === 0}
                         className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
                       />
@@ -638,18 +729,33 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                           if (!e.target.checked) {
                             handleAmountChange('transportation', '0');
                           } else if (allowances.transportation === 0) {
-                            handleAmountChange('transportation', '5000');
+                            // 일당 기본값 × 근무일수로 계산
+                            const dailyAmount = allowances.dailyRates?.transportation || 6000;
+                            const workDays = allowances.workDays || staff.totalDays;
+                            const totalAmount = dailyAmount * workDays;
+                            handleAmountChange('transportation', totalAmount.toString());
                           }
                         }}
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700">교통비</span>
+                      {allowances.dailyRates?.transportation && allowances.workDays && (
+                        <span className="ml-2 text-xs text-blue-600">
+                          ({allowances.dailyRates.transportation.toLocaleString()}원/일 × {allowances.workDays}일)
+                        </span>
+                      )}
                     </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        value={allowances.transportation}
-                        onChange={(e) => handleAmountChange('transportation', e.target.value)}
+                        value={allowances.dailyRates?.transportation && allowances.workDays ? allowances.dailyRates.transportation : allowances.transportation}
+                        onChange={(e) => {
+                          const inputValue = parseInt(e.target.value) || 0;
+                          const finalValue = allowances.dailyRates?.transportation && allowances.workDays
+                            ? inputValue * allowances.workDays  // 일당 입력 시 총액으로 변환
+                            : inputValue;
+                          handleAmountChange('transportation', finalValue.toString());
+                        }}
                         disabled={allowances.transportation === 0}
                         className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
                       />

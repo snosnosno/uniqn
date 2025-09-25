@@ -34,7 +34,7 @@ export const createInitialFormData = () => {
     endDate: today,
     salaryType: 'hourly',
     salaryAmount: '',
-    benefits: {} as Benefits
+    benefits: { isPerDay: true } as Benefits
   };
 };
 

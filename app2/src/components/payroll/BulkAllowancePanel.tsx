@@ -1,16 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { BulkAllowanceSettings, AllowanceType } from '../../types/payroll';
+import { Benefits } from '../../types/jobPosting/base';
 
 interface BulkAllowancePanelProps {
   availableRoles: string[];
   onApply: (settings: BulkAllowanceSettings) => void;
   selectedStaffCount?: number;
+  jobPostingBenefits?: Benefits | undefined;
 }
 
 const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
   availableRoles,
   onApply,
-  selectedStaffCount = 0
+  selectedStaffCount = 0,
+  jobPostingBenefits
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [applyTo, setApplyTo] = useState<'all' | 'selected' | 'byRole'>('all');
@@ -22,6 +25,30 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
     bonus: { enabled: false, amount: 0 },
     other: { enabled: false, amount: 0, description: '' }
   });
+
+  // Firebase에서 저장된 benefits 정보를 기반으로 allowances 초기화
+  useEffect(() => {
+    if (jobPostingBenefits && jobPostingBenefits.isPerDay) {
+      const mealAmount = jobPostingBenefits.mealAllowance ? parseInt(jobPostingBenefits.mealAllowance) || 0 : 0;
+      const transportAmount = jobPostingBenefits.transportation ? parseInt(jobPostingBenefits.transportation) || 0 : 0;
+      const accommodationAmount = jobPostingBenefits.accommodation ? parseInt(jobPostingBenefits.accommodation) || 0 : 0;
+
+      console.log('🔄 Firebase에서 불러온 benefits 정보로 allowances 초기화:', {
+        mealAmount,
+        transportAmount,
+        accommodationAmount,
+        benefits: jobPostingBenefits
+      });
+
+      setAllowances({
+        meal: { enabled: mealAmount > 0, amount: mealAmount },
+        transportation: { enabled: transportAmount > 0, amount: transportAmount },
+        accommodation: { enabled: accommodationAmount > 0, amount: accommodationAmount },
+        bonus: { enabled: false, amount: 0 },
+        other: { enabled: false, amount: 0, description: '' }
+      });
+    }
+  }, [jobPostingBenefits]);
 
   const handleAllowanceToggle = useCallback((type: AllowanceType) => {
     setAllowances(prev => ({

@@ -70,12 +70,21 @@ export interface EnhancedPayrollCalculation {
   
   // 수당 정보 (개별 편집 가능)
   allowances: {
-    meal: number;           // 식비
-    transportation: number; // 교통비  
-    accommodation: number;  // 숙소비
+    meal: number;           // 식비 (계산된 총액)
+    transportation: number; // 교통비 (계산된 총액)
+    accommodation: number;  // 숙소비 (계산된 총액)
     bonus: number;         // 보너스
     other: number;         // 기타
     otherDescription?: string;
+
+    // 일당 기반 계산을 위한 추가 필드
+    dailyRates?: {          // 일당 정보
+      meal?: number;
+      transportation?: number;
+      accommodation?: number;
+    };
+    workDays?: number;      // 적용된 근무일수
+    isManualEdit?: boolean; // 수동 편집 여부
   };
   
   // 계산 결과
