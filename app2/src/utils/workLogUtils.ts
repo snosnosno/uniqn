@@ -202,16 +202,35 @@ export const convertAssignedTimeToScheduled = (
   const validBaseDate = baseDate || new Date().toISOString().split('T')[0];
   
   const { startTime, endTime } = parseAssignedTime(assignedTime);
-  
+
   const scheduledStartTime = startTime && validBaseDate ? convertTimeToTimestamp(startTime, validBaseDate) : null;
   let scheduledEndTime = endTime && validBaseDate ? convertTimeToTimestamp(endTime, validBaseDate) : null;
-  
-  
+
+
   // 종료 시간이 시작 시간보다 이른 경우 다음날로 조정
-  if (scheduledStartTime && scheduledEndTime && startTime && endTime) {
-    const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(validBaseDate) || new Date());
-    if (adjustedEndTime) {
-      scheduledEndTime = adjustedEndTime;
+  if (scheduledStartTime && scheduledEndTime && startTime && endTime &&
+      typeof startTime === 'string' && typeof endTime === 'string') {
+    try {
+      const startTimeParts = startTime.split(':');
+      const endTimeParts = endTime.split(':');
+
+      if (startTimeParts.length < 2 || endTimeParts.length < 2) {
+        return { scheduledStartTime, scheduledEndTime };
+      }
+
+      const startHour = parseInt(startTimeParts[0] || '0');
+      const endHour = parseInt(endTimeParts[0] || '0');
+
+      // 종료 시간이 시작 시간보다 이른 경우만 다음날로 조정
+      if (!isNaN(startHour) && !isNaN(endHour) &&
+          (endHour < startHour || (endHour === startHour && endTime < startTime))) {
+        const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(validBaseDate) || new Date());
+        if (adjustedEndTime) {
+          scheduledEndTime = adjustedEndTime;
+        }
+      }
+    } catch (error) {
+      // 시간 파싱 오류 시 무시
     }
   }
   

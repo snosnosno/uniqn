@@ -175,62 +175,91 @@ const useScheduleData = (): UseScheduleDataReturn => {
     return filterSchedules(schedules, filters);
   }, [schedules, filters]);
 
-  // 통계 계산
+  // 통계 계산 - 완료된 일정만 시간과 수입 계산에 포함
   const stats = useMemo((): ScheduleStats => {
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
-    
-    const completedEvents = filteredSchedules.filter(e => 
-      e.type === 'completed' || 
+
+    const completedEvents = filteredSchedules.filter(e =>
+      e.type === 'completed' ||
       (e.status === 'checked_out' && e.actualEndTime)
     );
-    
-    const upcomingEvents = filteredSchedules.filter(e => 
+
+    const upcomingEvents = filteredSchedules.filter(e =>
       new Date(e.date) > now
     );
-    
-    const thisMonthEvents = filteredSchedules.filter(e => {
+
+    // 완료된 일정 중 이번달 일정 필터링
+    const thisMonthCompletedEvents = completedEvents.filter(e => {
       const eventDate = new Date(e.date);
       return eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear;
     });
-    
-    // 근무 시간 계산 (예정 시간 기준)
+
+    // 총 근무 시간 계산 (완료된 일정만, 예정 시간 기준)
     let totalHoursWorked = 0;
-    let totalEarnings = 0;
-    let thisMonthEarnings = 0;
-    
-    filteredSchedules.forEach(event => {
-      // 예정 시간 기준으로 근무 시간 계산
+    completedEvents.forEach(event => {
+      // 예정 시간 기준으로 계산 (startTime, endTime)
       if (event.startTime && event.endTime) {
-        const startDate = event.startTime && 'toDate' in event.startTime ? 
+        const startDate = event.startTime && 'toDate' in event.startTime ?
           event.startTime.toDate() : null;
-        const endDate = event.endTime && 'toDate' in event.endTime ? 
+        const endDate = event.endTime && 'toDate' in event.endTime ?
           event.endTime.toDate() : null;
-          
+
         if (startDate && endDate) {
-          const hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-          totalHoursWorked += hoursWorked;
-        }
-      }
-      
-      // 급여 계산
-      if (event.payrollAmount) {
-        totalEarnings += event.payrollAmount;
-        
-        const eventDate = new Date(event.date);
-        if (eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear) {
-          thisMonthEarnings += event.payrollAmount;
+          let hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+
+          // 자정을 넘는 근무 처리: 음수인 경우 (Timestamp 날짜 조정 실패 시)
+          if (hoursWorked < 0) {
+            // 24시간을 더해서 다음날 종료로 계산
+            hoursWorked += 24;
+
+            logger.debug('자정 넘는 근무시간 감지 및 수정', {
+              component: 'useScheduleData',
+              data: {
+                eventId: event.id,
+                startTime: startDate.toISOString(),
+                endTime: endDate.toISOString(),
+                originalHours: hoursWorked - 24,
+                correctedHours: hoursWorked
+              }
+            });
+          }
+
+          totalHoursWorked += Math.max(0, hoursWorked);
+
+          // 디버깅: 계산된 시간이 24시간을 초과하는 경우 로그
+          if (hoursWorked > 24) {
+            logger.warn('비정상적인 근무시간 감지', {
+              component: 'useScheduleData',
+              data: {
+                eventId: event.id,
+                startTime: startDate.toISOString(),
+                endTime: endDate.toISOString(),
+                hoursWorked: hoursWorked
+              }
+            });
+          }
         }
       }
     });
-    
+
+    // 이번달 수입 계산 (완료된 일정만)
+    const thisMonthEarnings = thisMonthCompletedEvents.reduce(
+      (sum, event) => sum + (event.payrollAmount || 0), 0
+    );
+
+    // 총 수입 계산 (완료된 일정만)
+    const totalEarnings = completedEvents.reduce(
+      (sum, event) => sum + (event.payrollAmount || 0), 0
+    );
+
     return {
       totalSchedules: filteredSchedules.length,
       completedSchedules: completedEvents.length,
       upcomingSchedules: upcomingEvents.length,
-      totalEarnings: totalEarnings,
-      thisMonthEarnings: thisMonthEarnings,
+      totalEarnings,
+      thisMonthEarnings,
       hoursWorked: Math.round(totalHoursWorked)
     };
   }, [filteredSchedules]);

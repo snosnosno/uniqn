@@ -486,25 +486,39 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
       return 0;
     }
     
-    // 심야 근무 케이스 처리: 종료시간이 시작시간보다 이전인 경우
+    // 심야 근무 케이스 처리: Timestamp가 이미 다음날로 조정된 상태인지 확인
     let adjustedEndDate = new Date(endDate);
-    
-    // 시간만 비교해서 다음날 근무인지 판단 (09:00 → 08:00 케이스)
+
+    // Timestamp가 이미 다음날로 설정되어 있는지 확인 (workLogUtils에서 조정된 경우)
     const startHour = startDate.getHours();
     const endHour = endDate.getHours();
-    
-    if (endHour < startHour || (endHour === startHour && endDate.getMinutes() < startDate.getMinutes())) {
-      // 다음날 종료: 종료시간에 24시간 추가
+
+    // 날짜가 다르면 이미 조정된 것으로 판단하고, 같은 날이면서 종료시간이 이른 경우만 조정
+    const sameDate = startDate.getDate() === endDate.getDate();
+
+    if (sameDate && (endHour < startHour || (endHour === startHour && endDate.getMinutes() < startDate.getMinutes()))) {
+      // 다음날 종료: 종료시간에 24시간 추가 (같은 날인 경우만)
       adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
-      
-      logger.debug('심야 근무 감지', {
+
+      logger.debug('심야 근무 감지 - 날짜 조정', {
         component: 'workLogMapper',
         data: {
           workLogId: workLog.id,
           startTime: startDate.toTimeString().slice(0, 8),
           endTime: endDate.toTimeString().slice(0, 8),
           adjustedEndTime: adjustedEndDate.toTimeString().slice(0, 8),
-          nextDay: true
+          nextDay: true,
+          sameDate: sameDate
+        }
+      });
+    } else if (!sameDate) {
+      logger.debug('이미 다음날로 조정된 Timestamp 감지', {
+        component: 'workLogMapper',
+        data: {
+          workLogId: workLog.id,
+          startDate: startDate.toDateString(),
+          endDate: endDate.toDateString(),
+          alreadyAdjusted: true
         }
       });
     }
