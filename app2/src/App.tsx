@@ -154,17 +154,17 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
+                {/* Smart Context DevTools (개발 모드) */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Suspense fallback={null}>
+                    <SmartContextDevTools />
+                  </Suspense>
+                )}
               </TournamentProvider>
             </UnifiedDataProvider>
           </AuthProvider>
-          </QueryClientProvider>
           <ToastContainer />
-          {/* Smart Context DevTools (개발 모드) */}
-          {process.env.NODE_ENV === 'development' && (
-            <Suspense fallback={null}>
-              <SmartContextDevTools />
-            </Suspense>
-          )}
+        </QueryClientProvider>
       </FirebaseErrorBoundary>
     </ErrorBoundary>
   );

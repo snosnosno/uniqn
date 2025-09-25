@@ -103,7 +103,7 @@ const SmartContextDevTools: React.FC = () => {
     const interval = setInterval(updateMetrics, 5000); // 5초마다 업데이트
 
     return () => clearInterval(interval);
-  }, [role, debug.dataSummary]);
+  }, [role]); // debug.dataSummary 제거 - 객체 참조가 매번 변경되어 무한 루프 발생
 
   // 개발 모드가 아니면 표시하지 않음
   if (process.env.NODE_ENV !== 'development') {
