@@ -25,6 +25,9 @@ import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 
+// Capacitor 네이티브 서비스 초기화 컴포넌트
+import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
+
 
 
 // Lazy load admin pages with retry mechanism
@@ -95,8 +98,9 @@ const App: React.FC = () => {
       <FirebaseErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <UnifiedDataProvider>
-              <TournamentProvider>
+            <CapacitorInitializer>
+              <UnifiedDataProvider>
+                <TournamentProvider>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
@@ -148,8 +152,9 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
-              </TournamentProvider>
-            </UnifiedDataProvider>
+                </TournamentProvider>
+              </UnifiedDataProvider>
+            </CapacitorInitializer>
           </AuthProvider>
           <ToastContainer />
         </QueryClientProvider>
