@@ -75,6 +75,36 @@ const {
 | `jobPostings` | id, title, location, roles | 구인공고 |
 | `attendanceRecords` | **staffId**, status, timestamp | 출석 기록 |
 
+## 📋 **기능 추가 필수 체크리스트**
+
+### ✅ **코드 작성 전 확인**
+- [ ] 유사 기능이 이미 있는지 확인
+- [ ] 표준 필드명 사용 (`staffId`, `eventId`)
+- [ ] UnifiedDataContext 활용 여부 확인
+- [ ] 재사용 가능한 컴포넌트/유틸 확인
+
+### ✅ **코드 작성 규칙**
+- [ ] TypeScript strict mode 준수 (any 타입 사용 금지)
+- [ ] Logger 사용 (`logger.info()`, `console.log` 금지)
+- [ ] Firebase 실시간 구독 (`onSnapshot`)
+- [ ] Toast 시스템 사용 (`showToast()`, `alert()` 금지)
+- [ ] 메모이제이션 적용 (`useMemo`, `useCallback`)
+
+### ✅ **UI/UX 일관성**
+- [ ] 로딩 상태 처리 (`loading`, `error` state)
+- [ ] 국제화 준수 (하드코딩 텍스트 금지, `t('key')` 사용)
+- [ ] 네이티브 앱 호환성 (Safe Area, 플랫폼 체크)
+- [ ] 반응형 디자인 (모바일 우선)
+
+### ✅ **배포 전 필수 확인**
+- [ ] `npm run type-check` 통과
+- [ ] `npm run lint` 통과
+- [ ] `npm run build` 성공
+- [ ] `npx cap sync` 성공
+- [ ] 테스트 케이스 작성
+
+> 📖 **상세 가이드**: [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)
+
 ## ⚡ **자주 사용하는 명령어**
 
 ### 개발 & 디버깅

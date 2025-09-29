@@ -14,8 +14,10 @@ interface PWAUpdateNotificationProps {
 const PWAUpdateNotification: React.FC<PWAUpdateNotificationProps> = ({
   className = '',
 }) => {
+  // Hook은 항상 최상위에서 호출
   const { needRefresh, offlineReady, updateServiceWorker } = useServiceWorkerUpdate();
 
+  // 에러 처리는 렌더링 로직에서 분리
   if (!needRefresh && !offlineReady) return null;
 
   if (needRefresh) {

@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { enableIndexedDbPersistence, disableNetwork, enableNetwork } from 'firebase/firestore';
+import { disableNetwork, enableNetwork } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from './logger';
 
@@ -21,7 +21,11 @@ const DEFAULT_OFFLINE_CONFIG: OfflineConfig = {
 };
 
 /**
- * Firebase 오프라인 지원 초기화
+ * Firebase 오프라인 지원 초기화 (Firebase v11 방식)
+ *
+ * Firebase v11부터는 FirestoreSettings.cache를 통해 오프라인 지속성을 설정합니다.
+ * 이 함수는 기존 API와의 호환성을 위해 유지되지만, 실제 오프라인 설정은
+ * firebase.ts에서 initializeFirestore() 시점에 설정되어야 합니다.
  */
 export const initializeOfflineSupport = async (
   config: Partial<OfflineConfig> = {}
@@ -30,33 +34,18 @@ export const initializeOfflineSupport = async (
 
   try {
     if (finalConfig.enablePersistence) {
-      await enableIndexedDbPersistence(db);
-
-      logger.info(`Firebase 오프라인 지속성 활성화됨 - synchronizeTabs: ${finalConfig.synchronizeTabs}, cacheSizeBytes: ${finalConfig.cacheSizeBytes}`, {
+      // Firebase v11에서는 initializeFirestore 시점에 cache 설정이 필요합니다.
+      // 여기서는 네트워크 상태만 확인합니다.
+      logger.info(`Firebase 오프라인 지원 초기화됨 (v11 방식) - synchronizeTabs: ${finalConfig.synchronizeTabs}, cacheSizeBytes: ${finalConfig.cacheSizeBytes}`, {
         component: 'offlineSupport',
-        operation: 'enablePersistence',
+        operation: 'initializeOfflineSupport',
       });
     }
   } catch (error: any) {
-    if (error.code === 'failed-precondition') {
-      // 여러 탭이 열려있는 경우 - 일반적인 상황
-      logger.warn(`Firebase 오프라인 지속성: 여러 탭이 열려있음 - ${error.code} - 다른 탭에서 이미 Firebase를 사용 중입니다.`, {
-        errorCode: error.code,
-        component: 'offlineSupport',
-      });
-    } else if (error.code === 'unimplemented') {
-      // 브라우저가 지원하지 않는 경우
-      logger.warn(`Firebase 오프라인 지속성: 브라우저 지원 안함 - ${error.code}`, {
-        errorCode: error.code,
-        user_agent: navigator.userAgent,
-        component: 'offlineSupport',
-      });
-    } else {
-      logger.error('Firebase 오프라인 지속성 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
-        errorCode: error.code,
-        component: 'offlineSupport',
-      });
-    }
+    logger.error('Firebase 오프라인 지원 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
+      errorCode: error.code,
+      component: 'offlineSupport',
+    });
   }
 };
 

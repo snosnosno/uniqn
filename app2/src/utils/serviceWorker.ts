@@ -2,7 +2,7 @@
  * Service Worker 등록 및 관리 유틸리티
  */
 
-import React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { logger } from './logger';
 
 const isLocalhost = Boolean(
@@ -325,20 +325,46 @@ export async function clearAllCaches(): Promise<void> {
 }
 
 /**
- * 앱 업데이트 알림 컴포넌트를 위한 훅
+ * 앱 업데이트 알림 컴포넌트를 위한 훅 (에러 안전성 강화)
  */
 export function useServiceWorkerUpdate() {
-  const [needRefresh, setNeedRefresh] = React.useState(false);
-  const [offlineReady, setOfflineReady] = React.useState(false);
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  React.useEffect(() => {
-    registerSW({
-      onNeedRefresh: () => setNeedRefresh(true),
-      onOfflineReady: () => setOfflineReady(true),
-    });
+  useEffect(() => {
+    try {
+      // 브라우저 환경에서만 실행
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        registerSW({
+          onNeedRefresh: () => {
+            try {
+              setNeedRefresh(true);
+            } catch (error) {
+              logger.warn('needRefresh 상태 업데이트 실패:', error instanceof Error ? error : new Error(String(error)));
+            }
+          },
+          onOfflineReady: () => {
+            try {
+              setOfflineReady(true);
+            } catch (error) {
+              logger.warn('offlineReady 상태 업데이트 실패:', error instanceof Error ? error : new Error(String(error)));
+            }
+          },
+        });
+      } else {
+        logger.info('Service Worker를 지원하지 않는 환경입니다.');
+      }
+    } catch (error) {
+      logger.error('Service Worker 등록 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'serviceWorkerUpdate',
+        operation: 'registerSW'
+      });
+      setHasError(true);
+    }
   }, []);
 
-  const updateServiceWorker = React.useCallback(async () => {
+  const updateServiceWorker = useCallback(async () => {
     try {
       await updateSW();
       setNeedRefresh(false);
@@ -347,13 +373,15 @@ export function useServiceWorkerUpdate() {
         component: 'serviceWorkerUpdate',
         operation: 'updateServiceWorker'
       });
+      setHasError(true);
     }
   }, []);
 
   return {
-    needRefresh,
-    offlineReady,
+    needRefresh: hasError ? false : needRefresh,
+    offlineReady: hasError ? false : offlineReady,
     updateServiceWorker,
+    hasError,
   };
 }
 

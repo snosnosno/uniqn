@@ -118,7 +118,6 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
           disabled={disabled || (includeYear && !value.year)}
           className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
         >
-          <option value="">전체</option>
           {Array.from({ length: 12 }, (_, i) => {
             const month = (i + 1).toString().padStart(2, '0');
             const isAvailable = !value.year || isMonthAvailable(value.year, month);
@@ -137,7 +136,6 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
           disabled={disabled || !value.month}
           className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
         >
-          <option value="">전체</option>
           {Array.from({ length: maxDays }, (_, i) => {
             const day = (i + 1).toString().padStart(2, '0');
             const isAvailable = !value.year || !value.month || isDateInRange(value.year, value.month, day);

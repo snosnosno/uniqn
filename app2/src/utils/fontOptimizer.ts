@@ -61,31 +61,20 @@ const criticalFonts: FontConfig[] = [
 ];
 
 /**
- * 폰트 프리로딩
+ * 폰트 조건부 프리로딩 (실제 사용될 때만)
  */
 export const preloadFont = (config: FontConfig): void => {
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'font';
-  link.type = 'font/woff2';
-  link.crossOrigin = 'anonymous';
-
-  // Google Fonts 또는 로컬 폰트 URL 생성
-  if (config.family === 'Pretendard') {
-    // CDN에서 Pretendard 폰트 로드
-    link.href = `https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-std-${config.weight}.woff2`;
-  }
-
-  document.head.appendChild(link);
+  // 완전 비활성화 - 404 오류 방지
+  console.debug(`폰트 프리로딩 비활성화: ${config.family}(${config.weight})`);
+  return;
 };
 
 /**
- * 중요한 폰트들을 프리로딩
+ * 중요한 폰트들 프리로딩 (완전 비활성화)
  */
 export const preloadCriticalFonts = (): void => {
-  criticalFonts.forEach(font => {
-    preloadFont(font);
-  });
+  // 완전 비활성화 - 404 오류 방지
+  return;
 };
 
 /**
@@ -163,35 +152,27 @@ export const getFontMetrics = (fontFamily: string) => {
 };
 
 /**
- * CSS에서 font-display 최적화 적용
+ * CSS에서 font-display 최적화 적용 (최신 버전 사용)
  */
 export const applyFontDisplay = (): void => {
+  // @fontsource/pretendard 최신 버전 사용 (더 안정적)
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://cdn.jsdelivr.net/npm/@fontsource/pretendard@5.2.5/400.css';
+  document.head.appendChild(link);
+
+  const link2 = document.createElement('link');
+  link2.rel = 'stylesheet';
+  link2.href = 'https://cdn.jsdelivr.net/npm/@fontsource/pretendard@5.2.5/600.css';
+  document.head.appendChild(link2);
+
+  // 폰트 로딩 중 레이아웃 시프트 방지
   const style = document.createElement('style');
   style.textContent = `
-    @font-face {
-      font-family: 'Pretendard';
-      src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-std-400.woff2') format('woff2');
-      font-weight: 400;
-      font-style: normal;
-      font-display: swap;
-      unicode-range: ${[basicLatinRange, ...koreanUnicodeRanges].join(',')};
-    }
-
-    @font-face {
-      font-family: 'Pretendard';
-      src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-std-600.woff2') format('woff2');
-      font-weight: 600;
-      font-style: normal;
-      font-display: swap;
-      unicode-range: ${[basicLatinRange, ...koreanUnicodeRanges].join(',')};
-    }
-
-    /* 폰트 로딩 중 레이아웃 시프트 방지 */
     body {
       font-family: ${systemFonts.join(', ')};
     }
   `;
-
   document.head.appendChild(style);
 };
 
@@ -215,21 +196,43 @@ export const analyzeUsedFontWeights = (): number[] => {
 };
 
 /**
- * 폰트 최적화 초기화
+ * 폰트 최적화 초기화 (성능 우선, 에러 처리 강화)
  */
 export const initializeFontOptimization = (): void => {
-  // 중요한 폰트 프리로딩
-  preloadCriticalFonts();
+  try {
+    // 폰트 디스플레이 최적화 먼저 적용 (즉시 실행)
+    applyFontDisplay();
 
-  // 폰트 디스플레이 최적화 적용
-  applyFontDisplay();
+    // 폰트 프리로딩은 지연 실행 (성능 경고 방지)
+    requestIdleCallback(() => {
+      try {
+        preloadCriticalFonts();
+      } catch (error) {
+        console.warn('폰트 프리로딩 실패:', error);
+      }
+    }, { timeout: 5000 });
 
-  // 폰트 로드 완료 후 성능 분석
-  if (document.fonts) {
-    document.fonts.ready.then(() => {
-      console.info('폰트 로딩 완료');
-      const usedWeights = analyzeUsedFontWeights();
-      console.info('사용 중인 폰트 웨이트:', usedWeights);
-    });
+    // 폰트 로드 완료 후 성능 분석 (에러 처리 포함)
+    if (document.fonts) {
+      document.fonts.ready
+        .then(() => {
+          console.info('폰트 로딩 완료');
+          const usedWeights = analyzeUsedFontWeights();
+          console.info('사용 중인 폰트 웨이트:', usedWeights);
+        })
+        .catch((error) => {
+          console.warn('폰트 로드 상태 확인 실패:', error);
+        });
+    }
+  } catch (error) {
+    console.error('폰트 최적화 초기화 실패:', error);
+    // 폴백: 시스템 폰트만 사용
+    const fallbackStyle = document.createElement('style');
+    fallbackStyle.textContent = `
+      body, * {
+        font-family: ${systemFonts.join(', ')} !important;
+      }
+    `;
+    document.head.appendChild(fallbackStyle);
   }
 };

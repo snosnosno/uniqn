@@ -7,18 +7,6 @@
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
-    },
-    {
-      "src": "images/icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "images/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable any"
     }
   ],
   "start_url": "/",
@@ -30,65 +18,24 @@
   "scope": "/",
   "lang": "ko-KR",
   "categories": ["business", "productivity", "games"],
-  "screenshots": [
-    {
-      "src": "images/screenshot-mobile-1.png",
-      "type": "image/png",
-      "sizes": "375x812",
-      "form_factor": "narrow",
-      "label": "메인 대시보드"
-    },
-    {
-      "src": "images/screenshot-mobile-2.png",
-      "type": "image/png",
-      "sizes": "375x812",
-      "form_factor": "narrow",
-      "label": "구인공고 관리"
-    },
-    {
-      "src": "images/screenshot-desktop-1.png",
-      "type": "image/png",
-      "sizes": "1280x720",
-      "form_factor": "wide",
-      "label": "데스크톱 대시보드"
-    }
-  ],
   "shortcuts": [
     {
       "name": "출석 체크",
       "short_name": "출석",
       "description": "스태프 출석 상태 확인",
-      "url": "/app/attendance",
-      "icons": [
-        {
-          "src": "images/shortcut-attendance.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/app/attendance"
     },
     {
       "name": "내 일정",
       "short_name": "일정",
       "description": "나의 근무 일정 확인",
-      "url": "/app/my-schedule",
-      "icons": [
-        {
-          "src": "images/shortcut-schedule.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/app/my-schedule"
     },
     {
       "name": "구인공고",
       "short_name": "구인",
       "description": "구인공고 확인 및 지원",
-      "url": "/app/jobs",
-      "icons": [
-        {
-          "src": "images/shortcut-jobs.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/app/jobs"
     }
   ],
   "prefer_related_applications": false,

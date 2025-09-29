@@ -122,12 +122,9 @@ const App: React.FC = () => {
       performanceMonitor.measureWebVitals();
       performanceMonitor.measureMemory();
 
-      // 중요한 이미지들 프리로딩 (백그라운드에서)
-      try {
-        await preloadCriticalImages();
-      } catch (error) {
-        console.warn('Critical images preloading failed:', error);
-      }
+      // 이미지 프리로딩 비활성화 (preload 경고 방지)
+      // 이미지는 실제 사용 시점에 로딩됨
+      console.debug('이미지 프리로딩이 비활성화되었습니다 (성능 최적화)');
 
       // Service Worker 등록 (마지막에 실행)
       registerSW({

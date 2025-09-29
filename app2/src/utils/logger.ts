@@ -43,7 +43,9 @@ export interface LogContext {
   strategy?: string;
   additionalData?: Record<string, unknown>;
   timestamp?: string;
-  
+  environment?: string;
+  cacheSize?: string;
+
   // 새로 추가된 속성들
   selectionsCount?: number;
   firstSelection?: unknown;

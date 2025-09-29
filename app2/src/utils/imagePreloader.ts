@@ -53,21 +53,33 @@ export const preloadImages = async (
   }
 };
 
-// 중요한 이미지들을 미리 로드 (앱 시작 시)
-export const preloadCriticalImages = () => {
-  const criticalImages = [
-    {
-      src: '/icons/icon-192x192.png',
-      options: { priority: 'high' as const },
-    },
-    {
-      src: '/images/logo.png',
-      options: { priority: 'high' as const },
-    },
-    // 필요한 다른 중요한 이미지들 추가
-  ];
+// 중요한 이미지들을 조건부로 지연 로드 (실제 필요할 때만)
+export const preloadCriticalImages = async () => {
+  // 2초 지연 후 프리로딩 (앱 초기화 완료 후)
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
-  return preloadImages(criticalImages);
+  // DOM에서 실제 사용되는 이미지만 확인
+  const hasFavicon = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+
+  const criticalImages: Array<{ src: string; options?: PreloadOptions }> = [];
+
+  // 현재 존재하는 파비콘만 프리로드 (필요한 경우)
+  if (hasFavicon) {
+    const faviconHref = hasFavicon.getAttribute('href');
+    if (faviconHref && !faviconHref.startsWith('data:')) {
+      criticalImages.push({
+        src: faviconHref,
+        options: { priority: 'low' as const },
+      });
+    }
+  }
+
+  if (criticalImages.length > 0) {
+    return preloadImages(criticalImages);
+  }
+
+  // 프리로드할 이미지가 없으면 아무것도 하지 않음
+  console.debug('프리로드할 중요한 이미지가 없습니다.');
 };
 
 // WebP 지원 확인
