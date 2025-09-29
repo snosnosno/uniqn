@@ -4,6 +4,8 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../contexts/AuthContext';
 import { initializePushNotifications } from '../../services/notifications';
 import { initializeLocalNotifications } from '../../services/localNotifications';
+import { initializeStatusBar } from '../../services/statusBar';
+import { initializeKeyboard } from '../../services/keyboard';
 import { logger } from '../../utils/logger';
 
 /**
@@ -36,6 +38,15 @@ const initializeCapacitorServices = async (userId: string) => {
   logger.info('Capacitor 네이티브 서비스 초기화 시작');
 
   try {
+    // 상태바 초기화 (UI 요소이므로 가장 먼저)
+    await initializeStatusBar();
+
+    // 키보드 초기화
+    const keyboardInitialized = await initializeKeyboard();
+    if (keyboardInitialized) {
+      logger.info('키보드 서비스 초기화 성공');
+    }
+
     // 로컬 알림 초기화
     const localNotificationsInitialized = await initializeLocalNotifications();
 
