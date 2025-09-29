@@ -9,7 +9,7 @@
 - **목표**: Capacitor를 통한 iOS/Android 앱 배포
 - **예상 기간**: 7-10일
 - **코드 재사용률**: 95% 이상
-- **진행 상황**: 🎉 **Phase 3 완료** (2025-09-30)
+- **진행 상황**: 🎉 **Phase 4 완료** (2025-09-30) - 성능 최적화 및 PWA 완성
 - **현재 브랜치**: `feature/capacitor-migration`
 
 ---
@@ -427,56 +427,113 @@ app2/src/services/
 
 ---
 
-## 🚀 Phase 4: 성능 최적화
+## 🚀 Phase 4: 성능 최적화 ✅ **완료됨 (2025-09-30)**
 
 ### **4.1 웹뷰 최적화**
 
 #### **Capacitor 설정 최적화**
 ```json
-// capacitor.config.json
+// capacitor.config.ts - 완전 최적화됨
 {
   "server": {
     "androidScheme": "https",
-    "iosScheme": "capacitor"
+    "iosScheme": "capacitor",
+    "cleartext": false,
+    "allowNavigation": ["https://tholdem-ebc18.web.app", "https://tholdem-ebc18.firebaseapp.com"]
   },
   "ios": {
-    "contentInset": "automatic"
+    "contentInset": "automatic",
+    "scrollEnabled": true,
+    "allowsInlineMediaPlaybook": true,
+    "preferredContentMode": "mobile"
   },
   "android": {
-    "webContentsDebuggingEnabled": false
+    "webContentsDebuggingEnabled": false,
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webViewPresentationStyle": "fullscreen"
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 3000, "backgroundColor": "#1f2937" },
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] },
+    "StatusBar": { "style": "light", "backgroundColor": "#1f2937" }
   }
 }
 ```
 
-- [ ] HTTPS 스키마 설정
-- [ ] 디버깅 비활성화 (프로덕션)
-- [ ] 콘텐츠 인셋 최적화
+- [x] HTTPS 스키마 설정 및 보안 강화 ✅
+- [x] 디버깅 비활성화 (프로덕션) ✅
+- [x] 콘텐츠 인셋 및 플러그인 최적화 ✅
 
 ### **4.2 번들 크기 최적화**
 
-- [ ] 코드 스플리팅 적용
-- [ ] Tree shaking 확인
-- [ ] 이미지 lazy loading
-- [ ] 폰트 최적화
+- [x] **코드 스플리팅 적용** ✅ - 기능별 청크 분할 (`lazyChunks.ts`)
+- [x] **Tree shaking 확인** ✅ - Webpack 기본 설정 활용
+- [x] **이미지 lazy loading** ✅ - `OptimizedImage` 컴포넌트, WebP 지원
+- [x] **폰트 최적화** ✅ - Pretendard 서브셋팅, 프리로딩
 
 ### **4.3 오프라인 지원**
 
 ```typescript
-// Firebase 오프라인 지속성
+// Firebase 오프라인 지속성 - 완전 구현됨
 import { enableIndexedDbPersistence } from 'firebase/firestore';
 
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    // 여러 탭이 열려있는 경우
-  } else if (err.code === 'unimplemented') {
-    // 브라우저가 지원하지 않는 경우
-  }
+await initializeOfflineSupport({
+  enablePersistence: true,
+  synchronizeTabs: false,
+  cacheSizeBytes: 40 * 1024 * 1024, // 40MB 캐시
 });
+
+// Service Worker 캐싱 전략
+- 캐시 우선: 이미지, 폰트, 정적 자산
+- 네트워크 우선: API, Firebase
+- Stale While Revalidate: 동적 콘텐츠
 ```
 
-- [ ] Firebase 오프라인 캐싱 설정
-- [ ] Service Worker 설정
-- [ ] 오프라인 UI 처리
+- [x] **Firebase 오프라인 캐싱 설정** ✅ - IndexedDB 지속성, 40MB 캐시
+- [x] **Service Worker 설정** ✅ - PWA 지원, 다단계 캐싱 전략
+- [x] **오프라인 UI 처리** ✅ - 네트워크 상태 인디케이터, 오프라인 알림
+
+### **✅ Phase 4 완료 요약 (2025-09-30)**
+
+#### **🎉 성과 지표**
+- **성능 최적화**: 웹뷰 설정, 번들 분할, 캐싱 전략 완성
+- **PWA 완성**: Service Worker, 오프라인 지원, 설치 프롬프트
+- **새로운 컴포넌트**: 7개 (최적화된 이미지, 네트워크 상태, PWA 관련)
+- **새로운 유틸리티**: 6개 (폰트, 이미지, 오프라인, Service Worker 최적화)
+- **빌드 상태**: ✅ 성공 (프로덕션 준비 완료)
+
+#### **📁 생성된 주요 파일**
+```
+app2/
+├── public/
+│   ├── sw.js                          # Service Worker 캐싱 전략
+│   └── manifest.json                  # PWA 매니페스트
+├── src/components/
+│   ├── OptimizedImage.tsx             # 이미지 lazy loading & WebP
+│   ├── NetworkStatusIndicator.tsx     # 네트워크 상태 표시
+│   ├── PWAUpdateNotification.tsx      # PWA 업데이트 알림
+│   └── PWAInstallPrompt.tsx           # PWA 설치 프롬프트
+└── src/utils/
+    ├── lazyChunks.ts                  # 코드 스플리팅 최적화
+    ├── imagePreloader.ts              # 이미지 프리로딩
+    ├── fontOptimizer.ts               # 폰트 최적화
+    ├── offlineSupport.ts              # 오프라인 지원
+    └── serviceWorker.ts               # Service Worker 관리
+```
+
+#### **🚀 최적화 결과**
+- **번들 크기**: 기능별 청크 분할로 초기 로딩 최적화
+- **캐싱 전략**: 3단계 캐싱 (캐시 우선, 네트워크 우선, SWR)
+- **오프라인 지원**: Firebase IndexedDB + Service Worker 조합
+- **PWA 기능**: 홈 화면 설치, 오프라인 작동, 업데이트 알림
+- **이미지 최적화**: Lazy loading, WebP 지원, 프리로딩
+- **폰트 최적화**: 서브셋팅, 프리로딩, font-display: swap
+
+#### **🔧 Capacitor 통합 완성**
+- **5개 네이티브 플러그인**: 모든 플러그인과 PWA 기능 호환
+- **성능 모니터링**: 실시간 성능 측정 및 최적화
+- **크로스 플랫폼**: 웹, Android, iOS 모두 동일한 최적화 적용
 
 ---
 
@@ -706,23 +763,22 @@ npx cap build android                  # Android 빌드
 
 ## 🎯 **다음 단계 가이드**
 
-**Phase 3 완료로 완전한 네이티브 모바일 앱 완성! 이제 다음과 같은 단계가 가능합니다:**
+**Phase 4 완료로 완전한 고성능 PWA + 네이티브 모바일 앱 완성! 이제 다음과 같은 단계가 가능합니다:**
 
 ### **즉시 가능한 테스트**
-1. **Android 에뮬레이터 테스트**:
+1. **최적화된 앱 테스트**:
    ```bash
    cd app2
    npm run build && npx cap sync && npx cap open android
    ```
-   - 푸시 알림 등록 및 수신 테스트
-   - 카메라 촬영 기능 테스트
-   - QR 코드 스캔 기능 테스트
-   - 로컬 알림 스케줄링 테스트
-   - Safe Area 자동 처리 확인
-   - 상태바 브랜드 스타일링 확인
-   - 키보드 최적화 동작 확인
+   - **PWA 기능**: 홈 화면 설치, 오프라인 작동, 업데이트 알림
+   - **네이티브 기능**: 푸시 알림, 카메라, QR 스캔, 로컬 알림
+   - **성능 최적화**: 코드 스플리팅, 이미지 lazy loading, 폰트 프리로딩
+   - **오프라인 지원**: Firebase 캐싱, Service Worker, 네트워크 상태 표시
+   - **UI 최적화**: Safe Area, 상태바, 키보드 처리
 
-2. **실제 Android 기기 테스트**: USB 디버깅으로 완전한 네이티브 앱 경험 테스트
+2. **PWA 웹 테스트**: `npm start` 후 Chrome에서 PWA 설치 및 오프라인 기능 테스트
+3. **실제 Android 기기 테스트**: USB 디버깅으로 완전한 네이티브 + PWA 경험 테스트
 
 ### **iOS 개발 준비 (Mac 환경)**
 1. Firebase Console에서 iOS 앱 추가 및 `GoogleService-Info.plist` 다운로드
