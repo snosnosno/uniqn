@@ -8,7 +8,9 @@ import JobPostingDetailContent from '../components/jobPosting/JobPostingDetailCo
 import { JobPostingProvider } from '../contexts/JobPostingContextAdapter';
 import { db } from '../firebase';
 import { usePermissions } from '../hooks/usePermissions';
+import { useJobPostingAnnouncement } from '../hooks/useJobPostingAnnouncement';
 import { JobPosting } from '../types/jobPosting';
+import SendAnnouncementModal from '../components/jobPosting/modals/SendAnnouncementModal';
 
 // 🚀 Week 4 지연 로딩: React.lazy()로 초기 번들 크기 50% 감소
 const ApplicantListTab = React.lazy(() => import('../components/tabs/ApplicantListTab'));
@@ -63,11 +65,13 @@ const JobPostingDetailPageContent: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { checkPermission, checkJobPostingPermission, permissions } = usePermissions();
-  
+  const { sendAnnouncement, isSending } = useJobPostingAnnouncement();
+
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   
   // 권한에 따라 접근 가능한 탭 필터링
   const availableTabs = useMemo(() => {
@@ -291,7 +295,22 @@ const JobPostingDetailPageContent: React.FC = () => {
               }`}>
                 {jobPosting.status === 'open' ? '모집 중' : '모집 마감'}
               </span>
-              
+
+              {/* 공지 전송 버튼 */}
+              {jobPosting.confirmedStaff && jobPosting.confirmedStaff.length > 0 &&
+               (permissions?.role === 'admin' || permissions?.role === 'manager') && (
+                <button
+                  onClick={() => setIsAnnouncementModalOpen(true)}
+                  className="inline-flex items-center justify-center py-1 px-2 sm:py-2 sm:px-3 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-300 min-h-[30px] sm:min-h-[40px]"
+                  type="button"
+                  title={t('jobPosting.announcement.button')}
+                >
+                  <span className="mr-1">📢</span>
+                  <span className="hidden sm:inline">{t('jobPosting.announcement.button')}</span>
+                  <span className="sm:hidden">공지</span>
+                </button>
+              )}
+
               {/* Toggle Button - 오른쪽에 배치 */}
               <button
                 onClick={handleToggleInfo}
@@ -356,7 +375,7 @@ const JobPostingDetailPageContent: React.FC = () => {
 
       {/* Tab Content with Suspense */}
       <div className="bg-white rounded-lg shadow-md">
-        <React.Suspense 
+        <React.Suspense
           fallback={
             <div className="flex items-center justify-center h-64">
               <div className="text-lg text-gray-500">
@@ -369,6 +388,18 @@ const JobPostingDetailPageContent: React.FC = () => {
           <ActiveTabComponent jobPosting={jobPosting} eventId={id || ''} />
         </React.Suspense>
       </div>
+
+      {/* 공지 전송 모달 */}
+      <SendAnnouncementModal
+        isOpen={isAnnouncementModalOpen}
+        onClose={() => setIsAnnouncementModalOpen(false)}
+        jobPosting={jobPosting}
+        confirmedStaff={jobPosting.confirmedStaff || []}
+        onSend={async (title, message, targetStaffIds) => {
+          await sendAnnouncement(jobPosting.id, title, message, targetStaffIds);
+        }}
+        isSending={isSending}
+      />
     </div>
   );
 };

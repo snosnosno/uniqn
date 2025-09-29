@@ -1,4 +1,4 @@
-// Firebase 초기??�??�증/DB ?�스?�스 export
+// Firebase 초기화 및 인증/DB 인스턴스 export
 import { initializeApp } from "firebase/app";
 import { logger } from './utils/logger';
 import { getAuth, connectAuthEmulator } from "firebase/auth";
@@ -17,7 +17,8 @@ import {
   Query,
   connectFirestoreEmulator
 } from "firebase/firestore";
-// Storage와 Functions는 동적 import를 위해 직접 import하지 않음
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+// Storage는 동적 import를 위해 직접 import하지 않음
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
 import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
@@ -70,10 +71,15 @@ try {
 
 export { db };
 
-// Storage와 Functions는 동적 로딩을 위해 별도 유틸리티 사용
-// firebase-dynamic.ts의 getStorageLazy(), getFunctionsLazy() 사용
+// Initialize Functions
+export const functions = getFunctions(app);
+
+// Storage는 동적 로딩을 위해 별도 유틸리티 사용
 
 if (isEmulator) {
+  // Connect Functions Emulator
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+  logger.info('Functions emulator connected', { data: { port: 5001 } });
   try {
     // Connect Auth Emulator with additional security options
     connectAuthEmulator(auth, 'http://localhost:9099', {

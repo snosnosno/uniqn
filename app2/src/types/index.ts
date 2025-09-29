@@ -105,6 +105,21 @@ export * from './simplePayroll';
 // 기타 타입들
 export * from './permissions';
 
+// 공지 관련 타입
+export type {
+  AnnouncementStatus,
+  AnnouncementSendResult,
+  JobPostingAnnouncement,
+  CreateAnnouncementInput,
+  SendAnnouncementRequest,
+  SendAnnouncementResponse,
+  AnnouncementFilterOptions
+} from './announcement';
+
+export {
+  validateAnnouncement
+} from './announcement';
+
 // ============================================================================
 // 통합된 Person 타입 (NEW)
 // ============================================================================

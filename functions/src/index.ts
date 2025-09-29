@@ -11,6 +11,9 @@ const db = admin.firestore();
 // CORS handler
 const corsHandler = cors({ origin: true });
 
+// --- Notification Functions ---
+export { sendJobPostingAnnouncement } from './notifications/sendJobPostingAnnouncement';
+
 // --- Existing Functions (placeholders for brevity) ---
 export const onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });
 export const onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { /* ... */ });
