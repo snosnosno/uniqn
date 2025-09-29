@@ -229,6 +229,40 @@ public/locales/
 }
 ```
 
+#### `public/locales/ko/support.json` (신규)
+```json
+{
+  "title": "고객 지원",
+  "subtitle": "FAQ를 확인하거나 문의사항을 보내주세요",
+  "tabs": {
+    "faq": "FAQ",
+    "inquiry": "문의하기",
+    "myInquiries": "내 문의"
+  },
+  "faq": {
+    "all": "전체",
+    "noResults": "해당 카테고리에 FAQ가 없습니다."
+  },
+  "inquiry": {
+    "loginRequired": "로그인이 필요합니다",
+    "loginMessage": "문의를 작성하려면 먼저 로그인해주세요.",
+    "category": "문의 분류",
+    "subject": "제목",
+    "subjectPlaceholder": "문의 제목을 입력해주세요",
+    "message": "내용",
+    "messagePlaceholder": "문의 내용을 자세히 작성해주세요",
+    "submit": "문의 제출",
+    "submitting": "제출 중..."
+  },
+  "myInquiries": {
+    "loading": "문의 내역을 불러오는 중...",
+    "empty": "문의 내역이 없습니다",
+    "emptyMessage": "문의사항이 있으시면 언제든지 문의해주세요.",
+    "response": "답변"
+  }
+}
+```
+
 ### 공통 번역 파일
 
 #### `public/locales/ko/common.json`

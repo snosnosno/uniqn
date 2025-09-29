@@ -285,7 +285,42 @@ Document ID: Auto-generated
 
 **인덱스**: `status`, `startDate`, `endDate`, `createdAt`
 
-### 7. users (사용자 정보)
+### 7. inquiries (문의/신고)
+
+```typescript
+Collection: "inquiries"
+Document ID: Auto-generated
+
+{
+  "id": string,                // 문서 ID
+  "userId": string,            // 사용자 ID
+  "userEmail": string,         // 사용자 이메일
+  "userName": string,          // 사용자 이름
+  "category": "general" | "technical" | "payment" | "account" | "report" | "other", // 문의 카테고리
+  "subject": string,           // 제목
+  "message": string,           // 내용
+  "status": "open" | "in_progress" | "closed", // 상태
+  "reportMetadata"?: {         // 신고 메타데이터 (카테고리가 'report'인 경우)
+    "type": string,
+    "reporterType": string,
+    "targetId": string,
+    "targetName": string,
+    "eventId": string,
+    "eventTitle": string,
+    "date": string
+  },
+  "response"?: string,         // 관리자 응답
+  "responderId"?: string,      // 응답자 ID
+  "responderName"?: string,    // 응답자 이름
+  "createdAt": Timestamp,      // 생성일시
+  "updatedAt": Timestamp,      // 수정일시
+  "respondedAt"?: Timestamp    // 응답일시
+}
+```
+
+**인덱스**: `userId`, `category`, `status`, `createdAt`
+
+### 8. users (사용자 정보)
 
 ```typescript
 Collection: "users"
