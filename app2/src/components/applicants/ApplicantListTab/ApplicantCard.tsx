@@ -22,6 +22,12 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
   const { t } = useTranslation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
+  // 지역 표시 함수 (프로필 페이지와 동일한 로직)
+  const getRegionDisplay = (region?: string) => {
+    if (!region) return t('common.none');
+    return t(`locations.${region}`, region);
+  };
+
   // StaffData 형식으로 변환
   const staffData: StaffData | null = applicant ? {
     id: applicant.applicantId || applicant.id,
@@ -33,7 +39,8 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
     notes: applicant.notes || '',
     postingId: applicant.eventId || '',
     postingTitle: '', // 지원자 탭에서는 posting 정보가 없으므로 빈 문자열
-    assignedTime: applicant.assignedTime || ''
+    assignedTime: applicant.assignedTime || '',
+    region: applicant.region || ''
   } : null;
 
   return (
@@ -69,28 +76,28 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
             <span className="font-medium">{t('profile.gender')}:</span>
             <span className="ml-1">
               {applicant.gender ? (
-                applicant.gender.toLowerCase() === 'male' 
-                  ? t('gender.male') 
-                  : applicant.gender.toLowerCase() === 'female' 
-                  ? t('gender.female') 
+                applicant.gender.toLowerCase() === 'male'
+                  ? t('gender.male')
+                  : applicant.gender.toLowerCase() === 'female'
+                  ? t('gender.female')
                   : applicant.gender
-              ) : '없음'}
+              ) : t('common.none')}
             </span>
           </div>
-          
+
           <div>
             <span className="font-medium">{t('profile.age')}:</span>
-            <span className="ml-1">{applicant.age || '없음'}</span>
+            <span className="ml-1">{applicant.age || t('common.none')}</span>
           </div>
-          
+
           <div>
-            <span className="font-medium">지역:</span>
-            <span className="ml-1">없음</span>
+            <span className="font-medium">{t('profile.region')}:</span>
+            <span className="ml-1">{getRegionDisplay(applicant.region)}</span>
           </div>
-          
+
           <div>
             <span className="font-medium">{t('profile.experience')}:</span>
-            <span className="ml-1">{applicant.experience || '없음'}</span>
+            <span className="ml-1">{applicant.experience || t('common.none')}</span>
           </div>
         </div>
         
@@ -98,11 +105,11 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         <div className="text-sm text-gray-600 space-y-1">
           <div>
             <span className="font-medium">{t('profile.email')}:</span>
-            <span className="ml-1 text-xs break-all">{applicant.email || '없음'}</span>
+            <span className="ml-1 text-xs break-all">{applicant.email || t('common.none')}</span>
           </div>
           <div>
             <span className="font-medium">{t('profile.phone')}:</span>
-            <span className="ml-1">{applicant.phone || '없음'}</span>
+            <span className="ml-1">{applicant.phone || t('common.none')}</span>
           </div>
         </div>
 

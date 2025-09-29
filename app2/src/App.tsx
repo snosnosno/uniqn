@@ -70,7 +70,7 @@ const {
 const {
   ParticipantsPage,
   TablesPage,
-  PrizesPage,
+  // PrizesPage, // 비활성화 - 추후 업데이트 예정
   ShiftSchedulePage,
 } = tournamentChunk;
 
@@ -197,7 +197,26 @@ const App: React.FC = () => {
                         <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
                         <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
                         <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
-                        <Route path="prizes" element={<Suspense fallback={<LoadingSpinner />}><PrizesPage /></Suspense>} />
+                        {/* 상금관리 페이지 - 추후 업데이트 예정 */}
+                        <Route path="prizes" element={
+                          <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-50">
+                            <div className="text-center max-w-md">
+                              <div className="text-6xl mb-4">🚧</div>
+                              <h2 className="text-3xl font-bold text-gray-800 mb-4">준비 중입니다</h2>
+                              <p className="text-gray-600 mb-6">
+                                상금관리 기능은 현재 업데이트 중입니다.
+                                <br />
+                                추후 다시 공개될 예정입니다.
+                              </p>
+                              <button
+                                onClick={() => window.history.back()}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                              >
+                                돌아가기
+                              </button>
+                            </div>
+                          </div>
+                        } />
                       </Route>
 
                       {/* Job Posting Management - Admin, Manager, Staff with permission */}
