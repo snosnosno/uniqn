@@ -33,6 +33,18 @@
         "@playwright/mcp@latest"
       ],
       "env": {}
+    },
+    "shrimp-task-manager": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:\\mcp-shrimp-task-manager\\dist\\index.js"
+      ],
+      "env": {
+        "DATA_DIR": "C:\\Users\\user\\Desktop\\T-HOLDEM\\SHRIMP",
+        "TEMPLATES_USE": "templates_en",
+        "ENABLE_GUI": "true"
+      }
     }
   }
 }
