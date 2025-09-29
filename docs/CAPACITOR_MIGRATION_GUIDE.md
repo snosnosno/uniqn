@@ -9,6 +9,8 @@
 - **목표**: Capacitor를 통한 iOS/Android 앱 배포
 - **예상 기간**: 7-10일
 - **코드 재사용률**: 95% 이상
+- **진행 상황**: 🎉 **Phase 1 완료** (2025-09-30)
+- **현재 브랜치**: `feature/capacitor-migration`
 
 ---
 
@@ -37,10 +39,10 @@ npm outdated      # 오래된 패키지 확인
 
 - [x] 미사용 패키지 확인
   - [x] `react-qr-scanner` - QR 스캔 사용 안함 (제거 완료)
-  - [ ] `xlsx` - 엑셀 처리 필요성 검토
-  - [ ] `@dnd-kit` - 드래그앤드롭 사용 여부
-- [ ] 패키지 버전 업데이트
-- [ ] package-lock.json 재생성
+  - [x] `xlsx` - 엑셀 내보내기 기능에서 사용 중 (유지)
+  - [x] `@dnd-kit` - 테이블 드래그앤드롭 기능에서 사용 중 (유지)
+- [x] 패키지 버전 업데이트 (Capacitor 7.4.3 설치)
+- [x] package-lock.json 재생성
 
 #### **번들 크기 최적화**
 ```bash
@@ -57,9 +59,9 @@ source-map-explorer build/static/js/*.js
 ### **0.2 환경 설정 준비**
 
 #### **개발 환경 체크**
-- [ ] Node.js 16+ 설치 확인
-- [ ] npm 또는 yarn 최신 버전
-- [ ] Git 설정 확인
+- [x] Node.js 22.15.0 설치 확인 ✅
+- [x] npm 10.9.2 최신 버전 ✅
+- [x] Git 설정 확인 ✅
 
 #### **모바일 개발 환경** (선택적)
 - [ ] Xcode 설치 (Mac만 해당)
@@ -67,13 +69,13 @@ source-map-explorer build/static/js/*.js
 - [ ] Java JDK 11+ 설치
 
 ### **0.3 백업 및 브랜치 생성**
-- [ ] 현재 코드 전체 백업
-- [ ] `feature/capacitor-migration` 브랜치 생성
-- [ ] .gitignore 업데이트 준비
+- [x] 현재 코드 전체 백업 ✅
+- [x] `feature/capacitor-migration` 브랜치 생성 ✅
+- [x] .gitignore 업데이트 완료 ✅
 
 ---
 
-## 📱 Phase 1: Capacitor 기본 설정
+## 📱 Phase 1: Capacitor 기본 설정 ✅ **완료됨 (2025-09-30)**
 
 ### **1.1 Capacitor 설치**
 
@@ -83,33 +85,36 @@ npm install @capacitor/core
 npm install -D @capacitor/cli
 ```
 
-- [ ] @capacitor/core 설치
-- [ ] @capacitor/cli 설치
-- [ ] package.json 확인
+- [x] @capacitor/core 설치 ✅
+- [x] @capacitor/cli 설치 ✅
+- [x] package.json 확인 ✅
 
 ### **1.2 Capacitor 초기화**
 
 ```bash
 # Capacitor 프로젝트 초기화
-npx cap init
+npx cap init "T-HOLDEM" "com.tholdem.app" --web-dir build
 ```
 
 설정 값:
-- [ ] App name: "T-HOLDEM"
-- [ ] App Package ID: "com.tholdem.app"
-- [ ] Web Directory: "build" (React 빌드 출력 디렉토리)
+- [x] App name: "T-HOLDEM" ✅
+- [x] App Package ID: "com.tholdem.app" ✅
+- [x] Web Directory: "build" (React 빌드 출력 디렉토리) ✅
 
 ### **1.3 플랫폼 추가**
 
 ```bash
+# 플랫폼 패키지 설치 (먼저 필요)
+npm install @capacitor/ios @capacitor/android
+
 # iOS/Android 플랫폼 추가
 npx cap add ios
 npx cap add android
 ```
 
-- [ ] iOS 플랫폼 추가
-- [ ] Android 플랫폼 추가
-- [ ] 생성된 네이티브 프로젝트 확인
+- [x] iOS 플랫폼 추가 ✅
+- [x] Android 플랫폼 추가 ✅
+- [x] 생성된 네이티브 프로젝트 확인 ✅
 
 ### **1.4 기본 빌드 테스트**
 
@@ -125,10 +130,51 @@ npx cap open ios     # Xcode 열기
 npx cap open android # Android Studio 열기
 ```
 
-- [ ] 웹 빌드 성공
-- [ ] Capacitor sync 성공
-- [ ] iOS 시뮬레이터 실행 테스트
-- [ ] Android 에뮬레이터 실행 테스트
+- [x] 웹 빌드 성공 ✅ (283.33 KB gzipped)
+- [x] Capacitor sync 성공 ✅
+- [ ] iOS 시뮬레이터 실행 테스트 (Windows 환경에서 불가능)
+- [ ] Android 에뮬레이터 실행 테스트 (Android Studio 설치 필요)
+
+### **✅ Phase 1 완료 요약 (2025-09-30)**
+
+#### **🎉 성과 지표**
+- **총 파일 변경**: 73개 파일, 2,435줄 추가
+- **번들 크기**: 283.33 KB (gzipped) - 최적화됨
+- **빌드 상태**: ✅ 성공 (일부 lint 경고는 정상 범위)
+- **Capacitor 버전**: 7.4.3 (최신)
+- **브랜치**: `feature/capacitor-migration` → GitHub 푸시 완료
+
+#### **📁 생성된 주요 구조**
+```
+app2/
+├── capacitor.config.ts           # 최적화된 Capacitor 설정
+├── android/                      # Android 네이티브 프로젝트
+├── ios/                          # iOS 네이티브 프로젝트
+├── build/                        # React 빌드 출력
+└── package.json                  # Capacitor 의존성 추가
+```
+
+#### **🔧 설치된 패키지**
+- `@capacitor/core`: ^7.4.3
+- `@capacitor/cli`: ^7.4.3
+- `@capacitor/ios`: ^7.4.3
+- `@capacitor/android`: ^7.4.3
+
+#### **⚙️ 최적화 설정**
+- HTTPS 스키마 설정 (Android)
+- 자동 content inset (iOS)
+- 웹 콘텐츠 디버깅 비활성화 (프로덕션)
+- .gitignore 보안 파일 제외 규칙 추가
+
+#### **🧪 테스트 방법 (Windows 환경)**
+```bash
+# 웹 브라우저 모바일 모드 테스트
+cd app2 && npm start
+# Chrome DevTools → 📱 아이콘 → iPhone 선택
+
+# Android 에뮬레이터 테스트 (Android Studio 필요)
+cd app2 && npm run build && npx cap sync && npx cap open android
+```
 
 ---
 
@@ -446,28 +492,49 @@ keytool -genkey -v -keystore tholdem-release.keystore -keyalg RSA -keysize 2048 
 
 ## 🛠️ 유용한 명령어 모음
 
+### **현재 사용 가능한 명령어 (Phase 1 완료)**
 ```bash
 # 개발 중 자주 사용
-npm run build && npx cap sync
-npx cap run ios -l --external
-npx cap run android -l --external
+cd app2
+npm run build && npx cap sync           # ✅ 완료된 설정
 
-# 디버깅
-npx cap sync
-npx cap copy
-npx cap update
+# Windows 환경 테스트
+npm start                               # 웹 개발 서버
+npx cap open android                    # Android Studio 열기 (설치 필요)
 
-# 빌드
-npx cap build ios
-npx cap build android
+# 디버깅 및 동기화
+npx cap sync                            # ✅ 작동 확인됨
+npx cap copy                            # 웹 자산 복사
+npx cap update                          # 플러그인 업데이트
+```
+
+### **iOS 관련 (Mac 환경에서만 가능)**
+```bash
+npx cap run ios -l --external          # iOS 시뮬레이터 + 라이브 리로드
+npx cap open ios                        # Xcode 열기
+npx cap build ios                       # iOS 빌드
+```
+
+### **Android 관련 (모든 OS)**
+```bash
+npx cap run android -l --external      # Android 에뮬레이터 + 라이브 리로드
+npx cap open android                    # Android Studio 열기
+npx cap build android                  # Android 빌드
 ```
 
 ---
 
 ## ⚠️ 주의사항
 
+### **Phase 1 완료 후 현재 상태**
+1. **Windows 환경 제약**: iOS 개발은 Mac에서만 가능 (Xcode 필요)
+2. **Android Studio 필요**: Android 테스트를 위해서는 Android Studio 설치 필요
+3. **Node.js 버전**: 22.15.0 사용 중 (권장: 16+ LTS)
+4. **Firebase 설정 대기**: Phase 2에서 GoogleService-Info.plist, google-services.json 추가 예정
+
+### **향후 배포 시 주의사항**
 1. **코드 서명**: 배포 전 반드시 올바른 인증서로 서명
-2. **API 키 보안**: 환경 변수로 관리, 코드에 하드코딩 금지
+2. **API 키 보안**: 환경 변수로 관리, 코드에 하드코딩 금지 (이미 .gitignore 설정됨)
 3. **버전 관리**: iOS와 Android 버전 동기화
 4. **권한**: 최소 필요 권한만 요청
 5. **테스트**: 실제 디바이스에서 충분한 테스트
@@ -499,10 +566,12 @@ npx cap build android
 
 ---
 
-**작성일**: 2025년 1월
-**버전**: 1.0.0
+**작성일**: 2025년 9월 30일
+**버전**: 1.1.0 (Phase 1 완료 반영)
 **작성자**: T-HOLDEM Development Team
+**마지막 업데이트**: Phase 1 Capacitor 기본 설정 완료 (2025-09-30)
 
 ---
 
 *이 가이드는 지속적으로 업데이트됩니다. 최신 버전은 GitHub 저장소를 확인하세요.*
+*Phase 1 완료! 현재 `feature/capacitor-migration` 브랜치에서 Phase 2 진행 가능*
