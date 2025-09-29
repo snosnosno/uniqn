@@ -329,6 +329,7 @@ const transformApplicationData = (doc: DocumentData): Application => ({
   processedAt: doc.processedAt,
   notes: doc.notes || '',
   assignments: doc.assignments || [],
+  preQuestionAnswers: doc.preQuestionAnswers || [], // 🆕 사전질문 답변 필드 추가
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
 } as Application);
