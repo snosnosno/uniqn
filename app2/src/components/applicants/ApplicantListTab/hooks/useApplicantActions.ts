@@ -36,12 +36,22 @@ const createWorkLogsForConfirmedStaff = async (
   try {
     logger.info('🚀 WorkLog 직접 생성 시작', {
       component: 'createWorkLogsForConfirmedStaff',
-      staffId,
-      applicantName,
-      applicantUserId,
-      jobRole,
-      assignedDate,
-      postingId
+      data: {
+        staffId,
+        applicantName,
+        applicantUserId,
+        jobRole,
+        assignedDate,
+        postingId,
+        // 🔍 role 관련 디버깅 정보 추가
+        roleDebug: {
+          jobRole,
+          assignmentRole: assignment.role,
+          assignmentRoleLowerCase: assignment.role?.toLowerCase(),
+          hasValidRole: !!(jobRole && jobRole !== ''),
+          willUseFallback: !jobRole || jobRole === ''
+        }
+      }
     });
 
     // WorkLog ID 생성 패턴: ${postingId}_${staffId}_${date}
@@ -74,7 +84,7 @@ const createWorkLogsForConfirmedStaff = async (
       
       // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
       assignmentInfo: {
-        role: jobRole,
+        role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
         assignedRole: assignment.role?.toLowerCase() || '',
         assignedTime: assignment.timeSlot,
         assignedDate: assignedDate,
@@ -82,9 +92,9 @@ const createWorkLogsForConfirmedStaff = async (
         managerId: managerId,
         type: 'staff' as const,
       },
-      
+
       // 기존 근무 관련 필드 (호환성 유지)
-      role: jobRole,
+      role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
       assignedTime: assignment.timeSlot,
       status: 'not_started' as const,
       createdAt: Timestamp.now(),

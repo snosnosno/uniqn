@@ -3,12 +3,11 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { getTodayString } from '../../../utils/jobPosting/dateUtils';
 import { parseTimeToString, calculateWorkHours } from '../../../utils/workLogMapper';
 import { calculateAllowances, PayrollCalculationResult } from '../../../utils/payrollCalculations';
-import { 
+import {
   FaInfoCircle,
   FaCheckCircle,
   FaHourglassHalf,
-  FaTimesCircle,
-  FaTrash
+  FaTimesCircle
 } from '../../../components/Icons/ReactIconsReplacement';
 import { ScheduleEvent } from '../../../types/schedule';
 import { JobPosting } from '../../../types/jobPosting/jobPosting';
@@ -137,11 +136,22 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   const getSalaryTypeLabel = useCallback((type: string) => {
     const labels: Record<string, string> = {
       hourly: '시급',
-      daily: '일급', 
+      daily: '일급',
       monthly: '월급',
       other: '기타'
     };
     return labels[type] || type;
+  }, []);
+
+  // 역할명 한글 라벨
+  const getRoleLabel = useCallback((role: string) => {
+    const labels: Record<string, string> = {
+      dealer: '딜러',
+      floor: '플로어',
+      manager: '매니저',
+      staff: '스태프'
+    };
+    return labels[role] || role;
   }, []);
 
   // 신고 핸들러
@@ -163,6 +173,46 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     setReportTarget(null);
   }, []);
 
+  // WorkLog 조회 공통 함수 (getSalaryInfo보다 먼저 정의 필요)
+  const getTargetWorkLog = useCallback(() => {
+    if (!schedule) return null;
+
+    let targetWorkLog = null;
+
+    // 1. workLogId로 직접 찾기
+    if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
+      targetWorkLog = realTimeWorkLogs.find(log => log.id === schedule.workLogId);
+    }
+
+    // 2. sourceId로 찾기
+    if (!targetWorkLog && schedule.sourceCollection === 'workLogs' && schedule.sourceId) {
+      targetWorkLog = realTimeWorkLogs.find(log => log.id === schedule.sourceId);
+    }
+
+    // 3. WorkLog ID 패턴 매칭 (schedule.id를 포함하는 WorkLog)
+    // 예: schedule.id = "xxx_0" → WorkLog.id = "xxx_0_2025-10-21"
+    if (!targetWorkLog) {
+      targetWorkLog = realTimeWorkLogs.find(log =>
+        log.id.startsWith(schedule.id) &&
+        log.date === schedule.date &&
+        log.type === 'schedule'
+      );
+    }
+
+    // 4. eventId + date로 찾기 (role이 빈 문자열일 수 있음)
+    if (!targetWorkLog) {
+      targetWorkLog = realTimeWorkLogs.find(log =>
+        log.eventId === schedule.eventId &&
+        log.date === schedule.date &&
+        log.type === 'schedule' &&
+        // role이 둘 다 빈 문자열이거나, 같은 경우
+        (log.role === schedule.role || (!log.role && !schedule.role))
+      );
+    }
+
+    return targetWorkLog;
+  }, [schedule, realTimeWorkLogs]);
+
   // 통합 급여 계산 유틸리티 사용
   const getSalaryInfo = useCallback(async () => {
     if (!schedule) return {
@@ -174,43 +224,53 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       allowances: { meal: 0, transportation: 0, accommodation: 0, bonus: 0, other: 0 }
     };
 
-    // UnifiedWorkLog 형태로 변환
+    // 🔥 WorkLog 우선순위 명확화: WorkLog 데이터를 최우선으로 사용
+    const targetWorkLog = getTargetWorkLog();
+
+    // WorkLog가 있으면 WorkLog 데이터 사용, 없으면 Schedule 데이터 사용
+    // role이 빈 문자열이면 'staff' 기본값 사용
+    const effectiveRole = (targetWorkLog ? targetWorkLog.role : schedule.role) || 'staff';
+    const effectiveStartTime = targetWorkLog?.scheduledStartTime || schedule.startTime;
+    const effectiveEndTime = targetWorkLog?.scheduledEndTime || schedule.endTime;
+
+    // UnifiedWorkLog 형태로 변환 (WorkLog 우선)
     const workLogData = {
-      id: schedule.id,
-      scheduledStartTime: schedule.startTime,
-      scheduledEndTime: schedule.endTime,
+      id: targetWorkLog?.id || schedule.id,
+      scheduledStartTime: effectiveStartTime,
+      scheduledEndTime: effectiveEndTime,
       date: schedule.date,
-      role: schedule.role,
+      role: effectiveRole,
       eventId: schedule.eventId
     };
 
     const { calculateSingleWorkLogPayroll, calculateWorkHours } = await import('../../../utils/payrollCalculations');
 
-    // 근무시간 계산
+    // 근무시간 계산 (WorkLog 기준)
     const totalHours = calculateWorkHours(workLogData as any);
 
-    // 급여 계산
-    const totalPay = calculateSingleWorkLogPayroll(workLogData as any, schedule.role, jobPosting);
+    // 급여 계산 (WorkLog 기준)
+    const totalPay = calculateSingleWorkLogPayroll(workLogData as any, effectiveRole || 'staff', jobPosting);
 
-    // 급여 정보 추출 (기존 getSalaryInfo와 호환성을 위해)
+    // 급여 정보 추출 (WorkLog 역할 기준)
     const { getRoleSalaryInfo } = await import('../../../utils/payrollCalculations');
-    const { salaryType, salaryAmount } = getRoleSalaryInfo(schedule.role, jobPosting);
+    const { salaryType, salaryAmount } = getRoleSalaryInfo(effectiveRole || 'staff', jobPosting);
 
     // 수당 계산 추가
     const allowances = calculateAllowances(jobPosting, 1); // 1일 기준
 
-    // logger.debug('ScheduleDetailModal - 급여 정보 계산', {
-    //   component: 'ScheduleDetailModal',
-    //   data: {
-    //     role: schedule.role,
-    //     salaryType,
-    //     salaryAmount,
-    //     totalHours,
-    //     totalPay,
-    //     hasJobPosting: !!jobPosting,
-    //     allowances
-    //   }
-    // });
+    logger.debug('ScheduleDetailModal - 급여 정보 계산 (WorkLog 우선)', {
+      component: 'ScheduleDetailModal',
+      data: {
+        hasWorkLog: !!targetWorkLog,
+        role: effectiveRole,
+        salaryType,
+        salaryAmount,
+        totalHours,
+        totalPay,
+        hasJobPosting: !!jobPosting,
+        allowances
+      }
+    });
 
     return {
       salaryType: salaryType as 'hourly' | 'daily' | 'monthly' | 'other',
@@ -220,7 +280,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       basePay: schedule.payrollAmount || totalPay,
       allowances
     };
-  }, [schedule, jobPosting]);
+  }, [schedule, jobPosting, getTargetWorkLog]);
 
   // 급여 정보 상태 관리
   const [salaryInfo, setSalaryInfo] = useState<{
@@ -247,34 +307,6 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     };
     updateSalaryInfo();
   }, [getSalaryInfo]);
-
-  // WorkLog 조회 공통 함수
-  const getTargetWorkLog = useCallback(() => {
-    if (!schedule) return null;
-    
-    let targetWorkLog = null;
-    
-    if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
-      // workLogId가 있으면 직접 사용
-      targetWorkLog = realTimeWorkLogs.find(log => log.id === schedule.workLogId);
-    } else if (schedule.sourceCollection === 'workLogs' && schedule.sourceId) {
-      // sourceId로 WorkLog 찾기
-      targetWorkLog = realTimeWorkLogs.find(log => log.id === schedule.sourceId);
-    }
-    
-    // WorkLog를 찾지 못했거나 applications에서 온 경우
-    if (!targetWorkLog) {
-      // eventId + date + role로 정확한 WorkLog 찾기
-      targetWorkLog = realTimeWorkLogs.find(log => 
-        log.eventId === schedule.eventId && 
-        log.date === schedule.date &&
-        log.role === schedule.role &&
-        log.type === 'schedule'
-      );
-    }
-    
-    return targetWorkLog;
-  }, [schedule, realTimeWorkLogs]);
 
   // 근무 내역 생성 - 공통 함수 사용
   const workHistory = useMemo(() => {
@@ -498,8 +530,9 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     <span className="text-sm text-gray-900">
                       {(() => {
                         const targetWorkLog = getTargetWorkLog();
-                        // WorkLog의 역할 정보 우선 사용, 없으면 schedule 역할 사용
-                        return targetWorkLog?.role || schedule.role || '미정';
+                        // 🔥 WorkLog 우선: WorkLog가 있으면 WorkLog 역할, 없으면 Schedule 역할
+                        const effectiveRole = targetWorkLog ? targetWorkLog.role : (schedule.role || '미정');
+                        return getRoleLabel(effectiveRole || '미정');
                       })()}
                     </span>
                   </div>
@@ -526,18 +559,18 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     <span className="text-sm text-gray-900">
                       {(() => {
                         const targetWorkLog = getTargetWorkLog();
-                        
-                        // WorkLog에서 스태프탭 설정 시간 우선 사용
-                        if (targetWorkLog?.scheduledStartTime && targetWorkLog?.scheduledEndTime) {
-                          const startTime = parseTimeToString(targetWorkLog.scheduledStartTime) || '미정';
-                          const endTime = parseTimeToString(targetWorkLog.scheduledEndTime) || '미정';
+
+                        // 🔥 WorkLog 우선: WorkLog 시간이 있으면 사용, 없으면 Schedule 시간 사용
+                        const effectiveStartTime = targetWorkLog?.scheduledStartTime || schedule.startTime;
+                        const effectiveEndTime = targetWorkLog?.scheduledEndTime || schedule.endTime;
+
+                        if (effectiveStartTime && effectiveEndTime) {
+                          const startTime = parseTimeToString(effectiveStartTime) || '미정';
+                          const endTime = parseTimeToString(effectiveEndTime) || '미정';
                           return `${startTime} - ${endTime}`;
                         }
-                        
-                        // 스태프탭 설정이 없으면 기본 스케줄 시간 사용
-                        return schedule.startTime && schedule.endTime 
-                          ? `${parseTimeToString(schedule.startTime) || '미정'} - ${parseTimeToString(schedule.endTime) || '미정'}` 
-                          : '미정';
+
+                        return '미정';
                       })()}
                     </span>
                   </div>
@@ -554,22 +587,34 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 <h4 className="text-sm font-medium text-gray-700 mb-3">급여 정보</h4>
                 <div className="space-y-2">
                   {/* 급여 설정 소스 표시 */}
-                  {jobPosting?.useRoleSalary && jobPosting.roleSalaries?.[schedule.role] ? (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">설정:</span>
-                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">역할별 급여</span>
-                    </div>
-                  ) : jobPosting?.salaryType ? (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">설정:</span>
-                      <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">공고 기본급여</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">설정:</span>
-                      <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">시스템 기본값</span>
-                    </div>
-                  )}
+                  {(() => {
+                    const targetWorkLog = getTargetWorkLog();
+                    // 🔥 WorkLog 우선: WorkLog가 있으면 WorkLog 역할, 없으면 Schedule 역할
+                    const effectiveRole = targetWorkLog ? targetWorkLog.role : (schedule.role || 'staff');
+
+                    if (jobPosting?.useRoleSalary && effectiveRole && jobPosting.roleSalaries?.[effectiveRole]) {
+                      return (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">설정:</span>
+                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">역할별 급여</span>
+                        </div>
+                      );
+                    } else if (jobPosting?.salaryType) {
+                      return (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">설정:</span>
+                          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">공고 기본급여</span>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">설정:</span>
+                          <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">시스템 기본값</span>
+                        </div>
+                      );
+                    }
+                  })()}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">급여 유형:</span>
                     <span className="text-sm text-gray-900">{getSalaryTypeLabel(salaryInfo.salaryType)}</span>
@@ -678,10 +723,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                               history.role === 'manager' ? 'bg-green-100 text-green-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {history.role === 'floor' ? 'floor' :
-                               history.role === 'dealer' ? 'dealer' :
-                               history.role === 'manager' ? 'manager' :
-                               history.role}
+                              {getRoleLabel(history.role)}
                             </span>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">

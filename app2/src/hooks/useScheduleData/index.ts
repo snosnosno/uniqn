@@ -36,6 +36,16 @@ const useScheduleData = (): UseScheduleDataReturn => {
         return;
       }
 
+      // 🔥 초기 로딩 상태 체크: UnifiedDataContext가 로딩 중이면 대기
+      if (_contextLoading.initial) {
+        logger.debug('UnifiedDataContext 초기 로딩 중...', {
+          component: 'useScheduleData',
+          userId: currentUser.uid
+        });
+        setLoading(true);
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -52,18 +62,18 @@ const useScheduleData = (): UseScheduleDataReturn => {
           });
 
         // WorkLog 비동기 처리를 병렬로 실행
-        const workLogPromises = userWorkLogs.map(workLog => 
+        const workLogPromises = userWorkLogs.map(workLog =>
           processWorkLogData(workLog.id || '', workLog)
         );
         const workLogEvents = await Promise.all(workLogPromises);
-        
+
         // WorkLog 이벤트 추가
         workLogEvents.forEach(event => {
           mergedEvents.push(event);
-          
+
           // 중복 방지 키 생성
           if (event.eventId && event.date) {
-            const timeKey = event.startTime && 'seconds' in event.startTime ? 
+            const timeKey = event.startTime && 'seconds' in event.startTime ?
               new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
             const key = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
@@ -86,7 +96,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
           processApplicationData(application.id || '', application)
         );
         const applicationEventArrays = await Promise.all(applicationPromises);
-        
+
         // Application 이벤트 추가 (중복 체크)
         applicationEventArrays.flat().forEach(event => {
           if (event.eventId && event.date) {
@@ -94,7 +104,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
               new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
             const preciseKey = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
-            
+
             // 중복 체크
             if (!processedKeys.has(preciseKey) && !processedKeys.has(basicKey)) {
               mergedEvents.push(event);
@@ -110,6 +120,16 @@ const useScheduleData = (): UseScheduleDataReturn => {
         setSchedules(mergedEvents);
         setLoading(false);
         setError(null);
+
+        logger.info('스케줄 데이터 로드 완료', {
+          component: 'useScheduleData',
+          userId: currentUser.uid,
+          data: {
+            totalEvents: mergedEvents.length,
+            workLogEvents: workLogEvents.length,
+            applicationEvents: applicationEventArrays.flat().length
+          }
+        });
       } catch (err) {
         const errorMessage = handleError(err, {
           component: 'useScheduleData',
@@ -122,31 +142,18 @@ const useScheduleData = (): UseScheduleDataReturn => {
       }
     };
 
-    // 데이터가 존재하면 처리 (contextLoading.initial 의존성 제거)
-    if (currentUser && (workLogs.size > 0 || applications.size > 0)) {
+    // 🔥 개선된 로딩 로직: UnifiedDataContext 초기 로딩 완료 후 처리
+    if (currentUser && !_contextLoading.initial) {
       loadSchedules();
-    } else if (currentUser) {
-      // 사용자는 로그인했지만 데이터가 없는 경우
-      logger.info('사용자 데이터 대기 중...', {
-        component: 'useScheduleData',
-        userId: currentUser.uid,
-        data: { workLogsCount: workLogs.size, applicationsCount: applications.size }
-      });
-      
-      // 일정 시간 후에도 데이터가 없으면 빈 상태로 설정
-      const timeoutId = setTimeout(() => {
-        if (workLogs.size === 0 && applications.size === 0) {
-          setSchedules([]);
-          setLoading(false);
-        }
-      }, 3000);
-
-      return () => clearTimeout(timeoutId);
+    } else if (!currentUser) {
+      // 로그인하지 않은 경우
+      setSchedules([]);
+      setLoading(false);
     }
-    
-    // 기본 반환 (TypeScript 오류 방지)
+
+    // 기본 반환 (cleanup 불필요)
     return undefined;
-  }, [currentUser, applications, workLogs]);
+  }, [currentUser, applications, workLogs, _contextLoading.initial]);
 
   // 필터링된 스케줄
   const filteredSchedules = useMemo(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { logger } from '../../utils/logger';
 import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
@@ -20,8 +20,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import useScheduleData from '../../hooks/useScheduleData';
 import { CalendarView, ScheduleEvent, ATTENDANCE_STATUS_COLORS } from '../../types/schedule';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
-import { prepareWorkLogForCreate, prepareWorkLogForUpdate } from '../../utils/workLogMapper';
-import { WorkLogCreateInput } from '../../types/unified/workLog';
+import { prepareWorkLogForUpdate } from '../../utils/workLogMapper';
 
 // 스타일 임포트
 
@@ -34,11 +33,10 @@ import ConfirmModal from './components/ConfirmModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Firebase 함수
-import { doc, updateDoc, deleteDoc, Timestamp, collection, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 const MySchedulePage: React.FC = () => {
-  const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
