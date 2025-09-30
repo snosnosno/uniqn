@@ -181,6 +181,12 @@ export interface ConfirmedStaff {
   /** 시간대 */
   timeSlot: string;
 
+  /** 전화번호 */
+  phone?: string;
+
+  /** 이메일 */
+  email?: string;
+
   /** 날짜 (특정 날짜에만 적용되는 경우) */
   date?: string;
 

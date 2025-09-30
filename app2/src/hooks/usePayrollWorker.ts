@@ -161,6 +161,8 @@ export const usePayrollWorker = () => {
         staffName: string;
         role: string;
         workLogs: UnifiedWorkLog[];
+        phone?: string;  // ✅ phone 필드 추가
+        email?: string;  // ✅ email 필드 추가
       }>();
 
       // 1단계: 날짜 필터링된 WorkLog만 선별
@@ -216,12 +218,31 @@ export const usePayrollWorker = () => {
         const key = `${staffId}_${staff.role}`;
         
         if (!staffRoleMap.has(key)) {
-          staffRoleMap.set(key, {
+          const staffData: {
+            staffId: string;
+            staffName: string;
+            role: string;
+            workLogs: UnifiedWorkLog[];
+            phone?: string;
+            email?: string;
+          } = {
             staffId,
             staffName: staff.name,
             role: staff.role,
             workLogs: []
-          });
+          };
+
+          // ✅ phone이 있고 빈 문자열이 아닐 때만 추가
+          if (staff.phone && staff.phone.trim() !== '') {
+            staffData.phone = staff.phone;
+          }
+
+          // ✅ email이 있고 빈 문자열이 아닐 때만 추가
+          if (staff.email && staff.email.trim() !== '') {
+            staffData.email = staff.email;
+          }
+
+          staffRoleMap.set(key, staffData);
         }
 
         // 해당 스태프의 WorkLog 가져오기
@@ -292,11 +313,12 @@ export const usePayrollWorker = () => {
 
         const totalAmount = basePay + allowanceTotal;
 
-        // EnhancedPayrollCalculation 객체 생성
+        // EnhancedPayrollCalculation 객체 생성 - phone이 있을 때만 포함
         const payrollCalculation: EnhancedPayrollCalculation = {
           staffId: data.staffId,
           staffName: data.staffName,
           role: data.role,
+          ...(data.phone && { phone: data.phone }),  // ✅ phone이 있을 때만 포함
           workLogs: data.workLogs,
           totalHours: Math.round(totalHours * 100) / 100,
           totalDays,

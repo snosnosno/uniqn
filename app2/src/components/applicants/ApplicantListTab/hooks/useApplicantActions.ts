@@ -315,6 +315,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
               name: applicant.applicantName,
               role,
               timeSlot,
+              phone: applicant.phone || '',  // ✅ 연락처 정보 추가
+              email: applicant.email || '',  // ✅ 이메일 정보 추가
               confirmedAt: new Date(),
 
               // 🆕 v2.1: 지원서 구분 메타데이터
