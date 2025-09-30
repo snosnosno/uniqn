@@ -266,18 +266,9 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'UPDATE_WORK_LOG': {
       const updatedWorkLogs = new Map(state.workLogs);
       updatedWorkLogs.set(action.workLog.id, action.workLog);
-      
+
       const timestamp = Date.now();
-      
-      logger.info('🔄 WorkLog 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          workLogId: action.workLog.id,
-          staffId: action.workLog.staffId,
-          status: action.workLog.status
-        }
-      });
-      
+
       return {
         ...state,
         workLogs: updatedWorkLogs,
@@ -300,18 +291,9 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'UPDATE_ATTENDANCE_RECORD': {
       const updatedAttendance = new Map(state.attendanceRecords);
       updatedAttendance.set(action.record.id, action.record);
-      
+
       const timestamp = Date.now();
-      
-      logger.info('🔄 AttendanceRecord 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          recordId: action.record.id,
-          staffId: action.record.staffId,
-          status: action.record.status
-        }
-      });
-      
+
       return {
         ...state,
         attendanceRecords: updatedAttendance,
@@ -333,16 +315,7 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       updatedStaff.set(action.staff.staffId, action.staff);
       
       const timestamp = Date.now();
-      
-      logger.info('🔄 Staff 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          staffId: action.staff.staffId,
-          name: action.staff.name,
-          role: action.staff.role
-        }
-      });
-      
+
       return {
         ...state,
         staff: updatedStaff,
@@ -361,19 +334,9 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'UPDATE_APPLICATION': {
       const updatedApplications = new Map(state.applications);
       updatedApplications.set(action.application.id, action.application);
-      
+
       const timestamp = Date.now();
-      
-      logger.info('🔄 Application 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          applicationId: action.application.id,
-          postId: action.application.postId,
-          applicantId: action.application.applicantId,
-          status: action.application.status
-        }
-      });
-      
+
       return {
         ...state,
         applications: updatedApplications,

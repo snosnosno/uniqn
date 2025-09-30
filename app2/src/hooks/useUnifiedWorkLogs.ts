@@ -180,10 +180,6 @@ export function useUnifiedWorkLogs(
             
             setWorkLogs(filtered);
             setLoading(false);
-            
-            logger.info(`WorkLogs 조회 완료: ${filtered.length}건`, {
-              component: 'useUnifiedWorkLogs'
-            });
           } catch (err) {
             logger.error('WorkLogs 처리 오류', err as Error, {
               component: 'useUnifiedWorkLogs'
@@ -236,11 +232,6 @@ export function useUnifiedWorkLogs(
       
       // Firestore에 저장
       await setDoc(docRef, data);
-      
-      logger.info(`WorkLog 생성 완료: ${docId}`, {
-        component: 'useUnifiedWorkLogs'
-      });
-      
       return docId;
     } catch (error) {
       logger.error('WorkLog 생성 실패', error as Error, {
@@ -257,10 +248,6 @@ export function useUnifiedWorkLogs(
       const data = prepareWorkLogForUpdate(updates);
       
       await updateDoc(docRef, data);
-      
-      logger.info(`WorkLog 업데이트 완료: ${id}`, {
-        component: 'useUnifiedWorkLogs'
-      });
     } catch (error) {
       logger.error('WorkLog 업데이트 실패', error as Error, {
         component: 'useUnifiedWorkLogs'
@@ -274,10 +261,6 @@ export function useUnifiedWorkLogs(
     try {
       const docRef = doc(db, 'workLogs', id);
       await deleteDoc(docRef);
-      
-      logger.info(`WorkLog 삭제 완료: ${id}`, {
-        component: 'useUnifiedWorkLogs'
-      });
     } catch (error) {
       logger.error('WorkLog 삭제 실패', error as Error, {
         component: 'useUnifiedWorkLogs'

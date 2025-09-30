@@ -600,16 +600,6 @@ class OptimizedUnifiedDataService {
 
           // 최적화 효과 기록 (예상 절약: 전체 데이터의 70%)
           this.performanceTracker.recordOptimizationSavings(Math.floor(data.length * 0.7));
-
-          logger.info('📋 JobPostings 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -667,16 +657,6 @@ class OptimizedUnifiedDataService {
 
           // 최적화 효과 기록
           this.performanceTracker.recordOptimizationSavings(Math.floor(data.length * 0.8));
-
-          logger.info('📝 Applications 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -734,16 +714,6 @@ class OptimizedUnifiedDataService {
 
           // 최적화 효과 기록 (가장 큰 절약 효과)
           this.performanceTracker.recordOptimizationSavings(Math.floor(data.length * 2)); // 2배 절약
-
-          logger.info('⏰ WorkLogs 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -799,15 +769,6 @@ class OptimizedUnifiedDataService {
           this.dispatcher?.({ type: 'SET_STAFF', data });
           this.dispatcher?.({ type: 'SET_LOADING', collection: 'staff', loading: false });
           this.dispatcher?.({ type: 'SET_ERROR', collection: 'staff', error: null });
-
-          logger.info('👥 Staff 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              cached: false
-            }
-          });
         }
       );
 
@@ -862,16 +823,6 @@ class OptimizedUnifiedDataService {
           this.dispatcher?.({ type: 'SET_ATTENDANCE_RECORDS', data });
           this.dispatcher?.({ type: 'SET_LOADING', collection: 'attendanceRecords', loading: false });
           this.dispatcher?.({ type: 'SET_ERROR', collection: 'attendanceRecords', error: null });
-
-          logger.info('📋 AttendanceRecords 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -928,15 +879,6 @@ class OptimizedUnifiedDataService {
           this.dispatcher?.({ type: 'SET_TOURNAMENTS', data });
           this.dispatcher?.({ type: 'SET_LOADING', collection: 'tournaments', loading: false });
           this.dispatcher?.({ type: 'SET_ERROR', collection: 'tournaments', error: null });
-
-          logger.info('🏆 Tournaments 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              cached: false
-            }
-          });
         }
       );
 
@@ -958,15 +900,18 @@ class OptimizedUnifiedDataService {
       const stats = this.cache.getStats();
       const metrics = this.performanceTracker.getMetrics();
 
-      logger.info('🧹 캐시 정리 및 성능 모니터링', {
-        component: 'OptimizedUnifiedDataService',
-        data: {
-          cacheSize: stats.size,
-          cacheHitRate: `${metrics.cacheHitRate.toFixed(1)}%`,
-          avgQueryTime: `${metrics.avgQueryTime.toFixed(2)}ms`,
-          optimizationSavings: metrics.optimizationSavings
-        }
-      });
+      // 성능 이슈가 있을 때만 로그 출력
+      if (metrics.cacheHitRate < 50 || metrics.avgQueryTime > 100) {
+        logger.warn('⚠️ 성능 저하 감지', {
+          component: 'OptimizedUnifiedDataService',
+          data: {
+            cacheSize: stats.size,
+            cacheHitRate: `${metrics.cacheHitRate.toFixed(1)}%`,
+            avgQueryTime: `${metrics.avgQueryTime.toFixed(2)}ms`,
+            optimizationSavings: metrics.optimizationSavings
+          }
+        });
+      }
     }, 60000); // 1분마다 실행
   }
 

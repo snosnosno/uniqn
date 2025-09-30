@@ -146,19 +146,6 @@ export const useEnhancedPayroll = ({
     const transportationDaily = benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0;
     const accommodationDaily = benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0;
 
-    // 디버깅 로그 추가 (INFO 레벨로 변경)
-    logger.info('🍽️ getDefaultAllowances 호출됨', {
-      component: 'useEnhancedPayroll',
-      data: {
-        totalDays,
-        benefits,
-        isPerDay,
-        mealDaily,
-        transportationDaily,
-        accommodationDaily
-      }
-    });
-
     const allowances: EnhancedPayrollCalculation['allowances'] = {
       meal: isPerDay ? mealDaily * totalDays : mealDaily,
       transportation: isPerDay ? transportationDaily * totalDays : transportationDaily,
@@ -763,18 +750,6 @@ export const useEnhancedPayroll = ({
       // 수당 정보 (개별 오버라이드가 있으면 사용, 없으면 기본값)
       // key를 사용하여 역할별로 다른 수당 설정 가능
       // 김승호 계산 추적용 로그
-      if (data.staffName === '김승호') {
-        logger.info('🎯 김승호 getDefaultAllowances 호출 직전', {
-          component: 'useEnhancedPayroll',
-          data: {
-            staffName: data.staffName,
-            totalDays,
-            jobPosting: !!jobPosting,
-            benefits: jobPosting?.benefits
-          }
-        });
-      }
-
       const defaultAllowances = getDefaultAllowances(totalDays);
 
       // Firebase에서 일당 정보가 있을 때는 defaultAllowances를 우선 사용
@@ -787,22 +762,6 @@ export const useEnhancedPayroll = ({
       const baseAllowances = hasFirebaseDailyRates
         ? defaultAllowances
         : (staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId] || defaultAllowances);
-
-      // 디버깅 로그 추가 (INFO 레벨로 변경)
-      if (data.staffName === '김승호') {
-        logger.info('🔍 김승호 수당 계산 디버깅', {
-          component: 'useEnhancedPayroll',
-          data: {
-            staffName: data.staffName,
-            totalDays,
-            defaultAllowances,
-            baseAllowances,
-            hasFirebaseDailyRates,
-            hasOverride: !!(staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId]),
-            overrideValue: staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId]
-          }
-        });
-      }
 
       // 일당 정보는 항상 유지 (수동 편집 시에도)
       const allowances: EnhancedPayrollCalculation['allowances'] = {
@@ -818,18 +777,6 @@ export const useEnhancedPayroll = ({
         allowances.workDays = defaultAllowances.workDays;
       }
 
-      // 최종 allowances 디버깅 로그 (INFO 레벨로 변경)
-      if (data.staffName === '김승호') {
-        logger.info('🎯 김승호 최종 allowances', {
-          component: 'useEnhancedPayroll',
-          data: {
-            allowances,
-            hasDailyRates: !!allowances.dailyRates,
-            hasWorkDays: !!allowances.workDays
-          }
-        });
-      }
-      
       // 수당 합계
       const allowanceTotal = 
         allowances.meal +

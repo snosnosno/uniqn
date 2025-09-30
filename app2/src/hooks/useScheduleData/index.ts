@@ -47,15 +47,9 @@ const useScheduleData = (): UseScheduleDataReturn => {
           .filter((log): log is WorkLog => {
             const workLog = log as WorkLog;
             // staffId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
-            return workLog.staffId === currentUser.uid || 
+            return workLog.staffId === currentUser.uid ||
                    workLog.staffId?.startsWith(currentUser.uid + '_');
           });
-        
-        logger.info(`필터링된 WorkLogs: ${userWorkLogs.length}개 [${userWorkLogs.map(log => log.staffId).join(',')}]`, {
-          component: 'useScheduleData',
-          userId: currentUser.uid,
-          operation: 'filterWorkLogs'
-        });
 
         // WorkLog 비동기 처리를 병렬로 실행
         const workLogPromises = userWorkLogs.map(workLog => 
@@ -82,17 +76,11 @@ const useScheduleData = (): UseScheduleDataReturn => {
         const userApplications = Array.from(applications.values())
           .filter((app): app is Application => {
             const application = app as Application;
-            // applicantId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우  
+            // applicantId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
             return application.applicantId === currentUser.uid ||
                    application.applicantId?.startsWith(currentUser.uid + '_');
           });
-          
-        logger.info(`필터링된 Applications: ${userApplications.length}개 [${userApplications.map(app => app.applicantId).join(',')}]`, {
-          component: 'useScheduleData',
-          userId: currentUser.uid,
-          operation: 'filterApplications'
-        });
-        
+
         // Application 비동기 처리를 병렬로 실행
         const applicationPromises = userApplications.map(application =>
           processApplicationData(application.id || '', application)
@@ -117,12 +105,6 @@ const useScheduleData = (): UseScheduleDataReturn => {
             // eventId나 date가 없는 경우 그냥 추가
             mergedEvents.push(event);
           }
-        });
-
-        logger.info(`스케줄 데이터 병합 완료: 총 ${mergedEvents.length}개 이벤트 (WorkLog: ${workLogEvents.length}, 지원서: ${applicationEventArrays.flat().length})`, {
-          component: 'useScheduleData',
-          userId: currentUser.uid,
-          operation: 'loadSchedules'
         });
 
         setSchedules(mergedEvents);
@@ -156,10 +138,6 @@ const useScheduleData = (): UseScheduleDataReturn => {
         if (workLogs.size === 0 && applications.size === 0) {
           setSchedules([]);
           setLoading(false);
-          logger.info('데이터 없음으로 빈 스케줄 설정', {
-            component: 'useScheduleData',
-            userId: currentUser.uid
-          });
         }
       }, 3000);
 

@@ -32,25 +32,16 @@ export const useDevTools = () => {
       ...prev,
       isOpen: !prev.isOpen
     }));
-    
-    logger.info('개발자 도구 토글', {
-      component: 'useDevTools',
-      data: { isOpen: !state.isOpen }
-    });
   }, [state.isEnabled, state.isOpen]);
 
   // 개발자 도구 열기
   const openDevTools = useCallback(() => {
     if (!state.isEnabled) return;
-    
+
     setState(prev => ({
       ...prev,
       isOpen: true
     }));
-    
-    logger.info('개발자 도구 열기', {
-      component: 'useDevTools'
-    });
   }, [state.isEnabled]);
 
   // 개발자 도구 닫기
@@ -59,10 +50,6 @@ export const useDevTools = () => {
       ...prev,
       isOpen: false
     }));
-    
-    logger.info('개발자 도구 닫기', {
-      component: 'useDevTools'
-    });
   }, []);
 
   // 키보드 단축키 등록 (Ctrl+Shift+D)

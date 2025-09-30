@@ -304,11 +304,6 @@ export class UnifiedDataService {
   setCurrentUserId(userId: string | null): void {
     const wasChanged = this.currentUserId !== userId;
     this.currentUserId = userId;
-    
-    logger.info('UnifiedDataService: 사용자 ID 설정', { 
-      component: 'unifiedDataService',
-      data: { userId, hasUserId: !!userId, wasChanged }
-    });
 
     // 사용자가 변경되었다면 캐시 무효화 및 구독 재시작
     if (wasChanged && this.dispatcher) {
@@ -323,11 +318,6 @@ export class UnifiedDataService {
   setCurrentEventId(eventId: string | null): void {
     const wasChanged = this.currentEventId !== eventId;
     this.currentEventId = eventId;
-    
-    logger.info('UnifiedDataService: 이벤트 ID 설정', { 
-      component: 'unifiedDataService',
-      data: { eventId, hasEventId: !!eventId, wasChanged }
-    });
 
     // eventId가 변경되면 WorkLogs 구독을 재시작하여 필터링 적용
     if (wasChanged && this.dispatcher) {
@@ -341,11 +331,6 @@ export class UnifiedDataService {
   setUserRole(role: string | null): void {
     const wasChanged = this.userRole !== role;
     this.userRole = role;
-    
-    logger.info('UnifiedDataService: 사용자 role 설정', { 
-      component: 'unifiedDataService',
-      data: { role, isAdmin: role === 'admin' || role === 'manager', wasChanged }
-    });
 
     // Role이 변경되었다면 캐시 무효화 및 구독 재시작
     if (wasChanged && this.dispatcher) {
@@ -402,10 +387,6 @@ export class UnifiedDataService {
         this.subscribeToWorkLogs(),
         this.subscribeToAttendanceRecords(),
       ]);
-
-      logger.info('UnifiedDataService: 사용자별 구독 재시작 완료', { 
-        component: 'unifiedDataService' 
-      });
     } catch (error) {
       logger.error('UnifiedDataService: 구독 재시작 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'unifiedDataService'

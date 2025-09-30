@@ -171,12 +171,6 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
 
     try {
       const count = await smartCache.invalidateByTags(tags);
-      
-      logger.info('태그별 캐시 무효화 완료', {
-        component: 'useSmartCache',
-        data: { tags, deletedCount: count }
-      });
-      
       return count;
     } catch (error) {
       logger.error('태그별 캐시 무효화 실패', error instanceof Error ? error : new Error(String(error)), {

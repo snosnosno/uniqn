@@ -33,14 +33,12 @@ const DEFAULT_CONFIG: StatusBarConfig = {
 export const initializeStatusBar = async (config: Partial<StatusBarConfig> = {}): Promise<void> => {
   // 웹 환경에서는 실행하지 않음
   if (!Capacitor.isNativePlatform()) {
-    logger.info('StatusBar: 웹 환경에서는 상태바 설정을 건너뜁니다');
     return;
   }
 
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
   try {
-    logger.info('StatusBar: 상태바 초기화 시작');
 
     // 상태바 스타일 설정
     await StatusBar.setStyle({
@@ -58,9 +56,6 @@ export const initializeStatusBar = async (config: Partial<StatusBarConfig> = {})
     await StatusBar.setOverlaysWebView({
       overlay: finalConfig.overlaysWebView
     });
-
-    logger.info('StatusBar: 상태바 설정 완료');
-
   } catch (error) {
     logger.error('StatusBar: 상태바 설정 중 오류 발생', error instanceof Error ? error : new Error(String(error)));
     // 상태바 설정 실패해도 앱 실행에는 영향 없음
@@ -75,7 +70,6 @@ export const hideStatusBar = async (): Promise<void> => {
 
   try {
     await StatusBar.hide();
-    logger.info('StatusBar: 상태바 숨김');
   } catch (error) {
     logger.error('StatusBar: 상태바 숨김 중 오류', error instanceof Error ? error : new Error(String(error)));
   }
@@ -89,7 +83,6 @@ export const showStatusBar = async (): Promise<void> => {
 
   try {
     await StatusBar.show();
-    logger.info('StatusBar: 상태바 표시');
   } catch (error) {
     logger.error('StatusBar: 상태바 표시 중 오류', error instanceof Error ? error : new Error(String(error)));
   }
@@ -111,7 +104,6 @@ export const getStatusBarInfo = async () => {
 
   try {
     const info = await StatusBar.getInfo();
-    logger.info('StatusBar: 현재 상태바 정보');
     return info;
   } catch (error) {
     logger.error('StatusBar: 상태바 정보 조회 중 오류', error instanceof Error ? error : new Error(String(error)));

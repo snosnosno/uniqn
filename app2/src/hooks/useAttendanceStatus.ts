@@ -53,11 +53,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         return record;
       });
     });
-    
-    logger.info('Optimistic update 적용', { 
-      component: 'useAttendanceStatus',
-      data: { workLogId, newStatus }
-    });
   };
 
   useEffect(() => {
@@ -101,20 +96,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
               
               records.push(attendanceRecord);
             });
-
-            // 이전 상태와 비교하여 변경사항 감지
-            const prevRecordsMap = new Map(attendanceRecords.map(r => [r.workLogId, r.status]));
-            const changedRecords = records.filter(r => {
-              const prevStatus = prevRecordsMap.get(r.workLogId);
-              return prevStatus && prevStatus !== r.status;
-            });
-
-            if (changedRecords.length > 0) {
-              logger.info('출석 상태 변경 감지', { 
-                component: 'useAttendanceStatus',
-                data: { changedCount: changedRecords.length }
-              });
-            }
 
             // 항상 새로운 배열로 설정하여 React가 변경을 감지하도록 함
             setAttendanceRecords([...records]);
