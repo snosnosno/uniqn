@@ -530,8 +530,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     debugInfo.workLogsLoading = state.loading.workLogs;
     debugInfo.initialLoading = state.loading.initial;
     debugInfo.staffIdHasNumberSuffix = /_\d+$/.test(staffId);
-    
-    
+
+    // 🔍 디버깅 로그 출력
+    logger.info('getStaffWorkLog - WorkLog 조회 결과', {
+      component: 'StaffManagementTab',
+      data: debugInfo
+    });
+
     return workLog;
   }, [state.workLogs, jobPosting?.id, state.lastUpdated.workLogs]); // 🔥 lastUpdated 추가로 업데이트 즉시 감지
 
@@ -1274,25 +1279,29 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         selectedStaff={staffData
           .filter(staff => selectedStaff.has(staff.id))
           .map(staff => {
-            // 스태프의 날짜를 추출
-            const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
-            // 해당 날짜의 workLog 찾기
-            const workLogRecord = attendanceRecords.find(r => {
-              // staffId가 일치하고
-              const recordAny = r as any;
-              const staffIdMatch = recordAny.staffId === staff.id || 
-                                  recordAny.workLog?.staffId === staff.id;
-              // 날짜가 일치하는 경우
-              const dateMatch = recordAny.workLog?.date === dateString;
-              return staffIdMatch && dateMatch;
+            // ✅ getStaffWorkLog 함수를 사용하여 정확한 WorkLog 매칭
+            const dateString = staff.assignedDate || getTodayString();
+            const workLog = getStaffWorkLog(staff.id, dateString);
+
+            // 🔍 디버깅: WorkLog 매칭 확인
+            logger.info('BulkTimeEditModal - WorkLog 매칭', {
+              component: 'StaffManagementTab',
+              data: {
+                staffId: staff.id,
+                staffName: staff.name,
+                dateString,
+                workLogFound: !!workLog,
+                workLogId: workLog?.id,
+                eventId: jobPosting?.id
+              }
             });
-            
+
             return {
               id: staff.id,
               name: staff.name || '이름 미정',
-              ...(staff.assignedDate && { assignedDate: staff.assignedDate }),
+              assignedDate: dateString,
               ...(staff.assignedTime && { assignedTime: staff.assignedTime }),
-              ...((workLogRecord as any)?.workLogId && { workLogId: (workLogRecord as any).workLogId })
+              ...(workLog?.id && { workLogId: workLog.id })
             };
           })}
         eventId={jobPosting?.id || 'default-event'}
