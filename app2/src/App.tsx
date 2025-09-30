@@ -18,8 +18,6 @@ import { ToastContainer } from './components/Toast';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import NetworkStatusIndicator from './components/NetworkStatusIndicator';
-import PWAUpdateNotification from './components/PWAUpdateNotification';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
 // Zustand 마이그레이션: Context 대신 Adapter 사용
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
 // UnifiedDataContext - 통합 데이터 관리
@@ -27,10 +25,8 @@ import { UnifiedDataProvider } from './contexts/UnifiedDataContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
-import { preloadCriticalImages } from './utils/imagePreloader';
 import { initializeFontOptimization } from './utils/fontOptimizer';
 import { initializeOfflineSupport } from './utils/offlineSupport';
-import { registerSW } from './utils/serviceWorker';
 
 // Capacitor 네이티브 서비스 초기화 컴포넌트
 import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
@@ -125,19 +121,6 @@ const App: React.FC = () => {
       // 이미지 프리로딩 비활성화 (preload 경고 방지)
       // 이미지는 실제 사용 시점에 로딩됨
       console.debug('이미지 프리로딩이 비활성화되었습니다 (성능 최적화)');
-
-      // Service Worker 등록 (마지막에 실행)
-      registerSW({
-        onSuccess: () => {
-          console.log('Service Worker 등록 성공 - 앱이 오프라인에서도 작동합니다.');
-        },
-        onUpdate: () => {
-          console.log('새로운 버전이 available합니다. 페이지를 새로고침해주세요.');
-        },
-        onOfflineReady: () => {
-          console.log('앱이 오프라인 사용을 위해 준비되었습니다.');
-        },
-      });
     };
 
     initializeApp();
@@ -160,10 +143,8 @@ const App: React.FC = () => {
             <CapacitorInitializer>
               <UnifiedDataProvider>
                 <TournamentProvider>
-                  {/* 네트워크 상태 및 PWA 관련 UI */}
+                  {/* 네트워크 상태 표시 */}
                   <NetworkStatusIndicator position="top" />
-                  <PWAUpdateNotification />
-                  <PWAInstallPrompt autoShow showDelay={5000} />
 
               <Routes>
                 {/* Public Routes */}

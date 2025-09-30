@@ -146,10 +146,6 @@ export const getOptimizedImageUrl = (
 
 // 이미지 캐시 정리
 export const clearImageCache = (): void => {
-  // Service Worker에서 이미지 캐시 정리 요청
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'CLEAR_IMAGE_CACHE',
-    });
-  }
+  // 브라우저 캐시 정리는 사용자가 직접 수행해야 함
+  console.warn('이미지 캐시를 정리하려면 브라우저 설정에서 캐시를 삭제하세요.');
 };

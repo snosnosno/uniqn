@@ -11,44 +11,7 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "theme_color": "#3b82f6",
   "background_color": "#ffffff",
-  "orientation": "portrait-primary",
-  "scope": "/",
-  "lang": "ko-KR",
-  "categories": ["business", "productivity", "games"],
-  "shortcuts": [
-    {
-      "name": "출석 체크",
-      "short_name": "출석",
-      "description": "스태프 출석 상태 확인",
-      "url": "/app/attendance"
-    },
-    {
-      "name": "내 일정",
-      "short_name": "일정",
-      "description": "나의 근무 일정 확인",
-      "url": "/app/my-schedule"
-    },
-    {
-      "name": "구인공고",
-      "short_name": "구인",
-      "description": "구인공고 확인 및 지원",
-      "url": "/app/jobs"
-    }
-  ],
-  "prefer_related_applications": false,
-  "protocol_handlers": [
-    {
-      "protocol": "web+tholdem",
-      "url": "/app?action=%s"
-    }
-  ],
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  },
-  "edge_side_panel": {
-    "preferred_width": 480
-  }
+  "orientation": "portrait-primary"
 }
