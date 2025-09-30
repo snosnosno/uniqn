@@ -131,9 +131,10 @@ class MemoryCache {
 
   // 캐시 통계
   getStats(): { size: number; hitRate: number } {
+    // 성능 트래커에서 히트율 계산
     return {
       size: this.cache.size,
-      hitRate: 0 // TODO: 히트율 계산 로직 추가
+      hitRate: 0 // 성능 트래커에서 관리
     };
   }
 }
@@ -900,15 +901,21 @@ class OptimizedUnifiedDataService {
       const stats = this.cache.getStats();
       const metrics = this.performanceTracker.getMetrics();
 
+      // 총 요청 수가 10개 이상일 때만 평가 (초기 로딩 무시)
+      const totalRequests = metrics.cacheHits + metrics.cacheMisses;
+
       // 성능 이슈가 있을 때만 로그 출력
-      if (metrics.cacheHitRate < 50 || metrics.avgQueryTime > 100) {
+      // - 캐시 히트율 30% 미만 (충분한 요청 후)
+      // - 평균 쿼리 시간 150ms 초과
+      if (totalRequests >= 10 && (metrics.cacheHitRate < 30 || metrics.avgQueryTime > 150)) {
         logger.warn('⚠️ 성능 저하 감지', {
           component: 'OptimizedUnifiedDataService',
           data: {
             cacheSize: stats.size,
             cacheHitRate: `${metrics.cacheHitRate.toFixed(1)}%`,
             avgQueryTime: `${metrics.avgQueryTime.toFixed(2)}ms`,
-            optimizationSavings: metrics.optimizationSavings
+            optimizationSavings: metrics.optimizationSavings,
+            totalRequests
           }
         });
       }

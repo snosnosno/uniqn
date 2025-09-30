@@ -10,11 +10,17 @@ i18n
   .init({
     debug: true,
     fallbackLng: 'en',
+    supportedLngs: ['en', 'ko'],
+    load: 'languageOnly', // ko-KR → ko, en-US → en
     interpolation: {
       escapeValue: false,
     },
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
     },
   });
 
