@@ -528,6 +528,19 @@
     }
   },
   "jobPosting": {
+    "announcement": {
+      "button": "Send Announcement",
+      "modalTitle": "Send Staff Announcement",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter announcement title (max 50 characters)",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Enter announcement message (max 500 characters)",
+      "targetStaff": "Recipients",
+      "staffCount": "{{count}} confirmed staff",
+      "postingInfo": "Posting Info",
+      "cancelButton": "Cancel",
+      "sendButton": "Send"
+    },
     "info": {
       "expand": "Expand Info",
       "collapse": "Collapse Info",

@@ -244,7 +244,8 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
     prevProps.applicant.assignedDate === nextProps.applicant.assignedDate &&
     prevProps.applicant.assignedTime === nextProps.applicant.assignedTime &&
     prevProps.children === nextProps.children &&
-    JSON.stringify(prevProps.jobPosting) === JSON.stringify(nextProps.jobPosting)
+    JSON.stringify(prevProps.jobPosting) === JSON.stringify(nextProps.jobPosting) &&
+    JSON.stringify(prevProps.applicant.preQuestionAnswers) === JSON.stringify(nextProps.applicant.preQuestionAnswers)
   );
 });
 
