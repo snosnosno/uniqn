@@ -456,12 +456,6 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   const typeDisplay = getTypeDisplay();
   const isToday = schedule.date === getTodayString();
   const canCheckOut = isToday && schedule.type === 'confirmed' && schedule.status === 'checked_in';
-  
-  // 삭제 가능한 일정인지 확인 (완료되지 않은 일정만)
-  const canDelete = onDelete && 
-    schedule.type !== 'completed' && 
-    schedule.status !== 'checked_in' && // 이미 출근한 일정은 삭제 제한
-    (schedule.sourceCollection === 'applications' || schedule.sourceCollection === 'workLogs');
 
   // 탭 정의
   const tabs = [

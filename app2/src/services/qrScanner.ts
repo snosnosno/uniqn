@@ -113,7 +113,6 @@ const checkForQRPattern = (imageData: ImageData): boolean => {
 
   const { data, width, height } = imageData;
   let darkPixels = 0;
-  let lightPixels = 0;
 
   // 픽셀 데이터 분석 (RGBA 형식)
   for (let i = 0; i < data.length; i += 4) {
@@ -124,8 +123,6 @@ const checkForQRPattern = (imageData: ImageData): boolean => {
 
     if (brightness < 128) {
       darkPixels++;
-    } else {
-      lightPixels++;
     }
   }
 

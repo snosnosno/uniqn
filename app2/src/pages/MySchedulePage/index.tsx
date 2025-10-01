@@ -13,7 +13,6 @@ import {
   FaHourglassHalf,
   FaTimesCircle
 } from '../../components/Icons/ReactIconsReplacement';
-import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { formatTime } from '../../utils/dateUtils';
 import { useMediaQuery } from '../../hooks/useMediaQuery';

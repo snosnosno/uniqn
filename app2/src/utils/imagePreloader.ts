@@ -79,7 +79,6 @@ export const preloadCriticalImages = async () => {
   }
 
   // 프리로드할 이미지가 없으면 아무것도 하지 않음
-  console.debug('프리로드할 중요한 이미지가 없습니다.');
 };
 
 // WebP 지원 확인

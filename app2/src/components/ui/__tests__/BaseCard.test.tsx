@@ -15,40 +15,40 @@ describe('BaseCard Component', () => {
     });
 
     it('should apply default variant class', () => {
-      const { container } = render(<BaseCard>Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('shadow-sm');
     });
 
     it('should apply elevated variant class', () => {
-      const { container } = render(<BaseCard variant="elevated">Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard variant="elevated" data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('shadow-lg');
     });
 
     it('should apply bordered variant class', () => {
-      const { container } = render(<BaseCard variant="bordered">Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard variant="bordered" data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('border', 'border-gray-200');
     });
 
     it('should apply ghost variant class', () => {
-      const { container } = render(<BaseCard variant="ghost">Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard variant="ghost" data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('bg-transparent');
     });
 
     it('should apply custom className', () => {
-      const { container } = render(
-        <BaseCard className="custom-class">Content</BaseCard>
+      render(
+        <BaseCard className="custom-class" data-testid="base-card">Content</BaseCard>
       );
-      const card = container.firstChild as HTMLElement;
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('custom-class');
     });
 
     it('should apply padding classes based on padding prop', () => {
-      const { container } = render(<BaseCard padding="lg">Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard padding="lg" data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('p-6');
     });
   });
@@ -57,39 +57,39 @@ describe('BaseCard Component', () => {
     it('should handle onClick event', () => {
       const handleClick = jest.fn();
       render(
-        <BaseCard onClick={handleClick}>
+        <BaseCard onClick={handleClick} data-testid="base-card">
           <div>Clickable Card</div>
         </BaseCard>
       );
-      
-      const card = screen.getByText('Clickable Card').parentElement;
-      fireEvent.click(card!);
+
+      const card = screen.getByTestId('base-card');
+      fireEvent.click(card);
       expect(handleClick).toHaveBeenCalledTimes(1);
     });
 
     it('should apply hover classes when hover prop is true', () => {
-      const { container } = render(<BaseCard hover>Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard hover data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('hover:shadow-md');
     });
 
     it('should apply active classes when active prop is true', () => {
-      const { container } = render(<BaseCard active>Content</BaseCard>);
-      const card = container.firstChild as HTMLElement;
+      render(<BaseCard active data-testid="base-card">Content</BaseCard>);
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('ring-2', 'ring-primary-500');
     });
 
     it('should apply disabled styles and prevent click when disabled', () => {
       const handleClick = jest.fn();
-      const { container } = render(
-        <BaseCard onClick={handleClick} disabled>
+      render(
+        <BaseCard onClick={handleClick} disabled data-testid="base-card">
           Content
         </BaseCard>
       );
-      
-      const card = container.firstChild as HTMLElement;
+
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveClass('opacity-50', 'cursor-not-allowed');
-      
+
       fireEvent.click(card);
       expect(handleClick).not.toHaveBeenCalled();
     });
@@ -97,59 +97,59 @@ describe('BaseCard Component', () => {
 
   describe('Accessibility', () => {
     it('should apply aria-label when provided', () => {
-      const { container } = render(
-        <BaseCard aria-label="Test Card">Content</BaseCard>
+      render(
+        <BaseCard aria-label="Test Card" data-testid="base-card">Content</BaseCard>
       );
-      const card = container.firstChild as HTMLElement;
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveAttribute('aria-label', 'Test Card');
     });
 
     it('should apply aria-labelledby when provided', () => {
-      const { container } = render(
-        <BaseCard aria-labelledby="title-id">Content</BaseCard>
+      render(
+        <BaseCard aria-labelledby="title-id" data-testid="base-card">Content</BaseCard>
       );
-      const card = container.firstChild as HTMLElement;
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveAttribute('aria-labelledby', 'title-id');
     });
 
     it('should apply aria-describedby when provided', () => {
-      const { container } = render(
-        <BaseCard aria-describedby="desc-id">Content</BaseCard>
+      render(
+        <BaseCard aria-describedby="desc-id" data-testid="base-card">Content</BaseCard>
       );
-      const card = container.firstChild as HTMLElement;
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveAttribute('aria-describedby', 'desc-id');
     });
 
     it('should apply role when provided', () => {
-      const { container } = render(
-        <BaseCard role="article">Content</BaseCard>
+      render(
+        <BaseCard role="article" data-testid="base-card">Content</BaseCard>
       );
-      const card = container.firstChild as HTMLElement;
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveAttribute('role', 'article');
     });
 
     it('should apply tabIndex when provided', () => {
-      const { container } = render(
-        <BaseCard tabIndex={0}>Content</BaseCard>
+      render(
+        <BaseCard tabIndex={0} data-testid="base-card">Content</BaseCard>
       );
-      const card = container.firstChild as HTMLElement;
+      const card = screen.getByTestId('base-card');
       expect(card).toHaveAttribute('tabIndex', '0');
     });
 
     it('should handle keyboard interaction when onClick is provided', () => {
       const handleClick = jest.fn();
-      const { container } = render(
-        <BaseCard onClick={handleClick} tabIndex={0}>
+      render(
+        <BaseCard onClick={handleClick} tabIndex={0} data-testid="base-card">
           Content
         </BaseCard>
       );
-      
-      const card = container.firstChild as HTMLElement;
+
+      const card = screen.getByTestId('base-card');
       card.focus();
-      
+
       fireEvent.keyDown(card, { key: 'Enter' });
       expect(handleClick).toHaveBeenCalledTimes(1);
-      
+
       fireEvent.keyDown(card, { key: ' ' });
       expect(handleClick).toHaveBeenCalledTimes(2);
     });
@@ -191,7 +191,7 @@ describe('BaseCard Component', () => {
           <CardFooter>Footer</CardFooter>
         </BaseCard>
       );
-      
+
       expect(screen.getByText('Header')).toBeInTheDocument();
       expect(screen.getByText('Body')).toBeInTheDocument();
       expect(screen.getByText('Footer')).toBeInTheDocument();
@@ -200,15 +200,15 @@ describe('BaseCard Component', () => {
     it('should apply custom className to sub-components', () => {
       render(
         <BaseCard>
-          <CardHeader className="header-class">Header</CardHeader>
-          <CardBody className="body-class">Body</CardBody>
-          <CardFooter className="footer-class">Footer</CardFooter>
+          <CardHeader className="header-class" data-testid="card-header">Header</CardHeader>
+          <CardBody className="body-class" data-testid="card-body">Body</CardBody>
+          <CardFooter className="footer-class" data-testid="card-footer">Footer</CardFooter>
         </BaseCard>
       );
-      
-      expect(screen.getByText('Header').parentElement).toHaveClass('header-class');
-      expect(screen.getByText('Body').parentElement).toHaveClass('body-class');
-      expect(screen.getByText('Footer').parentElement).toHaveClass('footer-class');
+
+      expect(screen.getByTestId('card-header')).toHaveClass('header-class');
+      expect(screen.getByTestId('card-body')).toHaveClass('body-class');
+      expect(screen.getByTestId('card-footer')).toHaveClass('footer-class');
     });
   });
 
@@ -218,7 +218,7 @@ describe('BaseCard Component', () => {
       render(
         <BaseCard ref={ref}>Content</BaseCard>
       );
-      
+
       expect(ref.current).toBeInstanceOf(HTMLDivElement);
       expect(ref.current?.textContent).toBe('Content');
     });

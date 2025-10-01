@@ -32,40 +32,11 @@ export const usedFontWeights = [
   700, // bold
 ];
 
-// 한글 유니코드 범위 (Pretendard 서브셋팅용)
-const koreanUnicodeRanges = [
-  'U+AC00-D7AF', // 한글 음절
-  'U+1100-11FF', // 한글 자모
-  'U+3130-318F', // 한글 호환 자모
-  'U+3200-32FF', // 괄호 CJK
-  'U+FF00-FFEF', // 반각 및 전각 형식
-];
-
-// 기본 ASCII 범위
-const basicLatinRange = 'U+0000-00FF';
-
-// 필수 폰트 설정
-const criticalFonts: FontConfig[] = [
-  {
-    family: 'Pretendard',
-    weight: 400,
-    display: 'swap',
-    unicode: [basicLatinRange, ...koreanUnicodeRanges].join(','),
-  },
-  {
-    family: 'Pretendard',
-    weight: 600,
-    display: 'swap',
-    unicode: [basicLatinRange, ...koreanUnicodeRanges].join(','),
-  },
-];
-
 /**
  * 폰트 조건부 프리로딩 (실제 사용될 때만)
  */
-export const preloadFont = (config: FontConfig): void => {
+export const preloadFont = (_config: FontConfig): void => {
   // 완전 비활성화 - 404 오류 방지
-  console.debug(`폰트 프리로딩 비활성화: ${config.family}(${config.weight})`);
   return;
 };
 
@@ -216,9 +187,7 @@ export const initializeFontOptimization = (): void => {
     if (document.fonts) {
       document.fonts.ready
         .then(() => {
-          console.info('폰트 로딩 완료');
-          const usedWeights = analyzeUsedFontWeights();
-          console.info('사용 중인 폰트 웨이트:', usedWeights);
+          analyzeUsedFontWeights();
         })
         .catch((error) => {
           console.warn('폰트 로드 상태 확인 실패:', error);
