@@ -1228,5 +1228,41 @@
         "answer": "출석 페이지에서 QR 코드를 스캔하거나 관리자가 수동으로 출석을 체크할 수 있습니다."
       }
     }
+  },
+  "notifications": {
+    "title": "알림",
+    "loading": "로딩 중...",
+    "noNotifications": "알림이 없습니다",
+    "markAllAsRead": "모두 읽음",
+    "viewAll": "모두 보기",
+    "deleteAllRead": "읽은 알림 모두 삭제",
+    "filters": {
+      "all": "전체",
+      "unread": "안읽음",
+      "read": "읽음"
+    },
+    "categories": {
+      "system": "시스템",
+      "work": "근무",
+      "schedule": "일정",
+      "finance": "급여",
+      "social": "소셜"
+    },
+    "types": {
+      "job_posting_announcement": "구인공고 알림",
+      "job_application": "지원서 제출",
+      "application_approved": "지원 승인",
+      "application_rejected": "지원 거절",
+      "staff_approval": "스태프 승인",
+      "attendance_reminder": "출석 알림",
+      "schedule_change": "일정 변경",
+      "shift_assigned": "근무 배정",
+      "payroll_ready": "급여 준비 완료",
+      "payment_sent": "급여 지급",
+      "work_log_approved": "근무 기록 승인",
+      "work_log_rejected": "근무 기록 반려",
+      "announcement": "공지사항",
+      "message": "메시지"
+    }
   }
 }

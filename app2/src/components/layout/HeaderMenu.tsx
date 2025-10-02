@@ -12,6 +12,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePermissions } from '../../hooks/usePermissions';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 interface NavItemProps {
     to: string;
@@ -112,7 +113,12 @@ export const HeaderMenu: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative flex items-center" ref={menuRef}>
+    <div className="relative flex items-center gap-2" ref={menuRef}>
+      {/* 알림 드롭다운 */}
+      {currentUser && !authLoading && (
+        <NotificationDropdown />
+      )}
+
       {/* 햄버거 메뉴 버튼 */}
       <button
         onClick={toggleMenu}
@@ -124,10 +130,10 @@ export const HeaderMenu: React.FC = () => {
         aria-haspopup="true"
         style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
       >
-        <svg 
-          className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`}
+          fill="none"
+          stroke="currentColor"
           strokeWidth="2"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"

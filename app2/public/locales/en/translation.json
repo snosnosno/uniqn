@@ -1167,5 +1167,41 @@
         "answer": "Use the Attendance page to scan QR codes or have an administrator manually record your attendance."
       }
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "loading": "Loading...",
+    "noNotifications": "No notifications",
+    "markAllAsRead": "Mark all as read",
+    "viewAll": "View all",
+    "deleteAllRead": "Delete all read",
+    "filters": {
+      "all": "All",
+      "unread": "Unread",
+      "read": "Read"
+    },
+    "categories": {
+      "system": "System",
+      "work": "Work",
+      "schedule": "Schedule",
+      "finance": "Finance",
+      "social": "Social"
+    },
+    "types": {
+      "job_posting_announcement": "Job Posting",
+      "job_application": "Application Submitted",
+      "application_approved": "Application Approved",
+      "application_rejected": "Application Rejected",
+      "staff_approval": "Staff Approved",
+      "attendance_reminder": "Attendance Reminder",
+      "schedule_change": "Schedule Changed",
+      "shift_assigned": "Shift Assigned",
+      "payroll_ready": "Payroll Ready",
+      "payment_sent": "Payment Sent",
+      "work_log_approved": "Work Log Approved",
+      "work_log_rejected": "Work Log Rejected",
+      "announcement": "Announcement",
+      "message": "Message"
+    }
   }
 }

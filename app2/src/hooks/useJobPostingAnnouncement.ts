@@ -21,7 +21,8 @@ export interface UseJobPostingAnnouncementReturn {
     jobPostingId: string,
     title: string,
     message: string,
-    targetStaffIds: string[]
+    targetStaffIds: string[],
+    jobPostingTitle?: string
   ) => Promise<SendAnnouncementResponse>;
 
   /** 전송 중 상태 */
@@ -73,7 +74,8 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
       jobPostingId: string,
       title: string,
       message: string,
-      targetStaffIds: string[]
+      targetStaffIds: string[],
+      jobPostingTitle?: string
     ): Promise<SendAnnouncementResponse> => {
       setIsSending(true);
       setError(null);
@@ -85,6 +87,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
             jobPostingId,
             title,
             targetCount: targetStaffIds.length,
+            jobPostingTitle,
           }
         });
 
@@ -94,12 +97,18 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
           SendAnnouncementResponse
         >(functions, 'sendJobPostingAnnouncement');
 
-        const response = await sendAnnouncementFn({
+        const requestData: SendAnnouncementRequest = {
           jobPostingId,
           title,
           message,
           targetStaffIds,
-        });
+        };
+
+        if (jobPostingTitle) {
+          requestData.jobPostingTitle = jobPostingTitle;
+        }
+
+        const response = await sendAnnouncementFn(requestData);
 
         const responseData = response.data;
 

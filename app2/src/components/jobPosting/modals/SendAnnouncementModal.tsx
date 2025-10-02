@@ -23,7 +23,7 @@ export interface SendAnnouncementModalProps {
   /** 확정된 스태프 목록 */
   confirmedStaff: ConfirmedStaff[];
   /** 전송 핸들러 */
-  onSend: (title: string, message: string, targetStaffIds: string[]) => Promise<void>;
+  onSend: (title: string, message: string, targetStaffIds: string[], jobPostingTitle?: string) => Promise<void>;
   /** 전송 중 상태 */
   isSending?: boolean;
 }
@@ -94,7 +94,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
     }
 
     try {
-      await onSend(title.trim(), announcementMessage.trim(), targetStaffIds);
+      await onSend(title.trim(), announcementMessage.trim(), targetStaffIds, jobPosting.title);
 
       // 성공 시 폼 초기화 및 모달 닫기
       setTitle('');
@@ -105,7 +105,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
       logger.error('공지 전송 실패', error as Error);
       setErrors(['공지 전송에 실패했습니다. 다시 시도해주세요.']);
     }
-  }, [jobPosting.id, title, announcementMessage, targetStaffIds, onSend, onClose]);
+  }, [jobPosting.id, jobPosting.title, title, announcementMessage, targetStaffIds, onSend, onClose]);
 
   // 취소 핸들러
   const handleCancel = useCallback(() => {

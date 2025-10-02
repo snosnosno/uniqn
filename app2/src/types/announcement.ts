@@ -130,6 +130,9 @@ export interface SendAnnouncementRequest {
 
   /** 수신 대상 스태프 ID 목록 */
   targetStaffIds: string[];
+
+  /** 공고 제목 (알림 제목에 자동 추가) */
+  jobPostingTitle?: string;
 }
 
 /**

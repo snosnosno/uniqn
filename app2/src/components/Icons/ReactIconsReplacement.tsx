@@ -45,7 +45,8 @@ import {
   PaperAirplaneIcon,
   ArrowUturnLeftIcon,
   CheckIcon,
-  Bars3BottomLeftIcon
+  Bars3BottomLeftIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleIconSolid,
@@ -122,6 +123,7 @@ export const FaPaperPlane = createIconWrapper(PaperAirplaneIcon);
 export const FaReply = createIconWrapper(ArrowUturnLeftIcon);
 export const FaCheck = createIconWrapper(CheckIcon);
 export const FaSort = createIconWrapper(Bars3BottomLeftIcon);
+export const FaBell = createIconWrapper(BellIcon);
 
 // Solid 버전 (필요한 경우)
 export const FaCheckCircleSolid = createIconWrapper(CheckCircleIconSolid);

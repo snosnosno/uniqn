@@ -120,6 +120,24 @@ export {
   validateAnnouncement
 } from './announcement';
 
+// 알림 관련 타입
+export type {
+  Notification,
+  NotificationCategory,
+  NotificationType,
+  NotificationPriority,
+  NotificationActionType,
+  NotificationAction,
+  NotificationSettings,
+  NotificationFilter,
+  NotificationStats,
+  NotificationCreateInput
+} from './notification';
+
+export {
+  convertTimestamp
+} from './notification';
+
 // ============================================================================
 // 통합된 Person 타입 (NEW)
 // ============================================================================

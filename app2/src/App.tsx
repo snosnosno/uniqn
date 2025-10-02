@@ -42,6 +42,10 @@ import {
   coreChunk
 } from './utils/lazyChunks';
 
+// Notification Pages
+const NotificationTestPage = React.lazy(() => import('./pages/NotificationTestPage'));
+const AnnouncementsPage = React.lazy(() => import('./pages/AnnouncementsPage'));
+
 // Extract components from chunks
 const {
   ApprovalPage,
@@ -75,6 +79,9 @@ const {
   ProfilePage,
   SupportPage,
 } = coreChunk;
+
+// 알림 페이지 (Lazy Load)
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
 
 
 // A component to handle role-based redirection for authenticated users
@@ -163,7 +170,12 @@ const App: React.FC = () => {
                       <Route index element={<AppRedirect />} />
                       <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
                       <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
-                      
+
+                      {/* 알림 센터 */}
+                      <Route path="notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationsPage /></Suspense>} />
+                      <Route path="test-notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationTestPage /></Suspense>} />
+                      <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
+
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
                       <Route path="my-schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알림 시스템 테스트</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .category {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .category-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .notification-test {
+      background: #f9fafb;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #3b82f6;
+    }
+    .notification-test h4 {
+      margin: 0 0 5px 0;
+      color: #1f2937;
+    }
+    .notification-test p {
+      margin: 5px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .test-all-btn {
+      background: #10b981;
+      font-size: 16px;
+      padding: 12px 24px;
+      margin: 20px 0;
+    }
+    .test-all-btn:hover {
+      background: #059669;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .status.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .status.info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .badge.urgent { background: #fee2e2; color: #991b1b; }
+    .badge.high { background: #fed7aa; color: #9a3412; }
+    .badge.medium { background: #fef3c7; color: #92400e; }
+    .badge.low { background: #d1fae5; color: #065f46; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔔 T-HOLDEM 알림 시스템 테스트</h1>
+    <p>14가지 알림 타입을 테스트할 수 있습니다</p>
+    <p style="font-size: 14px; opacity: 0.9;">※ 로그인 후 사용하세요</p>
+  </div>
+
+  <div id="status"></div>
+
+  <button class="test-all-btn" onclick="testAllNotifications()">🚀 전체 알림 테스트 (14개)</button>
+
+  <!-- 시스템 알림 -->
+  <div class="category">
+    <div class="category-title">📢 시스템 알림 (3개)</div>
+
+    <div class="notification-test">
+      <h4>1. 구인공고 알림<span class="badge high">높음</span></h4>
+      <p>[신규 구인] 강남 홀덤펍 토너먼트</p>
+      <p>5월 15일 강남점에서 딜러 3명을 모집합니다</p>
+      <button onclick="testNotification('job_posting_announcement')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>2. 시스템 공지<span class="badge urgent">긴급</span></h4>
+      <p>[긴급 공지] 5월 휴무 안내</p>
+      <p>5월 5일 어린이날은 전체 휴무입니다</p>
+      <button onclick="testNotification('system_announcement')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>3. 앱 업데이트<span class="badge medium">보통</span></h4>
+      <p>[업데이트] 새로운 기능이 추가되었습니다</p>
+      <p>v0.2.3: 알림 센터 기능이 추가되었습니다</p>
+      <button onclick="testNotification('app_update')">테스트</button>
+    </div>
+  </div>
+
+  <!-- 근무 알림 -->
+  <div class="category">
+    <div class="category-title">💼 근무 알림 (3개)</div>
+
+    <div class="notification-test">
+      <h4>4. 지원서 접수<span class="badge medium">보통</span></h4>
+      <p>[지원 완료] 강남점 토너먼트 지원 완료</p>
+      <p>귀하의 지원서가 접수되었습니다</p>
+      <button onclick="testNotification('job_application')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>5. 스태프 확정<span class="badge high">높음</span></h4>
+      <p>[확정] 5월 15일 강남점 스태프 확정</p>
+      <p>축하합니다! 스태프로 확정되었습니다</p>
+      <button onclick="testNotification('staff_approval')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>6. 스태프 거절<span class="badge medium">보통</span></h4>
+      <p>[거절] 5월 15일 강남점 지원 불승인</p>
+      <p>아쉽지만 이번에는 선정되지 못했습니다</p>
+      <button onclick="testNotification('staff_rejection')">테스트</button>
+    </div>
+  </div>
+
+  <!-- 일정 알림 -->
+  <div class="category">
+    <div class="category-title">📅 일정 알림 (3개)</div>
+
+    <div class="notification-test">
+      <h4>7. 일정 리마인더<span class="badge high">높음</span></h4>
+      <p>[리마인더] 1시간 후 근무 시작</p>
+      <p>오후 6시부터 강남점에서 근무가 시작됩니다</p>
+      <button onclick="testNotification('schedule_reminder')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>8. 일정 변경<span class="badge urgent">긴급</span></h4>
+      <p>[일정 변경] 5월 15일 근무 시간 변경</p>
+      <p>근무 시작 시간이 오후 5시로 변경되었습니다</p>
+      <button onclick="testNotification('schedule_change')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>9. 출석 리마인더<span class="badge high">높음</span></h4>
+      <p>[출석 체크] 출석 확인을 해주세요</p>
+      <p>아직 출석 체크를 하지 않으셨습니다</p>
+      <button onclick="testNotification('attendance_reminder')">테스트</button>
+    </div>
+  </div>
+
+  <!-- 급여 알림 -->
+  <div class="category">
+    <div class="category-title">💰 급여 알림 (2개)</div>
+
+    <div class="notification-test">
+      <h4>10. 급여 지급<span class="badge high">높음</span></h4>
+      <p>[급여 지급] 5월 급여가 지급되었습니다</p>
+      <p>총 1,500,000원이 입금되었습니다</p>
+      <button onclick="testNotification('salary_notification')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>11. 보너스 지급<span class="badge high">높음</span></h4>
+      <p>[보너스 지급] 성과급이 지급되었습니다</p>
+      <p>우수 근무로 200,000원이 추가 지급되었습니다</p>
+      <button onclick="testNotification('bonus_notification')">테스트</button>
+    </div>
+  </div>
+
+  <!-- 소셜 알림 -->
+  <div class="category">
+    <div class="category-title">💬 소셜 알림 (3개)</div>
+
+    <div class="notification-test">
+      <h4>12. 댓글<span class="badge low">낮음</span></h4>
+      <p>[댓글] 홍길동님이 댓글을 남겼습니다</p>
+      <p>좋은 정보 감사합니다!</p>
+      <button onclick="testNotification('comment')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>13. 좋아요<span class="badge low">낮음</span></h4>
+      <p>[좋아요] 김철수님이 좋아요를 눌렀습니다</p>
+      <p>귀하의 게시글에 좋아요가 추가되었습니다</p>
+      <button onclick="testNotification('like')">테스트</button>
+    </div>
+
+    <div class="notification-test">
+      <h4>14. 멘션<span class="badge medium">보통</span></h4>
+      <p>[멘션] 이영희님이 회원님을 언급했습니다</p>
+      <p>@홍길동 이 정보 참고하세요</p>
+      <button onclick="testNotification('mention')">테스트</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+    import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+
+    // Firebase 설정
+    const firebaseConfig = {
+      apiKey: "AIzaSyDa38L08uj0VtJdQBYfWCIZA3j_B6K8xFc",
+      authDomain: "tholdem-ebc18.firebaseapp.com",
+      projectId: "tholdem-ebc18",
+      storageBucket: "tholdem-ebc18.firebasestorage.app",
+      messagingSenderId: "390692126472",
+      appId: "1:390692126472:web:b88bbc6c6f5c5fcce1fc98"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 알림 데이터 정의
+    const notificationData = {
+      job_posting_announcement: {
+        type: 'job_posting_announcement',
+        category: 'system',
+        priority: 'high',
+        title: '[신규 구인] 강남 홀덤펍 토너먼트',
+        body: '5월 15일 강남점에서 딜러 3명을 모집합니다',
+        action: { type: 'navigate', target: '/app/my-schedule' },
+        relatedId: 'test-job-posting-123',
+        data: {}
+      },
+      system_announcement: {
+        type: 'system_announcement',
+        category: 'system',
+        priority: 'urgent',
+        title: '[긴급 공지] 5월 휴무 안내',
+        body: '5월 5일 어린이날은 전체 휴무입니다',
+        action: { type: 'navigate', target: '/app/announcements' },
+        relatedId: null,
+        data: {}
+      },
+      app_update: {
+        type: 'app_update',
+        category: 'system',
+        priority: 'medium',
+        title: '[업데이트] 새로운 기능이 추가되었습니다',
+        body: 'v0.2.3: 알림 센터 기능이 추가되었습니다',
+        action: { type: 'navigate', target: '/app/settings' },
+        relatedId: null,
+        data: { version: '0.2.3' }
+      },
+      job_application: {
+        type: 'job_application',
+        category: 'work',
+        priority: 'medium',
+        title: '[지원 완료] 강남점 토너먼트 지원 완료',
+        body: '귀하의 지원서가 접수되었습니다',
+        action: { type: 'navigate', target: '/app/my-applications' },
+        relatedId: 'test-application-456',
+        data: {}
+      },
+      staff_approval: {
+        type: 'staff_approval',
+        category: 'work',
+        priority: 'high',
+        title: '[확정] 5월 15일 강남점 스태프 확정',
+        body: '축하합니다! 스태프로 확정되었습니다',
+        action: { type: 'navigate', target: '/app/my-schedule' },
+        relatedId: 'test-event-789',
+        data: { eventDate: '2025-05-15' }
+      },
+      staff_rejection: {
+        type: 'staff_rejection',
+        category: 'work',
+        priority: 'medium',
+        title: '[거절] 5월 15일 강남점 지원 불승인',
+        body: '아쉽지만 이번에는 선정되지 못했습니다',
+        action: { type: 'navigate', target: '/app/job-postings' },
+        relatedId: 'test-event-790',
+        data: {}
+      },
+      schedule_reminder: {
+        type: 'schedule_reminder',
+        category: 'schedule',
+        priority: 'high',
+        title: '[리마인더] 1시간 후 근무 시작',
+        body: '오후 6시부터 강남점에서 근무가 시작됩니다',
+        action: { type: 'navigate', target: '/app/my-schedule' },
+        relatedId: 'test-schedule-111',
+        data: { scheduleTime: '18:00' }
+      },
+      schedule_change: {
+        type: 'schedule_change',
+        category: 'schedule',
+        priority: 'urgent',
+        title: '[일정 변경] 5월 15일 근무 시간 변경',
+        body: '근무 시작 시간이 오후 5시로 변경되었습니다',
+        action: { type: 'navigate', target: '/app/my-schedule' },
+        relatedId: 'test-schedule-222',
+        data: { oldTime: '18:00', newTime: '17:00' }
+      },
+      attendance_reminder: {
+        type: 'attendance_reminder',
+        category: 'schedule',
+        priority: 'high',
+        title: '[출석 체크] 출석 확인을 해주세요',
+        body: '아직 출석 체크를 하지 않으셨습니다',
+        action: { type: 'navigate', target: '/app/attendance' },
+        relatedId: 'test-attendance-333',
+        data: {}
+      },
+      salary_notification: {
+        type: 'salary_notification',
+        category: 'finance',
+        priority: 'high',
+        title: '[급여 지급] 5월 급여가 지급되었습니다',
+        body: '총 1,500,000원이 입금되었습니다',
+        action: { type: 'navigate', target: '/app/payroll' },
+        relatedId: 'test-salary-444',
+        data: { amount: 1500000, month: '2025-05' }
+      },
+      bonus_notification: {
+        type: 'bonus_notification',
+        category: 'finance',
+        priority: 'high',
+        title: '[보너스 지급] 성과급이 지급되었습니다',
+        body: '우수 근무로 200,000원이 추가 지급되었습니다',
+        action: { type: 'navigate', target: '/app/payroll' },
+        relatedId: 'test-bonus-555',
+        data: { amount: 200000 }
+      },
+      comment: {
+        type: 'comment',
+        category: 'social',
+        priority: 'low',
+        title: '[댓글] 홍길동님이 댓글을 남겼습니다',
+        body: '좋은 정보 감사합니다!',
+        action: { type: 'navigate', target: '/app/posts/test-post-666' },
+        relatedId: 'test-post-666',
+        data: { commenterId: 'user-123', commenterName: '홍길동' }
+      },
+      like: {
+        type: 'like',
+        category: 'social',
+        priority: 'low',
+        title: '[좋아요] 김철수님이 좋아요를 눌렀습니다',
+        body: '귀하의 게시글에 좋아요가 추가되었습니다',
+        action: { type: 'navigate', target: '/app/posts/test-post-777' },
+        relatedId: 'test-post-777',
+        data: { likerId: 'user-456', likerName: '김철수' }
+      },
+      mention: {
+        type: 'mention',
+        category: 'social',
+        priority: 'medium',
+        title: '[멘션] 이영희님이 회원님을 언급했습니다',
+        body: '@홍길동 이 정보 참고하세요',
+        action: { type: 'navigate', target: '/app/posts/test-post-888' },
+        relatedId: 'test-post-888',
+        data: { mentionerId: 'user-789', mentionerName: '이영희' }
+      }
+    };
+
+    // 단일 알림 테스트
+    window.testNotification = async function(type) {
+      const user = auth.currentUser;
+      if (!user) {
+        showStatus('error', '❌ 로그인이 필요합니다. 앱에서 로그인 후 다시 시도하세요.');
+        return;
+      }
+
+      try {
+        const data = notificationData[type];
+        await addDoc(collection(db, 'notifications'), {
+          userId: user.uid,
+          ...data,
+          isRead: false,
+          createdAt: serverTimestamp()
+        });
+        showStatus('success', `✅ ${data.title} - 알림이 생성되었습니다!`);
+      } catch (error) {
+        showStatus('error', `❌ 오류: ${error.message}`);
+      }
+    };
+
+    // 전체 알림 테스트
+    window.testAllNotifications = async function() {
+      const user = auth.currentUser;
+      if (!user) {
+        showStatus('error', '❌ 로그인이 필요합니다. 앱에서 로그인 후 다시 시도하세요.');
+        return;
+      }
+
+      showStatus('info', '🚀 14개의 알림을 생성하는 중...');
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const [type, data] of Object.entries(notificationData)) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            userId: user.uid,
+            ...data,
+            isRead: false,
+            createdAt: serverTimestamp()
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to create ${type}:`, error);
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        showStatus('success', `🎉 성공! ${successCount}개의 알림이 생성되었습니다. 앱에서 확인하세요!`);
+      } else {
+        showStatus('error', `⚠️ ${successCount}개 성공, ${errorCount}개 실패`);
+      }
+    };
+
+    function showStatus(type, message) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+      setTimeout(() => {
+        statusDiv.innerHTML = '';
+      }, 5000);
+    }
+
+    // 초기 상태 확인
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        showStatus('success', `✅ 로그인됨: ${user.email || user.uid}`);
+      } else {
+        showStatus('info', 'ℹ️ 로그인이 필요합니다. 앱에서 로그인 후 이 페이지를 새로고침하세요.');
+      }
+    });
+  </script>
+</body>
+</html>

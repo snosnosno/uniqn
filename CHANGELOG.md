@@ -12,12 +12,88 @@
   - Web Worker 기반 급여 계산 기능 테스트 및 안정화
   - 스마트 캐싱 및 가상화 기능 성능 검증
 - **신규 기능**:
-  - 실시간 알림 시스템
   - 관리자 대시보드 통계 기능
   - QR 코드를 이용한 자동 출퇴근 시스템
+  - 알림 설정 페이지 (사용자별 알림 ON/OFF)
 - **품질 개선**:
   - E2E 테스트 커버리지 확대 (65% → 80%)
   - 모바일 최적화 및 PWA 고도화
+
+## [0.2.3] - 2025-10-02
+
+### 📱 실시간 알림 센터 시스템 구현 완료
+
+#### 알림 시스템 핵심 기능
+- **14개 알림 타입 지원**: 시스템(3), 근무(3), 일정(3), 급여(2), 소셜(3)
+- **실시간 알림 관리**: Firestore 실시간 구독으로 즉시 알림 표시
+- **확장 가능한 아키텍처**: 3단계 프로세스로 새 알림 타입 추가 용이
+- **완벽한 타입 안정성**: TypeScript strict mode 100% 준수
+
+#### 구현된 컴포넌트
+- **NotificationBadge**: 읽지 않은 알림 개수 배지 (count/dot 모드)
+- **NotificationItem**: 개별 알림 아이템 (아이콘, 색상, 상대 시간)
+- **NotificationDropdown**: 헤더 드롭다운 (최근 5개 미리보기)
+- **NotificationsPage**: 전체 알림 센터 페이지 (탭, 필터링, 일괄 작업)
+
+#### 데이터 관리
+- **useNotifications Hook**: Firestore 실시간 구독 및 CRUD 작업
+- **Firestore 최적화**: 인덱스, Batch 처리, 최대 50개 제한
+- **React 최적화**: useMemo, useCallback으로 성능 최적화
+
+#### 다국어 지원
+- **한국어/영어**: 35개 키 완전 번역
+- **확장 가능**: 새 언어 추가 용이
+
+#### 기술 세부사항
+- **코드량**: 1,414줄 (7개 파일)
+- **TypeScript 에러**: 0개
+- **ESLint 경고**: 0개 (알림 관련)
+- **번들 크기**: +8.46 KB (최적화됨)
+
+#### 지원하는 알림 타입
+1. **구인공고 공지** (job_posting_announcement) - 완전 구현 ✅
+2. **지원서 도착** (job_application) - 부분 구현 ⚠️
+3. **스태프 승인** (staff_approval) - 미연결 ⚠️
+4. **스태프 거절** (staff_rejection) - 미구현 ❌
+5. **일정 리마인더** (schedule_reminder) - 부분 구현 ⚠️
+6. **일정 변경** (schedule_change) - 미구현 ❌
+7. **출석 알림** (attendance_reminder) - 부분 구현 ⚠️
+8. **급여 지급** (salary_notification) - 부분 구현 ⚠️
+9. **보너스** (bonus_notification) - 미구현 ❌
+10. **시스템 공지** (system_announcement) - 미구현 ❌
+11. **앱 업데이트** (app_update) - 미구현 ❌
+12. **댓글** (comment) - 향후 확장 🔮
+13. **좋아요** (like) - 향후 확장 🔮
+14. **멘션** (mention) - 향후 확장 🔮
+
+#### 향후 확장 계획
+- **Phase 2**: 알림 설정 (사용자별 ON/OFF, 카테고리별 설정)
+- **Phase 3**: 소셜 알림 (댓글, 좋아요, 멘션)
+- **Phase 4**: 고급 기능 (그룹핑, 검색, 아카이브, 통계)
+
+### 추가
+- `src/types/notification.ts` - 알림 타입 시스템 (169줄)
+- `src/config/notificationConfig.ts` - 알림 설정 중앙화 (186줄)
+- `src/hooks/useNotifications.ts` - Firestore 실시간 구독 Hook (357줄)
+- `src/components/notifications/NotificationBadge.tsx` - 알림 배지 (70줄)
+- `src/components/notifications/NotificationItem.tsx` - 알림 아이템 (224줄)
+- `src/components/notifications/NotificationDropdown.tsx` - 헤더 드롭다운 (202줄)
+- `src/pages/NotificationsPage.tsx` - 알림 센터 페이지 (208줄)
+- `docs/NOTIFICATION_SYSTEM.md` - 알림 시스템 완료 문서
+
+### 변경
+- `src/components/layout/HeaderMenu.tsx` - NotificationDropdown 통합
+- `src/App.tsx` - `/app/notifications` 라우트 추가
+- `src/components/Icons/ReactIconsReplacement.tsx` - FaBell 아이콘 추가
+- `public/locales/ko/translation.json` - 한국어 알림 번역 (35개 키)
+- `public/locales/en/translation.json` - 영어 알림 번역 (35개 키)
+
+### 기술 지표
+- TypeScript 에러: 0개 (strict mode)
+- ESLint 경고: 0개 (알림 관련)
+- 프로덕션 빌드: 성공 ✅
+- 번들 크기: 299.92 KB (+8.46 KB)
+- CSS 크기: 13.88 KB (+110 B)
 
 ## [0.2.2] - 2025-09-19
 
