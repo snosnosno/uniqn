@@ -21,6 +21,7 @@ interface SendAnnouncementRequest {
   title: string;
   message: string; // 클라이언트에서 전달되는 필드명
   targetStaffIds: string[];
+  jobPostingTitle?: string; // 공고 제목 (알림 제목 prefix용)
 }
 
 /**
@@ -74,7 +75,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
     }
 
     // 3. 입력 데이터 검증
-    const { jobPostingId, title, message: announcementMessage, targetStaffIds } = data;
+    const { jobPostingId, title, message: announcementMessage, targetStaffIds, jobPostingTitle } = data;
 
     if (!jobPostingId || !title || !announcementMessage || !targetStaffIds || targetStaffIds.length === 0) {
       throw new functions.https.HttpsError(
@@ -109,6 +110,10 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
       }
 
       const jobPosting = jobPostingDoc.data();
+
+      // 공고 제목으로 알림 제목 prefix 생성
+      const actualJobPostingTitle = jobPostingTitle || jobPosting?.title || '공고';
+      const notificationTitle = `[${actualJobPostingTitle}] ${title}`;
 
       // 5. 발신자 정보 조회
       const senderDoc = await db.collection('users').doc(userId).get();
@@ -189,7 +194,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
 
         const fcmMessage = {
           notification: {
-            title: `📢 ${title}`,
+            title: `📢 ${notificationTitle}`,
             body: announcementMessage,
           },
           data: {
@@ -271,7 +276,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
           type: 'job_posting_announcement',
           category: 'system',
           priority: 'high',
-          title: `📢 ${title}`,
+          title: `📢 ${notificationTitle}`,
           body: announcementMessage,
           action: {
             type: 'navigate',
