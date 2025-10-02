@@ -523,22 +523,9 @@ export const useTables = () => {
       // 참가자를 칩 수 기준으로 정렬 (내림차순)
       const sortedParticipants = [...activeParticipants].sort((a, b) => (b.chips || 0) - (a.chips || 0));
 
-      // 테이블 개수 기반 그룹 분류 + 나머지 참가자
-      const totalPlayers = sortedParticipants.length;
       const totalTables = openTables.length;
 
-      // 각 테이블에 상위/중간/하위 1명씩 필수 배치용 그룹
-      const topGroup = sortedParticipants.slice(0, totalTables); // 상위 N명 (N = 테이블 수)
-      const middleStart = Math.floor(totalPlayers / 3);
-      const middleGroup = sortedParticipants.slice(middleStart, middleStart + totalTables); // 중간 N명
-      const bottomGroup = sortedParticipants.slice(-totalTables); // 하위 N명
-
-      // 나머지 참가자들 (필수 배치에 포함되지 않은 사람들)
-      const remainingParticipants = sortedParticipants.filter(p =>
-        !topGroup.includes(p) && !middleGroup.includes(p) && !bottomGroup.includes(p)
-      );
-
-      logger.info(`💎 그룹 분류 완료: 상위 ${topGroup.length}명, 중간 ${middleGroup.length}명, 하위 ${bottomGroup.length}명 (각 테이블 1명씩), 나머지 ${remainingParticipants.length}명`, {
+      logger.info(`💎 스네이크 드래프트 준비: ${sortedParticipants.length}명을 ${totalTables}개 테이블에 배치`, {
         component: 'useTables'
       });
 
@@ -561,136 +548,71 @@ export const useTables = () => {
         chipGroups: { top: 0, middle: 0, bottom: 0 }
       }));
 
-      // 간단하고 직관적인 칩 균형 헬퍼 함수
-      const findBestTableForBalance = (tables: TableState[], participantChips: number): TableState | null => {
-        const availableTables = tables.filter(table => table.participants.length < table.maxSeats);
-        if (availableTables.length === 0) return null;
 
-        // 1단계: 인원수가 가장 적은 테이블들 찾기 (균등 분배 우선)
-        const minPlayers = Math.min(...availableTables.map(t => t.participants.length));
-        const tablesWithMinPlayers = availableTables.filter(t => t.participants.length === minPlayers);
-
-        if (tablesWithMinPlayers.length === 1) {
-          return tablesWithMinPlayers[0] || null;
-        }
-
-        // 2단계: 각 테이블에 참가자를 배치했을 때의 표준편차 계산 (단순화)
-        const tableScores = tablesWithMinPlayers.map(table => {
-          // 이 테이블에 참가자를 배치했을 때의 새로운 칩 총량
-          const newChips = table.totalChips + participantChips;
-
-          // 모든 테이블의 새로운 칩 분포 계산
-          const otherTables = tables.filter(t => t.id !== table.id);
-          const allNewChips = [...otherTables.map(t => t.totalChips), newChips];
-
-          // 평균 계산
-          const avgChips = allNewChips.reduce((sum, chips) => sum + chips, 0) / allNewChips.length;
-
-          // 표준편차 계산 (간단한 방식)
-          const variance = allNewChips.reduce((sum, chips) => sum + Math.pow(chips - avgChips, 2), 0) / allNewChips.length;
-          const standardDeviation = Math.sqrt(variance);
-
-          return {
-            table,
-            standardDeviation,
-            newChips
-          };
-        });
-
-        // 3단계: 표준편차가 가장 낮은 테이블 선택
-        const minStdDev = Math.min(...tableScores.map(score => score.standardDeviation));
-        const bestTables = tableScores.filter(score => score.standardDeviation === minStdDev);
-
-        // 4단계: 동일한 표준편차면 랜덤 선택
-        if (bestTables.length > 1) {
-          const randomIndex = Math.floor(Math.random() * bestTables.length);
-          return bestTables[randomIndex]?.table || null;
-        }
-
-        return bestTables[0]?.table || null;
-      };
-
-      // 균형 검증 헬퍼 함수
-      const isPlayerCountBalanced = (tables: TableState[]): boolean => {
-        const playerCounts = tables.map(t => t.participants.length);
-        const maxDiff = Math.max(...playerCounts) - Math.min(...playerCounts);
-        return maxDiff <= 1;
-      };
-
-      logger.info(`🎯 Guaranteed Balance 알고리즘 시작: 필수 분산 배치 + 균형 최적화`, {
+      logger.info(`🎯 스네이크 드래프트 알고리즘: 칩 순서대로 균등 배치 (인원 균형 보장)`, {
         component: 'useTables'
       });
 
-      // 1단계: 필수 분산 배치 - 각 테이블에 상위/중간/하위 1명씩
-      logger.info(`📍 1단계: 필수 분산 배치 (각 테이블에 상위/중간/하위 1명씩)`, {
+      // 테이블 인덱스를 랜덤으로 섞기 (예: [0,1,2,3,4] → [2,4,0,3,1])
+      const randomTableIndices = shuffleArray(tableStates.map((_, idx) => idx));
+      logger.info(`🎲 랜덤 테이블 순서: ${randomTableIndices.map(idx => `T${tableStates[idx]?.tableNumber || idx + 1}`).join('-')}`, {
         component: 'useTables'
       });
 
-      for (let i = 0; i < totalTables; i++) {
-        const table = tableStates[i];
+      // 전체 참가자를 칩 내림차순으로 정렬 (이미 sortedParticipants에 정렬되어 있음)
+      // 스네이크 드래프트로 한 번에 배치 - 자동으로 인원 균형 보장
+      logger.info(`📍 전체 ${sortedParticipants.length}명을 스네이크 드래프트로 배치`, {
+        component: 'useTables'
+      });
+
+      let tableIndex = 0;
+      let forward = true;
+
+      for (let i = 0; i < sortedParticipants.length; i++) {
+        const participant = sortedParticipants[i];
+        if (!participant) continue;
+
+        // 랜덤 테이블 순서에 따라 실제 테이블 선택
+        const actualTableIndex = randomTableIndices[tableIndex];
+        if (actualTableIndex === undefined) continue;
+
+        const table = tableStates[actualTableIndex];
         if (!table) continue;
 
-        // 상위 그룹 배치
-        const topParticipant = topGroup[i];
-        if (topParticipant) {
-          table.participants.push(topParticipant.id);
-          table.totalChips += topParticipant.chips || 0;
+        table.participants.push(participant.id);
+        table.totalChips += participant.chips || 0;
+
+        // 그룹별 카운터 (상위 25%, 중간 50%, 하위 25%)
+        const participantIndex = i;
+        const totalCount = sortedParticipants.length;
+        const top25Index = Math.ceil(totalCount * 0.25);
+        const bottom25Index = Math.floor(totalCount * 0.75);
+
+        if (participantIndex < top25Index) {
           table.chipGroups.top++;
-          logger.debug(`필수배치 - 상위 ${topParticipant.name} (${(topParticipant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
-            component: 'useTables'
-          });
-        }
-
-        // 중간 그룹 배치
-        const middleParticipant = middleGroup[i];
-        if (middleParticipant) {
-          table.participants.push(middleParticipant.id);
-          table.totalChips += middleParticipant.chips || 0;
-          table.chipGroups.middle++;
-          logger.debug(`필수배치 - 중간 ${middleParticipant.name} (${(middleParticipant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
-            component: 'useTables'
-          });
-        }
-
-        // 하위 그룹 배치
-        const bottomParticipant = bottomGroup[i];
-        if (bottomParticipant) {
-          table.participants.push(bottomParticipant.id);
-          table.totalChips += bottomParticipant.chips || 0;
+        } else if (participantIndex >= bottom25Index) {
           table.chipGroups.bottom++;
-          logger.debug(`필수배치 - 하위 ${bottomParticipant.name} (${(bottomParticipant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
-            component: 'useTables'
-          });
+        } else {
+          table.chipGroups.middle++;
         }
-      }
 
-      // 2단계: 나머지 참가자 균형 배치
-      logger.info(`⚖️ 2단계: 나머지 ${remainingParticipants.length}명 균형 배치 (표준편차 최소화)`, {
-        component: 'useTables'
-      });
+        logger.debug(`스네이크배치 [${i + 1}/${totalCount}] ${participant.name} (${(participant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
+          component: 'useTables'
+        });
 
-      for (const participant of remainingParticipants) {
-        const targetTable = findBestTableForBalance(tableStates, participant.chips || 0);
-        if (targetTable && participant) {
-          targetTable.participants.push(participant.id);
-          targetTable.totalChips += participant.chips || 0;
-
-          // 참가자의 칩 레벨에 따라 그룹 카운터 증가
-          const participantChips = participant.chips || 0;
-          const topThreshold = topGroup[topGroup.length - 1]?.chips || 0;
-          const bottomThreshold = bottomGroup[0]?.chips || 0;
-
-          if (participantChips >= topThreshold) {
-            targetTable.chipGroups.top++;
-          } else if (participantChips <= bottomThreshold) {
-            targetTable.chipGroups.bottom++;
-          } else {
-            targetTable.chipGroups.middle++;
+        // 스네이크 이동 로직 (랜덤 순서 배열 내에서 이동)
+        if (forward) {
+          tableIndex++;
+          if (tableIndex >= totalTables) {
+            tableIndex = totalTables - 1;
+            forward = false;
           }
-
-          logger.debug(`균형배치 - ${participant.name} (${participantChips.toLocaleString()}칩) → 테이블 ${targetTable.tableNumber} (인원: ${targetTable.participants.length}명, 총칩: ${targetTable.totalChips.toLocaleString()})`, {
-            component: 'useTables'
-          });
+        } else {
+          tableIndex--;
+          if (tableIndex < 0) {
+            tableIndex = 0;
+            forward = true;
+          }
         }
       }
 
@@ -747,11 +669,11 @@ export const useTables = () => {
 
       // Smart Balance 균형 결과 자세히 로깅
       // 균형 검증
-      const playerCountBalanced = isPlayerCountBalanced(tableStates);
       const playerCountDiff = maxPlayers - minPlayers;
+      const playerCountBalanced = playerCountDiff <= 1;
 
       const chipPercentDiff = avgChips > 0 ? (chipRange / avgChips * 100).toFixed(1) : '0';
-      logger.info(`🎯 Guaranteed Balance 칩 균형 재배치 완료 (필수 분산 + 표준편차 최적화)`, {
+      logger.info(`🎯 스네이크 드래프트 칩 균형 재배치 완료 (칩 순서 기반 자동 균등 배치)`, {
         component: 'useTables'
       });
       logger.info(`📊 균형 성과 분석:`, {
