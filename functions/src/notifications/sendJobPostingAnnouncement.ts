@@ -19,7 +19,7 @@ const db = admin.firestore();
 interface SendAnnouncementRequest {
   jobPostingId: string;
   title: string;
-  message: string;
+  message: string; // 클라이언트에서 전달되는 필드명
   targetStaffIds: string[];
 }
 
@@ -74,9 +74,9 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
     }
 
     // 3. 입력 데이터 검증
-    const { jobPostingId, title, message, targetStaffIds } = data;
+    const { jobPostingId, title, message: announcementMessage, targetStaffIds } = data;
 
-    if (!jobPostingId || !title || !message || !targetStaffIds || targetStaffIds.length === 0) {
+    if (!jobPostingId || !title || !announcementMessage || !targetStaffIds || targetStaffIds.length === 0) {
       throw new functions.https.HttpsError(
         'invalid-argument',
         '필수 입력값이 누락되었습니다.'
@@ -90,7 +90,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
       );
     }
 
-    if (message.length > 500) {
+    if (announcementMessage.length > 500) {
       throw new functions.https.HttpsError(
         'invalid-argument',
         '공지 내용은 최대 500자까지 입력 가능합니다.'
@@ -122,7 +122,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
         id: announcementId,
         jobPostingId,
         title,
-        message,
+        message: announcementMessage,
         createdBy: userId,
         createdByName: senderName,
         targetStaffIds,
@@ -187,10 +187,10 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
       for (let i = 0; i < tokens.length; i += batchSize) {
         const batchTokens = tokens.slice(i, i + batchSize);
 
-        const message = {
+        const fcmMessage = {
           notification: {
             title: `📢 ${title}`,
-            body: message,
+            body: announcementMessage,
           },
           data: {
             type: 'job_posting_announcement',
@@ -217,7 +217,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
         };
 
         try {
-          const response = await admin.messaging().sendEachForMulticast(message);
+          const response = await admin.messaging().sendEachForMulticast(fcmMessage);
 
           functions.logger.info(`FCM 배치 ${i / batchSize + 1} 전송 결과`, {
             successCount: response.successCount,
@@ -272,7 +272,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
           category: 'system',
           priority: 'high',
           title: `📢 ${title}`,
-          body: message,
+          body: announcementMessage,
           action: {
             type: 'navigate',
             target: `/app/admin/job-postings/${jobPostingId}`,
@@ -290,13 +290,23 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
       await notificationBatch.commit();
 
       // 10. 공지 문서 업데이트
-      const sendResult = {
+      const sendResult: {
+        successIds: string[];
+        failedIds: string[];
+        successCount: number;
+        failedCount: number;
+        errors?: Array<{ userId: string; error: string }>;
+      } = {
         successIds,
         failedIds,
         successCount: successIds.length,
         failedCount: failedIds.length,
-        errors: errors.length > 0 ? errors : undefined,
       };
+
+      // errors가 있을 때만 필드 추가
+      if (errors.length > 0) {
+        sendResult.errors = errors;
+      }
 
       await announcementRef.update({
         status: successIds.length > 0 ? 'sent' : 'failed',

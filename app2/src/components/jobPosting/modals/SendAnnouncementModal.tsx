@@ -40,7 +40,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
 
   // 폼 상태
   const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
+  const [announcementMessage, setAnnouncementMessage] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
 
   // 수신 대상 스태프 ID 목록
@@ -72,7 +72,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
   const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     if (value.length <= 500) {
-      setMessage(value);
+      setAnnouncementMessage(value);
       setErrors([]);
     }
   }, []);
@@ -83,7 +83,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
     const validation = validateAnnouncement({
       jobPostingId: jobPosting.id,
       title: title.trim(),
-      message: message.trim(),
+      message: announcementMessage.trim(),
       targetStaffIds
     });
 
@@ -94,23 +94,23 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
     }
 
     try {
-      await onSend(title.trim(), message.trim(), targetStaffIds);
+      await onSend(title.trim(), announcementMessage.trim(), targetStaffIds);
 
       // 성공 시 폼 초기화 및 모달 닫기
       setTitle('');
-      setMessage('');
+      setAnnouncementMessage('');
       setErrors([]);
       onClose();
     } catch (error) {
       logger.error('공지 전송 실패', error as Error);
       setErrors(['공지 전송에 실패했습니다. 다시 시도해주세요.']);
     }
-  }, [jobPosting.id, title, message, targetStaffIds, onSend, onClose]);
+  }, [jobPosting.id, title, announcementMessage, targetStaffIds, onSend, onClose]);
 
   // 취소 핸들러
   const handleCancel = useCallback(() => {
     setTitle('');
-    setMessage('');
+    setAnnouncementMessage('');
     setErrors([]);
     onClose();
   }, [onClose]);
@@ -197,7 +197,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
             </label>
             <textarea
               id="announcement-message"
-              value={message}
+              value={announcementMessage}
               onChange={handleMessageChange}
               placeholder={t('jobPosting.announcement.messagePlaceholder')}
               disabled={isSending}
@@ -206,7 +206,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
               maxLength={500}
             />
             <div className="mt-1 text-xs text-gray-500 text-right">
-              {message.length} / 500
+              {announcementMessage.length} / 500
             </div>
           </div>
 
@@ -258,7 +258,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           </button>
           <button
             onClick={handleSend}
-            disabled={isSending || !title.trim() || !message.trim()}
+            disabled={isSending || !title.trim() || !announcementMessage.trim()}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSending ? (
