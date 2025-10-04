@@ -113,7 +113,7 @@ const handleNotificationAction = (data: any) => {
     switch (data.type) {
       case 'job_application':
         // 구인공고 페이지로 이동
-        window.location.href = `/job-postings/${data.jobPostingId}`;
+        window.location.href = `/job-postings/${data.eventId}`;
         break;
       case 'staff_approval':
         // 승인 관리 페이지로 이동

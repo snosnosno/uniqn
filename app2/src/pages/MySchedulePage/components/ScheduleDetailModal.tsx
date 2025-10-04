@@ -17,6 +17,7 @@ import { logger } from '../../../utils/logger';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UnifiedWorkLog } from '../../../types/unified/workLog';
 import ReportModal from '../../../components/modals/ReportModal';
+import ConfirmModal from '../../../components/modals/ConfirmModal';
 
 interface ScheduleDetailModalProps {
   isOpen: boolean;
@@ -41,6 +42,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   const [realTimeWorkLogs, setRealTimeWorkLogs] = useState<UnifiedWorkLog[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // JobPosting 데이터 조회
   useEffect(() => {
@@ -930,12 +933,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           
           {schedule.type === 'applied' && onCancel && (
             <button
-              onClick={() => {
-                if (window.confirm('지원을 취소하시겠습니까?')) {
-                  onCancel(schedule.id);
-                  onClose();
-                }
-              }}
+              onClick={() => setIsCancelConfirmOpen(true)}
               className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
             >
               지원 취소
@@ -990,6 +988,30 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             date: schedule?.date || getTodayString()
           }}
           reporterType="employee"
+        />
+
+        {/* Cancel Confirmation Modal */}
+        <ConfirmModal
+          isOpen={isCancelConfirmOpen}
+          onClose={() => !isCancelling && setIsCancelConfirmOpen(false)}
+          onConfirm={async () => {
+            if (schedule && onCancel) {
+              setIsCancelling(true);
+              try {
+                await onCancel(schedule.id);
+                onClose();
+              } finally {
+                setIsCancelling(false);
+                setIsCancelConfirmOpen(false);
+              }
+            }
+          }}
+          title="지원 취소"
+          message="지원을 취소하시겠습니까?"
+          confirmText="취소하기"
+          cancelText="돌아가기"
+          isDangerous={true}
+          isLoading={isCancelling}
         />
       </div>
     </div>

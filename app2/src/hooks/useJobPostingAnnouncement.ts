@@ -18,7 +18,7 @@ import type { SendAnnouncementRequest, SendAnnouncementResponse } from '../types
 export interface UseJobPostingAnnouncementReturn {
   /** 공지 전송 함수 */
   sendAnnouncement: (
-    jobPostingId: string,
+    eventId: string,
     title: string,
     message: string,
     targetStaffIds: string[],
@@ -45,17 +45,17 @@ export interface UseJobPostingAnnouncementReturn {
  * const handleSend = async () => {
  *   try {
  *     const result = await sendAnnouncement(
- *       jobPostingId,
+ *       eventId,
  *       '긴급 공지',
  *       '내일 행사가 1시간 앞당겨졌습니다.',
  *       staffIds
  *     );
  *
  *     if (result.success) {
- *       console.log('전송 성공:', result.result);
+ *       // 전송 성공 처리
  *     }
  *   } catch (error) {
- *     console.error('전송 실패:', error);
+ *     // 전송 실패 처리
  *   }
  * };
  * ```
@@ -71,7 +71,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
    */
   const sendAnnouncement = useCallback(
     async (
-      jobPostingId: string,
+      eventId: string,
       title: string,
       message: string,
       targetStaffIds: string[],
@@ -84,7 +84,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
       try {
         logger.info('공지 전송 시작', {
           data: {
-            jobPostingId,
+            eventId,
             title,
             targetCount: targetStaffIds.length,
             jobPostingTitle,
@@ -98,7 +98,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
         >(functions, 'sendJobPostingAnnouncement');
 
         const requestData: SendAnnouncementRequest = {
-          jobPostingId,
+          eventId,
           title,
           message,
           targetStaffIds,
@@ -142,7 +142,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
 
         logger.error('공지 전송 실패', err as Error, {
           data: {
-            jobPostingId,
+            eventId,
             targetCount: targetStaffIds.length,
           }
         });

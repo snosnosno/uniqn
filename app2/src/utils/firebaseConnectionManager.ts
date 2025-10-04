@@ -1,6 +1,7 @@
 import { collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 import { db } from '../firebase';
 
 // Global listener management
@@ -178,17 +179,19 @@ class FirebaseConnectionManager {
 
   private handleGlobalInternalAssertionError() {
     logger.debug('🔧 Attempting automatic recovery from Firebase internal error...', { component: 'firebaseConnectionManager' });
-    
+
     // 모든 리스너 정리
     this.cleanupAllListeners();
-    
+
     // 재시도 카운트 리셋
     this.resetRetryCount();
-    
-    // 사용자에게 새로고침 권장 메시지 표시
-    if (window.confirm('Firebase 연결에 문제가 발생했습니다. 페이지를 새로고침하시겠습니까?')) {
-      window.location.reload();
-    }
+
+    // 사용자에게 새로고침 권장 Toast 표시
+    toast.error(
+      'Firebase 연결에 문제가 발생했습니다. 페이지를 새로고침해주세요.',
+      undefined,
+      10000
+    );
   }
 }
 

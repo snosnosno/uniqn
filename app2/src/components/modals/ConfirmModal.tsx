@@ -1,6 +1,6 @@
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { FaExclamationTriangle } from '../../../components/Icons/ReactIconsReplacement';
+import { FaExclamationTriangle } from '../Icons/ReactIconsReplacement';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -11,8 +11,13 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   isDangerous?: boolean;
+  isLoading?: boolean;
 }
 
+/**
+ * 재사용 가능한 확인 모달 컴포넌트
+ * window.confirm()을 대체하는 사용자 친화적인 확인 다이얼로그
+ */
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   onClose,
@@ -21,17 +26,22 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message,
   confirmText = '확인',
   cancelText = '취소',
-  isDangerous = false
+  isDangerous = false,
+  isLoading = false
 }) => {
   if (!isOpen) return null;
 
   const handleConfirm = () => {
     onConfirm();
-    onClose();
+    if (!isLoading) {
+      onClose();
+    }
   };
 
   const handleCancel = () => {
-    onClose();
+    if (!isLoading) {
+      onClose();
+    }
   };
 
   return (
@@ -49,7 +59,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </div>
           <button
             onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={isLoading}
+            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -66,19 +77,28 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={isLoading}
+            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
-            className={`px-4 py-2 text-white rounded-lg transition-colors ${
+            disabled={isLoading}
+            className={`px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
               isDangerous
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            {confirmText}
+            {isLoading ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                처리 중...
+              </div>
+            ) : (
+              confirmText
+            )}
           </button>
         </div>
       </div>

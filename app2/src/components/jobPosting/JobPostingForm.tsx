@@ -66,7 +66,10 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     setTemplateDescription,
     handleSaveTemplate,
     handleLoadTemplate,
-    handleDeleteTemplate,
+    handleDeleteTemplateClick,
+    handleDeleteTemplateConfirm,
+    deleteConfirmTemplate,
+    setDeleteConfirmTemplate,
     openTemplateModal,
     closeTemplateModal,
     openLoadTemplateModal,
@@ -92,6 +95,11 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     const templateFormData = await handleLoadTemplate(template);
     setFormDataFromTemplate(templateFormData);
     return templateFormData;
+  };
+
+  const handleDeleteTemplateWrapper = async (templateId: string, templateName: string) => {
+    handleDeleteTemplateClick(templateId, templateName);
+    return true; // Return true to indicate the modal should wait for confirmation
   };
 
   const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
@@ -642,7 +650,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         templates={templates}
         templatesLoading={templatesLoading}
         onLoadTemplate={handleLoadTemplateWrapper}
-        onDeleteTemplate={handleDeleteTemplate}
+        onDeleteTemplate={handleDeleteTemplateWrapper}
       />
     </div>
   );

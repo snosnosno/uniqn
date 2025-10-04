@@ -13,6 +13,7 @@ import { useApplicantActions } from './hooks/useApplicantActions';
 import ApplicantCard from './ApplicantCard';
 import MultiSelectControls from './MultiSelectControls';
 import ApplicantActions from './ApplicantActions';
+import ConfirmModal from '../../modals/ConfirmModal';
 
 // Utils - hasMultipleSelections 제거 (더 이상 필요 없음)
 
@@ -38,7 +39,10 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     canEdit,
     isProcessing,
     handleConfirmApplicant,
-    handleCancelConfirmation
+    handleCancelConfirmation,
+    cancelConfirmModal,
+    setCancelConfirmModal,
+    performCancelConfirmation
   } = useApplicantActions({
     jobPosting,
     currentUser,
@@ -279,6 +283,19 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
           })}
         </div>
       )}
+
+      {/* 확정 취소 확인 모달 */}
+      <ConfirmModal
+        isOpen={cancelConfirmModal.isOpen}
+        onClose={() => !isProcessing && setCancelConfirmModal({ isOpen: false, applicant: null })}
+        onConfirm={performCancelConfirmation}
+        title="확정 취소"
+        message={`${cancelConfirmModal.applicant?.applicantName || ''}님의 확정을 취소하시겠습니까?\n\n⚠️ 주의사항:\n• 지원자 상태가 '대기중'으로 변경됩니다\n• 관련된 모든 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`}
+        confirmText="확정 취소"
+        cancelText="돌아가기"
+        isDangerous={true}
+        isLoading={isProcessing}
+      />
     </div>
   );
 };

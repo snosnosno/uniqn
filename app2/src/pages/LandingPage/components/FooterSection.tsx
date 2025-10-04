@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { toast } from '../../../utils/toast';
 
 const FooterSection: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -130,7 +131,7 @@ const FooterSection: React.FC = () => {
               <button
                 onClick={() => {
                   // 이용약관 모달 또는 페이지 이동
-                  alert('이용약관 페이지가 준비 중입니다.');
+                  toast.info('이용약관 페이지가 준비 중입니다.');
                 }}
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >
@@ -139,7 +140,7 @@ const FooterSection: React.FC = () => {
               <button
                 onClick={() => {
                   // 개인정보처리방침 모달 또는 페이지 이동
-                  alert('개인정보처리방침 페이지가 준비 중입니다.');
+                  toast.info('개인정보처리방침 페이지가 준비 중입니다.');
                 }}
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >

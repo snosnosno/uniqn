@@ -47,6 +47,7 @@ export const useJobBoard = () => {
   
   // 지원 관련 상태
   const [appliedJobs, setAppliedJobs] = useState<Map<string, string>>(new Map());
+  const [cancelConfirmPostId, setCancelConfirmPostId] = useState<string | null>(null);
   
   // 상세보기 모달 상태
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -402,53 +403,58 @@ export const useJobBoard = () => {
     }
   };
   
-  const handleCancelApplication = async (postId: string) => {
+  const handleCancelApplicationClick = (postId: string) => {
     if (!currentUser) {
       showError(t('jobBoard.alerts.loginRequired'));
       return;
     }
-    
-    if (window.confirm(t('jobBoard.alerts.confirmCancel'))) {
-      setIsProcessing(postId);
-      try {
-        // eventId와 postId 모두 지원 (마이그레이션 호환성)
-        const qEventId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', '==', postId));
-        const qPostId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', '==', postId));
-        
-        const [eventIdSnapshot, postIdSnapshot] = await Promise.all([
-          getDocs(qEventId).catch(() => ({ docs: [] })),
-          getDocs(qPostId).catch(() => ({ docs: [] }))
-        ]);
-        
-        // 두 쿼리 결과 병합
-        const allDocs = [...eventIdSnapshot.docs, ...postIdSnapshot.docs];
+    setCancelConfirmPostId(postId);
+  };
+
+  const handleCancelApplicationConfirm = async () => {
+    if (!currentUser || !cancelConfirmPostId) return;
+
+    setIsProcessing(cancelConfirmPostId);
+    try {
+      // eventId와 postId 모두 지원 (마이그레이션 호환성)
+      const qEventId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('eventId', '==', cancelConfirmPostId));
+      const qPostId = query(collection(db, 'applications'), where('applicantId', '==', currentUser.uid), where('postId', '==', cancelConfirmPostId));
+
+      const [eventIdSnapshot, postIdSnapshot] = await Promise.all([
+        getDocs(qEventId).catch(() => ({ docs: [] })),
+        getDocs(qPostId).catch(() => ({ docs: [] }))
+      ]);
+
+      // 두 쿼리 결과 병합
+      const allDocs = [...eventIdSnapshot.docs, ...postIdSnapshot.docs];
         const uniqueDocs = allDocs.filter((doc, index, arr) => 
           arr.findIndex(d => d.id === doc.id) === index
         );
         
-        const deletePromises: Promise<void>[] = [];
-        uniqueDocs.forEach((document) => {
-          deletePromises.push(deleteDoc(doc(db, 'applications', document.id)));
-        });
-        await Promise.all(deletePromises);
-        
-        showSuccess(t('jobBoard.alerts.cancelSuccess'));
-        setAppliedJobs(prev => {
-          const newMap = new Map(prev);
-          newMap.delete(postId);
-          return newMap;
-        });
-        
-        // 내 지원 현황 새로고침
-        if (activeTab === 'myApplications') {
-          fetchMyApplications();
-        }
-      } catch (error) {
-        logger.error('Error cancelling application: ', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
-        showError(t('jobBoard.alerts.cancelFailed'));
-      } finally {
-        setIsProcessing(null);
+      const deletePromises: Promise<void>[] = [];
+      uniqueDocs.forEach((document) => {
+        deletePromises.push(deleteDoc(doc(db, 'applications', document.id)));
+      });
+      await Promise.all(deletePromises);
+
+      showSuccess(t('jobBoard.alerts.cancelSuccess'));
+      setAppliedJobs(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(cancelConfirmPostId);
+        return newMap;
+      });
+
+      // 내 지원 현황 새로고침
+      if (activeTab === 'myApplications') {
+        fetchMyApplications();
       }
+
+      setCancelConfirmPostId(null);
+    } catch (error) {
+      logger.error('Error cancelling application: ', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
+      showError(t('jobBoard.alerts.cancelFailed'));
+    } finally {
+      setIsProcessing(null);
     }
   };
   
@@ -510,13 +516,16 @@ export const useJobBoard = () => {
     loadMoreRef,
     isDetailModalOpen,
     selectedDetailPost,
-    
+    cancelConfirmPostId,
+
     // 함수
     handleFilterChange,
     handleOpenApplyModal,
     handleMultipleAssignmentChange,
     handleApply,
-    handleCancelApplication,
+    handleCancelApplicationClick,
+    handleCancelApplicationConfirm,
+    setCancelConfirmPostId,
     handlePreQuestionComplete,
     fetchMyApplications,
     handleBackToPreQuestions,

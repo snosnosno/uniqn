@@ -5,6 +5,7 @@ import { createNewDateSpecificRequirement, PREDEFINED_ROLES, getRoleDisplayName 
 import Button from '../ui/Button';
 import DateDropdownSelector from '../time/DateDropdownSelector';
 import { Select } from '../common/Select';
+import { toast } from '../../utils/toast';
 
 interface DateSpecificRequirementsProps {
   requirements: DateSpecificRequirement[];
@@ -35,12 +36,12 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
     const availableDates = generateDateRange(startDate, endDate);
     const usedDates = requirements.map(req => req.date);
     const unusedDate = availableDates.find(date => !usedDates.includes(date));
-    
+
     if (unusedDate) {
       const newRequirement = createNewDateSpecificRequirement(unusedDate);
       onRequirementsChange([...requirements, newRequirement]);
     } else {
-      alert('시작 날짜와 종료 날짜 범위 내에 추가할 수 있는 날짜가 없습니다.');
+      toast.warning('시작 날짜와 종료 날짜 범위 내에 추가할 수 있는 날짜가 없습니다.');
     }
   };
 

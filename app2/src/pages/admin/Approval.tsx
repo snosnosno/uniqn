@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { db } from '../../firebase';
 import { callFunctionLazy } from '../../utils/firebase-dynamic';
+import { toast } from '../../utils/toast';
 
 interface PendingUser {
     id: string;
@@ -45,7 +46,7 @@ const ApprovalPage: React.FC = () => {
         } catch (err: unknown) {
             logger.error(`Error processing ${action} for ${targetUid}:`, err instanceof Error ? err : new Error(String(err)), { component: 'Approval' });
             // Use a more specific error message from the 'approvalPage' namespace
-            alert(t('approvalPage.processError', { action: t(action) }));
+            toast.error(t('approvalPage.processError', { action: t(action) }));
         }
     };
 

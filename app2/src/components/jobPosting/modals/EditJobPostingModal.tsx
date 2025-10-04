@@ -6,10 +6,11 @@ import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
 import Input from '../../ui/Input';
 import { Select } from '../../common/Select';
-import DateSpecificRequirementsNew from '../DateSpecificRequirementsNew'; 
+import DateSpecificRequirementsNew from '../DateSpecificRequirementsNew';
 import PreQuestionManager from '../PreQuestionManager';
 import TemplateModal from './TemplateModal';
 import LoadTemplateModal from './LoadTemplateModal';
+import { toast } from '../../../utils/toast';
 
 interface EditJobPostingModalProps {
   isOpen: boolean;
@@ -67,7 +68,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     setTemplateDescription,
     handleSaveTemplate,
     handleLoadTemplate,
-    handleDeleteTemplate,
+    handleDeleteTemplateClick,
+    handleDeleteTemplateConfirm,
+    deleteConfirmTemplate,
+    setDeleteConfirmTemplate,
     openTemplateModal,
     closeTemplateModal,
     openLoadTemplateModal,
@@ -82,11 +86,11 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await onUpdate(currentPost.id, formData);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
     }
   };
 
@@ -102,6 +106,11 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     const templateFormData = await handleLoadTemplate(template);
     setFormDataFromTemplate(templateFormData);
     return templateFormData;
+  };
+
+  const handleDeleteTemplateWrapper = async (templateId: string, templateName: string) => {
+    handleDeleteTemplateClick(templateId, templateName);
+    return true; // Return true to indicate the modal should wait for confirmation
   };
 
   if (!isOpen || !currentPost) return null;
@@ -653,7 +662,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
       templates={templates}
       templatesLoading={templatesLoading}
       onLoadTemplate={handleLoadTemplateWrapper}
-      onDeleteTemplate={handleDeleteTemplate}
+      onDeleteTemplate={handleDeleteTemplateWrapper}
     />
   </>
   );

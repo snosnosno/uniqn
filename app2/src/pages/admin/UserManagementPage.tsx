@@ -5,9 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import EditUserModal from '../../components/modals/EditUserModal';
+import ConfirmModal from '../../components/modals/ConfirmModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
 import { callFunctionLazy } from '../../utils/firebase-dynamic';
+import { toast } from '../../utils/toast';
 
 interface User {
   id: string;
@@ -25,6 +27,9 @@ const UserManagementPage: React.FC = () => {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -50,19 +55,27 @@ const UserManagementPage: React.FC = () => {
     return () => unsubscribe();
   }, [isAdmin, t]);
 
-  const handleDelete = async (userId: string) => {
-    if (!window.confirm(t('userManagement.confirmDelete'))) {
-        return;
-    }
-    
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
     setError(null);
+    setIsDeleting(true);
     try {
-        await callFunctionLazy('deleteUser', { uid: userId });
-        alert(t('userManagement.deleteSuccess'));
+        await callFunctionLazy('deleteUser', { uid: userToDelete.id });
+        toast.success(t('userManagement.deleteSuccess'));
+        setIsDeleteConfirmOpen(false);
+        setUserToDelete(null);
     } catch (err: unknown) {
         logger.error('Error deleting user:', err instanceof Error ? err : new Error(String(err)), { component: 'UserManagementPage' });
         const errorMessage = err instanceof Error ? err.message : String(err);
         setError(errorMessage || t('userManagement.deleteError'));
+    } finally {
+        setIsDeleting(false);
     }
   };
 
@@ -109,7 +122,7 @@ const UserManagementPage: React.FC = () => {
                             <div className="flex items-center space-x-4">
                                 <span className="text-sm capitalize text-gray-600 bg-gray-200 px-2 py-1 rounded-full">{user.role}</span>
                                 <button onClick={() => handleOpenEditModal(user)} className="text-blue-600 hover:text-blue-800">{t('userManagement.edit')}</button>
-                                <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-800">{t('userManagement.delete')}</button>
+                                <button onClick={() => handleDeleteClick(user)} className="text-red-600 hover:text-red-800">{t('userManagement.delete')}</button>
                             </div>
                         </li>
                     )) : (
@@ -119,11 +132,28 @@ const UserManagementPage: React.FC = () => {
             </div>
         </div>
         
-        {isEditModalOpen && selectedUser ? <EditUserModal 
+        {isEditModalOpen && selectedUser ? <EditUserModal
                 isOpen={isEditModalOpen}
                 onClose={handleCloseEditModal}
                 user={selectedUser}
             /> : null}
+
+        <ConfirmModal
+            isOpen={isDeleteConfirmOpen}
+            onClose={() => {
+                if (!isDeleting) {
+                    setIsDeleteConfirmOpen(false);
+                    setUserToDelete(null);
+                }
+            }}
+            onConfirm={handleDeleteConfirm}
+            title={t('userManagement.confirmDelete')}
+            message={userToDelete ? `${userToDelete.name} (${userToDelete.email})` : ''}
+            confirmText={t('userManagement.delete')}
+            cancelText={t('common.cancel')}
+            isDangerous={true}
+            isLoading={isDeleting}
+        />
     </div>
   );
 };

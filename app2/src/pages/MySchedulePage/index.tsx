@@ -28,7 +28,7 @@ import ScheduleCalendar from './components/ScheduleCalendar';
 import ScheduleDetailModal from './components/ScheduleDetailModal';
 import ScheduleFilters from './components/ScheduleFilters';
 import ScheduleStats from './components/ScheduleStats';
-import ConfirmModal from './components/ConfirmModal';
+import ConfirmModal from '../../components/modals/ConfirmModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Firebase 함수
@@ -70,14 +70,19 @@ const MySchedulePage: React.FC = () => {
     title: string;
     message: string;
     onConfirm: () => void;
+    confirmText?: string;
+    cancelText?: string;
     isDangerous?: boolean;
   }>({
     isOpen: false,
     title: '',
     message: '',
     onConfirm: () => {},
+    confirmText: '확인',
+    cancelText: '취소',
     isDangerous: false
   });
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // 데이터 가져오기 (현재 사용자의 스케줄만)
   const {
@@ -195,13 +200,14 @@ const MySchedulePage: React.FC = () => {
 
   // 실제 삭제 수행 함수
   const performDelete = async (schedule: ScheduleEvent) => {
+    setIsProcessing(true);
     try {
 
       // 소스 컬렉션에 따른 삭제 처리
       if (schedule.sourceCollection === 'applications' && schedule.applicationId) {
         // applications: 완전 삭제
         await deleteDoc(doc(db, 'applications', schedule.applicationId));
-        
+
       } else if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
         // workLogs: 이력 보존을 위해 상태만 변경
         await updateDoc(doc(db, 'workLogs', schedule.workLogId), {
@@ -209,22 +215,25 @@ const MySchedulePage: React.FC = () => {
           cancelledAt: Timestamp.now(),
           updatedAt: Timestamp.now()
         });
-        
+
       } else if (schedule.sourceCollection === 'staff' && schedule.sourceId) {
         // staff: 해당 일정 정보만 제거 (전체 문서는 보존)
         // 실제 구현은 staff 문서 구조에 따라 달라질 수 있음
         showError('직원 일정 삭제는 관리자에게 문의하세요.');
         return;
-        
+
       } else {
         throw new Error('지원되지 않는 일정 타입입니다.');
       }
 
       showSuccess('일정이 삭제되었습니다.');
+      setConfirmModal(prev => ({ ...prev, isOpen: false }));
 
     } catch (error) {
       logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
       showError('일정 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -461,11 +470,14 @@ const MySchedulePage: React.FC = () => {
       {/* 확인 모달 */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => !isProcessing && setConfirmModal(prev => ({ ...prev, isOpen: false }))}
         onConfirm={confirmModal.onConfirm}
         title={confirmModal.title}
         message={confirmModal.message}
+        confirmText={confirmModal.confirmText || '확인'}
+        cancelText={confirmModal.cancelText || '취소'}
         isDangerous={confirmModal.isDangerous || false}
+        isLoading={isProcessing}
       />
 
     </div>

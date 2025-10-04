@@ -2,6 +2,7 @@ import React from 'react';
 import JobBoardErrorBoundary from '../../components/errors/JobBoardErrorBoundary';
 import JobPostingSkeleton from '../../components/JobPostingSkeleton';
 import PreQuestionModal from '../../components/modals/PreQuestionModal';
+import ConfirmModal from '../../components/modals/ConfirmModal';
 import JobFiltersComponent from './JobFilters';
 import JobListTab from './components/JobListTab';
 import MyApplicationsTab from './components/MyApplicationsTab';
@@ -44,7 +45,10 @@ const JobBoardPage = () => {
     handleOpenApplyModal,
     handleMultipleAssignmentChange,
     handleApply,
-    handleCancelApplication,
+    handleCancelApplicationClick,
+    handleCancelApplicationConfirm,
+    cancelConfirmPostId,
+    setCancelConfirmPostId,
     handlePreQuestionComplete,
     fetchMyApplications,
     handleBackToPreQuestions,
@@ -169,7 +173,7 @@ const JobBoardPage = () => {
             applications={myApplications}
             loading={loadingMyApplications}
             onRefresh={fetchMyApplications}
-            onCancel={handleCancelApplication}
+            onCancel={handleCancelApplicationClick}
             isProcessing={isProcessing}
             onTabChange={() => setActiveTab('jobs')}
             onViewDetail={handleOpenDetailModal}
@@ -213,6 +217,19 @@ const JobBoardPage = () => {
           isOpen={isDetailModalOpen}
           onClose={handleCloseDetailModal}
           jobPosting={selectedDetailPost}
+        />
+
+        {/* Cancel Application Confirmation Modal */}
+        <ConfirmModal
+          isOpen={!!cancelConfirmPostId}
+          onClose={() => setCancelConfirmPostId(null)}
+          onConfirm={handleCancelApplicationConfirm}
+          title={t('jobBoard.alerts.confirmCancel')}
+          message={t('jobBoard.alerts.cancelMessage', { defaultValue: '지원을 취소하시겠습니까?' })}
+          confirmText={t('common.confirm', { defaultValue: '확인' })}
+          cancelText={t('common.cancel', { defaultValue: '취소' })}
+          isDangerous={true}
+          isLoading={!!isProcessing}
         />
       </div>
     </JobBoardErrorBoundary>

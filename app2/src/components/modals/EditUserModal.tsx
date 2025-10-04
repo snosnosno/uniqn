@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { callFunctionLazy } from '../../utils/firebase-dynamic';
+import { toast } from '../../utils/toast';
 
 import Modal, { ModalFooter } from '../ui/Modal';
 
@@ -104,7 +105,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
 
     try {
       await callFunctionLazy('updateUser', { uid: user.id, ...formData });
-      alert(t('editUserModal.updateSuccess'));
+      toast.success(t('editUserModal.updateSuccess'));
       onClose();
     } catch (err: any) {
       logger.error('Error updating user:', err instanceof Error ? err : new Error(String(err)), { component: 'EditUserModal' });

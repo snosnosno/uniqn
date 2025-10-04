@@ -21,7 +21,10 @@ const JobPostingAdminPage = () => {
     currentPost,
     handleCreateJobPosting,
     handleUpdateJobPosting,
-    handleDeleteJobPosting,
+    handleDeleteJobPostingClick,
+    handleDeleteJobPostingConfirm,
+    deleteConfirmPost,
+    setDeleteConfirmPost,
     handleNavigateToDetail,
     openEditModal,
     closeEditModal,
@@ -52,19 +55,8 @@ const JobPostingAdminPage = () => {
 
   // 공고 삭제 핸들러
   const handleDelete = async (postId: string, title: string) => {
-    _setIsDeleting(postId);
-    try {
-      const success = await handleDeleteJobPosting(postId, title);
-      if (success) {
-        toast.success('공고가 성공적으로 삭제되었습니다.');
-      }
-      return success;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
-      throw error;
-    } finally {
-      _setIsDeleting(null);
-    }
+    handleDeleteJobPostingClick(postId, title);
+    return true; // Return true to indicate the modal should wait for confirmation
   };
 
   return (

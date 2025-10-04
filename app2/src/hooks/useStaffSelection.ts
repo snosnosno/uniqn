@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../utils/logger';
+import { toast } from '../utils/toast';
 
 interface UseStaffSelectionProps {
   totalStaffCount: number;
@@ -66,14 +67,15 @@ export const useStaffSelection = ({
   // 전체 선택
   const selectAll = useCallback((staffIds: string[]) => {
     if (staffIds.length > 100) {
-      const confirmed = window.confirm(
-        `${staffIds.length}명을 모두 선택하시겠습니까?\n대량 선택은 성능에 영향을 줄 수 있습니다.`
+      toast.warning(
+        `${staffIds.length}명을 선택합니다. 대량 선택은 성능에 영향을 줄 수 있습니다.`,
+        undefined,
+        3000
       );
-      if (!confirmed) return;
     }
-    
+
     setSelectedStaff(new Set(staffIds));
-    logger.debug('전체 선택', { 
+    logger.debug('전체 선택', {
       component: 'useStaffSelection',
       data: { count: staffIds.length }
     });

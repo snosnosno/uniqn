@@ -317,8 +317,8 @@ const transformJobPostingData = (doc: DocumentData): JobPosting => ({
 
 const transformApplicationData = (doc: DocumentData): Application => ({
   id: doc.id,
-  eventId: doc.eventId || doc.jobPostingId || '', // 레거시 호환
-  postId: doc.postId || doc.eventId || doc.jobPostingId || '', // 필수 필드
+  eventId: doc.eventId || '', // 표준 필드
+  postId: doc.postId || doc.eventId || '', // 필수 필드
   postTitle: doc.postTitle || '',
   applicantId: doc.applicantId,
   applicantName: doc.applicantName || '',

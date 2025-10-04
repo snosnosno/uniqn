@@ -27,6 +27,7 @@ import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 import { initializeFontOptimization } from './utils/fontOptimizer';
 import { initializeOfflineSupport } from './utils/offlineSupport';
+import { logger } from './utils/logger';
 
 // Capacitor 네이티브 서비스 초기화 컴포넌트
 import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
@@ -127,7 +128,7 @@ const App: React.FC = () => {
 
       // 이미지 프리로딩 비활성화 (preload 경고 방지)
       // 이미지는 실제 사용 시점에 로딩됨
-      console.debug('이미지 프리로딩이 비활성화되었습니다 (성능 최적화)');
+      logger.debug('이미지 프리로딩이 비활성화되었습니다 (성능 최적화)');
     };
 
     initializeApp();

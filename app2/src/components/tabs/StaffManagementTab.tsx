@@ -28,6 +28,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import BulkTimeEditModal from '../modals/BulkTimeEditModal';
 import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
 import ReportModal from '../modals/ReportModal';
+import ConfirmModal from '../modals/ConfirmModal';
 import StaffDateGroup from '../staff/StaffDateGroup';
 import StaffDateGroupMobile from '../staff/StaffDateGroupMobile';
 import WorkTimeEditor, { WorkLogWithTimestamp } from '../staff/WorkTimeEditor';
@@ -151,7 +152,20 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     id: string;
     name: string;
   } | null>(null);
-  
+
+  // 삭제 확인 모달 상태
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    staffId: string;
+    staffName: string;
+    date: string;
+  }>({
+    isOpen: false,
+    staffId: '',
+    staffName: '',
+    date: ''
+  });
+
   // 🎯 선택 모드 관리 - 내장 상태로 단순화 (useStaffSelection 훅 제거)
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
@@ -627,12 +641,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         showError(reason || '삭제할 수 없습니다.');
         return;
       }
-      
+
       // 2. 삭제 전 인원 카운트 계산 (해당 스태프의 역할/시간 정보 파악)
       let staffRole = '';
       let staffTimeSlot = '';
       const baseStaffId = staffId.replace(/_\d+$/, '');
-      
+
       if (jobPosting?.confirmedStaff) {
         const targetStaff = jobPosting.confirmedStaff.find(
           (staff: ConfirmedStaff) => (staff.userId) === baseStaffId && staff.date === date
@@ -641,12 +655,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         staffTimeSlot = targetStaff?.timeSlot || '';
       }
 
-      // 3. 확인 대화상자
-      if (!window.confirm(`${staffName} 스태프를 ${date} 날짜에서 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`)) {
-        return;
-      }
-      
-      // 4. Transaction으로 원자적 처리 (확정취소와 동일한 로직)
+      // 3. Transaction으로 원자적 처리 (확정취소와 동일한 로직)
       await runTransaction(db, async (transaction) => {
         if (!jobPosting?.id) {
           throw new Error('공고 정보를 찾을 수 없습니다.');
@@ -749,10 +758,24 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       const staffName = staff.name || '이름 미정';
       const date = staff.assignedDate || new Date().toISOString().split('T')[0];
       if (date) {
-        await deleteStaff(staffId, staffName, date);
+        // 삭제 확인 모달 열기
+        setDeleteConfirmModal({
+          isOpen: true,
+          staffId,
+          staffName,
+          date
+        });
       }
     }
-  }, [deleteStaff, staffData]);
+  }, [staffData]);
+
+  // 삭제 확인 콜백
+  const handleDeleteConfirm = useCallback(async () => {
+    const { staffId, staffName, date } = deleteConfirmModal;
+    if (staffId && staffName && date) {
+      await deleteStaff(staffId, staffName, date);
+    }
+  }, [deleteConfirmModal, deleteStaff]);
 
   // 최적화된 핸들러들 (메모이제이션 강화)
   const handleStaffSelect = useCallback((staffId: string) => {
@@ -816,17 +839,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           showError(`선택한 모든 스태프를 삭제할 수 없습니다:\n\n${nonDeletableMessage}`);
           return;
         } else {
-          // 일부만 삭제 가능한 경우
-          if (!window.confirm(`다음 스태프는 삭제할 수 없습니다:\n${nonDeletableMessage}\n\n나머지 ${deletableStaff.length}명만 삭제하시겠습니까?`)) {
-            return;
-          }
-        }
-      } else {
-        // 모든 스태프 삭제 가능한 경우
-        if (!window.confirm(`선택된 ${deletableStaff.length}명의 스태프를 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`)) {
-          return;
+          // 일부만 삭제 가능한 경우 - Toast로 안내
+          showError(`일부 스태프는 삭제할 수 없습니다:\n${nonDeletableMessage}\n\n나머지 ${deletableStaff.length}명만 삭제합니다.`);
         }
       }
+      // 모든 스태프 삭제 가능한 경우 - 별도 확인 없이 진행
       
       // 3. 삭제 가능한 스태프만 처리 (개별 deleteStaff 함수 사용)
       let successCount = 0;
@@ -1325,6 +1342,19 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         />
       )}
 
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={deleteConfirmModal.isOpen}
+        onClose={() => setDeleteConfirmModal({ isOpen: false, staffId: '', staffName: '', date: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="스태프 삭제 확인"
+        message={`${deleteConfirmModal.staffName} 스태프를 ${deleteConfirmModal.date} 날짜에서 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`}
+        confirmText="삭제"
+        cancelText="취소"
+        isDangerous={true}
+        isLoading={loading?.initial || false}
+      />
+
       {/* 모바일 선택 바 */}
       {multiSelectMode && selectedStaff.size > 0 && canEdit && (isMobile || isTablet) && (
         <MobileSelectionBar
@@ -1335,10 +1365,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           onBulkEdit={() => setIsBulkTimeEditOpen(true)}
           onBulkDelete={() => {
             if (selectedStaff.size === 0) return;
-            const confirmDelete = window.confirm(`선택된 ${selectedStaff.size}명의 스태프를 삭제하시겠습니까?`);
-            if (confirmDelete) {
-              handleBulkDelete(Array.from(selectedStaff));
-            }
+            // 일괄 삭제 실행
+            handleBulkDelete(Array.from(selectedStaff));
           }}
           onCancel={() => {
             deselectAll();

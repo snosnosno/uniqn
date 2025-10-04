@@ -7,6 +7,7 @@ import { toast } from '../utils/toast';
 
 import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 import CSVUploadButton from '../components/upload/CSVUploadButton';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
@@ -25,6 +26,9 @@ const ParticipantsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingSingle, setIsDeletingSingle] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
 
   // 전화번호 포맷팅 함수
   const formatPhoneNumber = useCallback((value: string) => {
@@ -78,8 +82,22 @@ const ParticipantsPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm(t('participants.confirmDelete'))) {
-      await deleteParticipant(id);
+    setDeleteConfirmId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmId) return;
+
+    setIsDeletingSingle(true);
+    try {
+      await deleteParticipant(deleteConfirmId);
+      toast.success('참가자가 삭제되었습니다.');
+      setDeleteConfirmId(null);
+    } catch (error) {
+      logger.error('Failed to delete participant:', error instanceof Error ? error : new Error(String(error)), { component: 'ParticipantsPage' });
+      toast.error('참가자 삭제에 실패했습니다.');
+    } finally {
+      setIsDeletingSingle(false);
     }
   };
 
@@ -141,16 +159,16 @@ const ParticipantsPage: React.FC = () => {
   };
 
   // 선택 삭제 함수
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedIds.size === 0) {
       toast.warning('삭제할 참가자를 선택해주세요.');
       return;
     }
 
-    if (!window.confirm(`${selectedIds.size}명의 참가자를 삭제하시겠습니까?`)) {
-      return;
-    }
+    setIsBulkDeleteConfirmOpen(true);
+  };
 
+  const handleBulkDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
       await runTransaction(db, async (transaction) => {
@@ -181,6 +199,8 @@ const ParticipantsPage: React.FC = () => {
       
       setSelectedIds(new Set());
       toast.success(`${selectedIds.size}명의 참가자가 삭제되었습니다.`);
+      setSelectedIds(new Set());
+      setIsBulkDeleteConfirmOpen(false);
     } catch (error) {
       logger.error('선택 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'ParticipantsPage',
@@ -454,6 +474,36 @@ const ParticipantsPage: React.FC = () => {
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
         onConfirm={handleBulkAdd}
+      />
+
+      {/* Delete Single Participant Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        onClose={() => !isDeletingSingle && setDeleteConfirmId(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t('participants.confirmDelete')}
+        message={deleteConfirmId ? participants.find(p => p.id === deleteConfirmId)?.name || '' : ''}
+        confirmText={t('common.delete', { defaultValue: '삭제' })}
+        cancelText={t('common.cancel', { defaultValue: '취소' })}
+        isDangerous={true}
+        isLoading={isDeletingSingle}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isBulkDeleteConfirmOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setIsBulkDeleteConfirmOpen(false);
+          }
+        }}
+        onConfirm={handleBulkDeleteConfirm}
+        title="선택 삭제 확인"
+        message={`${selectedIds.size}명의 참가자를 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        isDangerous={true}
+        isLoading={isDeleting}
       />
     </div>
   );

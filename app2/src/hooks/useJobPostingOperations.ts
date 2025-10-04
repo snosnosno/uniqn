@@ -17,6 +17,7 @@ export const useJobPostingOperations = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<JobPosting | null>(null);
   const [isMatching, setIsMatching] = useState<string | null>(null);
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState<{ id: string; title: string } | null>(null);
 
   // Memoized query for better performance
   const jobPostingsQuery = useMemo(() => query(collection(db, 'jobPostings')), []);
@@ -102,20 +103,24 @@ export const useJobPostingOperations = () => {
     }
   }, [currentUser]);
 
-  // 공고 삭제
-  const handleDeleteJobPosting = useCallback(async (postId: string, title: string) => {
-    if (!window.confirm(`"${title}" 공고를 삭제하시겠습니까?`)) {
-      return false;
-    }
+  // 공고 삭제 요청
+  const handleDeleteJobPostingClick = useCallback((postId: string, title: string) => {
+    setDeleteConfirmPost({ id: postId, title });
+  }, []);
+
+  // 공고 삭제 확인
+  const handleDeleteJobPostingConfirm = useCallback(async () => {
+    if (!deleteConfirmPost) return false;
 
     try {
-      await deleteDoc(doc(db, 'jobPostings', postId));
+      await deleteDoc(doc(db, 'jobPostings', deleteConfirmPost.id));
+      setDeleteConfirmPost(null);
       return true;
     } catch (error) {
       logger.error('공고 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useJobPostingOperations' });
       throw error;
     }
-  }, []);
+  }, [deleteConfirmPost]);
 
   // 상세 페이지로 이동
   const handleNavigateToDetail = useCallback((postId: string) => {
@@ -149,19 +154,22 @@ export const useJobPostingOperations = () => {
     isEditModalOpen,
     currentPost,
     isMatching,
+    deleteConfirmPost,
 
     // CRUD 작업
     handleCreateJobPosting,
     handleUpdateJobPosting,
-    handleDeleteJobPosting,
-    
+    handleDeleteJobPostingClick,
+    handleDeleteJobPostingConfirm,
+
     // 네비게이션
     handleNavigateToDetail,
-    
+
     // 모달 제어
     openEditModal,
     closeEditModal,
-    
+    setDeleteConfirmPost,
+
     // 기타
     setMatchingState,
     setCurrentPost,

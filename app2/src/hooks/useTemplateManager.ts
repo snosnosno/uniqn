@@ -15,6 +15,7 @@ export const useTemplateManager = () => {
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<JobPostingTemplate | null>(null);
+  const [deleteConfirmTemplate, setDeleteConfirmTemplate] = useState<{ id: string; name: string } | null>(null);
 
   // Template query
   const templatesQuery = useMemo(() => 
@@ -100,20 +101,24 @@ export const useTemplateManager = () => {
     }
   }, []);
 
-  // 템플릿 삭제
-  const handleDeleteTemplate = useCallback(async (templateId: string, templateName: string) => {
-    if (!window.confirm(`"${templateName}" 템플릿을 삭제하시겠습니까?`)) {
-      return false;
-    }
+  // 템플릿 삭제 요청
+  const handleDeleteTemplateClick = useCallback((templateId: string, templateName: string) => {
+    setDeleteConfirmTemplate({ id: templateId, name: templateName });
+  }, []);
+
+  // 템플릿 삭제 확인
+  const handleDeleteTemplateConfirm = useCallback(async () => {
+    if (!deleteConfirmTemplate) return false;
 
     try {
-      await deleteDoc(doc(db, 'jobPostingTemplates', templateId));
+      await deleteDoc(doc(db, 'jobPostingTemplates', deleteConfirmTemplate.id));
+      setDeleteConfirmTemplate(null);
       return true;
     } catch (error) {
       logger.error('템플릿 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useTemplateManager' });
       throw error;
     }
-  }, []);
+  }, [deleteConfirmTemplate]);
 
   // 모달 제어 함수들
   const openTemplateModal = useCallback(() => {
@@ -145,16 +150,19 @@ export const useTemplateManager = () => {
     templateName,
     templateDescription,
     selectedTemplate,
+    deleteConfirmTemplate,
 
     // 상태 업데이트 함수
     setTemplateName,
     setTemplateDescription,
     setSelectedTemplate,
+    setDeleteConfirmTemplate,
 
     // 템플릿 작업 함수
     handleSaveTemplate,
     handleLoadTemplate,
-    handleDeleteTemplate,
+    handleDeleteTemplateClick,
+    handleDeleteTemplateConfirm,
 
     // 모달 제어 함수
     openTemplateModal,
