@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { QrReader } from 'react-qr-reader';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useLocation } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { usePageOptimizedData } from '../hooks/useUnifiedData';
 
 import { logger } from '../utils/logger';
+
 const AttendancePage: React.FC = () => {
     const { t } = useTranslation();
     const location = useLocation();
@@ -15,12 +16,13 @@ const AttendancePage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const { currentUser: _currentUser, role } = useAuth();
+    const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
     // Smart Hybrid Context 사용 - 자신의 출석 데이터만 구독
-    const { workLogs, attendanceRecords, loading: _loading } = usePageOptimizedData(location.pathname); // loading은 미래 로딩 상태용
+    const { workLogs, attendanceRecords, loading: _loading } = usePageOptimizedData(location.pathname);
 
     // 성능 최적화 로그
-    React.useEffect(() => {
+    useEffect(() => {
         logger.info('AttendancePage 최적화 모드', {
             component: 'AttendancePage',
             data: {
@@ -32,36 +34,53 @@ const AttendancePage: React.FC = () => {
         });
     }, [role, workLogs.length, attendanceRecords.length]);
 
-    const handleScan = async (result: any, error: any) => {
-        if (!!result) {
-            const scannedUrl = result?.getText();
-            setScanResult(scannedUrl);
-            
-            // Extract token from URL
-            const urlParts = scannedUrl.split('/');
-            const token = urlParts[urlParts.length - 1];
+    // QR 스캐너 초기화
+    useEffect(() => {
+        if (!scannerRef.current) {
+            scannerRef.current = new Html5QrcodeScanner(
+                'qr-reader',
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                false
+            );
 
-            if (token && !isSubmitting) {
-                setIsSubmitting(true);
-                setFeedback(null);
-                try {
-                    await callFunctionLazy('recordAttendance', { qrCodeToken: token });
-                    setFeedback({ type: 'success', message: t('attendancePage.success') });
-                } catch (err: any) {
-                    logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AttendancePage' });
-                    setFeedback({ type: 'error', message: err.message || t('attendancePage.fail') });
-                } finally {
-                    setIsSubmitting(false);
-                    // Optionally clear result after processing
-                    setTimeout(() => setScanResult(''), 2000); 
+            scannerRef.current.render(
+                async (decodedText) => {
+                    setScanResult(decodedText);
+
+                    // Extract token from URL
+                    const urlParts = decodedText.split('/');
+                    const token = urlParts[urlParts.length - 1];
+
+                    if (token && !isSubmitting) {
+                        setIsSubmitting(true);
+                        setFeedback(null);
+                        try {
+                            await callFunctionLazy('recordAttendance', { qrCodeToken: token });
+                            setFeedback({ type: 'success', message: t('attendancePage.success') });
+                        } catch (err: unknown) {
+                            logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AttendancePage' });
+                            setFeedback({ type: 'error', message: (err as Error).message || t('attendancePage.fail') });
+                        } finally {
+                            setIsSubmitting(false);
+                            setTimeout(() => setScanResult(''), 2000);
+                        }
+                    }
+                },
+                (errorMessage) => {
+                    // QR 코드 스캔 오류는 무시 (지속적으로 발생)
+                    logger.debug('QR scan error', { error: errorMessage });
                 }
-            }
+            );
         }
 
-        if (!!error) {
-            // Error handling logic could be added here if needed
-        }
-    }
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch((err) => {
+                    logger.error('QR scanner cleanup error', err instanceof Error ? err : new Error(String(err)));
+                });
+            }
+        };
+    }, [isSubmitting, t]);
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen flex flex-col items-center">
@@ -76,11 +95,7 @@ const AttendancePage: React.FC = () => {
                 </div>
             )}
             <div className="w-full max-w-md bg-white p-4 rounded-lg shadow-xl">
-                <QrReader
-                    onResult={handleScan}
-                    constraints={{ facingMode: 'environment' }}
-                    containerStyle={{ width: '100%' }}
-                />
+                <div id="qr-reader" className="w-full" />
                 {scanResult ? <p className="mt-4 text-center text-sm text-gray-600">{t('attendancePage.lastScanned', { scanResult })}</p> : null}
             </div>
 

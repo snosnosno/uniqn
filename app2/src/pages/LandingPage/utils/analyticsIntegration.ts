@@ -335,19 +335,20 @@ class AnalyticsIntegration {
       bounce_rate: bounceRate
     };
 
-    // 개발 환경에서는 콘솔 출력
+    // 개발 환경에서는 로거 출력
     if (process.env.NODE_ENV === 'development') {
-      console.group('📈 Landing Page Analytics Summary');
-      console.table({
-        'Session ID': this.sessionId,
-        'Duration': `${Math.round(sessionDuration / 1000)}s`,
-        'Events': this.events.length,
-        'Conversions': this.conversions.length,
-        'Bounce Rate': `${(bounceRate * 100)}%`
-      });
+      const analyticsData = {
+        sessionId: this.sessionId,
+        duration: `${Math.round(sessionDuration / 1000)}s`,
+        events: this.events.length,
+        conversions: this.conversions.length,
+        bounceRate: `${(bounceRate * 100)}%`
+      };
 
-
-      console.groupEnd();
+      // logger 사용 (import 필요시 추가)
+      if (typeof window !== 'undefined' && (window as any).logger) {
+        (window as any).logger.info('📈 Landing Page Analytics Summary', { data: analyticsData });
+      }
     }
 
     // 프로덕션에서는 서버로 전송

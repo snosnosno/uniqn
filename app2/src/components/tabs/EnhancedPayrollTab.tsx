@@ -47,9 +47,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     summary,
     loading: calculationLoading,
     error: calculationError,
-    calculatePayroll,
-    isOptimized,
-    calculationTime
+    calculatePayroll
+    // isOptimized, calculationTime는 현재 미사용
   } = usePayrollWorker();
   
   // 실제 WorkLogs 데이터 (상태 변환 통일, eventId 필터링) - 메모이제이션 강화

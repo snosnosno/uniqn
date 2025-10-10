@@ -109,24 +109,26 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       // 강제 리렌더링을 위한 timestamp 추가
       timestamp: Date.now()
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     staff.id,
     staff.assignedDate,
-    staff.postingId,  // postingId 추가
+    staff.postingId,
     getStaffAttendanceStatus,
     eventId,
-    attendanceRecords  // ✅ props의 attendanceRecords 의존성 추가로 상태 변화 감지
+    attendanceRecords  // ✅ 의도적 의존성: attendanceRecords 변화 시 리렌더링
   ]);
 
   // 🔥 WorkLog 데이터를 별도 useMemo로 분리하여 변화 감지
   const currentWorkLog = useMemo(() => {
     const dateString = convertToDateString(staff.assignedDate) || getTodayString();
     const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
-    
+
     // 🔍 디버깅: getStaffWorkLog 호출 상세 분석 및 WorkLog ID 매칭 검증
-    
+
     return workLog;
-  }, [staff.id, staff.assignedDate, getStaffWorkLog, renderKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staff.id, staff.assignedDate, getStaffWorkLog, renderKey]); // renderKey는 의도적 의존성
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
