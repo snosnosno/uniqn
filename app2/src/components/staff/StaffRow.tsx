@@ -110,10 +110,10 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       timestamp: Date.now()
     };
   }, [
-    staff.id, 
-    staff.assignedDate, 
+    staff.id,
+    staff.assignedDate,
     staff.postingId,  // postingId 추가
-    getStaffAttendanceStatus, 
+    getStaffAttendanceStatus,
     eventId,
     attendanceRecords  // ✅ props의 attendanceRecords 의존성 추가로 상태 변화 감지
   ]);
@@ -126,7 +126,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
     // 🔍 디버깅: getStaffWorkLog 호출 상세 분석 및 WorkLog ID 매칭 검증
     
     return workLog;
-  }, [staff.id, staff.assignedDate, getStaffWorkLog, attendanceRecords, renderKey]); // renderKey 추가
+  }, [staff.id, staff.assignedDate, getStaffWorkLog, renderKey]);
 
   // 메모이제이션된 출근/퇴근 시간 데이터
   const memoizedTimeData = useMemo(() => {
@@ -179,13 +179,10 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
   }, [
-    staff.id, 
-    staff.assignedDate, 
-    staff.assignedTime, 
-    formatTimeDisplay, 
-    getTimeSlotColor, 
-    currentWorkLog,  // 🔥 currentWorkLog 의존성 추가로 WorkLog 변화 감지
-    currentWorkLog?.updatedAt  // 🔥 updatedAt 변경도 감지하여 더 정확한 업데이트
+    staff,
+    formatTimeDisplay,
+    getTimeSlotColor,
+    currentWorkLog
   ]);
 
   // 메모이제이션된 이벤트 핸들러들

@@ -399,12 +399,23 @@ service cloud.firestore {
 
     // --- Login Attempts Collection (보안 기능) ---
     match /loginAttempts/{attemptId} {
-      // 읽기는 모두 허용 (로그인 전에도 차단 여부 확인 가능)
-      allow read: if true;
-      // 쓰기는 모두 허용 (로그인 시도 기록 가능)
-      allow create, update: if true;
-      // 삭제는 관리자만 가능
-      allow delete: if isPrivileged();
+      // 로그인 시도 기록은 인증 없이도 가능 (로그인 전 차단 확인용)
+      // 필수 필드 검증: ipAddress, timestamp, attemptCount
+      allow create: if request.resource.data.keys().hasAll(['ipAddress', 'timestamp', 'attemptCount']) &&
+        request.resource.data.ipAddress is string &&
+        request.resource.data.timestamp is timestamp &&
+        request.resource.data.attemptCount is number &&
+        request.resource.data.attemptCount >= 0 &&
+        request.resource.data.attemptCount <= 100;
+
+      // 본인 데이터 또는 관리자만 읽기 가능
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+
+      // 관리자만 업데이트/삭제 가능 (차단 해제 등)
+      allow update, delete: if isPrivileged();
     }
 
     // --- Inquiries Collection (고객 문의) ---

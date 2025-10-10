@@ -155,14 +155,8 @@ export const getCurrentPushToken = async (): Promise<string | null> => {
     return null;
   }
 
-  try {
-    // 이미 등록된 토큰이 있는지 확인
-    // 실제 구현에서는 로컬 스토리지나 상태 관리에서 가져올 수 있음
-    return null; // 구현 필요
-  } catch (error) {
-    logger.error('푸시 토큰 조회 실패:', error as Error);
-    return null;
-  }
+  // TODO: 실제 구현에서는 로컬 스토리지나 상태 관리에서 토큰을 가져와야 함
+  return null;
 };
 
 /**

@@ -17,14 +17,25 @@ interface EnhancedPayrollTabProps {
 }
 
 const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eventId }) => {
-  
+
   // 계산 중복 방지를 위한 ref
   const hasCalculated = useRef(false);
   const lastCalculationKey = useRef<string>('');
-  
+
   // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // 급여 유형 한글 변환 (의존성 없는 함수는 최상단에 배치)
+  const getSalaryTypeLabel = useCallback((type: string) => {
+    const labels: { [key: string]: string } = {
+      hourly: '시급',
+      daily: '일급',
+      monthly: '월급',
+      other: '기타'
+    };
+    return labels[type] || type;
+  }, []);
 
   // 통합 데이터 훅 사용
   const { state, loading } = useUnifiedData();
@@ -82,10 +93,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     return filteredWorkLogs.map(workLog => ({
       ...workLog,
       // 상태 변환 통일 - UnifiedWorkLog 타입과 호환 (조건문 최적화)
-      status: workLog.status === 'absent' ? 'cancelled' as const : 
+      status: workLog.status === 'absent' ? 'cancelled' as const :
               (workLog.status || 'not_started') as 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'not_started'
     }));
-  }, [state.workLogs, jobPosting?.id, eventId]);
+  }, [state.workLogs, eventId]);
 
   // 정산 기간 설정 (현재 월 기준)
   const { startDate, endDate } = useMemo((): { startDate: string; endDate: string } => {
@@ -184,12 +195,14 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   const confirmedStaffCount = useMemo(() => confirmedStaff?.length || 0, [confirmedStaff]);
 
   // 객체 참조 안정화를 위한 메모이제이션 (무한 루프 방지)
-  const memoizedRoleSalaryOverrides = useMemo(() => 
-    roleSalaryOverrides || {}, [JSON.stringify(roleSalaryOverrides)]
+  const roleSalaryOverridesJson = JSON.stringify(roleSalaryOverrides);
+  const memoizedRoleSalaryOverrides = useMemo(() =>
+    roleSalaryOverrides || {}, [roleSalaryOverridesJson]
   );
 
-  const memoizedStaffAllowanceOverrides = useMemo(() => 
-    staffAllowanceOverrides || {}, [JSON.stringify(staffAllowanceOverrides)]
+  const staffAllowanceOverridesJson = JSON.stringify(staffAllowanceOverrides);
+  const memoizedStaffAllowanceOverrides = useMemo(() =>
+    staffAllowanceOverrides || {}, [staffAllowanceOverridesJson, staffAllowanceOverrides]
   );
 
   // 중복 계산 방지를 위한 키 메모이제이션 (무한 루프 방지)
@@ -280,7 +293,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         }
       });
     }
-  }, [calculationLoading, calculationKey, memoizedCalculatePayroll]);
+  }, [calculationLoading, calculationKey, memoizedCalculatePayroll, confirmedStaffCount, workLogs.length]);
 
   // 통합된 로딩 및 에러 상태
   const isLoading = dataLoading || calculationLoading;
@@ -319,7 +332,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, []);
   
   const toggleSelectAll = useCallback(() => {
-    setSelectedStaffIds(prev => 
+    if (!staffWorkData) return;
+    setSelectedStaffIds(prev =>
       prev.length === staffWorkData.length ? [] : staffWorkData.map(s => s.staffId)
     );
   }, [staffWorkData]);
@@ -382,7 +396,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         component: 'EnhancedPayrollTab'
       });
     }
-  }, [payrollData, startDate, endDate]);
+  }, [payrollData, startDate, endDate, getSalaryTypeLabel]);
 
   // 대량 수당 적용 구현
   const applyBulkAllowances = useCallback(async (settings: BulkAllowanceSettings) => {
@@ -549,17 +563,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       }
     });
   }
-
-  // 급여 유형 한글 변환
-  const getSalaryTypeLabel = useCallback((type: string) => {
-    const labels: { [key: string]: string } = {
-      hourly: '시급',
-      daily: '일급',
-      monthly: '월급',
-      other: '기타'
-    };
-    return labels[type] || type;
-  }, []);
 
   // 수당 편집 모달 열기
   const openEditModal = useCallback((data: any) => {

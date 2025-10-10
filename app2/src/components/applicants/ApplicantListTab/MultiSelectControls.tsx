@@ -201,7 +201,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
         selectedCount: stats.selectedCount
       };
     });
-  }, [applicant, selectedAssignments]);
+  }, [applicant, selectedAssignments, jobPosting]);
   
   if (allSortedCards.length === 0) {
     return null;

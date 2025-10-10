@@ -585,7 +585,7 @@ class OptimizedUnifiedDataService {
         postingsQuery,
         { includeMetadataChanges: false }, // 메타데이터 변경 제외로 비용 절약
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformJobPostingData({
             id: doc.id,
@@ -642,7 +642,7 @@ class OptimizedUnifiedDataService {
         applicationsQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformApplicationData({
             id: doc.id,
@@ -699,7 +699,7 @@ class OptimizedUnifiedDataService {
         workLogsQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformWorkLogData({
             id: doc.id,
@@ -757,7 +757,7 @@ class OptimizedUnifiedDataService {
         staffQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformStaffData({
             id: doc.id,
@@ -811,7 +811,7 @@ class OptimizedUnifiedDataService {
         attendanceQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformAttendanceRecordData({
             id: doc.id,
@@ -867,7 +867,7 @@ class OptimizedUnifiedDataService {
         tournamentsQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformTournamentData({
             id: doc.id,

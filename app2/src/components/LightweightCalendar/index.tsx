@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
   getDay,
   isSameMonth,
   isToday,

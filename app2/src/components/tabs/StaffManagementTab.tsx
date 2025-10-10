@@ -26,7 +26,6 @@ import { useResponsive } from '../../hooks/useResponsive';
 // import { useVirtualization } from '../../hooks/useVirtualization'; // 향후 성능 최적화 기능
 // import { BulkOperationService } from '../../services/BulkOperationService'; // 향후 일괄 작업 기능
 import BulkTimeEditModal from '../modals/BulkTimeEditModal';
-import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
 import ReportModal from '../modals/ReportModal';
 import ConfirmModal from '../modals/ConfirmModal';
 import StaffDateGroup from '../staff/StaffDateGroup';
@@ -35,6 +34,9 @@ import WorkTimeEditor, { WorkLogWithTimestamp } from '../staff/WorkTimeEditor';
 import StaffProfileModal from '../modals/StaffProfileModal';
 import MobileSelectionBar from '../layout/MobileSelectionBar';
 import '../../styles/staffSelection.css';
+
+// Lazy load QR 코드 모달 (번들 크기 최적화)
+const QRCodeGeneratorModal = React.lazy(() => import('../modals/QRCodeGeneratorModal'));
 
 interface StaffData {
   id: string;
@@ -128,7 +130,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
     
     return Array.from(staffMap.values());
-  }, [state.workLogs, jobPosting?.id]);
+  }, [state.workLogs, state.jobPostings, jobPosting?.id]);
 
   // 🎯 고유한 스태프 수 계산 (중복 제거)
   const uniqueStaffCount = useMemo(() => {
@@ -552,7 +554,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
 
     return workLog;
-  }, [state.workLogs, jobPosting?.id, state.lastUpdated.workLogs]); // 🔥 lastUpdated 추가로 업데이트 즉시 감지
+  }, [state.workLogs, state.loading.initial, state.loading.workLogs, jobPosting?.id]); // workLogs 변경 시 자동 업데이트
 
   // 🔒 삭제 가능 조건 검증 함수
   const canDeleteStaff = useCallback(async (staffId: string, date: string): Promise<{
@@ -1252,14 +1254,18 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         </div>
 
 
-      {/* QR 코드 생성 모달 */}
-      <QRCodeGeneratorModal
-        isOpen={isQrModalOpen}
-        onClose={() => setIsQrModalOpen(false)}
-        eventId={jobPosting?.id || 'default-event'}
-        title={t('attendance.actions.generateQR')}
-        description={`${jobPosting?.title || '공고'} 스태프들이 출석 체크를 할 수 있는 QR 코드를 생성합니다.`}
-      />
+      {/* QR 코드 생성 모달 (Lazy Loading) */}
+      {isQrModalOpen && (
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <QRCodeGeneratorModal
+            isOpen={isQrModalOpen}
+            onClose={() => setIsQrModalOpen(false)}
+            eventId={jobPosting?.id || 'default-event'}
+            title={t('attendance.actions.generateQR')}
+            description={`${jobPosting?.title || '공고'} 스태프들이 출석 체크를 할 수 있는 QR 코드를 생성합니다.`}
+          />
+        </React.Suspense>
+      )}
 
       {/* 시간 수정 모달 */}
       <WorkTimeEditor
