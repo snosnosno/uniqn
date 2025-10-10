@@ -131,21 +131,9 @@ export const processApplicationData = async (
             role: selection.role,
             assignedTime: timeStr
           };
-          
+
+
           events.push(event);
-          
-          logger.debug('✅ dateAssignments 기반 스케줄 이벤트 생성:', {
-            component: 'processApplicationData',
-            data: { 
-              docId, 
-              uniqueId, 
-              date: dateStr, 
-              role: selection.role, 
-              timeSlot: selection.timeSlot,
-              isConsecutive: dateAssignment.isConsecutive,
-              groupId: dateAssignment.groupId
-            }
-          });
         });
       });
       

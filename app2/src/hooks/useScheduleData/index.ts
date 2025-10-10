@@ -38,10 +38,6 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
       // 🔥 초기 로딩 상태 체크: UnifiedDataContext가 로딩 중이면 대기
       if (_contextLoading.initial) {
-        logger.debug('UnifiedDataContext 초기 로딩 중...', {
-          component: 'useScheduleData',
-          userId: currentUser.uid
-        });
         setLoading(true);
         return;
       }
@@ -198,17 +194,6 @@ const useScheduleData = (): UseScheduleDataReturn => {
           if (hoursWorked < 0) {
             // 24시간을 더해서 다음날 종료로 계산
             hoursWorked += 24;
-
-            logger.debug('자정 넘는 근무시간 감지 및 수정', {
-              component: 'useScheduleData',
-              data: {
-                eventId: event.id,
-                startTime: startDate.toISOString(),
-                endTime: endDate.toISOString(),
-                originalHours: hoursWorked - 24,
-                correctedHours: hoursWorked
-              }
-            });
           }
 
           totalHoursWorked += Math.max(0, hoursWorked);

@@ -75,10 +75,6 @@ export const useStaffSelection = ({
     }
 
     setSelectedStaff(new Set(staffIds));
-    logger.debug('전체 선택', {
-      component: 'useStaffSelection',
-      data: { count: staffIds.length }
-    });
   }, []);
 
   // 전체 해제
@@ -136,10 +132,6 @@ export const useStaffSelection = ({
         if (Array.isArray(staffIds) && staffIds.length > 0) {
           setSelectedStaff(new Set(staffIds));
           setMultiSelectMode(true);
-          logger.debug('저장된 선택 상태 복원', {
-            component: 'useStaffSelection',
-            data: { count: staffIds.length }
-          });
         }
       }
     } catch (error) {

@@ -106,15 +106,6 @@ export function useFirebaseCollection<T = DocumentData>(
             if (onSuccess) {
               onSuccess(docs);
             }
-
-            logger.debug('Firebase 컬렉션 데이터 업데이트:', {
-              component: 'useFirebaseCollection',
-              data: {
-                collection: collectionPath,
-                count: docs.length,
-                hasConstraints: queryConstraints.length > 0
-              }
-            });
           } catch (transformError) {
             const error = transformError instanceof Error 
               ? transformError 

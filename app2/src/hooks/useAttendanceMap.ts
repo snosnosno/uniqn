@@ -42,15 +42,7 @@ export const useAttendanceMap = (
         map.set(workLogKey, record);
       }
     });
-    
-    logger.debug('AttendanceMap 생성 완료', {
-      component: 'useAttendanceMap',
-      data: { 
-        recordCount: attendanceRecords.length,
-        mapSize: map.size 
-      }
-    });
-    
+
     return map;
   }, [attendanceRecords]);
 

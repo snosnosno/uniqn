@@ -230,23 +230,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   const isLoading = dataLoading || calculationLoading;
   const error = state.error.global || calculationError;
   
-  // 데이터 상태 디버깅 (production에서는 비활성화, 계산 중일 때는 로그 스킵)
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && !calculationLoading) {
-      logger.debug('정산탭 데이터 상태 확인', {
-        component: 'EnhancedPayrollTab',
-        data: {
-          dataLoading,
-          calculationLoading,
-          workLogsCount: workLogs.length,
-          confirmedStaffCount: confirmedStaffCount,
-          payrollDataCount: payrollData?.length || 0,
-          hasJobPosting: !!jobPosting,
-          error: error || null
-        }
-      });
-    }
-  }, [dataLoading, calculationLoading, workLogs.length, confirmedStaffCount, payrollData?.length, jobPosting, error]);
 
   // 실제 정산 데이터 사용
   const staffWorkData = payrollData || [];
@@ -458,19 +441,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     setRoleSalaryOverrides(updates);
   }, []);
 
-  // 디버깅 로그 (development 모드에서만)
-  if (process.env.NODE_ENV === 'development' && payrollData?.length > 0) {
-    logger.debug('EnhancedPayrollTab - 렌더링', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        payrollDataCount: staffWorkData.length,
-        summary: summary || { totalStaff: 0, totalAmount: 0 },
-        availableRoles,
-        isOptimized,
-        calculationTime: calculationTime || 0
-      }
-    });
-  }
 
   // 수당 편집 모달 열기
   const openEditModal = useCallback((data: any) => {
