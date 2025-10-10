@@ -443,9 +443,6 @@ export class UnifiedDataService {
       // 🚫 persons 컬렉션 비활성화 - WorkLog의 staffInfo를 사용
       // WorkLog에서 고유한 스태프 정보를 추출하여 사용
       
-      logger.info('Staff 구독 비활성화 (WorkLog 통합)', {
-        component: 'unifiedDataService'
-      });
 
       // 빈 배열로 설정하여 WorkLog 기반 데이터를 사용하도록 함
       if (this.dispatcher) {
@@ -490,20 +487,12 @@ export class UnifiedDataService {
           collection(db, 'workLogs'),
           orderBy('date', 'desc')
         );
-        logger.info('WorkLogs 사용자별 필터링 쿼리 (클라이언트 필터링)', { 
-          component: 'unifiedDataService',
-          data: { userId: this.currentUserId, note: 'staffId 시작 패턴 매칭을 위해 전체 조회 후 필터링' }
-        });
       } else {
         // 전체 근무 기록 가져오기 (관리자용 또는 userId 없음)
         workLogsQuery = query(
           collection(db, 'workLogs'),
           orderBy('date', 'desc')
         );
-        logger.info('WorkLogs 전체 데이터 쿼리', { 
-          component: 'unifiedDataService',
-          data: { isAdmin: this.isAdmin(), hasUserId: !!this.currentUserId }
-        });
       }
 
       this.subscriptions.workLogs = onSnapshot(
@@ -514,20 +503,6 @@ export class UnifiedDataService {
           
           // 🔥 변경된 문서만 효율적으로 처리
           const changes = snapshot.docChanges({ includeMetadataChanges: true });
-          
-          if (changes.length > 0) {
-            logger.info('🔄 WorkLogs 실시간 변경 감지', {
-              component: 'unifiedDataService',
-              data: {
-                totalChanges: changes.length,
-                changeTypes: changes.map(change => ({
-                  type: change.type,
-                  docId: change.doc.id,
-                  fromCache: change.doc.metadata.fromCache
-                }))
-              }
-            });
-          }
 
           // WorkLogs 데이터 업데이트 처리
           const workLogsData: WorkLog[] = [];
@@ -566,32 +541,6 @@ export class UnifiedDataService {
             }
           });
 
-          // 🔍 필터링 결과 로깅
-          if (this.currentUserId && !this.isAdmin()) {
-            logger.info('🔍 WorkLog 클라이언트 필터링 결과', {
-              component: 'unifiedDataService',
-              data: {
-                userId: this.currentUserId,
-                eventId: this.currentEventId,
-                totalWorkLogs: totalCount,
-                filteredWorkLogs: filteredCount,
-                workLogsMapSize: workLogsData.length,
-                filteringMode: this.currentEventId ? 'user+event' : 'user-only',
-                sampleWorkLogIds: workLogsData.slice(0, 3).map(wl => wl.id)
-              }
-            });
-          } else if (this.currentEventId) {
-            // 관리자 모드에서도 eventId 필터링이 적용된 경우 로깅
-            logger.info('🔍 WorkLog eventId 필터링 결과 (관리자)', {
-              component: 'unifiedDataService',
-              data: {
-                eventId: this.currentEventId,
-                totalWorkLogs: totalCount,
-                filteredWorkLogs: filteredCount,
-                workLogsMapSize: workLogsData.length
-              }
-            });
-          }
 
           if (this.dispatcher) {
             this.dispatcher({ type: 'SET_WORK_LOGS', data: workLogsData });
@@ -642,20 +591,12 @@ export class UnifiedDataService {
           collection(db, 'attendanceRecords'),
           orderBy('createdAt', 'desc')
         );
-        logger.info('AttendanceRecords 사용자별 필터링 쿼리 (클라이언트 필터링)', { 
-          component: 'unifiedDataService',
-          data: { userId: this.currentUserId, note: 'staffId 시작 패턴 매칭을 위해 전체 조회 후 필터링' }
-        });
       } else {
         // 전체 출석 기록 가져오기 (관리자용 또는 userId 없음)
         attendanceQuery = query(
           collection(db, 'attendanceRecords'),
           orderBy('createdAt', 'desc')
         );
-        logger.info('AttendanceRecords 전체 데이터 쿼리', { 
-          component: 'unifiedDataService',
-          data: { isAdmin: this.isAdmin(), hasUserId: !!this.currentUserId }
-        });
       }
 
       this.subscriptions.attendanceRecords = onSnapshot(
@@ -690,17 +631,6 @@ export class UnifiedDataService {
             }
           });
 
-          // 🔍 필터링 결과 로깅 (WorkLog보다 간단하게)
-          if (this.currentUserId && !this.isAdmin() && totalCount > 0) {
-            logger.info('🔍 AttendanceRecords 클라이언트 필터링 결과', {
-              component: 'unifiedDataService',
-              data: {
-                userId: this.currentUserId,
-                totalRecords: totalCount,
-                filteredRecords: filteredCount
-              }
-            });
-          }
 
           if (this.dispatcher) {
             this.dispatcher({ type: 'SET_ATTENDANCE_RECORDS', data: attendanceData });
@@ -839,20 +769,6 @@ export class UnifiedDataService {
             }
           });
 
-          // Raw 데이터 로깅 추가
-          if (rawDocs.length > 0) {
-            logger.info('Applications 원시 데이터', {
-              component: 'unifiedDataService',
-              data: { 
-                rawDocs: rawDocs.map(doc => ({
-                  id: doc.id,
-                  applicantId: doc.applicantId,
-                  postId: doc.postId,
-                  status: doc.status
-                }))
-              }
-            });
-          }
 
           if (this.dispatcher) {
             this.dispatcher({ type: 'SET_APPLICATIONS', data: applicationsData });

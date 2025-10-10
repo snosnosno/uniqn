@@ -98,14 +98,9 @@ class FirebaseConnectionManager {
     }
 
     this.retryCount++;
-    logger.debug(`🔄 Firebase internal assertion error detected (attempt ${this.retryCount}/${this.maxRetries})`, { component: 'firebaseConnectionManager' });
-
-    // Clean up existing listeners to prevent state corruption
     this.cleanupAllListeners();
 
-    // Firebase 내부 상태 정리를 위한 대기 시간
     setTimeout(() => {
-
       if (errorCallback) {
         errorCallback(new Error('Firebase internal assertion error occurred. Please refresh the page.'));
       }
@@ -135,7 +130,6 @@ class FirebaseConnectionManager {
   }
 
   public cleanupAllListeners() {
-    logger.debug('🧹 Cleaning up all Firebase listeners...', { component: 'firebaseConnectionManager' });
     this.listeners.forEach((unsubscribe, listenerId) => {
       try {
         unsubscribe();
@@ -178,15 +172,9 @@ class FirebaseConnectionManager {
   }
 
   private handleGlobalInternalAssertionError() {
-    logger.debug('🔧 Attempting automatic recovery from Firebase internal error...', { component: 'firebaseConnectionManager' });
-
-    // 모든 리스너 정리
     this.cleanupAllListeners();
-
-    // 재시도 카운트 리셋
     this.resetRetryCount();
 
-    // 사용자에게 새로고침 권장 Toast 표시
     toast.error(
       'Firebase 연결에 문제가 발생했습니다. 페이지를 새로고침해주세요.',
       undefined,

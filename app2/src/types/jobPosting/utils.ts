@@ -160,19 +160,8 @@ export class JobPostingUtils {
     const isMultiDayRange = matchingRequirement ?
       matchingRequirement.timeSlots?.[0]?.duration?.type === 'multi' : false;
 
-    // 🔍 상세 디버그 로그
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('🔍 [v2.4 우선순위 매칭]', {
-        targetDate,
-        matchingRequirement: matchingRequirement ? {
-          date: timestampToLocalDateString(matchingRequirement.date),
-          durationType: matchingRequirement.timeSlots?.[0]?.duration?.type,
-          endDate: matchingRequirement.timeSlots?.[0]?.duration?.endDate ?
-            timestampToLocalDateString(matchingRequirement.timeSlots[0].duration.endDate) : null
-        } : null,
-        isMultiDayRange
-      });
-    }
+    // 🔍 상세 디버그 로그 - 개발 환경에서만 필요시 활성화
+    // (프로덕션 배포 시에는 완전 제거)
 
     const matchingStaff = jobPosting.confirmedStaff.filter(staff => {
       const staffDate = timestampToLocalDateString(staff.date);
@@ -205,40 +194,8 @@ export class JobPostingUtils {
 
     const finalCount = withoutApplicationId.length + uniqueApplicationIds.size;
 
-    // 🔍 디버깅 로그 (개발 환경에서만) - 조건 제거하여 모든 호출 로그 출력
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('📊 [JobPostingUtils.getConfirmedStaffCount]', {
-        targetDate,
-        timeSlot,
-        role,
-        isMultiDayRange,
-        totalMatching: matchingStaff.length,
-        withApplicationId: withApplicationId.length,
-        withoutApplicationId: withoutApplicationId.length,
-        uniqueApplications: uniqueApplicationIds.size,
-        applicationIds: Array.from(uniqueApplicationIds),
-        finalCount,
-        // 🆕 전체 confirmedStaff 데이터 확인
-        allConfirmedStaff: jobPosting.confirmedStaff?.map(staff => ({
-          userId: staff.userId,
-          role: staff.role,
-          timeSlot: staff.timeSlot,
-          date: staff.date,
-          applicationId: staff.applicationId,
-          applicationType: staff.applicationType
-        })) || [],
-        // 🆕 실제 매칭된 스태프들의 상세 정보
-        matchingStaffDetails: matchingStaff.map(staff => ({
-          userId: staff.userId,
-          role: staff.role,
-          timeSlot: staff.timeSlot,
-          date: staff.date,
-          staffDate: timestampToLocalDateString(staff.date),
-          applicationId: staff.applicationId,
-          applicationType: staff.applicationType
-        }))
-      });
-    }
+    // 🔍 디버깅 로그 - 개발 환경에서만 필요시 활성화
+    // (프로덕션 배포 시에는 완전 제거)
 
     // 기존 데이터(applicationId 없음) + 신규 데이터(applicationId별 중복 제거)
     return finalCount;

@@ -47,31 +47,20 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   // 사전질문 답변 로드 함수
   const loadPreQuestionAnswers = async (staff: StaffData, userId: string) => {
     try {
-      // postingId 확인 (여러 필드에서 확인)
       const eventId = staff?.postingId;
       if (!eventId) {
-        logger.debug('postingId를 찾을 수 없습니다:', { 
-          component: 'StaffProfileModal', 
-          data: { staff: staff?.name, postingId: eventId } 
-        });
         return;
       }
 
-      logger.debug('🔍 사전질문 답변 조회 시작:', { 
-        component: 'StaffProfileModal', 
-        data: { eventId, userId, staffName: staff.name }
-      });
-
       const applicationsRef = collection(db, 'applications');
       const q = query(
-        applicationsRef, 
+        applicationsRef,
         where('eventId', '==', eventId),
         where('applicantId', '==', userId)
       );
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
-        // 가장 최근 지원서를 사용 (여러 개 있을 경우)
         const applications = querySnapshot.docs.map(doc => {
           const data = doc.data();
           return {
@@ -81,8 +70,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             preQuestionAnswers: data.preQuestionAnswers
           };
         });
-        
-        // createdAt 기준으로 정렬하여 가장 최근 것 사용
+
         applications.sort((a, b) => {
           const aTime = a.createdAt?.toMillis?.() || 0;
           const bTime = b.createdAt?.toMillis?.() || 0;
@@ -91,25 +79,8 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
         const latestApplication = applications[0];
         if (latestApplication && latestApplication.preQuestionAnswers) {
-          logger.debug('🔍 사전질문 답변 로드 성공:', { 
-            component: 'StaffProfileModal', 
-            data: { 
-              count: latestApplication.preQuestionAnswers.length,
-              applicationId: latestApplication.id 
-            }
-          });
           setPreQuestionAnswers(latestApplication.preQuestionAnswers);
-        } else {
-          logger.debug('사전질문 답변이 없습니다:', { 
-            component: 'StaffProfileModal', 
-            data: { applicationId: latestApplication?.id }
-          });
         }
-      } else {
-        logger.debug('해당하는 지원서를 찾을 수 없습니다:', { 
-          component: 'StaffProfileModal', 
-          data: { eventId, userId }
-        });
       }
     } catch (error) {
       logger.error('사전질문 답변 로드 오류:', error instanceof Error ? error : new Error(String(error)), { 
@@ -126,62 +97,32 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
       
       // staff 데이터에 이미 추가 정보가 있는지 확인
       const hasExtendedInfo = staff.gender || staff.age || staff.experience || staff.nationality;
-      
+
       if (hasExtendedInfo) {
-        // staff 데이터에 이미 추가 정보가 포함되어 있으면 바로 사용
-        logger.debug('🔍 Staff 데이터에서 추가 정보 사용:', { component: 'StaffProfileModal', data: staff });
         setUserProfile(staff as ProfileData);
         setLoading(false);
         return;
       }
-      
-      // staff 데이터에 추가 정보가 없으면 users 컬렉션에서 조회
-      // 🔧 userId 추출 로직 개선 (복합 ID 처리)
-      // userId_sequenceNumber 형식에서 뒤의 숫자 제거
+
       let userId = staff.userId || staff.id;
 
-      // 확실히 _숫자 패턴 제거
       if (userId && userId.includes('_')) {
         userId = userId.replace(/_\d+$/, '');
       }
-
-      logger.debug('🔍 Users 컬렉션 조회 userId 확인:', {
-        component: 'StaffProfileModal',
-        data: {
-          originalStaffId: staff.id,
-          originalUserId: staff.userId,
-          finalUserId: userId,
-          hasUnderscore: staff.id?.includes('_'),
-          patternRemoved: staff.id?.includes('_') && staff.id !== userId
-        }
-      });
 
       if (!userId) {
         logger.warn('⚠️ userId를 찾을 수 없음', { component: 'StaffProfileModal', data: staff });
         setUserProfile(staff as ProfileData);
         return;
       }
-      
+
       setLoading(true);
       try {
-        logger.debug('🔍 사용자 프로필 조회 시작:', { component: 'StaffProfileModal', data: userId });
         const userDocRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userDocRef);
-        
+
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          logger.debug('✅ 사용자 프로필 데이터 로드 성공:', {
-            component: 'StaffProfileModal',
-            data: {
-              userId: userId,
-              hasGender: !!userData.gender,
-              hasAge: !!userData.age,
-              hasNationality: !!userData.nationality,
-              hasRegion: !!userData.region,
-              hasExperience: !!userData.experience,
-              fullUserData: userData
-            }
-          });
           setUserProfile({
             ...staff,
             // userData의 값들을 우선 사용 (staff에 없는 경우)

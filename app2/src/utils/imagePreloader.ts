@@ -2,6 +2,8 @@
  * 이미지 프리로딩 및 최적화 유틸리티
  */
 
+import { logger } from './logger';
+
 interface PreloadOptions {
   priority?: 'high' | 'low' | 'auto';
   sizes?: string;
@@ -49,7 +51,7 @@ export const preloadImages = async (
   try {
     await Promise.all(promises);
   } catch (error) {
-    console.warn('일부 이미지 프리로딩에 실패했습니다:', error);
+    logger.warn('일부 이미지 프리로딩에 실패했습니다:', { error: error instanceof Error ? error.message : String(error) });
   }
 };
 
@@ -135,7 +137,7 @@ export const getOptimizedImageUrl = (
 
       return url.toString();
     } catch (error) {
-      console.warn('이미지 URL 최적화 실패:', error);
+      logger.warn('이미지 URL 최적화 실패:', { error: error instanceof Error ? error.message : String(error) });
       return originalUrl;
     }
   }
@@ -146,5 +148,5 @@ export const getOptimizedImageUrl = (
 // 이미지 캐시 정리
 export const clearImageCache = (): void => {
   // 브라우저 캐시 정리는 사용자가 직접 수행해야 함
-  console.warn('이미지 캐시를 정리하려면 브라우저 설정에서 캐시를 삭제하세요.');
+  logger.warn('이미지 캐시를 정리하려면 브라우저 설정에서 캐시를 삭제하세요.');
 };

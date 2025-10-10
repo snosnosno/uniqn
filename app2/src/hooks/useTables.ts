@@ -525,9 +525,6 @@ export const useTables = () => {
 
       const totalTables = openTables.length;
 
-      logger.info(`💎 스네이크 드래프트 준비: ${sortedParticipants.length}명을 ${totalTables}개 테이블에 배치`, {
-        component: 'useTables'
-      });
 
       // 테이블 상태 초기화
       interface TableState {
@@ -549,21 +546,12 @@ export const useTables = () => {
       }));
 
 
-      logger.info(`🎯 스네이크 드래프트 알고리즘: 칩 순서대로 균등 배치 (인원 균형 보장)`, {
-        component: 'useTables'
-      });
 
       // 테이블 인덱스를 랜덤으로 섞기 (예: [0,1,2,3,4] → [2,4,0,3,1])
       const randomTableIndices = shuffleArray(tableStates.map((_, idx) => idx));
-      logger.info(`🎲 랜덤 테이블 순서: ${randomTableIndices.map(idx => `T${tableStates[idx]?.tableNumber || idx + 1}`).join('-')}`, {
-        component: 'useTables'
-      });
 
       // 전체 참가자를 칩 내림차순으로 정렬 (이미 sortedParticipants에 정렬되어 있음)
       // 스네이크 드래프트로 한 번에 배치 - 자동으로 인원 균형 보장
-      logger.info(`📍 전체 ${sortedParticipants.length}명을 스네이크 드래프트로 배치`, {
-        component: 'useTables'
-      });
 
       let tableIndex = 0;
       let forward = true;
@@ -596,9 +584,6 @@ export const useTables = () => {
           table.chipGroups.middle++;
         }
 
-        logger.debug(`스네이크배치 [${i + 1}/${totalCount}] ${participant.name} (${(participant.chips || 0).toLocaleString()}칩) → 테이블 ${table.tableNumber}`, {
-          component: 'useTables'
-        });
 
         // 스네이크 이동 로직 (랜덤 순서 배열 내에서 이동)
         if (forward) {
@@ -672,75 +657,6 @@ export const useTables = () => {
       const playerCountDiff = maxPlayers - minPlayers;
       const playerCountBalanced = playerCountDiff <= 1;
 
-      const chipPercentDiff = avgChips > 0 ? (chipRange / avgChips * 100).toFixed(1) : '0';
-      logger.info(`🎯 스네이크 드래프트 칩 균형 재배치 완료 (칩 순서 기반 자동 균등 배치)`, {
-        component: 'useTables'
-      });
-      logger.info(`📊 균형 성과 분석:`, {
-        component: 'useTables'
-      });
-      logger.info(`⚖️ 칩 균형도: ${balanceScore.toFixed(1)}점/100점 (표준편차: ${chipStdDev.toFixed(0)}칩)`, {
-        component: 'useTables'
-      });
-      logger.info(`💰 칩 분포: 평균 ${avgChips.toLocaleString()}칩 | 범위 ${minChips.toLocaleString()}~${maxChips.toLocaleString()} (차이: ${chipRange.toLocaleString()}칩, ${chipPercentDiff}%)`, {
-        component: 'useTables'
-      });
-      logger.info(`👥 인원 분포: ${minPlayers}~${maxPlayers}명 (차이: ${playerCountDiff}명) ${playerCountBalanced ? '✅ 균등함' : '⚠️ 불균등함'}`, {
-        component: 'useTables'
-      });
-      logger.info(`🎲 테이블별 세부 현황:`, {
-        component: 'useTables'
-      });
-
-      // 각 테이블별 상세 정보 (그룹 분포 포함)
-      balanceInfo.forEach(info => {
-        const diffFromAvg = info.totalChips - avgChips;
-        const percentDiff = avgChips > 0 ? (diffFromAvg / avgChips * 100).toFixed(1) : '0';
-        const sign = diffFromAvg >= 0 ? '+' : '';
-        const groupInfo = `[상위:${info.chipGroups.top} 중간:${info.chipGroups.middle} 하위:${info.chipGroups.bottom}]`;
-
-        // 그룹 균등성 체크
-        const groupBalance = Math.abs(info.chipGroups.top - info.chipGroups.middle) <= 1 &&
-                            Math.abs(info.chipGroups.middle - info.chipGroups.bottom) <= 1 &&
-                            Math.abs(info.chipGroups.top - info.chipGroups.bottom) <= 1;
-        const balanceIcon = groupBalance ? '✅' : '⚠️';
-
-        logger.info(`  ${balanceIcon} 테이블 ${info.tableNumber}: ${info.playerCount}명 ${groupInfo} | 총칩: ${info.totalChips.toLocaleString()} (1인평균: ${info.avgChipsPerPlayer.toLocaleString()}) | 전체평균대비: ${sign}${percentDiff}%`, {
-          component: 'useTables'
-        });
-      });
-
-      // 그룹별 분포 균등성 검증
-      const groupDistribution = balanceInfo.reduce((acc, table) => {
-        acc.top += table.chipGroups.top;
-        acc.middle += table.chipGroups.middle;
-        acc.bottom += table.chipGroups.bottom;
-        return acc;
-      }, { top: 0, middle: 0, bottom: 0 });
-
-      const totalDistributed = groupDistribution.top + groupDistribution.middle + groupDistribution.bottom;
-
-      // 그룹 분포의 균등성 점수 계산
-      const idealDistribution = totalDistributed / 3;
-      const groupBalanceScore = 100 - (
-        (Math.abs(groupDistribution.top - idealDistribution) +
-         Math.abs(groupDistribution.middle - idealDistribution) +
-         Math.abs(groupDistribution.bottom - idealDistribution)) / totalDistributed * 100
-      );
-
-      logger.info(`🏆 그룹 분포 결과: 상위 ${groupDistribution.top}명, 중간 ${groupDistribution.middle}명, 하위 ${groupDistribution.bottom}명 (총 ${totalDistributed}명)`, {
-        component: 'useTables'
-      });
-      logger.info(`📈 그룹 균등도: ${groupBalanceScore.toFixed(1)}점/100점 (이상값: ${idealDistribution.toFixed(1)}명씩)`, {
-        component: 'useTables'
-      });
-
-      // 전체 성과 요약
-      const overallScore = (balanceScore + groupBalanceScore) / 2;
-      logger.info(`🎖️ 전체 균형 점수: ${overallScore.toFixed(1)}점/100점 (칩균형: ${balanceScore.toFixed(1)}점 + 그룹균등: ${groupBalanceScore.toFixed(1)}점)`, {
-        component: 'useTables'
-      });
-
       // 사용자 피드백 메시지
       if (!playerCountBalanced) {
         toast.warning(`⚠️ 인원 불균형: 테이블 간 최대 ${playerCountDiff}명 차이가 발생했습니다.`);
@@ -750,11 +666,7 @@ export const useTables = () => {
 
       logAction('seats_reassigned_with_balancing', {
         participantsCount: activeParticipants.length,
-        tableCount: openTables.length,
-        balanceScore: balanceScore.toFixed(1),
-        groupBalanceScore: groupBalanceScore.toFixed(1),
-        overallScore: overallScore.toFixed(1),
-        playerCountBalanced
+        tableCount: openTables.length
       });
     } catch (e) {
       const errorContext = {

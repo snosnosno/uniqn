@@ -166,91 +166,32 @@ export const useStaffWorkData = ({
   const staffWorkData = useMemo((): StaffWorkDataItem[] => {
     const defaultAllowances = getDefaultAllowances();
     const result: StaffWorkDataItem[] = [];
-    
-    logger.debug('useStaffWorkData - 데이터 생성 시작', {
-      component: 'useStaffWorkData',
-      data: {
-        confirmedStaffCount: confirmedStaff.length,
-        workLogsCount: filteredWorkLogs.length
-      }
-    });
-    
-    // 먼저 스태프별로 고유한 ID 집합 생성 (중복 제거)
+
     const uniqueStaffMap = new Map<string, any>();
     confirmedStaff.forEach((staff: any) => {
       if (!uniqueStaffMap.has(staff.userId)) {
         uniqueStaffMap.set(staff.userId, staff);
       }
     });
-    
-    // 고유한 스태프들에 대해서만 처리
+
     uniqueStaffMap.forEach((staff: any) => {
-      // 디버깅: 스태프 정보 확인
-      logger.debug('스태프 처리 시작', {
-        component: 'useStaffWorkData',
-        data: {
-          staffName: staff.name,
-          userId: staff.userId,
-          applicantId: staff.applicantId,
-          role: staff.role,
-          roles: staff.roles
-        }
-      });
-      
-      // 해당 스태프의 WorkLogs 필터링 - 간소화된 매칭
+
       const staffWorkLogs = filteredWorkLogs.filter(log => {
-        // staffIdMapper 유틸리티 사용하여 간소화
         const staffIdentifiers = [staff.userId];
-        
-        // applicantId가 있고 userId와 다른 경우만 추가
+
         if (staff.applicantId && staff.applicantId !== staff.userId) {
           staffIdentifiers.push(staff.applicantId);
         }
-        
-        // 1. ID 매칭 (staffIdMapper 활용)
+
         if (matchStaffIdentifier(log, staffIdentifiers)) {
-          logger.debug('ID 매칭 성공', {
-            component: 'useStaffWorkData',
-            data: { 
-              staffId: log.staffId,
-              staffIdentifiers,
-              role: log.role
-            }
-          });
           return true;
         }
-        
-        // 2. 이름 매칭 (fallback)
+
         if (log.staffName === staff.name) {
-          logger.debug('이름 매칭 성공', {
-            component: 'useStaffWorkData',
-            data: { 
-              staffName: log.staffName, 
-              name: staff.name,
-              role: log.role
-            }
-          });
           return true;
         }
-        
+
         return false;
-      });
-      
-      logger.debug('WorkLogs 필터링 결과', {
-        component: 'useStaffWorkData',
-        data: {
-          staffName: staff.name,
-          matchedLogsCount: staffWorkLogs.length,
-          matchedLogs: staffWorkLogs.map(log => ({
-            id: log.id,
-            staffId: log.staffId,
-            staffName: log.staffName,
-            role: log.role,
-            date: log.date,
-            scheduledStartTime: log.scheduledStartTime,
-            scheduledEndTime: log.scheduledEndTime
-          }))
-        }
       });
       
       // 역할별로 WorkLogs 그룹화
@@ -367,15 +308,7 @@ export const useStaffWorkData = ({
         result.push(item);
       });
     });
-    
-    logger.debug('useStaffWorkData - 데이터 생성 완료', {
-      component: 'useStaffWorkData',
-      data: {
-        resultCount: result.length,
-        roles: Array.from(new Set(result.map(item => item.role)))
-      }
-    });
-    
+
     return result;
   }, [confirmedStaff, filteredWorkLogs, getSalaryInfo, calculateBasePay, getDefaultAllowances, staffAllowanceOverrides]);
   

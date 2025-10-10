@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 import type { NotificationType, NotificationCategory, NotificationPriority } from '../types';
 
 interface TestNotification {
@@ -201,7 +202,7 @@ const NotificationTestPage: React.FC = () => {
         });
         successCount++;
       } catch (error) {
-        console.error(`Failed to create ${type}:`, error);
+        logger.error(`Failed to create ${type}:`, error instanceof Error ? error : undefined);
         errorCount++;
       }
     }

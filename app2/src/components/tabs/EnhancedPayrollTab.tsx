@@ -72,22 +72,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       workLog => workLog.eventId === postingId
     );
     
-    logger.info(`정산탭 WorkLog 필터링: ${filteredWorkLogs.length}개 (공고: ${postingId})`, {
-      component: 'EnhancedPayrollTab', 
-      data: { 
-        postingId, 
-        totalWorkLogs: workLogsArray.length,
-        filteredCount: filteredWorkLogs.length,
-        workLogDetails: filteredWorkLogs.map(log => ({
-          id: log.id,
-          staffId: log.staffId,
-          date: log.date,
-          role: log.role,
-          eventId: log.eventId,
-          staffName: log.staffName
-        }))
-      }
-    });
     
     // 상태 변환은 한 번에 수행
     return filteredWorkLogs.map(workLog => ({
@@ -140,14 +124,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     // Set을 Array로 변환하면서 정렬까지 한 번에 수행
     const roles = roleSet.size > 0 ? Array.from(roleSet).sort() : [];
     
-    logger.info('정산탭 역할 목록', {
-      component: 'EnhancedPayrollTab',
-      data: { 
-        roles,
-        workLogsCount: workLogs.length,
-        confirmedStaffCount: jobPosting?.confirmedStaff?.length || 0
-      }
-    });
     
     return roles;
   }, [workLogs, jobPosting?.confirmedStaff]);
@@ -213,16 +189,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
   // 정산 계산 실행 (메모이제이션으로 무한루프 방지)
   const memoizedCalculatePayroll = useCallback(() => {
-    logger.info('정산 계산 조건 확인', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        hasConfirmedStaff: !!confirmedStaff,
-        confirmedStaffLength: confirmedStaff?.length || 0,
-        workLogsLength: workLogs.length,
-        eventId: jobPosting?.id || 'none'
-      }
-    });
-
     if (!confirmedStaff || confirmedStaff.length === 0 || workLogs.length === 0) {
       logger.warn('정산 계산 건너뛰기 - 필수 데이터 부족', {
         component: 'EnhancedPayrollTab',
@@ -234,16 +200,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       });
       return;
     }
-
-    logger.info('Web Worker 정산 계산 시작', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        confirmedStaff: confirmedStaff.length,
-        workLogs: workLogs.length,
-        period: `${startDate} ~ ${endDate}`,
-        dataSource: jobPosting ? 'jobPosting' : 'UnifiedData'
-      }
-    });
 
     calculatePayroll({
       workLogs,
@@ -257,41 +213,16 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [workLogs, confirmedStaff, jobPosting, startDate, endDate, memoizedRoleSalaryOverrides, memoizedStaffAllowanceOverrides, calculatePayroll]);
 
   useEffect(() => {
-    logger.info('useEffect 정산 계산 조건 체크', {
-      component: 'EnhancedPayrollTab',
-      data: {
-        calculationLoading,
-        workLogsLength: workLogs.length,
-        confirmedStaffCount,
-        currentCalculationKey: calculationKey,
-        lastCalculationKey: lastCalculationKey.current,
-        keyChanged: lastCalculationKey.current !== calculationKey
-      }
-    });
-
     // 임시로 조건을 단순화 - 디버깅용
     if (
-      !calculationLoading && 
+      !calculationLoading &&
       workLogs.length > 0
       // confirmedStaffCount > 0 &&  // 임시로 주석 처리
       // lastCalculationKey.current !== calculationKey  // 임시로 주석 처리
     ) {
-      logger.info('정산 계산 실행 조건 충족', {
-        component: 'EnhancedPayrollTab'
-      });
       lastCalculationKey.current = calculationKey;
       hasCalculated.current = true;
       memoizedCalculatePayroll();
-    } else {
-      logger.warn('정산 계산 실행 조건 불충족', {
-        component: 'EnhancedPayrollTab',
-        data: {
-          calculationLoading,
-          workLogsLength: workLogs.length,
-          confirmedStaffCount,
-          keyChanged: lastCalculationKey.current !== calculationKey
-        }
-      });
     }
   }, [calculationLoading, calculationKey, memoizedCalculatePayroll, confirmedStaffCount, workLogs.length]);
 
@@ -387,10 +318,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       link.click();
       document.body.removeChild(link);
 
-      logger.info('CSV 내보내기 완료', { 
-        component: 'EnhancedPayrollTab', 
-        data: { fileName, recordCount: payrollData.length }
-      });
     } catch (error) {
       logger.error('CSV 내보내기 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'EnhancedPayrollTab'
@@ -409,11 +336,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       logger.warn('JobPosting ID가 없어 Firebase에 저장할 수 없습니다.', { component: 'EnhancedPayrollTab' });
       return;
     }
-
-    logger.info('대량 수당 적용 시작', {
-      component: 'EnhancedPayrollTab',
-      data: { settings, targetCount: payrollData.length }
-    });
 
     try {
       // 적용 대상 결정 (전체 또는 선택된 스태프)
@@ -474,10 +396,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       // 상태 업데이트
       setStaffAllowanceOverrides(prev => ({ ...prev, ...updates }));
 
-      logger.info('대량 수당 적용 완료 - Firebase 저장 성공', {
-        component: 'EnhancedPayrollTab',
-        data: { updatedStaff: targetStaffIds.length, benefits: updatedBenefits }
-      });
 
     } catch (error) {
       logger.error('대량 수당 적용 중 오류 발생', error instanceof Error ? error : new Error(String(error)), {
@@ -519,11 +437,6 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [payrollData, selectedStaffIds, staffAllowanceOverrides, jobPosting]);
   
   const updateStaffAllowances = useCallback((uniqueKey: string, allowances: any) => {
-    logger.info('스태프 수당 업데이트', { 
-      component: 'EnhancedPayrollTab', 
-      data: { uniqueKey, allowances }
-    });
-    
     // 개별 스태프 수당 업데이트
     setStaffAllowanceOverrides(prev => ({
       ...prev,
@@ -532,21 +445,16 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, []);
   
   const updateRoleSalarySettings = useCallback((roleSalaries: RoleSalaryConfig) => {
-    logger.info('역할별 급여 설정 업데이트', { 
-      component: 'EnhancedPayrollTab',
-      data: { roleSalaries }
-    });
-    
     // 역할별 급여 설정 전체 업데이트
     const updates: Record<string, { salaryType: string; salaryAmount: number }> = {};
-    
+
     Object.entries(roleSalaries).forEach(([role, config]) => {
       updates[role] = {
         salaryType: config.salaryType,
         salaryAmount: config.salaryAmount
       };
     });
-    
+
     setRoleSalaryOverrides(updates);
   }, []);
 

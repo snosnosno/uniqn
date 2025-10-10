@@ -5,6 +5,8 @@
  * - 사용하지 않는 폰트 제거
  */
 
+import { logger } from './logger';
+
 interface FontConfig {
   family: string;
   weight: number | string;
@@ -60,7 +62,7 @@ export const checkFontLoad = async (fontFamily: string): Promise<boolean> => {
     await document.fonts.load(`16px "${fontFamily}"`);
     return document.fonts.check(`16px "${fontFamily}"`);
   } catch (error) {
-    console.warn(`폰트 로드 확인 실패: ${fontFamily}`, error);
+    logger.warn(`폰트 로드 확인 실패: ${fontFamily}`, { error: error instanceof Error ? error.message : String(error) });
     return false;
   }
 };
@@ -179,7 +181,7 @@ export const initializeFontOptimization = (): void => {
       try {
         preloadCriticalFonts();
       } catch (error) {
-        console.warn('폰트 프리로딩 실패:', error);
+        logger.warn('폰트 프리로딩 실패:', { error: error instanceof Error ? error.message : String(error) });
       }
     }, { timeout: 5000 });
 
@@ -190,11 +192,11 @@ export const initializeFontOptimization = (): void => {
           analyzeUsedFontWeights();
         })
         .catch((error) => {
-          console.warn('폰트 로드 상태 확인 실패:', error);
+          logger.warn('폰트 로드 상태 확인 실패:', { error: error instanceof Error ? error.message : String(error) });
         });
     }
   } catch (error) {
-    console.error('폰트 최적화 초기화 실패:', error);
+    logger.error('폰트 최적화 초기화 실패:', error instanceof Error ? error : undefined);
     // 폴백: 시스템 폰트만 사용
     const fallbackStyle = document.createElement('style');
     fallbackStyle.textContent = `

@@ -86,14 +86,6 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
 
     try {
       const result = await smartCache.get<T>(config.namespace, key);
-      
-      if (result) {
-        logger.debug('캐시에서 데이터 조회 성공', {
-          component: 'useSmartCache',
-          data: { namespace: config.namespace, key }
-        });
-      }
-      
       return result;
     } catch (error) {
       logger.error('캐시 조회 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -120,16 +112,6 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
         tags: [...config.tags, ...(options?.tags || [])],
         version: 1
       });
-
-      logger.debug('캐시에 데이터 저장 완료', {
-        component: 'useSmartCache',
-        data: { 
-          namespace: config.namespace, 
-          key,
-          ttl: options?.ttl || config.defaultTTL,
-          tags: [...config.tags, ...(options?.tags || [])]
-        }
-      });
     } catch (error) {
       logger.error('캐시 저장 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'useSmartCache',
@@ -147,12 +129,6 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
 
     try {
       const result = await smartCache.delete(config.namespace, key);
-      
-      logger.debug('캐시 무효화 완료', {
-        component: 'useSmartCache',
-        data: { namespace: config.namespace, key, success: result }
-      });
-      
       return result;
     } catch (error) {
       logger.error('캐시 무효화 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -196,26 +172,17 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
 
     // 강제 새로고침이면 캐시 무시
     if (options?.forceRefresh) {
-      logger.debug('강제 새로고침 모드', {
-        component: 'useSmartCache',
-        data: { key }
-      });
-
       const result = await fetcher();
       const cacheOptions: { ttl?: number; tags?: string[] } = {};
       if (options.ttl !== undefined) cacheOptions.ttl = options.ttl;
       if (options.tags !== undefined) cacheOptions.tags = options.tags;
-      
+
       await setCached(key, result as unknown as T, cacheOptions);
       return result;
     }
 
     // 중복 요청 방지
     if (pendingRequests.current.has(fullKey)) {
-      logger.debug('중복 요청 감지, 기존 Promise 반환', {
-        component: 'useSmartCache',
-        data: { key }
-      });
       return pendingRequests.current.get(fullKey)!;
     }
 
@@ -223,27 +190,16 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
     if (config.enableCache) {
       const cached = await getCached(key);
       if (cached) {
-        logger.debug('캐시 히트', {
-          component: 'useSmartCache',
-          data: { key }
-        });
-
         // Stale-While-Revalidate 전략
         if (options?.staleWhileRevalidate) {
-          // 백그라운드에서 새 데이터 패치
           Promise.resolve().then(async () => {
             try {
               const fresh = await fetcher();
               const freshCacheOptions: { ttl?: number; tags?: string[] } = {};
               if (options.ttl !== undefined) freshCacheOptions.ttl = options.ttl;
               if (options.tags !== undefined) freshCacheOptions.tags = options.tags;
-              
+
               await setCached(key, fresh as unknown as T, freshCacheOptions);
-              
-              logger.debug('백그라운드 갱신 완료', {
-                component: 'useSmartCache',
-                data: { key }
-              });
             } catch (error) {
               logger.warn(`백그라운드 갱신 실패 [${key}]: ${error instanceof Error ? error.message : String(error)}`);
             }
@@ -253,12 +209,6 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
         return cached as R;
       }
     }
-
-    // 캐시 미스, fetcher 실행
-    logger.debug('캐시 미스, 데이터 패치 시작', {
-      component: 'useSmartCache',
-      data: { key }
-    });
 
     const fetchPromise = fetcher().then(async (result) => {
       if (config.enableCache) {
@@ -286,29 +236,18 @@ export const useSmartCache = <T = any>(options: CacheHookOptions = {}): CacheHoo
       return;
     }
 
-    // 이미 캐시에 있으면 패치하지 않음
     const cached = await getCached(key);
     if (cached) {
       return;
     }
-
-    logger.debug('프리패치 시작', {
-      component: 'useSmartCache',
-      data: { key }
-    });
 
     try {
       const result = await fetcher();
       const prefetchCacheOptions: { ttl?: number; tags?: string[] } = {};
       if (config.defaultTTL !== undefined) prefetchCacheOptions.ttl = config.defaultTTL;
       if (config.tags !== undefined) prefetchCacheOptions.tags = config.tags;
-      
+
       await setCached(key, result, prefetchCacheOptions);
-      
-      logger.debug('프리패치 완료', {
-        component: 'useSmartCache',
-        data: { key }
-      });
     } catch (error) {
       logger.warn(`프리패치 실패 [${key}]: ${error instanceof Error ? error.message : String(error)}`);
     }
