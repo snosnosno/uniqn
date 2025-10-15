@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import JobPostingForm from '../components/jobPosting/JobPostingForm';
 import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
@@ -104,6 +105,23 @@ const JobPostingAdminPage = () => {
           onClose={closeEditModal}
           currentPost={currentPost}
           onUpdate={handleUpdate}
+        />
+
+        {/* 삭제 확인 모달 */}
+        <ConfirmModal
+          isOpen={!!deleteConfirmPost}
+          onClose={() => setDeleteConfirmPost(null)}
+          onConfirm={async () => {
+            const success = await handleDeleteJobPostingConfirm();
+            if (success) {
+              toast.success(`"${deleteConfirmPost?.title}" 공고가 삭제되었습니다.`);
+            }
+          }}
+          title="공고 삭제"
+          message={`"${deleteConfirmPost?.title}" 공고를 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.`}
+          confirmText="삭제"
+          cancelText="취소"
+          isDangerous={true}
         />
       </div>
     </div>
