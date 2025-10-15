@@ -105,6 +105,30 @@ const {
 
 > 📖 **상세 가이드**: [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)
 
+## 📢 **알림 시스템**
+
+### 문서 참조
+- **시스템 개요**: [docs/NOTIFICATION_SYSTEM.md](docs/NOTIFICATION_SYSTEM.md)
+- **구현 로드맵**: [docs/NOTIFICATION_IMPLEMENTATION_ROADMAP.md](docs/NOTIFICATION_IMPLEMENTATION_ROADMAP.md)
+
+### 현재 상태
+- **UI 시스템**: 100% 완성 ✅
+- **Firebase Functions**: 20% 완성 (1/5 함수)
+- **알림 타입**: 10개 (system: 3, work: 3, schedule: 3, finance: 1)
+
+### 주요 구성요소
+```typescript
+// 프론트엔드 (완성)
+- useNotifications() Hook
+- NotificationCenter 컴포넌트
+- Push & Local Notification 서비스
+
+// 백엔드 (구현 필요)
+- 5개 Firebase Functions (Phase 1)
+- Cloud Scheduler 설정
+- FCM 토큰 관리 시스템
+```
+
 ## ⚡ **자주 사용하는 명령어**
 
 ### 개발 & 디버깅
