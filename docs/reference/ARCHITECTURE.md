@@ -152,7 +152,7 @@ const newPosting = await createJobPosting(formData);
 const application = {
   eventId: jobPosting.id,
   applicantId: user.uid,
-  status: 'pending'
+  status: 'applied'
 };
 // Firebase: applications 컬렉션에 저장
 ```
@@ -444,7 +444,7 @@ interface Application {
   id: string;              // 문서 ID
   eventId: string;         // 표준 이벤트 ID ✅
   applicantId: string;     // 지원자 ID
-  status: 'pending' | 'confirmed' | 'rejected' | 'cancelled';
+  status: 'applied' | 'confirmed' | 'cancelled';
   assignments?: {          // 배정 정보
     date: string;
     role: string;
@@ -507,7 +507,7 @@ const transformApplicationData = (doc: DocumentData): Application => ({
   postId: doc.postId || '',
   eventId: doc.eventId || doc.postId || '',  // 중요: eventId 보장
   applicantId: doc.applicantId || '',
-  status: doc.status || 'pending',
+  status: doc.status || 'applied',
   assignments: doc.assignments || [],
   // ... 기타 필드
 });

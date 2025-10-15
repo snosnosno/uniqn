@@ -76,7 +76,7 @@ interface NewFeatureData {
   staffId: string;
   eventId: string;
   timestamp: Date;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'applied' | 'confirmed' | 'cancelled';
 }
 
 const processFeature = (data: NewFeatureData): Promise<void> => {
