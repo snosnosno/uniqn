@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { logger } from '../utils/logger';
 
 interface AttendanceRecord {
   staffId: string;

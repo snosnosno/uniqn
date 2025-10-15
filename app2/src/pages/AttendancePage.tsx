@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useLocation } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +7,12 @@ import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { usePageOptimizedData } from '../hooks/useUnifiedData';
 
 import { logger } from '../utils/logger';
+
+// Html5QrcodeScanner 타입 정의
+type Html5QrcodeScanner = {
+  render: (onSuccess: (decodedText: string) => void, onError: (error: string) => void) => void;
+  clear: () => Promise<void>;
+};
 
 const AttendancePage: React.FC = () => {
     const { t } = useTranslation();
@@ -34,44 +39,53 @@ const AttendancePage: React.FC = () => {
         });
     }, [role, workLogs.length, attendanceRecords.length]);
 
-    // QR 스캐너 초기화
+    // QR 스캐너 초기화 (동적 import로 번들 최적화)
     useEffect(() => {
-        if (!scannerRef.current) {
-            scannerRef.current = new Html5QrcodeScanner(
-                'qr-reader',
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                false
-            );
+        const initScanner = async () => {
+            if (!scannerRef.current) {
+                // html5-qrcode를 동적으로 import
+                const { Html5QrcodeScanner } = await import('html5-qrcode');
 
-            scannerRef.current.render(
-                async (decodedText) => {
-                    setScanResult(decodedText);
+                scannerRef.current = new Html5QrcodeScanner(
+                    'qr-reader',
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    false
+                ) as unknown as Html5QrcodeScanner;
 
-                    // Extract token from URL
-                    const urlParts = decodedText.split('/');
-                    const token = urlParts[urlParts.length - 1];
+                scannerRef.current.render(
+                    async (decodedText) => {
+                        setScanResult(decodedText);
 
-                    if (token && !isSubmitting) {
-                        setIsSubmitting(true);
-                        setFeedback(null);
-                        try {
-                            await callFunctionLazy('recordAttendance', { qrCodeToken: token });
-                            setFeedback({ type: 'success', message: t('attendancePage.success') });
-                        } catch (err: unknown) {
-                            logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AttendancePage' });
-                            setFeedback({ type: 'error', message: (err as Error).message || t('attendancePage.fail') });
-                        } finally {
-                            setIsSubmitting(false);
-                            setTimeout(() => setScanResult(''), 2000);
+                        // Extract token from URL
+                        const urlParts = decodedText.split('/');
+                        const token = urlParts[urlParts.length - 1];
+
+                        if (token && !isSubmitting) {
+                            setIsSubmitting(true);
+                            setFeedback(null);
+                            try {
+                                await callFunctionLazy('recordAttendance', { qrCodeToken: token });
+                                setFeedback({ type: 'success', message: t('attendancePage.success') });
+                            } catch (err: unknown) {
+                                logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AttendancePage' });
+                                setFeedback({ type: 'error', message: (err as Error).message || t('attendancePage.fail') });
+                            } finally {
+                                setIsSubmitting(false);
+                                setTimeout(() => setScanResult(''), 2000);
+                            }
                         }
+                    },
+                    (errorMessage) => {
+                        // QR 코드 스캔 오류는 무시 (지속적으로 발생)
+                        logger.debug('QR scan error', { error: errorMessage });
                     }
-                },
-                (errorMessage) => {
-                    // QR 코드 스캔 오류는 무시 (지속적으로 발생)
-                    logger.debug('QR scan error', { error: errorMessage });
-                }
-            );
-        }
+                );
+            }
+        };
+
+        initScanner().catch((err) => {
+            logger.error('QR scanner initialization error', err instanceof Error ? err : new Error(String(err)));
+        });
 
         return () => {
             if (scannerRef.current) {

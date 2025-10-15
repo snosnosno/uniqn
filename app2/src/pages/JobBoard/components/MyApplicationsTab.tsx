@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
-import { logger } from '../../../utils/logger';
 import AssignmentDisplay from '../../../components/common/AssignmentDisplay';
 import {
   Application,

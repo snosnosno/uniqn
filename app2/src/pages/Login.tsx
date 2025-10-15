@@ -20,7 +20,6 @@ const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
-  const [blockTime, setBlockTime] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const navigate = useNavigate();
   const { signIn, signInWithGoogle /* , signInWithKakao */ } = useAuth();
@@ -46,7 +45,6 @@ const Login: React.FC = () => {
         const blockStatus = await isLoginBlocked(email);
         if (blockStatus.isBlocked && blockStatus.remainingTime) {
           setIsBlocked(true);
-          setBlockTime(blockStatus.remainingTime);
           setAttempts(blockStatus.attempts || 0);
           setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
         } else {
@@ -69,7 +67,6 @@ const Login: React.FC = () => {
       const blockStatus = await isLoginBlocked(email);
       if (blockStatus.isBlocked && blockStatus.remainingTime) {
         setIsBlocked(true);
-        setBlockTime(blockStatus.remainingTime);
         setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
         return;
       }
@@ -101,7 +98,6 @@ const Login: React.FC = () => {
         const blockStatus = await isLoginBlocked(email);
         if (blockStatus.isBlocked && blockStatus.remainingTime) {
           setIsBlocked(true);
-          setBlockTime(blockStatus.remainingTime);
           setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
         } else {
           setAttempts(blockStatus.attempts || 0);

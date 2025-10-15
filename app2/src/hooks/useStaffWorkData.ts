@@ -7,7 +7,6 @@ import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, Role
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { calculateWorkHours } from '../utils/workLogMapper';
 import { matchStaffIdentifier } from '../utils/staffIdMapper';
-import { logger } from '../utils/logger';
 
 interface StaffWorkDataItem extends EnhancedPayrollCalculation {
   // 추가 필드

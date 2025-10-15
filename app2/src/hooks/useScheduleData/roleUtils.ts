@@ -1,5 +1,3 @@
-import { logger } from '../../utils/logger';
-
 /**
  * 지원서 상태에 따른 역할 결정 함수 (날짜별 역할 매칭)
  * @param data applications 컬렉션 데이터

@@ -639,18 +639,9 @@ export const useTables = () => {
       }));
 
       // 결과 통계 계산
-      const chipValues = balanceInfo.map(t => t.totalChips);
       const playerCounts = balanceInfo.map(t => t.playerCount);
-      const avgChips = chipValues.reduce((a, b) => a + b, 0) / chipValues.length;
-      const maxChips = Math.max(...chipValues);
-      const minChips = Math.min(...chipValues);
-      const chipRange = maxChips - minChips;
       const maxPlayers = Math.max(...playerCounts);
       const minPlayers = Math.min(...playerCounts);
-
-      // 칩 균형도 점수 계산 (표준편차 기반)
-      const chipStdDev = Math.sqrt(chipValues.reduce((sum, chips) => sum + Math.pow(chips - avgChips, 2), 0) / chipValues.length);
-      const balanceScore = avgChips > 0 ? Math.max(0, 100 - (chipStdDev / avgChips * 100)) : 100;
 
       // Smart Balance 균형 결과 자세히 로깅
       // 균형 검증

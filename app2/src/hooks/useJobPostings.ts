@@ -1,5 +1,4 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { logger } from '../utils/logger';
 import { getDocs, DocumentSnapshot } from 'firebase/firestore';
 
 import { buildFilteredQuery } from '../firebase';

@@ -99,7 +99,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   // 역할 목록 (UnifiedData에서 추출, jobPosting은 보조) - normalizeRole 적용
   const availableRoles = useMemo(() => {
     const roleSet = new Set<string>();
-    
+
     // 1. WorkLogs에서 역할 추출 (정규화된 형태로 저장)
     workLogs.forEach(workLog => {
       if (workLog.role) {
@@ -122,10 +122,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     
     // Set을 Array로 변환하면서 정렬까지 한 번에 수행
     const roles = roleSet.size > 0 ? Array.from(roleSet).sort() : [];
-    
-    
+
+
     return roles;
-  }, [workLogs, jobPosting?.confirmedStaff]);
+  }, [workLogs, jobPosting]);
 
   // 수당 및 급여 오버라이드 상태 관리
   const [staffAllowanceOverrides, setStaffAllowanceOverrides] = useState<Record<string, any>>({});
@@ -172,12 +172,12 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   // 객체 참조 안정화를 위한 메모이제이션 (무한 루프 방지)
   const roleSalaryOverridesJson = JSON.stringify(roleSalaryOverrides);
   const memoizedRoleSalaryOverrides = useMemo(() =>
-    roleSalaryOverrides || {}, [roleSalaryOverridesJson]
+    roleSalaryOverrides || {}, [roleSalaryOverrides, roleSalaryOverridesJson]
   );
 
   const staffAllowanceOverridesJson = JSON.stringify(staffAllowanceOverrides);
   const memoizedStaffAllowanceOverrides = useMemo(() =>
-    staffAllowanceOverrides || {}, [staffAllowanceOverridesJson, staffAllowanceOverrides]
+    staffAllowanceOverrides || {}, [staffAllowanceOverridesJson]
   );
 
   // 중복 계산 방지를 위한 키 메모이제이션 (무한 루프 방지)
@@ -228,22 +228,22 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   // 통합된 로딩 및 에러 상태
   const isLoading = dataLoading || calculationLoading;
   const error = state.error.global || calculationError;
-  
 
-  // 실제 정산 데이터 사용
-  const staffWorkData = payrollData || [];
-  
+
+  // 실제 정산 데이터 사용 (메모이제이션으로 안정적인 참조 유지)
+  const staffWorkData = useMemo(() => payrollData || [], [payrollData]);
+
   // 로컬 상태로 구현해야 할 기능들
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
-  
+
   const toggleStaffSelection = useCallback((staffId: string) => {
-    setSelectedStaffIds(prev => 
-      prev.includes(staffId) 
+    setSelectedStaffIds(prev =>
+      prev.includes(staffId)
         ? prev.filter(id => id !== staffId)
         : [...prev, staffId]
     );
   }, []);
-  
+
   const toggleSelectAll = useCallback(() => {
     if (!staffWorkData) return;
     setSelectedStaffIds(prev =>

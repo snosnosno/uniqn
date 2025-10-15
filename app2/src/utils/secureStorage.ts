@@ -1,4 +1,5 @@
-import CryptoJS from 'crypto-js';
+import AES from 'crypto-js/aes';
+import Utf8 from 'crypto-js/enc-utf8';
 import { logger } from './logger';
 
 /**
@@ -33,9 +34,13 @@ import { logger } from './logger';
 // 암호화 키 - 환경 변수에서 가져오거나 fallback 사용
 const SECRET_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'tholdem-default-encryption-key-2025';
 
-// 경고: 프로덕션 환경에서는 반드시 환경 변수로 키를 설정해야 함
-if (!process.env.REACT_APP_ENCRYPTION_KEY && process.env.NODE_ENV === 'production') {
-  logger.warn('REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 기본 키를 사용합니다.', {
+// 프로덕션 환경에서는 반드시 환경 변수로 키를 설정해야 함 (강제)
+if (!process.env.REACT_APP_ENCRYPTION_KEY) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('[CRITICAL] REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 프로덕션 환경에서 필수입니다.');
+  }
+
+  logger.warn('REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 개발 환경에서 기본 키를 사용합니다.', {
     component: 'secureStorage'
   });
 }
@@ -47,7 +52,7 @@ if (!process.env.REACT_APP_ENCRYPTION_KEY && process.env.NODE_ENV === 'productio
  */
 const encrypt = (value: string): string => {
   try {
-    return CryptoJS.AES.encrypt(value, SECRET_KEY).toString();
+    return AES.encrypt(value, SECRET_KEY).toString();
   } catch (error) {
     logger.error('암호화 실패', error instanceof Error ? error : new Error(String(error)), {
       component: 'secureStorage'
@@ -63,8 +68,8 @@ const encrypt = (value: string): string => {
  */
 const decrypt = (encryptedValue: string): string => {
   try {
-    const bytes = CryptoJS.AES.decrypt(encryptedValue, SECRET_KEY);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    const bytes = AES.decrypt(encryptedValue, SECRET_KEY);
+    const decrypted = bytes.toString(Utf8);
 
     if (!decrypted) {
       throw new Error('복호화 결과가 비어있습니다.');
