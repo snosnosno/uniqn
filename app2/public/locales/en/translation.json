@@ -116,7 +116,8 @@
     "approvals": "Approvals",
     "userManagement": "User Management",
     "inquiryManagement": "Inquiry Management",
-    "support": "Support"
+    "support": "Support",
+    "ceoDashboard": "CEO Dashboard"
   },
   "layout": {
     "title": "T-Holdem",
@@ -135,7 +136,13 @@
     "processPayrollLink": "Process Payroll",
     "topRatedDealers": "Top Rated Dealers",
     "ratingsCount": "({{count}} ratings)",
-    "noRatings": "No dealer ratings yet."
+    "noRatings": "No dealer ratings yet.",
+    "ceo": {
+      "title": "CEO Dashboard",
+      "subtitle": "Business-wide statistics and analytics",
+      "lastUpdated": "Last updated",
+      "realtime": "Real-time"
+    }
   },
   "approvalPage": {
     "title": "Pending Registration Approvals",
@@ -246,7 +253,9 @@
     "viewList": "View List",
     "createPost": "Create Post",
     "preQuestionAnswer": "Pre-question answer",
-    "applying": "Applying"
+    "applying": "Applying",
+    "confirm": "Confirm",
+    "delete": "Delete"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -476,6 +485,7 @@
       "applicationFailed": "Failed to submit application.",
       "selectAssignment": "Please select a time and role to apply for.",
       "confirmCancel": "Are you sure you want to cancel your application?",
+      "cancelMessage": "Are you sure you want to cancel your application?",
       "cancelSuccess": "Application cancelled successfully.",
       "cancelFailed": "Failed to cancel application."
     },
@@ -1183,7 +1193,8 @@
     "categories": {
       "system": "System",
       "work": "Work",
-      "schedule": "Schedule"
+      "schedule": "Schedule",
+      "finance": "Finance"
     },
     "types": {
       "job_posting_announcement": "Job Announcement",

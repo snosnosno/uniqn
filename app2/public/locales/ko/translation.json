@@ -116,7 +116,8 @@
     "approvals": "가입 승인",
     "userManagement": "사용자 관리",
     "inquiryManagement": "문의 관리",
-    "support": "고객지원"
+    "support": "고객지원",
+    "ceoDashboard": "CEO 대시보드"
   },
   "layout": {
     "title": "T-홀덤",
@@ -135,7 +136,13 @@
     "processPayrollLink": "급여 처리",
     "topRatedDealers": "상위 평점 딜러",
     "ratingsCount": "({{count}}개 평점)",
-    "noRatings": "아직 딜러 평점이 없습니다."
+    "noRatings": "아직 딜러 평점이 없습니다.",
+    "ceo": {
+      "title": "CEO 대시보드",
+      "subtitle": "비즈니스 전체 통계 및 분석",
+      "lastUpdated": "마지막 업데이트",
+      "realtime": "실시간"
+    }
   },
   "approvalPage": {
     "title": "가입 승인 대기 목록",
@@ -246,7 +253,9 @@
     "viewList": "목록 보기",
     "createPost": "공고 작성",
     "preQuestionAnswer": "사전질문 답변",
-    "applying": "지원중"
+    "applying": "지원중",
+    "confirm": "확인",
+    "delete": "삭제"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -477,6 +486,7 @@
       "cancelFailed": "지원 취소에 실패했습니다.",
       "cancelSuccess": "지원이 취소되었습니다.",
       "confirmCancel": "정말로 지원을 취소하시겠습니까?",
+      "cancelMessage": "정말로 지원을 취소하시겠습니까?",
       "loginRequired": "로그인이 필요합니다.",
       "profileNotFound": "프로필을 찾을 수 없습니다.",
       "selectAssignment": "시간대와 역할을 선택해주세요."
@@ -1244,7 +1254,8 @@
     "categories": {
       "system": "시스템",
       "work": "근무",
-      "schedule": "일정"
+      "schedule": "일정",
+      "finance": "재무"
     },
     "types": {
       "job_posting_announcement": "공고 공지",
