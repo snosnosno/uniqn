@@ -46,6 +46,7 @@ import {
 // Notification Pages
 const NotificationTestPage = React.lazy(() => import('./pages/NotificationTestPage'));
 const AnnouncementsPage = React.lazy(() => import('./pages/AnnouncementsPage'));
+const NotificationSettingsPage = React.lazy(() => import('./pages/NotificationSettingsPage'));
 
 // Extract components from chunks
 const {
@@ -174,6 +175,7 @@ const App: React.FC = () => {
 
                       {/* 알림 센터 */}
                       <Route path="notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationsPage /></Suspense>} />
+                      <Route path="notification-settings" element={<Suspense fallback={<LoadingSpinner />}><NotificationSettingsPage /></Suspense>} />
                       <Route path="test-notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationTestPage /></Suspense>} />
                       <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
 

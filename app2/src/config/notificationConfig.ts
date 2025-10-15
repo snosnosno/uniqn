@@ -4,8 +4,9 @@
  * @description
  * 알림 타입별 아이콘, 색상, 라우팅 설정
  *
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2025-10-02
+ * @updated 2025-10-15
  */
 
 import type { NotificationType, NotificationCategory, NotificationPriority } from '../types/notification';
@@ -32,6 +33,13 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     defaultPriority: 'high',
     category: 'system',
     route: () => '/app/jobs',
+  },
+  new_job_posting: {
+    icon: '🎯',
+    color: 'blue',
+    defaultPriority: 'medium',
+    category: 'system',
+    route: (relatedId) => relatedId ? `/app/jobs/${relatedId}` : '/app/jobs',
   },
   system_announcement: {
     icon: '🔔',
@@ -68,39 +76,16 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     color: 'red',
     defaultPriority: 'medium',
     category: 'work',
-    route: () => '/app/jobs',
+    route: () => '/app/my-schedule',
   },
 
   // Schedule
-  schedule_reminder: {
-    icon: '⏰',
-    color: 'orange',
-    defaultPriority: 'high',
-    category: 'schedule',
-    route: () => '/app/my-schedule',
-  },
   schedule_change: {
     icon: '📅',
     color: 'orange',
     defaultPriority: 'high',
     category: 'schedule',
     route: () => '/app/my-schedule',
-  },
-  attendance_reminder: {
-    icon: '📍',
-    color: 'orange',
-    defaultPriority: 'medium',
-    category: 'schedule',
-    route: () => '/app/attendance',
-  },
-
-  // Finance
-  salary_notification: {
-    icon: '💰',
-    color: 'yellow',
-    defaultPriority: 'high',
-    category: 'finance',
-    route: () => '/app/staff',
   },
 };
 
@@ -111,7 +96,6 @@ export const CATEGORY_COLORS: Record<NotificationCategory, string> = {
   system: 'blue',
   work: 'green',
   schedule: 'orange',
-  finance: 'yellow',
 };
 
 /**

@@ -11,7 +11,7 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FaBell } from '../Icons/ReactIconsReplacement';
+import { FaBell, FaCog } from '../Icons/ReactIconsReplacement';
 
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationBadge from './NotificationBadge';
@@ -64,6 +64,14 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
   const handleViewAll = useCallback(() => {
     closeDropdown();
     navigate('/app/notifications');
+  }, [navigate, closeDropdown]);
+
+  /**
+   * 설정 페이지로 이동
+   */
+  const handleSettings = useCallback(() => {
+    closeDropdown();
+    navigate('/app/notification-settings');
   }, [navigate, closeDropdown]);
 
   /**
@@ -144,14 +152,24 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
               <h3 className="font-semibold text-gray-900">
                 {t('notifications.title', '알림')}
               </h3>
-              {unreadCount > 0 && (
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    {t('notifications.markAllAsRead', '모두 읽음')}
+                  </button>
+                )}
                 <button
-                  onClick={markAllAsRead}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  onClick={handleSettings}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label={t('notifications.settings.title', '알림 설정')}
+                  title={t('notifications.settings.title', '알림 설정')}
                 >
-                  {t('notifications.markAllAsRead', '모두 읽음')}
+                  <FaCog className="w-4 h-4 text-gray-600" />
                 </button>
-              )}
+              </div>
             </div>
 
             {/* 알림 목록 */}

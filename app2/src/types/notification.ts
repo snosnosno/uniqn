@@ -3,12 +3,13 @@
  *
  * @description
  * 확장 가능한 알림 시스템을 위한 타입 정의
- * - 10가지 알림 타입 지원
+ * - 8가지 알림 타입 지원
  * - 카테고리/우선순위 기반 분류
  * - 액션 타입 정의
  *
- * @version 1.0.0
+ * @version 1.2.0
  * @since 2025-10-02
+ * @updated 2025-10-15
  */
 
 import { Timestamp as FirebaseTimestamp } from 'firebase/firestore';
@@ -17,29 +18,25 @@ import { Timestamp as FirebaseTimestamp } from 'firebase/firestore';
  * 알림 카테고리 (대분류)
  */
 export type NotificationCategory =
-  | 'system'      // 시스템 공지, 업데이트
-  | 'work'        // 지원, 승인, 근무 관련
-  | 'schedule'    // 일정, 출석, 리마인더
-  | 'finance';    // 급여, 정산
+  | 'system'      // 시스템 공지, 신규 공고
+  | 'work'        // 지원, 확정, 취소 관련
+  | 'schedule';   // 근무시간 변경
 
 /**
  * 알림 타입 (세부 분류)
  */
 export type NotificationType =
   // System
-  | 'job_posting_announcement'
-  | 'system_announcement'
-  | 'app_update'
+  | 'job_posting_announcement'  // 공고별 공지 전송 (구현됨)
+  | 'new_job_posting'            // 신규 공고 등록 알림 (구현 예정)
+  | 'system_announcement'        // 시스템 공지
+  | 'app_update'                 // 앱 업데이트
   // Work
-  | 'job_application'
-  | 'staff_approval'
-  | 'staff_rejection'
+  | 'job_application'            // 지원서 제출 알림 (구현 예정)
+  | 'staff_approval'             // 지원 확정 알림 (구현 예정)
+  | 'staff_rejection'            // 지원 취소 알림 (구현 예정)
   // Schedule
-  | 'schedule_reminder'
-  | 'schedule_change'
-  | 'attendance_reminder'
-  // Finance
-  | 'salary_notification';
+  | 'schedule_change';           // 근무시간 변경 알림 (구현 예정)
 
 /**
  * 알림 우선순위
@@ -102,6 +99,22 @@ export interface Notification {
 }
 
 /**
+ * 조용한 시간대 설정
+ */
+export interface QuietHours {
+  enabled: boolean;
+  start: string; // "22:00" 형식
+  end: string;   // "08:00" 형식
+}
+
+/**
+ * 알림 타입별 설정
+ */
+export interface NotificationTypeSettings {
+  [key: string]: boolean;
+}
+
+/**
  * 알림 설정 (사용자별)
  */
 export interface NotificationSettings {
@@ -114,6 +127,9 @@ export interface NotificationSettings {
       emailEnabled: boolean;
     };
   };
+  types?: NotificationTypeSettings; // 타입별 세부 설정
+  quietHours?: QuietHours;
+  updatedAt?: Date | FirebaseTimestamp;
 }
 
 /**

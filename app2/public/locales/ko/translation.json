@@ -1244,25 +1244,34 @@
     "categories": {
       "system": "시스템",
       "work": "근무",
-      "schedule": "일정",
-      "finance": "급여",
-      "social": "소셜"
+      "schedule": "일정"
     },
     "types": {
-      "job_posting_announcement": "구인공고 알림",
+      "job_posting_announcement": "공고 공지",
+      "new_job_posting": "신규 공고",
+      "system_announcement": "시스템 공지",
+      "app_update": "앱 업데이트",
       "job_application": "지원서 제출",
-      "application_approved": "지원 승인",
-      "application_rejected": "지원 거절",
-      "staff_approval": "스태프 승인",
-      "attendance_reminder": "출석 알림",
-      "schedule_change": "일정 변경",
-      "shift_assigned": "근무 배정",
-      "payroll_ready": "급여 준비 완료",
-      "payment_sent": "급여 지급",
-      "work_log_approved": "근무 기록 승인",
-      "work_log_rejected": "근무 기록 반려",
-      "announcement": "공지사항",
-      "message": "메시지"
+      "staff_approval": "지원 확정",
+      "staff_rejection": "지원 취소",
+      "schedule_change": "근무시간 변경"
+    },
+    "descriptions": {
+      "system": "시스템 공지 및 신규 공고 알림",
+      "work": "지원, 확정, 취소 관련 알림",
+      "schedule": "근무시간 변경 알림"
+    },
+    "settings": {
+      "title": "알림 설정",
+      "updated": "알림 설정이 업데이트되었습니다",
+      "updateFailed": "알림 설정 업데이트에 실패했습니다",
+      "loadFailed": "알림 설정 로드에 실패했습니다",
+      "globalEnabled": "전체 알림",
+      "globalDescription": "모든 알림을 받습니다",
+      "quietHours": "조용한 시간대",
+      "quietHoursDescription": "설정한 시간대에는 알림을 받지 않습니다",
+      "startTime": "시작 시간",
+      "endTime": "종료 시간"
     }
   }
 }

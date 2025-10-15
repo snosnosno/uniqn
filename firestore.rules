@@ -72,6 +72,12 @@ service cloud.firestore {
         allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
         allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
       }
+
+      // Subcollection: settings (사용자 설정)
+      match /settings/{settingId} {
+        // 본인의 설정만 읽기/쓰기 가능
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
     }
 
     // --- Events Collection ---

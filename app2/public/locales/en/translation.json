@@ -1183,25 +1183,34 @@
     "categories": {
       "system": "System",
       "work": "Work",
-      "schedule": "Schedule",
-      "finance": "Finance",
-      "social": "Social"
+      "schedule": "Schedule"
     },
     "types": {
-      "job_posting_announcement": "Job Posting",
+      "job_posting_announcement": "Job Announcement",
+      "new_job_posting": "New Job Posting",
+      "system_announcement": "System Announcement",
+      "app_update": "App Update",
       "job_application": "Application Submitted",
-      "application_approved": "Application Approved",
-      "application_rejected": "Application Rejected",
-      "staff_approval": "Staff Approved",
-      "attendance_reminder": "Attendance Reminder",
-      "schedule_change": "Schedule Changed",
-      "shift_assigned": "Shift Assigned",
-      "payroll_ready": "Payroll Ready",
-      "payment_sent": "Payment Sent",
-      "work_log_approved": "Work Log Approved",
-      "work_log_rejected": "Work Log Rejected",
-      "announcement": "Announcement",
-      "message": "Message"
+      "staff_approval": "Application Confirmed",
+      "staff_rejection": "Application Cancelled",
+      "schedule_change": "Schedule Changed"
+    },
+    "descriptions": {
+      "system": "System announcements and new job postings",
+      "work": "Application, confirmation, and cancellation notifications",
+      "schedule": "Schedule change notifications"
+    },
+    "settings": {
+      "title": "Notification Settings",
+      "updated": "Notification settings updated",
+      "updateFailed": "Failed to update notification settings",
+      "loadFailed": "Failed to load notification settings",
+      "globalEnabled": "All Notifications",
+      "globalDescription": "Receive all notifications",
+      "quietHours": "Quiet Hours",
+      "quietHoursDescription": "Do not disturb during these hours",
+      "startTime": "Start Time",
+      "endTime": "End Time"
     }
   }
 }
