@@ -352,7 +352,7 @@ export const scheduleLocalNotification = async (
 **2. 지원 승인/거절 알림 (지원자)**
 ```yaml
 트리거: Firestore onUpdate(applications/{id})
-조건: status 변경 (pending → approved/rejected)
+조건: status 변경 (applied → confirmed/cancelled)
 액션: 지도 열기, 캘린더 추가 버튼
 우선순위: 🔴 최우선
 예상 작업: 4-6시간

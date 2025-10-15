@@ -59,7 +59,7 @@
 트리거:
   type: Firestore onCreate
   collection: applications/{applicationId}
-  조건: status === 'pending'
+  조건: status === 'applied'
 
 로직:
   1. 고용주 정보 조회 (jobPostings/{eventId})
@@ -96,7 +96,7 @@
 트리거:
   type: Firestore onUpdate
   collection: applications/{applicationId}
-  조건: status 변경 (pending → approved/rejected)
+  조건: status 변경 (applied → confirmed/cancelled)
 
 로직 (승인):
   1. 지원자 정보 조회
@@ -398,7 +398,7 @@
 
 #### 4. 지원 검토 대기 리마인더 (고용주) - 🟡 보통
 
-**파일**: `functions/src/notifications/checkPendingApplications.ts`
+**파일**: `functions/src/notifications/checkAppliedApplications.ts`
 **예상 작업**: 6시간
 **우선순위**: 🟡 Medium
 
@@ -419,7 +419,7 @@
   body: "검토 대기 중인 지원서가 {N}건 있습니다."
   action:
     type: navigate
-    target: /applications?status=pending
+    target: /applications?status=applied
 ```
 
 ---
