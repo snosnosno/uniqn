@@ -48,14 +48,13 @@ export const broadcastNewJobPosting = functions.firestore
       // 3. 급여 정보 추출
       const hourlyPay = roles?.[0]?.hourlyPay || '협의';
 
-      // 4. 모든 구직자(스태프) FCM 토큰 조회
+      // 4. 모든 사용자 FCM 토큰 조회
       const usersSnapshot = await admin.firestore()
         .collection('users')
-        .where('role', '==', 'staff')
         .get();
 
       if (usersSnapshot.empty) {
-        functions.logger.info(`[broadcastNewJobPosting] 구직자 없음`);
+        functions.logger.info(`[broadcastNewJobPosting] 사용자 없음`);
         return null;
       }
 
@@ -82,10 +81,12 @@ export const broadcastNewJobPosting = functions.firestore
         notificationPromises.push(
           notificationRef.set({
             id: notificationRef.id,
-            staffId: userId,
+            userId: userId,  // ✅ staffId → userId 변경
             type: 'new_job_posting',
+            category: 'system',  // ✅ category 추가
+            priority: 'medium',  // ✅ priority 추가
             title: '🎯 새로운 홀덤 딜러 구인공고',
-            message: `📍 ${location} | 💰 시급 ${hourlyPay}원\n지금 바로 지원하세요!`,
+            body: `📍 ${location} | 💰 시급 ${hourlyPay}원\n지금 바로 지원하세요!`,  // ✅ message → body 변경
             data: {
               postingId,
               title,
@@ -96,9 +97,11 @@ export const broadcastNewJobPosting = functions.firestore
               type: 'navigate',
               target: `/app/jobs/${postingId}`,
             },
+            relatedId: postingId,  // ✅ relatedId 추가
             isRead: false,
+            isSent: false,  // ✅ isSent 추가
+            isLocal: false,  // ✅ isLocal 추가
             createdAt: now,
-            updatedAt: now,
           })
         );
       }

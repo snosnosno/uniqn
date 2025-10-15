@@ -163,19 +163,19 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
       
       // 🚀 2단계: Firebase 업데이트 (백그라운드 처리)
       const workLogRef = doc(db, 'workLogs', workLog.id);
-      
+
       // 트랜잭션을 사용하여 원자적 업데이트 보장
       await runTransaction(db, async (transaction) => {
         const docSnap = await transaction.get(workLogRef);
-        
+
         if (!docSnap.exists()) {
           throw new Error(`WorkLog가 존재하지 않습니다. ID: ${workLog.id}`);
         }
-        
+
         const updatePayload: any = {
           updatedAt: Timestamp.now()
         };
-        
+
         // scheduled 시간만 업데이트 (actual 시간은 유지)
         if (startTime === '') {
           updatePayload.scheduledStartTime = null;
@@ -187,7 +187,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
           updatePayload.scheduledStartTime = null;
           updatePayload.assignedTime = null; // 🔥 assignedTime도 함께 업데이트
         }
-        
+
         if (endTime === '') {
           updatePayload.scheduledEndTime = null;
         } else if (endTime && endTime.trim() !== '') {
@@ -195,12 +195,22 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({
         } else {
           updatePayload.scheduledEndTime = null;
         }
-        
+
         // 기존 문서 업데이트 - actual 시간과 상태는 유지
         transaction.update(workLogRef, updatePayload);
       });
-      
-      
+
+      // ✅ Firebase Functions (onWorkTimeChanged)가 자동으로 알림 생성
+      // - 트리거: workLogs onUpdate
+      // - 조건: scheduledStartTime 또는 scheduledEndTime 변경
+      // - 수신자: 해당 workLog의 스태프
+      logger.info('근무 시간 수정 완료 - Firebase Functions가 알림 전송 예정', {
+        data: {
+          workLogId: workLog.id,
+          staffId: workLog.staffId
+        }
+      });
+
       // 🚀 3단계: 레거시 onUpdate 콜백 호출 (호환성 유지)
       if (onUpdate) {
         const updatedWorkLog = {

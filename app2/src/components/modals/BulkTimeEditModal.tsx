@@ -244,6 +244,17 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       // 배치 커밋
       await batch.commit();
 
+      // ✅ Firebase Functions (onWorkTimeChanged)가 자동으로 알림 생성
+      // - 트리거: workLogs onUpdate
+      // - 조건: scheduledStartTime 또는 scheduledEndTime 변경
+      // - 수신자: 해당 workLog의 스태프
+      logger.info('일괄 시간 수정 완료 - Firebase Functions가 알림 전송 예정', {
+        data: {
+          successCount,
+          editMode
+        }
+      });
+
       // ⚠️ WorkLog가 없는 스태프가 있으면 경고 메시지 표시
       if (missingWorkLogs.length > 0) {
         showError(

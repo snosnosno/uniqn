@@ -18,7 +18,10 @@ import * as admin from 'firebase-admin';
 const db = admin.firestore();
 
 /**
- * Firestore Timestamp를 HH:MM 형식으로 변환
+ * Firestore Timestamp를 HH:MM 형식으로 변환 (KST 기준)
+ *
+ * ⚠️ 중요: Firestore Timestamp는 UTC로 저장되므로 KST(UTC+9)로 변환 필요
+ * - Firestore: UTC 05:00 → KST 14:00으로 변환
  */
 function formatTime(time: any): string {
   if (!time) return '';
@@ -29,9 +32,13 @@ function formatTime(time: any): string {
 
   // Firestore Timestamp인 경우
   if (time.toDate) {
-    const date = time.toDate();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const utcDate = time.toDate(); // UTC 시간
+
+    // ✅ KST로 변환 (UTC+9)
+    const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+
+    const hours = kstDate.getUTCHours().toString().padStart(2, '0');
+    const minutes = kstDate.getUTCMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   }
 
@@ -96,15 +103,21 @@ export const onWorkTimeChanged = functions.firestore
       }
 
       // 2. 근무자 정보 조회
+      // staffId에서 실제 사용자 ID 추출 (staffId 형식: {userId}_{index})
+      const actualUserId = after.staffId.includes('_')
+        ? after.staffId.split('_')[0]
+        : after.staffId;
+
       const staffDoc = await db
         .collection('users')
-        .doc(after.staffId)
+        .doc(actualUserId)
         .get();
 
       if (!staffDoc.exists) {
         functions.logger.warn('근무자를 찾을 수 없습니다', {
           workLogId,
           staffId: after.staffId,
+          actualUserId,
         });
         return;
       }
@@ -118,11 +131,11 @@ export const onWorkTimeChanged = functions.firestore
       // 3. 변경 내용 메시지 생성
       let changeDetails = '';
       if (startTimeChanged && endTimeChanged) {
-        changeDetails = `시작: ${formatTime(after.scheduledStartTime)}, 종료: ${formatTime(after.scheduledEndTime)}`;
+        changeDetails = `시작: ${formatTime(before.scheduledStartTime)} → ${formatTime(after.scheduledStartTime)}, 종료: ${formatTime(before.scheduledEndTime)} → ${formatTime(after.scheduledEndTime)}`;
       } else if (startTimeChanged) {
-        changeDetails = `시작시간: ${formatTime(after.scheduledStartTime)}`;
+        changeDetails = `시작시간: ${formatTime(before.scheduledStartTime)} → ${formatTime(after.scheduledStartTime)}`;
       } else if (endTimeChanged) {
-        changeDetails = `종료시간: ${formatTime(after.scheduledEndTime)}`;
+        changeDetails = `종료시간: ${formatTime(before.scheduledEndTime)} → ${formatTime(after.scheduledEndTime)}`;
       }
 
       // 4. 알림 제목 및 내용 생성
@@ -139,9 +152,11 @@ export const onWorkTimeChanged = functions.firestore
       const notificationRef = db.collection('notifications').doc();
       const notificationId = notificationRef.id;
 
+      // actualUserId는 위에서 이미 추출됨 (line 100-102)
+
       await notificationRef.set({
         id: notificationId,
-        userId: after.staffId, // 근무자에게 전송
+        userId: actualUserId, // 근무자에게 전송 (실제 userId 사용)
         type: 'schedule_change',
         category: 'schedule',
         priority: 'high',

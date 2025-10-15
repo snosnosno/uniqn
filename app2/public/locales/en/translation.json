@@ -549,7 +549,8 @@
       "staffCount": "{{count}} confirmed staff",
       "postingInfo": "Posting Info",
       "cancelButton": "Cancel",
-      "sendButton": "Send"
+      "sendButton": "Send",
+      "sending": "Sending..."
     },
     "info": {
       "expand": "Expand Info",

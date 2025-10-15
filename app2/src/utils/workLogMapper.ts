@@ -125,19 +125,19 @@ export function parseTimeToString(timeValue: any): string | null {
  */
 export function parseTimeToTimestamp(timeStr: string, baseDate: string): Timestamp | null {
   if (!timeStr || !baseDate) return null;
-  
+
   try {
     const timeParts = timeStr.split(':').map(Number);
     if (timeParts.length !== 2) return null;
     const [hours, minutes] = timeParts;
     if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes)) return null;
-    
+
     const [year, month, day] = baseDate.split('-').map(Number);
     if (!year || !month || !day) return null;
     const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
-    
+
     if (isNaN(date.getTime())) return null;
-    
+
     return Timestamp.fromDate(date);
   } catch (error) {
     logger.error('Timestamp 변환 오류', error as Error, {

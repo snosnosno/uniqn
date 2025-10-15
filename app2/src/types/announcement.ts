@@ -96,8 +96,8 @@ export interface JobPostingAnnouncement {
  * 공지 생성 입력 데이터
  */
 export interface CreateAnnouncementInput {
-  /** 이벤트 ID (공고 ID) */
-  eventId: string;
+  /** 공고 ID (jobPostingId) */
+  jobPostingId: string;
 
   /** 공지 제목 */
   title: string;
@@ -119,8 +119,8 @@ export interface CreateAnnouncementInput {
  * 공지 전송 요청 데이터 (Firebase Functions 호출용)
  */
 export interface SendAnnouncementRequest {
-  /** 이벤트 ID (공고 ID) */
-  eventId: string;
+  /** 공고 ID (jobPostingId) */
+  jobPostingId: string;
 
   /** 공지 제목 */
   title: string;
@@ -190,8 +190,8 @@ export const validateAnnouncement = (input: CreateAnnouncementInput): { isValid:
     errors.push('공지 내용은 최대 500자까지 입력 가능합니다.');
   }
 
-  if (!input.eventId || input.eventId.trim().length === 0) {
-    errors.push('이벤트 ID는 필수입니다.');
+  if (!input.jobPostingId || input.jobPostingId.trim().length === 0) {
+    errors.push('공고 ID는 필수입니다.');
   }
 
   if (!input.targetStaffIds || input.targetStaffIds.length === 0) {

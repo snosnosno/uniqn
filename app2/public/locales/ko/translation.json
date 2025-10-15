@@ -575,7 +575,8 @@
       "staffCount": "{{count}}명의 확정된 스태프",
       "postingInfo": "공고 정보",
       "cancelButton": "취소",
-      "sendButton": "전송"
+      "sendButton": "전송",
+      "sending": "전송 중..."
     },
     "info": {
       "expand": "정보 열기",

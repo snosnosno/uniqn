@@ -64,6 +64,15 @@ export const useJobPostingOperations = () => {
       };
 
       const docRef = await addDoc(collection(db, 'jobPostings'), dataToSave);
+
+      // ✅ Firebase Functions (broadcastNewJobPosting)가 자동으로 알림 생성
+      // - 트리거: jobPostings onCreate
+      // - 조건: status === 'open'
+      // - 수신자: 모든 staff 사용자
+      logger.info('공고 생성 완료 - Firebase Functions가 알림 전송 예정', {
+        data: { jobPostingId: docRef.id }
+      });
+
       return docRef.id;
     } catch (error) {
       logger.error('공고 생성 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useJobPostingOperations' });

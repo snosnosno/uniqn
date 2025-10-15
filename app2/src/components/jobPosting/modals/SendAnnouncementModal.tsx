@@ -81,7 +81,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
   const handleSend = useCallback(async () => {
     // 유효성 검증
     const validation = validateAnnouncement({
-      eventId: jobPosting.id,
+      jobPostingId: jobPosting.id,
       title: title.trim(),
       message: announcementMessage.trim(),
       targetStaffIds

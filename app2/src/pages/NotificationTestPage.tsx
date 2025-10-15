@@ -2,9 +2,9 @@
  * 알림 시스템 테스트 페이지
  *
  * @description
- * 6가지 알림 타입을 테스트할 수 있는 개발자 도구
+ * 8가지 알림 타입을 테스트할 수 있는 개발자 도구
  *
- * @version 1.1.0
+ * @version 1.2.0
  * @since 2025-10-02
  * @updated 2025-10-15
  */
@@ -37,9 +37,9 @@ const NotificationTestPage: React.FC = () => {
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 6가지 테스트 알림 데이터
+  // 8가지 테스트 알림 데이터
   const testNotifications: Record<string, TestNotification> = {
-    // 시스템 알림 (2개)
+    // 시스템 알림 (4개)
     job_posting_announcement: {
       type: 'job_posting_announcement',
       category: 'system',
@@ -59,6 +59,26 @@ const NotificationTestPage: React.FC = () => {
       action: { type: 'navigate', target: '/app/jobs/test-job-posting-456' },
       relatedId: 'test-job-posting-456',
       data: { location: '홍대' }
+    },
+    system_announcement: {
+      type: 'system_announcement',
+      category: 'system',
+      priority: 'medium',
+      title: '[시스템 공지] 정기 점검 안내',
+      body: '5월 16일 새벽 2시~4시 시스템 정기 점검이 있습니다',
+      action: { type: 'navigate', target: '/app/announcements' },
+      relatedId: null,
+      data: {}
+    },
+    app_update: {
+      type: 'app_update',
+      category: 'system',
+      priority: 'low',
+      title: '[업데이트] T-HOLDEM v0.2.3 출시',
+      body: '새로운 기능이 추가되었습니다. 앱을 업데이트하세요',
+      action: { type: 'navigate', target: '/app/announcements' },
+      relatedId: null,
+      data: { version: '0.2.3' }
     },
 
     // 근무 알림 (3개)
@@ -146,7 +166,7 @@ const NotificationTestPage: React.FC = () => {
     }
 
     setLoading(true);
-    setStatus({ type: 'info', message: '🚀 6개의 알림을 생성하는 중...' });
+    setStatus({ type: 'info', message: '🚀 8개의 알림을 생성하는 중...' });
 
     let successCount = 0;
     let errorCount = 0;
@@ -217,7 +237,7 @@ const NotificationTestPage: React.FC = () => {
       {/* 헤더 */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg p-6 mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">🔔 알림 시스템 테스트</h1>
-        <p className="text-purple-100">6가지 알림 타입을 테스트할 수 있습니다</p>
+        <p className="text-purple-100">8가지 알림 타입을 테스트할 수 있습니다</p>
         <p className="text-purple-200 text-sm mt-2">현재 사용자: {currentUser.email || currentUser.uid}</p>
       </div>
 
@@ -239,15 +259,15 @@ const NotificationTestPage: React.FC = () => {
           disabled={loading}
           className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
-          {loading ? '생성 중...' : '🚀 전체 알림 테스트 (6개)'}
+          {loading ? '생성 중...' : '🚀 전체 알림 테스트 (8개)'}
         </button>
       </div>
 
       {/* 시스템 알림 */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">📢 시스템 알림 (2개)</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">📢 시스템 알림 (4개)</h2>
         <div className="space-y-4">
-          {Object.entries(testNotifications).slice(0, 2).map(([type, data]) => (
+          {Object.entries(testNotifications).slice(0, 4).map(([type, data]) => (
             <div key={type} className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
               <div className="flex items-start justify-between mb-2">
                 <h4 className="font-semibold text-gray-900">{data.title}</h4>
@@ -272,7 +292,7 @@ const NotificationTestPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">💼 근무 알림 (3개)</h2>
         <div className="space-y-4">
-          {Object.entries(testNotifications).slice(2, 5).map(([type, data]) => (
+          {Object.entries(testNotifications).slice(4, 7).map(([type, data]) => (
             <div key={type} className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
               <div className="flex items-start justify-between mb-2">
                 <h4 className="font-semibold text-gray-900">{data.title}</h4>
@@ -297,7 +317,7 @@ const NotificationTestPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">📅 일정 알림 (1개)</h2>
         <div className="space-y-4">
-          {Object.entries(testNotifications).slice(5, 6).map(([type, data]) => (
+          {Object.entries(testNotifications).slice(7, 8).map(([type, data]) => (
             <div key={type} className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
               <div className="flex items-start justify-between mb-2">
                 <h4 className="font-semibold text-gray-900">{data.title}</h4>

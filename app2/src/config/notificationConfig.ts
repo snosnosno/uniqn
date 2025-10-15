@@ -62,7 +62,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     color: 'green',
     defaultPriority: 'medium',
     category: 'work',
-    route: () => '/app/my-schedule',
+    route: () => '/app/admin/job-postings',
   },
   staff_approval: {
     icon: '✅',

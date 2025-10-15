@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.sendJobPostingAnnouncement = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendJobPostingAnnouncement = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -39,6 +39,14 @@ const corsHandler = (0, cors_1.default)({ origin: true });
 // --- Notification Functions ---
 var sendJobPostingAnnouncement_1 = require("./notifications/sendJobPostingAnnouncement");
 Object.defineProperty(exports, "sendJobPostingAnnouncement", { enumerable: true, get: function () { return sendJobPostingAnnouncement_1.sendJobPostingAnnouncement; } });
+var onApplicationSubmitted_1 = require("./notifications/onApplicationSubmitted");
+Object.defineProperty(exports, "onApplicationSubmitted", { enumerable: true, get: function () { return onApplicationSubmitted_1.onApplicationSubmitted; } });
+var onApplicationStatusChanged_1 = require("./notifications/onApplicationStatusChanged");
+Object.defineProperty(exports, "onApplicationStatusChanged", { enumerable: true, get: function () { return onApplicationStatusChanged_1.onApplicationStatusChanged; } });
+var onWorkTimeChanged_1 = require("./notifications/onWorkTimeChanged");
+Object.defineProperty(exports, "onWorkTimeChanged", { enumerable: true, get: function () { return onWorkTimeChanged_1.onWorkTimeChanged; } });
+var broadcastNewJobPosting_1 = require("./notifications/broadcastNewJobPosting");
+Object.defineProperty(exports, "broadcastNewJobPosting", { enumerable: true, get: function () { return broadcastNewJobPosting_1.broadcastNewJobPosting; } });
 // --- Existing Functions (placeholders for brevity) ---
 exports.onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { });
 exports.onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { });

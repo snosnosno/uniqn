@@ -5,7 +5,7 @@ import {
     FaTachometerAlt, FaUsers, FaTable, FaClock,
     FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList,
     FaSignOutAlt, FaUserCheck, FaCalendarAlt, FaQuestionCircle,
-    FaEnvelope
+    FaEnvelope, FaBell
 } from '../Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -177,9 +177,10 @@ export const HeaderMenu: React.FC = () => {
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
               {/* 기본 메뉴 (모든 사용자) */}
+              <NavItem to="/app/announcements" label="공지사항" Icon={FaBell} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/support" label={t('nav.support', '고객지원')} Icon={FaQuestionCircle} isOpen={true} onNavigate={closeMenu} />
 
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
