@@ -1,7 +1,7 @@
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { JobPosting } from './jobPosting';
 import { TimeSlot } from './base';
-import { Applicant } from './applicant';
+import { Applicant } from '../../components/applicants/ApplicantListTab/types';
 
 /**
  * JobPosting 관련 유틸리티 클래스
@@ -239,9 +239,8 @@ export class JobPostingUtils {
    * @returns 해당 날짜에 지원한 지원자 목록
    */
   static getApplicantsByDate(applicants: Applicant[], date: string): Applicant[] {
-    return applicants.filter(applicant => 
-      applicant.assignedDate === date || 
-      applicant.date === date
+    return applicants.filter(applicant =>
+      applicant.assignedDate === date
     );
   }
   
