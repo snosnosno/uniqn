@@ -18,6 +18,7 @@ import type { WorkLog } from '../../types/unifiedData';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
 import type { ConfirmedStaff } from '../../types/jobPosting/base';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
+import { getKoreanDate } from '../../utils/dateUtils';
 import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLogSimplified';
 // createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
 
@@ -35,8 +36,8 @@ import StaffProfileModal from '../modals/StaffProfileModal';
 import MobileSelectionBar from '../layout/MobileSelectionBar';
 import '../../styles/staffSelection.css';
 
-// Lazy load QR 코드 모달 (번들 크기 최적화)
-const QRCodeGeneratorModal = React.lazy(() => import('../modals/QRCodeGeneratorModal'));
+// Lazy load QR 스캔 모달 (번들 크기 최적화)
+const ManagerScannerModal = React.lazy(() => import('../qr/ManagerScannerModal'));
 
 interface StaffData {
   id: string;
@@ -1105,7 +1106,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 onClick={() => setIsQrModalOpen(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                QR 생성
+                QR 스캔
               </button>
             </div>
           )}
@@ -1144,7 +1145,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     onClick={() => setIsQrModalOpen(true)}
                     className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                   >
-                    QR 생성
+                    QR 스캔
                   </button>
                 </div>
               </div>
@@ -1254,17 +1255,16 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         </div>
 
 
-      {/* QR 코드 생성 모달 (Lazy Loading) */}
-      {isQrModalOpen && (
+      {/* QR 스캔 모달 (Lazy Loading) */}
+      {isQrModalOpen && jobPosting && (
         <React.Suspense fallback={<div>Loading...</div>}>
-          <QRCodeGeneratorModal
+          <ManagerScannerModal
             isOpen={isQrModalOpen}
             onClose={() => setIsQrModalOpen(false)}
-            eventId={jobPosting?.id || 'default-event'}
-            date={new Date().toISOString().split('T')[0] || ''}
-            roundUpInterval={30}
-            title={t('attendance.actions.generateQR')}
-            description={`${jobPosting?.title || '공고'} 스태프들이 출석 체크를 할 수 있는 QR 코드를 생성합니다.`}
+            eventId={jobPosting.id}
+            eventTitle={jobPosting.title}
+            managerId={currentUser?.uid || ''}
+            initialMode="check-in"
           />
         </React.Suspense>
       )}

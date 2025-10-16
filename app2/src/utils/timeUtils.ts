@@ -257,6 +257,50 @@ export const formatMinutesToKorean = (minutes: number): string => {
   return `${hours}시간 ${remainingMinutes}분`;
 };
 
+/**
+ * 타임스탬프를 지정된 간격으로 라운드업
+ * @param timestamp - 밀리초 단위 타임스탬프
+ * @param intervalMinutes - 라운드업 간격 (분 단위)
+ * @returns 라운드업된 타임스탬프 (밀리초)
+ *
+ * @example
+ * // 14:37 → 15:00 (30분 간격)
+ * roundUpTimestamp(timestamp, 30)
+ *
+ * // 14:37 → 14:45 (15분 간격)
+ * roundUpTimestamp(timestamp, 15)
+ */
+export function roundUpTimestamp(
+  timestamp: number,
+  intervalMinutes: 15 | 30
+): number {
+  const date = new Date(timestamp);
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+  const milliseconds = date.getMilliseconds();
+
+  // 이미 정각이면 그대로 반환
+  if (minutes % intervalMinutes === 0 && seconds === 0 && milliseconds === 0) {
+    return timestamp;
+  }
+
+  // 다음 간격으로 라운드업
+  const roundedMinutes = Math.ceil(minutes / intervalMinutes) * intervalMinutes;
+
+  // 60분을 넘으면 시간 증가
+  if (roundedMinutes >= 60) {
+    date.setHours(date.getHours() + 1);
+    date.setMinutes(0);
+  } else {
+    date.setMinutes(roundedMinutes);
+  }
+
+  date.setSeconds(0);
+  date.setMilliseconds(0);
+
+  return date.getTime();
+}
+
 const timeUtilities = {
   TIME_INTERVALS,
   generateTimeSlots,

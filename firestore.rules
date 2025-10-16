@@ -488,46 +488,73 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
-    // --- QR Attendance System Collections ---
+    // --- Staff-based QR Attendance System Collections (v2.0) ---
 
-    // Event QR Seeds Collection (일별 QR 시드)
-    match /eventQRSeeds/{seedId} {
-      // 읽기: 모든 인증된 사용자 (QR 생성/스캔용)
-      allow read: if isSignedIn();
+    // User QR Metadata Subcollection (users/{userId}/qrMetadata/{docId})
+    // 각 사용자의 QR 메타데이터 (보안 코드, 통계)
+    match /users/{userId}/qrMetadata/{metadataId} {
+      // 읽기: 본인과 관리자만
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
 
-      // 생성/수정: 관리자 및 매니저만 (QR 코드 생성 권한)
-      allow create, update: if isPrivileged() &&
-        request.resource.data.keys().hasAll(['eventId', 'date', 'seed', 'createdAt', 'createdBy', 'expiresAt']) &&
-        request.resource.data.eventId is string &&
-        request.resource.data.date is string &&
-        request.resource.data.seed is string &&
+      // 생성/수정: 본인과 관리자만
+      allow create, update: if isSignedIn() && (isOwner(userId) || isPrivileged()) &&
+        request.resource.data.keys().hasAll(['securityCode', 'createdAt', 'regenerationCount', 'totalScanCount']) &&
+        request.resource.data.securityCode is string &&
         request.resource.data.createdAt is timestamp &&
-        request.resource.data.createdBy is string &&
-        request.resource.data.expiresAt is timestamp &&
-        (!('roundUpInterval' in request.resource.data) || request.resource.data.roundUpInterval in [15, 30]);
+        request.resource.data.regenerationCount is number &&
+        request.resource.data.totalScanCount is number &&
+        (!('lastUsedAt' in request.resource.data) || request.resource.data.lastUsedAt is timestamp) &&
+        (!('lastRegeneratedAt' in request.resource.data) || request.resource.data.lastRegeneratedAt is timestamp);
 
       // 삭제: 관리자만
       allow delete: if request.auth.token.role == 'admin';
     }
 
-    // Used Tokens Collection (사용된 일회용 토큰)
-    match /usedTokens/{tokenId} {
-      // 읽기: 모든 인증된 사용자 (중복 사용 방지 확인용)
-      allow read: if isSignedIn();
+    // Scan History Collection (스캔 이력)
+    match /scanHistory/{historyId} {
+      // 읽기: 본인의 이력, 관련 이벤트 관리자, 또는 전체 관리자
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.staffId ||
+        request.auth.uid == resource.data.scannedBy ||
+        isPrivileged()
+      );
 
-      // 생성: 모든 인증된 사용자 (QR 스캔 시 자동 생성)
+      // 생성: 모든 인증된 사용자 (스캔 시 자동 생성)
       allow create: if isSignedIn() &&
-        request.resource.data.keys().hasAll(['token', 'eventId', 'date', 'type', 'staffId', 'usedAt', 'expiresAt']) &&
-        request.resource.data.token is string &&
+        request.resource.data.keys().hasAll(['staffId', 'staffName', 'eventId', 'date', 'mode', 'scannedAt', 'workLogId', 'scannedBy']) &&
+        request.resource.data.staffId is string &&
+        request.resource.data.staffName is string &&
         request.resource.data.eventId is string &&
         request.resource.data.date is string &&
-        request.resource.data.type in ['check-in', 'check-out'] &&
-        request.resource.data.staffId is string &&
-        request.resource.data.usedAt is timestamp &&
-        request.resource.data.expiresAt is timestamp;
+        request.resource.data.mode in ['check-in', 'check-out'] &&
+        request.resource.data.scannedAt is timestamp &&
+        request.resource.data.workLogId is string &&
+        request.resource.data.scannedBy is string &&
+        (!('deviceInfo' in request.resource.data) || request.resource.data.deviceInfo is string) &&
+        (!('location' in request.resource.data) || request.resource.data.location is map);
 
       // 수정/삭제: 관리자만
       allow update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // Scan Cooldowns Collection (5분 중복 스캔 방지)
+    match /scanCooldowns/{cooldownId} {
+      // 읽기: 모든 인증된 사용자 (중복 확인용)
+      allow read: if isSignedIn();
+
+      // 생성/수정: 모든 인증된 사용자 (스캔 시 자동 생성)
+      allow create, update: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['key', 'staffId', 'eventId', 'date', 'mode', 'lastScanAt', 'expiresAt']) &&
+        request.resource.data.key is string &&
+        request.resource.data.staffId is string &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string &&
+        request.resource.data.mode in ['check-in', 'check-out'] &&
+        request.resource.data.lastScanAt is timestamp &&
+        request.resource.data.expiresAt is timestamp;
+
+      // 삭제: 관리자만 (만료된 쿨다운 정리용)
+      allow delete: if request.auth.token.role == 'admin';
     }
 
     // Fallback rule: deny all other access
