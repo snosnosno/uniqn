@@ -78,6 +78,18 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   };
 
   /**
+   * QR 문자열 복사 핸들러
+   */
+  const handleCopyQRString = useCallback(() => {
+    if (!qrString) return;
+    navigator.clipboard.writeText(qrString).then(() => {
+      toast.success('QR 주소가 복사되었습니다.');
+    }).catch(() => {
+      toast.error('복사에 실패했습니다.');
+    });
+  }, [qrString]);
+
+  /**
    * 로딩 상태
    */
   if (loading) {
@@ -149,6 +161,30 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
           level="H"
           includeMargin
         />
+      </div>
+
+      {/* QR 주소 표시 (수동 입력용) */}
+      <div className="w-full max-w-md bg-gray-50 rounded-xl p-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500 font-medium">QR 주소 (수동 입력용)</span>
+          <button
+            onClick={handleCopyQRString}
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            복사
+          </button>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-3">
+          <code className="text-xs text-gray-700 break-all font-mono leading-relaxed">
+            {qrString}
+          </code>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          💡 관리자가 수동 입력 모드를 사용할 경우 위 주소를 전달하세요
+        </p>
       </div>
 
       {/* 카운트다운 */}

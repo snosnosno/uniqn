@@ -57,7 +57,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
     activatedBy: managerId
   });
 
-  const [scanMode, setScanMode] = useState<'camera' | 'manual'>('manual');
+  const [scanMode, setScanMode] = useState<'camera' | 'manual'>('camera');
   const [manualInput, setManualInput] = useState('');
   const [scanning, setScanning] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
@@ -85,8 +85,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
       });
       setManualInput('');
       setScanResult(null);
-      setScanMode('manual');
-      inputRef.current?.focus();
+      setScanMode('camera');
     }
   }, [isOpen, eventId, eventTitle, managerId, initialMode]);
 
@@ -97,14 +96,14 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
     if (!isOpen || scanMode !== 'camera') {
       // 카메라 모드가 아니거나 모달이 닫히면 scanner 정리
       if (scannerRef.current) {
-        scannerRef.current
+        const currentScanner = scannerRef.current;
+        scannerRef.current = null;
+        setCameraActive(false);
+
+        currentScanner
           .clear()
-          .then(() => {
-            scannerRef.current = null;
-            setCameraActive(false);
-          })
-          .catch((err) => {
-            logger.error('카메라 정리 실패', err as Error, { data: { eventId } });
+          .catch(() => {
+            // 이미 정리 중이거나 정리 완료된 경우 에러 무시
           });
       }
       return;
@@ -128,34 +127,37 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         processQRScan(decodedText);
 
         // 스캔 후 카메라 일시 정지 (자동 재시작)
-        scanner
-          .clear()
-          .then(() => {
-            // 0.5초 후 재시작
-            setTimeout(() => {
-              if (scannerRef.current && scanMode === 'camera' && isOpen) {
-                const newScanner = new Html5QrcodeScanner(
-                  'qr-reader',
-                  {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
-                  },
-                  false
-                );
-                newScanner.render(
-                  (text) => processQRScan(text),
-                  () => {
-                    // 에러 무시
-                  }
-                );
-                scannerRef.current = newScanner;
-              }
-            }, 500);
-          })
-          .catch(() => {
-            // 에러 무시
-          });
+        const currentScanner = scannerRef.current;
+        if (currentScanner) {
+          currentScanner
+            .clear()
+            .then(() => {
+              // 0.5초 후 재시작
+              setTimeout(() => {
+                if (scanMode === 'camera' && isOpen) {
+                  const newScanner = new Html5QrcodeScanner(
+                    'qr-reader',
+                    {
+                      fps: 10,
+                      qrbox: { width: 250, height: 250 },
+                      aspectRatio: 1.0
+                    },
+                    false
+                  );
+                  newScanner.render(
+                    (text) => processQRScan(text),
+                    () => {
+                      // 에러 무시
+                    }
+                  );
+                  scannerRef.current = newScanner;
+                }
+              }, 500);
+            })
+            .catch(() => {
+              // 에러 무시
+            });
+        }
       },
       () => {
         // 스캔 실패 (무시)
@@ -169,14 +171,16 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
 
     // Cleanup
     return () => {
-      scanner
-        .clear()
-        .then(() => {
-          setCameraActive(false);
-        })
-        .catch(() => {
-          // 에러 무시
-        });
+      const currentScanner = scannerRef.current;
+      if (currentScanner) {
+        scannerRef.current = null;
+        setCameraActive(false);
+        currentScanner
+          .clear()
+          .catch(() => {
+            // 이미 정리 중이거나 정리 완료된 경우 에러 무시
+          });
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, scanMode, eventId]);
