@@ -1261,6 +1261,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
             isOpen={isQrModalOpen}
             onClose={() => setIsQrModalOpen(false)}
             eventId={jobPosting?.id || 'default-event'}
+            date={new Date().toISOString().split('T')[0] || ''}
+            roundUpInterval={30}
             title={t('attendance.actions.generateQR')}
             description={`${jobPosting?.title || '공고'} 스태프들이 출석 체크를 할 수 있는 QR 코드를 생성합니다.`}
           />

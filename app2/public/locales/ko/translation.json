@@ -1285,5 +1285,41 @@
       "startTime": "시작 시간",
       "endTime": "종료 시간"
     }
+  },
+  "qr": {
+    "modalTitle": "QR 코드 생성",
+    "modalDescription": "출근 또는 퇴근용 QR 코드를 생성하여 스태프에게 공유하세요.",
+    "checkInTab": "출근용 QR",
+    "checkOutTab": "퇴근용 QR",
+    "checkInTitle": "출근 QR 코드",
+    "checkOutTitle": "퇴근 QR 코드",
+    "checkInBadge": "출근",
+    "checkOutBadge": "퇴근",
+    "scanInstructions": "아래 QR 코드를 스캔하세요",
+    "checkInGuide": "출근 시 위 QR 코드를 스캔하세요.",
+    "checkOutGuide": "퇴근 시 위 QR 코드를 스캔하세요.",
+    "roundUpInfo": "퇴근 시간은 {{interval}}분 단위로 조정됩니다.",
+    "loading": "QR 코드 생성 중...",
+    "error": "QR 코드 생성 실패",
+    "retry": "다시 시도",
+    "refresh": "수동 새로고침",
+    "seconds": "초",
+    "autoRefreshIn": "자동 재생성까지",
+    "infoTitle": "안내사항",
+    "info1": "QR 코드는 1분마다 자동으로 재생성됩니다.",
+    "info2": "출근과 퇴근은 각각 별도의 QR 코드를 사용합니다.",
+    "info3": "각 QR 코드는 한 번만 사용 가능하며, 2분 후 만료됩니다.",
+    "info4": "퇴근 시간은 {{interval}}분 단위로 자동 조정됩니다."
+  },
+  "attendancePage": {
+    "title": "QR 출석",
+    "lastScanned": "QR 코드 스캔됨",
+    "submitting": "처리 중...",
+    "success": "출석이 완료되었습니다",
+    "fail": "출석 처리에 실패했습니다",
+    "howToUse": "사용 방법",
+    "guide1": "관리자가 생성한 QR 코드를 스캔하세요.",
+    "guide2": "출근과 퇴근은 각각 다른 QR 코드입니다.",
+    "guide3": "QR 코드는 1분마다 자동으로 변경됩니다."
   }
 }

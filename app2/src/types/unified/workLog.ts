@@ -84,9 +84,25 @@ export interface UnifiedWorkLog {
   
   /** 실제 종료 시간 */
   actualEndTime?: string | Timestamp | null;
-  
+
   /** 지원 시 설정한 시간 (스태프가 지원할 때 선택한 근무 시간) */
   assignedTime?: string | null;
+
+  // QR 출석 정보
+  /** QR 출근 정보 */
+  qrCheckIn?: {
+    token: string;
+    scannedAt: Timestamp;
+  };
+
+  /** QR 퇴근 정보 */
+  qrCheckOut?: {
+    token: string;
+    scannedAt: Timestamp;
+  };
+
+  /** 원본 예정 종료 시간 (퇴근 시 라운드업 전) */
+  originalScheduledEndTime?: Timestamp | string | null;
   
   // 근무 정보
   /** 총 근무시간 (분 단위) */

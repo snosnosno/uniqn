@@ -488,6 +488,48 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
+    // --- QR Attendance System Collections ---
+
+    // Event QR Seeds Collection (일별 QR 시드)
+    match /eventQRSeeds/{seedId} {
+      // 읽기: 모든 인증된 사용자 (QR 생성/스캔용)
+      allow read: if isSignedIn();
+
+      // 생성/수정: 관리자 및 매니저만 (QR 코드 생성 권한)
+      allow create, update: if isPrivileged() &&
+        request.resource.data.keys().hasAll(['eventId', 'date', 'seed', 'createdAt', 'createdBy', 'expiresAt']) &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string &&
+        request.resource.data.seed is string &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.createdBy is string &&
+        request.resource.data.expiresAt is timestamp &&
+        (!('roundUpInterval' in request.resource.data) || request.resource.data.roundUpInterval in [15, 30]);
+
+      // 삭제: 관리자만
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // Used Tokens Collection (사용된 일회용 토큰)
+    match /usedTokens/{tokenId} {
+      // 읽기: 모든 인증된 사용자 (중복 사용 방지 확인용)
+      allow read: if isSignedIn();
+
+      // 생성: 모든 인증된 사용자 (QR 스캔 시 자동 생성)
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['token', 'eventId', 'date', 'type', 'staffId', 'usedAt', 'expiresAt']) &&
+        request.resource.data.token is string &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string &&
+        request.resource.data.type in ['check-in', 'check-out'] &&
+        request.resource.data.staffId is string &&
+        request.resource.data.usedAt is timestamp &&
+        request.resource.data.expiresAt is timestamp;
+
+      // 수정/삭제: 관리자만
+      allow update, delete: if request.auth.token.role == 'admin';
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;
