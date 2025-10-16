@@ -54,8 +54,8 @@ const NotificationTestPage: React.FC = () => {
       type: 'new_job_posting',
       category: 'system',
       priority: 'medium',
-      title: '[신규 공고] 새로운 구인공고가 등록되었습니다',
-      body: '홍대점에서 딜러 2명을 모집합니다',
+      title: '🎯 새로운 구인공고',
+      body: '📍 홍대 토너먼트 딜러 모집 | 홍대\n지금 바로 지원하세요!',
       action: { type: 'navigate', target: '/app/jobs/test-job-posting-456' },
       relatedId: 'test-job-posting-456',
       data: { location: '홍대' }

@@ -85,8 +85,8 @@ export const broadcastNewJobPosting = functions.firestore
             type: 'new_job_posting',
             category: 'system',  // ✅ category 추가
             priority: 'medium',  // ✅ priority 추가
-            title: '🎯 새로운 홀덤 딜러 구인공고',
-            body: `📍 ${location} | 💰 시급 ${hourlyPay}원\n지금 바로 지원하세요!`,  // ✅ message → body 변경
+            title: '🎯 새로운 구인공고',
+            body: `📍 ${title} | ${location}\n지금 바로 지원하세요!`,  // ✅ message → body 변경
             data: {
               postingId,
               title,
@@ -115,8 +115,8 @@ export const broadcastNewJobPosting = functions.firestore
         const message: admin.messaging.MulticastMessage = {
           tokens: fcmTokens,
           notification: {
-            title: '🎯 새로운 홀덤 딜러 구인공고',
-            body: `📍 ${location} | 💰 시급 ${hourlyPay}원\n지금 바로 지원하세요!`,
+            title: '🎯 새로운 구인공고',
+            body: `📍 ${title} | ${location}\n지금 바로 지원하세요!`,
           },
           data: {
             type: 'new_job_posting',
