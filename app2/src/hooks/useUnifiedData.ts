@@ -12,7 +12,6 @@ import { useUnifiedDataContext } from '../contexts/UnifiedDataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import {
-  // Staff, // TODO: 미래 타입 사용용
   WorkLog,
   AttendanceRecord,
   Application,
@@ -31,7 +30,6 @@ export const useUnifiedData = (options?: UnifiedDataOptions) => {
 
   // options가 제공되면 Smart Hybrid Context 적용
   if (options) {
-    // TODO: UnifiedDataContext에 options 전달 로직 구현
     logger.info('Smart Hybrid Context 옵션 적용', {
       component: 'useUnifiedData',
       data: { options }
