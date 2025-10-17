@@ -43,7 +43,7 @@ const TablesPage: React.FC = () => {
         updateParticipant 
     } = useParticipants(null, null);
 
-    const { settings, updateSettings, loading: settingsLoading } = useSettings();
+    const { settings, updateSettings, loading: settingsLoading } = useSettings(null, null);
     
     const isMobile = useMediaQuery('(max-width: 768px)');
 
