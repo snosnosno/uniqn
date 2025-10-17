@@ -26,6 +26,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   // 모달 상태 관리
   const [editingStaff, setEditingStaff] = useState<EnhancedPayrollCalculation | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showExportConfirmModal, setShowExportConfirmModal] = useState(false);
 
   // 급여 유형 한글 변환 (의존성 없는 함수는 최상단에 배치)
   const getSalaryTypeLabel = useCallback((type: string) => {
@@ -266,6 +267,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         '급여유형',
         '기본급',
         '수당',
+        '세금',
         '총 지급액',
         '세후 급여'
       ];
@@ -278,30 +280,51 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         getSalaryTypeLabel(data.salaryType),
         data.basePay.toLocaleString('ko-KR'),
         data.allowanceTotal.toLocaleString('ko-KR'),
+        data.tax !== undefined && data.tax > 0
+          ? data.tax.toLocaleString('ko-KR')
+          : '-',
         data.totalAmount.toLocaleString('ko-KR'),
-        data.afterTaxAmount !== undefined && data.afterTaxAmount > 0
+        data.afterTaxAmount !== undefined
           ? data.afterTaxAmount.toLocaleString('ko-KR')
-          : '-'
+          : data.totalAmount.toLocaleString('ko-KR')
       ]);
 
+      // CSV 필드를 큰따옴표로 감싸서 쉼표 문제 해결
+      const escapeCSVField = (field: string): string => {
+        // 필드에 쉼표, 큰따옴표, 줄바꿈이 있으면 큰따옴표로 감싸기
+        if (field.includes(',') || field.includes('"') || field.includes('\n')) {
+          // 큰따옴표는 두 개로 이스케이프
+          return `"${field.replace(/"/g, '""')}"`;
+        }
+        return field;
+      };
+
       const csvContent = [headers, ...rows]
-        .map(row => row.join(','))
+        .map(row => row.map(escapeCSVField).join(','))
         .join('\n');
 
       // BOM 추가하여 한글 깨짐 방지
       const BOM = '\uFEFF';
       const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-      
+
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       const fileName = `정산_${startDate}_${endDate}_${new Date().toISOString().split('T')[0]}.csv`;
-      
+
       link.setAttribute('href', url);
       link.setAttribute('download', fileName);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // 다운로드 성공 후 모달 닫기
+      setShowExportConfirmModal(false);
+
+      logger.info('CSV 내보내기 성공', {
+        component: 'EnhancedPayrollTab',
+        data: { fileName, rowCount: payrollData.length }
+      });
 
     } catch (error) {
       logger.error('CSV 내보내기 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -541,7 +564,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-900">정산 관리</h2>
         <button
-          onClick={exportToCSV}
+          onClick={() => setShowExportConfirmModal(true)}
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
           disabled={staffWorkData.length === 0}
         >
@@ -737,6 +760,61 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
           workLogs={workLogs}  // workLogs를 props로 전달
           onSave={handleSaveAllowances}
         />
+      )}
+
+      {/* CSV 내보내기 확인 모달 */}
+      {showExportConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            {/* 헤더 */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">CSV 내보내기 확인</h3>
+            </div>
+
+            {/* 내용 */}
+            <div className="px-6 py-4">
+              <p className="text-sm text-gray-700 mb-4">
+                정산 데이터를 CSV 파일로 내보내시겠습니까?
+              </p>
+
+              {/* CSV 필드 정보 */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">포함될 정보:</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• 이름, 역할, 근무일수, 근무시간</li>
+                  <li>• 급여유형, 기본급, 수당</li>
+                  <li>• 세금, 총 지급액, 세후 급여</li>
+                </ul>
+              </div>
+
+              {/* 파일 정보 */}
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <p className="text-xs text-blue-800">
+                  <span className="font-medium">파일명:</span> 정산_{startDate}_{endDate}_{new Date().toISOString().split('T')[0]}.csv
+                </p>
+                <p className="text-xs text-blue-800 mt-1">
+                  <span className="font-medium">스태프 수:</span> {payrollData?.length || 0}명
+                </p>
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+              <button
+                onClick={() => setShowExportConfirmModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={exportToCSV}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                내보내기
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
