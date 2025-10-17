@@ -70,7 +70,7 @@ export const useJobPostingOperations = () => {
       // - 조건: status === 'open'
       // - 수신자: 모든 staff 사용자
       logger.info('공고 생성 완료 - Firebase Functions가 알림 전송 예정', {
-        data: { jobPostingId: docRef.id }
+        data: { eventId: docRef.id }
       });
 
       return docRef.id;

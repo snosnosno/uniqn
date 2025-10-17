@@ -18,7 +18,6 @@ import type { WorkLog } from '../../types/unifiedData';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
 import type { ConfirmedStaff } from '../../types/jobPosting/base';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
-import { getKoreanDate } from '../../utils/dateUtils';
 import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLogSimplified';
 // createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
 

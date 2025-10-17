@@ -98,7 +98,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
         >(functions, 'sendJobPostingAnnouncement');
 
         const requestData: SendAnnouncementRequest = {
-          jobPostingId: eventId, // eventId는 실제로 jobPostingId
+          eventId,
           title,
           message,
           targetStaffIds,

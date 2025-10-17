@@ -1,16 +1,21 @@
 /**
  * Toast 유틸리티
  * alert() 대체용 통합 토스트 시스템
- * 
+ *
  * @example
  * // alert('성공!') 대신
  * toast.success('성공!');
- * 
- * // alert('오류 발생') 대신  
+ *
+ * // alert('오류 발생') 대신
  * toast.error('오류 발생');
  */
 
-import { useToastStore } from '../stores/toastStore';
+import { useToastStore, Toast } from '../stores/toastStore';
+
+/**
+ * Toast 데이터 타입 (id 제외)
+ */
+type ToastData = Omit<Toast, 'id'>;
 
 /**
  * 전역 토스트 유틸리티 객체
@@ -22,7 +27,7 @@ export const toast = {
    */
   success: (message: string, title?: string, duration?: number) => {
     const { addToast } = useToastStore.getState();
-    const toastData: any = {
+    const toastData: ToastData = {
       type: 'success',
       message,
       duration: duration || 3000
@@ -36,7 +41,7 @@ export const toast = {
    */
   error: (message: string, title?: string, duration?: number) => {
     const { addToast } = useToastStore.getState();
-    const toastData: any = {
+    const toastData: ToastData = {
       type: 'error',
       message,
       duration: duration || 5000 // 에러는 더 오래 표시
@@ -50,7 +55,7 @@ export const toast = {
    */
   warning: (message: string, title?: string, duration?: number) => {
     const { addToast } = useToastStore.getState();
-    const toastData: any = {
+    const toastData: ToastData = {
       type: 'warning',
       message,
       duration: duration || 4000
@@ -64,7 +69,7 @@ export const toast = {
    */
   info: (message: string, title?: string, duration?: number) => {
     const { addToast } = useToastStore.getState();
-    const toastData: any = {
+    const toastData: ToastData = {
       type: 'info',
       message,
       duration: duration || 3000

@@ -17,7 +17,7 @@ const db = admin.firestore();
  * 공지 전송 요청 데이터
  */
 interface SendAnnouncementRequest {
-  jobPostingId: string;
+  eventId: string; // 이벤트 ID (공고 ID)
   title: string;
   message: string; // 클라이언트에서 전달되는 필드명
   targetStaffIds: string[];
@@ -75,9 +75,9 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
     }
 
     // 3. 입력 데이터 검증
-    const { jobPostingId, title, message: announcementMessage, targetStaffIds, jobPostingTitle } = data;
+    const { eventId, title, message: announcementMessage, targetStaffIds, jobPostingTitle } = data;
 
-    if (!jobPostingId || !title || !announcementMessage || !targetStaffIds || targetStaffIds.length === 0) {
+    if (!eventId || !title || !announcementMessage || !targetStaffIds || targetStaffIds.length === 0) {
       throw new functions.https.HttpsError(
         'invalid-argument',
         '필수 입력값이 누락되었습니다.'
@@ -100,7 +100,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
 
     try {
       // 4. 공고 정보 조회
-      const jobPostingDoc = await db.collection('jobPostings').doc(jobPostingId).get();
+      const jobPostingDoc = await db.collection('jobPostings').doc(eventId).get();
 
       if (!jobPostingDoc.exists) {
         throw new functions.https.HttpsError(
@@ -125,7 +125,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
 
       const announcementData = {
         id: announcementId,
-        jobPostingId,
+        eventId,
         title,
         message: announcementMessage,
         createdBy: userId,
@@ -200,8 +200,8 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
           data: {
             type: 'job_posting_announcement',
             announcementId,
-            jobPostingId,
-            target: `/app/admin/job-postings/${jobPostingId}`,
+            eventId,
+            target: `/app/admin/job-postings/${eventId}`,
           },
           tokens: batchTokens,
           android: {
@@ -280,7 +280,7 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
           body: announcementMessage,
           action: {
             type: 'navigate',
-            target: `/app/admin/job-postings/${jobPostingId}`,
+            target: `/app/admin/job-postings/${eventId}`,
           },
           relatedId: announcementId,
           senderId: userId,

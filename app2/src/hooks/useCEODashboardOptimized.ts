@@ -13,6 +13,7 @@ import { db } from '../firebase';
 import { startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns';
 import { logger } from '../utils/logger';
 import { useUnifiedData } from './useUnifiedData';
+import { UnifiedWorkLog } from '../types/unified/workLog';
 
 interface TopDealer {
   id: string;
@@ -166,11 +167,11 @@ export const useCEODashboardOptimized = () => {
       for (const dealer of sortedDealers) {
         // WorkLog에서 해당 딜러 정보 찾기
         if (workLogs) {
-          const dealerWorkLog = workLogs.find((wl: any) => 
+          const dealerWorkLog = workLogs.find((wl) =>
             (wl.staffInfo?.userId === dealer.id || wl.staffId === dealer.id) &&
             wl.staffInfo?.isActive !== false
           );
-          
+
           if (dealerWorkLog) {
             dealers.push({
               id: dealer.id,
@@ -370,9 +371,13 @@ export const useCEODashboardOptimized = () => {
         // WorkLog 변경 시마다 스태프 통계 재계산
         const calculateStaffStats = () => {
           if (!workLogs) return { totalStaff: 0, activeCount: 0, newThisMonth: 0 };
-          
-          const staffMap = new Map<string, any>();
-          
+
+          const staffMap = new Map<string, {
+            isActive: boolean;
+            createdAt: Timestamp | undefined;
+            staffInfo: any;
+          }>();
+
           // WorkLog에서 고유한 스태프 추출
           workLogs.forEach((workLog: any) => {
             const staffId = workLog.staffInfo?.userId || workLog.staffId;

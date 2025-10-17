@@ -23,7 +23,7 @@ export interface SendAnnouncementModalProps {
   /** 확정된 스태프 목록 */
   confirmedStaff: ConfirmedStaff[];
   /** 전송 핸들러 */
-  onSend: (title: string, message: string, targetStaffIds: string[], jobPostingTitle?: string) => Promise<void>;
+  onSend: (eventId: string, title: string, message: string, targetStaffIds: string[], jobPostingTitle?: string) => Promise<void>;
   /** 전송 중 상태 */
   isSending?: boolean;
 }
@@ -81,7 +81,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
   const handleSend = useCallback(async () => {
     // 유효성 검증
     const validation = validateAnnouncement({
-      jobPostingId: jobPosting.id,
+      eventId: jobPosting.id,
       title: title.trim(),
       message: announcementMessage.trim(),
       targetStaffIds
@@ -94,7 +94,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
     }
 
     try {
-      await onSend(title.trim(), announcementMessage.trim(), targetStaffIds, jobPosting.title);
+      await onSend(jobPosting.id, title.trim(), announcementMessage.trim(), targetStaffIds, jobPosting.title);
 
       // 성공 시 폼 초기화 및 모달 닫기
       setTitle('');

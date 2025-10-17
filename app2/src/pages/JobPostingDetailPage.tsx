@@ -395,8 +395,8 @@ const JobPostingDetailPageContent: React.FC = () => {
         onClose={() => setIsAnnouncementModalOpen(false)}
         jobPosting={jobPosting}
         confirmedStaff={jobPosting.confirmedStaff || []}
-        onSend={async (title, message, targetStaffIds, jobPostingTitle) => {
-          await sendAnnouncement(jobPosting.id, title, message, targetStaffIds, jobPostingTitle);
+        onSend={async (eventId, title, message, targetStaffIds, jobPostingTitle) => {
+          await sendAnnouncement(eventId, title, message, targetStaffIds, jobPostingTitle);
         }}
         isSending={isSending}
       />

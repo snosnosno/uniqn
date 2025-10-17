@@ -1,5 +1,19 @@
 import { useMemo } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { formatDate } from '../utils/jobPosting/dateUtils';
+
+/**
+ * 날짜 입력 타입 정의
+ * Firebase Timestamp, Date 객체, 문자열, 숫자 등 다양한 형태 지원
+ */
+type DateInput =
+  | Timestamp
+  | Date
+  | string
+  | number
+  | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
+  | null
+  | undefined;
 
 // 전역 캐시 맵 - 앱 전체에서 공유
 const formatDateCache = new Map<string, string>();
@@ -8,7 +22,7 @@ const formatDateCache = new Map<string, string>();
  * 캐시된 날짜 포맷팅 훅
  * 동일한 날짜 입력에 대해 이전 결과를 캐시하여 성능 최적화
  */
-export const useCachedFormatDate = (dateInput: any): string => {
+export const useCachedFormatDate = (dateInput: DateInput): string => {
   return useMemo(() => {
     // null, undefined, 빈 문자열 처리
     if (!dateInput) {

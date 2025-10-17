@@ -79,7 +79,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       status: workLog.status === 'absent' ? 'cancelled' as const :
               (workLog.status || 'not_started') as 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'not_started'
     }));
-  }, [state.workLogs, eventId]);
+  }, [state.workLogs, eventId, jobPosting]);
 
   // 정산 기간 설정 (현재 월 기준)
   const { startDate, endDate } = useMemo((): { startDate: string; endDate: string } => {
@@ -170,14 +170,12 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   const confirmedStaffCount = useMemo(() => confirmedStaff?.length || 0, [confirmedStaff]);
 
   // 객체 참조 안정화를 위한 메모이제이션 (무한 루프 방지)
-  const roleSalaryOverridesJson = JSON.stringify(roleSalaryOverrides);
   const memoizedRoleSalaryOverrides = useMemo(() =>
-    roleSalaryOverrides || {}, [roleSalaryOverrides, roleSalaryOverridesJson]
+    roleSalaryOverrides || {}, [roleSalaryOverrides]
   );
 
-  const staffAllowanceOverridesJson = JSON.stringify(staffAllowanceOverrides);
   const memoizedStaffAllowanceOverrides = useMemo(() =>
-    staffAllowanceOverrides || {}, [staffAllowanceOverridesJson]
+    staffAllowanceOverrides || {}, [staffAllowanceOverrides]
   );
 
   // 중복 계산 방지를 위한 키 메모이제이션 (무한 루프 방지)

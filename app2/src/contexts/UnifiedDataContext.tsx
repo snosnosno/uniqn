@@ -34,12 +34,15 @@ import { ScheduleEvent } from '../types/schedule';
 import { parseTimeString, safeDateToString as _safeDateToString } from '../utils/scheduleUtils';
 
 // 메모이제이션 헬퍼 함수
-const memoize = <T extends (...args: any[]) => any>(fn: T, keyGenerator: (...args: Parameters<T>) => string): T => {
+const memoize = <T extends (...args: any[]) => any>(
+  fn: T,
+  keyGenerator: (...args: Parameters<T>) => string
+): T => {
   const cache = new Map<string, ReturnType<T>>();
-  
+
   return ((...args: Parameters<T>): ReturnType<T> => {
     const key = keyGenerator(...args);
-    
+
     if (cache.has(key)) {
       return cache.get(key)!;
     }

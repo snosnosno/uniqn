@@ -7,12 +7,11 @@ import {
 } from '../utils/jobPosting/jobPostingHelpers';
 // import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
 
-import { JobPosting } from '../types/jobPosting';
+import { JobPosting, JobPostingFormData } from '../types/jobPosting';
 import { toast } from '../utils/toast';
-// import { JobPostingFormData } from '../types/jobPosting'; // 현재 사용하지 않음
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
-  const [formData, setFormData] = useState<any>(() => 
+  const [formData, setFormData] = useState<any>(() =>
     initialData ? initialData : createInitialFormData()
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,10 +57,10 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handleDateSpecificRoleChange = useCallback((
-    dateIndex: number, 
-    timeSlotIndex: number, 
-    roleIndex: number, 
-    field: 'name' | 'count', 
+    dateIndex: number,
+    timeSlotIndex: number,
+    roleIndex: number,
+    field: 'name' | 'count',
     value: string | number
   ) => {
     setFormData((prev: any) => {
@@ -88,12 +87,12 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     setFormData((prev: any) => {
       const newQuestions = [...prev.preQuestions];
       newQuestions[questionIndex] = { ...newQuestions[questionIndex], [field]: value };
-      
+
       // select 타입이 아니면 options 제거
       if (field === 'type' && value !== 'select') {
         newQuestions[questionIndex].options = [];
       }
-      
+
       return { ...prev, preQuestions: newQuestions };
     });
   }, []);

@@ -24,9 +24,9 @@
 
 - **프로젝트 ID**: tholdem-ebc18  
 - **배포 URL**: https://tholdem-ebc18.web.app
-- **상태**: 🚀 **Production Ready (96% 완성)** 
-- **버전**: 0.2.2 (프로덕션 준비 완료 - 인증 시스템 고도화)
-- **핵심 기능**: 토너먼트 운영, 스태프 관리, 구인공고, 실시간 출석 추적, 급여 정산
+- **상태**: 🚀 **Production Ready (98% 완성)**
+- **버전**: 0.2.3 (프로덕션 준비 완료 - 알림/멀티테넌트/테이블 관리 고도화)
+- **핵심 기능**: 토너먼트 운영, 스태프 관리, 구인공고, 실시간 출석 추적, 급여 정산, 멀티테넌트 아키텍처
 
 ### 🗂️ 프로젝트 구조
 ```
@@ -110,10 +110,12 @@ const {
 ### 문서 참조
 - **시스템 개요**: [docs/NOTIFICATION_SYSTEM.md](docs/NOTIFICATION_SYSTEM.md)
 - **구현 로드맵**: [docs/NOTIFICATION_IMPLEMENTATION_ROADMAP.md](docs/NOTIFICATION_IMPLEMENTATION_ROADMAP.md)
+- **구현 상태**: [docs/NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/NOTIFICATION_IMPLEMENTATION_STATUS.md)
 
-### 현재 상태
+### 현재 상태 (Phase 1 완료 ✅)
 - **UI 시스템**: 100% 완성 ✅
-- **Firebase Functions**: 20% 완성 (1/5 함수)
+- **Firebase Functions**: 100% 완성 ✅ (5/5 함수 배포 완료)
+- **타임존 처리**: UTC→KST 자동 변환 완료 ✅
 - **알림 타입**: 10개 (system: 3, work: 3, schedule: 3, finance: 1)
 
 ### 주요 구성요소
@@ -123,11 +125,58 @@ const {
 - NotificationCenter 컴포넌트
 - Push & Local Notification 서비스
 
-// 백엔드 (구현 필요)
-- 5개 Firebase Functions (Phase 1)
-- Cloud Scheduler 설정
-- FCM 토큰 관리 시스템
+// 백엔드 (완성)
+- 5개 Firebase Functions 배포 완료
+  1. sendWorkAssignmentNotification (근무 배정)
+  2. sendApplicationStatusNotification (지원 상태 변경)
+  3. sendScheduleChangeNotification (일정 변경)
+  4. sendScheduleReminderNotification (일정 알림)
+  5. sendJobPostingAnnouncement (공고 공지)
+- Cloud Scheduler 설정 완료
+- FCM 토큰 관리 시스템 구현
 ```
+
+## 🏢 **멀티테넌트 아키텍처**
+
+### 문서 참조
+- **구현 현황**: [docs/MULTI_TENANT_STATUS.md](docs/MULTI_TENANT_STATUS.md)
+
+### 현재 상태 (100% 완료 ✅)
+- **Phase 1-6**: 모든 단계 완료
+- **데이터 격리**: users/{userId}/tournaments/{tournamentId} 경로 구조
+- **Security Rules**: 프로덕션 배포 완료 (ruleset: 12925291-b09f-49bd-a478-9da7b54e6823)
+- **핵심 Hook 완료**:
+  - useParticipants (100%)
+  - useSettings (100%)
+  - useTables (100% - 21개 경로 멀티테넌트화)
+
+### 멀티테넌트 경로 구조
+```typescript
+// Before (레거시)
+Firestore
+├── participants/
+├── settings/
+└── tables/
+
+// After (멀티테넌트)
+Firestore
+└── users/{userId}/
+    └── tournaments/{tournamentId}/
+        ├── participants/  ✅
+        ├── settings/      ✅
+        └── tables/        ✅
+```
+
+## 🎮 **토너먼트 시스템**
+
+### 문서 참조
+- **완료 보고서**: [docs/tournament/COMPLETION_REPORT_2025-10-17.md](docs/tournament/COMPLETION_REPORT_2025-10-17.md)
+
+### 최신 개선사항
+- **테이블 닫기/삭제 분리**: 테이블 관리 워크플로우 개선
+  - 닫기: 비활성화만 (데이터 보존)
+  - 삭제: 영구 제거 (복구 불가)
+- **테이블 관리 안정화**: 21개 Firestore 경로 멀티테넌트 전환 완료
 
 ## ⚡ **자주 사용하는 명령어**
 
@@ -175,6 +224,13 @@ console.log('Debug');                    // console 직접 사용
 
 ## 🔄 **최근 주요 업데이트**
 
+### v0.2.3 (2025-10-18) - 알림/멀티테넌트/테이블 관리 고도화 🚀
+- **알림 시스템 완성**: 5개 Firebase Functions 배포, UTC→KST 타임존 처리 완료
+- **멀티테넌트 아키텍처 완성**: Phase 1-6 완료, Security Rules 배포, 데이터 격리 완료
+- **테이블 관리 개선**: 닫기/삭제 분리, 21개 경로 멀티테넌트 전환 완료
+- **토너먼트 시스템 안정화**: useParticipants, useSettings, useTables 멀티테넌트 구현
+- **문서 정리**: 22개 핵심 문서로 정리, 완료 보고서 아카이빙
+
 ### v0.2.2 (2025-09-19) - 인증 시스템 고도화 완료 🔐
 - **고급 인증 시스템**: 로그인 안정화, 2FA, 세션 관리 구현
 - **국제화 (i18n) 완성**: 한국어/영어 다국어 지원 완료
@@ -202,9 +258,12 @@ console.log('Debug');                    // console 직접 사용
 
 ## 🎯 **프로젝트 상태**
 
-**🚀 현재 상태: Production Ready (96% 완성)**
+**🚀 현재 상태: Production Ready (98% 완성)**
 - **프로덕션 준비**: 완료 ✅ (Enterprise 수준 품질)
 - **인증 시스템**: 완료 ✅ (고급 보안 기능, 2FA, 세션 관리)
+- **알림 시스템**: 완료 ✅ (5개 Firebase Functions, UTC→KST 타임존 처리)
+- **멀티테넌트 아키텍처**: 완료 ✅ (Phase 1-6, Security Rules 배포)
+- **토너먼트 시스템**: 완료 ✅ (테이블 관리 개선, 멀티테넌트 전환)
 - **국제화 (i18n)**: 완료 ✅ (한국어/영어 다국어 지원)
 - **성능 최적화**: 완료 ✅ (React.memo, 번들 최적화, 코드 스플리팅)
 - **안정성**: TypeScript 에러 0개, any 타입 0개 ✅
@@ -212,27 +271,26 @@ console.log('Debug');                    // console 직접 사용
 - **테스트**: 65% 커버리지, 핵심 기능 검증 완료 ✅
 - **현대화**: 레거시 시스템 완전 제거, Toast 시스템 도입 ✅
 
-### **최신 완료 기능 (v0.2.2)**
-- **인증 시스템 고도화** ✅:
-  - 로그인 시스템 안정화 및 사용자 경험 개선
-  - 고급 보안 기능 (2FA, 세션 관리)
-  - 프로필 필수 정보 설정 및 검증
-- **국제화 (i18n)** ✅:
-  - 한국어/영어 다국어 지원 완료
-  - 하드코딩 텍스트 완전 제거
-  - 동적 언어 전환 기능
-- **메뉴 시스템 개선** ✅:
-  - 직관적인 네비게이션 구조
-  - 사용자 역할별 맞춤 메뉴
+### **최신 완료 기능 (v0.2.3)**
+- **알림 시스템 완성** ✅:
+  - 5개 Firebase Functions 배포 완료
+  - UTC→KST 타임존 자동 변환
+  - 근무 배정, 지원 상태, 일정 변경, 일정 알림, 공고 공지
+- **멀티테넌트 아키텍처 완성** ✅:
+  - users/{userId}/tournaments/{tournamentId} 구조 완성
+  - useParticipants, useSettings, useTables 멀티테넌트화
+  - Security Rules 프로덕션 배포
+- **토너먼트 시스템 개선** ✅:
+  - 테이블 닫기/삭제 분리
+  - 21개 Firestore 경로 멀티테넌트 전환
 
 ### **향후 계획 (Unreleased)**
-- **고급 기능 안정화 및 테스트**:
-  - Web Worker 기반 급여 계산 기능 테스트 및 안정화
+- **고급 기능 안정화**:
+  - Web Worker 기반 급여 계산 기능 테스트
   - 스마트 캐싱 및 가상화 기능 성능 검증
 - **신규 기능**:
-  - 실시간 알림 시스템
   - 관리자 대시보드 통계 기능
-  - QR 코드를 이용한 자동 출퇴근 시스템
+  - 알림 시스템 Phase 2 (실시간 알림 고도화)
 - **품질 개선**:
   - E2E 테스트 커버리지 확대 (현재 65%)
   - 모바일 최적화 및 PWA 고도화
@@ -247,5 +305,23 @@ console.log('Debug');                    // console 직접 사용
 
 ---
 
-*마지막 업데이트: 2025년 9월 19일*
-*프로젝트 버전: v0.2.2 (Production Ready - 인증 시스템 고도화 완성)*
+## 📚 **주요 문서**
+
+### 개발 가이드
+- [DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md) - 개발 가이드라인 및 패턴
+- [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - 테스트 가이드 (65% 커버리지)
+- [CAPACITOR_MIGRATION_GUIDE.md](docs/CAPACITOR_MIGRATION_GUIDE.md) - Capacitor 마이그레이션
+
+### 시스템 현황
+- [NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/NOTIFICATION_IMPLEMENTATION_STATUS.md) - 알림 시스템 상태
+- [MULTI_TENANT_STATUS.md](docs/MULTI_TENANT_STATUS.md) - 멀티테넌트 아키텍처 현황
+
+### 참고 자료
+- [ARCHITECTURE.md](docs/reference/ARCHITECTURE.md) - 아키텍처 문서
+- [DATA_SCHEMA.md](docs/reference/DATA_SCHEMA.md) - 데이터 스키마
+- [SUBSCRIPTION_MODEL.md](docs/reference/SUBSCRIPTION_MODEL.md) - 구독 모델 (향후 구현)
+
+---
+
+*마지막 업데이트: 2025년 10월 18일*
+*프로젝트 버전: v0.2.3 (Production Ready - 알림/멀티테넌트/테이블 관리 고도화 완성)*
