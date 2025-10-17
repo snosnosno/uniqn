@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
 import { writeBatch, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -15,9 +16,10 @@ import { ParsedParticipant, downloadCSV, generateParticipantsCSV } from '../util
 import { FaTrash, FaPlus } from '../components/Icons/ReactIconsReplacement';
 
 const ParticipantsPage: React.FC = () => {
+  const { state } = useTournament();
   const { t } = useTranslation();
-  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants(null, null);
-  const { tables, loading: tablesLoading, error: tablesError } = useTables(null, null);
+  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants(state.userId, state.tournamentId);
+  const { tables, loading: tablesLoading, error: tablesError } = useTables(state.userId, state.tournamentId);
 
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
   const [newParticipant, setNewParticipant] = useState<Omit<Participant, 'id'>>({ name: '', phone: '', playerIdentifier: '', participationMethod: '', chips: 10000, status: 'active' as const });

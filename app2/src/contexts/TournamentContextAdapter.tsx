@@ -1,8 +1,9 @@
 import { logger } from '../utils/logger';
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useTournamentStore } from '../stores/tournamentStore';
 import type { User } from '../types/common';
 import { TournamentState } from './TournamentContext';
+import { useAuth } from './AuthContext';
 
 // 기존 Action 타입과 호환되는 인터페이스
 type Action =
@@ -34,8 +35,22 @@ interface TournamentProviderProps {
  * 기존 Context API 인터페이스를 유지하면서 내부적으로 Zustand store를 사용
  */
 export const TournamentProvider = ({ children }: TournamentProviderProps) => {
+  // AuthContext에서 현재 사용자 가져오기
+  const { currentUser } = useAuth();
+  
   // Zustand store 사용
   const store = useTournamentStore();
+
+  // currentUser가 변경되면 userId 업데이트
+  useEffect(() => {
+    if (currentUser?.uid && currentUser.uid !== store.userId) {
+      logger.info('TournamentProvider: userId 업데이트', {
+        component: 'TournamentContextAdapter',
+        data: { userId: currentUser.uid }
+      });
+      store.setTournament({ userId: currentUser.uid });
+    }
+  }, [currentUser, store]);
 
   // Zustand state를 기존 TournamentState 형태로 변환
   const state: TournamentState = {

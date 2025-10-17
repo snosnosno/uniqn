@@ -12,12 +12,14 @@ import PlayerActionModal from '../components/modals/PlayerActionModal';
 import TableCard from '../components/tables/TableCard';
 import TableDetailModal from '../components/modals/TableDetailModal';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useTournament } from '../contexts/TournamentContext';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useSettings } from '../hooks/useSettings';
 import { useTables, Table } from '../hooks/useTables';
 import { exportTablesToExcel } from '../utils/excelExport';
 
 const TablesPage: React.FC = () => {
+    const { state } = useTournament();
     const { t } = useTranslation();
     const {
         tables,
@@ -34,16 +36,16 @@ const TablesPage: React.FC = () => {
         activateTable,
         updateTableDetails,
         updateTableMaxSeats,
-    } = useTables(null, null);
+    } = useTables(state.userId, state.tournamentId);
     
     const { 
         participants, 
         loading: participantsLoading, 
         error: participantsError, 
         updateParticipant 
-    } = useParticipants(null, null);
+    } = useParticipants(state.userId, state.tournamentId);
 
-    const { settings, updateSettings, loading: settingsLoading } = useSettings(null, null);
+    const { settings, updateSettings, loading: settingsLoading } = useSettings(state.userId, state.tournamentId);
     
     const isMobile = useMediaQuery('(max-width: 768px)');
 
