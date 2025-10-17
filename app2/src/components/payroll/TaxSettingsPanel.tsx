@@ -180,9 +180,22 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
           )}
 
           {!enabled && (
-            <div className="text-center py-4 text-gray-500 text-sm">
-              세금 적용이 비활성화되어 있습니다.
-            </div>
+            <>
+              <div className="text-center py-4 text-gray-500 text-sm">
+                세금 적용이 비활성화되어 있습니다.
+              </div>
+
+              {/* 비활성화 저장 버튼 */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400"
+                >
+                  {isSaving ? '저장 중...' : '설정 저장'}
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}

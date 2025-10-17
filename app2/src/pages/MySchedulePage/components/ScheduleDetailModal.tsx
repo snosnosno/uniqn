@@ -242,6 +242,29 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     // 수당 계산 추가
     const allowances = calculateAllowances(jobPosting, 1); // 1일 기준
 
+    // 세금 계산
+    const totalAmount = totalPay + (allowances.meal || 0) + (allowances.transportation || 0) +
+                        (allowances.accommodation || 0) + (allowances.bonus || 0) + (allowances.other || 0);
+
+    let tax = 0;
+    let taxRate: number | undefined;
+    let afterTaxAmount = totalAmount;
+
+    if (jobPosting?.taxSettings?.enabled) {
+      const taxSettings = jobPosting.taxSettings;
+
+      if (taxSettings.taxRate !== undefined && taxSettings.taxRate > 0) {
+        // 세율 기반 계산
+        taxRate = taxSettings.taxRate;
+        tax = Math.round(totalAmount * (taxRate / 100));
+      } else if (taxSettings.taxAmount !== undefined && taxSettings.taxAmount > 0) {
+        // 고정 세금
+        tax = taxSettings.taxAmount;
+      }
+
+      afterTaxAmount = totalAmount - tax;
+    }
+
     logger.debug('ScheduleDetailModal - 급여 정보 계산 (WorkLog 우선)', {
       component: 'ScheduleDetailModal',
       data: {
@@ -252,7 +275,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         totalHours,
         totalPay,
         hasJobPosting: !!jobPosting,
-        allowances
+        allowances,
+        tax,
+        taxRate,
+        afterTaxAmount
       }
     });
 
@@ -262,7 +288,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       totalHours,
       totalDays: 1, // 일정은 하루
       basePay: schedule.payrollAmount || totalPay,
-      allowances
+      allowances,
+      ...(tax > 0 && { tax }),
+      ...(taxRate !== undefined && { taxRate }),
+      ...(tax > 0 && { afterTaxAmount })
     };
   }, [schedule, jobPosting, getTargetWorkLog]);
 
@@ -274,6 +303,9 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     totalDays: number;
     basePay: number;
     allowances: PayrollCalculationResult['allowances'];
+    tax?: number;
+    taxRate?: number;
+    afterTaxAmount?: number;
   }>({
     salaryType: 'hourly',
     baseSalary: 10000,
@@ -613,6 +645,16 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       {salaryInfo.basePay.toLocaleString('ko-KR')}원
                     </span>
                   </div>
+                  {salaryInfo.tax !== undefined && salaryInfo.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">세금:</span>
+                      <span className="text-sm text-gray-900">
+                        {salaryInfo.taxRate !== undefined && salaryInfo.taxRate > 0
+                          ? `${salaryInfo.taxRate}%`
+                          : '고정 세금'}
+                      </span>
+                    </div>
+                  )}
                   {schedule.payrollAmount && schedule.payrollAmount !== salaryInfo.basePay && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">정산 금액:</span>
@@ -627,7 +669,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-3">근무 요약</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-900">{salaryInfo.totalDays}</div>
                   <div className="text-xs text-gray-500">근무일수</div>
@@ -640,8 +682,23 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   <div className="text-lg font-bold text-indigo-600">
                     {(schedule.payrollAmount || (salaryInfo.totalHours * salaryInfo.baseSalary)).toLocaleString('ko-KR')}
                   </div>
-                  <div className="text-xs text-gray-500">예상 지급액</div>
+                  <div className="text-xs text-gray-500">총 지급액</div>
                 </div>
+                {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 ? (
+                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-green-600">
+                      {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}
+                    </div>
+                    <div className="text-xs text-gray-500">세후 급여</div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-gray-900">
+                      {(schedule.payrollAmount || (salaryInfo.totalHours * salaryInfo.baseSalary)).toLocaleString('ko-KR')}
+                    </div>
+                    <div className="text-xs text-gray-500">세후 급여</div>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -786,59 +843,31 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
               {/* 일당 계산 과정 표시 */}
               {salaryInfo.allowances?.dailyRates && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">일당 기반 계산</span>
+                    <span className="text-sm font-medium text-gray-700">일당 기반 계산</span>
                     <span className="text-sm font-medium text-gray-900">{salaryInfo.allowances.workDays || 1}일 근무</span>
                   </div>
                   {salaryInfo.allowances.dailyRates.meal && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">식비: {salaryInfo.allowances.dailyRates.meal.toLocaleString('ko-KR')}원/일</span>
-                      <span className="text-gray-900">= {(salaryInfo.allowances.meal || 0).toLocaleString('ko-KR')}원</span>
+                      <span className="text-gray-600">식비: {salaryInfo.allowances.dailyRates.meal.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
+                      <span className="text-gray-900 font-medium">= {(salaryInfo.allowances.meal || 0).toLocaleString('ko-KR')}원</span>
                     </div>
                   )}
                   {salaryInfo.allowances.dailyRates.transportation && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">교통비: {salaryInfo.allowances.dailyRates.transportation.toLocaleString('ko-KR')}원/일</span>
-                      <span className="text-gray-900">= {(salaryInfo.allowances.transportation || 0).toLocaleString('ko-KR')}원</span>
+                      <span className="text-gray-600">교통비: {salaryInfo.allowances.dailyRates.transportation.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
+                      <span className="text-gray-900 font-medium">= {(salaryInfo.allowances.transportation || 0).toLocaleString('ko-KR')}원</span>
                     </div>
                   )}
                   {salaryInfo.allowances.dailyRates.accommodation && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">숙소비: {salaryInfo.allowances.dailyRates.accommodation.toLocaleString('ko-KR')}원/일</span>
-                      <span className="text-gray-900">= {(salaryInfo.allowances.accommodation || 0).toLocaleString('ko-KR')}원</span>
+                      <span className="text-gray-600">숙소비: {salaryInfo.allowances.dailyRates.accommodation.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
+                      <span className="text-gray-900 font-medium">= {(salaryInfo.allowances.accommodation || 0).toLocaleString('ko-KR')}원</span>
                     </div>
                   )}
                 </div>
               )}
-
-              {/* 수당 목록 */}
-              <div className="space-y-3">
-                {[
-                  { name: '식비', key: 'meal' as const, amount: salaryInfo.allowances?.meal || 0, description: '식사 지원' },
-                  { name: '교통비', key: 'transportation' as const, amount: salaryInfo.allowances?.transportation || 0, description: '교통 지원' },
-                  { name: '숙소비', key: 'accommodation' as const, amount: salaryInfo.allowances?.accommodation || 0, description: '숙박 지원' },
-                  { name: '보너스', key: 'bonus' as const, amount: salaryInfo.allowances?.bonus || 0, description: '성과급' }
-                ].map((allowance, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-700">{allowance.name}</span>
-                      <span className="text-xs text-gray-500 ml-2">({allowance.description})</span>
-                      {/* 일당 표시 */}
-                      {salaryInfo.allowances?.dailyRates &&
-                       allowance.key in salaryInfo.allowances.dailyRates &&
-                       salaryInfo.allowances.dailyRates[allowance.key as keyof typeof salaryInfo.allowances.dailyRates] && (
-                        <span className="text-xs text-blue-600 ml-2">
-                          ({salaryInfo.allowances.dailyRates[allowance.key as keyof typeof salaryInfo.allowances.dailyRates]!.toLocaleString('ko-KR')}원/일 × {salaryInfo.allowances.workDays || 1}일)
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-900">
-                      {allowance.amount.toLocaleString('ko-KR')}원
-                    </span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* 총 계산 */}
@@ -864,6 +893,14 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     })()}
                   </span>
                 </div>
+                {salaryInfo.tax !== undefined && salaryInfo.tax > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">세금</span>
+                    <span className="text-red-600">
+                      -{salaryInfo.tax.toLocaleString('ko-KR')}원
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-indigo-200 pt-2 flex justify-between">
                   <span className="text-base font-medium text-gray-800">총 지급액</span>
                   <span className="text-lg font-bold text-indigo-600">
@@ -880,6 +917,14 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     })()}
                   </span>
                 </div>
+                {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-base font-medium text-green-700">세후 급여</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}원
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
