@@ -123,7 +123,7 @@ export const validateConfig = (): boolean => {
 };
 
 // 설정 내보내기
-export default {
+const firebaseConfigExport = {
   firebase: firebaseConfig,
   emulator: emulatorConfig,
   environment,
@@ -132,3 +132,5 @@ export default {
   monitoring: monitoringConfig,
   validate: validateConfig
 };
+
+export default firebaseConfigExport;

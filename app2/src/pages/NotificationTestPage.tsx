@@ -10,7 +10,6 @@
  */
 
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,7 +31,6 @@ interface TestNotification {
 }
 
 const NotificationTestPage: React.FC = () => {
-  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);

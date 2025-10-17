@@ -132,7 +132,7 @@ const MultipleAssignmentsDisplay: React.FC<{
 };
 */
 
-// 단일 지원 시간대 표시 컴포넌트 - TODO: 현재 미사용
+// 단일 지원 시간대 표시 컴포넌트 (현재 미사용)
 /*
 const SingleAssignmentDisplay: React.FC<{
   assignedTime?: string | DateValue | undefined;

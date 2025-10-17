@@ -236,6 +236,7 @@ const ParticipantsPage: React.FC = () => {
 
   // 전체 삭제 함수
   const handleDeleteAll = async () => {
+    // eslint-disable-next-line no-alert
     const confirmText = prompt(
       `모든 참가자(${participants.length}명)를 삭제합니다.\n` +
       '정말로 삭제하려면 "전체삭제"를 입력하세요:'

@@ -359,6 +359,7 @@ class OptimizedUnifiedDataService {
   private subscriptions: SubscriptionManager = {};
   private dispatcher: ((action: UnifiedDataAction) => void) | null = null;
   private currentUserId: string | null = null;
+  private userRole: string | null = null; // 사용자 역할 저장
   private currentEventId: string | null = null;
   private performanceTracker = new OptimizedPerformanceTracker();
   private cache = new MemoryCache();
@@ -367,13 +368,19 @@ class OptimizedUnifiedDataService {
    * 사용자 역할 확인
    */
   private isAdmin(): boolean {
-    // TODO: 실제 사용자 역할 확인 로직 구현
-    return true; // 임시로 admin 권한으로 설정
+    // AuthContext에서 관리하는 role 사용
+    if (!this.userRole) {
+      return false;
+    }
+    return this.userRole === 'admin' || this.userRole === 'manager';
   }
 
   private getUserRole(): 'admin' | 'manager' | 'staff' {
-    // TODO: 실제 사용자 역할 확인 로직 구현
-    return 'admin'; // 임시
+    // AuthContext에서 전달받은 role 반환
+    if (!this.userRole) {
+      return 'staff'; // 기본값
+    }
+    return this.userRole as 'admin' | 'manager' | 'staff';
   }
 
   /**
@@ -500,6 +507,7 @@ class OptimizedUnifiedDataService {
   ): Promise<SubscriptionManager> {
     this.dispatcher = dispatch;
     this.currentUserId = userId;
+    this.userRole = userRole; // 사용자 역할 저장
 
     const subscriptions: SubscriptionManager = {};
 

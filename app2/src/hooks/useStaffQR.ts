@@ -198,7 +198,7 @@ export function useStaffQR({
     if (!qrPayload) return;
 
     countdownIntervalRef.current = setInterval(() => {
-      setRemainingSeconds(prev => {
+      setRemainingSeconds(_prev => {
         const elapsed = Math.floor((Date.now() - qrPayload.generatedAt) / 1000);
         const remaining = 180 - elapsed;
 

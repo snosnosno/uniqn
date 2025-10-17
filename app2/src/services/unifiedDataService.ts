@@ -107,7 +107,7 @@ class PerformanceTracker {
   }
 }
 
-// 데이터 변환 유틸리티 - TODO: 미래 데이터 변환 로직용 - 현재 미사용
+// 데이터 변환 유틸리티 (현재 미사용)
 /*
 const transformStaffData = (doc: DocumentData): Staff => ({
   id: doc.id,

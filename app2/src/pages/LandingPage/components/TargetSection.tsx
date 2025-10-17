@@ -178,7 +178,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
 
                 {/* 혜택 목록 */}
                 {target.benefits && target.benefits.length > 0 && (
-                  <ul role="list" className="space-y-3 mb-8">
+                  <ul className="space-y-3 mb-8">
                     {target.benefits.map((benefit, index) => (
                       <li
                         key={index}

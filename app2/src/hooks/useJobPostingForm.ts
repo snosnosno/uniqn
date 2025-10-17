@@ -7,7 +7,7 @@ import {
 } from '../utils/jobPosting/jobPostingHelpers';
 // import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
 
-import { JobPosting, JobPostingFormData } from '../types/jobPosting';
+import { JobPosting } from '../types/jobPosting';
 import { toast } from '../utils/toast';
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {

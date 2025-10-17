@@ -40,6 +40,9 @@ export const initializePushNotifications = async (userId: string) => {
       logger.info('FCM 토큰 수신', { data: { token: token.value } });
 
       try {
+        // 로컬 스토리지에 토큰 캐싱
+        localStorage.setItem('fcm_token', token.value);
+
         // Firestore에 토큰 저장
         const platform = Capacitor.getPlatform() as 'ios' | 'android';
         await saveFCMToken(userId, token.value, platform);
@@ -155,8 +158,19 @@ export const getCurrentPushToken = async (): Promise<string | null> => {
     return null;
   }
 
-  // TODO: 실제 구현에서는 로컬 스토리지나 상태 관리에서 토큰을 가져와야 함
-  return null;
+  try {
+    // Capacitor PushNotifications에서 현재 토큰 가져오기
+    // 이미 등록된 토큰이 있으면 반환, 없으면 null 반환
+    const deliveredNotifications = await PushNotifications.getDeliveredNotifications();
+
+    // 토큰은 registration 이벤트에서만 받을 수 있으므로
+    // 저장된 토큰을 로컬 스토리지에서 가져옴
+    const cachedToken = localStorage.getItem('fcm_token');
+    return cachedToken;
+  } catch (error) {
+    logger.error('FCM 토큰 조회 실패:', error as Error);
+    return null;
+  }
 };
 
 /**

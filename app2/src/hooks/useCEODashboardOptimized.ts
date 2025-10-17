@@ -13,7 +13,6 @@ import { db } from '../firebase';
 import { startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns';
 import { logger } from '../utils/logger';
 import { useUnifiedData } from './useUnifiedData';
-import { UnifiedWorkLog } from '../types/unified/workLog';
 
 interface TopDealer {
   id: string;

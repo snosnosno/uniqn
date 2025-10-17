@@ -1,7 +1,7 @@
 /**
  * 테이블 Firebase 쿼리 로직
  */
-import { collection, onSnapshot, collectionGroup, query, where, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, collectionGroup, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Table } from './types';
 import { logger } from '../../utils/logger';

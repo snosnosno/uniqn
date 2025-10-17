@@ -250,7 +250,6 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     setLoading(true);
     try {
       // 토너먼트 정보 조회 (색상 정보 포함)
-      const tournamentRef = doc(db, `users/${userId}/tournaments`, targetTournamentId);
       const tournamentSnap = await getDocs(collection(db, `users/${userId}/tournaments`));
       const tournamentData = tournamentSnap.docs.find(d => d.id === targetTournamentId)?.data();
 

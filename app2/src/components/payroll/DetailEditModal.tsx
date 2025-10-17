@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { EnhancedPayrollCalculation, AllowanceType } from '../../types/payroll';
+import { EnhancedPayrollCalculation } from '../../types/payroll';
 import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import { calculateWorkHours, parseTimeToString } from '../../utils/workLogMapper';
@@ -22,7 +22,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   onClose,
   staff,
   workLogs,  // props로 받은 workLogs 사용
-  onSave
+  onSave: _onSave
 }) => {
   const [allowances, setAllowances] = useState<EnhancedPayrollCalculation['allowances']>({
     meal: 0,

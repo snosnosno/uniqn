@@ -373,20 +373,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, [staffData, filters.searchTerm]);
   
   const filteredStaffCount = groupedStaffData.uniqueCount;
-  
-  // TODO: 향후 대량 선택 기능을 위해 준비됨
-  // const selectedStaffData = useMemo(() => {
-  //   if (selectedStaff.size === 0) return [];
-  //   return staffData.filter(staff => selectedStaff.has(staff.id));
-  // }, [staffData, selectedStaff]);
-
-  // TODO: 향후 가상화 기능을 위해 준비됨
-  // const mobileVirtualization = useVirtualization({
-  //   itemCount: filteredStaffCount,
-  //   threshold: 30,
-  //   mobileThreshold: 20,
-  //   isMobile: true
-  // });
 
   // const desktopVirtualization = useVirtualization({
   //   itemCount: filteredStaffCount,
@@ -799,12 +785,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     setReportTarget(null);
   }, []);
 
-
-  // TODO: 향후 대량 작업 기능을 위해 준비됨
-  // const handleBulkActions = () => {
-  //   // 대량 작업 UI 열기
-  // };
-  
   const handleBulkDelete = async (staffIds: string[]) => {
     try {
       // 1. 각 스태프의 삭제 가능 여부 확인
@@ -952,54 +932,6 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       showError('스태프 일괄 삭제 중 오류가 발생했습니다.');
     }
   };
-  
-  // TODO: 향후 대량 메시지 기능을 위해 준비됨
-  // const handleBulkMessage = async (staffIds: string[], message: string) => {
-  //   showSuccess(`${staffIds.length}명에게 메시지를 발송했습니다: "${message}"`);
-  // };
-  
-  // TODO: 향후 대량 상태 변경 기능을 위해 준비됨
-  /*
-  const handleBulkStatusUpdate = async (staffIds: string[], status: string) => {
-    if (!canEdit) {
-      showError('이 공고를 수정할 권한이 없습니다.');
-      return;
-    }
-    
-    try {
-      const staffInfo = staffIds.map(id => {
-        const staff = staffData.find(s => s.id === id);
-        return {
-          id,
-          name: staff?.name || '이름 미정',
-          ...(staff?.assignedDate && { assignedDate: staff.assignedDate })
-        };
-      });
-      
-      const result = await BulkOperationService.bulkUpdateStatus(
-        staffInfo,
-        jobPosting?.id || 'default-event',
-        status as any
-      );
-      
-      const { type, message } = BulkOperationService.generateResultMessage(
-        result,
-        'status',
-        { status }
-      );
-      
-      if (type === 'success') {
-        showSuccess(message);
-        resetSelection(); // 성공 시 선택 상태 초기화
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      logger.error('출석 상태 일괄 변경 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffManagementTab' });
-      showError('출석 상태 변경 중 오류가 발생했습니다.');
-    }
-  };
-  */
   
   // 프로필 모달 핸들러
   const handleShowProfile = (staffId: string) => {

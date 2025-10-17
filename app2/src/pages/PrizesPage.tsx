@@ -56,7 +56,7 @@ const PrizesPage: React.FC = () => {
   };
   
   const handleSave = () => {
-    const payoutsToSave = isManual ? manualPayouts : calculatedPayouts;
+    // const payoutsToSave = isManual ? manualPayouts : calculatedPayouts;
     // SAVE_PAYOUTS action not yet implemented
     toast.success(t('prizes.alertSaved'));
   }
