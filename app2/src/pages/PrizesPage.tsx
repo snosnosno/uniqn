@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '../utils/toast';
 
 import { useTournament } from '../contexts/TournamentContextAdapter';
+import TournamentSelector from '../components/TournamentSelector';
 
 // 예시: ITM(In The Money) 비율에 따른 상금 분배 (조정 가능)
 const PRIZE_DISTRIBUTION_RULES = {
@@ -69,7 +70,16 @@ const PrizesPage: React.FC = () => {
   const totalManualPayout = manualPayouts.reduce((sum, v) => sum + v, 0);
 
   return (
-    <div className="card">
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <TournamentSelector />
+
+      {!state.tournamentId ? (
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+          <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
+        </div>
+      ) : (
+        <div className="card">
       <h2 className="text-2xl font-bold mb-4">{t('prizes.title')}</h2>
 
       <div className="grid grid-cols-3 gap-4 mb-4 text-center">
@@ -114,10 +124,12 @@ const PrizesPage: React.FC = () => {
           </div>
         ))}
       </div>
-      
+
       <button onClick={handleSave} className="btn btn-primary w-full mt-4">
         {t('prizes.saveButton')}
       </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -395,6 +395,15 @@ service cloud.firestore {
         allow delete: if isPrivileged(); // 관리자만 삭제 가능
       }
     }
+
+    // ================= collectionGroup 쿼리 지원 =================
+    // collectionGroup('tables') 등의 쿼리를 위한 규칙
+    match /{path=**}/tables/{tableId} {
+      // users/{userId}/tournaments/{tournamentId}/tables/{tableId} 경로의 모든 테이블
+      // 인증된 사용자만 읽을 수 있음 (본인 또는 관리자)
+      allow read: if isSignedIn();
+      // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/tables) 적용
+    }
     
     // --- Attendance Records Collection (표준 필드명 지원) ---
     match /attendanceRecords/{recordId} {

@@ -37,6 +37,7 @@ type ActionType =
   | 'seat_moved'
   | 'max_seats_updated'
   | 'settings_updated'
+  | 'tables_assigned_to_tournament'
   | 'action_failed';
 
 

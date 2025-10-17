@@ -10,6 +10,7 @@ import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import CSVUploadButton from '../components/upload/CSVUploadButton';
+import TournamentSelector from '../components/TournamentSelector';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
 import { ParsedParticipant, downloadCSV, generateParticipantsCSV } from '../utils/csvParser';
@@ -276,11 +277,20 @@ const ParticipantsPage: React.FC = () => {
   if (participantsError) return <div className="text-red-500">{t('participants.errorParticipants')} {participantsError.message}</div>;
   if (tablesError) return <div className="text-red-500">{t('participants.errorTables')} {tablesError.message}</div>;
 
-  const isAllSelected = filteredParticipants.length > 0 && 
+  const isAllSelected = filteredParticipants.length > 0 &&
     filteredParticipants.every(p => selectedIds.has(p.id));
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
+      <TournamentSelector />
+
+      {!state.tournamentId ? (
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+          <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
+        </div>
+      ) : (
+        <>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">{t('participants.title')}</h1>
       <div className="mb-4 space-y-2">
         <div className="flex gap-2 flex-wrap">
@@ -507,6 +517,8 @@ const ParticipantsPage: React.FC = () => {
         isDangerous={true}
         isLoading={isDeleting}
       />
+        </>
+      )}
     </div>
   );
 };

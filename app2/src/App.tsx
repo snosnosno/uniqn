@@ -22,6 +22,8 @@ import NetworkStatusIndicator from './components/NetworkStatusIndicator';
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
 // UnifiedDataContext - 통합 데이터 관리
 import { UnifiedDataProvider } from './contexts/UnifiedDataContext';
+// TournamentDataContext - 토너먼트 데이터 전역 관리
+import { TournamentDataProvider } from './contexts/TournamentDataContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
@@ -72,6 +74,7 @@ const {
 const {
   ParticipantsPage,
   TablesPage,
+  TournamentsPage,
   // PrizesPage, // 비활성화 - 추후 업데이트 예정
   ShiftSchedulePage,
 } = tournamentChunk;
@@ -152,8 +155,9 @@ const App: React.FC = () => {
             <CapacitorInitializer>
               <UnifiedDataProvider>
                 <TournamentProvider>
-                  {/* 네트워크 상태 표시 */}
-                  <NetworkStatusIndicator position="top" />
+                  <TournamentDataProvider>
+                    {/* 네트워크 상태 표시 */}
+                    <NetworkStatusIndicator position="top" />
 
               <Routes>
                 {/* Public Routes */}
@@ -187,12 +191,15 @@ const App: React.FC = () => {
                       <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
                       <Route path="support" element={<Suspense fallback={<LoadingSpinner />}><SupportPage /></Suspense>} />
 
+                      {/* Tournament Management - All authenticated users */}
+                      <Route path="tournaments" element={<Suspense fallback={<LoadingSpinner />}><TournamentsPage /></Suspense>} />
+                      <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
+                      <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
+
                       {/* Admin & Manager Routes */}
                       <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
                         <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
                         <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
-                        <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
-                        <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
                         {/* 상금관리 페이지 - 추후 업데이트 예정 */}
                         <Route path="prizes" element={
                           <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-50">
@@ -231,6 +238,7 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
+                  </TournamentDataProvider>
                 </TournamentProvider>
               </UnifiedDataProvider>
             </CapacitorInitializer>

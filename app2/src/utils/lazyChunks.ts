@@ -25,6 +25,7 @@ export const jobManagementChunk = {
 
 // 토너먼트 운영 관리 그룹
 export const tournamentChunk = {
+  TournamentsPage: lazyWithRetry(() => import('../pages/TournamentsPage')),
   ParticipantsPage: lazyWithRetry(() => import('../pages/ParticipantsPage')),
   TablesPage: lazyWithRetry(() => import('../pages/TablesPage')),
   PrizesPage: lazyWithRetry(() => import('../pages/PrizesPage')),
