@@ -149,19 +149,7 @@ const ShiftSchedulePage: React.FC = () => {
   // const handleDateChange = (newDate: string) => {
   //   setSelectedDate(newDate);
   // };
-  
-  // 스태프 추가 핸들러 - 업데이트 예정
-  const handleAddStaff = async (_staffId: string, _staffName: string) => {
-    showError('이 기능은 현재 업데이트 중입니다.');
-    return;
-  };
-  
-  // 스태프 제거 핸들러 - 업데이트 예정
-  const handleRemoveStaff = async (_staffId: string) => {
-    showError('이 기능은 현재 업데이트 중입니다.');
-    return;
-  };
-  
+
   // 근무기록 생성 핸들러 - 업데이트 예정
   // const handleGenerateWorkLogs = async () => {
   //   showError('이 기능은 현재 업데이트 중입니다.');

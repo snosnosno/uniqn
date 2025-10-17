@@ -34,7 +34,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   schedule,
   onCheckOut,
   onCancel,
-  onDelete
+  onDelete: _onDelete
 }) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'work' | 'calculation'>('basic');
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);

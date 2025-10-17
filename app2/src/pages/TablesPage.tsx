@@ -25,7 +25,7 @@ import { useSettings } from '../hooks/useSettings';
 import { useTables, Table } from '../hooks/useTables';
 import { exportTablesToExcel } from '../utils/excelExport';
 import { useTournamentData } from '../contexts/TournamentDataContext';
-import { getDefaultTournamentId, isDefaultTournament } from '../hooks/useTournaments';
+import { isDefaultTournament } from '../hooks/useTournaments';
 import { getTournamentColorById, COLOR_EMOJIS, UNASSIGNED_COLOR } from '../utils/tournamentColors';
 
 const TablesPage: React.FC = () => {

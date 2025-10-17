@@ -500,18 +500,13 @@ export class UnifiedDataService {
         { includeMetadataChanges: true }, // 🔥 메타데이터 변경도 감지하여 실시간성 강화
         (snapshot: QuerySnapshot) => {
           const _queryTime = _endTimer(); // 성능 추적용
-          
-          // 🔥 변경된 문서만 효율적으로 처리
-          const changes = snapshot.docChanges({ includeMetadataChanges: true });
 
           // WorkLogs 데이터 업데이트 처리
           const workLogsData: WorkLog[] = [];
           let filteredCount = 0;
-          let totalCount = 0;
-          
+
           snapshot.forEach((doc) => {
             try {
-              totalCount++;
               const rawData = { id: doc.id, ...doc.data() };
               const workLog = transformWorkLogData(rawData);
               
@@ -605,26 +600,21 @@ export class UnifiedDataService {
           const _queryTime = _endTimer(); // 성능 추적용
           // AttendanceRecords 데이터 업데이트 처리
           const attendanceData: AttendanceRecord[] = [];
-          let filteredCount = 0;
-          let totalCount = 0;
-          
+
           snapshot.forEach((doc) => {
             try {
-              totalCount++;
               const rawData = { id: doc.id, ...doc.data() };
               const attendanceRecord = transformAttendanceData(rawData);
-              
+
               // 🔥 클라이언트 측 필터링: staffId가 userId로 시작하는지 확인
               if (this.currentUserId && !this.isAdmin()) {
                 if (attendanceRecord.staffId && attendanceRecord.staffId.startsWith(this.currentUserId)) {
                   attendanceData.push(attendanceRecord);
-                  filteredCount++;
                 }
                 // userId와 매칭되지 않는 AttendanceRecord는 제외
               } else {
                 // 관리자이거나 userId가 없으면 모든 데이터 포함
                 attendanceData.push(attendanceRecord);
-                filteredCount++;
               }
             } catch (error) {
               logger.warn('AttendanceRecord 데이터 변환 오류', { component: 'unifiedDataService', data: { docId: doc.id, error } });

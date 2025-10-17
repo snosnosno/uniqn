@@ -159,10 +159,6 @@ export const getCurrentPushToken = async (): Promise<string | null> => {
   }
 
   try {
-    // Capacitor PushNotifications에서 현재 토큰 가져오기
-    // 이미 등록된 토큰이 있으면 반환, 없으면 null 반환
-    const deliveredNotifications = await PushNotifications.getDeliveredNotifications();
-
     // 토큰은 registration 이벤트에서만 받을 수 있으므로
     // 저장된 토큰을 로컬 스토리지에서 가져옴
     const cachedToken = localStorage.getItem('fcm_token');
