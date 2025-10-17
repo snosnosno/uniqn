@@ -441,15 +441,18 @@ class SmartCache {
       this.stats.deletes += expiredEntries.length;
       this.stats.lastCleanup = now;
 
-      logger.info('캐시 정리 완료', {
-        component: 'SmartCache',
-        data: {
-          expired: expiredEntries.length,
-          evicted: additionalEvictions.length,
-          totalDeleted: deletedCount,
-          currentSize: `${(this.stats.totalSize / 1024 / 1024).toFixed(2)}MB`
-        }
-      });
+      // 대량 정리가 발생했을 때만 로그 (10개 이상)
+      if (deletedCount >= 10) {
+        logger.info('대량 캐시 정리 완료', {
+          component: 'SmartCache',
+          data: {
+            expired: expiredEntries.length,
+            evicted: additionalEvictions.length,
+            totalDeleted: deletedCount,
+            currentSize: `${(this.stats.totalSize / 1024 / 1024).toFixed(2)}MB`
+          }
+        });
+      }
 
       return deletedCount;
     } catch (error) {

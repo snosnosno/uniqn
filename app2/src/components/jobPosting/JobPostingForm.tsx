@@ -4,6 +4,7 @@ import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
 import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { JobPosting, DateSpecificRequirement, JobPostingTemplate } from '../../types/jobPosting';
+import { toast } from '../../utils/toast';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Select } from '../common/Select';
@@ -11,6 +12,7 @@ import DateSpecificRequirementsNew from './DateSpecificRequirementsNew';
 import PreQuestionManager from './PreQuestionManager';
 import TemplateModal from './modals/TemplateModal';
 import LoadTemplateModal from './modals/LoadTemplateModal';
+import ConfirmModal from '../modals/ConfirmModal';
 
 interface JobPostingFormProps {
   onSubmit: (formData: Partial<JobPosting>) => Promise<void>;
@@ -66,7 +68,10 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     setTemplateDescription,
     handleSaveTemplate,
     handleLoadTemplate,
-    handleDeleteTemplate,
+    handleDeleteTemplateClick,
+    handleDeleteTemplateConfirm: _handleDeleteTemplateConfirm,
+    deleteConfirmTemplate: _deleteConfirmTemplate,
+    setDeleteConfirmTemplate: _setDeleteConfirmTemplate,
     openTemplateModal,
     closeTemplateModal,
     openLoadTemplateModal,
@@ -92,6 +97,11 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     const templateFormData = await handleLoadTemplate(template);
     setFormDataFromTemplate(templateFormData);
     return templateFormData;
+  };
+
+  const handleDeleteTemplateWrapper = async (templateId: string, templateName: string) => {
+    handleDeleteTemplateClick(templateId, templateName);
+    return true; // Return true to indicate the modal should wait for confirmation
   };
 
   const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
@@ -642,7 +652,24 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         templates={templates}
         templatesLoading={templatesLoading}
         onLoadTemplate={handleLoadTemplateWrapper}
-        onDeleteTemplate={handleDeleteTemplate}
+        onDeleteTemplate={handleDeleteTemplateWrapper}
+      />
+
+      {/* 템플릿 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={!!_deleteConfirmTemplate}
+        onClose={() => _setDeleteConfirmTemplate(null)}
+        onConfirm={async () => {
+          const success = await _handleDeleteTemplateConfirm();
+          if (success) {
+            toast.success(`"${_deleteConfirmTemplate?.name}" 템플릿이 삭제되었습니다.`);
+          }
+        }}
+        title="템플릿 삭제"
+        message={`"${_deleteConfirmTemplate?.name}" 템플릿을 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.`}
+        confirmText="삭제"
+        cancelText="취소"
+        isDangerous={true}
       />
     </div>
   );

@@ -15,10 +15,10 @@ import { Timestamp } from 'firebase/firestore';
  */
 export function toDateString(input: any): string {
   if (!input) return new Date().toISOString().split('T')[0] || '';
-  
+
   try {
     let date: Date;
-    
+
     // Timestamp 처리 (Firebase)
     if (input?.toDate && typeof input.toDate === 'function') {
       date = input.toDate();
@@ -39,18 +39,77 @@ export function toDateString(input: any): string {
     else {
       date = new Date(input);
     }
-    
+
     // 유효한 날짜인지 확인
     if (isNaN(date.getTime())) {
       return new Date().toISOString().split('T')[0] || '';
     }
-    
+
     // yyyy-MM-dd 형식으로 반환
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-    
+
+  } catch {
+    return new Date().toISOString().split('T')[0] || '';
+  }
+}
+
+/**
+ * 날짜 문자열을 정규화 (YYYY-MM-DD 형식으로 강제 변환)
+ * @param dateString - 정규화할 날짜 문자열
+ * @returns YYYY-MM-DD 형식의 정규화된 날짜 문자열
+ *
+ * @example
+ * normalizeDate('2025-1-16') => '2025-01-16'
+ * normalizeDate('2025-01-16') => '2025-01-16'
+ */
+export function normalizeDate(dateString: string): string {
+  if (!dateString) return '';
+
+  try {
+    // 이미 정규화된 형식이면 그대로 반환
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+
+    // Date 객체로 변환 후 정규화
+    const date = new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * 한국 시간대 기준으로 현재 날짜 반환
+ * @returns YYYY-MM-DD 형식의 한국 시간대 날짜
+ *
+ * @example
+ * // 한국 시간 2025-01-17 00:30 (UTC 2025-01-16 15:30)
+ * getKoreanDate() => '2025-01-17'
+ */
+export function getKoreanDate(): string {
+  try {
+    // 한국 시간대 (UTC+9)
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+
+    const year = koreaTime.getUTCFullYear();
+    const month = String(koreaTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(koreaTime.getUTCDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   } catch {
     return new Date().toISOString().split('T')[0] || '';
   }

@@ -105,6 +105,39 @@ export * from './simplePayroll';
 // 기타 타입들
 export * from './permissions';
 
+// 공지 관련 타입
+export type {
+  AnnouncementStatus,
+  AnnouncementSendResult,
+  JobPostingAnnouncement,
+  CreateAnnouncementInput,
+  SendAnnouncementRequest,
+  SendAnnouncementResponse,
+  AnnouncementFilterOptions
+} from './announcement';
+
+export {
+  validateAnnouncement
+} from './announcement';
+
+// 알림 관련 타입
+export type {
+  Notification,
+  NotificationCategory,
+  NotificationType,
+  NotificationPriority,
+  NotificationActionType,
+  NotificationAction,
+  NotificationSettings,
+  NotificationFilter,
+  NotificationStats,
+  NotificationCreateInput
+} from './notification';
+
+export {
+  convertTimestamp
+} from './notification';
+
 // ============================================================================
 // 통합된 Person 타입 (NEW)
 // ============================================================================

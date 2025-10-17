@@ -1,9 +1,24 @@
-// Firebase 초기??�??�증/DB ?�스?�스 export
+// Firebase 초기화 및 인증/DB 인스턴스 export
 import { initializeApp } from "firebase/app";
 import { logger } from './utils/logger';
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, doc, collection, getDocs, writeBatch, query, where, orderBy, limit, startAfter, Timestamp, Query, connectFirestoreEmulator } from "firebase/firestore";
-// Storage와 Functions는 동적 import를 위해 직접 import하지 않음
+import {
+  getFirestore,
+  doc,
+  collection,
+  getDocs,
+  writeBatch,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  Timestamp,
+  Query,
+  connectFirestoreEmulator
+} from "firebase/firestore";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+// Storage는 동적 import를 위해 직접 import하지 않음
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
 import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
@@ -19,23 +34,59 @@ if (!validateConfig()) {
 
 const app = initializeApp(firebaseConfig);
 export { app }; // Export app for Firebase Performance
-export const auth = getAuth(app);
-export const db = getFirestore(app); // Export db as a named export
 
-// Storage와 Functions는 동적 로딩을 위해 별도 유틸리티 사용
-// firebase-dynamic.ts의 getStorageLazy(), getFunctionsLazy() 사용
+export const auth = getAuth(app);
 
 // Connect to Firebase Emulators for local development
 const { useEmulator: isEmulator } = emulatorConfig;
 
+// Initialize Firestore with proper settings based on environment
+let db: ReturnType<typeof getFirestore>;
+
+try {
+  if (isEmulator) {
+    // For emulator environment, use getFirestore
+    db = getFirestore(app);
+    logger.info('Firestore initialized for emulator environment', {
+      component: 'firebase',
+      environment: 'emulator'
+    });
+  } else {
+    // For production, also use getFirestore for now
+    // Firebase v11 cache settings are still experimental
+    db = getFirestore(app);
+    logger.info('Firestore initialized for production environment', {
+      component: 'firebase',
+      environment: 'production'
+    });
+  }
+} catch (error) {
+  // Fallback to getFirestore if initialization fails
+  db = getFirestore(app);
+  logger.warn('Fallback to getFirestore due to initialization error', {
+    component: 'firebase',
+    errorInfo: String(error)
+  });
+}
+
+export { db };
+
+// Initialize Functions
+export const functions = getFunctions(app);
+
+// Storage는 동적 로딩을 위해 별도 유틸리티 사용
+
 if (isEmulator) {
+  // Connect Functions Emulator
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+  logger.info('Functions emulator connected', { data: { port: 5001 } });
   try {
     // Connect Auth Emulator with additional security options
-    connectAuthEmulator(auth, 'http://localhost:9099', { 
+    connectAuthEmulator(auth, 'http://localhost:9099', {
       disableWarnings: true,
       // Force emulator mode to bypass token endpoint issues
     });
-    
+
     // Set additional emulator-specific settings
     if (typeof window !== 'undefined') {
       // Disable token refresh for emulator mode
@@ -50,7 +101,7 @@ if (isEmulator) {
   } catch (error) {
     // Emulator already connected or unavailable
   }
-  
+
   try {
     // Connect Firestore Emulator
     connectFirestoreEmulator(db, 'localhost', 8080);

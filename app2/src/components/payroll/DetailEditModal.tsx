@@ -65,7 +65,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
         }
       });
 
-      // useEnhancedPayroll에서 이미 총액(일당×일수)으로 계산되어 온 값을 그대로 사용
+      // 총액(일당×일수)으로 계산되어 온 값을 그대로 사용
       const newAllowances: EnhancedPayrollCalculation['allowances'] = {
         meal: staff.allowances.meal || 0,
         transportation: staff.allowances.transportation || 0,

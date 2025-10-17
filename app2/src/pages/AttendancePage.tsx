@@ -1,96 +1,71 @@
-import React, { useState } from 'react';
+/**
+ * 출석 페이지 (v2.0 - Staff-based QR 시스템)
+ *
+ * @version 2.0
+ * @since 2025-10-16
+ * @author T-HOLDEM Development Team
+ *
+ * 주요 변경사항:
+ * - Staff-based QR 시스템으로 전환
+ * - 스태프 고유 QR 코드 표시
+ * - 3분 자동 갱신 카운트다운
+ */
+
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { QrReader } from 'react-qr-reader';
-import { useLocation } from 'react-router-dom';
-
 import { useAuth } from '../contexts/AuthContext';
-import { callFunctionLazy } from '../utils/firebase-dynamic';
-import { usePageOptimizedData } from '../hooks/useUnifiedData';
-
+import { StaffQRDisplay } from '../components/qr/StaffQRDisplay';
 import { logger } from '../utils/logger';
+
 const AttendancePage: React.FC = () => {
-    const { t } = useTranslation();
-    const location = useLocation();
-    const [scanResult, setScanResult] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-    const { currentUser: _currentUser, role } = useAuth();
+  const { t } = useTranslation();
+  const { currentUser } = useAuth();
 
-    // Smart Hybrid Context 사용 - 자신의 출석 데이터만 구독
-    const { workLogs, attendanceRecords, loading: _loading } = usePageOptimizedData(location.pathname); // loading은 미래 로딩 상태용
+  // 성능 최적화 로그
+  useEffect(() => {
+    logger.info('AttendancePage 마운트 (Staff QR 시스템)', {
+      component: 'AttendancePage',
+      data: {
+        userId: currentUser?.uid
+      }
+    });
+  }, [currentUser?.uid]);
 
-    // 성능 최적화 로그
-    React.useEffect(() => {
-        logger.info('AttendancePage 최적화 모드', {
-            component: 'AttendancePage',
-            data: {
-                role,
-                workLogsCount: workLogs.length,
-                attendanceCount: attendanceRecords.length,
-                isOptimized: true
-            }
-        });
-    }, [role, workLogs.length, attendanceRecords.length]);
-
-    const handleScan = async (result: any, error: any) => {
-        if (!!result) {
-            const scannedUrl = result?.getText();
-            setScanResult(scannedUrl);
-            
-            // Extract token from URL
-            const urlParts = scannedUrl.split('/');
-            const token = urlParts[urlParts.length - 1];
-
-            if (token && !isSubmitting) {
-                setIsSubmitting(true);
-                setFeedback(null);
-                try {
-                    await callFunctionLazy('recordAttendance', { qrCodeToken: token });
-                    setFeedback({ type: 'success', message: t('attendancePage.success') });
-                } catch (err: any) {
-                    logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AttendancePage' });
-                    setFeedback({ type: 'error', message: err.message || t('attendancePage.fail') });
-                } finally {
-                    setIsSubmitting(false);
-                    // Optionally clear result after processing
-                    setTimeout(() => setScanResult(''), 2000); 
-                }
-            }
-        }
-
-        if (!!error) {
-            // Error handling logic could be added here if needed
-        }
-    }
-
+  if (!currentUser) {
     return (
-        <div className="p-6 bg-gray-50 min-h-screen flex flex-col items-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">{t('attendancePage.title')}</h1>
-
-            {/* 최적화 정보 표시 (개발 모드) */}
-            {process.env.NODE_ENV === 'development' && (
-                <div className="mb-4 p-2 bg-blue-100 rounded-lg text-sm">
-                    <p>🚀 Smart Hybrid Context 활성화</p>
-                    <p>📊 데이터: {workLogs.length} 근무, {attendanceRecords.length} 출석</p>
-                    <p>💰 비용 절감: ~95%</p>
-                </div>
-            )}
-            <div className="w-full max-w-md bg-white p-4 rounded-lg shadow-xl">
-                <QrReader
-                    onResult={handleScan}
-                    constraints={{ facingMode: 'environment' }}
-                    containerStyle={{ width: '100%' }}
-                />
-                {scanResult ? <p className="mt-4 text-center text-sm text-gray-600">{t('attendancePage.lastScanned', { scanResult })}</p> : null}
-            </div>
-
-            {isSubmitting ? <p className="mt-4 text-blue-600">{t('attendancePage.submitting')}</p> : null}
-            
-            {feedback ? <div className={`mt-4 p-4 rounded-md w-full max-w-md text-center ${feedback.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {feedback.message}
-                </div> : null}
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <p className="text-gray-600">{t('common.pleaseLogin', '로그인이 필요합니다.')}</p>
+      </div>
     );
+  }
+
+  // displayName에서 실제 이름만 추출 (JSON 부분 제거)
+  const extractUserName = (displayName: string | null | undefined): string => {
+    if (!displayName) return 'Unknown';
+    // "[{...}]" 패턴이 있으면 제거
+    const cleanName = displayName.replace(/\s*\[.*\]$/, '').trim();
+    return cleanName || 'Unknown';
+  };
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
+          {t('attendancePage.title', '내 QR 출석')}
+        </h1>
+        <p className="text-center text-gray-600 mb-8">
+          {t('attendancePage.subtitle', '매니저에게 QR 코드를 보여주세요')}
+        </p>
+
+        {/* 스태프 QR 표시 */}
+        <StaffQRDisplay
+          userId={currentUser.uid}
+          userName={extractUserName(currentUser.displayName) || currentUser.email || 'Unknown'}
+          autoRefresh
+        />
+      </div>
+    </div>
+  );
 };
 
 export default AttendancePage;

@@ -4,6 +4,7 @@ import Button from '../ui/Button';
 import LoadingSpinner from '../LoadingSpinner';
 import JobPostingCard from '../common/JobPostingCard';
 import { JobPosting } from '../../types/jobPosting';
+import { toast } from '../../utils/toast';
 
 interface JobPostingListProps {
   jobPostings: JobPosting[];
@@ -28,7 +29,7 @@ const JobPostingList: React.FC<JobPostingListProps> = React.memo(({
     try {
       await onDelete(postId, title);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
     }
   };
 

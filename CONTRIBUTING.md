@@ -10,6 +10,9 @@
 
 T-HOLDEM 프로젝트에 관심을 가져주셔서 감사합니다! 이 문서는 프로젝트에 기여하는 방법을 안내합니다.
 
+> 📖 **개발 가이드**: 코드 작성 전에 반드시 [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)를 참고해주세요.
+> 🎯 **핵심 규칙**: [CLAUDE.md](CLAUDE.md)에서 프로젝트의 기본 개발 원칙을 확인하세요.
+
 ### 💡 기여할 수 있는 분야
 - **백엔드 개발**: Firebase Functions, 데이터베이스 최적화
 - **프론트엔드 개발**: React/TypeScript UI 개선, 성능 최적화

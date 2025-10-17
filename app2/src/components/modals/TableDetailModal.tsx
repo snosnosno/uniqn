@@ -6,6 +6,7 @@ import { Participant } from '../../hooks/useParticipants';
 
 import Modal from '../ui/Modal';
 import { Seat } from '../tables/Seat';
+import { toast } from '../../utils/toast';
 
 interface TableDetailModalProps {
   table: Table | null;
@@ -65,7 +66,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
       try {
         await updateTableMaxSeats(table.id, newMaxSeats, (id) => getParticipantName(id) || t('tableDetailModal.participantUnknown'));
       } catch (error) {
-        alert(error instanceof Error ? error.message : String(error));
+        toast.error(error instanceof Error ? error.message : String(error));
       }
     }
   };

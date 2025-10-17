@@ -221,11 +221,14 @@ class PerformanceMonitor {
    * 성능 지표 전송
    */
   private sendMetrics(): void {
-    // 개발 환경에서는 콘솔 로그
+    // 개발 환경에서는 로거 출력
     if (process.env.NODE_ENV === 'development') {
-      console.group('🚀 Landing Page Performance Metrics');
-      console.table(this.getMetricsReport());
-      console.groupEnd();
+      const metricsReport = this.getMetricsReport();
+
+      // logger 사용 (import 필요시 추가)
+      if (typeof window !== 'undefined' && (window as any).logger) {
+        (window as any).logger.info('🚀 Landing Page Performance Metrics', { data: metricsReport });
+      }
       return;
     }
 

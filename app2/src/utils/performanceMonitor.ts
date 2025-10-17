@@ -97,11 +97,7 @@ class PerformanceMonitor {
       timestamp: Date.now()
     };
     this.metrics.push(metric);
-    logger.info(`📊 성능 메트릭: ${name}`, {
-      component: 'PerformanceMonitor',
-      value,
-      additionalData: { unit }
-    });
+    // 성능 매트릭은 메모리에만 저장하고 로그 출력하지 않음
   }
 
   // 컴포넌트 렌더링 시간 측정

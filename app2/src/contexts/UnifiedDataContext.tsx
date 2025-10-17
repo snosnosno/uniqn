@@ -101,23 +101,7 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'SET_STAFF': {
       const staffMap = new Map<string, Staff>();
       action.data.forEach(staff => staffMap.set(staff.staffId, staff));
-      
-      // logger.info('📊 Staff 데이터 업데이트됨', { 
-      //   component: 'UnifiedDataContext',
-      //   data: { 
-      //     count: action.data.length,
-      //     staffIds: action.data.slice(0, 3).map(s => s.staffId),
-      //     sampleStaff: action.data.slice(0, 1).map(s => ({
-      //       name: s.name,
-      //       phone: s.phone,
-      //       email: s.email,
-      //       assignedDate: s.assignedDate,
-      //       assignedTime: s.assignedTime,
-      //       assignedRole: s.assignedRole
-      //     }))
-      //   }
-      // });
-      
+
       return {
         ...state,
         staff: staffMap,
@@ -131,16 +115,7 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'SET_WORK_LOGS': {
       const workLogsMap = new Map<string, WorkLog>();
       action.data.forEach(workLog => workLogsMap.set(workLog.id, workLog));
-      
-      // logger.info('📊 WorkLogs 데이터 업데이트됨', { 
-      //   component: 'UnifiedDataContext',
-      //   data: { 
-      //     count: action.data.length,
-      //     sampleIds: action.data.slice(0, 3).map(w => w.id),
-      //     staffIds: action.data.slice(0, 3).map(w => w.staffId)
-      //   }
-      // });
-      
+
       return {
         ...state,
         workLogs: workLogsMap,
@@ -182,17 +157,7 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'SET_APPLICATIONS': {
       const applicationsMap = new Map();
       action.data.forEach(app => applicationsMap.set(app.id, app));
-      
-      // logger.info('📊 Applications 데이터 업데이트됨', { 
-      //   component: 'UnifiedDataContext',
-      //   data: { 
-      //     count: action.data.length,
-      //     sampleIds: action.data.slice(0, 3).map(a => a.id),
-      //     applicantIds: action.data.slice(0, 3).map(a => a.applicantId),
-      //     statuses: action.data.slice(0, 3).map(a => a.status)
-      //   }
-      // });
-      
+
       return {
         ...state,
         applications: applicationsMap,
@@ -266,33 +231,22 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'UPDATE_WORK_LOG': {
       const updatedWorkLogs = new Map(state.workLogs);
       updatedWorkLogs.set(action.workLog.id, action.workLog);
-      
+
       const timestamp = Date.now();
-      
-      logger.info('🔄 WorkLog 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          workLogId: action.workLog.id,
-          staffId: action.workLog.staffId,
-          status: action.workLog.status
-        }
-      });
-      
+
       return {
         ...state,
         workLogs: updatedWorkLogs,
         cacheKeys: {
           ...state.cacheKeys,
-          // 🔥 모든 관련 캐시 즉시 무효화 (attendanceRecords 추가)
+          // 🔥 필요한 캐시만 무효화 (성능 최적화)
           workLogs: `workLogs_update_${timestamp}`,
           scheduleEvents: `scheduleEvents_update_${timestamp}`,
-          attendanceRecords: `attendance_update_${timestamp}`, // WorkLog 변경이 출석 상태에 영향
-          staff: `staff_update_${timestamp}`, // Staff와 WorkLog 연관 캐시도 무효화
+          // ✅ staff 캐시 무효화 제거: WorkLog 변경이 Staff 데이터에는 영향 없음
         },
         lastUpdated: {
           ...state.lastUpdated,
           workLogs: timestamp,
-          attendanceRecords: timestamp, // attendanceRecords도 갱신 시간 업데이트
         },
       };
     }
@@ -300,18 +254,9 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'UPDATE_ATTENDANCE_RECORD': {
       const updatedAttendance = new Map(state.attendanceRecords);
       updatedAttendance.set(action.record.id, action.record);
-      
+
       const timestamp = Date.now();
-      
-      logger.info('🔄 AttendanceRecord 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          recordId: action.record.id,
-          staffId: action.record.staffId,
-          status: action.record.status
-        }
-      });
-      
+
       return {
         ...state,
         attendanceRecords: updatedAttendance,
@@ -333,16 +278,7 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
       updatedStaff.set(action.staff.staffId, action.staff);
       
       const timestamp = Date.now();
-      
-      logger.info('🔄 Staff 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          staffId: action.staff.staffId,
-          name: action.staff.name,
-          role: action.staff.role
-        }
-      });
-      
+
       return {
         ...state,
         staff: updatedStaff,
@@ -361,19 +297,9 @@ const unifiedDataReducer = (state: UnifiedDataState, action: UnifiedDataAction):
     case 'UPDATE_APPLICATION': {
       const updatedApplications = new Map(state.applications);
       updatedApplications.set(action.application.id, action.application);
-      
+
       const timestamp = Date.now();
-      
-      logger.info('🔄 Application 즉시 업데이트', { 
-        component: 'UnifiedDataContext',
-        data: { 
-          applicationId: action.application.id,
-          postId: action.application.postId,
-          applicantId: action.application.applicantId,
-          status: action.application.status
-        }
-      });
-      
+
       return {
         ...state,
         applications: updatedApplications,
@@ -414,28 +340,10 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
   useEffect(() => {
     // 로그인하지 않은 경우 구독하지 않음
     if (!currentUser || !role) {
-      logger.info('🔐 UnifiedDataProvider: 로그인 및 역할 대기 중', {
-        component: 'OptimizedUnifiedDataContext',
-        data: {
-          hasUser: !!currentUser,
-          hasRole: !!role,
-          userStatus: 'waiting_for_auth'
-        }
-      });
       return;
     }
 
     let isSubscribed = true;
-
-    logger.info('🚀 최적화된 UnifiedDataProvider: 초기화 시작', {
-      component: 'OptimizedUnifiedDataContext',
-      data: {
-        userId: currentUser.uid,
-        email: currentUser.email,
-        role,
-        optimizationType: 'server-side-filtering + memory-caching'
-      }
-    });
 
     // 🎯 최적화된 구독 시작 (중복 호출 방지)
     const initializeOptimizedSubscriptions = async () => {
@@ -464,15 +372,6 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
         if (isSubscribed) {
           dispatch({ type: 'SET_LOADING', collection: 'initial', loading: false });
 
-          logger.info('✅ 최적화된 UnifiedDataProvider: 초기화 완료', {
-            component: 'OptimizedUnifiedDataContext',
-            data: {
-              userId: currentUser.uid,
-              role,
-              timestamp: new Date().toISOString(),
-              performance: optimizedUnifiedDataService.getPerformanceMetrics()
-            }
-          });
         }
       } catch (error) {
         if (isSubscribed) {
@@ -497,23 +396,12 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
         clearTimeout(initializeTimeoutRef.current);
       }
 
-      logger.info('🧹 최적화된 UnifiedDataProvider: 클린업 시작', {
-        component: 'OptimizedUnifiedDataContext',
-        data: {
-          userId: currentUser.uid,
-          finalMetrics: optimizedUnifiedDataService.getPerformanceMetrics()
-        }
-      });
 
       if (subscriptionsRef.current) {
         optimizedUnifiedDataService.unsubscribeAll(subscriptionsRef.current);
         subscriptionsRef.current = null;
       }
 
-      logger.info('✅ 최적화된 UnifiedDataProvider: 클린업 완료', {
-        component: 'OptimizedUnifiedDataContext',
-        data: { userId: currentUser.uid }
-      });
     };
   }, [currentUser, role]); // role도 의존성에 추가
 
@@ -652,15 +540,6 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
         }
       });
 
-      // logger.info('스케줄 이벤트 생성 완료', { 
-      //   component: 'UnifiedDataContext', 
-      //   data: {
-      //     totalEvents: events.length,
-      //     workLogEvents: events.filter(e => e.sourceCollection === 'workLogs').length,
-      //     applicationEvents: events.filter(e => e.sourceCollection === 'applications').length
-      //   }
-      // });
-
     } catch (error) {
       logger.error('스케줄 이벤트 생성 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'UnifiedDataContext'
@@ -791,9 +670,6 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     } else {
       dispatch({ type: 'INVALIDATE_CACHE' });
     }
-    
-    // 필요한 경우 서비스 재시작
-    logger.info('데이터 새로고침 요청', { component: 'UnifiedDataContext', data: { collection } });
   }, []);
 
   // 성능 메트릭
@@ -850,14 +726,7 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
 
   // setCurrentEventId 메서드 구현
   const setCurrentEventId = useCallback((eventId: string | null) => {
-    logger.info('UnifiedDataContext: setCurrentEventId 호출', { 
-      component: 'UnifiedDataContext', 
-      data: { eventId } 
-    });
-    
     // 최적화된 서비스에서는 eventId 필터링이 쿼리 레벨에서 처리됨
-    // setCurrentEventId는 더 이상 필요하지 않음
-    
     // 필터 상태도 업데이트 (UI 반영용)
     if (eventId) {
       dispatch({

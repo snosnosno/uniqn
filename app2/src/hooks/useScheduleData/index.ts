@@ -36,6 +36,12 @@ const useScheduleData = (): UseScheduleDataReturn => {
         return;
       }
 
+      // 🔥 초기 로딩 상태 체크: UnifiedDataContext가 로딩 중이면 대기
+      if (_contextLoading.initial) {
+        setLoading(true);
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -47,29 +53,23 @@ const useScheduleData = (): UseScheduleDataReturn => {
           .filter((log): log is WorkLog => {
             const workLog = log as WorkLog;
             // staffId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
-            return workLog.staffId === currentUser.uid || 
+            return workLog.staffId === currentUser.uid ||
                    workLog.staffId?.startsWith(currentUser.uid + '_');
           });
-        
-        logger.info(`필터링된 WorkLogs: ${userWorkLogs.length}개 [${userWorkLogs.map(log => log.staffId).join(',')}]`, {
-          component: 'useScheduleData',
-          userId: currentUser.uid,
-          operation: 'filterWorkLogs'
-        });
 
         // WorkLog 비동기 처리를 병렬로 실행
-        const workLogPromises = userWorkLogs.map(workLog => 
+        const workLogPromises = userWorkLogs.map(workLog =>
           processWorkLogData(workLog.id || '', workLog)
         );
         const workLogEvents = await Promise.all(workLogPromises);
-        
+
         // WorkLog 이벤트 추가
         workLogEvents.forEach(event => {
           mergedEvents.push(event);
-          
+
           // 중복 방지 키 생성
           if (event.eventId && event.date) {
-            const timeKey = event.startTime && 'seconds' in event.startTime ? 
+            const timeKey = event.startTime && 'seconds' in event.startTime ?
               new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
             const key = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
@@ -82,23 +82,17 @@ const useScheduleData = (): UseScheduleDataReturn => {
         const userApplications = Array.from(applications.values())
           .filter((app): app is Application => {
             const application = app as Application;
-            // applicantId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우  
+            // applicantId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
             return application.applicantId === currentUser.uid ||
                    application.applicantId?.startsWith(currentUser.uid + '_');
           });
-          
-        logger.info(`필터링된 Applications: ${userApplications.length}개 [${userApplications.map(app => app.applicantId).join(',')}]`, {
-          component: 'useScheduleData',
-          userId: currentUser.uid,
-          operation: 'filterApplications'
-        });
-        
+
         // Application 비동기 처리를 병렬로 실행
         const applicationPromises = userApplications.map(application =>
           processApplicationData(application.id || '', application)
         );
         const applicationEventArrays = await Promise.all(applicationPromises);
-        
+
         // Application 이벤트 추가 (중복 체크)
         applicationEventArrays.flat().forEach(event => {
           if (event.eventId && event.date) {
@@ -106,7 +100,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
               new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
             const preciseKey = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
-            
+
             // 중복 체크
             if (!processedKeys.has(preciseKey) && !processedKeys.has(basicKey)) {
               mergedEvents.push(event);
@@ -119,15 +113,19 @@ const useScheduleData = (): UseScheduleDataReturn => {
           }
         });
 
-        logger.info(`스케줄 데이터 병합 완료: 총 ${mergedEvents.length}개 이벤트 (WorkLog: ${workLogEvents.length}, 지원서: ${applicationEventArrays.flat().length})`, {
-          component: 'useScheduleData',
-          userId: currentUser.uid,
-          operation: 'loadSchedules'
-        });
-
         setSchedules(mergedEvents);
         setLoading(false);
         setError(null);
+
+        logger.info('스케줄 데이터 로드 완료', {
+          component: 'useScheduleData',
+          userId: currentUser.uid,
+          data: {
+            totalEvents: mergedEvents.length,
+            workLogEvents: workLogEvents.length,
+            applicationEvents: applicationEventArrays.flat().length
+          }
+        });
       } catch (err) {
         const errorMessage = handleError(err, {
           component: 'useScheduleData',
@@ -140,35 +138,18 @@ const useScheduleData = (): UseScheduleDataReturn => {
       }
     };
 
-    // 데이터가 존재하면 처리 (contextLoading.initial 의존성 제거)
-    if (currentUser && (workLogs.size > 0 || applications.size > 0)) {
+    // 🔥 개선된 로딩 로직: UnifiedDataContext 초기 로딩 완료 후 처리
+    if (currentUser && !_contextLoading.initial) {
       loadSchedules();
-    } else if (currentUser) {
-      // 사용자는 로그인했지만 데이터가 없는 경우
-      logger.info('사용자 데이터 대기 중...', {
-        component: 'useScheduleData',
-        userId: currentUser.uid,
-        data: { workLogsCount: workLogs.size, applicationsCount: applications.size }
-      });
-      
-      // 일정 시간 후에도 데이터가 없으면 빈 상태로 설정
-      const timeoutId = setTimeout(() => {
-        if (workLogs.size === 0 && applications.size === 0) {
-          setSchedules([]);
-          setLoading(false);
-          logger.info('데이터 없음으로 빈 스케줄 설정', {
-            component: 'useScheduleData',
-            userId: currentUser.uid
-          });
-        }
-      }, 3000);
-
-      return () => clearTimeout(timeoutId);
+    } else if (!currentUser) {
+      // 로그인하지 않은 경우
+      setSchedules([]);
+      setLoading(false);
     }
-    
-    // 기본 반환 (TypeScript 오류 방지)
+
+    // 기본 반환 (cleanup 불필요)
     return undefined;
-  }, [currentUser, applications, workLogs]);
+  }, [currentUser, applications, workLogs, _contextLoading.initial]);
 
   // 필터링된 스케줄
   const filteredSchedules = useMemo(() => {
@@ -213,17 +194,6 @@ const useScheduleData = (): UseScheduleDataReturn => {
           if (hoursWorked < 0) {
             // 24시간을 더해서 다음날 종료로 계산
             hoursWorked += 24;
-
-            logger.debug('자정 넘는 근무시간 감지 및 수정', {
-              component: 'useScheduleData',
-              data: {
-                eventId: event.id,
-                startTime: startDate.toISOString(),
-                endTime: endDate.toISOString(),
-                originalHours: hoursWorked - 24,
-                correctedHours: hoursWorked
-              }
-            });
           }
 
           totalHoursWorked += Math.max(0, hoursWorked);

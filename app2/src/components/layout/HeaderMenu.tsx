@@ -5,13 +5,14 @@ import {
     FaTachometerAlt, FaUsers, FaTable, FaClock,
     FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList,
     FaSignOutAlt, FaUserCheck, FaCalendarAlt, FaQuestionCircle,
-    FaEnvelope
+    FaEnvelope, FaBell
 } from '../Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePermissions } from '../../hooks/usePermissions';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 interface NavItemProps {
     to: string;
@@ -112,7 +113,12 @@ export const HeaderMenu: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative flex items-center" ref={menuRef}>
+    <div className="relative flex items-center gap-2" ref={menuRef}>
+      {/* 알림 드롭다운 */}
+      {currentUser && !authLoading && (
+        <NotificationDropdown />
+      )}
+
       {/* 햄버거 메뉴 버튼 */}
       <button
         onClick={toggleMenu}
@@ -124,10 +130,10 @@ export const HeaderMenu: React.FC = () => {
         aria-haspopup="true"
         style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
       >
-        <svg 
-          className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`}
+          fill="none"
+          stroke="currentColor"
           strokeWidth="2"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
@@ -171,9 +177,10 @@ export const HeaderMenu: React.FC = () => {
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
               {/* 기본 메뉴 (모든 사용자) */}
+              <NavItem to="/app/announcements" label="공지사항" Icon={FaBell} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/profile" label={t('nav.myProfile', 'My Profile')} Icon={FaUserCircle} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/my-schedule" label="내 스케줄" Icon={FaCalendarAlt} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/support" label={t('nav.support', '고객지원')} Icon={FaQuestionCircle} isOpen={true} onNavigate={closeMenu} />
 
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}

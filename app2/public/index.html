@@ -4,8 +4,24 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#3b82f6" />
     <meta name="description" content="T-HOLDEM - 홀덤 토너먼트 운영 플랫폼" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.ico" />
+
+    <!-- Apple Web App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="T-HOLDEM" />
+
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="%PUBLIC_URL%/favicon.ico" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
     
     <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
@@ -14,7 +30,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
       font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.cloudfunctions.net;
+      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://apis.google.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.cloudfunctions.net;
       frame-src 'self' https://*.firebaseapp.com;
       object-src 'none';
       base-uri 'self';

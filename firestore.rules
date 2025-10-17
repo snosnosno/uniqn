@@ -72,6 +72,12 @@ service cloud.firestore {
         allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
         allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
       }
+
+      // Subcollection: settings (사용자 설정)
+      match /settings/{settingId} {
+        // 본인의 설정만 읽기/쓰기 가능
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
     }
 
     // --- Events Collection ---
@@ -106,8 +112,20 @@ service cloud.firestore {
     }
 
     // --- Notifications Collection ---
+    // ✅ 보안 강화: 클라이언트 알림 생성 완전 차단 (Cloud Functions만 가능)
     match /notifications/{notificationId} {
-        allow read, write: if isSignedIn() && (isOwner(resource.data.staffId) || isPrivileged());
+      // 본인의 알림만 읽기 가능 (userId 필드 기반)
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 본인의 알림만 읽음 처리 및 삭제 가능
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['isRead', 'readAt']);
+
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // ❌ 클라이언트 생성 완전 차단 (Cloud Functions만 가능)
+      allow create: if false;
     }
 
     // --- Staff Availability ---
@@ -399,12 +417,23 @@ service cloud.firestore {
 
     // --- Login Attempts Collection (보안 기능) ---
     match /loginAttempts/{attemptId} {
-      // 읽기는 모두 허용 (로그인 전에도 차단 여부 확인 가능)
-      allow read: if true;
-      // 쓰기는 모두 허용 (로그인 시도 기록 가능)
-      allow create, update: if true;
-      // 삭제는 관리자만 가능
-      allow delete: if isPrivileged();
+      // 로그인 시도 기록은 인증 없이도 가능 (로그인 전 차단 확인용)
+      // 필수 필드 검증: ipAddress, timestamp, attemptCount
+      allow create: if request.resource.data.keys().hasAll(['ipAddress', 'timestamp', 'attemptCount']) &&
+        request.resource.data.ipAddress is string &&
+        request.resource.data.timestamp is timestamp &&
+        request.resource.data.attemptCount is number &&
+        request.resource.data.attemptCount >= 0 &&
+        request.resource.data.attemptCount <= 100;
+
+      // 본인 데이터 또는 관리자만 읽기 가능
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+
+      // 관리자만 업데이트/삭제 가능 (차단 해제 등)
+      allow update, delete: if isPrivileged();
     }
 
     // --- Inquiries Collection (고객 문의) ---
@@ -457,6 +486,75 @@ service cloud.firestore {
 
       // 삭제: 관리자만 가능
       allow delete: if isPrivileged();
+    }
+
+    // --- Staff-based QR Attendance System Collections (v2.0) ---
+
+    // User QR Metadata Subcollection (users/{userId}/qrMetadata/{docId})
+    // 각 사용자의 QR 메타데이터 (보안 코드, 통계)
+    match /users/{userId}/qrMetadata/{metadataId} {
+      // 읽기: 본인과 관리자만
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // 생성/수정: 본인과 관리자만
+      allow create, update: if isSignedIn() && (isOwner(userId) || isPrivileged()) &&
+        request.resource.data.keys().hasAll(['securityCode', 'createdAt', 'regenerationCount', 'totalScanCount']) &&
+        request.resource.data.securityCode is string &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.regenerationCount is number &&
+        request.resource.data.totalScanCount is number &&
+        (!('lastUsedAt' in request.resource.data) || request.resource.data.lastUsedAt is timestamp) &&
+        (!('lastRegeneratedAt' in request.resource.data) || request.resource.data.lastRegeneratedAt is timestamp);
+
+      // 삭제: 관리자만
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // Scan History Collection (스캔 이력)
+    match /scanHistory/{historyId} {
+      // 읽기: 본인의 이력, 관련 이벤트 관리자, 또는 전체 관리자
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.staffId ||
+        request.auth.uid == resource.data.scannedBy ||
+        isPrivileged()
+      );
+
+      // 생성: 모든 인증된 사용자 (스캔 시 자동 생성)
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['staffId', 'staffName', 'eventId', 'date', 'mode', 'scannedAt', 'workLogId', 'scannedBy']) &&
+        request.resource.data.staffId is string &&
+        request.resource.data.staffName is string &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string &&
+        request.resource.data.mode in ['check-in', 'check-out'] &&
+        request.resource.data.scannedAt is timestamp &&
+        request.resource.data.workLogId is string &&
+        request.resource.data.scannedBy is string &&
+        (!('deviceInfo' in request.resource.data) || request.resource.data.deviceInfo is string) &&
+        (!('location' in request.resource.data) || request.resource.data.location is map);
+
+      // 수정/삭제: 관리자만
+      allow update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // Scan Cooldowns Collection (5분 중복 스캔 방지)
+    match /scanCooldowns/{cooldownId} {
+      // 읽기: 모든 인증된 사용자 (중복 확인용)
+      allow read: if isSignedIn();
+
+      // 생성/수정: 모든 인증된 사용자 (스캔 시 자동 생성)
+      allow create, update: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['key', 'staffId', 'eventId', 'date', 'mode', 'lastScanAt', 'expiresAt']) &&
+        request.resource.data.key is string &&
+        request.resource.data.staffId is string &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string &&
+        request.resource.data.mode in ['check-in', 'check-out'] &&
+        request.resource.data.lastScanAt is timestamp &&
+        request.resource.data.expiresAt is timestamp;
+
+      // 삭제: 관리자만 (만료된 쿨다운 정리용)
+      allow delete: if request.auth.token.role == 'admin';
     }
 
     // Fallback rule: deny all other access

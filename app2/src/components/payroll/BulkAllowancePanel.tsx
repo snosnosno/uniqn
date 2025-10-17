@@ -33,12 +33,6 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
       const transportAmount = jobPostingBenefits.transportation ? parseInt(jobPostingBenefits.transportation) || 0 : 0;
       const accommodationAmount = jobPostingBenefits.accommodation ? parseInt(jobPostingBenefits.accommodation) || 0 : 0;
 
-      console.log('🔄 Firebase에서 불러온 benefits 정보로 allowances 초기화:', {
-        mealAmount,
-        transportAmount,
-        accommodationAmount,
-        benefits: jobPostingBenefits
-      });
 
       setAllowances({
         meal: { enabled: mealAmount > 0, amount: mealAmount },

@@ -32,7 +32,15 @@ export const useApplicantData = (eventId?: string) => {
       // assignments에서 첫 번째 assignment의 정보를 사용 (하위 호환성)
       const firstAssignment = app.assignments && app.assignments.length > 0 ? app.assignments[0] : null;
       const assignedDate = firstAssignment && firstAssignment.dates.length > 0 ? firstAssignment.dates[0] : '';
-      
+
+      // 사전질문 답변 데이터 변환 및 검증
+      const preQuestionAnswers = app.preQuestionAnswers?.map((answer) => ({
+        questionId: answer.questionId || '',
+        question: answer.question || '',
+        answer: answer.answer || '',
+        required: answer.required ?? false
+      })) || [];
+
       return {
         id: app.id,
         applicantId: app.applicantId,
@@ -40,17 +48,6 @@ export const useApplicantData = (eventId?: string) => {
         applicantPhone: app.applicantPhone,
         applicantEmail: app.applicantEmail,
         status: app.status,
-        // 🔍 임시 디버깅: status 값 확인
-        // ...(app.status && logger.debug('🔍 useApplicantData: applicant status', {
-        //   component: 'useApplicantData',
-        //   data: { 
-        //     applicantName: app.applicantName, 
-        //     status: app.status,
-        //     statusType: typeof app.status,
-        //     isConfirmed: app.status === 'confirmed',
-        //     rawStatus: JSON.stringify(app.status)
-        //   }
-        // }) as any),
         role: firstAssignment?.role || '',
         assignedRole: firstAssignment?.role || '',
         assignedTime: firstAssignment?.timeSlot || '',
@@ -69,8 +66,8 @@ export const useApplicantData = (eventId?: string) => {
         eventId: app.eventId || app.postId,
         // 🎯 중요: assignments 필드 추가 - Firebase 데이터의 assignments 배열을 그대로 전달
         assignments: app.assignments || [],
-        // 🆕 사전질문 답변 필드 추가
-        preQuestionAnswers: app.preQuestionAnswers || []
+        // 🆕 사전질문 답변 필드 - 타입 변환 및 검증 완료
+        preQuestionAnswers: preQuestionAnswers
       } as Applicant;
     });
   }, [applications, eventId]);
@@ -101,7 +98,8 @@ export const useApplicantData = (eventId?: string) => {
                   age: userData.age,
                   experience: userData.experience,
                   email: userData.email,
-                  phone: userData.phone
+                  phone: userData.phone,
+                  region: userData.region
                 };
               }
               return applicant;

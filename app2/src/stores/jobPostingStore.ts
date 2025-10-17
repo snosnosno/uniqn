@@ -3,7 +3,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { doc, getDoc, onSnapshot, collection, query, where, orderBy, Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase';
 import { JobPosting } from '../types/jobPosting';
-import { Applicant } from '../types/applicant';
+import { Applicant } from '../components/applicants/ApplicantListTab/types';
 import { Staff } from '../types/common';
 import { logger } from '../utils/logger';
 

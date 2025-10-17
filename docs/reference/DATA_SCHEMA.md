@@ -443,7 +443,7 @@ export interface Application {
 // 유니언 타입 정의
 export type StaffRole = 'dealer' | 'server' | 'manager' | 'admin';
 export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed';
-export type ApplicationStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
+export type ApplicationStatus = 'applied' | 'confirmed' | 'cancelled';
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 // 복합 타입 정의
@@ -549,7 +549,7 @@ export const transformApplicationData = (doc: DocumentData): Application => ({
   postTitle: doc.postTitle || '',
   applicantName: doc.applicantName || '',
   applicantPhone: doc.applicantPhone || '',
-  status: doc.status || 'pending',
+  status: doc.status || 'applied',
   appliedRoles: doc.appliedRoles || [],
   preferredDates: doc.preferredDates || [],
   assignments: doc.assignments || [],

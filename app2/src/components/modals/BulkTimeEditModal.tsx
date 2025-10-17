@@ -173,31 +173,39 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     if (!validateInputs()) {
       return;
     }
-    
+
     setIsUpdating(true);
-    
+
     try {
       const batch = writeBatch(db);
       const now = Timestamp.now();
       let successCount = 0;
       let errorCount = 0;
-      
+      const missingWorkLogs: string[] = [];
+
       for (const staff of selectedStaff) {
         try {
           const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
           const workLogId = staff.workLogId || `${eventId}_${staff.id}_${dateString}`;
           const workLogRef = doc(db, 'workLogs', workLogId);
-          
+
+          // ⚠️ WorkLog가 없거나 virtual인 경우 스킵
+          if (!staff.workLogId || staff.workLogId.startsWith('virtual_')) {
+            missingWorkLogs.push(staff.name);
+            errorCount++;
+            continue;
+          }
+
           if (editMode === 'time') {
-            // 시간 업데이트
+            // ✅ 시간 수정 모드: scheduledStartTime, scheduledEndTime만 업데이트
             const startTime = combineTime(startHour, startMinute);
             const endTime = combineTime(endHour, endMinute);
             const baseDate = parseToDate(dateString) || new Date();
-            
+
             const updateData: WorkLogUpdateData = {
               updatedAt: now
             };
-            
+
             // 시간이 설정된 경우에만 업데이트
             if (startTime) {
               const parsedStartTime = parseTimeString(startTime, baseDate, false);
@@ -205,74 +213,55 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                 updateData.scheduledStartTime = parsedStartTime;
               }
             }
-            
+
             if (endTime) {
               const parsedEndTime = parseTimeString(endTime, baseDate, true, startTime);
               if (parsedEndTime) {
                 updateData.scheduledEndTime = parsedEndTime;
               }
             }
-            
-            // workLog가 없는 경우 새로 생성
-            if (staff.workLogId?.startsWith('virtual_') || !staff.workLogId) {
-              const newWorkLogData = {
-                eventId: eventId,
-                staffId: staff.id,
-                staffName: staff.name,
-                date: dateString,
-                scheduledStartTime: updateData.scheduledStartTime || null,
-                scheduledEndTime: updateData.scheduledEndTime || null,
-                actualStartTime: null,
-                actualEndTime: null,
-                status: 'not_started',
-                createdAt: now,
-                updatedAt: now
-              };
-              
-              batch.set(workLogRef, newWorkLogData);
-            } else {
-              batch.update(workLogRef, updateData);
-            }
+
+            // ✅ 무조건 update만 사용 (set 사용 금지 - 기존 필드 보존)
+            batch.update(workLogRef, updateData);
           } else {
-            // 출석 상태 업데이트
+            // ✅ 출석 상태 수정 모드: status만 업데이트
             const updateData: WorkLogUpdateData = {
               status: attendanceStatus,
               updatedAt: now
             };
-            
-            // workLog가 없는 경우 새로 생성
-            if (staff.workLogId?.startsWith('virtual_') || !staff.workLogId) {
-              const newWorkLogData = {
-                eventId: eventId,
-                staffId: staff.id,
-                staffName: staff.name,
-                date: dateString,
-                scheduledStartTime: null,
-                scheduledEndTime: null,
-                actualStartTime: null,
-                actualEndTime: null,
-                status: attendanceStatus,
-                createdAt: now,
-                updatedAt: now
-              };
-              
-              batch.set(workLogRef, newWorkLogData);
-            } else {
-              batch.update(workLogRef, updateData);
-            }
+
+            // ✅ 무조건 update만 사용 (set 사용 금지 - 기존 필드 보존)
+            batch.update(workLogRef, updateData);
           }
-          
+
           successCount++;
         } catch (error) {
           logger.error(`Error updating staff ${staff.id}:`, error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
           errorCount++;
         }
       }
-      
+
       // 배치 커밋
       await batch.commit();
-      
-      if (errorCount === 0) {
+
+      // ✅ Firebase Functions (onWorkTimeChanged)가 자동으로 알림 생성
+      // - 트리거: workLogs onUpdate
+      // - 조건: scheduledStartTime 또는 scheduledEndTime 변경
+      // - 수신자: 해당 workLog의 스태프
+      logger.info('일괄 시간 수정 완료 - Firebase Functions가 알림 전송 예정', {
+        data: {
+          successCount,
+          editMode
+        }
+      });
+
+      // ⚠️ WorkLog가 없는 스태프가 있으면 경고 메시지 표시
+      if (missingWorkLogs.length > 0) {
+        showError(
+          `⚠️ 다음 스태프는 WorkLog가 없어 수정할 수 없습니다:\n${missingWorkLogs.join(', ')}\n\n` +
+          `성공: ${successCount}명 / 실패: ${errorCount}명`
+        );
+      } else if (errorCount === 0) {
         // 성공 메시지를 더 구체적으로 표시
         if (editMode === 'time') {
           const startTime = combineTime(startHour, startMinute);
@@ -282,18 +271,18 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`
           );
         } else {
-          const statusText = attendanceStatus === 'not_started' ? '출근 전' : 
+          const statusText = attendanceStatus === 'not_started' ? '출근 전' :
                             attendanceStatus === 'checked_in' ? '출근' : '퇴근';
           showSuccess(`✅ ${successCount}명의 출석 상태가 "${statusText}"(으)로 변경되었습니다.`);
         }
       } else {
         showError(`⚠️ 일부 업데이트 실패\n성공: ${successCount}명 / 실패: ${errorCount}명`);
       }
-      
+
       if (onComplete) {
         onComplete();
       }
-      
+
       onClose();
     } catch (error) {
       logger.error('일괄 업데이트 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });

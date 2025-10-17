@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 // Removed unused type imports
-import { 
-  createInitialFormData, 
+import {
+  createInitialFormData,
   createNewPreQuestion,
   PREDEFINED_ROLES
 } from '../utils/jobPosting/jobPostingHelpers';
 // import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
 
 import { JobPosting } from '../types/jobPosting';
+import { toast } from '../utils/toast';
 // import { JobPostingFormData } from '../types/jobPosting'; // 현재 사용하지 않음
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
@@ -221,20 +222,20 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     setFormData((prev: any) => {
       const existingRoles = Object.keys(prev.roleSalaries || {});
       const availableRoles = PREDEFINED_ROLES.filter(r => !existingRoles.includes(r));
-      
+
       if (availableRoles.length === 0) {
-        alert('모든 역할이 이미 추가되었습니다.');
+        toast.warning('모든 역할이 이미 추가되었습니다.');
         return prev;
       }
-      
+
       const newRole = availableRoles[0] as string;
       return {
         ...prev,
         roleSalaries: {
           ...prev.roleSalaries,
-          [newRole]: { 
-            salaryType: 'hourly' as const, 
-            salaryAmount: '20000' 
+          [newRole]: {
+            salaryType: 'hourly' as const,
+            salaryAmount: '20000'
           }
         }
       };

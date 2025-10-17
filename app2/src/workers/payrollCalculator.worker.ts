@@ -223,14 +223,6 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     const transportationDaily = benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0;
     const accommodationDaily = benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0;
 
-    console.log('🍽️ Web Worker getDefaultAllowances 호출됨', {
-      totalDays,
-      benefits,
-      isPerDay,
-      mealDaily,
-      transportationDaily,
-      accommodationDaily
-    });
 
     const baseAllowances = {
       meal: isPerDay ? mealDaily * totalDays : mealDaily,
@@ -423,16 +415,6 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
                           staffAllowanceOverrides[data.staffId] ||
                           defaultAllowances;
 
-    // 김승호 디버깅 로그
-    if (data.staffName === '김승호') {
-      console.log('🔍 김승호 Web Worker 수당 계산 디버깅', {
-        staffName: data.staffName,
-        totalDays,
-        defaultAllowances,
-        baseAllowances,
-        hasOverride: !!(staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId])
-      });
-    }
 
     // 일당 정보는 항상 유지 (수동 편집 시에도)
     const allowances = { ...baseAllowances };
@@ -445,14 +427,6 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       allowances.workDays = defaultAllowances.workDays;
     }
 
-    // 김승호 최종 allowances 로그
-    if (data.staffName === '김승호') {
-      console.log('🎯 김승호 Web Worker 최종 allowances', {
-        allowances,
-        hasDailyRates: !!allowances.dailyRates,
-        hasWorkDays: !!allowances.workDays
-      });
-    }
 
     const allowanceTotal = 
       allowances.meal +

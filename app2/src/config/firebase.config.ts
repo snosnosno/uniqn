@@ -5,12 +5,20 @@
 
 import { logger } from '../utils/logger';
 
-// 환경 변수 검증
-const validateEnvVar = (key: string, defaultValue?: string): string => {
+// 환경 변수 검증 (프로덕션에서 강제)
+const validateEnvVar = (key: string, defaultValue?: string, required = false): string => {
   const value = process.env[key] || defaultValue;
+  const isProduction = process.env.NODE_ENV === 'production';
 
   if (!value) {
-    logger.warn(`환경 변수 ${key}가 설정되지 않았습니다.`, {
+    const message = `환경 변수 ${key}가 설정되지 않았습니다.`;
+
+    // 프로덕션에서 필수 변수가 없으면 에러
+    if (isProduction && required) {
+      throw new Error(`[CRITICAL] ${message} - 프로덕션 환경에서 필수 환경 변수입니다.`);
+    }
+
+    logger.warn(message, {
       component: 'firebase.config'
     });
   }
@@ -22,16 +30,16 @@ const validateEnvVar = (key: string, defaultValue?: string): string => {
 const useProxy = process.env.REACT_APP_USE_FIREBASE_PROXY === 'true';
 const proxyUrl = process.env.REACT_APP_FIREBASE_PROXY_URL;
 
-// Firebase 설정
+// Firebase 설정 (프로덕션 필수 변수 강제)
 export const firebaseConfig = {
   // 프록시 사용 시 API 키를 숨김
-  apiKey: useProxy ? 'proxy' : validateEnvVar('REACT_APP_FIREBASE_API_KEY'),
-  authDomain: validateEnvVar('REACT_APP_FIREBASE_AUTH_DOMAIN'),
-  projectId: validateEnvVar('REACT_APP_FIREBASE_PROJECT_ID'),
-  storageBucket: validateEnvVar('REACT_APP_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: validateEnvVar('REACT_APP_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: validateEnvVar('REACT_APP_FIREBASE_APP_ID'),
-  measurementId: validateEnvVar('REACT_APP_FIREBASE_MEASUREMENT_ID')
+  apiKey: useProxy ? 'proxy' : validateEnvVar('REACT_APP_FIREBASE_API_KEY', undefined, true),
+  authDomain: validateEnvVar('REACT_APP_FIREBASE_AUTH_DOMAIN', undefined, true),
+  projectId: validateEnvVar('REACT_APP_FIREBASE_PROJECT_ID', undefined, true),
+  storageBucket: validateEnvVar('REACT_APP_FIREBASE_STORAGE_BUCKET', undefined, true),
+  messagingSenderId: validateEnvVar('REACT_APP_FIREBASE_MESSAGING_SENDER_ID', undefined, true),
+  appId: validateEnvVar('REACT_APP_FIREBASE_APP_ID', undefined, true),
+  measurementId: validateEnvVar('REACT_APP_FIREBASE_MEASUREMENT_ID') // 선택적
 };
 
 // 에뮬레이터 설정

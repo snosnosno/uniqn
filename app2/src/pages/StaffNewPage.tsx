@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
-
-
+import { toast } from '../utils/toast';
 import { logger } from '../utils/logger';
 const StaffNewPage: React.FC = () => {
   const { t } = useTranslation();
@@ -32,13 +31,13 @@ const StaffNewPage: React.FC = () => {
         setError(t('staffNew.accessDeniedAction'));
         return;
     }
-    
+
     setIsSubmitting(true);
     setError(null);
 
     try {
       await callFunctionLazy('createUserAccount', formData);
-      alert(t('staffNew.alertSuccess'));
+      toast.success(t('staffNew.alertSuccess'));
       navigate('/app/admin/staff'); // Redirect to staff list after creation
     } catch (err) {
       logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'StaffNewPage' });

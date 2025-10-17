@@ -294,11 +294,6 @@ export const useCEODashboardOptimized = () => {
           });
           dashboardData.totalParticipants = totalParticipants;
 
-          logger.debug('이벤트 및 참가자 현황', { 
-            component: 'useCEODashboardOptimized', 
-            data: { activeEvents: dashboardData.activeEvents, totalParticipants }
-          });
-          
           const updatedData = { ...dashboardData };
           setData(updatedData);
           updateCache(updatedData);
@@ -331,15 +326,10 @@ export const useCEODashboardOptimized = () => {
           dashboardData.scheduledStaff = staffIds.size;
           dashboardData.checkedInStaff = checkedIn;
           dashboardData.absentStaff = absent;
-          dashboardData.attendanceRate = staffIds.size > 0 
-            ? Math.round((checkedIn / staffIds.size) * 100) 
+          dashboardData.attendanceRate = staffIds.size > 0
+            ? Math.round((checkedIn / staffIds.size) * 100)
             : 0;
 
-          logger.debug('출석 현황 통합', { 
-            component: 'useCEODashboardOptimized', 
-            data: { scheduled: staffIds.size, checkedIn, absent }
-          });
-          
           setData({ ...dashboardData });
         });
         unsubscribers.push(attendanceUnsubscribe);
@@ -372,11 +362,6 @@ export const useCEODashboardOptimized = () => {
           dashboardData.paidAmount = paid;
           dashboardData.pendingAmount = pending;
 
-          logger.debug('급여 현황', { 
-            component: 'useCEODashboardOptimized', 
-            data: { totalPayroll, paid, pending }
-          });
-          
           setData({ ...dashboardData });
         });
         unsubscribers.push(payrollUnsubscribe);
@@ -434,11 +419,6 @@ export const useCEODashboardOptimized = () => {
           dashboardData.activeStaff = activeCount;
           dashboardData.newStaffThisMonth = newThisMonth;
 
-          logger.debug('스태프 및 사용자 현황 (WorkLog 기반)', { 
-            component: 'useCEODashboardOptimized', 
-            data: { totalStaff, activeCount, newThisMonth, pendingRegistrations: dashboardData.pendingRegistrations }
-          });
-          
           setData({ ...dashboardData });
         };
         
@@ -480,12 +460,7 @@ export const useCEODashboardOptimized = () => {
           });
 
           dashboardData.jobPostings = jobs;
-          
-          logger.debug('구인공고 현황', { 
-            component: 'useCEODashboardOptimized', 
-            data: dashboardData.jobPostings 
-          });
-          
+
           setData({ ...dashboardData });
         });
         unsubscribers.push(jobsUnsubscribe);

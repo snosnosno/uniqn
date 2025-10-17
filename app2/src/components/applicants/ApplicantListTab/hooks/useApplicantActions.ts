@@ -36,12 +36,22 @@ const createWorkLogsForConfirmedStaff = async (
   try {
     logger.info('🚀 WorkLog 직접 생성 시작', {
       component: 'createWorkLogsForConfirmedStaff',
-      staffId,
-      applicantName,
-      applicantUserId,
-      jobRole,
-      assignedDate,
-      postingId
+      data: {
+        staffId,
+        applicantName,
+        applicantUserId,
+        jobRole,
+        assignedDate,
+        postingId,
+        // 🔍 role 관련 디버깅 정보 추가
+        roleDebug: {
+          jobRole,
+          assignmentRole: assignment.role,
+          assignmentRoleLowerCase: assignment.role?.toLowerCase(),
+          hasValidRole: !!(jobRole && jobRole !== ''),
+          willUseFallback: !jobRole || jobRole === ''
+        }
+      }
     });
 
     // WorkLog ID 생성 패턴: ${postingId}_${staffId}_${date}
@@ -74,7 +84,7 @@ const createWorkLogsForConfirmedStaff = async (
       
       // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
       assignmentInfo: {
-        role: jobRole,
+        role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
         assignedRole: assignment.role?.toLowerCase() || '',
         assignedTime: assignment.timeSlot,
         assignedDate: assignedDate,
@@ -82,9 +92,9 @@ const createWorkLogsForConfirmedStaff = async (
         managerId: managerId,
         type: 'staff' as const,
       },
-      
+
       // 기존 근무 관련 필드 (호환성 유지)
-      role: jobRole,
+      role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
       assignedTime: assignment.timeSlot,
       status: 'not_started' as const,
       createdAt: Timestamp.now(),
@@ -197,13 +207,20 @@ const checkIfIndependentDates = (assignments: Assignment[], jobPosting: JobPosti
 export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseApplicantActionsProps) => {
   const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cancelConfirmModal, setCancelConfirmModal] = useState<{
+    isOpen: boolean;
+    applicant: Applicant | null;
+  }>({
+    isOpen: false,
+    applicant: null
+  });
 
   // 권한 체크 - 공고 작성자 또는 관리자만 수정 가능
   const canEdit = currentUser?.uid && (
-    currentUser.uid === jobPosting?.createdBy || 
+    currentUser.uid === jobPosting?.createdBy ||
     currentUser.role === 'admin'
   );
-  
+
   // canEdit 값 확인
 
 
@@ -305,6 +322,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
               name: applicant.applicantName,
               role,
               timeSlot,
+              phone: applicant.phone || '',  // ✅ 연락처 정보 추가
+              email: applicant.email || '',  // ✅ 이메일 정보 추가
               confirmedAt: new Date(),
 
               // 🆕 v2.1: 지원서 구분 메타데이터
@@ -426,24 +445,32 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
   }, [canEdit, jobPosting, currentUser, t, onRefresh]);
 
   /**
-   * 지원자 확정을 취소하는 함수
+   * 확정 취소 확인 모달을 여는 함수
    */
-  const handleCancelConfirmation = useCallback(async (applicant: Applicant) => {
+  const handleCancelConfirmation = useCallback((applicant: Applicant) => {
     if (!jobPosting) return;
-    
+
     // 권한 체크
     if (!canEdit) {
       toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
       return;
     }
 
-    // 확정 취소 확인 대화상자
-    const confirmed = window.confirm(
-      `${applicant.applicantName}님의 확정을 취소하시겠습니까?\n\n취소 시 다음 작업이 수행됩니다:\n• 지원자 상태가 '지원함'으로 변경됩니다\n• 원래 지원한 시간대는 유지됩니다\n• 확정 스태프 목록에서 제거됩니다\n• 다시 확정 선택이 가능해집니다`
-    );
+    // 확인 모달 열기
+    setCancelConfirmModal({
+      isOpen: true,
+      applicant
+    });
+  }, [canEdit, jobPosting]);
 
-    if (!confirmed) return;
+  /**
+   * 지원자 확정을 실제로 취소하는 함수
+   */
+  const performCancelConfirmation = useCallback(async () => {
+    const applicant = cancelConfirmModal.applicant;
+    if (!applicant || !jobPosting) return;
 
+    // 확정 취소 작업 수행 (Toast로 안내)
     setIsProcessing(true);
 
     try {
@@ -498,18 +525,24 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
       toast.success(`${applicant.applicantName}님의 확정이 취소되었습니다. (WorkLog도 함께 삭제됨)`);
 
+      // 모달 닫기
+      setCancelConfirmModal({
+        isOpen: false,
+        applicant: null
+      });
+
       // 지원자 목록 새로고침
       onRefresh();
 
     } catch (error) {
-      logger.error('Error cancelling confirmation:', error instanceof Error ? error : new Error(String(error)), { 
-        component: 'useApplicantActions' 
+      logger.error('Error cancelling confirmation:', error instanceof Error ? error : new Error(String(error)), {
+        component: 'useApplicantActions'
       });
       toast.error('확정 취소 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
     }
-  }, [canEdit, jobPosting, onRefresh]);
+  }, [cancelConfirmModal.applicant, jobPosting, onRefresh]);
 
   /**
    * 공고 자동 마감 체크 함수
@@ -763,6 +796,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     canEdit,
     isProcessing,
     handleConfirmApplicant,
-    handleCancelConfirmation
+    handleCancelConfirmation,
+    cancelConfirmModal,
+    setCancelConfirmModal,
+    performCancelConfirmation
   };
 };

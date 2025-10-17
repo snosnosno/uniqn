@@ -9,8 +9,7 @@ import {
   writeBatch,
   Timestamp,
   getDocs,
-  query,
-  // where // TODO: 미래 필터링용
+  query
 } from 'firebase/firestore';
 import {
   createUserWithEmailAndPassword,

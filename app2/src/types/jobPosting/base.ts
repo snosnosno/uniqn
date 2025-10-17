@@ -154,6 +154,18 @@ export interface DateSpecificRequirement {
 }
 
 /**
+ * QR 출석 설정
+ * @description 구인공고별 QR 출석 시스템 설정입니다.
+ */
+export interface QRAttendanceConfig {
+  /** QR 출석 기능 활성화 여부 */
+  enabled: boolean;
+
+  /** 퇴근 시 라운드업 간격 (분) */
+  roundUpInterval?: 15 | 30;
+}
+
+/**
  * 확정된 스태프 정보
  * @description 구인공고에 확정된 스태프 정보를 저장합니다.
  *
@@ -180,6 +192,12 @@ export interface ConfirmedStaff {
 
   /** 시간대 */
   timeSlot: string;
+
+  /** 전화번호 */
+  phone?: string;
+
+  /** 이메일 */
+  email?: string;
 
   /** 날짜 (특정 날짜에만 적용되는 경우) */
   date?: string;

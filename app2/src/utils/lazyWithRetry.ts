@@ -7,8 +7,11 @@ import { lazy, ComponentType } from 'react';
 export function lazyWithRetry<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   retries = 3,
-  delay = 1000
+  initialDelay = 1000
 ): React.LazyExoticComponent<T> {
+  // Exponential backoff delay calculation moved outside loop for reusability
+  const calculateDelay = (attemptNumber: number) => initialDelay * Math.pow(2, attemptNumber);
+
   return lazy(async () => {
     let lastError: Error | null = null;
 
@@ -21,9 +24,8 @@ export function lazyWithRetry<T extends ComponentType<any>>(
         // If it's a chunk load error and we have retries left
         if (i < retries - 1 && error instanceof Error &&
             error.message.includes('Loading chunk')) {
+          const delay = calculateDelay(i);
           await new Promise(resolve => setTimeout(resolve, delay));
-          // Exponential backoff
-          delay *= 2;
         } else {
           throw error;
         }

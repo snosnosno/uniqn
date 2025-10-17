@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '../../../utils/jobPosting/dateUtils';
-import { logger } from '../../../utils/logger';
 import AssignmentDisplay from '../../../components/common/AssignmentDisplay';
 import {
   Application,
@@ -281,32 +280,6 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // 디버깅을 위한 데이터 로그
-  React.useEffect(() => {
-    logger.debug('🎯 MyApplicationsTab 데이터 상태', {
-      component: 'MyApplicationsTab',
-      data: {
-        applications: applications.length,
-        loading,
-        applicationsData: applications.slice(0, 3).map(app => ({
-          id: app.id,
-          postId: app.postId,
-          status: app.status,
-          hasJobPosting: !!app.jobPosting,
-          jobTitle: app.jobPosting?.title,
-          assignments: app.assignments,
-          assignmentsLength: app.assignments?.length || 0,
-          hasAssignments: !!app.assignments && app.assignments.length > 0,
-          // 레거시 필드들 확인
-          hasLegacyFields: !!(app as any).assignedDate || !!(app as any).assignedTime || !!(app as any).assignedRole ||
-                          !!(app as any).assignedDates || !!(app as any).assignedTimes || !!(app as any).assignedRoles ||
-                          !!(app as any).dateAssignments,
-          // 전체 데이터 구조
-          fullData: app
-        }))
-      }
-    });
-  }, [applications, loading]);
 
   if (loading) {
     return (

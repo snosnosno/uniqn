@@ -16,6 +16,7 @@ export interface Applicant {
   gender?: string;
   age?: number;
   experience?: string;
+  region?: string;          // 지역 정보
   assignedDate?: string;    // 할당된 날짜 (yyyy-MM-dd 형식)
   email?: string;
   phone?: string;  // ProfilePage와 일치하도록 phone으로 변경

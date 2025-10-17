@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import JobPostingForm from '../components/jobPosting/JobPostingForm';
 import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
@@ -21,7 +22,10 @@ const JobPostingAdminPage = () => {
     currentPost,
     handleCreateJobPosting,
     handleUpdateJobPosting,
-    handleDeleteJobPosting,
+    handleDeleteJobPostingClick,
+    handleDeleteJobPostingConfirm,
+    deleteConfirmPost,
+    setDeleteConfirmPost,
     handleNavigateToDetail,
     openEditModal,
     closeEditModal,
@@ -52,19 +56,8 @@ const JobPostingAdminPage = () => {
 
   // 공고 삭제 핸들러
   const handleDelete = async (postId: string, title: string) => {
-    _setIsDeleting(postId);
-    try {
-      const success = await handleDeleteJobPosting(postId, title);
-      if (success) {
-        toast.success('공고가 성공적으로 삭제되었습니다.');
-      }
-      return success;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : '공고 삭제 중 오류가 발생했습니다.');
-      throw error;
-    } finally {
-      _setIsDeleting(null);
-    }
+    handleDeleteJobPostingClick(postId, title);
+    return true; // Return true to indicate the modal should wait for confirmation
   };
 
   return (
@@ -112,6 +105,23 @@ const JobPostingAdminPage = () => {
           onClose={closeEditModal}
           currentPost={currentPost}
           onUpdate={handleUpdate}
+        />
+
+        {/* 삭제 확인 모달 */}
+        <ConfirmModal
+          isOpen={!!deleteConfirmPost}
+          onClose={() => setDeleteConfirmPost(null)}
+          onConfirm={async () => {
+            const success = await handleDeleteJobPostingConfirm();
+            if (success) {
+              toast.success(`"${deleteConfirmPost?.title}" 공고가 삭제되었습니다.`);
+            }
+          }}
+          title="공고 삭제"
+          message={`"${deleteConfirmPost?.title}" 공고를 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.`}
+          confirmText="삭제"
+          cancelText="취소"
+          isDangerous={true}
         />
       </div>
     </div>

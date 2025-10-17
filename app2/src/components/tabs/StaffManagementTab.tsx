@@ -18,6 +18,7 @@ import type { WorkLog } from '../../types/unifiedData';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
 import type { ConfirmedStaff } from '../../types/jobPosting/base';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
+import { getKoreanDate } from '../../utils/dateUtils';
 import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLogSimplified';
 // createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
 
@@ -26,14 +27,17 @@ import { useResponsive } from '../../hooks/useResponsive';
 // import { useVirtualization } from '../../hooks/useVirtualization'; // 향후 성능 최적화 기능
 // import { BulkOperationService } from '../../services/BulkOperationService'; // 향후 일괄 작업 기능
 import BulkTimeEditModal from '../modals/BulkTimeEditModal';
-import QRCodeGeneratorModal from '../modals/QRCodeGeneratorModal';
 import ReportModal from '../modals/ReportModal';
+import ConfirmModal from '../modals/ConfirmModal';
 import StaffDateGroup from '../staff/StaffDateGroup';
 import StaffDateGroupMobile from '../staff/StaffDateGroupMobile';
 import WorkTimeEditor, { WorkLogWithTimestamp } from '../staff/WorkTimeEditor';
 import StaffProfileModal from '../modals/StaffProfileModal';
 import MobileSelectionBar from '../layout/MobileSelectionBar';
 import '../../styles/staffSelection.css';
+
+// Lazy load QR 스캔 모달 (번들 크기 최적화)
+const ManagerScannerModal = React.lazy(() => import('../qr/ManagerScannerModal'));
 
 interface StaffData {
   id: string;
@@ -127,7 +131,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     });
     
     return Array.from(staffMap.values());
-  }, [state.workLogs, jobPosting?.id]);
+  }, [state.workLogs, state.jobPostings, jobPosting?.id]);
 
   // 🎯 고유한 스태프 수 계산 (중복 제거)
   const uniqueStaffCount = useMemo(() => {
@@ -151,7 +155,20 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     id: string;
     name: string;
   } | null>(null);
-  
+
+  // 삭제 확인 모달 상태
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    staffId: string;
+    staffName: string;
+    date: string;
+  }>({
+    isOpen: false,
+    staffId: '',
+    staffName: '',
+    date: ''
+  });
+
   // 🎯 선택 모드 관리 - 내장 상태로 단순화 (useStaffSelection 훅 제거)
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
@@ -530,10 +547,15 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     debugInfo.workLogsLoading = state.loading.workLogs;
     debugInfo.initialLoading = state.loading.initial;
     debugInfo.staffIdHasNumberSuffix = /_\d+$/.test(staffId);
-    
-    
+
+    // 🔍 디버깅 로그 출력
+    logger.info('getStaffWorkLog - WorkLog 조회 결과', {
+      component: 'StaffManagementTab',
+      data: debugInfo
+    });
+
     return workLog;
-  }, [state.workLogs, jobPosting?.id, state.lastUpdated.workLogs]); // 🔥 lastUpdated 추가로 업데이트 즉시 감지
+  }, [state.workLogs, state.loading.initial, state.loading.workLogs, jobPosting?.id]); // workLogs 변경 시 자동 업데이트
 
   // 🔒 삭제 가능 조건 검증 함수
   const canDeleteStaff = useCallback(async (staffId: string, date: string): Promise<{
@@ -622,12 +644,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         showError(reason || '삭제할 수 없습니다.');
         return;
       }
-      
+
       // 2. 삭제 전 인원 카운트 계산 (해당 스태프의 역할/시간 정보 파악)
       let staffRole = '';
       let staffTimeSlot = '';
       const baseStaffId = staffId.replace(/_\d+$/, '');
-      
+
       if (jobPosting?.confirmedStaff) {
         const targetStaff = jobPosting.confirmedStaff.find(
           (staff: ConfirmedStaff) => (staff.userId) === baseStaffId && staff.date === date
@@ -636,12 +658,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         staffTimeSlot = targetStaff?.timeSlot || '';
       }
 
-      // 3. 확인 대화상자
-      if (!window.confirm(`${staffName} 스태프를 ${date} 날짜에서 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`)) {
-        return;
-      }
-      
-      // 4. Transaction으로 원자적 처리 (확정취소와 동일한 로직)
+      // 3. Transaction으로 원자적 처리 (확정취소와 동일한 로직)
       await runTransaction(db, async (transaction) => {
         if (!jobPosting?.id) {
           throw new Error('공고 정보를 찾을 수 없습니다.');
@@ -744,10 +761,24 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       const staffName = staff.name || '이름 미정';
       const date = staff.assignedDate || new Date().toISOString().split('T')[0];
       if (date) {
-        await deleteStaff(staffId, staffName, date);
+        // 삭제 확인 모달 열기
+        setDeleteConfirmModal({
+          isOpen: true,
+          staffId,
+          staffName,
+          date
+        });
       }
     }
-  }, [deleteStaff, staffData]);
+  }, [staffData]);
+
+  // 삭제 확인 콜백
+  const handleDeleteConfirm = useCallback(async () => {
+    const { staffId, staffName, date } = deleteConfirmModal;
+    if (staffId && staffName && date) {
+      await deleteStaff(staffId, staffName, date);
+    }
+  }, [deleteConfirmModal, deleteStaff]);
 
   // 최적화된 핸들러들 (메모이제이션 강화)
   const handleStaffSelect = useCallback((staffId: string) => {
@@ -811,17 +842,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           showError(`선택한 모든 스태프를 삭제할 수 없습니다:\n\n${nonDeletableMessage}`);
           return;
         } else {
-          // 일부만 삭제 가능한 경우
-          if (!window.confirm(`다음 스태프는 삭제할 수 없습니다:\n${nonDeletableMessage}\n\n나머지 ${deletableStaff.length}명만 삭제하시겠습니까?`)) {
-            return;
-          }
-        }
-      } else {
-        // 모든 스태프 삭제 가능한 경우
-        if (!window.confirm(`선택된 ${deletableStaff.length}명의 스태프를 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`)) {
-          return;
+          // 일부만 삭제 가능한 경우 - Toast로 안내
+          showError(`일부 스태프는 삭제할 수 없습니다:\n${nonDeletableMessage}\n\n나머지 ${deletableStaff.length}명만 삭제합니다.`);
         }
       }
+      // 모든 스태프 삭제 가능한 경우 - 별도 확인 없이 진행
       
       // 3. 삭제 가능한 스태프만 처리 (개별 deleteStaff 함수 사용)
       let successCount = 0;
@@ -1081,7 +1106,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 onClick={() => setIsQrModalOpen(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                QR 생성
+                QR 스캔
               </button>
             </div>
           )}
@@ -1120,7 +1145,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     onClick={() => setIsQrModalOpen(true)}
                     className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                   >
-                    QR 생성
+                    QR 스캔
                   </button>
                 </div>
               </div>
@@ -1230,14 +1255,19 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         </div>
 
 
-      {/* QR 코드 생성 모달 */}
-      <QRCodeGeneratorModal
-        isOpen={isQrModalOpen}
-        onClose={() => setIsQrModalOpen(false)}
-        eventId={jobPosting?.id || 'default-event'}
-        title={t('attendance.actions.generateQR')}
-        description={`${jobPosting?.title || '공고'} 스태프들이 출석 체크를 할 수 있는 QR 코드를 생성합니다.`}
-      />
+      {/* QR 스캔 모달 (Lazy Loading) */}
+      {isQrModalOpen && jobPosting && (
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <ManagerScannerModal
+            isOpen={isQrModalOpen}
+            onClose={() => setIsQrModalOpen(false)}
+            eventId={jobPosting.id}
+            eventTitle={jobPosting.title}
+            managerId={currentUser?.uid || ''}
+            initialMode="check-in"
+          />
+        </React.Suspense>
+      )}
 
       {/* 시간 수정 모달 */}
       <WorkTimeEditor
@@ -1274,25 +1304,29 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         selectedStaff={staffData
           .filter(staff => selectedStaff.has(staff.id))
           .map(staff => {
-            // 스태프의 날짜를 추출
-            const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
-            // 해당 날짜의 workLog 찾기
-            const workLogRecord = attendanceRecords.find(r => {
-              // staffId가 일치하고
-              const recordAny = r as any;
-              const staffIdMatch = recordAny.staffId === staff.id || 
-                                  recordAny.workLog?.staffId === staff.id;
-              // 날짜가 일치하는 경우
-              const dateMatch = recordAny.workLog?.date === dateString;
-              return staffIdMatch && dateMatch;
+            // ✅ getStaffWorkLog 함수를 사용하여 정확한 WorkLog 매칭
+            const dateString = staff.assignedDate || getTodayString();
+            const workLog = getStaffWorkLog(staff.id, dateString);
+
+            // 🔍 디버깅: WorkLog 매칭 확인
+            logger.info('BulkTimeEditModal - WorkLog 매칭', {
+              component: 'StaffManagementTab',
+              data: {
+                staffId: staff.id,
+                staffName: staff.name,
+                dateString,
+                workLogFound: !!workLog,
+                workLogId: workLog?.id,
+                eventId: jobPosting?.id
+              }
             });
-            
+
             return {
               id: staff.id,
               name: staff.name || '이름 미정',
-              ...(staff.assignedDate && { assignedDate: staff.assignedDate }),
+              assignedDate: dateString,
               ...(staff.assignedTime && { assignedTime: staff.assignedTime }),
-              ...((workLogRecord as any)?.workLogId && { workLogId: (workLogRecord as any).workLogId })
+              ...(workLog?.id && { workLogId: workLog.id })
             };
           })}
         eventId={jobPosting?.id || 'default-event'}
@@ -1316,6 +1350,19 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         />
       )}
 
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={deleteConfirmModal.isOpen}
+        onClose={() => setDeleteConfirmModal({ isOpen: false, staffId: '', staffName: '', date: '' })}
+        onConfirm={handleDeleteConfirm}
+        title="스태프 삭제 확인"
+        message={`${deleteConfirmModal.staffName} 스태프를 ${deleteConfirmModal.date} 날짜에서 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 확정 스태프 목록에서 제거됩니다\n• 관련 WorkLog가 삭제됩니다\n• 이 작업은 되돌릴 수 없습니다`}
+        confirmText="삭제"
+        cancelText="취소"
+        isDangerous={true}
+        isLoading={loading?.initial || false}
+      />
+
       {/* 모바일 선택 바 */}
       {multiSelectMode && selectedStaff.size > 0 && canEdit && (isMobile || isTablet) && (
         <MobileSelectionBar
@@ -1326,10 +1373,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           onBulkEdit={() => setIsBulkTimeEditOpen(true)}
           onBulkDelete={() => {
             if (selectedStaff.size === 0) return;
-            const confirmDelete = window.confirm(`선택된 ${selectedStaff.size}명의 스태프를 삭제하시겠습니까?`);
-            if (confirmDelete) {
-              handleBulkDelete(Array.from(selectedStaff));
-            }
+            // 일괄 삭제 실행
+            handleBulkDelete(Array.from(selectedStaff));
           }}
           onCancel={() => {
             deselectAll();

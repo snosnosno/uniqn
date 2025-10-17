@@ -278,13 +278,11 @@ describe('useLandingAnalytics', () => {
       jest.spyOn(console, 'error').mockImplementation(() => {});
 
       await act(async () => {
-        try {
-          await result.current.trackPageView('landing-page');
-        } catch (error) {
-          // 에러 처리 확인
-          expect(result.current.error).toBeTruthy();
-        }
+        await result.current.trackPageView('landing-page');
       });
+
+      // 에러 상태 확인
+      expect(result.current.error).toBeTruthy();
     });
 
     it('잘못된 이벤트 파라미터에 대해 경고해야 한다', async () => {

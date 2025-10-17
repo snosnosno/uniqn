@@ -14,6 +14,7 @@ interface BaseCardProps {
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
   tabIndex?: number;
+  'data-testid'?: string;
 }
 
 /**
@@ -37,6 +38,7 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
       'aria-labelledby': ariaLabelledBy,
       'aria-describedby': ariaDescribedBy,
       tabIndex,
+      'data-testid': dataTestId,
     },
     ref
   ) => {
@@ -108,6 +110,7 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
         aria-describedby={ariaDescribedBy}
         aria-disabled={disabled || undefined}
         tabIndex={disabled ? -1 : (tabIndex ?? (onClick ? 0 : undefined))}
+        data-testid={dataTestId}
       >
         {children}
       </div>
@@ -122,8 +125,9 @@ export const CardHeader: React.FC<{
   children: React.ReactNode;
   className?: string;
   id?: string;
-}> = ({ children, className = '', id }) => (
-  <div id={id} className={`border-b border-gray-200 pb-3 mb-3 ${className}`}>
+  'data-testid'?: string;
+}> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
+  <div id={id} className={`border-b border-gray-200 pb-3 mb-3 ${className}`} data-testid={dataTestId}>
     {children}
   </div>
 );
@@ -133,8 +137,9 @@ export const CardBody: React.FC<{
   children: React.ReactNode;
   className?: string;
   id?: string;
-}> = ({ children, className = '', id }) => (
-  <div id={id} className={`flex-1 ${className}`}>
+  'data-testid'?: string;
+}> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
+  <div id={id} className={`flex-1 ${className}`} data-testid={dataTestId}>
     {children}
   </div>
 );
@@ -144,8 +149,9 @@ export const CardFooter: React.FC<{
   children: React.ReactNode;
   className?: string;
   id?: string;
-}> = ({ children, className = '', id }) => (
-  <div id={id} className={`border-t border-gray-200 pt-3 mt-3 ${className}`}>
+  'data-testid'?: string;
+}> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
+  <div id={id} className={`border-t border-gray-200 pt-3 mt-3 ${className}`} data-testid={dataTestId}>
     {children}
   </div>
 );

@@ -4,6 +4,7 @@
  */
 
 import { logger } from './logger';
+import { toast } from './toast';
 
 export interface ErrorHandlerOptions {
   component: string;
@@ -53,12 +54,12 @@ export const handleError = (
   if (userId) logContext.userId = userId;
   
   logger.error(`[${component}] ${action || 'Error'}:`, errorObject, logContext);
-  
+
   // 알림 표시 (옵션)
   if (showAlert && typeof window !== 'undefined') {
-    alert(errorMessage);
+    toast.error(errorMessage);
   }
-  
+
   return errorMessage;
 };
 

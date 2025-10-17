@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { logger } from '../utils/logger';
 import { setSentryUser } from '../utils/sentry';
+import { secureStorage } from '../utils/secureStorage';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 import { auth } from '../firebase';
@@ -111,8 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
       await setPersistence(auth, persistence);
 
-      // localStorage에 설정 저장
-      localStorage.setItem('rememberMe', JSON.stringify(rememberMe));
+      // secureStorage에 암호화하여 저장
+      secureStorage.setItem('rememberMe', JSON.stringify(rememberMe));
 
       logger.info('로그인 persistence 설정 완료', {
         component: 'AuthContext',

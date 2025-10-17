@@ -36,8 +36,7 @@ import {
   PerformanceMetrics,
 } from '../types/unifiedData';
 import {
-  Application,
-  // LegacyApplication // TODO: 레거시 지원용 타입 - 현재 미사용
+  Application
 } from '../types/application';
 // formatDate 함수 로컬 구현
 const formatDate = (date: Date): string => {
@@ -131,9 +130,10 @@ class MemoryCache {
 
   // 캐시 통계
   getStats(): { size: number; hitRate: number } {
+    // 성능 트래커에서 히트율 계산
     return {
       size: this.cache.size,
-      hitRate: 0 // TODO: 히트율 계산 로직 추가
+      hitRate: 0 // 성능 트래커에서 관리
     };
   }
 }
@@ -316,8 +316,8 @@ const transformJobPostingData = (doc: DocumentData): JobPosting => ({
 
 const transformApplicationData = (doc: DocumentData): Application => ({
   id: doc.id,
-  eventId: doc.eventId || doc.jobPostingId || '', // 레거시 호환
-  postId: doc.postId || doc.eventId || doc.jobPostingId || '', // 필수 필드
+  eventId: doc.eventId || '', // 표준 필드
+  postId: doc.postId || doc.eventId || '', // 필수 필드
   postTitle: doc.postTitle || '',
   applicantId: doc.applicantId,
   applicantName: doc.applicantName || '',
@@ -329,6 +329,7 @@ const transformApplicationData = (doc: DocumentData): Application => ({
   processedAt: doc.processedAt,
   notes: doc.notes || '',
   assignments: doc.assignments || [],
+  preQuestionAnswers: doc.preQuestionAnswers || [], // 🆕 사전질문 답변 필드 추가
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
 } as Application);
@@ -583,7 +584,7 @@ class OptimizedUnifiedDataService {
         postingsQuery,
         { includeMetadataChanges: false }, // 메타데이터 변경 제외로 비용 절약
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformJobPostingData({
             id: doc.id,
@@ -599,16 +600,6 @@ class OptimizedUnifiedDataService {
 
           // 최적화 효과 기록 (예상 절약: 전체 데이터의 70%)
           this.performanceTracker.recordOptimizationSavings(Math.floor(data.length * 0.7));
-
-          logger.info('📋 JobPostings 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -650,7 +641,7 @@ class OptimizedUnifiedDataService {
         applicationsQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformApplicationData({
             id: doc.id,
@@ -666,16 +657,6 @@ class OptimizedUnifiedDataService {
 
           // 최적화 효과 기록
           this.performanceTracker.recordOptimizationSavings(Math.floor(data.length * 0.8));
-
-          logger.info('📝 Applications 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -717,7 +698,7 @@ class OptimizedUnifiedDataService {
         workLogsQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformWorkLogData({
             id: doc.id,
@@ -733,16 +714,6 @@ class OptimizedUnifiedDataService {
 
           // 최적화 효과 기록 (가장 큰 절약 효과)
           this.performanceTracker.recordOptimizationSavings(Math.floor(data.length * 2)); // 2배 절약
-
-          logger.info('⏰ WorkLogs 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -785,7 +756,7 @@ class OptimizedUnifiedDataService {
         staffQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformStaffData({
             id: doc.id,
@@ -798,15 +769,6 @@ class OptimizedUnifiedDataService {
           this.dispatcher?.({ type: 'SET_STAFF', data });
           this.dispatcher?.({ type: 'SET_LOADING', collection: 'staff', loading: false });
           this.dispatcher?.({ type: 'SET_ERROR', collection: 'staff', error: null });
-
-          logger.info('👥 Staff 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              cached: false
-            }
-          });
         }
       );
 
@@ -848,7 +810,7 @@ class OptimizedUnifiedDataService {
         attendanceQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformAttendanceRecordData({
             id: doc.id,
@@ -861,16 +823,6 @@ class OptimizedUnifiedDataService {
           this.dispatcher?.({ type: 'SET_ATTENDANCE_RECORDS', data });
           this.dispatcher?.({ type: 'SET_LOADING', collection: 'attendanceRecords', loading: false });
           this.dispatcher?.({ type: 'SET_ERROR', collection: 'attendanceRecords', error: null });
-
-          logger.info('📋 AttendanceRecords 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              userRole,
-              cached: false
-            }
-          });
         }
       );
 
@@ -914,7 +866,7 @@ class OptimizedUnifiedDataService {
         tournamentsQuery,
         { includeMetadataChanges: false },
         (snapshot: QuerySnapshot) => {
-          const queryTime = endTimer();
+          const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
           const data = snapshot.docs.map(doc => transformTournamentData({
             id: doc.id,
@@ -927,15 +879,6 @@ class OptimizedUnifiedDataService {
           this.dispatcher?.({ type: 'SET_TOURNAMENTS', data });
           this.dispatcher?.({ type: 'SET_LOADING', collection: 'tournaments', loading: false });
           this.dispatcher?.({ type: 'SET_ERROR', collection: 'tournaments', error: null });
-
-          logger.info('🏆 Tournaments 최적화 구독 업데이트', {
-            component: 'OptimizedUnifiedDataService',
-            data: {
-              count: data.length,
-              queryTime: `${queryTime.toFixed(2)}ms`,
-              cached: false
-            }
-          });
         }
       );
 
@@ -957,15 +900,24 @@ class OptimizedUnifiedDataService {
       const stats = this.cache.getStats();
       const metrics = this.performanceTracker.getMetrics();
 
-      logger.info('🧹 캐시 정리 및 성능 모니터링', {
-        component: 'OptimizedUnifiedDataService',
-        data: {
-          cacheSize: stats.size,
-          cacheHitRate: `${metrics.cacheHitRate.toFixed(1)}%`,
-          avgQueryTime: `${metrics.avgQueryTime.toFixed(2)}ms`,
-          optimizationSavings: metrics.optimizationSavings
-        }
-      });
+      // 총 요청 수가 10개 이상일 때만 평가 (초기 로딩 무시)
+      const totalRequests = metrics.cacheHits + metrics.cacheMisses;
+
+      // 성능 이슈가 있을 때만 로그 출력
+      // - 캐시 히트율 30% 미만 (충분한 요청 후)
+      // - 평균 쿼리 시간 150ms 초과
+      if (totalRequests >= 10 && (metrics.cacheHitRate < 30 || metrics.avgQueryTime > 150)) {
+        logger.warn('⚠️ 성능 저하 감지', {
+          component: 'OptimizedUnifiedDataService',
+          data: {
+            cacheSize: stats.size,
+            cacheHitRate: `${metrics.cacheHitRate.toFixed(1)}%`,
+            avgQueryTime: `${metrics.avgQueryTime.toFixed(2)}ms`,
+            optimizationSavings: metrics.optimizationSavings,
+            totalRequests
+          }
+        });
+      }
     }, 60000); // 1분마다 실행
   }
 

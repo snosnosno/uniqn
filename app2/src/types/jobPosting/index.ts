@@ -3,9 +3,6 @@
 // 기본 타입들
 export * from './base';
 
-// 지원자 관련 타입
-export * from './applicant';
-
 // 구인공고 관련 타입
 export * from './jobPosting';
 

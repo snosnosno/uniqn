@@ -152,68 +152,23 @@ export const usePayrollWorker = () => {
     const startTime = performance.now();
 
     try {
-      logger.info('메인 스레드에서 정산 계산 시작 (Web Worker 우회)', {
-        component: 'usePayrollWorker',
-        data: {
-          workLogsCount: params.workLogs.length,
-          confirmedStaffCount: params.confirmedStaff.length,
-          period: `${params.startDate} ~ ${params.endDate}`
-        }
-      });
-
       // 실제 계산 로직 수행
       const calculationTime = performance.now() - startTime;
-      
+
       const payrollData: EnhancedPayrollCalculation[] = [];
       const staffRoleMap = new Map<string, {
         staffId: string;
         staffName: string;
         role: string;
         workLogs: UnifiedWorkLog[];
+        phone?: string;  // ✅ phone 필드 추가
+        email?: string;  // ✅ email 필드 추가
       }>();
 
-      logger.info('confirmedStaff 데이터 확인', {
-        component: 'usePayrollWorker',
-        data: {
-          confirmedStaffCount: params.confirmedStaff.length,
-          confirmedStaff: params.confirmedStaff.map(staff => ({
-            userId: staff.userId,
-            name: staff.name,
-            role: staff.role
-          }))
-        }
-      });
-
-      logger.info('WorkLogs 데이터 확인', {
-        component: 'usePayrollWorker',
-        data: {
-          workLogsCount: params.workLogs.length,
-          workLogs: params.workLogs.map(log => ({
-            id: log.id,
-            staffId: log.staffId,
-            staffName: log.staffName,
-            role: log.role,
-            date: log.date,
-            hasScheduledStart: !!log.scheduledStartTime,
-            hasScheduledEnd: !!log.scheduledEndTime
-          }))
-        }
-      });
-
       // 1단계: 날짜 필터링된 WorkLog만 선별
-      const dateFilteredWorkLogs = params.workLogs.filter(log => 
+      const dateFilteredWorkLogs = params.workLogs.filter(log =>
         log.date >= params.startDate && log.date <= params.endDate
       );
-
-      logger.info('날짜 필터링 완료', {
-        component: 'usePayrollWorker',
-        data: {
-          totalWorkLogs: params.workLogs.length,
-          dateFilteredCount: dateFilteredWorkLogs.length,
-          startDate: params.startDate,
-          endDate: params.endDate
-        }
-      });
 
       // 2단계: workLogHelpers의 groupWorkLogsByStaff 사용 (성능 최적화)
       const groupedWorkLogs = groupWorkLogsByStaff(dateFilteredWorkLogs);
@@ -256,16 +211,6 @@ export const usePayrollWorker = () => {
         }
       }
 
-      logger.info('최적화된 스태프별 WorkLog 그룹화 완료', {
-        component: 'usePayrollWorker',
-        data: {
-          staffCount: staffWorkLogsMap.size,
-          staffWorkLogs: Array.from(staffWorkLogsMap.entries()).map(([staffId, logs]) => ({
-            staffId,
-            workLogsCount: logs.length
-          }))
-        }
-      });
 
       // 2단계: 각 확정된 스태프별로 역할별 계산
       for (const staff of params.confirmedStaff) {
@@ -273,12 +218,31 @@ export const usePayrollWorker = () => {
         const key = `${staffId}_${staff.role}`;
         
         if (!staffRoleMap.has(key)) {
-          staffRoleMap.set(key, {
+          const staffData: {
+            staffId: string;
+            staffName: string;
+            role: string;
+            workLogs: UnifiedWorkLog[];
+            phone?: string;
+            email?: string;
+          } = {
             staffId,
             staffName: staff.name,
             role: staff.role,
             workLogs: []
-          });
+          };
+
+          // ✅ phone이 있고 빈 문자열이 아닐 때만 추가
+          if (staff.phone && staff.phone.trim() !== '') {
+            staffData.phone = staff.phone;
+          }
+
+          // ✅ email이 있고 빈 문자열이 아닐 때만 추가
+          if (staff.email && staff.email.trim() !== '') {
+            staffData.email = staff.email;
+          }
+
+          staffRoleMap.set(key, staffData);
         }
 
         // 해당 스태프의 WorkLog 가져오기
@@ -291,21 +255,6 @@ export const usePayrollWorker = () => {
         const uniqueWorkLogs = Array.from(
           new Map(roleWorkLogs.map(log => [`${log.date}_${log.staffId}_${staff.role}`, log])).values()
         );
-        
-        logger.info('스태프-역할별 WorkLog 할당', {
-          component: 'usePayrollWorker',
-          data: {
-            staffId,
-            staffName: staff.name,
-            role: staff.role,
-            key,
-            totalStaffWorkLogs: staffWorkLogs.length,
-            roleFilteredWorkLogs: roleWorkLogs.length,
-            uniqueWorkLogs: uniqueWorkLogs.length,
-            workLogDates: uniqueWorkLogs.map(log => log.date),
-            workLogRoles: staffWorkLogs.map(log => ({ id: log.id, role: log.role, hasRole: !!log.role }))
-          }
-        });
 
         const entry = staffRoleMap.get(key);
         if (entry) {
@@ -313,58 +262,13 @@ export const usePayrollWorker = () => {
         }
       }
 
-      logger.info('최종 staffRoleMap 상태', {
-        component: 'usePayrollWorker',
-        data: {
-          mapSize: staffRoleMap.size,
-          entries: Array.from(staffRoleMap.entries()).map(([key, data]) => ({
-            key,
-            staffId: data.staffId,
-            staffName: data.staffName,
-            role: data.role,
-            workLogsCount: data.workLogs.length
-          }))
-        }
-      });
-
       // 각 스태프-역할 조합별로 정산 계산
       for (const [key, data] of Array.from(staffRoleMap)) {
         let totalHours = 0;
         const uniqueDates = new Set<string>();
 
         // WorkLog 기반 실제 근무시간 계산
-        logger.info('해당 스태프-역할의 WorkLog 배열 확인', {
-          component: 'usePayrollWorker',
-          data: {
-            key: key,
-            staffId: data.staffId,
-            role: data.role,
-            workLogsCount: data.workLogs.length,
-            workLogIds: data.workLogs.map(log => log.id)
-          }
-        });
-        
         for (const log of data.workLogs) {
-          logger.info('WorkLog 데이터 구조 확인', {
-            component: 'usePayrollWorker',
-            data: {
-              logId: log.id,
-              staffId: log.staffId,
-              staffName: log.staffName,
-              date: log.date,
-              scheduledStartTime: log.scheduledStartTime,
-              scheduledEndTime: log.scheduledEndTime,
-              actualStartTime: log.actualStartTime,
-              actualEndTime: log.actualEndTime,
-              assignedTime: log.assignedTime,
-              startTimeType: typeof log.scheduledStartTime,
-              endTimeType: typeof log.scheduledEndTime,
-              hasStartTime: !!log.scheduledStartTime,
-              hasEndTime: !!log.scheduledEndTime,
-              allFields: Object.keys(log)
-            }
-          });
-          
           if (log.scheduledStartTime && log.scheduledEndTime) {
             uniqueDates.add(log.date);
             const hours = calculateWorkHours(log);
@@ -409,11 +313,12 @@ export const usePayrollWorker = () => {
 
         const totalAmount = basePay + allowanceTotal;
 
-        // EnhancedPayrollCalculation 객체 생성
+        // EnhancedPayrollCalculation 객체 생성 - phone이 있을 때만 포함
         const payrollCalculation: EnhancedPayrollCalculation = {
           staffId: data.staffId,
           staffName: data.staffName,
           role: data.role,
+          ...(data.phone && { phone: data.phone }),  // ✅ phone이 있을 때만 포함
           workLogs: data.workLogs,
           totalHours: Math.round(totalHours * 100) / 100,
           totalDays,
@@ -476,16 +381,6 @@ export const usePayrollWorker = () => {
         calculationTime
       });
 
-      logger.info('메인 스레드 정산 계산 완료 (실제 데이터)', {
-        component: 'usePayrollWorker',
-        data: {
-          staffCount: payrollData.length,
-          calculationTime: Math.round(calculationTime),
-          totalAmount: summary.totalAmount,
-          totalHours: Math.round(summary.totalHours * 100) / 100,
-          roles: Object.keys(roleStats)
-        }
-      });
 
     } catch (error) {
       const requestTime = performance.now() - startTime;

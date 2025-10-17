@@ -697,13 +697,6 @@ export interface ConsecutiveDateGroup {
  * - 나머지는 개별 표시
  */
 export const groupApplicationsByConsecutiveDates = (selections: Selection[]): ConsecutiveDateGroup[] => {
-  logger.debug('groupApplicationsByConsecutiveDates 입력 데이터 확인', {
-    selectionsCount: selections.length,
-    firstSelection: selections[0],
-    hasDatesArray: selections.length > 0 && selections[0]?.dates,
-    hasCheckMethod: selections.length > 0 && selections[0]?.checkMethod,
-  });
-  
   // 🎯 checkMethod 기반 그룹화 - 이미 그룹화된 데이터는 유지
   if (selections.length > 0 && selections[0]?.dates) {
     // 1단계: 이미 그룹화된 selection과 개별 selection 구분
@@ -944,22 +937,6 @@ export const getStaffCounts = (
   timeSlot: string,
   date?: string
 ): { confirmed: number; required: number } => {
-  // 디버깅 로그 추가
-  logger.debug('🔢 getStaffCounts 호출', {
-    component: 'applicantHelpers',
-    data: {
-      role,
-      timeSlot,
-      date,
-      applicationsCount: applications.length,
-      confirmedAppsCount: applications.filter(app => app.status === 'confirmed').length,
-      jobPostingStructure: {
-        hasDateSpecificRequirements: !!jobPosting?.dateSpecificRequirements,
-        dateReqsCount: jobPosting?.dateSpecificRequirements?.length || 0
-      }
-    }
-  });
-
   // 확정된 인원 계산
   const confirmed = applications.filter(app => 
     app.status === 'confirmed' && 
@@ -1015,11 +992,6 @@ export const getStaffCounts = (
       });
     }
   }
-  
-  logger.debug('🔢 getStaffCounts 결과', {
-    component: 'applicantHelpers',
-    data: { role, timeSlot, date, confirmed, required }
-  });
 
   return { confirmed, required };
 };
