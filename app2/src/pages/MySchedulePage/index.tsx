@@ -358,7 +358,7 @@ const MySchedulePage: React.FC = () => {
 
 
   return (
-    <div className="container max-w-7xl">
+    <div className="container mx-auto px-2 sm:px-4 max-w-full">
       {/* 헤더 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">

@@ -130,8 +130,8 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
       <div className="grid grid-cols-7 gap-px bg-gray-200">
         {/* 요일 헤더 */}
         {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
-          <div 
-            key={day} 
+          <div
+            key={day}
             className={`
               bg-gray-50 py-2 text-center text-sm font-medium
               ${idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-gray-700'}
@@ -140,7 +140,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
             {day}
           </div>
         ))}
-        
+
         {/* 날짜 셀 */}
         {calendarDays.map((day, idx) => {
           const dateKey = format(day, 'yyyy-MM-dd');
@@ -148,13 +148,13 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
           const isCurrentMonth = isSameMonth(day, currentDate);
           const isSelectedDay = isToday(day);
           const dayOfWeek = getDay(day);
-          
+
           return (
             <div
               key={idx}
               onClick={() => handleDateCellClick(day)}
               className={`
-                bg-white p-2 min-h-[100px] cursor-pointer
+                bg-white p-1 min-h-[120px] cursor-pointer
                 hover:bg-gray-50 transition-colors
                 ${!isCurrentMonth ? 'opacity-40' : ''}
                 ${isSelectedDay ? 'bg-blue-50' : ''}
@@ -176,16 +176,16 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
                     <div
                       key={event.id}
                       onClick={(e) => handleEventItemClick(event, e)}
-                      className="text-xs p-1 rounded cursor-pointer hover:opacity-80 truncate"
+                      className="text-xs p-1 rounded cursor-pointer hover:opacity-80"
                       style={{
                         backgroundColor: colors.backgroundColor,
                         borderLeft: `3px solid ${colors.borderColor}`,
                         color: colors.textColor
                       }}
-                      title={`${formatEventTime(event)} ${event.eventName}`}
+                      title={`${event.eventName} ${formatEventTime(event)}`}
                     >
-                      <span className="font-medium">{formatEventTime(event)}</span>
-                      <span className="ml-1">{event.eventName}</span>
+                      <div className="truncate font-medium">{event.eventName}</div>
+                      <div className="text-[10px] mt-0.5">{formatEventTime(event)}</div>
                     </div>
                   );
                 })}
