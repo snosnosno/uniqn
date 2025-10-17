@@ -32,6 +32,11 @@ export interface JobPostingFormData {
       customRoleName?: string;  // 기타 선택 시 직접 입력한 역할명
     }
   };
+  taxSettings?: {           // 세금 설정
+    enabled: boolean;       // 세금 적용 여부
+    taxRate?: number;       // 세율 (%) - 비율 기반 계산
+    taxAmount?: number;     // 고정 세금 - 고정 금액 계산
+  };
 }
 
 /**
@@ -68,7 +73,7 @@ export interface JobPosting {
   
   // 복리후생 정보
   benefits?: Benefits;
-  
+
   // 역할별 급여 정보
   useRoleSalary?: boolean;
   roleSalaries?: {
@@ -78,7 +83,14 @@ export interface JobPosting {
       customRoleName?: string;
     }
   };
-  
+
+  // 세금 설정
+  taxSettings?: {
+    enabled: boolean;      // 세금 적용 여부
+    taxRate?: number;      // 세율 (%) - 비율 기반 계산
+    taxAmount?: number;    // 고정 세금 - 고정 금액 계산
+  };
+
   // 자동 관리 기능 플래그
   autoManageStatus?: boolean; // 자동 상태 관리 활성화 여부
 }

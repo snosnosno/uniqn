@@ -5,6 +5,7 @@ import { useUnifiedData } from '../../hooks/useUnifiedData';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
+import TaxSettingsPanel from '../payroll/TaxSettingsPanel';
 import DetailEditModal from '../payroll/DetailEditModal';
 import RoleSalarySettings from '../payroll/RoleSalarySettings';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, RoleSalaryConfig } from '../../types/payroll';
@@ -259,15 +260,16 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     try {
       const headers = [
         '이름',
-        '역할', 
+        '역할',
         '근무일수',
         '근무시간',
         '급여유형',
         '기본급',
         '수당',
-        '총 지급액'
+        '총 지급액',
+        '세후 급여'
       ];
-      
+
       const rows = payrollData.map(data => [
         data.staffName,
         data.role,
@@ -276,7 +278,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         getSalaryTypeLabel(data.salaryType),
         data.basePay.toLocaleString('ko-KR'),
         data.allowanceTotal.toLocaleString('ko-KR'),
-        data.totalAmount.toLocaleString('ko-KR')
+        data.totalAmount.toLocaleString('ko-KR'),
+        data.afterTaxAmount !== undefined && data.afterTaxAmount > 0
+          ? data.afterTaxAmount.toLocaleString('ko-KR')
+          : '-'
       ]);
 
       const csvContent = [headers, ...rows]
@@ -438,6 +443,35 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     setRoleSalaryOverrides(updates);
   }, []);
 
+  // 세금 설정 업데이트
+  const updateTaxSettings = useCallback(async (taxSettings: NonNullable<JobPosting['taxSettings']>) => {
+    if (!jobPosting?.id) {
+      logger.warn('JobPosting ID가 없어 세금 설정을 저장할 수 없습니다.', {
+        component: 'EnhancedPayrollTab'
+      });
+      return;
+    }
+
+    try {
+      const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
+      await updateDoc(jobPostingRef, {
+        taxSettings,
+        updatedAt: Timestamp.now()
+      });
+
+      logger.info('세금 설정 저장 완료', {
+        component: 'EnhancedPayrollTab',
+        data: { jobPostingId: jobPosting.id, taxSettings }
+      });
+    } catch (error) {
+      logger.error('세금 설정 저장 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'EnhancedPayrollTab',
+        data: { jobPostingId: jobPosting.id }
+      });
+      throw error;
+    }
+  }, [jobPosting]);
+
 
   // 수당 편집 모달 열기
   const openEditModal = useCallback((data: any) => {
@@ -531,8 +565,22 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
               {(summary?.totalAmount || 0).toLocaleString('ko-KR')}원
             </p>
           </div>
+          {payrollData.some(data => data.afterTaxAmount !== undefined && data.afterTaxAmount > 0) && (
+            <>
+              <div className="h-10 w-px bg-gray-200"></div>
+              <div className="text-center">
+                <h3 className="text-xs font-medium text-gray-500 mb-1">세후 급여 합계</h3>
+                <p className="text-xl font-bold text-green-600">
+                  {payrollData
+                    .filter(data => data.afterTaxAmount !== undefined && data.afterTaxAmount > 0)
+                    .reduce((sum, data) => sum + (data.afterTaxAmount || 0), 0)
+                    .toLocaleString('ko-KR')}원
+                </p>
+              </div>
+            </>
+          )}
         </div>
-        
+
       </div>
 
       {/* 급여 설정 */}
@@ -549,6 +597,12 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         onApply={applyBulkAllowances}
         selectedStaffCount={selectedStaffIds.length}
         jobPostingBenefits={jobPosting?.benefits}
+      />
+
+      {/* 세금 설정 */}
+      <TaxSettingsPanel
+        jobPosting={jobPosting || null}
+        onUpdate={updateTaxSettings}
       />
 
       {/* 상세 내역 테이블 */}
@@ -596,12 +650,15 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   총 지급액
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  세후 급여
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {staffWorkData.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
                     정산 데이터가 없습니다.
                   </td>
                 </tr>
@@ -656,6 +713,11 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {data.totalAmount.toLocaleString('ko-KR')}원
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                        {data.afterTaxAmount !== undefined && data.afterTaxAmount > 0
+                          ? `${data.afterTaxAmount.toLocaleString('ko-KR')}원`
+                          : '-'}
                       </td>
                     </tr>
                   );

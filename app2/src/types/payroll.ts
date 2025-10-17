@@ -57,17 +57,17 @@ export interface EnhancedPayrollCalculation {
   role: string;  // 기존 호환성 유지 (주요 역할)
   roles?: string[];  // 모든 역할 배열
   phone?: string;
-  
+
   // 근무 정보 (자동 계산) - UnifiedWorkLog 타입 사용
   workLogs: UnifiedWorkLog[];
   totalHours: number;       // 총 근무시간
   totalDays: number;        // 총 근무일수
   overtimeHours?: number;   // 초과 근무시간
-  
+
   // 급여 정보 (공고에서 자동 로드)
   salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
   baseSalary: number;       // 기본 급여 (시급/일급/월급)
-  
+
   // 수당 정보 (개별 편집 가능)
   allowances: {
     meal: number;           // 식비 (계산된 총액)
@@ -86,16 +86,21 @@ export interface EnhancedPayrollCalculation {
     workDays?: number;      // 적용된 근무일수
     isManualEdit?: boolean; // 수동 편집 여부
   };
-  
+
   // 계산 결과
   basePay: number;         // 기본급 (시간/일수 × 기본급여)
   allowanceTotal: number;  // 수당 합계
-  totalAmount: number;     // 총 지급액
-  
+  totalAmount: number;     // 총 지급액 (세전)
+
+  // 세금 정보
+  tax?: number;            // 세금 금액
+  taxRate?: number;        // 세율 (%)
+  afterTaxAmount?: number; // 세후 급여
+
   // 역할별 급여 정보 (다중 역할 지원)
   rolePayrollInfo?: Map<string, RolePayrollInfo>;
   totalBasePay?: number;   // 모든 역할 기본급 합계
-  
+
   // 메타 정보
   period: {
     start: string;

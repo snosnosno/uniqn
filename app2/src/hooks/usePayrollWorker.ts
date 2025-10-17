@@ -304,7 +304,7 @@ export const usePayrollWorker = () => {
         const defaultAllowances = calculateAllowances(params.jobPosting, totalDays);
         const allowances = staffAllowanceOverride || defaultAllowances;
 
-        const allowanceTotal = 
+        const allowanceTotal =
           allowances.meal +
           allowances.transportation +
           allowances.accommodation +
@@ -312,6 +312,26 @@ export const usePayrollWorker = () => {
           allowances.other;
 
         const totalAmount = basePay + allowanceTotal;
+
+        // 세금 계산
+        let tax = 0;
+        let taxRate: number | undefined;
+        let afterTaxAmount = totalAmount;
+
+        if (params.jobPosting?.taxSettings?.enabled) {
+          const taxSettings = params.jobPosting.taxSettings;
+
+          if (taxSettings.taxRate !== undefined && taxSettings.taxRate > 0) {
+            // 세율 기반 계산
+            taxRate = taxSettings.taxRate;
+            tax = Math.round(totalAmount * (taxRate / 100));
+          } else if (taxSettings.taxAmount !== undefined && taxSettings.taxAmount > 0) {
+            // 고정 세금
+            tax = taxSettings.taxAmount;
+          }
+
+          afterTaxAmount = totalAmount - tax;
+        }
 
         // EnhancedPayrollCalculation 객체 생성 - phone이 있을 때만 포함
         const payrollCalculation: EnhancedPayrollCalculation = {
@@ -328,6 +348,9 @@ export const usePayrollWorker = () => {
           basePay,
           allowanceTotal,
           totalAmount,
+          ...(tax > 0 && { tax }),  // 세금이 있을 때만 포함
+          ...(taxRate !== undefined && { taxRate }),  // 세율이 있을 때만 포함
+          ...(tax > 0 && { afterTaxAmount }),  // 세후 급여가 있을 때만 포함
           period: {
             start: params.startDate,
             end: params.endDate

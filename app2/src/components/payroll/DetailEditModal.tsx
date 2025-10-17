@@ -341,29 +341,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     }
   }, [staff, realTimeWorkLogs]);
 
-  const handleAmountChange = useCallback((type: AllowanceType, value: string) => {
-    const numValue = parseInt(value) || 0;
-    setAllowances(prev => ({
-      ...prev,
-      [type]: numValue,
-      isManualEdit: true // 수동으로 수정됨을 표시
-    }));
-  }, []);
-
-  const handleDescriptionChange = useCallback((value: string) => {
-    setAllowances(prev => ({
-      ...prev,
-      otherDescription: value,
-      isManualEdit: true // 수동으로 수정됨을 표시
-    }));
-  }, []);
-
-  const handleSave = useCallback(() => {
-    if (staff) {
-      onSave(staff, allowances);
-      onClose();
-    }
-  }, [staff, allowances, onSave, onClose]);
 
   const getTotalAllowances = useCallback(() => {
     return allowances.meal + 
@@ -477,13 +454,23 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                         {staff.basePay.toLocaleString('ko-KR')}
                       </span>
                     </div>
+                    {staff.tax !== undefined && staff.tax > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">세금:</span>
+                        <span className="text-sm text-gray-900">
+                          {staff.taxRate !== undefined && staff.taxRate > 0
+                            ? `${staff.taxRate}%`
+                            : '고정 세금'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">근무 요약</h4>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-gray-900">{staff.totalDays}</div>
                     <div className="text-xs text-gray-500">근무일수</div>
@@ -498,6 +485,19 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                     </div>
                     <div className="text-xs text-gray-500">총 지급액</div>
                   </div>
+                  {staff.afterTaxAmount !== undefined && staff.afterTaxAmount > 0 ? (
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-green-600">
+                        {staff.afterTaxAmount.toLocaleString('ko-KR')}
+                      </div>
+                      <div className="text-xs text-gray-500">세후 급여</div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-gray-400">-</div>
+                      <div className="text-xs text-gray-500">세후 급여</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -637,11 +637,11 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
               {/* 수당 설정 */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">🎁 수당 설정</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">🎁 수당 정보</h4>
 
                 {/* 일당 계산 정보 표시 */}
-                {allowances.dailyRates && allowances.workDays && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                {allowances.dailyRates && allowances.workDays ? (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-blue-800">일당 기반 계산</span>
                       <span className="text-sm text-blue-600">{allowances.workDays}일 근무</span>
@@ -665,6 +665,18 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                           <span>= {(allowances.dailyRates.accommodation * allowances.workDays).toLocaleString()}원</span>
                         </div>
                       )}
+                      {allowances.bonus > 0 && (
+                        <div className="flex justify-between">
+                          <span>보너스:</span>
+                          <span>{allowances.bonus.toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {allowances.other > 0 && (
+                        <div className="flex justify-between">
+                          <span>기타{allowances.otherDescription ? ` (${allowances.otherDescription})` : ''}:</span>
+                          <span>{allowances.other.toLocaleString()}원</span>
+                        </div>
+                      )}
                     </div>
                     {allowances.isManualEdit && (
                       <div className="mt-2 text-xs text-orange-600">
@@ -672,196 +684,37 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                       </div>
                     )}
                   </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    수당 정보가 없습니다.
+                  </div>
                 )}
 
-                <div className="space-y-3">
-                  {/* 식비 */}
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={allowances.meal > 0}
-                        onChange={(e) => {
-                          if (!e.target.checked) {
-                            handleAmountChange('meal', '0');
-                          } else if (allowances.meal === 0) {
-                            // 일당 기본값 × 근무일수로 계산
-                            const dailyAmount = allowances.dailyRates?.meal || 12000;
-                            const workDays = allowances.workDays || staff.totalDays;
-                            const totalAmount = dailyAmount * workDays;
-                            handleAmountChange('meal', totalAmount.toString());
-                          }
-                        }}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">식비</span>
-                      {allowances.dailyRates?.meal && allowances.workDays && (
-                        <span className="ml-2 text-xs text-blue-600">
-                          ({allowances.dailyRates.meal.toLocaleString()}원/일 × {allowances.workDays}일)
-                        </span>
-                      )}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={allowances.dailyRates?.meal && allowances.workDays ? allowances.dailyRates.meal : allowances.meal}
-                        onChange={(e) => {
-                          const inputValue = parseInt(e.target.value) || 0;
-                          const finalValue = allowances.dailyRates?.meal && allowances.workDays
-                            ? inputValue * allowances.workDays  // 일당 입력 시 총액으로 변환
-                            : inputValue;
-                          handleAmountChange('meal', finalValue.toString());
-                        }}
-                        disabled={allowances.meal === 0}
-                        className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                      />
-                      <span className="text-sm text-gray-500">원</span>
-                    </div>
-                  </div>
-
-                  {/* 교통비 */}
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={allowances.transportation > 0}
-                        onChange={(e) => {
-                          if (!e.target.checked) {
-                            handleAmountChange('transportation', '0');
-                          } else if (allowances.transportation === 0) {
-                            // 일당 기본값 × 근무일수로 계산
-                            const dailyAmount = allowances.dailyRates?.transportation || 6000;
-                            const workDays = allowances.workDays || staff.totalDays;
-                            const totalAmount = dailyAmount * workDays;
-                            handleAmountChange('transportation', totalAmount.toString());
-                          }
-                        }}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">교통비</span>
-                      {allowances.dailyRates?.transportation && allowances.workDays && (
-                        <span className="ml-2 text-xs text-blue-600">
-                          ({allowances.dailyRates.transportation.toLocaleString()}원/일 × {allowances.workDays}일)
-                        </span>
-                      )}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={allowances.dailyRates?.transportation && allowances.workDays ? allowances.dailyRates.transportation : allowances.transportation}
-                        onChange={(e) => {
-                          const inputValue = parseInt(e.target.value) || 0;
-                          const finalValue = allowances.dailyRates?.transportation && allowances.workDays
-                            ? inputValue * allowances.workDays  // 일당 입력 시 총액으로 변환
-                            : inputValue;
-                          handleAmountChange('transportation', finalValue.toString());
-                        }}
-                        disabled={allowances.transportation === 0}
-                        className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                      />
-                      <span className="text-sm text-gray-500">원</span>
-                    </div>
-                  </div>
-
-                  {/* 숙소비 */}
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={allowances.accommodation > 0}
-                        onChange={(e) => {
-                          if (!e.target.checked) {
-                            handleAmountChange('accommodation', '0');
-                          } else if (allowances.accommodation === 0) {
-                            handleAmountChange('accommodation', '50000');
-                          }
-                        }}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">숙소비</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={allowances.accommodation}
-                        onChange={(e) => handleAmountChange('accommodation', e.target.value)}
-                        disabled={allowances.accommodation === 0}
-                        className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                      />
-                      <span className="text-sm text-gray-500">원</span>
-                    </div>
-                  </div>
-
-                  {/* 보너스 */}
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={allowances.bonus > 0}
-                        onChange={(e) => {
-                          if (!e.target.checked) {
-                            handleAmountChange('bonus', '0');
-                          } else if (allowances.bonus === 0) {
-                            handleAmountChange('bonus', '50000');
-                          }
-                        }}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">보너스</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={allowances.bonus}
-                        onChange={(e) => handleAmountChange('bonus', e.target.value)}
-                        disabled={allowances.bonus === 0}
-                        className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                      />
-                      <span className="text-sm text-gray-500">원</span>
-                    </div>
-                  </div>
-
-                  {/* 기타 */}
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <label className="flex items-center mb-2">
-                      <input
-                        type="checkbox"
-                        checked={allowances.other > 0}
-                        onChange={(e) => {
-                          if (!e.target.checked) {
-                            handleAmountChange('other', '0');
-                            handleDescriptionChange('');
-                          } else if (allowances.other === 0) {
-                            handleAmountChange('other', '10000');
-                          }
-                        }}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">기타</span>
-                    </label>
-                    {allowances.other > 0 && (
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          value={allowances.otherDescription}
-                          onChange={(e) => handleDescriptionChange(e.target.value)}
-                          placeholder="기타 수당 설명"
-                          className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={allowances.other}
-                            onChange={(e) => handleAmountChange('other', e.target.value)}
-                            className="w-28 px-2 py-1 text-sm text-right border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                          />
-                          <span className="text-sm text-gray-500">원</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="mt-3 text-xs text-gray-500">
+                  💡 수당은 정산 탭의 '추가 수당 설정'에서 일괄 관리할 수 있습니다.
                 </div>
               </div>
+
+              {/* 세금 설정 */}
+              {staff.tax !== undefined && staff.tax > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">💸 세금 설정</h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {staff.taxRate !== undefined && staff.taxRate > 0
+                            ? `세율 (${staff.taxRate}%)`
+                            : '세금'}
+                        </span>
+                        <span className="text-red-600 font-medium">
+                          -{staff.tax.toLocaleString('ko-KR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 총 계산 */}
               <div className="bg-indigo-50 rounded-lg p-4">
@@ -878,12 +731,28 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                       {getTotalAllowances().toLocaleString('ko-KR')}
                     </span>
                   </div>
+                  {staff.tax !== undefined && staff.tax > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">세금</span>
+                      <span className="text-red-600">
+                        -{staff.tax.toLocaleString('ko-KR')}
+                      </span>
+                    </div>
+                  )}
                   <div className="border-t border-indigo-200 pt-2 flex justify-between">
                     <span className="text-base font-medium text-gray-800">총 지급액</span>
                     <span className="text-lg font-bold text-indigo-600">
                       {getTotalAmount().toLocaleString('ko-KR')}
                     </span>
                   </div>
+                  {staff.afterTaxAmount !== undefined && staff.afterTaxAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-base font-medium text-green-700">세후 급여</span>
+                      <span className="text-lg font-bold text-green-600">
+                        {staff.afterTaxAmount.toLocaleString('ko-KR')}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -894,15 +763,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
         <div className="flex justify-end gap-3 pt-6 border-t">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-          >
-            취소
-          </button>
-          <button
-            onClick={handleSave}
             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            수당 저장
+            닫기
           </button>
         </div>
       </div>
