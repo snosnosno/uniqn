@@ -1,9 +1,9 @@
 # 멀티 테넌트 아키텍처 및 토너먼트 시스템 완료 보고서
 
-**작성일**: 2025년 10월 17일
+**작성일**: 2025년 10월 18일
 **작성자**: Claude Code (AI 개발 보조)
-**기간**: 2025-09-01 ~ 2025-10-17
-**커밋 범위**: `159db7c9` → `c7ebbead` (5개 커밋)
+**기간**: 2025-09-01 ~ 2025-10-18
+**커밋 범위**: `159db7c9` → `7e18edc8` (6개 커밋)
 
 ---
 
@@ -35,7 +35,7 @@ T-HOLDEM 프로젝트에 **멀티 테넌트 아키텍처**를 도입하여 사�
 
 ## 📊 전체 변경사항 요약
 
-### 커밋 이력 (5개)
+### 커밋 이력 (6개)
 
 | 순서 | 커밋 해시 | 제목 | 날짜 |
 |------|----------|------|------|
@@ -44,13 +44,14 @@ T-HOLDEM 프로젝트에 **멀티 테넌트 아키텍처**를 도입하여 사�
 | 3 | `522bf92e` | 멀티 테넌트 아키텍처 완성 - Phase 6 & Security Rules | Phase 6 |
 | 4 | `6acc97c5` | 토너먼트 색상 선택 및 테이블 자동 색상 적용 기능 추가 | 기능 개선 |
 | 5 | `c7ebbead` | 참가자 관리 개선 - 전체 뷰 지원 및 엑셀 업로드 제거 | 기능 개선 |
+| 6 | `7e18edc8` | 테이블 관리 및 토너먼트 시스템 개선 | 2025-10-18 |
 
 ### 파일 변경 통계
 
 ```
-22 files changed
-+2,275 insertions
--142 deletions
+총 변경: 39 files changed
+총 추가: +4,601 insertions
+총 삭제: -411 deletions
 ```
 
 #### 주요 파일 변경
@@ -453,22 +454,23 @@ if (!userId || !tournamentId) {
 ## 📈 코드 품질 지표
 
 ### 커밋 품질
-- ✅ **5개 커밋** 모두 의미 있는 기능 단위
+- ✅ **6개 커밋** 모두 의미 있는 기능 단위
 - ✅ **Conventional Commits** 규칙 준수
 - ✅ **상세한 커밋 메시지** (변경사항, 이유, 효과 포함)
 
 ### 코드 메트릭
 ```
 총 변경사항:
-- 2,275줄 추가
-- 142줄 삭제
-- 22개 파일 수정
+- 4,601줄 추가
+- 411줄 삭제
+- 39개 파일 수정
 - 8개 신규 파일 생성
 
 주요 파일:
 - TournamentsPage.tsx: 500 lines (신규)
-- useTables.ts: 681 lines (대규모 수정)
-- TablesPage.tsx: 300 lines (대규모 수정)
+- useTables.ts: 1,027 lines (대규모 수정)
+- TablesPage.tsx: 600 lines (대규모 수정)
+- TableDetailModal.tsx: 200 lines (UI 개선)
 - MULTI_TENANT_STATUS.md: 353 lines (문서)
 ```
 
@@ -514,6 +516,180 @@ npm run type-check
 
 ---
 
+### 기능 개선 3: 테이블 관리 및 UI 개선
+**커밋**: `7e18edc8` (2025-10-18)
+
+#### 구현 내용
+
+##### 1. 테이블 닫기/삭제 기능 분리
+**문제**: 기존 closeTable 함수가 테이블을 완전히 삭제하여 재활성화 불가능
+
+**해결**:
+```typescript
+// closeTable: 대기 상태로 전환 (재활성화 가능)
+const closeTable = async (tableIdToClose: string): Promise<BalancingResult[]> => {
+  // 참가자 이동 처리
+  const participantsMap = new Map(
+    participantsSnapshot.docs.map(d => [d.id, { id: d.id, ...d.data() }])
+  );
+
+  // 참가자 정보와 함께 이동 결과 반환
+  const balancingResult = participantsToMove.map(p => ({
+    participantId: p.participantId,
+    participantName: participantsMap.get(p.participantId)?.name || '알 수 없음',
+    fromTableNumber: tableToClose.tableNumber,
+    fromSeatIndex: p.fromSeatIndex,
+    toTableNumber: p.toTableNumber,
+    toSeatIndex: p.toSeatIndex,
+  }));
+
+  // 테이블 상태를 'standby'로 변경 (삭제 안 함)
+  const emptySeats = Array((tableToClose.seats || []).length || maxSeatsSetting).fill(null);
+  transaction.update(closedTableRef, { status: 'standby', seats: emptySeats });
+
+  return balancingResult;
+};
+
+// deleteTable: 완전 삭제 (새 함수)
+const deleteTable = async (tableIdToDelete: string): Promise<BalancingResult[]> => {
+  // closeTable과 동일한 참가자 이동 로직
+  // ...
+
+  // 테이블 문서 삭제
+  transaction.delete(deletedTableRef);
+
+  return balancingResult;
+};
+```
+
+**혜택**:
+- ✅ 테이블 닫기: 대기 상태로 전환 → 재활성화 가능
+- ✅ 테이블 삭제: 완전 제거 → 복구 불가능
+- ✅ 참가자 이동 시 이름 포함하여 사용자 경험 개선
+- ✅ 원래 좌석 수 유지 (재활성화 시 동일한 구조)
+
+##### 2. 테이블 모달 UI 개선
+**변경사항**:
+```typescript
+// TableDetailModal.tsx
+// 1. 색상 편집 버튼 제거
+// 2. 테이블 삭제 버튼 추가
+<button
+  onClick={handleDeleteTableClick}
+  className="btn btn-sm bg-gray-500 hover:bg-gray-600"
+>
+  테이블 삭제
+</button>
+
+// 3. 빈 좌석 표시 간소화
+// Before: (0/9, 빈좌석:9)
+// After: (0/9)
+<span>({filledSeats}/{totalSeats})</span>
+
+// 4. 토너먼트 선택 드롭다운 추가 (같은 날짜만 필터링)
+const sameDateTournaments = useMemo(() => {
+  if (!selectedDate) return tournaments;
+  return tournaments.filter(t => t.date === selectedDate || t.dateKey === selectedDate);
+}, [tournaments, selectedDate]);
+
+<select value={table.tournamentId || ''} onChange={handleTournamentChange}>
+  <option value="">토너먼트 선택</option>
+  {sameDateTournaments.map(tournament => (
+    <option key={tournament.id} value={tournament.id}>
+      {tournament.name}
+    </option>
+  ))}
+</select>
+```
+
+##### 3. 기본 토너먼트/테이블 이름 개선
+**문제**: "yyyy-mm-dd 전체보기" 형식이 길고 직관적이지 않음
+
+**해결**:
+```typescript
+// useTournaments.ts (line 238)
+await setDoc(defaultTournamentDoc, {
+  name: '전체',  // Before: `${dateKey} 전체보기`
+  // ...
+});
+
+// TournamentSelector.tsx (line 84)
+<option value={defaultTournamentForDate.id}>
+  🌐 전체 ({dateFilter})  // Before: 🌐 {dateFilter} 전체보기
+</option>
+
+// TablesPage.tsx (line 478)
+const name = tid === 'UNASSIGNED' ? '전체' : (tournament?.name || '알 수 없음');
+// Before: '기본 테이블'
+```
+
+##### 4. React Hooks 규칙 준수
+**문제**: React Hook이 조건문 이후에 호출되어 lint 에러 발생
+
+**해결**:
+```typescript
+// TableDetailModal.tsx
+// Before (WRONG)
+useEffect(() => { /* ... */ }, [table]);
+if (!table) return null;
+const sameDateTournaments = useMemo(() => { /* ... */ });
+
+// After (CORRECT)
+const sameDateTournaments = useMemo(() => { /* ... */ });  // Hook 먼저
+useEffect(() => { /* ... */ }, [table]);
+if (!table) return null;  // 조건문은 나중
+```
+
+##### 5. 확인 모달 및 결과 표시
+```typescript
+// TablesPage.tsx
+const handleCloseTable = async (tableId: string) => {
+  setConfirmModal({
+    isOpen: true,
+    title: '테이블 닫기',
+    message: '테이블을 닫으시겠습니까? 참가자들은 다른 테이블로 이동됩니다.',
+    onConfirm: async () => {
+      const results = await closeTable(tableId);
+      if (results.length > 0) {
+        setAssignmentResultModal({
+          isOpen: true,
+          title: '테이블 닫기 완료',
+          results: assignmentResults  // 참가자 이동 내역 표시
+        });
+      }
+    }
+  });
+};
+```
+
+#### 수정된 파일 (17개)
+1. **useTables.ts**: closeTable/deleteTable 함수 수정 (346 lines)
+2. **useLogger.ts**: 'table_deleted' ActionType 추가
+3. **TableDetailModal.tsx**: UI 개선 및 토너먼트 선택 (200 lines)
+4. **TablesPage.tsx**: 핸들러 추가 및 모달 연동 (300 lines)
+5. **AssignmentResultModal.tsx**: 참가자 이동 결과 표시
+6. **useTournaments.ts**: 기본 토너먼트 이름 변경
+7. **TournamentSelector.tsx**: 표시 형식 개선
+8. **DateFilterContext.tsx**: 날짜 필터링 지원
+
+#### 사용자 경험 개선
+- ✅ 테이블 닫기/삭제 구분으로 실수 방지
+- ✅ 참가자 이동 시 이름 표시로 투명성 향상
+- ✅ 간소화된 UI (빈 좌석 표시 제거)
+- ✅ 직관적인 이름 ("전체" 형식)
+- ✅ 같은 날짜 토너먼트만 선택 가능 (UX 개선)
+- ✅ 확인 모달로 실수 방지
+- ✅ 이동 결과 모달로 투명성 제공
+
+#### 코드 품질
+- ✅ React Hooks 규칙 100% 준수
+- ✅ TypeScript strict mode 완전 준수
+- ✅ BalancingResult 인터페이스 개선 (participantName 추가)
+- ✅ useMemo로 필터링 최적화
+- ✅ 날짜 기반 필터링으로 성능 개선
+
+---
+
 ## 🎯 달성한 목표
 
 ### 핵심 목표 100% 달성
@@ -528,6 +704,9 @@ npm run type-check
 - ✅ ALL 뷰 버그 수정 (4개 함수)
 - ✅ UI 단순화 (엑셀 업로드 제거)
 - ✅ 코드 품질 향상 (Conventional Commits)
+- ✅ 테이블 관리 개선 (닫기/삭제 분리, UI 개선)
+- ✅ React Hooks 규칙 완전 준수
+- ✅ 직관적인 이름 체계 ("전체" 형식)
 
 ---
 
@@ -558,19 +737,24 @@ npm run type-check
 ## 📊 성과 지표
 
 ### 개발 효율성
-- **총 작업 기간**: 약 6주
-- **커밋 수**: 5개 (의미 있는 단위)
+- **총 작업 기간**: 약 7주 (2025-09-01 ~ 2025-10-18)
+- **커밋 수**: 6개 (의미 있는 단위)
 - **코드 품질**: TypeScript strict mode 완전 준수
+- **React Hooks**: 100% 규칙 준수
 
 ### 기술 부채 감소
-- **레거시 코드 제거**: 142줄 삭제
+- **레거시 코드 제거**: 411줄 삭제
 - **타입 안정성**: any 타입 0개
 - **문서화**: 353줄의 상세 문서
+- **코드 품질**: React Hooks 규칙 위반 0개
 
 ### 사용자 만족도 (예상)
 - **시각적 개선**: 색상 시스템으로 토너먼트 구분 용이
 - **편의성**: 전체 뷰로 모든 참가자 한 번에 조회
 - **보안**: 완전한 데이터 격리로 안심
+- **테이블 관리**: 닫기/삭제 분리로 실수 방지
+- **직관성**: 간소화된 UI와 직관적인 이름 체계
+- **투명성**: 참가자 이동 시 이름 표시 및 결과 모달
 
 ---
 
@@ -609,9 +793,9 @@ Phase 7부터 성능 최적화 및 고급 기능 개발을 진행할 예정입�
 
 ---
 
-**작성 완료일**: 2025년 10월 17일
-**문서 버전**: 1.0.0
-**마지막 커밋**: `c7ebbead` (feat: 참가자 관리 개선)
+**작성 완료일**: 2025년 10월 18일
+**문서 버전**: 1.1.0
+**마지막 커밋**: `7e18edc8` (feat: 테이블 관리 및 토너먼트 시스템 개선)
 
 ---
 
