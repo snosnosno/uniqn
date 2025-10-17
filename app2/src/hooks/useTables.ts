@@ -28,8 +28,6 @@ export interface BalancingResult {
   toSeatIndex: number;
 }
 
-const tablesCollection = collection(db, 'tables');
-
 const shuffleArray = <T>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -48,14 +46,20 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
   const [maxSeatsSetting, setMaxSeatsSetting] = useState<number>(9);
 
   useEffect(() => {
-    const settingsDocRef = doc(db, 'tournaments', 'settings');
+    if (!userId || !tournamentId) {
+      setLoading(false);
+      return;
+    }
+
+    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'config');
     const unsubscribeSettings = onSnapshot(settingsDocRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().maxSeatsPerTable) {
             setMaxSeatsSetting(docSnap.data().maxSeatsPerTable);
         }
     });
 
-    const unsubscribeTables = onSnapshot(tablesCollection,
+    const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+    const unsubscribeTables = onSnapshot(tablesCollectionRef,
       (snapshot) => {
         const tablesData = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
           id: doc.id,
@@ -74,10 +78,11 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
         unsubscribeSettings();
         unsubscribeTables();
     };
-  }, []);
+  }, [userId, tournamentId]);
   
   const updateTableDetails = useCallback(async (tableId: string, data: { name?: string; borderColor?: string }) => {
-    const tableRef = doc(db, 'tables', tableId);
+    if (!userId || !tournamentId) return;
+    const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
     try {
       await updateDoc(tableRef, data);
       logAction('table_details_updated', { tableId, ...data });
@@ -87,10 +92,11 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
       setError(e as Error);
       toast.error('테이블 정보 업데이트 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const updateTablePosition = useCallback(async (tableId: string, position: { x: number; y: number }) => {
-    const tableRef = doc(db, 'tables', tableId);
+    if (!userId || !tournamentId) return;
+    const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
     try {
       await updateDoc(tableRef, { position });
     } catch (e) {
@@ -98,12 +104,13 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
       setError(e as Error);
       toast.error('테이블 위치 업데이트 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const updateTableOrder = useCallback(async (tables: Table[]) => {
+    if (!userId || !tournamentId) return;
     const batch = writeBatch(db);
     tables.forEach((table, index) => {
-        const tableRef = doc(db, 'tables', table.id);
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, table.id);
         batch.update(tableRef, { tableNumber: index });
     });
     try {
@@ -114,9 +121,10 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
         setError(e as Error);
         toast.error('테이블 순서 업데이트 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const openNewTable = useCallback(async () => {
+    if (!userId || !tournamentId) return;
     setLoading(true);
     try {
       const maxTableNumber = tables.reduce((max, table) => Math.max(max, table.tableNumber), 0);
@@ -127,7 +135,8 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
         status: 'standby' as const,
         position: { x: 10, y: 10 + (tables.length * 40) },
       };
-      const docRef = await addDoc(tablesCollection, newTable);
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const docRef = await addDoc(tablesCollectionRef, newTable);
       logAction('table_created_standby', { tableId: docRef.id, tableNumber: newTable.tableNumber, maxSeats: maxSeatsSetting });
     } catch (e) {
       logger.error('Error opening new table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
@@ -136,10 +145,11 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     } finally {
       setLoading(false);
     }
-  }, [tables, maxSeatsSetting]);
+  }, [userId, tournamentId, tables, maxSeatsSetting]);
 
   const activateTable = useCallback(async (tableId: string) => {
-    const tableRef = doc(db, 'tables', tableId);
+    if (!userId || !tournamentId) return;
+    const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
     try {
       await updateDoc(tableRef, { status: 'open' });
       logAction('table_activated', { tableId });
@@ -148,16 +158,18 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
       setError(e as Error);
       toast.error('테이블 활성화 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
   
   const closeTable = useCallback(async (tableIdToClose: string): Promise<BalancingResult[]> => {
+    if (!userId || !tournamentId) return [];
     setLoading(true);
     try {
       const balancingResult: BalancingResult[] = [];
       const movedParticipantsDetails: any[] = [];
 
       const transactionResult = await runTransaction(db, async (transaction) => {
-        const tablesSnapshot = await getDocs(tablesCollection);
+        const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+        const tablesSnapshot = await getDocs(tablesCollectionRef);
         const allTables: Table[] = tablesSnapshot.docs
           .map(d => ({ id: d.id, ...d.data() } as Table));
 
@@ -173,7 +185,7 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
             .filter(item => item.pId !== null) as { pId: string, fromSeatIndex: number }[];
 
         if (participantsToMove.length === 0) {
-            const tableRef = doc(db, 'tables', tableIdToClose);
+            const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableIdToClose);
             transaction.delete(tableRef);
             logAction('table_closed', { tableId: tableIdToClose, tableNumber: tableToClose.tableNumber, movedParticipantsCount: 0 });
             return;
@@ -227,11 +239,11 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
         }
         
         mutableOpenTables.forEach(t => {
-            const tableRef = doc(db, 'tables', t.id);
+            const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, t.id);
             transaction.update(tableRef, { seats: t.seats });
         });
 
-        const closedTableRef = doc(db, 'tables', tableIdToClose);
+        const closedTableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableIdToClose);
         transaction.delete(closedTableRef);
         
         logAction('table_closed', { 
@@ -261,9 +273,10 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     } finally {
       setLoading(false);
     }
-  }, [maxSeatsSetting]);
+  }, [userId, tournamentId, maxSeatsSetting]);
   
   const rebalanceAndAssignAll = useCallback(async (participants: Participant[]) => {
+    if (!userId || !tournamentId) return;
     if (participants.length === 0) {
         toast.warning("배정할 참가자가 없습니다.");
         return;
@@ -271,8 +284,9 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     setLoading(true);
     try {
       const batch = writeBatch(db);
-      const tablesSnapshot = await getDocs(tablesCollection);
-      
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const tablesSnapshot = await getDocs(tablesCollectionRef);
+
       const openTables: Table[] = tablesSnapshot.docs
         .map(d => ({id: d.id, ...d.data()} as Table))
         .filter(t => t.status === 'open');
@@ -327,10 +341,10 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
       }
 
       for (const tableId in newTableSeatArrays) {
-          const tableRef = doc(db, 'tables', tableId);
+          const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
           batch.update(tableRef, { seats: newTableSeatArrays[tableId] });
       }
-      
+
       await batch.commit();
 
       logAction('seats_reassigned_with_balancing', { participantsCount: participants.length, tableCount: openTables.length });
@@ -347,20 +361,21 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     } finally {
       setLoading(false);
     }
-  }, [maxSeatsSetting]);
+  }, [userId, tournamentId, maxSeatsSetting]);
 
   const moveSeat = useCallback(async (
     participantId: string,
     from: { tableId: string; seatIndex: number },
     to: { tableId: string; seatIndex: number }
   ) => {
+    if (!userId || !tournamentId) return;
     if (from.tableId === to.tableId && from.seatIndex === to.seatIndex) return;
 
     try {
         await runTransaction(db, async (transaction) => {
             if (from.tableId === to.tableId) {
                 // Same table move
-                const tableRef = doc(db, 'tables', from.tableId);
+                const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, from.tableId);
                 const tableSnap = await transaction.get(tableRef);
                 if (!tableSnap.exists()) {
                   logger.error('Table not found during seat move', new Error('Table not found'), { component: 'useTables' });
@@ -374,16 +389,16 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
                   toast.error('해당 좌석에 이미 참가자가 있습니다.');
                   return;
                 }
-                
+
                 seats[to.seatIndex] = participantId;
                 seats[from.seatIndex] = null;
-                
+
                 transaction.update(tableRef, { seats });
 
             } else {
                 // Different table move
-                const fromTableRef = doc(db, 'tables', from.tableId);
-                const toTableRef = doc(db, 'tables', to.tableId);
+                const fromTableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, from.tableId);
+                const toTableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, to.tableId);
 
                 const [fromTableSnap, toTableSnap] = await Promise.all([
                     transaction.get(fromTableRef),
@@ -395,7 +410,7 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
                     toast.error('테이블 정보를 찾을 수 없습니다.');
                     return;
                 }
-                
+
                 const fromSeats = [...fromTableSnap.data().seats];
                 const toSeats = [...toTableSnap.data().seats];
 
@@ -407,7 +422,7 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
 
                 fromSeats[from.seatIndex] = null;
                 toSeats[to.seatIndex] = participantId;
-                
+
                 transaction.update(fromTableRef, { seats: fromSeats });
                 transaction.update(toTableRef, { seats: toSeats });
             }
@@ -421,17 +436,18 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
         setError(e as Error);
         toast.error('좌석 이동 중 오류가 발생했습니다.');
     }
-  }, [tables]);
+  }, [userId, tournamentId, tables]);
 
   const bustOutParticipant = useCallback(async (participantId: string) => {
+    if (!userId || !tournamentId) return;
     try {
       await runTransaction(db, async (transaction) => {
-        const participantRef = doc(db, 'participants', participantId);
+        const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
         transaction.update(participantRef, { status: 'busted' });
 
         const table = tables.find(t => (t.seats || []).includes(participantId));
         if (table) {
-          const tableRef = doc(db, 'tables', table.id);
+          const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, table.id);
           const newSeats = (table.seats || []).map(seat => seat === participantId ? null : seat);
           transaction.update(tableRef, { seats: newSeats });
         }
@@ -442,12 +458,13 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
       setError(e as Error);
       toast.error('참가자 탈락 처리 중 오류가 발생했습니다.');
     }
-  }, [tables]);
+  }, [userId, tournamentId, tables]);
 
   const updateTableMaxSeats = useCallback(async (tableId: string, newMaxSeats: number, getParticipantName: (id: string) => string) => {
+    if (!userId || !tournamentId) return;
     try {
       await runTransaction(db, async (transaction) => {
-        const tableRef = doc(db, 'tables', tableId);
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
         const tableSnap = await transaction.get(tableRef);
         if (!tableSnap.exists()) {
           logger.error('Table not found for max seats update', new Error('Table not found'), { component: 'useTables' });
@@ -487,9 +504,10 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
       setError(e as Error);
       toast.error('최대 좌석 수 변경 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const autoBalanceByChips = useCallback(async (participants: Participant[]) => {
+    if (!userId || !tournamentId) return;
     // 활성 참가자만 필터링
     const activeParticipants = participants.filter(p => p.status === 'active');
     if (activeParticipants.length === 0) {
@@ -500,7 +518,8 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     setLoading(true);
     try {
       const batch = writeBatch(db);
-      const tablesSnapshot = await getDocs(tablesCollection);
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const tablesSnapshot = await getDocs(tablesCollectionRef);
 
       const openTables: Table[] = tablesSnapshot.docs
         .map(d => ({id: d.id, ...d.data()} as Table))
@@ -623,12 +642,12 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
           }
         });
 
-        const tableRef = doc(db, 'tables', table.id);
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, table.id);
         batch.update(tableRef, { seats: newSeats });
       }
-      
+
       await batch.commit();
-      
+
       // Smart Balance 결과 로깅
       const balanceInfo = tableStates.map(state => ({
         tableNumber: state.tableNumber,
@@ -672,7 +691,7 @@ export const useTables = (userId: string | null, tournamentId: string | null) =>
     } finally {
       setLoading(false);
     }
-  }, [maxSeatsSetting]);
+  }, [userId, tournamentId, maxSeatsSetting]);
 
   return { tables, setTables, loading, error, maxSeatsSetting, updateTableDetails, openNewTable, activateTable, closeTable, autoAssignSeats: rebalanceAndAssignAll, autoBalanceByChips, moveSeat, bustOutParticipant, updateTablePosition, updateTableOrder, updateTableMaxSeats };
 };
