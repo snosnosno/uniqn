@@ -9,7 +9,6 @@ import { toast } from '../utils/toast';
 import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import CSVUploadButton from '../components/upload/CSVUploadButton';
 import TournamentSelector from '../components/TournamentSelector';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
@@ -147,19 +146,6 @@ const ParticipantsPage: React.FC = () => {
     await batch.commit();
   };
 
-  // CSV 파일 내용 처리
-  const handleCSVContent = (content: string) => {
-    setIsBulkModalOpen(true);
-    // BulkAddParticipantsModal에서 content를 처리할 수 있도록
-    // 모달이 열리면 자동으로 텍스트 영역에 입력됨
-    setTimeout(() => {
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        textarea.value = content;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    }, 100);
-  };
 
   // 선택 삭제 함수
   const handleDeleteSelected = () => {
@@ -306,8 +292,9 @@ const ParticipantsPage: React.FC = () => {
           <button
             onClick={() => setIsBulkModalOpen(true)}
             className="btn btn-secondary flex items-center gap-2"
-            disabled={isDeleting || isModalOpen || isBulkModalOpen}
+            disabled={isDeleting || isModalOpen || isBulkModalOpen || state.tournamentId === 'ALL'}
             tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+            title={state.tournamentId === 'ALL' ? '전체 토너먼트 뷰에서는 참가자를 추가할 수 없습니다.' : ''}
           >
             <FaPlus className="w-4 h-4" />
             대량 추가
@@ -315,16 +302,15 @@ const ParticipantsPage: React.FC = () => {
           <button
             onClick={() => handleOpenModal(null)}
             className="btn btn-primary flex items-center gap-2"
-            disabled={isDeleting || isModalOpen || isBulkModalOpen}
+            disabled={isDeleting || isModalOpen || isBulkModalOpen || state.tournamentId === 'ALL'}
             tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+            title={state.tournamentId === 'ALL' ? '전체 토너먼트 뷰에서는 참가자를 추가할 수 없습니다.' : ''}
           >
             <FaPlus className="w-4 h-4" />
             참가자 추가
           </button>
         </div>
         <div className="flex gap-2 items-center">
-          <CSVUploadButton onFileRead={handleCSVContent} disabled={isDeleting || isModalOpen || isBulkModalOpen} />
-          <span className="text-gray-400">|</span>
           <button
             onClick={handleExportParticipants}
             className="btn btn-primary"

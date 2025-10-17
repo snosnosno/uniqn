@@ -5,6 +5,10 @@ import {
   doc,
   getDocs,
   runTransaction,
+  collectionGroup,
+  onSnapshot,
+  DocumentData,
+  QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { useState, useEffect } from 'react';
@@ -29,6 +33,7 @@ export interface Participant {
   addOns?: number;
   playerIdentifier?: string;
   participationMethod?: string;
+  tournamentId?: string | null; // 소속 토너먼트 ID (전체 보기 기능용)
 }
 
 /**
@@ -52,9 +57,56 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
       return;
     }
 
+    // "ALL" 전체 보기 모드
+    if (tournamentId === 'ALL') {
+      // collectionGroup으로 모든 토너먼트의 참가자 조회
+      const participantsGroupRef = collectionGroup(db, 'participants');
+
+      const unsubscribe = onSnapshot(
+        participantsGroupRef,
+        (snapshot) => {
+          const participantsData = snapshot.docs
+            .map((doc: QueryDocumentSnapshot<DocumentData>) => {
+              const data = doc.data();
+              // tournamentId 추출 (path: users/{userId}/tournaments/{tournamentId}/participants/{participantId})
+              const pathParts = doc.ref.path.split('/');
+              const extractedTournamentId = pathParts[3] || null;
+
+              // 현재 사용자의 참가자만 필터링
+              const pathUserId = pathParts[1];
+              if (pathUserId !== userId) return null;
+
+              return {
+                id: doc.id,
+                ...data,
+                tournamentId: extractedTournamentId, // 어느 토너먼트 소속인지 저장
+              } as Participant;
+            })
+            .filter((participant): participant is Participant => participant !== null);
+
+          setParticipants(participantsData);
+          setLoading(false);
+          logger.info('전체 참가자 목록 로드 완료', {
+            component: 'useParticipants',
+            data: { userId, count: participantsData.length },
+          });
+        },
+        (err) => {
+          setError(err);
+          setLoading(false);
+          logger.error('전체 참가자 목록 구독 실패:', err, { component: 'useParticipants' });
+        }
+      );
+
+      return () => {
+        unsubscribe();
+      };
+    }
+
+    // 일반 모드 (특정 토너먼트)
     // 멀티 테넌트 경로: users/{userId}/tournaments/{tournamentId}/participants
     const participantsPath = `users/${userId}/tournaments/${tournamentId}/participants`;
-    
+
     const unsubscribe = safeOnSnapshot<Participant>(
       participantsPath,
       (participantsData) => {
