@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 import { logger } from '../utils/logger';
 interface GroupByDateOptions<T> {
@@ -18,14 +18,14 @@ interface GroupedData<T> {
 interface UseGroupByDateReturn<T> {
   // 그룹화된 데이터
   groupedData: GroupedData<T>;
-  
+
   // 확장 상태
   expandedKeys: Set<string>;
   isExpanded: (key: string) => boolean;
   toggleExpansion: (key: string) => void;
   expandAll: () => void;
   collapseAll: () => void;
-  
+
   // 유틸리티
   getItemCount: (key: string) => number;
   getTotalItems: () => number;
@@ -44,38 +44,45 @@ export const useGroupByDate = <T>(
   } = options;
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const isInitializedRef = useRef(false);
 
-  // localStorage에서 확장 상태 복원
+  // localStorage에서 확장 상태 복원 (마운트 시 한 번만)
   useEffect(() => {
+    if (isInitializedRef.current) return;
+
     if (storageKey) {
       const savedExpanded = localStorage.getItem(storageKey);
       if (savedExpanded) {
         try {
           const expandedArray = JSON.parse(savedExpanded);
           setExpandedKeys(new Set(expandedArray));
+          isInitializedRef.current = true;
         } catch (error) {
           logger.error('확장 상태 복원 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useGroupByDate' });
           // 기본값 설정
-          if (defaultExpanded) {
+          if (defaultExpanded && data.length > 0) {
             const allKeys = Array.from(new Set(data.map(getDateKey)));
             setExpandedKeys(new Set(allKeys));
           }
+          isInitializedRef.current = true;
         }
-      } else if (defaultExpanded) {
+      } else if (defaultExpanded && data.length > 0) {
         // 저장된 상태가 없고 기본값이 확장이면 모든 키를 확장
         const allKeys = Array.from(new Set(data.map(getDateKey)));
         setExpandedKeys(new Set(allKeys));
+        isInitializedRef.current = true;
+      } else {
+        isInitializedRef.current = true;
       }
-    }
-  }, [storageKey, defaultExpanded, data, getDateKey]);
-
-  // 데이터가 변경될 때 기본 확장 상태 적용
-  useEffect(() => {
-    if (defaultExpanded && !storageKey && expandedKeys.size === 0) {
+    } else if (!isInitializedRef.current && defaultExpanded && data.length > 0) {
+      // storageKey가 없고 기본값이 확장이면
       const allKeys = Array.from(new Set(data.map(getDateKey)));
       setExpandedKeys(new Set(allKeys));
+      isInitializedRef.current = true;
+    } else {
+      isInitializedRef.current = true;
     }
-  }, [data, getDateKey, defaultExpanded, storageKey, expandedKeys.size]);
+  }, [storageKey, defaultExpanded]);
 
   // 그룹화된 데이터 생성
   const groupedData = useMemo((): GroupedData<T> => {

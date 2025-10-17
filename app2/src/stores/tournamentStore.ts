@@ -41,6 +41,7 @@ export interface TournamentSettings {
 interface TournamentState {
   // State
   tournamentId: string | null;
+  userId: string | null;
   participants: Participant[];
   tables: Table[];
   blinds: BlindLevel[];
@@ -81,6 +82,7 @@ interface TournamentState {
 
 // Initial State
 const initialState = {
+  userId: null,
   tournamentId: null,
   participants: [],
   tables: [],

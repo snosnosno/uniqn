@@ -1,4 +1,4 @@
-import { collection, onSnapshot, doc, runTransaction, DocumentData, QueryDocumentSnapshot, getDocs, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, runTransaction, DocumentData, QueryDocumentSnapshot, getDocs, writeBatch, addDoc, updateDoc, collectionGroup } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useState, useEffect, useCallback } from 'react';
@@ -7,6 +7,7 @@ import { db } from '../firebase';
 
 import { logAction } from './useLogger';
 import { Participant } from './useParticipants';
+import { isDefaultTournament } from './useTournaments';
 
 export interface Table {
   id: string;
@@ -18,17 +19,18 @@ export interface Table {
   position?: { x: number; y: number };
   assignedStaffId?: string | null;
   assignedDealerId?: string | null; // @deprecated - assignedStaffId 사용 권장. 하위 호환성을 위해 유지
+  tournamentId?: string | null; // 소속 토너먼트 ID (전체 보기 기능용)
+  tournamentColor?: string | null; // 소속 토너먼트 색상 (전체 보기 기능용)
 }
 
 export interface BalancingResult {
   participantId: string;
+  participantName: string;
   fromTableNumber: number;
   fromSeatIndex: number;
   toTableNumber: number;
   toSeatIndex: number;
 }
-
-const tablesCollection = collection(db, 'tables');
 
 const shuffleArray = <T>(array: T[]): T[] => {
   const newArray = [...array];
@@ -41,21 +43,108 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return newArray;
 };
 
-export const useTables = () => {
+export const useTables = (userId: string | null, tournamentId: string | null) => {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [maxSeatsSetting, setMaxSeatsSetting] = useState<number>(9);
 
   useEffect(() => {
-    const settingsDocRef = doc(db, 'tournaments', 'settings');
+    if (!userId || !tournamentId) {
+      setLoading(false);
+      return;
+    }
+
+    // "ALL" 전체 보기 모드 또는 날짜별 기본 토너먼트 모드
+    if (tournamentId === 'ALL' || isDefaultTournament(tournamentId)) {
+      // collectionGroup으로 모든 토너먼트의 테이블 조회
+      const tablesGroupRef = collectionGroup(db, 'tables');
+
+      // 날짜별 기본 토너먼트인 경우 dateKey 추출
+      const dateKeyForFilter = isDefaultTournament(tournamentId)
+        ? tournamentId.replace('DEFAULT_DATE_', '') // "DEFAULT_DATE_2025-01-20" -> "2025-01-20"
+        : null;
+
+      const unsubscribeTables = onSnapshot(
+        tablesGroupRef,
+        async (snapshot) => {
+          const tablesData = snapshot.docs
+            .map((doc: QueryDocumentSnapshot<DocumentData>) => {
+              const data = doc.data();
+              // tournamentId 추출 (path: users/{userId}/tournaments/{tournamentId}/tables/{tableId})
+              const pathParts = doc.ref.path.split('/');
+              const extractedTournamentId = pathParts[3] || null;
+
+              // 현재 사용자의 테이블만 필터링
+              const pathUserId = pathParts[1];
+              if (pathUserId !== userId) return null;
+
+              return {
+                id: doc.id,
+                ...data,
+                tournamentId: extractedTournamentId, // 어느 토너먼트 소속인지 저장
+              } as Table;
+            })
+            .filter((table): table is Table => table !== null);
+
+          // 날짜별 전체보기인 경우 해당 날짜의 테이블만 필터링
+          let filteredTables = tablesData;
+          if (dateKeyForFilter) {
+            // 해당 날짜의 토너먼트를 찾기 위해 tournaments 컬렉션 조회 필요
+            // 각 테이블의 tournamentId로 tournament 정보를 조회하여 dateKey 확인
+            const tournamentsSnapshot = await getDocs(collection(db, `users/${userId}/tournaments`));
+            const tournamentDateMap = new Map<string, string>();
+
+            tournamentsSnapshot.docs.forEach(doc => {
+              const data = doc.data();
+              if (data.dateKey) {
+                tournamentDateMap.set(doc.id, data.dateKey);
+              }
+            });
+
+            // 해당 날짜의 토너먼트에 속한 테이블만 필터링
+            filteredTables = tablesData.filter(table => {
+              if (!table.tournamentId) return false;
+              const tableDateKey = tournamentDateMap.get(table.tournamentId);
+              return tableDateKey === dateKeyForFilter;
+            });
+
+            logger.info('날짜별 전체보기 필터링 완료', {
+              component: 'useTables',
+              data: {
+                dateKey: dateKeyForFilter,
+                totalTables: tablesData.length,
+                filteredTables: filteredTables.length
+              }
+            });
+          }
+
+          filteredTables.sort((a, b) => a.tableNumber - b.tableNumber);
+
+          setTables(filteredTables);
+          setLoading(false);
+        },
+        (err) => {
+          setError(err);
+          setLoading(false);
+        }
+      );
+
+      return () => {
+        unsubscribeTables();
+      };
+    }
+
+    // 일반 모드 (특정 토너먼트)
+    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'config');
     const unsubscribeSettings = onSnapshot(settingsDocRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().maxSeatsPerTable) {
             setMaxSeatsSetting(docSnap.data().maxSeatsPerTable);
         }
     });
 
-    const unsubscribeTables = onSnapshot(tablesCollection,
+    const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+    const unsubscribeTables = onSnapshot(tablesCollectionRef,
       (snapshot) => {
         const tablesData = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
           id: doc.id,
@@ -74,10 +163,11 @@ export const useTables = () => {
         unsubscribeSettings();
         unsubscribeTables();
     };
-  }, []);
+  }, [userId, tournamentId]);
   
   const updateTableDetails = useCallback(async (tableId: string, data: { name?: string; borderColor?: string }) => {
-    const tableRef = doc(db, 'tables', tableId);
+    if (!userId || !tournamentId) return;
+    const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
     try {
       await updateDoc(tableRef, data);
       logAction('table_details_updated', { tableId, ...data });
@@ -87,10 +177,11 @@ export const useTables = () => {
       setError(e as Error);
       toast.error('테이블 정보 업데이트 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const updateTablePosition = useCallback(async (tableId: string, position: { x: number; y: number }) => {
-    const tableRef = doc(db, 'tables', tableId);
+    if (!userId || !tournamentId) return;
+    const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
     try {
       await updateDoc(tableRef, { position });
     } catch (e) {
@@ -98,12 +189,13 @@ export const useTables = () => {
       setError(e as Error);
       toast.error('테이블 위치 업데이트 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const updateTableOrder = useCallback(async (tables: Table[]) => {
+    if (!userId || !tournamentId) return;
     const batch = writeBatch(db);
     tables.forEach((table, index) => {
-        const tableRef = doc(db, 'tables', table.id);
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, table.id);
         batch.update(tableRef, { tableNumber: index });
     });
     try {
@@ -114,11 +206,16 @@ export const useTables = () => {
         setError(e as Error);
         toast.error('테이블 순서 업데이트 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId]);
 
   const openNewTable = useCallback(async () => {
+    if (!userId || !tournamentId) return;
     setLoading(true);
     try {
+      // 토너먼트 정보 조회 (색상 정보 포함)
+      const tournamentSnap = await getDocs(collection(db, `users/${userId}/tournaments`));
+      const tournamentData = tournamentSnap.docs.find(d => d.id === tournamentId)?.data();
+
       const maxTableNumber = tables.reduce((max, table) => Math.max(max, table.tableNumber), 0);
       const newTable = {
         name: `T${maxTableNumber + 1}`,
@@ -126,8 +223,11 @@ export const useTables = () => {
         seats: Array(maxSeatsSetting).fill(null),
         status: 'standby' as const,
         position: { x: 10, y: 10 + (tables.length * 40) },
+        tournamentId: tournamentId, // 소속 토너먼트 명시
+        tournamentColor: tournamentData?.color || null, // 토너먼트 색상 설정
       };
-      const docRef = await addDoc(tablesCollection, newTable);
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const docRef = await addDoc(tablesCollectionRef, newTable);
       logAction('table_created_standby', { tableId: docRef.id, tableNumber: newTable.tableNumber, maxSeats: maxSeatsSetting });
     } catch (e) {
       logger.error('Error opening new table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
@@ -136,11 +236,75 @@ export const useTables = () => {
     } finally {
       setLoading(false);
     }
-  }, [tables, maxSeatsSetting]);
+  }, [userId, tournamentId, tables, maxSeatsSetting]);
+
+  /**
+   * 특정 토너먼트에 새 테이블 추가 (전체 보기 모드용)
+   */
+  const openNewTableInTournament = useCallback(async (targetTournamentId: string) => {
+    if (!userId || !targetTournamentId || targetTournamentId === 'ALL') {
+      toast.error('유효한 토너먼트를 선택해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 토너먼트 정보 조회 (색상 정보 포함)
+      const tournamentRef = doc(db, `users/${userId}/tournaments`, targetTournamentId);
+      const tournamentSnap = await getDocs(collection(db, `users/${userId}/tournaments`));
+      const tournamentData = tournamentSnap.docs.find(d => d.id === targetTournamentId)?.data();
+
+      // 해당 토너먼트의 기존 테이블 조회
+      const targetTablesRef = collection(db, `users/${userId}/tournaments/${targetTournamentId}/tables`);
+      const targetTablesSnapshot = await getDocs(targetTablesRef);
+
+      const existingTables = targetTablesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Table));
+
+      const maxTableNumber = existingTables.reduce((max, table) => Math.max(max, table.tableNumber), 0);
+
+      const newTable = {
+        name: `T${maxTableNumber + 1}`,
+        tableNumber: maxTableNumber + 1,
+        seats: Array(9).fill(null), // 기본 9석
+        status: 'standby' as const,
+        position: { x: 10, y: 10 + (existingTables.length * 40) },
+        tournamentId: targetTournamentId, // 소속 토너먼트 명시
+        tournamentColor: tournamentData?.color || null, // 토너먼트 색상 설정
+      };
+
+      await addDoc(targetTablesRef, newTable);
+
+      toast.success('새 테이블이 성공적으로 추가되었습니다.');
+      logAction('table_created_standby', {
+        tournamentId: targetTournamentId,
+        tableNumber: newTable.tableNumber,
+        maxSeats: 9
+      });
+    } catch (e) {
+      logger.error('Error opening new table in tournament:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
+      setError(e as Error);
+      toast.error('새 테이블 생성 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   const activateTable = useCallback(async (tableId: string) => {
-    const tableRef = doc(db, 'tables', tableId);
+    if (!userId || !tournamentId) return;
+
     try {
+      // 테이블 정보를 먼저 찾아서 실제 tournamentId 사용
+      const table = tables.find(t => t.id === tableId);
+      if (!table) {
+        toast.error('테이블을 찾을 수 없습니다.');
+        return;
+      }
+
+      const actualTournamentId = table.tournamentId || tournamentId;
+      const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableId);
       await updateDoc(tableRef, { status: 'open' });
       logAction('table_activated', { tableId });
     } catch (e) {
@@ -148,18 +312,33 @@ export const useTables = () => {
       setError(e as Error);
       toast.error('테이블 활성화 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId, tables]);
   
   const closeTable = useCallback(async (tableIdToClose: string): Promise<BalancingResult[]> => {
+    if (!userId || !tournamentId) return [];
     setLoading(true);
     try {
       const balancingResult: BalancingResult[] = [];
       const movedParticipantsDetails: any[] = [];
 
       const transactionResult = await runTransaction(db, async (transaction) => {
-        const tablesSnapshot = await getDocs(tablesCollection);
-        const allTables: Table[] = tablesSnapshot.docs
-          .map(d => ({ id: d.id, ...d.data() } as Table));
+        // 전체 토너먼트 뷰('ALL')인 경우 collectionGroup 사용
+        let allTables: Table[] = [];
+        if (tournamentId === 'ALL') {
+          const tablesGroupRef = collectionGroup(db, 'tables');
+          const tablesSnapshot = await getDocs(tablesGroupRef);
+          allTables = tablesSnapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as Table))
+            .filter((table: Table) => {
+              const tablePath = tablesSnapshot.docs.find(doc => doc.id === table.id)?.ref.path || '';
+              return tablePath.includes(`users/${userId}/`);
+            });
+        } else {
+          const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+          const tablesSnapshot = await getDocs(tablesCollectionRef);
+          allTables = tablesSnapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as Table));
+        }
 
         const tableToClose = allTables.find(t => t.id === tableIdToClose);
         if (!tableToClose) {
@@ -172,11 +351,22 @@ export const useTables = () => {
             .map((pId, index) => ({ pId, fromSeatIndex: index}))
             .filter(item => item.pId !== null) as { pId: string, fromSeatIndex: number }[];
 
+        // 테이블이 속한 실제 tournamentId 사용
+        const actualTournamentId = tableToClose.tournamentId || tournamentId;
+
+        // 참가자 정보 가져오기
+        const participantsCollectionRef = collection(db, `users/${userId}/tournaments/${actualTournamentId}/participants`);
+        const participantsSnapshot = await getDocs(participantsCollectionRef);
+        const participantsMap = new Map(
+          participantsSnapshot.docs.map(d => [d.id, { id: d.id, ...d.data() }])
+        );
+
         if (participantsToMove.length === 0) {
-            const tableRef = doc(db, 'tables', tableIdToClose);
-            transaction.delete(tableRef);
+            const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableIdToClose);
+            const emptySeats = Array((tableToClose.seats || []).length || maxSeatsSetting).fill(null);
+            transaction.update(tableRef, { status: 'standby', seats: emptySeats });
             logAction('table_closed', { tableId: tableIdToClose, tableNumber: tableToClose.tableNumber, movedParticipantsCount: 0 });
-            return;
+            return { balancingResult: [], movedParticipantsDetails: [] };
         }
 
         const openTables = allTables.filter(t => t.id !== tableIdToClose && t.status === 'open');
@@ -185,7 +375,7 @@ export const useTables = () => {
             toast.error('참가자를 이동시킬 수 있는 활성화된 테이블이 없습니다.');
             return { balancingResult: [], movedParticipantsDetails: [] };
         }
-        
+
         const mutableOpenTables = openTables.map(t => ({
           ...t,
           seats: [...(t.seats || Array(maxSeatsSetting).fill(null))],
@@ -195,7 +385,7 @@ export const useTables = () => {
         for (const participantToMove of participantsToMove) {
           const minPlayerCount = Math.min(...mutableOpenTables.map(t => t.playerCount));
           const leastPopulatedTables = mutableOpenTables.filter(t => t.playerCount === minPlayerCount);
-          
+
           let targetTable = leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
           if (!targetTable) continue;
           let emptySeatIndexes = targetTable.seats.map((seat, index) => (seat === null ? index : -1)).filter(index => index !== -1);
@@ -207,35 +397,48 @@ export const useTables = () => {
                toast.error('참가자를 배치할 빈 좌석이 없습니다.');
                return { balancingResult: [], movedParticipantsDetails: [] };
              }
-             
+
              targetTable = alternativeTables[Math.floor(Math.random() * alternativeTables.length)];
              if (!targetTable) continue;
              emptySeatIndexes = targetTable.seats.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
           }
-          
+
           const targetSeatIndex = emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
           if (targetSeatIndex === undefined) continue;
 
           targetTable.seats[targetSeatIndex] = participantToMove.pId;
           targetTable.playerCount++;
-          
+
           const from = { tableNumber: tableToClose.tableNumber, seatIndex: participantToMove.fromSeatIndex };
           const to = { tableNumber: targetTable.tableNumber, seatIndex: targetSeatIndex };
-          
-          balancingResult.push({ participantId: participantToMove.pId, fromTableNumber: from.tableNumber, fromSeatIndex: from.seatIndex, toTableNumber: to.tableNumber, toSeatIndex: to.seatIndex });
+
+          const participant = participantsMap.get(participantToMove.pId);
+          const participantName = participant ? (participant as any).name || '이름 없음' : '이름 없음';
+
+          balancingResult.push({
+            participantId: participantToMove.pId,
+            participantName,
+            fromTableNumber: from.tableNumber,
+            fromSeatIndex: from.seatIndex,
+            toTableNumber: to.tableNumber,
+            toSeatIndex: to.seatIndex
+          });
           movedParticipantsDetails.push({ participantId: participantToMove.pId, from: `${from.tableNumber}-${from.seatIndex+1}`, to: `${to.tableNumber}-${to.seatIndex+1}` });
         }
-        
+
         mutableOpenTables.forEach(t => {
-            const tableRef = doc(db, 'tables', t.id);
+            // 각 테이블이 속한 실제 tournamentId 사용
+            const targetTableTournamentId = t.tournamentId || tournamentId;
+            const tableRef = doc(db, `users/${userId}/tournaments/${targetTableTournamentId}/tables`, t.id);
             transaction.update(tableRef, { seats: t.seats });
         });
 
-        const closedTableRef = doc(db, 'tables', tableIdToClose);
-        transaction.delete(closedTableRef);
-        
-        logAction('table_closed', { 
-            tableId: tableIdToClose, 
+        const closedTableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableIdToClose);
+        const emptySeats = Array((tableToClose.seats || []).length || maxSeatsSetting).fill(null);
+        transaction.update(closedTableRef, { status: 'standby', seats: emptySeats });
+
+        logAction('table_closed', {
+            tableId: tableIdToClose,
             tableNumber: tableToClose.tableNumber,
             movedParticipantsCount: participantsToMove.length
         });
@@ -261,18 +464,170 @@ export const useTables = () => {
     } finally {
       setLoading(false);
     }
-  }, [maxSeatsSetting]);
-  
-  const rebalanceAndAssignAll = useCallback(async (participants: Participant[]) => {
+  }, [userId, tournamentId, maxSeatsSetting]);
+
+  const deleteTable = useCallback(async (tableIdToDelete: string): Promise<BalancingResult[]> => {
+    if (!userId || !tournamentId) return [];
+    setLoading(true);
+    try {
+      const balancingResult: BalancingResult[] = [];
+      const movedParticipantsDetails: any[] = [];
+
+      const transactionResult = await runTransaction(db, async (transaction) => {
+        // 전체 토너먼트 뷰('ALL')인 경우 collectionGroup 사용
+        let allTables: Table[] = [];
+        if (tournamentId === 'ALL') {
+          const tablesGroupRef = collectionGroup(db, 'tables');
+          const tablesSnapshot = await getDocs(tablesGroupRef);
+          allTables = tablesSnapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as Table))
+            .filter((table: Table) => {
+              const tablePath = tablesSnapshot.docs.find(doc => doc.id === table.id)?.ref.path || '';
+              return tablePath.includes(`users/${userId}/`);
+            });
+        } else {
+          const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+          const tablesSnapshot = await getDocs(tablesCollectionRef);
+          allTables = tablesSnapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as Table));
+        }
+
+        const tableToDelete = allTables.find(t => t.id === tableIdToDelete);
+        if (!tableToDelete) {
+          logger.error('Table not found for deletion', new Error(`Table with id ${tableIdToDelete} not found`), { component: 'useTables' });
+          toast.error('삭제하려는 테이블을 찾을 수 없습니다.');
+          return { balancingResult: [], movedParticipantsDetails: [] };
+        }
+
+        const participantsToMove = (tableToDelete.seats || [])
+            .map((pId, index) => ({ pId, fromSeatIndex: index}))
+            .filter(item => item.pId !== null) as { pId: string, fromSeatIndex: number }[];
+
+        // 테이블이 속한 실제 tournamentId 사용
+        const actualTournamentId = tableToDelete.tournamentId || tournamentId;
+
+        // 참가자 정보 가져오기
+        const participantsCollectionRef = collection(db, `users/${userId}/tournaments/${actualTournamentId}/participants`);
+        const participantsSnapshot = await getDocs(participantsCollectionRef);
+        const participantsMap = new Map(
+          participantsSnapshot.docs.map(d => [d.id, { id: d.id, ...d.data() }])
+        );
+
+        if (participantsToMove.length === 0) {
+            const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableIdToDelete);
+            transaction.delete(tableRef);
+            logAction('table_deleted', { tableId: tableIdToDelete, tableNumber: tableToDelete.tableNumber, movedParticipantsCount: 0 });
+            return { balancingResult: [], movedParticipantsDetails: [] };
+        }
+
+        const openTables = allTables.filter(t => t.id !== tableIdToDelete && t.status === 'open');
+        if (openTables.length === 0) {
+            logger.error('No open tables available for participant relocation', new Error('No open tables'), { component: 'useTables' });
+            toast.error('참가자를 이동시킬 수 있는 활성화된 테이블이 없습니다.');
+            return { balancingResult: [], movedParticipantsDetails: [] };
+        }
+
+        const mutableOpenTables = openTables.map(t => ({
+          ...t,
+          seats: [...(t.seats || Array(maxSeatsSetting).fill(null))],
+          playerCount: (t.seats || []).filter(s => s !== null).length,
+        }));
+
+        for (const participantToMove of participantsToMove) {
+          const minPlayerCount = Math.min(...mutableOpenTables.map(t => t.playerCount));
+          const leastPopulatedTables = mutableOpenTables.filter(t => t.playerCount === minPlayerCount);
+
+          let targetTable = leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
+          if (!targetTable) continue;
+          let emptySeatIndexes = targetTable.seats.map((seat, index) => (seat === null ? index : -1)).filter(index => index !== -1);
+
+          if (emptySeatIndexes.length === 0) {
+             const alternativeTables = mutableOpenTables.filter(t => t.id !== targetTable?.id && t.seats.some(s => s === null));
+             if(alternativeTables.length === 0) {
+               logger.error('Balancing failed: No seats available', new Error('No seats available'), { component: 'useTables' });
+               toast.error('참가자를 배치할 빈 좌석이 없습니다.');
+               return { balancingResult: [], movedParticipantsDetails: [] };
+             }
+
+             targetTable = alternativeTables[Math.floor(Math.random() * alternativeTables.length)];
+             if (!targetTable) continue;
+             emptySeatIndexes = targetTable.seats.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
+          }
+
+          const targetSeatIndex = emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
+          if (targetSeatIndex === undefined) continue;
+
+          targetTable.seats[targetSeatIndex] = participantToMove.pId;
+          targetTable.playerCount++;
+
+          const from = { tableNumber: tableToDelete.tableNumber, seatIndex: participantToMove.fromSeatIndex };
+          const to = { tableNumber: targetTable.tableNumber, seatIndex: targetSeatIndex };
+
+          const participant = participantsMap.get(participantToMove.pId);
+          const participantName = participant ? (participant as any).name || '이름 없음' : '이름 없음';
+
+          balancingResult.push({
+            participantId: participantToMove.pId,
+            participantName,
+            fromTableNumber: from.tableNumber,
+            fromSeatIndex: from.seatIndex,
+            toTableNumber: to.tableNumber,
+            toSeatIndex: to.seatIndex
+          });
+          movedParticipantsDetails.push({ participantId: participantToMove.pId, from: `${from.tableNumber}-${from.seatIndex+1}`, to: `${to.tableNumber}-${to.seatIndex+1}` });
+        }
+
+        mutableOpenTables.forEach(t => {
+            // 각 테이블이 속한 실제 tournamentId 사용
+            const targetTableTournamentId = t.tournamentId || tournamentId;
+            const tableRef = doc(db, `users/${userId}/tournaments/${targetTableTournamentId}/tables`, t.id);
+            transaction.update(tableRef, { seats: t.seats });
+        });
+
+        const deletedTableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableIdToDelete);
+        transaction.delete(deletedTableRef);
+
+        logAction('table_deleted', {
+            tableId: tableIdToDelete,
+            tableNumber: tableToDelete.tableNumber,
+            movedParticipantsCount: participantsToMove.length
+        });
+        logAction('participants_moved', {
+            details: movedParticipantsDetails
+        });
+
+        return { balancingResult, movedParticipantsDetails };
+      });
+
+      return transactionResult?.balancingResult || [];
+    } catch (e) {
+      const errorContext = {
+        failedAction: 'delete_table',
+        tableId: tableIdToDelete,
+        errorMessage: e instanceof Error ? e.message : String(e),
+      };
+      logAction('action_failed', errorContext);
+      logger.error('Error deleting table:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
+      setError(e as Error);
+      toast.error('테이블 삭제 중 오류가 발생했습니다.');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, tournamentId, maxSeatsSetting]);
+
+  const rebalanceAndAssignAll = useCallback(async (participants: Participant[]): Promise<Array<{ participantId: string; participantName: string; fromTableNumber?: number; fromSeatNumber?: number; toTableNumber: number; toSeatNumber: number }>> => {
+    if (!userId || !tournamentId) return [];
     if (participants.length === 0) {
         toast.warning("배정할 참가자가 없습니다.");
-        return;
+        return [];
     }
     setLoading(true);
     try {
       const batch = writeBatch(db);
-      const tablesSnapshot = await getDocs(tablesCollection);
-      
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const tablesSnapshot = await getDocs(tablesCollectionRef);
+
       const openTables: Table[] = tablesSnapshot.docs
         .map(d => ({id: d.id, ...d.data()} as Table))
         .filter(t => t.status === 'open');
@@ -280,14 +635,14 @@ export const useTables = () => {
       if (openTables.length === 0) {
         logger.error('No open tables for seat assignment', new Error('No open tables'), { component: 'useTables' });
         toast.error('좌석을 배정할 수 있는 활성화된 테이블이 없습니다.');
-        return;
+        return [];
       }
 
       const totalSeats = openTables.reduce((sum, table) => sum + (table.seats?.length || maxSeatsSetting), 0);
       if (participants.length > totalSeats) {
         logger.error('Too many participants for available seats', new Error(`Participants: ${participants.length}, Seats: ${totalSeats}`), { component: 'useTables' });
         toast.error(`참가자 수(${participants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`);
-        return;
+        return [];
       }
 
       const shuffledParticipants = shuffleArray(participants);
@@ -308,11 +663,14 @@ export const useTables = () => {
       });
 
       const newTableSeatArrays: { [key: string]: (string | null)[] } = {};
+      const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } = {};
+      const assignmentResults: Array<{ participantId: string; participantName: string; fromTableNumber?: number; fromSeatNumber?: number; toTableNumber: number; toSeatNumber: number }> = [];
+
       for (const table of openTables) {
         const playersForThisTable = tablePlayerGroups[table.id];
         const seatCount = table.seats?.length || maxSeatsSetting;
         const newSeats: (string | null)[] = Array(seatCount).fill(null);
-        
+
         const seatIndexes = Array.from({ length: seatCount }, (_, i) => i);
         const shuffledSeatIndexes = shuffleArray(seatIndexes);
 
@@ -320,20 +678,46 @@ export const useTables = () => {
           const seatIndex = shuffledSeatIndexes[index];
           if (seatIndex !== undefined) {
             newSeats[seatIndex] = player.id;
+            // 참가자 위치 업데이트 정보 저장
+            participantUpdates[player.id] = {
+              tableNumber: table.tableNumber,
+              seatNumber: seatIndex + 1
+            };
+            // 배정 결과 저장
+            const result: { participantId: string; participantName: string; fromTableNumber?: number; fromSeatNumber?: number; toTableNumber: number; toSeatNumber: number } = {
+              participantId: player.id,
+              participantName: player.name,
+              toTableNumber: table.tableNumber,
+              toSeatNumber: seatIndex + 1
+            };
+            if (player.tableNumber !== undefined) result.fromTableNumber = player.tableNumber;
+            if (player.seatNumber !== undefined) result.fromSeatNumber = player.seatNumber;
+            assignmentResults.push(result);
           }
         });
-        
+
         newTableSeatArrays[table.id] = newSeats;
       }
 
+      // 테이블 좌석 배열 업데이트
       for (const tableId in newTableSeatArrays) {
-          const tableRef = doc(db, 'tables', tableId);
+          const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
           batch.update(tableRef, { seats: newTableSeatArrays[tableId] });
       }
-      
+
+      // 참가자 위치 정보 업데이트
+      for (const participantId in participantUpdates) {
+        const updateData = participantUpdates[participantId];
+        if (updateData) {
+          const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
+          batch.update(participantRef, updateData);
+        }
+      }
+
       await batch.commit();
 
       logAction('seats_reassigned_with_balancing', { participantsCount: participants.length, tableCount: openTables.length });
+      return assignmentResults;
     } catch (e) {
       const errorContext = {
         failedAction: 'rebalance_and_assign_all',
@@ -344,23 +728,159 @@ export const useTables = () => {
       logger.error('좌석 자동 재배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       toast.error('좌석 자동 배정 중 오류가 발생했습니다.');
       setError(e as Error);
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [maxSeatsSetting]);
+  }, [userId, tournamentId, maxSeatsSetting]);
+
+  const assignWaitingParticipants = useCallback(async (participants: Participant[]): Promise<Array<{ participantId: string; participantName: string; toTableNumber: number; toSeatNumber: number }>> => {
+    if (!userId || !tournamentId) return [];
+    if (participants.length === 0) {
+        toast.warning("배정할 참가자가 없습니다.");
+        return [];
+    }
+    setLoading(true);
+    try {
+      const batch = writeBatch(db);
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const tablesSnapshot = await getDocs(tablesCollectionRef);
+
+      const openTables: Table[] = tablesSnapshot.docs
+        .map(d => ({id: d.id, ...d.data()} as Table))
+        .filter(t => t.status === 'open');
+
+      if (openTables.length === 0) {
+        logger.error('No open tables for seat assignment', new Error('No open tables'), { component: 'useTables' });
+        toast.error('좌석을 배정할 수 있는 활성화된 테이블이 없습니다.');
+        return [];
+      }
+
+      // 각 테이블의 현재 인원수 계산
+      const mutableTables = openTables.map(table => ({
+        ...table,
+        seats: [...(table.seats || Array(maxSeatsSetting).fill(null))],
+        playerCount: (table.seats || []).filter(s => s !== null).length,
+      }));
+
+      // 빈 자리 총합 확인
+      const totalEmptySeats = mutableTables.reduce((sum, table) =>
+        sum + table.seats.filter(s => s === null).length, 0
+      );
+
+      if (participants.length > totalEmptySeats) {
+        logger.error('Too many participants for available seats', new Error(`Participants: ${participants.length}, Seats: ${totalEmptySeats}`), { component: 'useTables' });
+        toast.error(`참가자 수(${participants.length}명)가 빈 좌석 수(${totalEmptySeats}석)보다 많아 배정할 수 없습니다.`);
+        return [];
+      }
+
+      const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } = {};
+      const assignmentResults: Array<{ participantId: string; participantName: string; toTableNumber: number; toSeatNumber: number }> = [];
+
+      // 각 참가자를 가장 인원이 적은 테이블에 배정
+      for (const participant of participants) {
+        // 가장 인원이 적은 테이블 찾기
+        const minPlayerCount = Math.min(...mutableTables.map(t => t.playerCount));
+        const leastPopulatedTables = mutableTables.filter(t => t.playerCount === minPlayerCount);
+
+        // 같은 인원수라면 랜덤 선택
+        const targetTable = leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
+        if (!targetTable) continue;
+
+        // 빈 자리 찾기
+        const emptySeatIndexes = targetTable.seats
+          .map((seat, index) => (seat === null ? index : -1))
+          .filter(index => index !== -1);
+
+        if (emptySeatIndexes.length === 0) {
+          logger.error('No empty seats available', new Error('No empty seats'), { component: 'useTables' });
+          toast.error('빈 좌석이 없습니다.');
+          continue;
+        }
+
+        // 빈 자리 중 랜덤 선택
+        const targetSeatIndex = emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
+        if (targetSeatIndex === undefined) continue;
+
+        // 자리 배정
+        targetTable.seats[targetSeatIndex] = participant.id;
+        targetTable.playerCount++;
+
+        // 참가자 위치 업데이트 정보 저장
+        participantUpdates[participant.id] = {
+          tableNumber: targetTable.tableNumber,
+          seatNumber: targetSeatIndex + 1
+        };
+
+        // 배정 결과 저장
+        assignmentResults.push({
+          participantId: participant.id,
+          participantName: participant.name,
+          toTableNumber: targetTable.tableNumber,
+          toSeatNumber: targetSeatIndex + 1
+        });
+      }
+
+      // 테이블 좌석 배열 업데이트
+      for (const table of mutableTables) {
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, table.id);
+        batch.update(tableRef, { seats: table.seats });
+      }
+
+      // 참가자 위치 정보 업데이트
+      for (const participantId in participantUpdates) {
+        const updateData = participantUpdates[participantId];
+        if (updateData) {
+          const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
+          batch.update(participantRef, updateData);
+        }
+      }
+
+      await batch.commit();
+
+      logAction('seats_reassigned_with_balancing', { participantsCount: participants.length, tableCount: openTables.length });
+      return assignmentResults;
+    } catch (e) {
+      const errorContext = {
+        failedAction: 'assign_waiting_participants',
+        participantsCount: participants.length,
+        errorMessage: e instanceof Error ? e.message : String(e),
+      };
+      logAction('action_failed', errorContext);
+      logger.error('대기 참가자 배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
+      toast.error('대기 참가자 배정 중 오류가 발생했습니다.');
+      setError(e as Error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, tournamentId, maxSeatsSetting]);
 
   const moveSeat = useCallback(async (
     participantId: string,
     from: { tableId: string; seatIndex: number },
     to: { tableId: string; seatIndex: number }
   ) => {
+    if (!userId || !tournamentId) return;
     if (from.tableId === to.tableId && from.seatIndex === to.seatIndex) return;
 
     try {
         await runTransaction(db, async (transaction) => {
+            // 테이블들의 실제 tournamentId 찾기
+            const fromTable = tables.find(t => t.id === from.tableId);
+            const toTable = tables.find(t => t.id === to.tableId);
+
+            if (!fromTable || !toTable) {
+              toast.error('테이블을 찾을 수 없습니다.');
+              return;
+            }
+
+            const fromTournamentId = fromTable.tournamentId || tournamentId;
+            const toTournamentId = toTable.tournamentId || tournamentId;
+
             if (from.tableId === to.tableId) {
                 // Same table move
-                const tableRef = doc(db, 'tables', from.tableId);
+                const tableRef = doc(db, `users/${userId}/tournaments/${fromTournamentId}/tables`, from.tableId);
                 const tableSnap = await transaction.get(tableRef);
                 if (!tableSnap.exists()) {
                   logger.error('Table not found during seat move', new Error('Table not found'), { component: 'useTables' });
@@ -374,16 +894,16 @@ export const useTables = () => {
                   toast.error('해당 좌석에 이미 참가자가 있습니다.');
                   return;
                 }
-                
+
                 seats[to.seatIndex] = participantId;
                 seats[from.seatIndex] = null;
-                
+
                 transaction.update(tableRef, { seats });
 
             } else {
                 // Different table move
-                const fromTableRef = doc(db, 'tables', from.tableId);
-                const toTableRef = doc(db, 'tables', to.tableId);
+                const fromTableRef = doc(db, `users/${userId}/tournaments/${fromTournamentId}/tables`, from.tableId);
+                const toTableRef = doc(db, `users/${userId}/tournaments/${toTournamentId}/tables`, to.tableId);
 
                 const [fromTableSnap, toTableSnap] = await Promise.all([
                     transaction.get(fromTableRef),
@@ -395,7 +915,7 @@ export const useTables = () => {
                     toast.error('테이블 정보를 찾을 수 없습니다.');
                     return;
                 }
-                
+
                 const fromSeats = [...fromTableSnap.data().seats];
                 const toSeats = [...toTableSnap.data().seats];
 
@@ -407,7 +927,7 @@ export const useTables = () => {
 
                 fromSeats[from.seatIndex] = null;
                 toSeats[to.seatIndex] = participantId;
-                
+
                 transaction.update(fromTableRef, { seats: fromSeats });
                 transaction.update(toTableRef, { seats: toSeats });
             }
@@ -421,20 +941,24 @@ export const useTables = () => {
         setError(e as Error);
         toast.error('좌석 이동 중 오류가 발생했습니다.');
     }
-  }, [tables]);
+  }, [userId, tournamentId, tables]);
 
   const bustOutParticipant = useCallback(async (participantId: string) => {
+    if (!userId || !tournamentId) return;
     try {
       await runTransaction(db, async (transaction) => {
-        const participantRef = doc(db, 'participants', participantId);
+        // 테이블의 실제 tournamentId 찾기
+        const table = tables.find(t => (t.seats || []).includes(participantId));
+        if (!table) return;
+
+        const actualTournamentId = table.tournamentId || tournamentId;
+
+        const participantRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/participants`, participantId);
         transaction.update(participantRef, { status: 'busted' });
 
-        const table = tables.find(t => (t.seats || []).includes(participantId));
-        if (table) {
-          const tableRef = doc(db, 'tables', table.id);
-          const newSeats = (table.seats || []).map(seat => seat === participantId ? null : seat);
-          transaction.update(tableRef, { seats: newSeats });
-        }
+        const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, table.id);
+        const newSeats = (table.seats || []).map(seat => seat === participantId ? null : seat);
+        transaction.update(tableRef, { seats: newSeats });
       });
       logAction('participant_busted', { participantId });
     } catch (e) {
@@ -442,12 +966,21 @@ export const useTables = () => {
       setError(e as Error);
       toast.error('참가자 탈락 처리 중 오류가 발생했습니다.');
     }
-  }, [tables]);
+  }, [userId, tournamentId, tables]);
 
   const updateTableMaxSeats = useCallback(async (tableId: string, newMaxSeats: number, getParticipantName: (id: string) => string) => {
+    if (!userId || !tournamentId) return;
     try {
       await runTransaction(db, async (transaction) => {
-        const tableRef = doc(db, 'tables', tableId);
+        // 테이블의 실제 tournamentId 찾기
+        const table = tables.find(t => t.id === tableId);
+        if (!table) {
+          toast.error('테이블을 찾을 수 없습니다.');
+          return;
+        }
+
+        const actualTournamentId = table.tournamentId || tournamentId;
+        const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableId);
         const tableSnap = await transaction.get(tableRef);
         if (!tableSnap.exists()) {
           logger.error('Table not found for max seats update', new Error('Table not found'), { component: 'useTables' });
@@ -455,8 +988,8 @@ export const useTables = () => {
           return;
         }
 
-        const table = tableSnap.data() as Table;
-        const currentSeats = table.seats || [];
+        const tableData = tableSnap.data() as Table;
+        const currentSeats = tableData.seats || [];
         const currentMaxSeats = currentSeats.length;
 
         if (newMaxSeats === currentMaxSeats) return;
@@ -487,20 +1020,22 @@ export const useTables = () => {
       setError(e as Error);
       toast.error('최대 좌석 수 변경 중 오류가 발생했습니다.');
     }
-  }, []);
+  }, [userId, tournamentId, tables]);
 
-  const autoBalanceByChips = useCallback(async (participants: Participant[]) => {
+  const autoBalanceByChips = useCallback(async (participants: Participant[]): Promise<Array<{ participantId: string; participantName: string; fromTableNumber?: number; fromSeatNumber?: number; toTableNumber: number; toSeatNumber: number }>> => {
+    if (!userId || !tournamentId) return [];
     // 활성 참가자만 필터링
     const activeParticipants = participants.filter(p => p.status === 'active');
     if (activeParticipants.length === 0) {
       toast.warning("칩 균형 재배치할 활성 참가자가 없습니다.");
-      return;
+      return [];
     }
 
     setLoading(true);
     try {
       const batch = writeBatch(db);
-      const tablesSnapshot = await getDocs(tablesCollection);
+      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+      const tablesSnapshot = await getDocs(tablesCollectionRef);
 
       const openTables: Table[] = tablesSnapshot.docs
         .map(d => ({id: d.id, ...d.data()} as Table))
@@ -510,14 +1045,14 @@ export const useTables = () => {
       if (openTables.length === 0) {
         logger.error('No open tables for chip balance', new Error('No open tables'), { component: 'useTables' });
         toast.error('칩 균형 재배치를 할 수 있는 활성화된 테이블이 없습니다.');
-        return;
+        return [];
       }
 
       const totalSeats = openTables.reduce((sum, table) => sum + (table.seats?.length || maxSeatsSetting), 0);
       if (activeParticipants.length > totalSeats) {
         logger.error('Too many active participants for chip balance', new Error(`Participants: ${activeParticipants.length}, Seats: ${totalSeats}`), { component: 'useTables' });
         toast.error(`활성 참가자 수(${activeParticipants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`);
-        return;
+        return [];
       }
 
       // 참가자를 칩 수 기준으로 정렬 (내림차순)
@@ -525,12 +1060,14 @@ export const useTables = () => {
 
       const totalTables = openTables.length;
 
+      const assignmentResults: Array<{ participantId: string; participantName: string; fromTableNumber?: number; fromSeatNumber?: number; toTableNumber: number; toSeatNumber: number }> = [];
+      const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } = {};
 
       // 테이블 상태 초기화
       interface TableState {
         id: string;
         tableNumber: number;
-        participants: string[];
+        participants: Participant[];
         totalChips: number;
         maxSeats: number;
         chipGroups: { top: number; middle: number; bottom: number }; // 각 그룹별 인원수 추적
@@ -567,7 +1104,7 @@ export const useTables = () => {
         const table = tableStates[actualTableIndex];
         if (!table) continue;
 
-        table.participants.push(participant.id);
+        table.participants.push(participant);
         table.totalChips += participant.chips || 0;
 
         // 그룹별 카운터 (상위 25%, 중간 50%, 하위 25%)
@@ -614,21 +1151,45 @@ export const useTables = () => {
         const availableSeatIndexes = Array.from({ length: seatCount }, (_, i) => i);
         const shuffledIndexes = shuffleArray(availableSeatIndexes);
 
-        tableState.participants.forEach((participantId, i) => {
+        tableState.participants.forEach((participant, i) => {
           if (i < shuffledIndexes.length) {
             const seatIndex = shuffledIndexes[i];
             if (seatIndex !== undefined) {
-              newSeats[seatIndex] = participantId;
+              newSeats[seatIndex] = participant.id;
+              // 참가자 위치 업데이트 정보 저장
+              participantUpdates[participant.id] = {
+                tableNumber: table.tableNumber,
+                seatNumber: seatIndex + 1
+              };
+              // 배정 결과 저장
+              const result: { participantId: string; participantName: string; fromTableNumber?: number; fromSeatNumber?: number; toTableNumber: number; toSeatNumber: number } = {
+                participantId: participant.id,
+                participantName: participant.name,
+                toTableNumber: table.tableNumber,
+                toSeatNumber: seatIndex + 1
+              };
+              if (participant.tableNumber !== undefined) result.fromTableNumber = participant.tableNumber;
+              if (participant.seatNumber !== undefined) result.fromSeatNumber = participant.seatNumber;
+              assignmentResults.push(result);
             }
           }
         });
 
-        const tableRef = doc(db, 'tables', table.id);
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, table.id);
         batch.update(tableRef, { seats: newSeats });
       }
-      
+
+      // 참가자 위치 정보 업데이트
+      for (const participantId in participantUpdates) {
+        const updateData = participantUpdates[participantId];
+        if (updateData) {
+          const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
+          batch.update(participantRef, updateData);
+        }
+      }
+
       await batch.commit();
-      
+
       // Smart Balance 결과 로깅
       const balanceInfo = tableStates.map(state => ({
         tableNumber: state.tableNumber,
@@ -659,6 +1220,7 @@ export const useTables = () => {
         participantsCount: activeParticipants.length,
         tableCount: openTables.length
       });
+      return assignmentResults;
     } catch (e) {
       const errorContext = {
         failedAction: 'auto_balance_by_chips',
@@ -669,12 +1231,76 @@ export const useTables = () => {
       logger.error('칩 균형 재배치 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
       toast.error('칩 균형 재배치 중 오류가 발생했습니다.');
       setError(e as Error);
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [maxSeatsSetting]);
+  }, [userId, tournamentId, maxSeatsSetting]);
 
-  return { tables, setTables, loading, error, maxSeatsSetting, updateTableDetails, openNewTable, activateTable, closeTable, autoAssignSeats: rebalanceAndAssignAll, autoBalanceByChips, moveSeat, bustOutParticipant, updateTablePosition, updateTableOrder, updateTableMaxSeats };
+  /**
+   * 테이블을 특정 토너먼트에 할당 (실제로 다른 컬렉션으로 이동)
+   */
+  const assignTableToTournament = useCallback(async (tableIds: string[], targetTournamentId: string) => {
+    if (!userId) {
+      toast.error('사용자 ID가 필요합니다.');
+      return;
+    }
+
+    if (!targetTournamentId || targetTournamentId === 'ALL') {
+      toast.error('유효한 토너먼트를 선택해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 목적지 토너먼트 정보 조회 (색상 정보 포함)
+      const tournamentSnap = await getDocs(collection(db, `users/${userId}/tournaments`));
+      const targetTournamentData = tournamentSnap.docs.find(d => d.id === targetTournamentId)?.data();
+
+      const batch = writeBatch(db);
+
+      for (const tableId of tableIds) {
+        // 현재 테이블의 tournamentId 찾기
+        const table = tables.find(t => t.id === tableId);
+        if (!table) continue;
+
+        const currentTournamentId = table.tournamentId || tournamentId;
+        if (!currentTournamentId || currentTournamentId === 'ALL') continue;
+
+        // 원본 테이블 문서 참조
+        const sourceTableRef = doc(db, `users/${userId}/tournaments/${currentTournamentId}/tables`, tableId);
+
+        // 목적지 테이블 문서 참조 (같은 ID 사용)
+        const targetTableRef = doc(db, `users/${userId}/tournaments/${targetTournamentId}/tables`, tableId);
+
+        // 테이블 데이터 복사 (tournamentId와 tournamentColor 업데이트하여)
+        batch.set(targetTableRef, {
+          ...table,
+          tournamentId: targetTournamentId,
+          tournamentColor: targetTournamentData?.color || null,
+        });
+
+        // 원본 테이블 삭제
+        batch.delete(sourceTableRef);
+      }
+
+      await batch.commit();
+
+      toast.success(`${tableIds.length}개의 테이블이 성공적으로 배정되었습니다.`);
+      logAction('tables_assigned_to_tournament', {
+        tableCount: tableIds.length,
+        targetTournamentId,
+      });
+    } catch (e) {
+      logger.error('테이블 배정 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), { component: 'useTables' });
+      toast.error('테이블 배정 중 오류가 발생했습니다.');
+      setError(e as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, tournamentId, tables]);
+
+  return { tables, setTables, loading, error, maxSeatsSetting, updateTableDetails, openNewTable, openNewTableInTournament, activateTable, closeTable, deleteTable, autoAssignSeats: rebalanceAndAssignAll, assignWaitingParticipants, autoBalanceByChips, moveSeat, bustOutParticipant, updateTablePosition, updateTableOrder, updateTableMaxSeats, assignTableToTournament };
 };
 
 export default useTables;

@@ -191,13 +191,17 @@ export const HeaderMenu: React.FC = () => {
                   {/* Job Posting Management - 모든 역할에서 표시 (권한은 개별 확인) */}
                   <NavItem to="/app/admin/job-postings" label={t('nav.managePostings', 'Manage Postings')} Icon={FaFileInvoice} isOpen={true} onNavigate={closeMenu} />
 
+                  {/* Tournament Management - All authenticated users */}
+                  <hr className="my-2 border-t border-gray-200" />
+                  <NavItem to="/app/tournaments" label="토너먼트 관리" Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/app/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/app/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+
                   {/* Admin and Manager 메뉴 */}
                   {(role === 'admin' || role === 'manager') && (
                     <>
-                      <NavItem to="/app/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                       <hr className="my-2 border-t border-gray-200" />
-                      <NavItem to="/app/admin/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/app/admin/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}

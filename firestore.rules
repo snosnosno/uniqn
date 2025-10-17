@@ -367,6 +367,51 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update, delete: if isPrivileged();
     }
+
+    // ================= 멀티 테넌트 아키텍처 =================
+    // users/{userId}/tournaments/{tournamentId} 구조
+
+    match /users/{userId}/tournaments/{tournamentId} {
+      // 본인의 토너먼트만 읽기/쓰기 가능 (관리자는 모든 토너먼트 접근 가능)
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+      allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // --- Participants Subcollection ---
+      match /participants/{participantId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow create, update, delete: if isSignedIn() && (isOwner(userId) || isPrivileged());
+      }
+
+      // --- Tables Subcollection ---
+      match /tables/{tableId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow create, update, delete: if isSignedIn() && (isOwner(userId) || isPrivileged());
+      }
+
+      // --- Settings Subcollection ---
+      match /settings/{settingId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow create, update: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow delete: if isPrivileged(); // 관리자만 삭제 가능
+      }
+    }
+
+    // ================= collectionGroup 쿼리 지원 =================
+    // collectionGroup('tables') 등의 쿼리를 위한 규칙
+    match /{path=**}/tables/{tableId} {
+      // users/{userId}/tournaments/{tournamentId}/tables/{tableId} 경로의 모든 테이블
+      // 인증된 사용자만 읽을 수 있음 (본인 또는 관리자)
+      allow read: if isSignedIn();
+      // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/tables) 적용
+    }
+
+    // collectionGroup('participants') 쿼리를 위한 규칙
+    match /{path=**}/participants/{participantId} {
+      // users/{userId}/tournaments/{tournamentId}/participants/{participantId} 경로의 모든 참가자
+      // 인증된 사용자만 읽을 수 있음 (본인 또는 관리자)
+      allow read: if isSignedIn();
+      // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/participants) 적용
+    }
     
     // --- Attendance Records Collection (표준 필드명 지원) ---
     match /attendanceRecords/{recordId} {

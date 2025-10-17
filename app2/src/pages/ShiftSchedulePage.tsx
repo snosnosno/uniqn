@@ -14,12 +14,14 @@ import { WorkLog } from '../types/unifiedData';
 import { useShiftSchedule, ShiftDealer } from '../hooks/useShiftSchedule';
 import useTables from '../hooks/useTables';
 import { useToast } from '../hooks/useToast';
+import { useTournament } from '../contexts/TournamentContext';
 
 const ShiftSchedulePage: React.FC = () => {
+  const { state: tournamentState } = useTournament();
   const { t } = useTranslation();
   // const { currentUser } = useAuth(); // 향후 사용 예정
   const { showError } = useToast();
-  
+
   // 현재 선택된 날짜 상태
   const [selectedDate] = useState<string>(() => {
     const today = new Date();
@@ -27,15 +29,15 @@ const ShiftSchedulePage: React.FC = () => {
     return datePart || ''; // YYYY-MM-DD 형식
   });
   // setSelectedDate - 향후 사용 예정
-  
+
   // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)
   const [selectedEventId] = useState<string>('default-event');
-  
+
   // 🚀 WorkLog에서 스태프 데이터 가져오기 (persons 컬렉션 통합)
   const { state, loading: loadingState } = useUnifiedData();
   const workLogs = Array.from(state.workLogs.values());
   const workLogsLoading = loadingState.workLogs;
-  const { tables, loading: tablesLoading } = useTables();
+  const { tables, loading: tablesLoading } = useTables(tournamentState.userId, tournamentState.tournamentId);
   
   // 교대 스케줄 데이터
   const {

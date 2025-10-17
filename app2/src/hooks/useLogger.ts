@@ -30,6 +30,7 @@ type ActionType =
   | 'table_created_standby'
   | 'table_activated'
   | 'table_closed'
+  | 'table_deleted'
   | 'table_details_updated'
   | 'table_order_updated'
   | 'seats_reassigned_with_balancing'
@@ -37,6 +38,7 @@ type ActionType =
   | 'seat_moved'
   | 'max_seats_updated'
   | 'settings_updated'
+  | 'tables_assigned_to_tournament'
   | 'action_failed';
 
 

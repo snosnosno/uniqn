@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Table } from '../../hooks/useTables';
 import { Participant } from '../../hooks/useParticipants';
+import { Tournament } from '../../hooks/useTournaments';
+import { useDateFilter } from '../../contexts/DateFilterContext';
 
 import Modal from '../ui/Modal';
 import { Seat } from '../tables/Seat';
@@ -23,14 +25,13 @@ interface TableDetailModalProps {
   onPlayerSelect: (participantId: string, tableId: string, seatIndex: number, event: React.MouseEvent) => void;
   updateTableDetails: (tableId: string, data: { name?: string; borderColor?: string }) => void;
   onCloseTable: (tableId: string) => void;
+  onDeleteTable: (tableId: string) => void;
   activateTable: (tableId: string) => void;
   updateTableMaxSeats: (tableId: string, newMaxSeats: number, getParticipantName: (id: string) => string) => Promise<void>;
+  tournaments?: Tournament[];
+  assignTableToTournament?: (tableIds: string[], tournamentId: string) => Promise<void>;
   isDimmed?: boolean;
 }
-
-const PRESET_COLORS = [
-  '#FFFFFF', '#FF6B6B', '#4ECDC4', '#45B7D1', '#F7D842', '#8A2BE2', '#32CD32', '#FF8C00'
-];
 
 const TableDetailModal: React.FC<TableDetailModalProps> = ({
   table,
@@ -43,14 +44,23 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
   onPlayerSelect,
   updateTableDetails,
   onCloseTable,
+  onDeleteTable,
   activateTable,
   updateTableMaxSeats,
+  tournaments = [],
+  assignTableToTournament,
   isDimmed = false,
 }) => {
   const { t } = useTranslation();
+  const { selectedDate } = useDateFilter();
   const [isEditingName, setIsEditingName] = useState(false);
   const [tableName, setTableName] = useState('');
-  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // 같은 날짜의 토너먼트만 필터링
+  const sameDateTournaments = useMemo(() => {
+    if (!selectedDate) return tournaments;
+    return tournaments.filter(t => t.date === selectedDate || t.dateKey === selectedDate);
+  }, [tournaments, selectedDate]);
 
   useEffect(() => {
     if (table) {
@@ -79,15 +89,16 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
     setIsEditingName(false);
   };
 
-  const handleColorSelect = (e: React.MouseEvent, color: string) => {
-    e.stopPropagation();
-    updateTableDetails(table.id, { borderColor: color });
-    setShowColorPicker(false);
-  }
-
   const handleCloseTableClick = () => {
     if (table) {
       onCloseTable(table.id);
+      onClose();
+    }
+  };
+
+  const handleDeleteTableClick = () => {
+    if (table) {
+      onDeleteTable(table.id);
       onClose();
     }
   };
@@ -99,36 +110,66 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
     }
   };
 
+  const handleTournamentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!table || !assignTableToTournament) return;
+
+    const newTournamentId = e.target.value;
+    if (!newTournamentId) return;
+
+    try {
+      await assignTableToTournament([table.id], newTournamentId);
+      toast.success('테이블이 토너먼트에 배정되었습니다.');
+    } catch (error) {
+      toast.error('테이블 배정 중 오류가 발생했습니다.');
+    }
+  };
+
   const totalSeats = (table.seats || []).length;
   const filledSeats = (table.seats || []).filter(s => s !== null).length;
-  const emptySeatCount = totalSeats - filledSeats;
 
   const modalTitle = (
     <div className="flex items-center justify-between w-full">
       <span className="text-lg font-semibold text-gray-900">
-        {`${table.name || t('tableDetailModal.defaultTableName', { number: table.tableNumber })} (${filledSeats}/${totalSeats}, ${t('tableDetailModal.infoEmptySeats')} ${emptySeatCount})`}
+        {`${table.name || t('tableDetailModal.defaultTableName', { number: table.tableNumber })} (${filledSeats}/${totalSeats})`}
       </span>
-      {isEditingName ? (
-        <input
-          type="text"
-          value={tableName}
-          onChange={(e) => {e.stopPropagation(); setTableName(e.target.value);}}
-          onBlur={handleNameUpdate}
-          onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate(e)}
-          className="w-32 px-2 py-1 ml-3 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          autoFocus
-          onClick={(e) => e.stopPropagation()}
-          placeholder={t('tableDetailModal.defaultTableName', { number: table.tableNumber })}
-        />
-      ) : (
-        <button
-          onClick={(e) => { e.stopPropagation(); setIsEditingName(true); }}
-          className="flex items-center gap-1 px-2 py-1 ml-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-          title="테이블 이름 수정"
-        >
-          ✏️ 편집
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        {isEditingName ? (
+          <input
+            type="text"
+            value={tableName}
+            onChange={(e) => {e.stopPropagation(); setTableName(e.target.value);}}
+            onBlur={handleNameUpdate}
+            onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate(e)}
+            className="w-32 px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+            placeholder={t('tableDetailModal.defaultTableName', { number: table.tableNumber })}
+          />
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsEditingName(true); }}
+            className="flex items-center gap-1 px-2 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+            title="테이블 이름 수정"
+          >
+            ✏️ 편집
+          </button>
+        )}
+        {sameDateTournaments.length > 0 && assignTableToTournament && (
+          <select
+            value={table.tournamentId || ''}
+            onChange={handleTournamentChange}
+            onClick={(e) => e.stopPropagation()}
+            className="select select-bordered select-sm"
+          >
+            <option value="">토너먼트 선택</option>
+            {sameDateTournaments.map((tournament) => (
+              <option key={tournament.id} value={tournament.id}>
+                {tournament.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
     </div>
   );
 
@@ -146,25 +187,12 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
           
           <div className="flex justify-between items-center mb-4 pb-4 border-b">
             <div className="flex items-center gap-2">
-              <div className="relative flex items-center gap-2">
-                <button
-                    onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
-                    className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: table.borderColor || '#cccccc' }}
-                    title={t('tableDetailModal.changeBorderColorTitle')}
-                />
-                <span className="text-sm text-gray-600">색 편집</span>
-                {showColorPicker ? <div className="absolute z-30 top-8 left-0 bg-white p-2 rounded-md shadow-lg flex gap-2">
-                        {PRESET_COLORS.map(color => (
-                            <button
-                                key={color}
-                                onClick={(e) => handleColorSelect(e, color)}
-                                className="w-6 h-6 rounded-full"
-                                style={{ backgroundColor: color }}
-                            />
-                        ))}
-                    </div> : null}
-              </div>
+              <button
+                onClick={handleDeleteTableClick}
+                className="btn btn-sm bg-gray-500 hover:bg-gray-600 text-white border-none"
+              >
+                테이블 삭제
+              </button>
             </div>
             <div className="flex items-center gap-2">
                 <div className="flex items-center space-x-2">

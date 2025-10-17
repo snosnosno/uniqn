@@ -14,6 +14,10 @@ interface TableCardProps {
   getDealerName: (staffId: string | null) => string;
   participants?: Participant[];
   onPlayerSelect?: (participant: Participant | null, table: Table, seatIndex: number, event?: React.MouseEvent) => void;
+  tournamentColor?: string; // 토너먼트 색상
+  isSelectionMode?: boolean; // 선택 모드 여부
+  isSelected?: boolean; // 선택 상태
+  onSelect?: (checked: boolean) => void; // 선택 핸들러
 }
 
 const TableCard: React.FC<TableCardProps> = ({
@@ -23,6 +27,10 @@ const TableCard: React.FC<TableCardProps> = ({
   getDealerName,
   participants,
   onPlayerSelect,
+  tournamentColor,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
 }) => {
   const { t } = useTranslation();
   const {
@@ -40,6 +48,8 @@ const TableCard: React.FC<TableCardProps> = ({
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.8 : 1,
     borderColor: table.borderColor || 'transparent',
+    borderLeftWidth: tournamentColor ? '8px' : '4px',
+    borderLeftColor: tournamentColor || 'transparent',
   };
   
   const isStandby = table.status === 'standby';
@@ -80,16 +90,30 @@ const TableCard: React.FC<TableCardProps> = ({
       onClick={onTableClick}
     >
       {/* Card Header */}
-      <div 
+      <div
         className="w-full flex justify-between items-center mb-3 pb-2 border-b"
       >
-        <h3 
-            className={`font-bold text-lg truncate ${!isMobile ? 'cursor-grab' : ''}`}
-            {...listeners} 
-            {...attributes}
-        >
-            {table.name || `Table ${table.tableNumber}`}
-        </h3>
+        <div className="flex items-center gap-2 flex-1">
+          {/* 선택 모드 체크박스 */}
+          {isSelectionMode && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => {
+                e.stopPropagation();
+                onSelect?.(e.target.checked);
+              }}
+              className="w-5 h-5 cursor-pointer"
+            />
+          )}
+          <h3
+              className={`font-bold text-lg truncate ${!isMobile && !isSelectionMode ? 'cursor-grab' : ''}`}
+              {...(!isSelectionMode ? listeners : {})}
+              {...(!isSelectionMode ? attributes : {})}
+          >
+              {table.name || `Table ${table.tableNumber}`}
+          </h3>
+        </div>
         <div className="flex items-center gap-3">
             <div className="flex items-center text-sm text-gray-600">
                 <FaUsers className="w-4 h-4 mr-1" />
@@ -102,10 +126,10 @@ const TableCard: React.FC<TableCardProps> = ({
                 </div>
             )}
         </div>
-        <button 
-            className="p-2 rounded-full hover:bg-gray-200" 
-            onClick={(e) => { 
-                e.stopPropagation(); 
+        <button
+            className="p-2 rounded-full hover:bg-gray-200"
+            onClick={(e) => {
+                e.stopPropagation();
                 onTableClick();
             }}
         >

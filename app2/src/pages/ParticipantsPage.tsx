@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
 import { writeBatch, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -8,19 +9,42 @@ import { toast } from '../utils/toast';
 import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import CSVUploadButton from '../components/upload/CSVUploadButton';
+import TournamentSelector from '../components/TournamentSelector';
+import DateNavigator from '../components/DateNavigator';
+import { useDateFilter } from '../contexts/DateFilterContext';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
 import { ParsedParticipant, downloadCSV, generateParticipantsCSV } from '../utils/csvParser';
 import { FaTrash, FaPlus } from '../components/Icons/ReactIconsReplacement';
+import { isDefaultTournament } from '../hooks/useTournaments';
+import { useTournamentData } from '../contexts/TournamentDataContext';
 
 const ParticipantsPage: React.FC = () => {
+  const { state } = useTournament();
   const { t } = useTranslation();
-  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants();
-  const { tables, loading: tablesLoading, error: tablesError } = useTables();
+  const { tournaments } = useTournamentData();
+  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants(state.userId, state.tournamentId);
+  const { tables, loading: tablesLoading, error: tablesError } = useTables(state.userId, state.tournamentId);
+  const { selectedDate } = useDateFilter(); // 최상단에서 호출
 
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
-  const [newParticipant, setNewParticipant] = useState<Omit<Participant, 'id'>>({ name: '', phone: '', playerIdentifier: '', participationMethod: '', chips: 10000, status: 'active' as const });
+  const [newParticipant, setNewParticipant] = useState<Omit<Participant, 'id'>>({
+    name: '',
+    phone: '',
+    playerIdentifier: '',
+    participationMethod: '',
+    chips: 10000,
+    status: 'active' as const,
+    userId: '',
+    etc: '',
+    note: ''
+  });
+
+  // 현재 토너먼트 정보 가져오기
+  const currentTournament = useMemo(() => {
+    if (!state.tournamentId || state.tournamentId === 'ALL') return null;
+    return tournaments.find(t => t.id === state.tournamentId);
+  }, [state.tournamentId, tournaments]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +90,17 @@ const ParticipantsPage: React.FC = () => {
     if (participant) {
       setNewParticipant(participant);
     } else {
-      setNewParticipant({ name: '', phone: '', playerIdentifier: '', participationMethod: '', chips: 10000, status: 'active' as const });
+      setNewParticipant({
+        name: '',
+        phone: '',
+        playerIdentifier: '',
+        participationMethod: '',
+        chips: 10000,
+        status: 'active' as const,
+        userId: '',
+        etc: '',
+        note: ''
+      });
     }
     setIsModalOpen(true);
   };
@@ -144,19 +178,6 @@ const ParticipantsPage: React.FC = () => {
     await batch.commit();
   };
 
-  // CSV 파일 내용 처리
-  const handleCSVContent = (content: string) => {
-    setIsBulkModalOpen(true);
-    // BulkAddParticipantsModal에서 content를 처리할 수 있도록
-    // 모달이 열리면 자동으로 텍스트 영역에 입력됨
-    setTimeout(() => {
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        textarea.value = content;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    }, 100);
-  };
 
   // 선택 삭제 함수
   const handleDeleteSelected = () => {
@@ -274,14 +295,77 @@ const ParticipantsPage: React.FC = () => {
   if (participantsError) return <div className="text-red-500">{t('participants.errorParticipants')} {participantsError.message}</div>;
   if (tablesError) return <div className="text-red-500">{t('participants.errorTables')} {tablesError.message}</div>;
 
-  const isAllSelected = filteredParticipants.length > 0 && 
+  const isAllSelected = filteredParticipants.length > 0 &&
     filteredParticipants.every(p => selectedIds.has(p.id));
+
+  // 날짜 필터 사용 (전체 보기 모드가 아닐 때만)
+  const dateFilterForSelector = state.tournamentId === 'ALL' ? null : selectedDate;
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">{t('participants.title')}</h1>
-      <div className="mb-4 space-y-2">
-        <div className="flex gap-2 flex-wrap">
+      {/* 날짜 선택기 (전체 보기 모드가 아닐 때만 표시) */}
+      {state.tournamentId !== 'ALL' && state.tournamentId && (
+        <div className="mb-4">
+          <DateNavigator />
+        </div>
+      )}
+
+      <TournamentSelector dateFilter={dateFilterForSelector} />
+
+      {!state.tournamentId ? (
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+          <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
+        </div>
+      ) : (
+        <>
+      {/* Header */}
+      <div className="mb-6 bg-white p-4 rounded-lg shadow">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-800 mb-3 md:mb-0">{t('participants.title')}</h1>
+          <div className="flex flex-wrap items-center gap-2 md:space-x-3 md:gap-0">
+            <button
+              onClick={() => setIsBulkModalOpen(true)}
+              className="btn btn-secondary flex items-center gap-2 text-sm"
+              disabled={isDeleting || isModalOpen || isBulkModalOpen || state.tournamentId === 'ALL' || (!!state.tournamentId && isDefaultTournament(state.tournamentId))}
+              tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+              title={state.tournamentId === 'ALL' || (!!state.tournamentId && isDefaultTournament(state.tournamentId)) ? '전체보기에서는 참가자를 추가할 수 없습니다.' : undefined}
+            >
+              <FaPlus className="w-4 h-4" />
+              대량 추가
+            </button>
+            <button
+              onClick={() => handleOpenModal(null)}
+              className="btn btn-primary flex items-center gap-2 text-sm"
+              disabled={isDeleting || isModalOpen || isBulkModalOpen || state.tournamentId === 'ALL' || (!!state.tournamentId && isDefaultTournament(state.tournamentId))}
+              tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+              title={state.tournamentId === 'ALL' || (!!state.tournamentId && isDefaultTournament(state.tournamentId)) ? '전체보기에서는 참가자를 추가할 수 없습니다.' : undefined}
+            >
+              <FaPlus className="w-4 h-4" />
+              참가자 추가
+            </button>
+            <button
+              onClick={handleExportParticipants}
+              className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              disabled={isModalOpen || isBulkModalOpen || filteredParticipants.length === 0}
+              tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+            >
+              엑셀 내보내기 ({filteredParticipants.length}명)
+            </button>
+            <button
+              onClick={handleDeleteAll}
+              className="btn btn-danger text-sm flex items-center gap-2"
+              disabled={isDeleting || participants.length === 0 || isModalOpen || isBulkModalOpen}
+              tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+            >
+              <FaTrash className="w-3 h-3" />
+              전체 삭제
+            </button>
+          </div>
+        </div>
+
+        {/* 검색 및 선택 삭제 */}
+        <div className="flex flex-wrap gap-2 items-center">
           <input
             type="text"
             placeholder={t('participants.searchPlaceholder')}
@@ -291,60 +375,17 @@ const ParticipantsPage: React.FC = () => {
             disabled={isModalOpen || isBulkModalOpen}
             tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
           />
-          <button
-            onClick={() => setIsBulkModalOpen(true)}
-            className="btn btn-secondary flex items-center gap-2"
-            disabled={isDeleting || isModalOpen || isBulkModalOpen}
-            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
-          >
-            <FaPlus className="w-4 h-4" />
-            대량 추가
-          </button>
-          <button
-            onClick={() => handleOpenModal(null)}
-            className="btn btn-primary flex items-center gap-2"
-            disabled={isDeleting || isModalOpen || isBulkModalOpen}
-            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
-          >
-            <FaPlus className="w-4 h-4" />
-            참가자 추가
-          </button>
-        </div>
-        <div className="flex gap-2 items-center">
-          <CSVUploadButton onFileRead={handleCSVContent} disabled={isDeleting || isModalOpen || isBulkModalOpen} />
-          <span className="text-gray-400">|</span>
-          <button
-            onClick={handleExportParticipants}
-            className="btn btn-primary"
-            disabled={isModalOpen || isBulkModalOpen || filteredParticipants.length === 0}
-            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
-          >
-            엑셀 내보내기 ({filteredParticipants.length}명)
-          </button>
-          <span className="text-gray-400">|</span>
           {selectedIds.size > 0 && (
-            <>
-              <button
-                onClick={handleDeleteSelected}
-                className="btn btn-danger btn-sm flex items-center gap-2"
-                disabled={isDeleting || isModalOpen || isBulkModalOpen}
-                tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
-              >
-                <FaTrash className="w-3 h-3" />
-                선택 삭제 ({selectedIds.size}명)
-              </button>
-              <span className="text-gray-400">|</span>
-            </>
+            <button
+              onClick={handleDeleteSelected}
+              className="btn btn-danger btn-sm flex items-center gap-2"
+              disabled={isDeleting || isModalOpen || isBulkModalOpen}
+              tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
+            >
+              <FaTrash className="w-3 h-3" />
+              선택 삭제 ({selectedIds.size}명)
+            </button>
           )}
-          <button
-            onClick={handleDeleteAll}
-            className="btn btn-danger btn-sm flex items-center gap-2"
-            disabled={isDeleting || participants.length === 0 || isModalOpen || isBulkModalOpen}
-            tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
-          >
-            <FaTrash className="w-3 h-3" />
-            전체 삭제
-          </button>
         </div>
       </div>
 
@@ -363,9 +404,12 @@ const ParticipantsPage: React.FC = () => {
                 />
               </th>
               <th className="px-4 py-2">{t('participants.tableHeaderName')}</th>
+              <th className="px-4 py-2">ID</th>
               <th className="px-4 py-2">{t('participants.tableHeaderPhone')}</th>
               <th className="px-4 py-2">{t('participants.tableHeaderChips')}</th>
               <th className="px-4 py-2 whitespace-nowrap">{t('participants.tableHeaderLocation')}</th>
+              <th className="px-4 py-2">기타</th>
+              <th className="px-4 py-2">비고</th>
               <th className="px-4 py-2">{t('participants.tableHeaderActions')}</th>
               <th className="px-4 py-2">{t('participants.tableHeaderStatus')}</th>
             </tr>
@@ -384,9 +428,12 @@ const ParticipantsPage: React.FC = () => {
                   />
                 </td>
                 <td className="px-4 py-2">{p.name}</td>
+                <td className="px-4 py-2">{p.userId || '-'}</td>
                 <td className="px-4 py-2">{p.phone}</td>
                 <td className="px-4 py-2">{p.chips}</td>
                 <td className="px-4 py-2 whitespace-nowrap">{getParticipantLocation(p.id)}</td>
+                <td className="px-4 py-2">{p.etc || '-'}</td>
+                <td className="px-4 py-2">{p.note || '-'}</td>
                 <td className="px-4 py-2">
                   <button
                     onClick={() => handleOpenModal(p)}
@@ -425,6 +472,15 @@ const ParticipantsPage: React.FC = () => {
           onSubmit={handleAddOrUpdateParticipant}
           className="space-y-4"
         >
+          {/* 토너먼트 정보 표시 */}
+          {currentTournament && (
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold">토너먼트:</span> {currentTournament.name}
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-1">{t('participants.modalLabelName')}</label>
             <input
@@ -435,6 +491,16 @@ const ParticipantsPage: React.FC = () => {
               className="input-field w-full"
               autoFocus
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">ID</label>
+            <input
+              type="text"
+              value={newParticipant.userId || ''}
+              onChange={e => setNewParticipant(p => ({ ...p, userId: e.target.value }))}
+              className="input-field w-full"
+              placeholder="사용자 ID"
             />
           </div>
           <div>
@@ -462,6 +528,38 @@ const ParticipantsPage: React.FC = () => {
               onChange={e => setNewParticipant(p => ({ ...p, chips: Number(e.target.value) }))}
               className="input-field w-full"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">기타</label>
+            <input
+              type="text"
+              value={newParticipant.etc || ''}
+              onChange={e => setNewParticipant(p => ({ ...p, etc: e.target.value }))}
+              className="input-field w-full"
+              placeholder="기타 정보"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">비고</label>
+            <textarea
+              value={newParticipant.note || ''}
+              onChange={e => setNewParticipant(p => ({ ...p, note: e.target.value }))}
+              className="input-field w-full"
+              placeholder="비고"
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">상태</label>
+            <select
+              value={newParticipant.status}
+              onChange={e => setNewParticipant(p => ({ ...p, status: e.target.value as 'active' | 'busted' | 'no-show' }))}
+              className="input-field w-full"
+            >
+              <option value="active">활성</option>
+              <option value="busted">탈락</option>
+              <option value="no-show">불참</option>
+            </select>
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">{t('participants.modalButtonCancel')}</button>
@@ -505,6 +603,8 @@ const ParticipantsPage: React.FC = () => {
         isDangerous={true}
         isLoading={isDeleting}
       />
+        </>
+      )}
     </div>
   );
 };

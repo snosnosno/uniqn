@@ -13,13 +13,23 @@ export interface TournamentSettings {
   maxSeatsPerTable?: number;
 }
 
-export const useSettings = () => {
+export const useSettings = (userId: string | null, tournamentId: string | null) => {
   const [settings, setSettings] = useState<TournamentSettings>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const settingsDocRef = doc(db, 'tournaments', 'settings');
+    if (!userId || !tournamentId) {
+      setSettings({
+        minWorkMinutesForClockOut: 60,
+        qrClockInEnabled: true,
+        maxSeatsPerTable: 9,
+      });
+      setLoading(false);
+      return;
+    }
+
+    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'tournament');
 
     const unsubscribe = onSnapshot(
       settingsDocRef,
@@ -44,10 +54,13 @@ export const useSettings = () => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [userId, tournamentId]);
   
   const updateSettings = async (newSettings: Partial<TournamentSettings>) => {
-    const settingsDocRef = doc(db, 'tournaments', 'settings');
+    if (!userId || !tournamentId) {
+      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+    }
+    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'tournament');
     try {
       await setDoc(settingsDocRef, newSettings, { merge: true });
       logAction('settings_updated', { ...newSettings });
