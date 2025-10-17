@@ -2,19 +2,33 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../contexts/TournamentContext';
 import { useTournamentData } from '../contexts/TournamentDataContext';
-import { DEFAULT_TOURNAMENT_ID } from '../hooks/useTournaments';
+import { isDefaultTournament, getDefaultTournamentId } from '../hooks/useTournaments';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { FaCog } from './Icons/ReactIconsReplacement';
 
 interface TournamentSelectorProps {
   className?: string;
+  dateFilter?: string | null; // YYYY-MM-DD 형식의 날짜 필터 (옵션)
 }
 
-const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '' }) => {
+const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '', dateFilter = null }) => {
   const navigate = useNavigate();
   const { state, dispatch } = useTournament();
   const { tournaments, loading } = useTournamentData();
+
+  // 날짜 필터가 있으면 해당 날짜의 토너먼트만 표시
+  const filteredTournaments = React.useMemo(() => {
+    if (!dateFilter) return tournaments;
+    return tournaments.filter(t => t.dateKey === dateFilter || t.date === dateFilter);
+  }, [tournaments, dateFilter]);
+
+  // 날짜별 기본 토너먼트(전체보기) 찾기
+  const defaultTournamentForDate = React.useMemo(() => {
+    if (!dateFilter) return null;
+    const defaultId = getDefaultTournamentId(dateFilter);
+    return tournaments.find(t => t.id === defaultId);
+  }, [tournaments, dateFilter]);
 
   const handleTournamentChange = (tournamentId: string) => {
     if (!tournamentId) return;
@@ -54,16 +68,24 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '' 
           value={state.tournamentId || ''}
           onChange={(e) => handleTournamentChange(e.target.value)}
           className="input-field flex-1 min-w-0"
-          disabled={tournaments.length === 0}
+          disabled={filteredTournaments.length === 0}
         >
-          {tournaments.length === 0 ? (
-            <option value="">토너먼트가 없습니다</option>
+          {filteredTournaments.length === 0 ? (
+            <option value="">
+              {dateFilter ? '선택한 날짜에 토너먼트가 없습니다' : '토너먼트가 없습니다'}
+            </option>
           ) : (
             <>
               <option value="">선택하세요</option>
-              <option value="ALL">🌐 전체 토너먼트</option>
-              {tournaments
-                .filter((tournament) => tournament.id !== DEFAULT_TOURNAMENT_ID)
+              {!dateFilter && <option value="ALL">🌐 전체 토너먼트</option>}
+              {/* 날짜가 선택되었고 해당 날짜의 기본 토너먼트가 있으면 표시 */}
+              {dateFilter && defaultTournamentForDate && (
+                <option value={defaultTournamentForDate.id}>
+                  🌐 전체 ({dateFilter})
+                </option>
+              )}
+              {filteredTournaments
+                .filter((tournament) => !isDefaultTournament(tournament.id))
                 .map((tournament) => (
                   <option key={tournament.id} value={tournament.id}>
                     {tournament.name} ({tournament.date})

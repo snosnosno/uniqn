@@ -4,6 +4,8 @@ import { toast } from '../utils/toast';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { runTransaction, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { FaThList, FaUserPlus } from '../components/Icons/ReactIconsReplacement';
 
 import MoveSeatModal from '../components/modals/MoveSeatModal';
@@ -12,7 +14,10 @@ import PlayerActionModal from '../components/modals/PlayerActionModal';
 import TableCard from '../components/tables/TableCard';
 import TableDetailModal from '../components/modals/TableDetailModal';
 import TournamentSelector from '../components/TournamentSelector';
+import DateNavigator from '../components/DateNavigator';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import AssignmentResultModal, { AssignmentResult } from '../components/modals/AssignmentResultModal';
+import { useDateFilter } from '../contexts/DateFilterContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useTournament } from '../contexts/TournamentContext';
 import { useParticipants, Participant } from '../hooks/useParticipants';
@@ -20,7 +25,7 @@ import { useSettings } from '../hooks/useSettings';
 import { useTables, Table } from '../hooks/useTables';
 import { exportTablesToExcel } from '../utils/excelExport';
 import { useTournamentData } from '../contexts/TournamentDataContext';
-import { DEFAULT_TOURNAMENT_ID } from '../hooks/useTournaments';
+import { getDefaultTournamentId, isDefaultTournament } from '../hooks/useTournaments';
 import { getTournamentColorById, COLOR_EMOJIS, UNASSIGNED_COLOR } from '../utils/tournamentColors';
 
 const TablesPage: React.FC = () => {
@@ -37,7 +42,9 @@ const TablesPage: React.FC = () => {
         openNewTable,
         openNewTableInTournament,
         closeTable,
+        deleteTable,
         autoAssignSeats,
+        assignWaitingParticipants,
         autoBalanceByChips,
         activateTable,
         updateTableDetails,
@@ -53,7 +60,8 @@ const TablesPage: React.FC = () => {
     } = useParticipants(state.userId, state.tournamentId);
 
     const { settings, updateSettings, loading: settingsLoading } = useSettings(state.userId, state.tournamentId);
-    const { tournaments, ensureDefaultTournament } = useTournamentData();
+    const { tournaments, ensureDefaultTournamentForDate } = useTournamentData();
+    const { selectedDate } = useDateFilter(); // 최상단에서 호출
 
     const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -80,6 +88,34 @@ const TablesPage: React.FC = () => {
         message: '',
         onConfirm: () => {}
     });
+
+    // 대기 중 참가자 수동 배정을 위한 state
+    const [waitingParticipantForAssignment, setWaitingParticipantForAssignment] = useState<Participant | null>(null);
+    const [isWaitingAssignmentModalOpen, setIsWaitingAssignmentModalOpen] = useState(false);
+
+    // 배정 결과 모달 state
+    const [assignmentResultModal, setAssignmentResultModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        results: AssignmentResult[];
+    }>({
+        isOpen: false,
+        title: '',
+        results: []
+    });
+
+    // 대기 중 참가자 필터링 (위치 없음, 상태 active)
+    const waitingParticipants = useMemo(() => {
+        // 전체 보기 모드나 날짜별 전체보기에서는 배정 불가
+        if (state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) {
+            return [];
+        }
+
+        return participants.filter(p =>
+            p.status === 'active' &&
+            (p.tableNumber === undefined || p.tableNumber === null)
+        );
+    }, [participants, state.tournamentId]);
     
     const handleMaxSeatsChange = (newMaxSeats: number) => {
         if (newMaxSeats > 0) {
@@ -254,15 +290,173 @@ const TablesPage: React.FC = () => {
         setTargetTournamentId('');
     };
 
+    // 대기 중 참가자 자동 배정 핸들러
+    const handleAutoAssignWaiting = async (participant: Participant) => {
+        setConfirmModal({
+            isOpen: true,
+            title: '자동 배정',
+            message: `${participant.name} 참가자를 자동으로 배정하시겠습니까?`,
+            onConfirm: async () => {
+                try {
+                    const results = await assignWaitingParticipants([participant]);
+                    if (results.length > 0) {
+                        setAssignmentResultModal({
+                            isOpen: true,
+                            title: '자동 배정 완료',
+                            results
+                        });
+                    }
+                } catch (error) {
+                    logger.error('대기 참가자 자동 배정 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+                    toast.error('자동 배정 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    };
+
+    // 테이블 닫기 핸들러 (확인 모달 → 참가자 이동 → 결과 표시)
+    const handleCloseTable = async (tableId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: '테이블 닫기',
+            message: '테이블을 닫으시겠습니까? 참가자들은 다른 테이블로 이동됩니다.',
+            onConfirm: async () => {
+                try {
+                    const results = await closeTable(tableId);
+                    if (results.length > 0) {
+                        // BalancingResult를 AssignmentResult로 변환
+                        const assignmentResults = results.map(r => ({
+                            participantId: r.participantId,
+                            participantName: r.participantName,
+                            fromTableNumber: r.fromTableNumber,
+                            fromSeatNumber: r.fromSeatIndex + 1,
+                            toTableNumber: r.toTableNumber,
+                            toSeatNumber: r.toSeatIndex + 1
+                        }));
+                        setAssignmentResultModal({
+                            isOpen: true,
+                            title: '테이블 닫기 완료',
+                            results: assignmentResults
+                        });
+                    } else {
+                        toast.success('테이블이 닫혔습니다.');
+                    }
+                } catch (error) {
+                    logger.error('테이블 닫기 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+                    toast.error('테이블 닫기 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    };
+
+    // 테이블 삭제 핸들러 (확인 모달 → 참가자 이동 → 테이블 삭제 → 결과 표시)
+    const handleDeleteTable = async (tableId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: '테이블 삭제',
+            message: '테이블을 삭제하시겠습니까? 참가자들은 다른 테이블로 이동되고 테이블은 완전히 제거됩니다.',
+            onConfirm: async () => {
+                try {
+                    const results = await deleteTable(tableId);
+                    if (results.length > 0) {
+                        // BalancingResult를 AssignmentResult로 변환
+                        const assignmentResults = results.map(r => ({
+                            participantId: r.participantId,
+                            participantName: r.participantName,
+                            fromTableNumber: r.fromTableNumber,
+                            fromSeatNumber: r.fromSeatIndex + 1,
+                            toTableNumber: r.toTableNumber,
+                            toSeatNumber: r.toSeatIndex + 1
+                        }));
+                        setAssignmentResultModal({
+                            isOpen: true,
+                            title: '테이블 삭제 완료',
+                            results: assignmentResults
+                        });
+                    } else {
+                        toast.success('테이블이 삭제되었습니다.');
+                    }
+                } catch (error) {
+                    logger.error('테이블 삭제 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+                    toast.error('테이블 삭제 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    };
+
+    // 대기 중 참가자 수동 배정 모달 열기
+    const handleManualAssignOpen = (participant: Participant) => {
+        setWaitingParticipantForAssignment(participant);
+        setIsWaitingAssignmentModalOpen(true);
+    };
+
+    // 대기 중 참가자 수동 배정 확정
+    const handleManualAssignConfirm = async (tableId: string, seatIndex: number) => {
+        if (!waitingParticipantForAssignment || !state.userId || !state.tournamentId) return;
+
+        try {
+            // 테이블의 seats 배열 업데이트
+            const table = tables.find(t => t.id === tableId);
+            if (!table) {
+                toast.error('테이블을 찾을 수 없습니다.');
+                return;
+            }
+
+            const actualTournamentId = table.tournamentId || state.tournamentId;
+
+            await runTransaction(db, async (transaction) => {
+                const tableRef = doc(db, `users/${state.userId}/tournaments/${actualTournamentId}/tables`, tableId);
+                const tableSnap = await transaction.get(tableRef);
+
+                if (!tableSnap.exists()) {
+                    toast.error('테이블 정보를 찾을 수 없습니다.');
+                    return;
+                }
+
+                const seats = [...tableSnap.data().seats];
+                if (seats[seatIndex] !== null) {
+                    toast.error('해당 좌석에 이미 참가자가 있습니다.');
+                    return;
+                }
+
+                // 자리에 참가자 배정
+                seats[seatIndex] = waitingParticipantForAssignment.id;
+                transaction.update(tableRef, { seats });
+
+                // 참가자의 tableNumber, seatNumber 업데이트
+                const participantRef = doc(db, `users/${state.userId}/tournaments/${actualTournamentId}/participants`, waitingParticipantForAssignment.id);
+                transaction.update(participantRef, {
+                    tableNumber: table.tableNumber,
+                    seatNumber: seatIndex + 1
+                });
+            });
+
+            toast.success(`${waitingParticipantForAssignment.name}이(가) ${table.name || `테이블 ${table.tableNumber}`} - ${seatIndex + 1}번 자리에 배정되었습니다.`);
+            setIsWaitingAssignmentModalOpen(false);
+            setWaitingParticipantForAssignment(null);
+        } catch (error) {
+            logger.error('대기 참가자 수동 배정 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+            toast.error('수동 배정 중 오류가 발생했습니다.');
+        }
+    };
+
     // 테이블 추가 핸들러 (전체 보기 모드)
     const handleAddTableInAllMode = async () => {
         if (state.tournamentId === 'ALL') {
-            // 전체 보기 모드에서는 기본 토너먼트에 테이블 추가
+            // 전체 보기 모드에서는 선택된 날짜의 기본 토너먼트에 테이블 추가
             try {
-                await ensureDefaultTournament(); // 기본 토너먼트 확인/생성
-                await openNewTableInTournament(DEFAULT_TOURNAMENT_ID);
+                if (!selectedDate) {
+                    toast.error('날짜를 먼저 선택해주세요.');
+                    return;
+                }
+                const defaultTournamentId = await ensureDefaultTournamentForDate(selectedDate);
+                await openNewTableInTournament(defaultTournamentId);
+                logger.info('날짜별 기본 토너먼트에 테이블 추가 완료', {
+                    component: 'TablesPage',
+                    data: { dateKey: selectedDate, tournamentId: defaultTournamentId }
+                });
             } catch (error) {
-                logger.error('기본 토너먼트 테이블 추가 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
+                logger.error('날짜별 기본 토너먼트 테이블 추가 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'TablesPage' });
                 toast.error('테이블 추가 중 오류가 발생했습니다.');
             }
         } else {
@@ -272,7 +466,7 @@ const TablesPage: React.FC = () => {
 
     // 토너먼트별 범례 데이터
     const legend = useMemo(() => {
-        if (state.tournamentId !== 'ALL') return [];
+        if (state.tournamentId !== 'ALL' && !(state.tournamentId && isDefaultTournament(state.tournamentId))) return [];
 
         const legendMap: Record<string, { color: string; count: number; name: string }> = {};
 
@@ -281,7 +475,7 @@ const TablesPage: React.FC = () => {
             if (!legendMap[tid]) {
                 const tournament = tournaments.find(t => t.id === tid);
                 const color = tid === 'UNASSIGNED' ? UNASSIGNED_COLOR : (tournament?.color || UNASSIGNED_COLOR);
-                const name = tid === 'UNASSIGNED' ? '기본 테이블' : (tournament?.name || '알 수 없음');
+                const name = tid === 'UNASSIGNED' ? '전체' : (tournament?.name || '알 수 없음');
 
                 legendMap[tid] = { color, count: 0, name };
             }
@@ -317,9 +511,19 @@ const TablesPage: React.FC = () => {
         handleCloseActionMenu();
     };
 
+    // 날짜 필터 사용 (전체 보기 모드가 아닐 때만)
+    const dateFilterForSelector = state.tournamentId === 'ALL' ? null : selectedDate;
+
     return (
         <div className="p-4 bg-gray-100 min-h-screen" onClick={handleContainerClick}>
-            <TournamentSelector />
+            {/* 날짜 선택기 (전체 보기 모드가 아닐 때만 표시) */}
+            {state.tournamentId !== 'ALL' && state.tournamentId && (
+                <div className="mb-4">
+                    <DateNavigator />
+                </div>
+            )}
+
+            <TournamentSelector dateFilter={dateFilterForSelector} />
 
             {!state.tournamentId ? (
                 <div className="bg-white shadow-md rounded-lg p-8 text-center">
@@ -331,17 +535,8 @@ const TablesPage: React.FC = () => {
             {/* Header */}
             <div className="mb-6 bg-white p-4 rounded-lg shadow">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-3 md:mb-0">{t('tables.title')}</h1>
-                    <div className="flex flex-wrap items-center gap-2 md:space-x-3 md:gap-0">
-                        {/* 전체 보기 모드에서만 테이블 배정 버튼 표시 */}
-                        {state.tournamentId === 'ALL' && (
-                            <button
-                                onClick={handleToggleSelectionMode}
-                                className={`btn text-sm ${isSelectionMode ? 'btn-secondary bg-gray-600' : 'btn-primary'}`}
-                            >
-                                📌 {isSelectionMode ? '취소' : '테이블 배정'}
-                            </button>
-                        )}
+                    <div className="flex items-center gap-3 mb-3 md:mb-0">
+                        <h1 className="text-3xl font-bold text-gray-800">{t('tables.title')}</h1>
                         <button
                             onClick={handleExportToExcel}
                             className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
@@ -349,6 +544,17 @@ const TablesPage: React.FC = () => {
                         >
                             {t('tables.exportExcel')}
                         </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 md:space-x-3 md:gap-0">
+                        {/* 전체 보기 모드에서만 테이블 배정 버튼 표시 */}
+                        {(state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) && (
+                            <button
+                                onClick={handleToggleSelectionMode}
+                                className={`btn text-sm ${isSelectionMode ? 'btn-secondary bg-gray-600' : 'btn-primary'}`}
+                            >
+                                {isSelectionMode ? '취소' : '테이블 배정'}
+                            </button>
+                        )}
                         <button
                             onClick={() => {
                                 const activePlayers = participants.filter(p => p.status === 'active');
@@ -357,7 +563,14 @@ const TablesPage: React.FC = () => {
                                     title: '자동 재배치',
                                     message: `활성 참가자 ${activePlayers.length}명을 자동으로 재배치하시겠습니까?\n\n현재 좌석 배치가 초기화되고 새로운 자리가 배정됩니다.`,
                                     onConfirm: async () => {
-                                        await autoAssignSeats(activePlayers);
+                                        const results = await autoAssignSeats(activePlayers);
+                                        if (results.length > 0) {
+                                            setAssignmentResultModal({
+                                                isOpen: true,
+                                                title: '자동 재배치 완료',
+                                                results
+                                            });
+                                        }
                                     }
                                 });
                             }}
@@ -373,7 +586,14 @@ const TablesPage: React.FC = () => {
                                     title: '칩 균형 재배치',
                                     message: `참가자들을 칩 스택 기준으로 균형있게 재배치하시겠습니까?\n\n각 테이블의 평균 칩이 비슷하도록 자동으로 조정됩니다.\n현재 좌석 배치가 변경됩니다.`,
                                     onConfirm: async () => {
-                                        await autoBalanceByChips(participants);
+                                        const results = await autoBalanceByChips(participants);
+                                        if (results.length > 0) {
+                                            setAssignmentResultModal({
+                                                isOpen: true,
+                                                title: '칩 균형 재배치 완료',
+                                                results
+                                            });
+                                        }
                                     }
                                 });
                             }}
@@ -389,7 +609,7 @@ const TablesPage: React.FC = () => {
                 </div>
 
                 {/* 선택 모드 활성화 시 할당 UI */}
-                {isSelectionMode && state.tournamentId === 'ALL' && (
+                {isSelectionMode && (state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) && (
                     <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <div className="flex flex-wrap items-center gap-3">
                             <label className="font-semibold text-gray-700">토너먼트 선택:</label>
@@ -423,7 +643,7 @@ const TablesPage: React.FC = () => {
                 )}
 
                 {/* 범례 (전체 보기 모드) */}
-                {state.tournamentId === 'ALL' && legend.length > 0 && (
+                {(state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) && legend.length > 0 && (
                     <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                         <div className="flex flex-wrap items-center gap-3">
                             {legend.map(item => {
@@ -461,6 +681,56 @@ const TablesPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* 대기 중 참가자 섹션 */}
+            {waitingParticipants.length > 0 && (
+                <div className="mb-6 bg-white p-4 rounded-lg shadow">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">대기 중 참가자</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full table-auto">
+                            <thead className="bg-gray-200">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">이름</th>
+                                    <th className="px-4 py-2 text-left">ID</th>
+                                    <th className="px-4 py-2 text-left">칩</th>
+                                    <th className="px-4 py-2 text-left">위치</th>
+                                    <th className="px-4 py-2 text-center">배정</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {waitingParticipants.map((participant) => (
+                                    <tr key={participant.id} className="border-b hover:bg-gray-50">
+                                        <td className="px-4 py-2">{participant.name}</td>
+                                        <td className="px-4 py-2">{participant.userId || '-'}</td>
+                                        <td className="px-4 py-2">{participant.chips}</td>
+                                        <td className="px-4 py-2 text-gray-500">대기중</td>
+                                        <td className="px-4 py-2">
+                                            <div className="flex justify-center gap-2">
+                                                <button
+                                                    onClick={() => handleAutoAssignWaiting(participant)}
+                                                    className="btn btn-secondary btn-xs"
+                                                    disabled={tablesLoading || participantsLoading || totalEmptySeats === 0}
+                                                    title={totalEmptySeats === 0 ? '빈 자리가 없습니다' : '자동 배정'}
+                                                >
+                                                    자동 배정
+                                                </button>
+                                                <button
+                                                    onClick={() => handleManualAssignOpen(participant)}
+                                                    className="btn btn-primary btn-xs"
+                                                    disabled={tablesLoading || participantsLoading || totalEmptySeats === 0}
+                                                    title={totalEmptySeats === 0 ? '빈 자리가 없습니다' : '수동 배정'}
+                                                >
+                                                    수동 배정
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Tables Grid */}
             <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
@@ -503,7 +773,8 @@ const TablesPage: React.FC = () => {
                     onClose={() => setDetailModalTable(null)}
                     table={currentDetailTable}
                     activateTable={activateTable}
-                    onCloseTable={closeTable}
+                    onCloseTable={handleCloseTable}
+                    onDeleteTable={handleDeleteTable}
                     getParticipantName={getParticipantName}
                     participants={participants}
                     onMoveSeat={moveSeat}
@@ -511,6 +782,8 @@ const TablesPage: React.FC = () => {
                     onPlayerSelect={onPlayerSelectInModal}
                     updateTableDetails={updateTableDetails}
                     updateTableMaxSeats={updateTableMaxSeats}
+                    tournaments={tournaments}
+                    assignTableToTournament={assignTableToTournament}
                 /> : null}
             
             {actionMenu && selectedPlayer?.participant ? <PlayerActionModal
@@ -530,7 +803,20 @@ const TablesPage: React.FC = () => {
                     onConfirmMove={handleConfirmMove}
                     getParticipantName={getParticipantName}
                 /> : null}
-            
+
+            {/* 대기 참가자 수동 배정 모달 */}
+            {isWaitingAssignmentModalOpen && waitingParticipantForAssignment ? <MoveSeatModal
+                    isOpen={isWaitingAssignmentModalOpen}
+                    onClose={() => {
+                        setIsWaitingAssignmentModalOpen(false);
+                        setWaitingParticipantForAssignment(null);
+                    }}
+                    tables={tables}
+                    movingParticipant={waitingParticipantForAssignment}
+                    onConfirmMove={handleManualAssignConfirm}
+                    getParticipantName={getParticipantName}
+                /> : null}
+
             {detailModalParticipant ? <ParticipantDetailModal
                     isOpen={!!detailModalParticipant}
                     onClose={() => setDetailModalParticipant(null)}
@@ -545,6 +831,13 @@ const TablesPage: React.FC = () => {
                 onConfirm={confirmModal.onConfirm}
                 title={confirmModal.title}
                 message={confirmModal.message}
+            />
+
+            <AssignmentResultModal
+                isOpen={assignmentResultModal.isOpen}
+                onClose={() => setAssignmentResultModal({ ...assignmentResultModal, isOpen: false })}
+                title={assignmentResultModal.title}
+                results={assignmentResultModal.results}
             />
                 </>
             )}

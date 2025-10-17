@@ -1,18 +1,38 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDoc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
 import { getTournamentColor, UNASSIGNED_COLOR } from '../utils/tournamentColors';
+import { normalizeDate } from '../utils/dateUtils';
 
-// 기본 토너먼트 ID (기본 테이블 저장용)
-export const DEFAULT_TOURNAMENT_ID = 'DEFAULT_UNASSIGNED';
+// 기본 토너먼트 ID 접두사 (날짜별 전체보기용)
+export const DEFAULT_TOURNAMENT_PREFIX = 'DEFAULT_DATE_';
+
+/**
+ * 날짜별 기본 토너먼트 ID 생성
+ * @param dateKey - YYYY-MM-DD 형식의 날짜
+ * @returns 날짜별 기본 토너먼트 ID (예: DEFAULT_DATE_2025-01-20)
+ */
+export const getDefaultTournamentId = (dateKey: string): string => {
+  return `${DEFAULT_TOURNAMENT_PREFIX}${dateKey}`;
+};
+
+/**
+ * 기본 토너먼트 ID인지 확인
+ * @param tournamentId - 확인할 토너먼트 ID
+ * @returns 기본 토너먼트 여부
+ */
+export const isDefaultTournament = (tournamentId: string): boolean => {
+  return tournamentId.startsWith(DEFAULT_TOURNAMENT_PREFIX);
+};
 
 export interface Tournament {
   id: string;
   name: string;
   date: string;
+  dateKey: string; // YYYY-MM-DD 형식의 날짜 키 (날짜별 그룹화용)
   location?: string;
   status: 'upcoming' | 'active' | 'completed';
   color?: string; // 토너먼트별 색상 (HEX 코드, 예: #3B82F6)
@@ -67,7 +87,7 @@ export const useTournaments = (userId: string | null) => {
     return () => unsubscribe();
   }, [userId]);
 
-  const createTournament = async (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createTournament = async (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => {
     if (!userId) {
       throw new Error('사용자 ID가 필요합니다.');
     }
@@ -79,8 +99,12 @@ export const useTournaments = (userId: string | null) => {
       // 색상이 지정되지 않았으면 자동 할당
       const color = tournamentData.color || getTournamentColor(tournaments.length);
 
+      // date 필드에서 dateKey 자동 생성 (YYYY-MM-DD 형식)
+      const dateKey = normalizeDate(tournamentData.date);
+
       const docRef = await addDoc(collection(db, tournamentsPath), {
         ...tournamentData,
+        dateKey,
         color,
         createdAt: now,
         updatedAt: now,
@@ -88,28 +112,36 @@ export const useTournaments = (userId: string | null) => {
 
       logger.info('토너먼트 생성 완료', {
         component: 'useTournaments',
-        data: { tournamentId: docRef.id, name: tournamentData.name, color },
+        data: { tournamentId: docRef.id, name: tournamentData.name, dateKey, color },
       });
 
       return docRef;
     }, 'createTournament');
   };
 
-  const updateTournament = async (tournamentId: string, data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt'>>) => {
+  const updateTournament = async (tournamentId: string, data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>>) => {
     if (!userId) {
       throw new Error('사용자 ID가 필요합니다.');
     }
 
     return withFirebaseErrorHandling(async () => {
       const tournamentDoc = doc(db, `users/${userId}/tournaments`, tournamentId);
-      await updateDoc(tournamentDoc, {
+
+      // date가 변경되면 dateKey도 자동 업데이트
+      const updateData: Record<string, any> = {
         ...data,
         updatedAt: Timestamp.now(),
-      });
+      };
+
+      if (data.date) {
+        updateData.dateKey = normalizeDate(data.date);
+      }
+
+      await updateDoc(tournamentDoc, updateData);
 
       logger.info('토너먼트 수정 완료', {
         component: 'useTournaments',
-        data: { tournamentId, ...data },
+        data: { tournamentId, ...updateData },
       });
     }, 'updateTournament');
   };
@@ -120,34 +152,92 @@ export const useTournaments = (userId: string | null) => {
     }
 
     return withFirebaseErrorHandling(async () => {
+      // 삭제할 토너먼트 정보 가져오기
       const tournamentDoc = doc(db, `users/${userId}/tournaments`, tournamentId);
+      const tournamentSnap = await getDoc(tournamentDoc);
+
+      if (!tournamentSnap.exists()) {
+        throw new Error('토너먼트를 찾을 수 없습니다.');
+      }
+
+      const tournamentData = tournamentSnap.data();
+      const dateKey = tournamentData.dateKey;
+
+      // 토너먼트 삭제
       await deleteDoc(tournamentDoc);
 
       logger.info('토너먼트 삭제 완료', {
         component: 'useTournaments',
-        data: { tournamentId },
+        data: { tournamentId, dateKey },
       });
+
+      // 해당 날짜에 다른 토너먼트가 있는지 확인
+      if (dateKey) {
+        const tournamentsSnapshot = await getDocs(collection(db, `users/${userId}/tournaments`));
+        const otherTournamentsForDate = tournamentsSnapshot.docs.filter(doc => {
+          const data = doc.data();
+          return data.dateKey === dateKey && !isDefaultTournament(doc.id);
+        });
+
+        // 해당 날짜에 다른 토너먼트가 없으면 기본 토너먼트와 테이블 삭제
+        if (otherTournamentsForDate.length === 0) {
+          const defaultTournamentId = getDefaultTournamentId(dateKey);
+          const defaultTournamentDoc = doc(db, `users/${userId}/tournaments`, defaultTournamentId);
+          const defaultTournamentSnap = await getDoc(defaultTournamentDoc);
+
+          if (defaultTournamentSnap.exists()) {
+            // 기본 토너먼트의 테이블들도 삭제
+            const tablesSnapshot = await getDocs(collection(db, `users/${userId}/tournaments/${defaultTournamentId}/tables`));
+
+            if (tablesSnapshot.docs.length > 0) {
+              const batch = writeBatch(db);
+              tablesSnapshot.docs.forEach(tableDoc => {
+                batch.delete(tableDoc.ref);
+              });
+              await batch.commit();
+
+              logger.info('기본 토너먼트 테이블 삭제 완료', {
+                component: 'useTournaments',
+                data: { defaultTournamentId, tableCount: tablesSnapshot.docs.length }
+              });
+            }
+
+            // 기본 토너먼트 삭제
+            await deleteDoc(defaultTournamentDoc);
+
+            logger.info('기본 토너먼트 자동 삭제 완료', {
+              component: 'useTournaments',
+              data: { defaultTournamentId, dateKey, reason: '해당 날짜의 마지막 토너먼트 삭제' }
+            });
+          }
+        }
+      }
     }, 'deleteTournament');
   };
 
   /**
-   * 기본 토너먼트 확인 및 생성
-   * 기본 테이블을 저장할 기본 토너먼트가 없으면 자동 생성
+   * 날짜별 기본 토너먼트 확인 및 생성
+   * 해당 날짜의 기본 토너먼트(전체보기용)가 없으면 자동 생성
+   *
+   * @param dateKey - YYYY-MM-DD 형식의 날짜
+   * @returns 생성 또는 확인된 기본 토너먼트 ID
    */
-  const ensureDefaultTournament = async () => {
+  const ensureDefaultTournamentForDate = async (dateKey: string) => {
     if (!userId) {
       throw new Error('사용자 ID가 필요합니다.');
     }
 
     return withFirebaseErrorHandling(async () => {
-      const defaultTournamentDoc = doc(db, `users/${userId}/tournaments`, DEFAULT_TOURNAMENT_ID);
+      const defaultTournamentId = getDefaultTournamentId(dateKey);
+      const defaultTournamentDoc = doc(db, `users/${userId}/tournaments`, defaultTournamentId);
       const docSnap = await getDoc(defaultTournamentDoc);
 
       if (!docSnap.exists()) {
         const now = Timestamp.now();
         await setDoc(defaultTournamentDoc, {
-          name: '기본 테이블',
-          date: new Date().toISOString().split('T')[0] || '',
+          name: '전체',
+          date: dateKey,
+          dateKey: dateKey,
           location: '',
           status: 'upcoming' as const,
           color: UNASSIGNED_COLOR,
@@ -155,14 +245,14 @@ export const useTournaments = (userId: string | null) => {
           updatedAt: now,
         });
 
-        logger.info('기본 토너먼트 생성 완료', {
+        logger.info('날짜별 기본 토너먼트 생성 완료', {
           component: 'useTournaments',
-          data: { tournamentId: DEFAULT_TOURNAMENT_ID },
+          data: { tournamentId: defaultTournamentId, dateKey },
         });
       }
 
-      return DEFAULT_TOURNAMENT_ID;
-    }, 'ensureDefaultTournament');
+      return defaultTournamentId;
+    }, 'ensureDefaultTournamentForDate');
   };
 
   return {
@@ -172,7 +262,7 @@ export const useTournaments = (userId: string | null) => {
     createTournament,
     updateTournament,
     deleteTournament,
-    ensureDefaultTournament,
+    ensureDefaultTournamentForDate,
   };
 };
 

@@ -30,6 +30,7 @@ type ActionType =
   | 'table_created_standby'
   | 'table_activated'
   | 'table_closed'
+  | 'table_deleted'
   | 'table_details_updated'
   | 'table_order_updated'
   | 'seats_reassigned_with_balancing'

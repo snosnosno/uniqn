@@ -24,6 +24,8 @@ import { TournamentProvider } from './contexts/TournamentContextAdapter';
 import { UnifiedDataProvider } from './contexts/UnifiedDataContext';
 // TournamentDataContext - 토너먼트 데이터 전역 관리
 import { TournamentDataProvider } from './contexts/TournamentDataContext';
+// DateFilterContext - 날짜 선택 상태 관리
+import { DateFilterProvider } from './contexts/DateFilterContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
@@ -156,8 +158,9 @@ const App: React.FC = () => {
               <UnifiedDataProvider>
                 <TournamentProvider>
                   <TournamentDataProvider>
-                    {/* 네트워크 상태 표시 */}
-                    <NetworkStatusIndicator position="top" />
+                    <DateFilterProvider>
+                      {/* 네트워크 상태 표시 */}
+                      <NetworkStatusIndicator position="top" />
 
               <Routes>
                 {/* Public Routes */}
@@ -238,6 +241,7 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
+                    </DateFilterProvider>
                   </TournamentDataProvider>
                 </TournamentProvider>
               </UnifiedDataProvider>

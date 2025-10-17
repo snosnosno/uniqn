@@ -29,10 +29,10 @@ interface TournamentDataContextType {
   tournaments: Tournament[];
   loading: boolean;
   error: Error | null;
-  createTournament: (data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt'>) => Promise<DocumentReference<DocumentData, DocumentData>>;
-  updateTournament: (id: string, data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>;
+  createTournament: (data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => Promise<DocumentReference<DocumentData, DocumentData>>;
+  updateTournament: (id: string, data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>>) => Promise<void>;
   deleteTournament: (id: string) => Promise<void>;
-  ensureDefaultTournament: () => Promise<string>;
+  ensureDefaultTournamentForDate: (dateKey: string) => Promise<string>;
 }
 
 /**
@@ -70,8 +70,31 @@ export const TournamentDataProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, [state.userId, tournamentData.tournaments.length, tournamentData.loading]);
 
+  // createTournament 래핑: 해당 날짜의 첫 번째 토너먼트 생성 시 기본 토너먼트도 자동 생성
+  const createTournamentWithDefault = async (data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => {
+    const dateKey = data.date; // 정규화된 날짜 키
+
+    // 해당 날짜에 토너먼트가 없으면 기본 토너먼트 먼저 생성
+    const tournamentsForDate = tournamentData.tournaments.filter(t => t.dateKey === dateKey);
+    if (tournamentsForDate.length === 0) {
+      await tournamentData.ensureDefaultTournamentForDate(dateKey);
+      logger.info('첫 번째 토너먼트 생성 전 기본 토너먼트 자동 생성', {
+        component: 'TournamentDataContext',
+        data: { dateKey }
+      });
+    }
+
+    // 실제 토너먼트 생성
+    return tournamentData.createTournament(data);
+  };
+
+  const contextValue: TournamentDataContextType = {
+    ...tournamentData,
+    createTournament: createTournamentWithDefault,
+  };
+
   return (
-    <TournamentDataContext.Provider value={tournamentData}>
+    <TournamentDataContext.Provider value={contextValue}>
       {children}
     </TournamentDataContext.Provider>
   );

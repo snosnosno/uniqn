@@ -2,13 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../contexts/TournamentContext';
 import { useTournamentData } from '../contexts/TournamentDataContext';
-import { Tournament, DEFAULT_TOURNAMENT_ID } from '../hooks/useTournaments';
+import { Tournament, isDefaultTournament } from '../hooks/useTournaments';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import Modal from '../components/ui/Modal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import { FaPlus, FaCog, FaTrash, FaCheck } from '../components/Icons/ReactIconsReplacement';
+import { FaPlus, FaCog, FaTrash, FaCheck, FaChevronDown } from '../components/Icons/ReactIconsReplacement';
 import { TOURNAMENT_COLORS, COLOR_EMOJIS } from '../utils/tournamentColors';
+import { useGroupByDate } from '../hooks/useGroupByDate';
+import { formatDateDisplay } from '../utils/dateUtils';
 
 const TournamentsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -177,11 +179,44 @@ const TournamentsPage: React.FC = () => {
     }
   };
 
-  // 기본 테이블 토너먼트 필터링
+  // 기본 테이블 토너먼트 필터링 (날짜별 전체보기 토너먼트 숨김)
   const visibleTournaments = useMemo(
-    () => tournaments.filter((tournament) => tournament.id !== DEFAULT_TOURNAMENT_ID),
+    () => tournaments.filter((tournament) => !isDefaultTournament(tournament.id)),
     [tournaments]
   );
+
+  // 날짜별 그룹화 (useGroupByDate 훅 사용)
+  const {
+    groupedData,
+    isExpanded,
+    toggleExpansion,
+    expandAll,
+    collapseAll,
+    getItemCount,
+  } = useGroupByDate<Tournament>({
+    data: visibleTournaments,
+    getDateKey: (tournament) => tournament.dateKey || tournament.date,
+    sortItems: (a, b) => {
+      // 같은 날짜 내에서 시간순 정렬
+      return a.name.localeCompare(b.name);
+    },
+    storageKey: 'tournament_sections_expanded',
+    defaultExpanded: true,
+  });
+
+  // 상대적 날짜 라벨 생성 (오늘, 내일 등)
+  const getDateLabel = (dateKey: string): string => {
+    const today = new Date().toISOString().split('T')[0] || '';
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0] || '';
+
+    if (dateKey === today) {
+      return '오늘';
+    } else if (dateKey === tomorrow) {
+      return '내일';
+    } else {
+      return formatDateDisplay(dateKey);
+    }
+  };
 
   if (loading) {
     return (
@@ -201,16 +236,32 @@ const TournamentsPage: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-800">토너먼트 관리</h1>
-        <button
-          onClick={handleOpenCreateModal}
-          className="btn btn-primary flex items-center gap-2"
-          disabled={isSubmitting}
-        >
-          <FaPlus className="w-4 h-4" />
-          새 토너먼트
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={collapseAll}
+            className="btn btn-secondary btn-sm"
+            disabled={isSubmitting}
+          >
+            전체 접기
+          </button>
+          <button
+            onClick={expandAll}
+            className="btn btn-secondary btn-sm"
+            disabled={isSubmitting}
+          >
+            전체 펼치기
+          </button>
+          <button
+            onClick={handleOpenCreateModal}
+            className="btn btn-primary flex items-center gap-2"
+            disabled={isSubmitting}
+          >
+            <FaPlus className="w-4 h-4" />
+            새 토너먼트
+          </button>
+        </div>
       </div>
 
       {visibleTournaments.length === 0 ? (
@@ -224,14 +275,49 @@ const TournamentsPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {visibleTournaments.map((tournament) => (
+        <div className="space-y-6">
+          {/* 날짜별 섹션 */}
+          {groupedData.sortedKeys.map((dateKey) => {
+            const tournamentsInDate = groupedData.grouped[dateKey] || [];
+            const expanded = isExpanded(dateKey);
+            const count = getItemCount(dateKey);
+
+            return (
+              <div key={dateKey} className="bg-white shadow-md rounded-lg overflow-hidden">
+                {/* 날짜 섹션 헤더 */}
+                <button
+                  onClick={() => toggleExpansion(dateKey)}
+                  className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expanded ? (
+                      <FaChevronDown className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <span className="text-blue-600 text-xl">▶</span>
+                    )}
+                    <h2 className="text-xl font-bold text-gray-800">
+                      {getDateLabel(dateKey)}
+                      <span className="ml-2 text-sm font-normal text-gray-600">
+                        ({count}개)
+                      </span>
+                    </h2>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {dateKey}
+                  </div>
+                </button>
+
+                {/* 토너먼트 카드 그리드 (확장 시에만 표시) */}
+                {expanded && (
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {tournamentsInDate.map((tournament) => (
             <div
               key={tournament.id}
               className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow border-l-8"
               style={{ borderLeftColor: tournament.color || TOURNAMENT_COLORS[0] }}
             >
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{COLOR_EMOJIS[tournament.color || TOURNAMENT_COLORS[0]]}</span>
                   <h3 className="text-xl font-bold text-gray-800">{tournament.name}</h3>
@@ -239,17 +325,6 @@ const TournamentsPage: React.FC = () => {
                 <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(tournament.status)}`}>
                   {getStatusLabel(tournament.status)}
                 </span>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-gray-600">
-                  <span className="text-sm">📅 {tournament.date}</span>
-                </div>
-                {tournament.location && (
-                  <div className="flex items-center text-gray-600">
-                    <span className="text-sm">📍 {tournament.location}</span>
-                  </div>
-                )}
               </div>
 
               <div className="flex gap-2">
@@ -281,7 +356,13 @@ const TournamentsPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          ))}
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

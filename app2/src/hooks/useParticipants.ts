@@ -18,6 +18,7 @@ import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
 
 import { logAction } from './useLogger';
+import { isDefaultTournament } from './useTournaments';
 
 
 export interface Participant {
@@ -34,6 +35,9 @@ export interface Participant {
   playerIdentifier?: string;
   participationMethod?: string;
   tournamentId?: string | null; // 소속 토너먼트 ID (전체 보기 기능용)
+  userId?: string; // 사용자 ID
+  etc?: string; // 기타 정보
+  note?: string; // 비고
 }
 
 /**
@@ -57,14 +61,19 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
       return;
     }
 
-    // "ALL" 전체 보기 모드
-    if (tournamentId === 'ALL') {
+    // "ALL" 전체 보기 모드 또는 날짜별 기본 토너먼트 모드
+    if (tournamentId === 'ALL' || isDefaultTournament(tournamentId)) {
       // collectionGroup으로 모든 토너먼트의 참가자 조회
       const participantsGroupRef = collectionGroup(db, 'participants');
 
+      // 날짜별 기본 토너먼트인 경우 dateKey 추출
+      const dateKeyForFilter = isDefaultTournament(tournamentId)
+        ? tournamentId.replace('DEFAULT_DATE_', '') // "DEFAULT_DATE_2025-01-20" -> "2025-01-20"
+        : null;
+
       const unsubscribe = onSnapshot(
         participantsGroupRef,
-        (snapshot) => {
+        async (snapshot) => {
           const participantsData = snapshot.docs
             .map((doc: QueryDocumentSnapshot<DocumentData>) => {
               const data = doc.data();
@@ -84,11 +93,42 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
             })
             .filter((participant): participant is Participant => participant !== null);
 
-          setParticipants(participantsData);
+          // 날짜별 전체보기인 경우 해당 날짜의 참가자만 필터링
+          let filteredParticipants = participantsData;
+          if (dateKeyForFilter) {
+            // 해당 날짜의 토너먼트를 찾기 위해 tournaments 컬렉션 조회
+            const tournamentsSnapshot = await getDocs(collection(db, `users/${userId}/tournaments`));
+            const tournamentDateMap = new Map<string, string>();
+
+            tournamentsSnapshot.docs.forEach(doc => {
+              const data = doc.data();
+              if (data.dateKey) {
+                tournamentDateMap.set(doc.id, data.dateKey);
+              }
+            });
+
+            // 해당 날짜의 토너먼트에 속한 참가자만 필터링
+            filteredParticipants = participantsData.filter(participant => {
+              if (!participant.tournamentId) return false;
+              const participantDateKey = tournamentDateMap.get(participant.tournamentId);
+              return participantDateKey === dateKeyForFilter;
+            });
+
+            logger.info('날짜별 전체보기 참가자 필터링 완료', {
+              component: 'useParticipants',
+              data: {
+                dateKey: dateKeyForFilter,
+                totalParticipants: participantsData.length,
+                filteredParticipants: filteredParticipants.length
+              }
+            });
+          }
+
+          setParticipants(filteredParticipants);
           setLoading(false);
           logger.info('전체 참가자 목록 로드 완료', {
             component: 'useParticipants',
-            data: { userId, count: participantsData.length },
+            data: { userId, count: filteredParticipants.length },
           });
         },
         (err) => {
