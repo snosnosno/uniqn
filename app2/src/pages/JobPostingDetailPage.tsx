@@ -296,9 +296,8 @@ const JobPostingDetailPageContent: React.FC = () => {
                 {jobPosting.status === 'open' ? '모집 중' : '모집 마감'}
               </span>
 
-              {/* 공지 전송 버튼 */}
-              {jobPosting.confirmedStaff && jobPosting.confirmedStaff.length > 0 &&
-               (permissions?.role === 'admin' || permissions?.role === 'manager') && (
+              {/* 공지 전송 버튼 - 항상 표시 */}
+              {(permissions?.role === 'admin' || permissions?.role === 'manager') && (
                 <button
                   onClick={() => setIsAnnouncementModalOpen(true)}
                   className="inline-flex items-center justify-center py-1 px-2 sm:py-2 sm:px-3 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-300 min-h-[30px] sm:min-h-[40px]"
