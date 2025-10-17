@@ -35,7 +35,7 @@ const ShiftSchedulePage: React.FC = () => {
   const { state, loading: loadingState } = useUnifiedData();
   const workLogs = Array.from(state.workLogs.values());
   const workLogsLoading = loadingState.workLogs;
-  const { tables, loading: tablesLoading } = useTables();
+  const { tables, loading: tablesLoading } = useTables(null, null);
   
   // 교대 스케줄 데이터
   const {

@@ -40,6 +40,7 @@ export const TournamentProvider = ({ children }: TournamentProviderProps) => {
   // Zustand state를 기존 TournamentState 형태로 변환
   const state: TournamentState = {
     tournamentId: store.tournamentId,
+    userId: store.userId,
     participants: store.participants,
     tables: store.tables,
     blinds: store.blinds,

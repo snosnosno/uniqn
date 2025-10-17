@@ -1,12 +1,8 @@
 import {
   collection,
-  // onSnapshot,
   addDoc,
   updateDoc,
-  // deleteDoc,
   doc,
-  // DocumentData,
-  // QueryDocumentSnapshot,
   getDocs,
   runTransaction,
 } from 'firebase/firestore';
@@ -35,47 +31,84 @@ export interface Participant {
   participationMethod?: string;
 }
 
-export const useParticipants = () => {
+/**
+ * useParticipants Hook (멀티 테넌트 버전)
+ * 특정 사용자의 특정 토너먼트 참가자 데이터를 관리합니다.
+ * 
+ * @param userId - 현재 사용자 ID
+ * @param tournamentId - 현재 토너먼트 ID
+ * @returns 참가자 목록, 로딩 상태, 에러, CRUD 작업 함수들
+ */
+export const useParticipants = (userId: string | null, tournamentId: string | null) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // userId 또는 tournamentId가 없으면 빈 상태로 유지
+    if (!userId || !tournamentId) {
+      setParticipants([]);
+      setLoading(false);
+      return;
+    }
+
+    // 멀티 테넌트 경로: users/{userId}/tournaments/{tournamentId}/participants
+    const participantsPath = `users/${userId}/tournaments/${tournamentId}/participants`;
+    
     const unsubscribe = safeOnSnapshot<Participant>(
-      'participants',
+      participantsPath,
       (participantsData) => {
         setParticipants(participantsData);
         setLoading(false);
+        logger.info('참가자 목록 로드 완료', {
+          component: 'useParticipants',
+          data: { userId, tournamentId, count: participantsData.length },
+        });
       },
       (err) => {
         setError(err);
         setLoading(false);
+        logger.error('참가자 목록 구독 실패:', err, { component: 'useParticipants' });
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [userId, tournamentId]);
 
   const addParticipant = async (participant: Omit<Participant, 'id'>) => {
+    if (!userId || !tournamentId) {
+      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+    }
+
     return withFirebaseErrorHandling(async () => {
-      const docRef = await addDoc(collection(db, 'participants'), participant);
+      const participantsPath = `users/${userId}/tournaments/${tournamentId}/participants`;
+      const docRef = await addDoc(collection(db, participantsPath), participant);
       logAction('participant_added', { participantId: docRef.id, ...participant });
       return docRef;
     }, 'addParticipant');
   };
   
   const updateParticipant = async (id: string, data: Partial<Participant>) => {
+    if (!userId || !tournamentId) {
+      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+    }
+
     return withFirebaseErrorHandling(async () => {
-      const participantDoc = doc(db, 'participants', id);
+      const participantDoc = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, id);
       await updateDoc(participantDoc, data);
       logAction('participant_updated', { participantId: id, ...data });
     }, 'updateParticipant');
   };
 
   const deleteParticipant = async (id: string) => {
+    if (!userId || !tournamentId) {
+      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+    }
+
     return withFirebaseErrorHandling(async () => {
       await runTransaction(db, async (transaction) => {
         // 1. Find the table where the participant is seated
-        const tablesCollectionRef = collection(db, 'tables');
+        const tablesPath = `users/${userId}/tournaments/${tournamentId}/tables`;
+        const tablesCollectionRef = collection(db, tablesPath);
         const tablesSnapshot = await getDocs(tablesCollectionRef);
         
         let foundTableRef = null;
@@ -97,7 +130,7 @@ export const useParticipants = () => {
         }
         
         // 3. Delete the participant
-        const participantDoc = doc(db, 'participants', id);
+        const participantDoc = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, id);
         transaction.delete(participantDoc);
       });
 
@@ -106,11 +139,17 @@ export const useParticipants = () => {
   };
   
   const addParticipantAndAssignToSeat = async (participantData: Omit<Participant, 'id'>, tableId: string, seatIndex: number) => {
+    if (!userId || !tournamentId) {
+      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+    }
+
     setLoading(true);
     try {
-        const newParticipantRef = doc(collection(db, 'participants'));
+        const participantsPath = `users/${userId}/tournaments/${tournamentId}/participants`;
+        const newParticipantRef = doc(collection(db, participantsPath));
+        
         await runTransaction(db, async (transaction) => {
-            const tableRef = doc(db, 'tables', tableId);
+            const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
             const tableDoc = await transaction.get(tableRef);
 
             if (!tableDoc.exists()) {

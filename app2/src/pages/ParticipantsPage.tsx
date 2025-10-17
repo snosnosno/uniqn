@@ -16,8 +16,8 @@ import { FaTrash, FaPlus } from '../components/Icons/ReactIconsReplacement';
 
 const ParticipantsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants();
-  const { tables, loading: tablesLoading, error: tablesError } = useTables();
+  const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants(null, null);
+  const { tables, loading: tablesLoading, error: tablesError } = useTables(null, null);
 
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
   const [newParticipant, setNewParticipant] = useState<Omit<Participant, 'id'>>({ name: '', phone: '', playerIdentifier: '', participationMethod: '', chips: 10000, status: 'active' as const });

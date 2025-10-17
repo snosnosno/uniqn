@@ -34,14 +34,14 @@ const TablesPage: React.FC = () => {
         activateTable,
         updateTableDetails,
         updateTableMaxSeats,
-    } = useTables();
+    } = useTables(null, null);
     
     const { 
         participants, 
         loading: participantsLoading, 
         error: participantsError, 
         updateParticipant 
-    } = useParticipants();
+    } = useParticipants(null, null);
 
     const { settings, updateSettings, loading: settingsLoading } = useSettings();
     

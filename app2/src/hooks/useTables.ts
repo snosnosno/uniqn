@@ -41,7 +41,7 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return newArray;
 };
 
-export const useTables = () => {
+export const useTables = (userId: string | null, tournamentId: string | null) => {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
