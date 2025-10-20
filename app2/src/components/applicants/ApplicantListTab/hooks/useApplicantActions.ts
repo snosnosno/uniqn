@@ -7,7 +7,7 @@ import { db } from '../../../../firebase';
 import { JobPostingUtils, JobPosting } from '../../../../types/jobPosting';
 import { Assignment } from '../../../../types/application';
 import { Applicant } from '../types';
-import { jobRoleMap } from '../utils/applicantHelpers';
+import { jobRoleMap } from '../../../../utils/applicants';
 import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
 import { timestampToLocalDateString } from '../../../../utils/dateUtils';
 

@@ -4,7 +4,7 @@ import { TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } f
 import { timestampToLocalDateString } from '../../../utils/dateUtils';
 import { logger } from '../../../utils/logger';
 import { Applicant, Assignment } from './types';
-import { formatDateDisplay } from './utils/applicantHelpers';
+import { formatDateDisplay } from '../../../utils/applicants';
 
 interface ApplicantActionsProps {
   applicant: Applicant;

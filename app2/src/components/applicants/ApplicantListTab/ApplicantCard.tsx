@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
-import { 
-  getApplicantSelections, 
+import {
+  getApplicantSelections,
   formatDateDisplay
-} from './utils/applicantHelpers';
+} from '../../../utils/applicants';
 import StaffProfileModal from '../../modals/StaffProfileModal';
 import { StaffData } from '../../../hooks/useStaffManagement';
 

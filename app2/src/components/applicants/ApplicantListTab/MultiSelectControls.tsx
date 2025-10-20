@@ -2,14 +2,14 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../../../utils/toast';
 import { Applicant, Assignment } from './types';
-import { 
-  getApplicantSelectionsByDate, 
+import {
+  getApplicantSelectionsByDate,
   getDateSelectionStats,
   getApplicantSelections,
   groupSingleDaySelections,
   formatDateDisplay,
   getStaffCounts
-} from './utils/applicantHelpers';
+} from '../../../utils/applicants';
 
 interface MultiSelectControlsProps {
   applicant: Applicant;
