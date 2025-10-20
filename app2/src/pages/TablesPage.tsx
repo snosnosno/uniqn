@@ -9,8 +9,8 @@ import { db } from '../firebase';
 import { FaThList, FaUserPlus } from '../components/Icons/ReactIconsReplacement';
 
 import MoveSeatModal from '../components/modals/MoveSeatModal';
-import ParticipantDetailModal from '../components/modals/ParticipantDetailModal';
 import PlayerActionModal from '../components/modals/PlayerActionModal';
+import Modal from '../components/ui/Modal';
 import TableCard from '../components/tables/TableCard';
 import TableDetailModal from '../components/modals/TableDetailModal';
 import TournamentSelector from '../components/TournamentSelector';
@@ -66,7 +66,8 @@ const TablesPage: React.FC = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
 
     const [detailModalTable, setDetailModalTable] = useState<Table | null>(null);
-    const [detailModalParticipant, setDetailModalParticipant] = useState<Participant | null>(null);
+    const [isParticipantEditModalOpen, setIsParticipantEditModalOpen] = useState(false);
+    const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
     const [isMoveSeatModalOpen, setMoveSeatModalOpen] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState<{ participant: Participant; table: Table; seatIndex: number } | null>(null);
     const [actionMenu, setActionMenu] = useState<{ x: number, y: number } | null>(null);
@@ -162,7 +163,8 @@ const TablesPage: React.FC = () => {
     
     const handleShowDetails = () => {
         if (selectedPlayer?.participant) {
-            setDetailModalParticipant(selectedPlayer.participant);
+            setEditingParticipant(selectedPlayer.participant);
+            setIsParticipantEditModalOpen(true);
         }
         handleCloseActionMenu();
     };
@@ -507,7 +509,7 @@ const TablesPage: React.FC = () => {
 
     const handleContainerClick = (_e: React.MouseEvent) => {
         // 자리 이동 모달이나 다른 모달이 열려있을 때는 이벤트 무시
-        if (isMoveSeatModalOpen || detailModalParticipant || currentDetailTable) return;
+        if (isMoveSeatModalOpen || isParticipantEditModalOpen || currentDetailTable) return;
         handleCloseActionMenu();
     };
 
@@ -821,28 +823,113 @@ const TablesPage: React.FC = () => {
                     currentTournamentName={tournaments.find(t => t.id === state.tournamentId)?.name}
                 /> : null}
 
-            {detailModalParticipant ? <ParticipantDetailModal
-                    isOpen={!!detailModalParticipant}
-                    onClose={() => setDetailModalParticipant(null)}
-                    participant={detailModalParticipant}
-                    onUpdate={updateParticipant}
-                    onMoveSeat={() => {
-                        // detailModalParticipant가 속한 테이블 찾기
-                        const foundTable = tables.find(t =>
-                            t.seats?.some(seat => seat === detailModalParticipant.id)
-                        );
-                        if (foundTable) {
-                            const seatIndex = foundTable.seats.indexOf(detailModalParticipant.id);
-                            setSelectedPlayer({
-                                participant: detailModalParticipant,
-                                table: foundTable,
-                                seatIndex
-                            });
-                            setDetailModalParticipant(null); // 상세 모달 닫기
-                            setMoveSeatModalOpen(true); // 자리이동 모달 열기
-                        }
-                    }}
-                /> : null}
+            {/* 참가자 수정 모달 */}
+            <Modal
+                isOpen={isParticipantEditModalOpen}
+                onClose={() => {
+                    setIsParticipantEditModalOpen(false);
+                    setEditingParticipant(null);
+                }}
+                title="참가자 수정"
+                closeOnEsc={true}
+                closeOnBackdrop={true}
+                showCloseButton={true}
+            >
+                {editingParticipant && (
+                    <form
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            await updateParticipant(editingParticipant.id, editingParticipant);
+                            setIsParticipantEditModalOpen(false);
+                            setEditingParticipant(null);
+                        }}
+                        className="space-y-4"
+                    >
+                        <div>
+                            <label className="block text-sm font-medium mb-1">이름</label>
+                            <input
+                                type="text"
+                                value={editingParticipant.name}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, name: e.target.value } : null)}
+                                className="input-field w-full"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">전화번호</label>
+                            <input
+                                type="text"
+                                value={editingParticipant.phone || ''}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, phone: e.target.value } : null)}
+                                className="input-field w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">칩</label>
+                            <input
+                                type="number"
+                                value={editingParticipant.chips}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, chips: Number(e.target.value) } : null)}
+                                className="input-field w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">상태</label>
+                            <select
+                                value={editingParticipant.status}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, status: e.target.value as 'active' | 'busted' | 'no-show' } : null)}
+                                className="input-field w-full"
+                            >
+                                <option value="active">활성</option>
+                                <option value="busted">탈락</option>
+                                <option value="no-show">불참</option>
+                            </select>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                {editingParticipant.status === 'active' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const foundTable = tables.find(t => t.seats?.some(seat => seat === editingParticipant.id));
+                                            if (foundTable) {
+                                                const seatIndex = foundTable.seats.indexOf(editingParticipant.id);
+                                                setSelectedPlayer({
+                                                    participant: editingParticipant,
+                                                    table: foundTable,
+                                                    seatIndex
+                                                });
+                                                setIsParticipantEditModalOpen(false);
+                                                setMoveSeatModalOpen(true);
+                                            } else {
+                                                toast.error('테이블에 배정되지 않은 참가자입니다.');
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                    >
+                                        자리 이동
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsParticipantEditModalOpen(false);
+                                        setEditingParticipant(null);
+                                    }}
+                                    className="btn btn-secondary"
+                                >
+                                    취소
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    저장
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                )}
+            </Modal>
 
             {/* 확인 모달 */}
             <ConfirmModal
