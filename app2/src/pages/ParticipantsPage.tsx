@@ -9,6 +9,7 @@ import { toast } from '../utils/toast';
 import Modal from '../components/ui/Modal';
 import BulkAddParticipantsModal from '../components/modals/BulkAddParticipantsModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import MoveSeatModal from '../components/modals/MoveSeatModal';
 import TournamentSelector from '../components/TournamentSelector';
 import DateNavigator from '../components/DateNavigator';
 import { useDateFilter } from '../contexts/DateFilterContext';
@@ -24,7 +25,7 @@ const ParticipantsPage: React.FC = () => {
   const { t } = useTranslation();
   const { tournaments } = useTournamentData();
   const { participants, loading: participantsLoading, error: participantsError, addParticipant, updateParticipant, deleteParticipant } = useParticipants(state.userId, state.tournamentId);
-  const { tables, loading: tablesLoading, error: tablesError } = useTables(state.userId, state.tournamentId);
+  const { tables, loading: tablesLoading, error: tablesError, moveSeat } = useTables(state.userId, state.tournamentId);
   const { selectedDate } = useDateFilter(); // 최상단에서 호출
 
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
@@ -53,6 +54,10 @@ const ParticipantsPage: React.FC = () => {
   const [isDeletingSingle, setIsDeletingSingle] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+
+  // 자리이동 모달 state
+  const [isMoveSeatModalOpen, setMoveSeatModalOpen] = useState(false);
+  const [selectedPlayerForMove, setSelectedPlayerForMove] = useState<{ participant: Participant; table: Table; seatIndex: number } | null>(null);
 
   // 전화번호 포맷팅 함수
   const formatPhoneNumber = useCallback((value: string) => {
@@ -84,6 +89,31 @@ const ParticipantsPage: React.FC = () => {
   const filteredParticipants = useMemo(() => {
     return participants.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [participants, searchTerm]);
+
+  // 자리이동 핸들러
+  const handleConfirmMove = useCallback(async (toTableId: string, toSeatIndex: number) => {
+    if (!selectedPlayerForMove) return;
+
+    try {
+      await moveSeat(
+        selectedPlayerForMove.participant.id,
+        { tableId: selectedPlayerForMove.table.id, seatIndex: selectedPlayerForMove.seatIndex },
+        { tableId: toTableId, seatIndex: toSeatIndex }
+      );
+      toast.success('자리 이동이 완료되었습니다.');
+      setMoveSeatModalOpen(false);
+      setSelectedPlayerForMove(null);
+    } catch (error) {
+      logger.error('자리 이동 실패', error as Error, { component: 'ParticipantsPage' });
+      toast.error('자리 이동에 실패했습니다.');
+    }
+  }, [selectedPlayerForMove, moveSeat]);
+
+  const getParticipantName = useCallback((participantId: string | null): string => {
+    if (!participantId) return '-';
+    const participant = participants.find(p => p.id === participantId);
+    return participant?.name || '-';
+  }, [participants]);
 
   const handleOpenModal = (participant: Participant | null) => {
     setEditingParticipant(participant);
@@ -542,12 +572,12 @@ const ParticipantsPage: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">비고</label>
-            <textarea
+            <input
+              type="text"
               value={newParticipant.note || ''}
               onChange={e => setNewParticipant(p => ({ ...p, note: e.target.value }))}
               className="input-field w-full"
               placeholder="비고"
-              rows={3}
             />
           </div>
           <div>
@@ -562,9 +592,37 @@ const ParticipantsPage: React.FC = () => {
               <option value="no-show">불참</option>
             </select>
           </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">{t('participants.modalButtonCancel')}</button>
-            <button type="submit" className="btn btn-primary">{editingParticipant ? t('participants.modalButtonUpdate') : t('participants.modalButtonAdd')}</button>
+          <div className="flex justify-between items-center">
+            <div>
+              {editingParticipant && editingParticipant.status === 'active' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // editingParticipant가 속한 테이블 찾기
+                    const foundTable = tables.find(t => t.seats?.some(seat => seat === editingParticipant.id));
+                    if (foundTable) {
+                      const seatIndex = foundTable.seats.indexOf(editingParticipant.id);
+                      setSelectedPlayerForMove({
+                        participant: editingParticipant,
+                        table: foundTable,
+                        seatIndex
+                      });
+                      setIsModalOpen(false); // 수정 모달 닫기
+                      setMoveSeatModalOpen(true); // 자리이동 모달 열기
+                    } else {
+                      toast.error('테이블에 배정되지 않은 참가자입니다.');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  자리 이동
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">{t('participants.modalButtonCancel')}</button>
+              <button type="submit" className="btn btn-primary">{editingParticipant ? t('participants.modalButtonUpdate') : t('participants.modalButtonAdd')}</button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -604,6 +662,23 @@ const ParticipantsPage: React.FC = () => {
         isDangerous={true}
         isLoading={isDeleting}
       />
+
+      {/* 자리이동 모달 */}
+      {isMoveSeatModalOpen && selectedPlayerForMove && (
+        <MoveSeatModal
+          isOpen={isMoveSeatModalOpen}
+          onClose={() => {
+            setMoveSeatModalOpen(false);
+            setSelectedPlayerForMove(null);
+          }}
+          tables={tables}
+          movingParticipant={selectedPlayerForMove.participant}
+          onConfirmMove={handleConfirmMove}
+          getParticipantName={getParticipantName}
+          currentTournamentId={selectedPlayerForMove.table.tournamentId}
+          currentTournamentName={tournaments.find(t => t.id === selectedPlayerForMove.table.tournamentId)?.name}
+        />
+      )}
         </>
       )}
     </div>

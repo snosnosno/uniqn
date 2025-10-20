@@ -826,6 +826,22 @@ const TablesPage: React.FC = () => {
                     onClose={() => setDetailModalParticipant(null)}
                     participant={detailModalParticipant}
                     onUpdate={updateParticipant}
+                    onMoveSeat={() => {
+                        // detailModalParticipant가 속한 테이블 찾기
+                        const foundTable = tables.find(t =>
+                            t.seats?.some(seat => seat === detailModalParticipant.id)
+                        );
+                        if (foundTable) {
+                            const seatIndex = foundTable.seats.indexOf(detailModalParticipant.id);
+                            setSelectedPlayer({
+                                participant: detailModalParticipant,
+                                table: foundTable,
+                                seatIndex
+                            });
+                            setDetailModalParticipant(null); // 상세 모달 닫기
+                            setMoveSeatModalOpen(true); // 자리이동 모달 열기
+                        }
+                    }}
                 /> : null}
 
             {/* 확인 모달 */}

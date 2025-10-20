@@ -12,6 +12,7 @@ interface ParticipantDetailModalProps {
   onUpdate: (id: string, data: Partial<Participant>) => Promise<void>;
   tableName?: string | null;
   seatNumber?: number | null;
+  onMoveSeat?: () => void; // 자리 이동 버튼 핸들러
 }
 
 const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
@@ -21,6 +22,7 @@ const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
   onUpdate,
   tableName,
   seatNumber,
+  onMoveSeat,
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -69,9 +71,16 @@ const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
           {t('participantDetailModal.buttonSave')}
         </button>
       ) : (
-        <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
-          {t('participantDetailModal.buttonEdit')}
-        </button>
+        <>
+          <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
+            {t('participantDetailModal.buttonEdit')}
+          </button>
+          {onMoveSeat && participant.status === 'active' && (
+            <button onClick={onMoveSeat} className="btn btn-primary">
+              자리 이동
+            </button>
+          )}
+        </>
       )}
     </ModalFooter>
   );
