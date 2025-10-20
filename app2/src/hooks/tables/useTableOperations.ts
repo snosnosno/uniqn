@@ -249,6 +249,32 @@ export const useTableOperations = (
   const closeTable = useCallback(
     async (tableIdToClose: string): Promise<BalancingResult[]> => {
       if (!userId || !tournamentId) return [];
+
+      // 닫으려는 테이블 찾기
+      const tableToClose = tables.find(t => t.id === tableIdToClose);
+      if (!tableToClose) {
+        toast.error('닫으려는 테이블을 찾을 수 없습니다.');
+        return [];
+      }
+
+      // 참가자가 있는지 확인
+      const hasParticipants = (tableToClose.seats || []).some(seat => seat !== null);
+
+      if (hasParticipants) {
+        // 같은 토너먼트의 다른 열린 테이블 확인
+        const actualTournamentId = tableToClose.tournamentId || tournamentId;
+        const otherOpenTables = tables.filter(
+          t => t.id !== tableIdToClose &&
+               t.status === 'open' &&
+               (actualTournamentId === 'ALL' || t.tournamentId === actualTournamentId)
+        );
+
+        if (otherOpenTables.length === 0) {
+          toast.error('참가자를 이동시킬 수 있는 다른 열린 테이블이 없습니다. 먼저 새 테이블을 추가하거나 참가자를 제거해주세요.');
+          return [];
+        }
+      }
+
       setLoading(true);
       try {
         const results = await moveParticipantsToOpenTables(
@@ -263,12 +289,38 @@ export const useTableOperations = (
         setLoading(false);
       }
     },
-    [userId, tournamentId, maxSeatsSetting]
+    [userId, tournamentId, maxSeatsSetting, tables]
   );
 
   const deleteTable = useCallback(
     async (tableIdToDelete: string): Promise<BalancingResult[]> => {
       if (!userId || !tournamentId) return [];
+
+      // 삭제하려는 테이블 찾기
+      const tableToDelete = tables.find(t => t.id === tableIdToDelete);
+      if (!tableToDelete) {
+        toast.error('삭제하려는 테이블을 찾을 수 없습니다.');
+        return [];
+      }
+
+      // 참가자가 있는지 확인
+      const hasParticipants = (tableToDelete.seats || []).some(seat => seat !== null);
+
+      if (hasParticipants) {
+        // 같은 토너먼트의 다른 열린 테이블 확인
+        const actualTournamentId = tableToDelete.tournamentId || tournamentId;
+        const otherOpenTables = tables.filter(
+          t => t.id !== tableIdToDelete &&
+               t.status === 'open' &&
+               (actualTournamentId === 'ALL' || t.tournamentId === actualTournamentId)
+        );
+
+        if (otherOpenTables.length === 0) {
+          toast.error('참가자를 이동시킬 수 있는 다른 열린 테이블이 없습니다. 먼저 새 테이블을 추가하거나 참가자를 제거해주세요.');
+          return [];
+        }
+      }
+
       setLoading(true);
       try {
         const results = await moveParticipantsToOpenTables(
@@ -283,7 +335,7 @@ export const useTableOperations = (
         setLoading(false);
       }
     },
-    [userId, tournamentId, maxSeatsSetting]
+    [userId, tournamentId, maxSeatsSetting, tables]
   );
 
   const updateTableMaxSeats = useCallback(
