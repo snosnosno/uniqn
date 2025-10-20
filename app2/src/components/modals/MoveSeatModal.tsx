@@ -15,6 +15,8 @@ interface MoveSeatModalProps {
   movingParticipant: Participant | null;
   onConfirmMove: (tableId: string, seatIndex: number) => void;
   getParticipantName: (participantId: string | null) => string;
+  currentTournamentId?: string | null | undefined; // 현재 참가자가 속한 토너먼트 ID
+  currentTournamentName?: string | undefined; // 현재 토너먼트 이름
 }
 
 const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
@@ -24,11 +26,18 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
   movingParticipant,
   onConfirmMove,
   getParticipantName,
+  currentTournamentId,
+  currentTournamentName,
 }) => {
   const { t } = useTranslation();
   const [selectedSeat, setSelectedSeat] = useState<{ tableId: string; seatIndex: number } | null>(null);
 
   if (!isOpen || !movingParticipant) return null;
+
+  // 같은 토너먼트의 테이블만 필터링
+  const filteredTables = currentTournamentId
+    ? tables.filter(table => table.tournamentId === currentTournamentId)
+    : tables;
 
   const handleSeatSelect = (tableId: string, seatIndex: number, participantId: string | null, tableStatus?: string) => {
     logger.info('자리 선택을 시도합니다', {
@@ -77,9 +86,9 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
     }
   };
   
-  const currentSeatInfo = tables.flatMap(t => t.seats.map((pId, sIdx) => ({pId, tId: t.id, sIdx})))
+  const currentSeatInfo = filteredTables.flatMap(t => t.seats.map((pId, sIdx) => ({pId, tId: t.id, sIdx})))
                                 .find(s => s.pId === movingParticipant.id);
-  const currentTable = tables.find(t => t.id === currentSeatInfo?.tId);
+  const currentTable = filteredTables.find(t => t.id === currentSeatInfo?.tId);
   const currentTableName = currentTable?.name || t('moveSeatModal.defaultTableName', { number: currentTable?.tableNumber });
   const currentLocation = currentSeatInfo ? `${currentTableName} - ${currentSeatInfo.sIdx + 1}${t('moveSeatModal.seatSuffix')}` : t('moveSeatModal.notApplicable');
 
@@ -109,13 +118,16 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
       >
         <h4 className="font-bold text-blue-800">{t('moveSeatModal.sectionTitle')}</h4>
         <p><strong>{t('moveSeatModal.labelName')}</strong> {movingParticipant.name}</p>
+        {currentTournamentName && (
+          <p><strong>토너먼트:</strong> {currentTournamentName}</p>
+        )}
         <p><strong>{t('moveSeatModal.labelCurrentLocation')}</strong> {currentLocation}</p>
       </div>
       <div
         className="space-y-4 max-h-[60vh] overflow-y-auto p-1"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
-        {tables.map(table => (
+        {filteredTables.map(table => (
           <div key={table.id} className={`border rounded-lg p-3 ${table.status !== 'open' ? 'bg-gray-100 opacity-70' : ''}`}>
             <h4 className="font-bold text-lg mb-2">
               {table.name || t('moveSeatModal.defaultTableName', { number: table.tableNumber })} 

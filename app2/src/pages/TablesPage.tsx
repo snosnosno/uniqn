@@ -802,6 +802,8 @@ const TablesPage: React.FC = () => {
                     movingParticipant={selectedPlayer.participant}
                     onConfirmMove={handleConfirmMove}
                     getParticipantName={getParticipantName}
+                    currentTournamentId={selectedPlayer.table.tournamentId}
+                    currentTournamentName={tournaments.find(t => t.id === selectedPlayer.table.tournamentId)?.name}
                 /> : null}
 
             {/* 대기 참가자 수동 배정 모달 */}
@@ -815,6 +817,8 @@ const TablesPage: React.FC = () => {
                     movingParticipant={waitingParticipantForAssignment}
                     onConfirmMove={handleManualAssignConfirm}
                     getParticipantName={getParticipantName}
+                    currentTournamentId={state.tournamentId}
+                    currentTournamentName={tournaments.find(t => t.id === state.tournamentId)?.name}
                 /> : null}
 
             {detailModalParticipant ? <ParticipantDetailModal
