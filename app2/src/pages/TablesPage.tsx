@@ -856,6 +856,16 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
+                            <label className="block text-sm font-medium mb-1">ID</label>
+                            <input
+                                type="text"
+                                value={editingParticipant.userId || ''}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, userId: e.target.value } : null)}
+                                className="input-field w-full"
+                                placeholder="사용자 ID"
+                            />
+                        </div>
+                        <div>
                             <label className="block text-sm font-medium mb-1">전화번호</label>
                             <input
                                 type="text"
@@ -871,6 +881,26 @@ const TablesPage: React.FC = () => {
                                 value={editingParticipant.chips}
                                 onChange={e => setEditingParticipant(p => p ? { ...p, chips: Number(e.target.value) } : null)}
                                 className="input-field w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">기타</label>
+                            <input
+                                type="text"
+                                value={editingParticipant.etc || ''}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, etc: e.target.value } : null)}
+                                className="input-field w-full"
+                                placeholder="기타 정보"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">비고</label>
+                            <input
+                                type="text"
+                                value={editingParticipant.note || ''}
+                                onChange={e => setEditingParticipant(p => p ? { ...p, note: e.target.value } : null)}
+                                className="input-field w-full"
+                                placeholder="비고"
                             />
                         </div>
                         <div>
