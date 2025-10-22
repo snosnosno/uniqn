@@ -105,6 +105,38 @@ const {
 
 > 📖 **상세 가이드**: [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)
 
+## 🎛️ **Feature Flag 시스템**
+
+### 문서 참조
+- **사용 가이드**: [docs/FEATURE_FLAG_GUIDE.md](docs/FEATURE_FLAG_GUIDE.md)
+
+### 현재 상태
+- **시스템 구축**: 100% 완성 ✅
+- **비공개 페이지**: 5개 (토너먼트, 참가자, 테이블, 교대, 상금 관리)
+- **공개 페이지**: 10개 (구인구직, 프로필, 스케줄, 출석 등)
+
+### 주요 구성요소
+```typescript
+// 중앙 설정 파일
+- src/config/features.ts (Feature Flag 정의)
+
+// UI 컴포넌트
+- src/components/ComingSoon.tsx (준비 중 페이지)
+
+// 적용 영역
+- src/App.tsx (라우팅 조건부 렌더링)
+- src/components/navigation/* (메뉴 자동 필터링)
+```
+
+### 빠른 사용법
+```typescript
+// 기능 활성화
+// src/config/features.ts
+export const FEATURE_FLAGS = {
+  TOURNAMENTS: true,  // false → true로 변경
+}
+```
+
 ## 📢 **알림 시스템**
 
 ### 문서 참조

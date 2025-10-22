@@ -89,11 +89,13 @@ npm run dev
 ├── 📁 mobile/          # 모바일 개발 (향후)
 │   ├── MOBILE_API_SPEC.md
 │   └── MOBILE_DEVELOPMENT.md
-└── NOTIFICATION_SYSTEM.md # 알림 시스템 완료 문서 (신규 ⭐)
+├── NOTIFICATION_SYSTEM.md # 알림 시스템 완료 문서 (v0.2.3 ⭐)
+└── FEATURE_FLAG_GUIDE.md  # Feature Flag 시스템 가이드 (v0.2.3 신규 ⭐)
 ```
 
 ### 🎯 **핵심 문서**
-- **알림 시스템**: `docs/NOTIFICATION_SYSTEM.md` (v0.2.3 신규 ⭐)
+- **Feature Flag 시스템**: `docs/FEATURE_FLAG_GUIDE.md` (v0.2.3 신규 ⭐)
+- **알림 시스템**: `docs/NOTIFICATION_SYSTEM.md` (v0.2.3 완료 ⭐)
 - **아키텍처**: `docs/reference/ARCHITECTURE.md` (폴더 구조 체계화 포함)
 - **마이그레이션**: `docs/guides/MIGRATION_GUIDE.md` (v0.2.1 폴더 구조 변경)
 - **성능 최적화**: `docs/guides/PERFORMANCE.md` (번들 299KB, React.memo 적용)

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { FEATURE_FLAGS, FeatureFlag } from '../../config/features';
 
 interface TabItem {
   path: string;
@@ -8,6 +9,7 @@ interface TabItem {
   icon: React.ReactNode;
   requiresAuth?: boolean;
   adminOnly?: boolean;
+  featureFlag?: FeatureFlag;
 }
 
 /**
@@ -44,6 +46,7 @@ const BottomTabBar: React.FC = () => {
         </svg>
       ),
       requiresAuth: true,
+      featureFlag: 'TABLES',
     },
     {
       path: '/app/jobs',
@@ -85,10 +88,11 @@ const BottomTabBar: React.FC = () => {
     },
   ];
 
-  // 필터링된 탭 (권한에 따라)
+  // 필터링된 탭 (권한 및 Feature Flag에 따라)
   const filteredTabs = tabs.filter(tab => {
     if (tab.adminOnly && !isAdmin) return false;
     if (tab.requiresAuth && !currentUser) return false;
+    if (tab.featureFlag && !FEATURE_FLAGS[tab.featureFlag]) return false;
     return true;
   });
 

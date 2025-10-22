@@ -3,11 +3,17 @@ import React, { Suspense } from 'react';
 // import { lazyWithRetry } from './utils/lazyWithRetry';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+// Feature Flags
+import { FEATURE_FLAGS } from './config/features';
+
 // Auth pages - load immediately for better UX
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import RequireEmailVerification from './components/auth/RequireEmailVerification';
+
+// Coming Soon page
+import ComingSoon from './components/ComingSoon';
 
 import FirebaseErrorBoundary from './components/errors/FirebaseErrorBoundary';
 import ErrorBoundary from './components/errors/ErrorBoundary';
@@ -195,33 +201,45 @@ const App: React.FC = () => {
                       <Route path="support" element={<Suspense fallback={<LoadingSpinner />}><SupportPage /></Suspense>} />
 
                       {/* Tournament Management - All authenticated users */}
-                      <Route path="tournaments" element={<Suspense fallback={<LoadingSpinner />}><TournamentsPage /></Suspense>} />
-                      <Route path="participants" element={<Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>} />
-                      <Route path="tables" element={<Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>} />
+                      <Route path="tournaments" element={
+                        FEATURE_FLAGS.TOURNAMENTS ? (
+                          <Suspense fallback={<LoadingSpinner />}><TournamentsPage /></Suspense>
+                        ) : (
+                          <ComingSoon feature="토너먼트 관리" />
+                        )
+                      } />
+                      <Route path="participants" element={
+                        FEATURE_FLAGS.PARTICIPANTS ? (
+                          <Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>
+                        ) : (
+                          <ComingSoon feature="참가자 관리" />
+                        )
+                      } />
+                      <Route path="tables" element={
+                        FEATURE_FLAGS.TABLES ? (
+                          <Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>
+                        ) : (
+                          <ComingSoon feature="테이블 관리" />
+                        )
+                      } />
 
                       {/* Admin & Manager Routes */}
                       <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
                         <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
-                        <Route path="shift-schedule" element={<Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>} />
+                        <Route path="shift-schedule" element={
+                          FEATURE_FLAGS.SHIFT_SCHEDULE ? (
+                            <Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>
+                          ) : (
+                            <ComingSoon feature="교대 관리" />
+                          )
+                        } />
                         {/* 상금관리 페이지 - 추후 업데이트 예정 */}
                         <Route path="prizes" element={
-                          <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-50">
-                            <div className="text-center max-w-md">
-                              <div className="text-6xl mb-4">🚧</div>
-                              <h2 className="text-3xl font-bold text-gray-800 mb-4">준비 중입니다</h2>
-                              <p className="text-gray-600 mb-6">
-                                상금관리 기능은 현재 업데이트 중입니다.
-                                <br />
-                                추후 다시 공개될 예정입니다.
-                              </p>
-                              <button
-                                onClick={() => window.history.back()}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                              >
-                                돌아가기
-                              </button>
-                            </div>
-                          </div>
+                          FEATURE_FLAGS.PRIZES ? (
+                            <ComingSoon feature="상금 관리" />
+                          ) : (
+                            <ComingSoon feature="상금 관리" />
+                          )
                         } />
                       </Route>
 

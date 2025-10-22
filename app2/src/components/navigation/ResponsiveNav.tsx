@@ -2,8 +2,17 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useBreakpoint } from '../../hooks/useMediaQuery';
 import { useAuth } from '../../contexts/AuthContext';
+import { FEATURE_FLAGS, FeatureFlag } from '../../config/features';
 import BottomTabBar from './BottomTabBar';
 import MobileMenu from './MobileMenu';
+
+interface NavItem {
+  path: string;
+  label: string;
+  requiresAuth?: boolean;
+  adminOnly?: boolean;
+  featureFlag?: FeatureFlag;
+}
 
 /**
  * 반응형 네비게이션 컴포넌트
@@ -18,11 +27,12 @@ const ResponsiveNav: React.FC = () => {
   const isAdmin = role === 'admin' || role === 'ceo';
 
   // 데스크톱 네비게이션 아이템
-  const desktopNavItems = [
+  const desktopNavItems: NavItem[] = [
     { path: '/', label: '홈' },
-    { path: '/app/tables', label: '테이블', requiresAuth: true },
+    { path: '/app/tournaments', label: '토너먼트', requiresAuth: true, featureFlag: 'TOURNAMENTS' },
+    { path: '/app/participants', label: '참가자', requiresAuth: true, adminOnly: true, featureFlag: 'PARTICIPANTS' },
+    { path: '/app/tables', label: '테이블', requiresAuth: true, featureFlag: 'TABLES' },
     { path: '/app/jobs', label: '구인구직' },
-    { path: '/app/participants', label: '참가자', requiresAuth: true, adminOnly: true },
     { path: '/app/schedule', label: '스케줄', requiresAuth: true },
     { path: '/app/admin', label: '관리자', adminOnly: true },
   ];
@@ -30,6 +40,7 @@ const ResponsiveNav: React.FC = () => {
   const filteredNavItems = desktopNavItems.filter(item => {
     if (item.adminOnly && !isAdmin) return false;
     if (item.requiresAuth && !currentUser) return false;
+    if (item.featureFlag && !FEATURE_FLAGS[item.featureFlag]) return false;
     return true;
   });
 
