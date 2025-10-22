@@ -16,6 +16,7 @@ export interface JobPostingFormData {
   location: string;
   detailedAddress?: string;
   district?: string;       // 시/군/구
+  contactPhone?: string;   // 문의 연락처
   // startDate와 endDate 제거 - dateSpecificRequirements로 대체
   status: 'open' | 'closed';
   dateSpecificRequirements: DateSpecificRequirement[];
@@ -50,6 +51,7 @@ export interface JobPosting {
   location: string;
   district?: string;
   detailedAddress?: string;
+  contactPhone?: string;  // 문의 연락처
   // startDate와 endDate 제거 - dateSpecificRequirements로 대체
   dateSpecificRequirements: DateSpecificRequirement[];
   requiredRoles?: string[];
@@ -61,16 +63,16 @@ export interface JobPosting {
   confirmedStaff?: ConfirmedStaff[];
   recruitmentType?: 'application' | 'fixed';
   preQuestions?: PreQuestion[];
-  
+
   // 변경 사유 기록
   statusChangeReason?: string;
   statusChangedAt?: Timestamp;
   statusChangedBy?: string;
-  
+
   // 급여 정보 필드
   salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
   salaryAmount?: string;
-  
+
   // 복리후생 정보
   benefits?: Benefits;
 

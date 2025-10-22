@@ -528,7 +528,17 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   </span>
                 </span>
               </div>
-              
+
+              {/* 문의 연락처 */}
+              {post.contactPhone && (
+                <div className={getInfoItemClasses()}>
+                  <span className="flex items-center">
+                    <span className="mr-2">📞</span>
+                    <span className="break-words">{post.contactPhone}</span>
+                  </span>
+                </div>
+              )}
+
               {/* 유형 (관리자용) */}
               {variant === 'admin-list' && post.type && (
                 <div className={getInfoItemClasses()}>

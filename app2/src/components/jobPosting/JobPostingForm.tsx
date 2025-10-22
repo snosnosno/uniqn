@@ -212,6 +212,21 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               disabled={isSubmitting}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              문의 연락처
+            </label>
+            <Input
+              type="text"
+              name="contactPhone"
+              value={formData.contactPhone || ''}
+              onChange={handleFormChange}
+              placeholder="010-0000-0000"
+              maxLength={25}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         {/* 급여 정보 */}

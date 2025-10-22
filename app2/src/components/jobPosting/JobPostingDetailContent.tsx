@@ -89,6 +89,12 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
               <span>{jobPosting.detailedAddress}</span>
             </p>
           )}
+          {jobPosting.contactPhone && (
+            <p className="flex items-center">
+              <span className="font-medium w-20">문의연락처:</span>
+              <span>📞 {jobPosting.contactPhone}</span>
+            </p>
+          )}
           {/* 급여 정보 */}
           {jobPosting.useRoleSalary && jobPosting.roleSalaries ? (
             <div className="mt-2">

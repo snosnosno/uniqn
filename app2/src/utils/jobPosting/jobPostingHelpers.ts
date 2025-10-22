@@ -17,7 +17,7 @@ export const createInitialTimeSlot = (): TimeSlot => ({
  */
 export const createInitialFormData = () => {
   const today = getTodayString();
-  
+
   return {
     title: '',
     type: 'application' as const,
@@ -28,6 +28,7 @@ export const createInitialFormData = () => {
     location: '서울',
     detailedAddress: '',
     district: '',
+    contactPhone: '',
     preQuestions: [] as any[],
     usesPreQuestions: false,
     startDate: today,
@@ -77,6 +78,7 @@ export const templateToFormData = (template: JobPostingTemplate) => {
     status: 'open' as const, // 템플릿에서 불러온 공고는 항상 open 상태로 설정
     // 새로운 필드들도 템플릿에서 가져오기
     district: templateData.district || '',
+    contactPhone: templateData.contactPhone || '',
     salaryType: templateData.salaryType,
     salaryAmount: templateData.salaryAmount || '',
     benefits: templateData.benefits || {},
