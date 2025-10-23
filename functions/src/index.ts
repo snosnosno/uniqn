@@ -18,6 +18,10 @@ export { onApplicationStatusChanged } from './notifications/onApplicationStatusC
 export { onWorkTimeChanged } from './notifications/onWorkTimeChanged';
 export { broadcastNewJobPosting } from './notifications/broadcastNewJobPosting';
 
+// --- Account Management Functions ---
+export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';
+export { sendLoginNotification, recordLoginFailure } from './account/loginNotification';
+
 // --- Existing Functions (placeholders for brevity) ---
 export const onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });
 export const onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { /* ... */ });

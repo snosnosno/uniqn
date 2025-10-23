@@ -1,9 +1,9 @@
 import { StarIcon } from '@heroicons/react/24/solid';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
-// Link - 향후 사용 예정
+import { useParams, Link } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
@@ -282,9 +282,24 @@ const ProfilePage = () => {
                             </div>
                         </div>
                         <div className="mt-4 md:mt-0 flex gap-2">
-                            {isOwnProfile ? <button onClick={handleEditClick} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    {isEditing ? t('profilePage.cancel') : t('profilePage.editProfile')}
-                                </button> : null}
+                            {isOwnProfile && (
+                                <>
+                                    <Link
+                                        to="/app/settings"
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-2"
+                                        title={t('settings.title', '설정')}
+                                    >
+                                        <Cog6ToothIcon className="h-5 w-5" />
+                                        <span className="hidden sm:inline">{t('settings.title', '설정')}</span>
+                                    </Link>
+                                    <button
+                                        onClick={handleEditClick}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    >
+                                        {isEditing ? t('profilePage.cancel') : t('profilePage.editProfile')}
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 

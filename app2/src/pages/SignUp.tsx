@@ -8,9 +8,11 @@ import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
 import Modal from '../components/ui/Modal';
 import PasswordStrength from '../components/auth/PasswordStrength';
+import ConsentManager from '../components/consent/ConsentManager';
 import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { validatePassword } from '../utils/passwordValidator';
+import type { ConsentCreateInput } from '../types/consent';
 
 const SignUp: React.FC = () => {
   const [name, setName] = useState('');
@@ -21,6 +23,7 @@ const SignUp: React.FC = () => {
   const [gender, setGender] = useState(''); // 'male' or 'female'
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [consents, setConsents] = useState<ConsentCreateInput | null>(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { signInWithGoogle } = useAuth();
@@ -50,6 +53,13 @@ const SignUp: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // 동의 확인
+    if (!consents) {
+      setError(t('consent.required.pleaseAgree', '필수 약관에 동의해주세요.'));
+      setIsLoading(false);
+      return;
+    }
 
     // 비밀번호 유효성 검사
     const passwordValidation = validatePassword(password);
@@ -183,9 +193,17 @@ const SignUp: React.FC = () => {
             )}
           </div>
 
+          {/* 동의 관리 */}
+          <div className="pt-4 border-t border-gray-200">
+            <ConsentManager
+              isSignupMode={true}
+              onChange={setConsents}
+            />
+          </div>
+
           {error ? <p className="text-red-500 text-sm text-center">{error}</p> : null}
-          
-          <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">
+
+          <button type="submit" disabled={isLoading || !consents} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">
             {isLoading ? t('signUp.signingUpButton') : t('signUp.signUpButton')}
           </button>
         </form>

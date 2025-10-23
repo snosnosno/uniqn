@@ -29,13 +29,22 @@ const Login: React.FC = () => {
     const savedRememberMe = localStorage.getItem('rememberMe');
     if (savedRememberMe) {
       try {
-        setRememberMe(JSON.parse(savedRememberMe));
-        logger.info('로그인 설정 복원 완료', {
-          component: 'Login',
-          data: { rememberMe: JSON.parse(savedRememberMe) }
-        });
+        // boolean 값만 허용 (암호화된 문자열은 무시)
+        const parsed = JSON.parse(savedRememberMe);
+        if (typeof parsed === 'boolean') {
+          setRememberMe(parsed);
+          logger.info('로그인 설정 복원 완료', {
+            component: 'Login',
+            data: { rememberMe: parsed }
+          });
+        } else {
+          // 잘못된 형식의 데이터는 제거
+          localStorage.removeItem('rememberMe');
+        }
       } catch (error) {
-        logger.error('로그인 설정 복원 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'Login' });
+        // JSON 파싱 실패 시 (암호화된 데이터 등) 제거
+        logger.debug('로그인 설정 파싱 실패, 초기화합니다', { component: 'Login' });
+        localStorage.removeItem('rememberMe');
       }
     }
 

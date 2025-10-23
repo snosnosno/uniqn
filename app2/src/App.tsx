@@ -58,6 +58,11 @@ const NotificationTestPage = React.lazy(() => import('./pages/NotificationTestPa
 const AnnouncementsPage = React.lazy(() => import('./pages/AnnouncementsPage'));
 const NotificationSettingsPage = React.lazy(() => import('./pages/NotificationSettingsPage'));
 
+// Settings & Legal Pages
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const TermsOfServicePage = React.lazy(() => import('./pages/legal/TermsOfServicePage'));
+const PrivacyPolicyPage = React.lazy(() => import('./pages/legal/PrivacyPolicyPage'));
+
 // Extract components from chunks
 const {
   ApprovalPage,
@@ -175,6 +180,10 @@ const App: React.FC = () => {
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
 
+                  {/* Legal Documents - Public Access (회원가입 시 확인 가능해야 함) */}
+                  <Route path="/terms-of-service" element={<Suspense fallback={<LoadingSpinner />}><TermsOfServicePage /></Suspense>} />
+                  <Route path="/privacy-policy" element={<Suspense fallback={<LoadingSpinner />}><PrivacyPolicyPage /></Suspense>} />
+
                   {/* Authenticated Routes */}
                   <Route path="/app" element={<PrivateRoute />}>
                     <Route path="/app" element={
@@ -191,6 +200,9 @@ const App: React.FC = () => {
                       <Route path="notification-settings" element={<Suspense fallback={<LoadingSpinner />}><NotificationSettingsPage /></Suspense>} />
                       <Route path="test-notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationTestPage /></Suspense>} />
                       <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
+
+                      {/* 설정 */}
+                      <Route path="settings" element={<Suspense fallback={<LoadingSpinner />}><SettingsPage /></Suspense>} />
 
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />

@@ -10,7 +10,6 @@
  * @module utils/applicants/applicantFormat
  */
 
-import { logger } from '../logger';
 import { formatDateDisplay } from './applicantTransform';
 
 /**

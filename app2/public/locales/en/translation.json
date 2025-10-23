@@ -1224,5 +1224,222 @@
       "startTime": "Start Time",
       "endTime": "End Time"
     }
+  },
+  "consent": {
+    "title": "Service Agreement",
+    "description": "Please agree to the following terms to use the service.",
+    "agreeAll": "Agree to All",
+    "required": "Required Agreements",
+    "optional": "Optional Agreements",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "marketing": "Marketing Communications",
+    "locationService": "Location Services",
+    "pushNotification": "Push Notifications",
+    "descriptions": {
+      "termsOfService": "Terms and conditions for using our service",
+      "privacyPolicy": "How we collect and use your personal information",
+      "marketing": "Receive promotional emails and notifications",
+      "locationService": "Allow access to location information for enhanced service",
+      "pushNotification": "Receive push notifications about important updates"
+    },
+    "agreedAt": "Agreed on: {{date}}",
+    "viewDocument": "View Full Document",
+    "submit": "Agree and Continue",
+    "errors": {
+      "requiredConsents": "You must agree to the required terms to continue.",
+      "updateFailed": "Failed to update consent preferences.",
+      "loadFailed": "Failed to load consent information."
+    },
+    "success": {
+      "updated": "Your consent preferences have been updated successfully.",
+      "created": "Service agreement completed successfully."
+    },
+    "history": {
+      "title": "Consent Change History",
+      "changedAt": "Changed on",
+      "changedFields": "Changed Items",
+      "previousValue": "Previous",
+      "newValue": "New",
+      "noHistory": "No change history available."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "consent": "Consent Management",
+      "security": "Security",
+      "notifications": "Notifications",
+      "language": "Language",
+      "account": "Account Management"
+    },
+    "consent": {
+      "title": "Consent Management",
+      "description": "Manage your consent preferences for optional services.",
+      "agreedAt": "Agreed on",
+      "notAgreed": "Not agreed",
+      "requiredNotice": "Required consents cannot be modified after signup. To withdraw, please delete your account.",
+      "marketingEnabled": "Marketing communications enabled.",
+      "marketingDisabled": "Marketing communications disabled.",
+      "locationEnabled": "Location services enabled.",
+      "locationDisabled": "Location services disabled.",
+      "pushEnabled": "Push notifications enabled.",
+      "pushDisabled": "Push notifications disabled.",
+      "updateSuccess": "Consent preferences updated successfully.",
+      "updateFailed": "Failed to update consent preferences.",
+      "viewHistory": "View Change History"
+    },
+    "security": {
+      "title": "Security Settings",
+      "description": "Manage password and login notification settings.",
+      "password": {
+        "title": "Password Management",
+        "description": "Change your account password",
+        "changeButton": "Change Password",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm New Password",
+        "currentPasswordPlaceholder": "Enter current password",
+        "newPasswordPlaceholder": "Enter new password (min. 8 characters)",
+        "confirmPasswordPlaceholder": "Re-enter new password",
+        "strength": {
+          "title": "Password Strength",
+          "weak": "Weak",
+          "medium": "Medium",
+          "strong": "Strong"
+        },
+        "requirements": {
+          "title": "Password Requirements",
+          "length": "At least 8 characters",
+          "uppercase": "Include uppercase letters",
+          "lowercase": "Include lowercase letters",
+          "number": "Include numbers",
+          "special": "Include special characters (!@#$%^&*)"
+        },
+        "errors": {
+          "currentRequired": "Please enter your current password.",
+          "newRequired": "Please enter a new password.",
+          "tooShort": "Password must be at least 8 characters long.",
+          "mismatch": "Passwords do not match.",
+          "sameAsCurrent": "New password must be different from current password.",
+          "authFailed": "Current password is incorrect.",
+          "updateFailed": "Failed to update password."
+        },
+        "success": "Password changed successfully. Please log in again.",
+        "cancel": "Cancel",
+        "confirm": "Change Password"
+      },
+      "loginNotifications": {
+        "title": "Login Notification Settings",
+        "description": "Receive notifications for login activities",
+        "enabled": "Enable Login Notifications",
+        "enabledDescription": "Receive in-app notifications when login activity is detected",
+        "newDevice": "New Device Login",
+        "newDeviceDescription": "Notify when logging in from a new device",
+        "newLocation": "New Location Login",
+        "newLocationDescription": "Notify when logging in from a new location",
+        "suspiciousActivity": "Suspicious Activity Detection",
+        "suspiciousActivityDescription": "Notify when suspicious login activity is detected (recommended)",
+        "updateSuccess": "Login notification settings updated successfully.",
+        "updateFailed": "Failed to update login notification settings."
+      },
+      "sessionManagement": {
+        "title": "Session Management",
+        "description": "Manage active login sessions",
+        "currentSession": "Current Session",
+        "otherSessions": "Other Sessions",
+        "lastActive": "Last active",
+        "logoutAll": "Log Out All Sessions",
+        "logoutSuccess": "All sessions logged out successfully."
+      }
+    },
+    "language": {
+      "title": "Language Settings",
+      "description": "Select your preferred language",
+      "current": "Current Language",
+      "korean": "한국어",
+      "english": "English",
+      "updateSuccess": "Language settings updated successfully.",
+      "updateFailed": "Failed to update language settings."
+    },
+    "account": {
+      "title": "Account Management",
+      "description": "Delete your account and all associated data",
+      "deleteAccount": {
+        "title": "Delete Account",
+        "description": "Permanently delete your account and all data",
+        "button": "Request Account Deletion",
+        "warning": {
+          "title": "⚠️ Warning",
+          "message": "This action cannot be undone. All your data will be permanently deleted.",
+          "effects": "Once you delete your account, the following will happen:",
+          "effect1": "• All personal information will be permanently deleted",
+          "effect2": "• All application and work history will be deleted",
+          "effect3": "• All payroll information will be deleted",
+          "effect4": "• You will not be able to use this account again"
+        },
+        "gracePeriod": {
+          "title": "30-Day Grace Period",
+          "description": "After requesting deletion, you have 30 days to cancel. Your account will be deactivated during this period.",
+          "deactivated": "Your account is currently deactivated and scheduled for deletion.",
+          "canReactivate": "You can cancel the deletion request and reactivate your account anytime within 30 days."
+        },
+        "modal": {
+          "title": "Confirm Account Deletion",
+          "subtitle": "This action cannot be undone",
+          "reasonLabel": "Reason for Deletion (Optional)",
+          "reasonPlaceholder": "Please select a reason",
+          "reason": {
+            "notUseful": "Service not useful",
+            "privacyConcerns": "Privacy concerns",
+            "switchingService": "Switching to another service",
+            "tooManyEmails": "Too many notifications",
+            "difficultToUse": "Difficult to use",
+            "other": "Other"
+          },
+          "feedbackLabel": "Additional Feedback (Optional)",
+          "feedbackPlaceholder": "Please share any feedback to help us improve (max 500 characters)",
+          "passwordLabel": "Password Confirmation (Required)",
+          "passwordPlaceholder": "Enter your password to confirm deletion",
+          "confirmCheckbox": "I understand that this action cannot be undone and all my data will be permanently deleted.",
+          "cancel": "Cancel",
+          "confirm": "Confirm Deletion",
+          "errors": {
+            "passwordRequired": "Please enter your password to confirm.",
+            "confirmRequired": "Please check the confirmation box.",
+            "invalidPassword": "Password is incorrect.",
+            "deletionFailed": "Failed to request account deletion."
+          },
+          "success": "Account deletion requested. Your account will be deleted in 30 days."
+        },
+        "pending": {
+          "title": "Account Deletion Pending",
+          "requestedAt": "Requested on",
+          "scheduledDeletionAt": "Scheduled deletion date",
+          "remainingDays": "{{days}} days remaining",
+          "cancelButton": "Cancel Deletion Request",
+          "confirmCancel": "Are you sure you want to cancel the account deletion request?",
+          "cancelSuccess": "Account deletion request cancelled successfully. Your account has been reactivated.",
+          "cancelFailed": "Failed to cancel account deletion request."
+        }
+      }
+    }
+  },
+  "legal": {
+    "termsOfService": {
+      "title": "Terms of Service",
+      "pageTitle": "Terms of Service"
+    },
+    "privacyPolicy": {
+      "title": "Privacy Policy",
+      "pageTitle": "Privacy Policy"
+    },
+    "version": "Version",
+    "effectiveDate": "Effective Date",
+    "lastUpdated": "Last Updated",
+    "backButton": "Back",
+    "printButton": "Print",
+    "article": "Article {{number}}",
+    "section": "Section {{number}}"
   }
 }
