@@ -299,10 +299,39 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                           <input
                             type="number"
                             min="1"
+                            max="200"
                             value={role.count}
-                            onChange={(e) =>
-                              onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', parseInt(e.target.value) || 1)
-                            }
+                            onFocus={(e) => {
+                              e.target.select();
+                              // 기본값 1인 경우 빈 값으로 만들기
+                              if (role.count === 1) {
+                                e.target.value = '';
+                              }
+                            }}
+                            onBlur={(e) => {
+                              // 포커스 아웃 시 빈 값이면 기본값 1로 복원
+                              if (e.target.value === '') {
+                                onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', 1);
+                              }
+                            }}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+
+                              // 빈 값은 허용 (입력 중)
+                              if (newValue === '') {
+                                return;
+                              }
+
+                              const numValue = parseInt(newValue, 10);
+
+                              // 인원수 범위 검증 (1-200명)
+                              if (isNaN(numValue) || numValue < 1 || numValue > 200) {
+                                toast.error('인원수는 1명에서 200명 사이로 입력해주세요.');
+                                return;
+                              }
+
+                              onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
+                            }}
                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                         </div>
