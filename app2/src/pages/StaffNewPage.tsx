@@ -57,7 +57,7 @@ const StaffNewPage: React.FC = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">{t('staffNew.title')}</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('staffNew.labelName')}</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('common.name')}</label>
             <input
               type="text"
               name="name"
@@ -69,7 +69,7 @@ const StaffNewPage: React.FC = () => {
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">{t('staffNew.labelEmail')}</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">{t('common.emailAddress')}</label>
             <input
               type="email"
               name="email"

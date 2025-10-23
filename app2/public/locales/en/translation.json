@@ -28,9 +28,7 @@
   },
   "login": {
     "title": "Login",
-    "emailLabel": "Email Address",
     "passwordLabel": "Password",
-    "emailPlaceholder": "Email Address",
     "passwordPlaceholder": "Password",
     "loginButton": "Sign In",
     "rememberMe": "Remember me",
@@ -52,8 +50,6 @@
   "forgotPassword": {
     "title": "Reset Password",
     "instruction": "Enter your account's email address and we will send you a password reset link.",
-    "emailLabel": "Email Address",
-    "emailPlaceholder": "Email Address",
     "sendButton": "Send Reset Link",
     "sendingButton": "Sending...",
     "successMessage": "A password reset link has been sent to your email. Please check your inbox.",
@@ -62,13 +58,7 @@
   },
   "signUp": {
     "title": "Sign Up",
-    "nameLabel": "Name",
-    "phoneLabel": "Phone Number",
-    "emailLabel": "Email Address",
     "passwordLabel": "Password",
-    "namePlaceholder": "Name",
-    "phonePlaceholder": "Phone Number",
-    "emailPlaceholder": "Email Address",
     "passwordPlaceholder": "Password (min. 6 characters)",
     "roleTitle": "Account Type",
     "roleStaff": "Staff",
@@ -146,7 +136,6 @@
     "title": "Pending Registration Approvals",
     "fetchError": "Failed to fetch pending approvals.",
     "processError": "Failed to process {{action}} request. Please try again.",
-    "nameHeader": "Name",
     "emailHeader": "Email",
     "actionsHeader": "Actions",
     "noPending": "There are no users awaiting approval."
@@ -168,8 +157,6 @@
     "alertSuccess": "Staff created successfully!",
     "errorUnknown": "An unknown error occurred.",
     "title": "Add New Staff",
-    "labelName": "Name",
-    "labelEmail": "Email Address",
     "labelRole": "Role",
     "roleStaff": "Staff",
     "roleAdmin": "Admin",
@@ -212,7 +199,6 @@
     "title": "Edit User Information",
     "updateSuccess": "User updated successfully!",
     "updateError": "Failed to update user.",
-    "labelName": "Name",
     "labelEmail": "Email",
     "labelRole": "Role"
   },
@@ -259,7 +245,14 @@
       "generating": "Generating...",
       "searching": "Searching...",
       "processing": "Processing..."
-    }
+    },
+    "name": "Name",
+    "emailAddress": "Email Address",
+    "date": "Date",
+    "phone": "Phone",
+    "status": "Status",
+    "location": "Location",
+    "time": "Time"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -273,7 +266,6 @@
     "tableHeaderName": "Dealer Name",
     "tableHeaderHours": "Hours Worked (approx.)",
     "tableHeaderAmount": "Amount",
-    "tableHeaderStatus": "Status",
     "unknownDealer": "Unknown Dealer",
     "status": {
       "pending": "Pending",
@@ -296,16 +288,10 @@
     "title": "Participant Management",
     "searchPlaceholder": "Search by name",
     "addNew": "+ Add Participant",
-    "tableHeaderName": "Name",
-    "tableHeaderPhone": "Phone",
-    "tableHeaderStatus": "Status",
     "tableHeaderChips": "Chips",
-    "tableHeaderLocation": "Location",
     "tableHeaderActions": "Actions",
     "modalTitleEdit": "Edit Participant",
     "modalTitleAdd": "Add Participant",
-    "modalLabelName": "Name",
-    "modalLabelPhone": "Phone",
     "modalLabelChips": "Chips",
     "modalButtonAdd": "Add"
   },
@@ -385,10 +371,7 @@
   "participantDetailModal": {
     "title": "Participant Details",
     "editTitle": "Edit Participant Info",
-    "labelName": "Name",
-    "labelPhone": "Phone",
     "labelChips": "Chips",
-    "labelStatus": "Status",
     "labelTable": "Table",
     "statusActive": "Active",
     "statusBusted": "Busted",
@@ -449,7 +432,6 @@
   "historyDetail": {
     "title": "{{name}} Results",
     "backToList": "Back to List",
-    "date": "Date",
     "participants": "Participants",
     "playerCount": "{{count}} players",
     "prizePool": "Total Prize Pool",
@@ -457,13 +439,11 @@
     "winner": "Winner",
     "finalRanking": "Final Ranking",
     "rank": "Rank",
-    "name": "Name",
     "prize": "Prize"
   },
   "historyPage": {
     "title": "Tournament History",
     "tournamentName": "Tournament Name",
-    "date": "Date",
     "participants": "Participants",
     "winner": "Winner",
     "details": "Details",
@@ -514,7 +494,6 @@
       "confirm": "Confirm Application"
     },
     "filters": {
-      "location": "Location",
       "allLocations": "All Locations",
       "type": "Recruitment Type",
       "allTypes": "All Types",
@@ -604,7 +583,6 @@
       "location": "Location",
       "startDate": "Start Date",
       "endDate": "End Date",
-      "time": "Time",
       "timeAndRoles": "Time Slots & Roles",
       "addTimeSlot": "Add Time Slot",
       "removeTimeSlot": "Remove Time Slot",
@@ -624,14 +602,10 @@
       "typeFixed": "Fixed",
       "matching": "Matching...",
       "button": "Auto Match",
-      "applicants": "Applicants",
-      "location": "Location",
-      "date": "Date",
-      "time": "Time"
+      "applicants": "Applicants"
     },
     "edit": {
       "title": "Edit Job Posting",
-      "status": "Status",
       "statusOpen": "Open",
       "statusClosed": "Closed"
     },
@@ -693,10 +667,8 @@
     "payrollHistory": "Payroll History",
     "loadingPayroll": "Loading payroll history...",
     "tableEvent": "Event",
-    "tableDate": "Date",
     "tableHours": "Hours",
     "tablePay": "Pay",
-    "tableStatus": "Status",
     "noPayroll": "No payroll history available.",
     "statusPaid": "Paid",
     "statusPending": "Pending",
@@ -740,10 +712,8 @@
     "pendingAmount": "Pending",
     "payrollHistory": "Payroll History",
     "tableEvent": "Event",
-    "tableDate": "Date",
     "tableHours": "Hours",
     "tablePay": "Pay",
-    "tableStatus": "Status",
     "statusPaid": "Paid",
     "statusPending": "Pending",
     "noPayroll": "No payroll history",
@@ -882,7 +852,6 @@
       "updateError": "Error occurred while updating time."
     },
     "editWorkTime": "Edit Work Time",
-    "date": "Date",
     "eventId": "Event ID",
     "scheduledTimes": "Scheduled Times",
     "scheduledStartTime": "Scheduled Start Time",
@@ -998,9 +967,7 @@
   "report": {
     "title": "Submit Report",
     "targetInfo": "Report Target",
-    "targetName": "Name",
     "eventTitle": "Event",
-    "eventDate": "Date",
     "type": "Report Type",
     "types": {
       "tardiness": {

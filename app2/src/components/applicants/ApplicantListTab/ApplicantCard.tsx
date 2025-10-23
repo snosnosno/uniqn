@@ -108,7 +108,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
             <span className="ml-1 text-xs break-all">{applicant.email || t('common.none')}</span>
           </div>
           <div>
-            <span className="font-medium">{t('profile.phone')}:</span>
+            <span className="font-medium">{t('common.phone')}:</span>
             <span className="ml-1">{applicant.phone || t('common.none')}</span>
           </div>
         </div>

@@ -49,7 +49,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
             {/* Location Filter */}
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('jobBoard.filters.location')}
+                {t('common.location')}
               </label>
               <select
                 id="location"

@@ -152,11 +152,11 @@ const Login: React.FC = () => {
       <form className="space-y-6" onSubmit={handleLogin}>
         <FormField
           id="email"
-          label={t('login.emailLabel')}
+          label={t('common.emailAddress')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('login.emailPlaceholder')}
+          placeholder={t('common.emailAddress')}
           required
           autoComplete="email"
         />

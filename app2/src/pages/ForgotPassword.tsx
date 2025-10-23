@@ -40,11 +40,11 @@ const ForgotPassword = () => {
         </p>
         <FormField
           id="email"
-          label={t('forgotPassword.emailLabel')}
+          label={t('common.emailAddress')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('forgotPassword.emailPlaceholder')}
+          placeholder={t('common.emailAddress')}
           required
           autoComplete="email"
         />

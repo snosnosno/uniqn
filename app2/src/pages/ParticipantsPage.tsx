@@ -434,15 +434,15 @@ const ParticipantsPage: React.FC = () => {
                   tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                 />
               </th>
-              <th className="px-4 py-2">{t('participants.tableHeaderName')}</th>
+              <th className="px-4 py-2">{t('common.name')}</th>
               <th className="px-4 py-2">ID</th>
-              <th className="px-4 py-2">{t('participants.tableHeaderPhone')}</th>
+              <th className="px-4 py-2">{t('common.phone')}</th>
               <th className="px-4 py-2">{t('participants.tableHeaderChips')}</th>
-              <th className="px-4 py-2 whitespace-nowrap">{t('participants.tableHeaderLocation')}</th>
+              <th className="px-4 py-2 whitespace-nowrap">{t('common.location')}</th>
               <th className="px-4 py-2">기타</th>
               <th className="px-4 py-2">비고</th>
               <th className="px-4 py-2">{t('participants.tableHeaderActions')}</th>
-              <th className="px-4 py-2">{t('participants.tableHeaderStatus')}</th>
+              <th className="px-4 py-2">{t('common.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -513,7 +513,7 @@ const ParticipantsPage: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1">{t('participants.modalLabelName')}</label>
+            <label className="block text-sm font-medium mb-1">{t('common.name')}</label>
             <input
               key="participant-name-input"
               type="text"
@@ -535,7 +535,7 @@ const ParticipantsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('participants.modalLabelPhone')}</label>
+            <label className="block text-sm font-medium mb-1">{t('common.phone')}</label>
             <input
               key="participant-phone-input"
               type="text"

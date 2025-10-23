@@ -28,9 +28,7 @@
   },
   "login": {
     "title": "로그인",
-    "emailLabel": "이메일 주소",
     "passwordLabel": "비밀번호",
-    "emailPlaceholder": "이메일 주소",
     "passwordPlaceholder": "비밀번호",
     "loginButton": "로그인",
     "rememberMe": "로그인 상태 유지",
@@ -52,8 +50,6 @@
   "forgotPassword": {
     "title": "비밀번호 재설정",
     "instruction": "계정의 이메일 주소를 입력하시면, 비밀번호 재설정 링크를 보내드립니다.",
-    "emailLabel": "이메일 주소",
-    "emailPlaceholder": "이메일 주소",
     "sendButton": "재설정 링크 받기",
     "sendingButton": "보내는 중...",
     "successMessage": "비밀번호 재설정 링크가 이메일로 전송되었습니다. 받은 편지함을 확인해주세요.",
@@ -62,13 +58,7 @@
   },
   "signUp": {
     "title": "회원가입",
-    "nameLabel": "이름",
-    "phoneLabel": "연락처",
-    "emailLabel": "이메일 주소",
     "passwordLabel": "비밀번호",
-    "namePlaceholder": "이름",
-    "phonePlaceholder": "연락처",
-    "emailPlaceholder": "이메일 주소",
     "passwordPlaceholder": "비밀번호 (6자 이상)",
     "roleTitle": "가입 유형",
     "roleStaff": "스태프",
@@ -146,7 +136,6 @@
     "title": "가입 승인 대기 목록",
     "fetchError": "승인 대기 목록을 불러오는 데 실패했습니다.",
     "processError": "{{action}} 요청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
-    "nameHeader": "이름",
     "emailHeader": "이메일",
     "actionsHeader": "작업",
     "noPending": "현재 승인 대기 중인 사용자가 없습니다."
@@ -168,8 +157,6 @@
     "alertSuccess": "스태프가 성공적으로 생성되었습니다!",
     "errorUnknown": "알 수 없는 오류가 발생했습니다.",
     "title": "새 스태프 추가",
-    "labelName": "이름",
-    "labelEmail": "이메일 주소",
     "labelRole": "역할",
     "roleStaff": "스태프",
     "roleAdmin": "관리자",
@@ -212,7 +199,6 @@
     "title": "사용자 정보 수정",
     "updateSuccess": "사용자 정보가 성공적으로 업데이트되었습니다!",
     "updateError": "사용자 정보 업데이트에 실패했습니다.",
-    "labelName": "이름",
     "labelEmail": "이메일",
     "labelRole": "역할"
   },
@@ -259,7 +245,14 @@
       "generating": "생성 중...",
       "searching": "검색중...",
       "processing": "처리 중..."
-    }
+    },
+    "name": "이름",
+    "emailAddress": "이메일 주소",
+    "date": "날짜",
+    "phone": "연락처",
+    "status": "상태",
+    "location": "지역",
+    "time": "시간"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -273,7 +266,6 @@
     "tableHeaderName": "딜러 이름",
     "tableHeaderHours": "근무 시간 (근사치)",
     "tableHeaderAmount": "금액",
-    "tableHeaderStatus": "상태",
     "unknownDealer": "알 수 없는 딜러",
     "status": {
       "pending": "지급 대기중",
@@ -296,16 +288,10 @@
     "title": "참가자 관리",
     "searchPlaceholder": "이름으로 검색",
     "addNew": "+ 참가자 추가",
-    "tableHeaderName": "이름",
-    "tableHeaderPhone": "연락처",
-    "tableHeaderStatus": "상태",
     "tableHeaderChips": "칩",
-    "tableHeaderLocation": "위치",
     "tableHeaderActions": "관리",
     "modalTitleEdit": "참가자 수정",
     "modalTitleAdd": "참가자 추가",
-    "modalLabelName": "이름",
-    "modalLabelPhone": "연락처",
     "modalLabelChips": "칩",
     "modalButtonAdd": "추가"
   },
@@ -385,10 +371,7 @@
   "participantDetailModal": {
     "title": "참가자 상세 정보",
     "editTitle": "참가자 정보 수정",
-    "labelName": "이름",
-    "labelPhone": "연락처",
     "labelChips": "칩",
-    "labelStatus": "상태",
     "labelTable": "테이블",
     "statusActive": "참가중",
     "statusBusted": "탈락",
@@ -453,7 +436,6 @@
   "historyDetail": {
     "title": "{{name}} 결과",
     "backToList": "목록으로",
-    "date": "날짜",
     "participants": "참가자",
     "playerCount": "{{count}}명",
     "prizePool": "총상금",
@@ -461,13 +443,11 @@
     "winner": "우승자",
     "finalRanking": "최종 순위",
     "rank": "순위",
-    "name": "이름",
     "prize": "상금"
   },
   "historyPage": {
     "title": "토너먼트 기록",
     "tournamentName": "대회명",
-    "date": "날짜",
     "participants": "참가자 수",
     "winner": "우승자",
     "details": "상세",
@@ -491,7 +471,6 @@
       "placeholder": "공고 제목, 설명으로 검색..."
     },
     "filters": {
-      "location": "지역",
       "allLocations": "전체 지역",
       "type": "고용형태",
       "allTypes": "전체 유형",
@@ -630,7 +609,6 @@
       "location": "지역",
       "startDate": "시작일",
       "endDate": "종료일",
-      "time": "시간",
       "timeAndRoles": "시간대 및 역할",
       "addTimeSlot": "시간대 추가",
       "removeTimeSlot": "시간대 삭제",
@@ -651,14 +629,10 @@
       "matching": "매칭 중...",
       "button": "자동 매칭",
       "applicants": "지원자",
-      "location": "지역",
-      "date": "날짜",
-      "time": "시간",
       "detailManagement": "상세 관리"
     },
     "edit": {
       "title": "구인공고 수정",
-      "status": "상태",
       "statusOpen": "진행중",
       "statusClosed": "마감"
     },
@@ -693,7 +667,6 @@
     "region": "지역",
     "age": "나이",
     "experience": "경력",
-    "phone": "연락처",
     "selectRegion": "지역을 선택하세요",
     "email": "이메일"
   },
@@ -725,10 +698,8 @@
     "payrollHistory": "급여 내역",
     "loadingPayroll": "급여 내역 로딩 중...",
     "tableEvent": "이벤트",
-    "tableDate": "날짜",
     "tableHours": "시간",
     "tablePay": "급여",
-    "tableStatus": "상태",
     "noPayroll": "급여 내역이 없습니다.",
     "statusPaid": "지급 완료",
     "statusPending": "지급 대기중",
@@ -772,10 +743,8 @@
     "pendingAmount": "대기중",
     "payrollHistory": "급여 내역",
     "tableEvent": "이벤트",
-    "tableDate": "날짜",
     "tableHours": "근무시간",
     "tablePay": "급여",
-    "tableStatus": "상태",
     "statusPaid": "지급완료",
     "statusPending": "지급대기",
     "noPayroll": "급여 내역이 없습니다",
@@ -940,7 +909,6 @@
       "updateError": "시간 수정 중 오류가 발생했습니다."
     },
     "editWorkTime": "출퇴근 시간 수정",
-    "date": "날짜",
     "eventId": "이벤트 ID",
     "scheduledTimes": "예정 시간",
     "scheduledStartTime": "예정 출근시간",
@@ -1047,9 +1015,7 @@
   "report": {
     "title": "신고하기",
     "targetInfo": "신고 대상",
-    "targetName": "이름",
     "eventTitle": "이벤트",
-    "eventDate": "날짜",
     "type": "신고 유형",
     "types": {
       "tardiness": {

@@ -147,7 +147,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       <form id="edit-user-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('editUserModal.labelName')}</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('common.name')}</label>
             <input
               type="text"
               name="name"

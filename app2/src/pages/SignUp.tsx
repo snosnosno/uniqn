@@ -160,10 +160,10 @@ const SignUp: React.FC = () => {
             )}
           </div>
 
-          <FormField id="name" label={t('signUp.nameLabel')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('signUp.namePlaceholder')} required />
+          <FormField id="name" label={t('common.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('common.name')} required />
           <FormField
             id="phone"
-            label={t('signUp.phoneLabel')}
+            label={t('common.phone')}
             type="tel"
             value={phone}
             onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
@@ -181,7 +181,7 @@ const SignUp: React.FC = () => {
             </div>
           </div>
 
-          <FormField id="email" label={t('signUp.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('signUp.emailPlaceholder')} required />
+          <FormField id="email" label={t('common.emailAddress')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('common.emailAddress')} required />
 
           <div>
             <FormField id="password" label={t('signUp.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('signUp.passwordPlaceholder')} required />
