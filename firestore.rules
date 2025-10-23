@@ -556,6 +556,30 @@ service cloud.firestore {
       allow update, delete: if isPrivileged();
     }
 
+    // --- Account Deletion Requests Collection (계정 삭제 요청) ---
+    match /deletionRequests/{requestId} {
+      // 본인의 삭제 요청만 읽기 가능, 관리자는 처리 목적으로 읽기 가능
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+
+      // 본인만 삭제 요청 생성 가능
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['requestId', 'userId', 'userEmail', 'userName', 'requestedAt', 'scheduledDeletionAt', 'status']) &&
+        request.resource.data.status == 'pending';
+
+      // 본인은 취소만 가능, 관리자는 모든 상태 변경 가능
+      allow update: if isSignedIn() && (
+        (request.auth.uid == resource.data.userId && request.resource.data.status == 'cancelled') ||
+        isPrivileged()
+      );
+
+      // 삭제는 관리자만 가능
+      allow delete: if isPrivileged();
+    }
+
     // --- Inquiries Collection (고객 문의) ---
     match /inquiries/{inquiryId} {
       // 읽기: 본인의 문의는 볼 수 있고, 관리자는 모든 문의를 볼 수 있음

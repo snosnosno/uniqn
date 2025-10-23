@@ -28,16 +28,15 @@ export interface PasswordChangeModalProps {
 }
 
 /**
- * 비밀번호 강도 계산
+ * 비밀번호 강도 계산 (대소문자 요구사항 제거)
  */
 const calculatePasswordStrength = (password: string): number => {
   let strength = 0;
 
-  if (password.length >= 8) strength += 25;
+  if (password.length >= 8) strength += 35;
   if (password.length >= 12) strength += 25;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
-  if (/\d/.test(password)) strength += 15;
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength += 10;
+  if (/\d/.test(password)) strength += 20;
+  if (/[@$!%*?&]/.test(password)) strength += 20;
 
   return Math.min(strength, 100);
 };
@@ -291,27 +290,18 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
 
               {/* 비밀번호 요구사항 */}
               <ul className="mt-2 text-xs text-gray-600 space-y-1">
-                <li className={newPassword.length >= 8 ? 'text-green-600' : ''}>
-                  • {t('settings.security.passwordRequirement1')}
+                <li className={newPassword.length >= 8 ? 'text-green-600 font-medium' : ''}>
+                  {newPassword.length >= 8 ? '✓' : '•'} 최소 8자 이상
+                </li>
+                <li className={/\d/.test(newPassword) ? 'text-green-600 font-medium' : ''}>
+                  {/\d/.test(newPassword) ? '✓' : '•'} 숫자 포함 (0-9)
                 </li>
                 <li
                   className={
-                    /[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)
-                      ? 'text-green-600'
-                      : ''
+                    /[@$!%*?&]/.test(newPassword) ? 'text-green-600 font-medium' : ''
                   }
                 >
-                  • {t('settings.security.passwordRequirement2')}
-                </li>
-                <li className={/\d/.test(newPassword) ? 'text-green-600' : ''}>
-                  • {t('settings.security.passwordRequirement3')}
-                </li>
-                <li
-                  className={
-                    /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? 'text-green-600' : ''
-                  }
-                >
-                  • {t('settings.security.passwordRequirement4')}
+                  {/[@$!%*?&]/.test(newPassword) ? '✓' : '•'} 특수문자 포함 (@$!%*?&)
                 </li>
               </ul>
             </div>

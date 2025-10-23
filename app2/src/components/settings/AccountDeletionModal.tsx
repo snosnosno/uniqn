@@ -128,7 +128,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
         handleClose();
 
         // 설정 페이지로 이동 (삭제 대기 상태 표시)
-        navigate('/settings', { state: { tab: 'account' } });
+        navigate('/app/settings', { state: { tab: 'account' } });
       } catch (err) {
         const error = err as Error;
         logger.error('계정 삭제 요청 실패', error, {

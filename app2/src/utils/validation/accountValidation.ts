@@ -199,7 +199,14 @@ export const validateDeletionRequest = (
   }
 
   // reasonCategory 검증
-  const validCategories = ['not_using', 'privacy_concern', 'switching_service', 'other'];
+  const validCategories = [
+    'not_useful',
+    'privacy_concerns',
+    'switching_service',
+    'too_many_emails',
+    'difficult_to_use',
+    'other',
+  ];
   if (data.reasonCategory && !validCategories.includes(data.reasonCategory)) {
     errors.push('유효하지 않은 탈퇴 사유 카테고리입니다.');
   }
@@ -228,10 +235,21 @@ export const validatePasswordChange = (
     errors.push('새 비밀번호를 입력해주세요.');
   }
 
-  // 비밀번호 강도 검증 (최소 8자, 대소문자, 숫자, 특수문자)
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (data.newPassword && !passwordRegex.test(data.newPassword)) {
-    errors.push('비밀번호는 최소 8자 이상이며, 대소문자, 숫자, 특수문자를 포함해야 합니다.');
+  // 비밀번호 강도 검증 (최소 8자, 숫자, 특수문자 포함)
+  if (data.newPassword) {
+    const hasMinLength = data.newPassword.length >= 8;
+    const hasNumber = /\d/.test(data.newPassword);
+    const hasSpecialChar = /[@$!%*?&]/.test(data.newPassword);
+
+    if (!hasMinLength) {
+      errors.push('비밀번호는 최소 8자 이상이어야 합니다.');
+    }
+    if (!hasNumber) {
+      errors.push('비밀번호는 숫자를 포함해야 합니다.');
+    }
+    if (!hasSpecialChar) {
+      errors.push('비밀번호는 특수문자(@$!%*?&)를 포함해야 합니다.');
+    }
   }
 
   // 같은 비밀번호 사용 금지
