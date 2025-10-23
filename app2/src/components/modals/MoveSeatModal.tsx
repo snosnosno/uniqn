@@ -95,7 +95,7 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
   const footerButtons = (
     <ModalFooter>
       <button onClick={onClose} className="btn btn-secondary">
-        {t('moveSeatModal.buttonCancel')}
+        {t('common.cancel')}
       </button>
       <button onClick={handleConfirm} className="btn btn-primary" disabled={!selectedSeat}>
         {t('moveSeatModal.buttonConfirm')}

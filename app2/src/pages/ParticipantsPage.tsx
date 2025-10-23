@@ -322,7 +322,7 @@ const ParticipantsPage: React.FC = () => {
     downloadCSV(csvContent, filename);
   };
 
-  if (participantsLoading || tablesLoading) return <div>{t('participants.loading')}</div>;
+  if (participantsLoading || tablesLoading) return <div>{t('common.messages.loading')}</div>;
   if (participantsError) return <div className="text-red-500">{t('participants.errorParticipants')} {participantsError.message}</div>;
   if (tablesError) return <div className="text-red-500">{t('participants.errorTables')} {tablesError.message}</div>;
 
@@ -472,7 +472,7 @@ const ParticipantsPage: React.FC = () => {
                     disabled={isModalOpen || isBulkModalOpen}
                     tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                   >
-                    {t('participants.actionEdit')}
+                    {t('common.edit')}
                   </button>
                   <button
                     onClick={() => handleDelete(p.id)}
@@ -480,7 +480,7 @@ const ParticipantsPage: React.FC = () => {
                     disabled={isModalOpen || isBulkModalOpen}
                     tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                   >
-                    {t('participants.actionDelete')}
+                    {t('common.delete')}
                   </button>
                 </td>
                 <td className="px-4 py-2">{p.status}</td>
@@ -620,8 +620,8 @@ const ParticipantsPage: React.FC = () => {
               )}
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">{t('participants.modalButtonCancel')}</button>
-              <button type="submit" className="btn btn-primary">{editingParticipant ? t('participants.modalButtonUpdate') : t('participants.modalButtonAdd')}</button>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">{t('common.cancel')}</button>
+              <button type="submit" className="btn btn-primary">{editingParticipant ? t('common.edit') : t('participants.modalButtonAdd')}</button>
             </div>
           </div>
         </form>

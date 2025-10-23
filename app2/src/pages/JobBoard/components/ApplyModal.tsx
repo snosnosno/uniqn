@@ -496,7 +496,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               onClick={onClose} 
               className="py-3 px-6 sm:py-2 sm:px-4 bg-gray-500 text-white rounded hover:bg-gray-700 min-h-[48px] text-sm sm:text-base"
             >
-              {t('jobBoard.applyModal.cancel')}
+              {t('common.cancel')}
             </button>
             <button 
               onClick={onApply} 

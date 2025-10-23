@@ -650,13 +650,13 @@ const ShiftSchedulePage: React.FC = () => {
               onClick={() => setIsSettingsModalOpen(false)}
               className="btn btn-outline flex-1"
             >
-              {t('shiftSchedule.cancel')}
+              {t('common.cancel')}
             </button>
             <button 
               onClick={handleSaveSettings}
               className="btn btn-primary flex-1"
             >
-              {t('shiftSchedule.save')}
+              {t('common.save')}
             </button>
           </div>
         </div>

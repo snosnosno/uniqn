@@ -89,7 +89,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
                 onChange={(e) => handleFilterChange('month', e.target.value)}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
-                <option value="">{t('jobBoard.filters.allMonths')}</option>
+                <option value="">{t('common.all')}</option>
                 {[...Array(12)].map((_, i) => (
                   <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
                     {i + 1}월
@@ -109,7 +109,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
                 onChange={(e) => handleFilterChange('day', e.target.value)}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
-                <option value="">{t('jobBoard.filters.allDays')}</option>
+                <option value="">{t('common.all')}</option>
                 {[...Array(31)].map((_, i) => (
                   <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
                     {i + 1}일

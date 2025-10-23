@@ -1,0 +1,1803 @@
+{
+  "ko": {
+    "total": 1133,
+    "duplicateGroups": 120,
+    "removableKeys": 212,
+    "groups": [
+      {
+        "value": "이름",
+        "keys": [
+          "signUp.nameLabel",
+          "signUp.namePlaceholder",
+          "approvalPage.nameHeader",
+          "staffNew.labelName",
+          "editUserModal.labelName",
+          "participants.tableHeaderName",
+          "participants.modalLabelName",
+          "participantDetailModal.labelName",
+          "historyDetail.name",
+          "report.targetName"
+        ]
+      },
+      {
+        "value": "로딩 중...",
+        "keys": [
+          "loading",
+          "layout.loading",
+          "common.messages.loading",
+          "payrollAdmin.buttonLoading",
+          "participants.loading",
+          "tables.loading",
+          "historyDetail.loading",
+          "tournamentDashboard.loading",
+          "notifications.loading"
+        ]
+      },
+      {
+        "value": "이메일 주소",
+        "keys": [
+          "login.emailLabel",
+          "login.emailPlaceholder",
+          "forgotPassword.emailLabel",
+          "forgotPassword.emailPlaceholder",
+          "signUp.emailLabel",
+          "signUp.emailPlaceholder",
+          "staffNew.labelEmail"
+        ]
+      },
+      {
+        "value": "수정",
+        "keys": [
+          "userManagement.edit",
+          "common.edit",
+          "participants.actionEdit",
+          "participants.modalButtonUpdate",
+          "participantDetailModal.buttonEdit",
+          "jobPostingAdmin.manage.edit",
+          "exceptions.edit"
+        ]
+      },
+      {
+        "value": "취소",
+        "keys": [
+          "common.cancel",
+          "participants.modalButtonCancel",
+          "moveSeatModal.buttonCancel",
+          "jobBoard.applyModal.cancel",
+          "jobPosting.announcement.cancelButton",
+          "profilePage.cancel",
+          "shiftSchedule.cancel"
+        ]
+      },
+      {
+        "value": "날짜",
+        "keys": [
+          "historyDetail.date",
+          "historyPage.date",
+          "jobPostingAdmin.manage.date",
+          "profilePage.tableDate",
+          "payrollPage.tableDate",
+          "attendance.date",
+          "report.eventDate"
+        ]
+      },
+      {
+        "value": "연락처",
+        "keys": [
+          "signUp.phoneLabel",
+          "signUp.phonePlaceholder",
+          "participants.tableHeaderPhone",
+          "participants.modalLabelPhone",
+          "participantDetailModal.labelPhone",
+          "profile.phone"
+        ]
+      },
+      {
+        "value": "삭제",
+        "keys": [
+          "userManagement.delete",
+          "common.delete",
+          "common.remove",
+          "participants.actionDelete",
+          "jobPostingAdmin.form.remove",
+          "jobPostingAdmin.manage.delete"
+        ]
+      },
+      {
+        "value": "상태",
+        "keys": [
+          "payrollAdmin.tableHeaderStatus",
+          "participants.tableHeaderStatus",
+          "participantDetailModal.labelStatus",
+          "jobPostingAdmin.edit.status",
+          "profilePage.tableStatus",
+          "payrollPage.tableStatus"
+        ]
+      },
+      {
+        "value": "검색",
+        "keys": [
+          "staffListPage.search",
+          "common.search",
+          "jobBoard.search.label",
+          "jobBoard.search.button",
+          "jobBoard.filters.search.label"
+        ]
+      },
+      {
+        "value": "전체",
+        "keys": [
+          "common.all",
+          "jobBoard.filters.allMonths",
+          "jobBoard.filters.allDays",
+          "support.faq.all",
+          "notifications.filters.all"
+        ]
+      },
+      {
+        "value": "제출 중...",
+        "keys": [
+          "common.messages.submitting",
+          "jobBoard.preQuestion.submitting",
+          "jobPostingAdmin.form.submitting",
+          "support.inquiry.submitting",
+          "report.submitting"
+        ]
+      },
+      {
+        "value": "지원",
+        "keys": [
+          "jobBoard.types.application",
+          "jobBoard.applyModal.submit",
+          "jobPostingAdmin.form.typeApplication",
+          "jobPostingAdmin.manage.typeApplication",
+          "jobPostingAdmin.applicants.statusValue.applied"
+        ]
+      },
+      {
+        "value": "기타",
+        "keys": [
+          "locations.other",
+          "report.types.other.label",
+          "inquiry.categories.other.label",
+          "settings.account.reason.other"
+        ]
+      },
+      {
+        "value": "성별",
+        "keys": [
+          "signUp.genderLabel",
+          "staffListPage.gender",
+          "jobPostingAdmin.applicants.gender",
+          "profile.gender"
+        ]
+      },
+      {
+        "value": "이메일",
+        "keys": [
+          "approvalPage.emailHeader",
+          "staffListPage.email",
+          "editUserModal.labelEmail",
+          "profile.email"
+        ]
+      },
+      {
+        "value": "나이",
+        "keys": [
+          "staffListPage.age",
+          "jobPostingAdmin.applicants.age",
+          "profile.age",
+          "profilePage.age"
+        ]
+      },
+      {
+        "value": "저장",
+        "keys": [
+          "common.save",
+          "participantDetailModal.buttonSave",
+          "availableTimes.saveButton",
+          "shiftSchedule.save"
+        ]
+      },
+      {
+        "value": "대기중",
+        "keys": [
+          "participants.locationWaiting",
+          "payrollPage.pendingAmount",
+          "tableCard.waiting",
+          "report.status.pending"
+        ]
+      },
+      {
+        "value": "지역",
+        "keys": [
+          "jobBoard.filters.location",
+          "jobPostingAdmin.form.location",
+          "jobPostingAdmin.manage.location",
+          "profile.region"
+        ]
+      },
+      {
+        "value": "확정",
+        "keys": [
+          "jobBoard.confirmed",
+          "jobPostingAdmin.applicants.confirm",
+          "jobPostingAdmin.applicants.statusValue.confirmed",
+          "jobPostingAdmin.applicants.confirmed"
+        ]
+      },
+      {
+        "value": "급여 내역",
+        "keys": [
+          "profilePage.payrollHistory",
+          "profilePage.viewPayroll",
+          "payrollPage.title",
+          "payrollPage.payrollHistory"
+        ]
+      },
+      {
+        "value": "비밀번호",
+        "keys": [
+          "login.passwordLabel",
+          "login.passwordPlaceholder",
+          "signUp.passwordLabel"
+        ]
+      },
+      {
+        "value": "참가자",
+        "keys": [
+          "nav.participants",
+          "prizes.participants",
+          "historyDetail.participants"
+        ]
+      },
+      {
+        "value": "오류",
+        "keys": [
+          "dashboard.errorPrefix",
+          "payrollPage.error",
+          "shiftSchedule.error"
+        ]
+      },
+      {
+        "value": "역할",
+        "keys": [
+          "staffNew.labelRole",
+          "editUserModal.labelRole",
+          "jobBoard.filters.role"
+        ]
+      },
+      {
+        "value": "생성 중...",
+        "keys": [
+          "staffNew.buttonCreating",
+          "common.messages.generating",
+          "shiftSchedule.generating"
+        ]
+      },
+      {
+        "value": "경력",
+        "keys": [
+          "staffListPage.experience",
+          "jobPostingAdmin.applicants.experience",
+          "profile.experience"
+        ]
+      },
+      {
+        "value": "닫기",
+        "keys": [
+          "common.close",
+          "participantDetailModal.buttonClose",
+          "jobPostingAdmin.applicants.close"
+        ]
+      },
+      {
+        "value": "지급 완료",
+        "keys": [
+          "payrollAdmin.status.paid",
+          "profilePage.statusPaid",
+          "payrollPage.paidAmount"
+        ]
+      },
+      {
+        "value": "해당 없음",
+        "keys": [
+          "dealerEvents.dateNotAvailable",
+          "tables.dealerNotApplicable",
+          "moveSeatModal.notApplicable"
+        ]
+      },
+      {
+        "value": "칩",
+        "keys": [
+          "participants.tableHeaderChips",
+          "participants.modalLabelChips",
+          "participantDetailModal.labelChips"
+        ]
+      },
+      {
+        "value": "고정",
+        "keys": [
+          "jobBoard.types.fixed",
+          "jobPostingAdmin.form.typeFixed",
+          "jobPostingAdmin.manage.typeFixed"
+        ]
+      },
+      {
+        "value": "지원하기",
+        "keys": [
+          "jobBoard.apply",
+          "jobBoard.applyNow",
+          "jobBoard.applyModal.title"
+        ]
+      },
+      {
+        "value": "시간",
+        "keys": [
+          "jobPostingAdmin.form.time",
+          "jobPostingAdmin.manage.time",
+          "profilePage.tableHours"
+        ]
+      },
+      {
+        "value": "이벤트",
+        "keys": [
+          "profilePage.tableEvent",
+          "payrollPage.tableEvent",
+          "report.eventTitle"
+        ]
+      },
+      {
+        "value": "총 급여",
+        "keys": [
+          "payrollPage.totalPay",
+          "payroll.summary.totalPay",
+          "payroll.details.totalPay"
+        ]
+      },
+      {
+        "value": "거절",
+        "keys": [
+          "reject",
+          "jobPostingAdmin.applicants.statusValue.rejected"
+        ]
+      },
+      {
+        "value": "남성",
+        "keys": [
+          "gender.male",
+          "signUp.genderMale"
+        ]
+      },
+      {
+        "value": "여성",
+        "keys": [
+          "gender.female",
+          "signUp.genderFemale"
+        ]
+      },
+      {
+        "value": "로그인",
+        "keys": [
+          "login.title",
+          "login.loginButton"
+        ]
+      },
+      {
+        "value": "로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해주세요.",
+        "keys": [
+          "login.errorMessage",
+          "adminLogin.errorMessage"
+        ]
+      },
+      {
+        "value": "가입 승인 대기중입니다. 관리자에게 문의하세요.",
+        "keys": [
+          "login.approvalPending",
+          "adminLogin.approvalPending"
+        ]
+      },
+      {
+        "value": "Google 로그인 중 오류가 발생했습니다. 나중에 다시 시도해주세요.",
+        "keys": [
+          "login.googleSignInError",
+          "googleSignIn.error"
+        ]
+      },
+      {
+        "value": "로그인으로 돌아가기",
+        "keys": [
+          "forgotPassword.backToLogin",
+          "signUp.backToLogin"
+        ]
+      },
+      {
+        "value": "스태프",
+        "keys": [
+          "signUp.roleStaff",
+          "staffNew.roleStaff"
+        ]
+      },
+      {
+        "value": "확인",
+        "keys": [
+          "modal.confirm",
+          "common.confirm"
+        ]
+      },
+      {
+        "value": "스태프 관리",
+        "keys": [
+          "nav.staffManagement",
+          "dashboard.manageStaffLink"
+        ]
+      },
+      {
+        "value": "공고 관리",
+        "keys": [
+          "nav.managePostings",
+          "common.jobManagement"
+        ]
+      },
+      {
+        "value": "급여 처리",
+        "keys": [
+          "nav.processPayroll",
+          "dashboard.processPayrollLink"
+        ]
+      },
+      {
+        "value": "테이블",
+        "keys": [
+          "nav.tables",
+          "participantDetailModal.labelTable"
+        ]
+      },
+      {
+        "value": "사용자 관리",
+        "keys": [
+          "nav.userManagement",
+          "userManagement.title"
+        ]
+      },
+      {
+        "value": "고객지원",
+        "keys": [
+          "nav.support",
+          "support.title"
+        ]
+      },
+      {
+        "value": "CEO 대시보드",
+        "keys": [
+          "nav.ceoDashboard",
+          "dashboard.ceo.title"
+        ]
+      },
+      {
+        "value": "이 페이지를 볼 권한이 없습니다.",
+        "keys": [
+          "userManagement.accessDenied",
+          "staffNew.accessDeniedView"
+        ]
+      },
+      {
+        "value": "사용자를 찾을 수 없습니다.",
+        "keys": [
+          "userManagement.noUsersFound",
+          "payrollPage.userNotFound"
+        ]
+      },
+      {
+        "value": "알 수 없는 사용자",
+        "keys": [
+          "staffListPage.unknownUser",
+          "jobPostingAdmin.unknownUser"
+        ]
+      },
+      {
+        "value": "검색중...",
+        "keys": [
+          "staffListPage.searching",
+          "common.messages.searching"
+        ]
+      },
+      {
+        "value": "이름 없음",
+        "keys": [
+          "staffListPage.noName",
+          "common.noName"
+        ]
+      },
+      {
+        "value": "임시 스태프 추가",
+        "keys": [
+          "staffListPage.addTempStaff",
+          "staffListPage.addTempStaffBtn"
+        ]
+      },
+      {
+        "value": "국적",
+        "keys": [
+          "staffListPage.nationality",
+          "profilePage.nationality"
+        ]
+      },
+      {
+        "value": "없음",
+        "keys": [
+          "common.none",
+          "participantDetailModal.notAvailable"
+        ]
+      },
+      {
+        "value": "필수 항목",
+        "keys": [
+          "common.requiredField",
+          "jobBoard.preQuestion.requiredField"
+        ]
+      },
+      {
+        "value": "공고 작성",
+        "keys": [
+          "common.createPost",
+          "jobPostingAdmin.create.button"
+        ]
+      },
+      {
+        "value": "추가",
+        "keys": [
+          "common.add",
+          "participants.modalButtonAdd"
+        ]
+      },
+      {
+        "value": "처리 중...",
+        "keys": [
+          "common.messages.processing",
+          "attendancePage.submitting"
+        ]
+      },
+      {
+        "value": "지급 대기중",
+        "keys": [
+          "payrollAdmin.status.pending",
+          "profilePage.statusPending"
+        ]
+      },
+      {
+        "value": "최대 좌석:",
+        "keys": [
+          "tables.labelMaxSeats",
+          "tableDetailModal.labelMaxSeats"
+        ]
+      },
+      {
+        "value": "알 수 없음",
+        "keys": [
+          "tables.participantUnknown",
+          "tableDetailModal.participantUnknown"
+        ]
+      },
+      {
+        "value": "테이블 {{number}}",
+        "keys": [
+          "tableDetailModal.defaultTableName",
+          "moveSeatModal.defaultTableName"
+        ]
+      },
+      {
+        "value": "이름:",
+        "keys": [
+          "moveSeatModal.labelName",
+          "profilePage.name"
+        ]
+      },
+      {
+        "value": "휴식 시간",
+        "keys": [
+          "blinds.breakTime",
+          "attendance.labels.breakTime"
+        ]
+      },
+      {
+        "value": "총상금",
+        "keys": [
+          "prizes.totalPrizePool",
+          "historyDetail.prizePool"
+        ]
+      },
+      {
+        "value": "로그인이 필요합니다.",
+        "keys": [
+          "availableTimes.alerts.notLoggedIn",
+          "jobBoard.alerts.loginRequired"
+        ]
+      },
+      {
+        "value": "오류: {{message}}",
+        "keys": [
+          "availableTimes.status.error",
+          "profilePage.error"
+        ]
+      },
+      {
+        "value": "우승자",
+        "keys": [
+          "historyDetail.winner",
+          "historyPage.winner"
+        ]
+      },
+      {
+        "value": "지원이 완료되었습니다!",
+        "keys": [
+          "jobBoard.alerts.applicationSuccess",
+          "jobBoard.applyModal.success"
+        ]
+      },
+      {
+        "value": "정말로 지원을 취소하시겠습니까?",
+        "keys": [
+          "jobBoard.alerts.confirmCancel",
+          "jobBoard.alerts.cancelMessage"
+        ]
+      },
+      {
+        "value": "공고 제목, 설명으로 검색...",
+        "keys": [
+          "jobBoard.search.placeholder",
+          "jobBoard.filters.search.placeholder"
+        ]
+      },
+      {
+        "value": "시작일",
+        "keys": [
+          "jobBoard.filters.startDate",
+          "jobPostingAdmin.form.startDate"
+        ]
+      },
+      {
+        "value": "종료일",
+        "keys": [
+          "jobBoard.filters.endDate",
+          "jobPostingAdmin.form.endDate"
+        ]
+      },
+      {
+        "value": "월",
+        "keys": [
+          "jobBoard.filters.month",
+          "days.1"
+        ]
+      },
+      {
+        "value": "일",
+        "keys": [
+          "jobBoard.filters.day",
+          "days.0"
+        ]
+      },
+      {
+        "value": "지원 취소",
+        "keys": [
+          "jobBoard.cancelApplication",
+          "notifications.types.staff_rejection"
+        ]
+      },
+      {
+        "value": "자세히 보기",
+        "keys": [
+          "jobBoard.viewDetails",
+          "consent.viewDetails"
+        ]
+      },
+      {
+        "value": "마감",
+        "keys": [
+          "jobBoard.applyModal.full",
+          "jobPostingAdmin.edit.statusClosed"
+        ]
+      },
+      {
+        "value": "지원 확정",
+        "keys": [
+          "jobBoard.applyModal.confirm",
+          "notifications.types.staff_approval"
+        ]
+      },
+      {
+        "value": "고용 형태",
+        "keys": [
+          "jobPostingAdmin.form.type",
+          "jobPostingAdmin.manage.type"
+        ]
+      },
+      {
+        "value": "질문 추가",
+        "keys": [
+          "jobPostingAdmin.form.addPreQuestion",
+          "jobPostingAdmin.form.addQuestion"
+        ]
+      },
+      {
+        "value": "질문 삭제",
+        "keys": [
+          "jobPostingAdmin.form.removePreQuestion",
+          "jobPostingAdmin.form.removeQuestion"
+        ]
+      },
+      {
+        "value": "단답형",
+        "keys": [
+          "jobPostingAdmin.form.typeText",
+          "jobPostingAdmin.form.questionTypeText"
+        ]
+      },
+      {
+        "value": "장문형",
+        "keys": [
+          "jobPostingAdmin.form.typeTextarea",
+          "jobPostingAdmin.form.questionTypeTextarea"
+        ]
+      },
+      {
+        "value": "객관식",
+        "keys": [
+          "jobPostingAdmin.form.typeSelect",
+          "jobPostingAdmin.form.questionTypeSelect"
+        ]
+      },
+      {
+        "value": "필수 답변",
+        "keys": [
+          "jobPostingAdmin.form.requiredQuestion",
+          "jobPostingAdmin.form.questionRequired"
+        ]
+      },
+      {
+        "value": "진행중",
+        "keys": [
+          "jobPostingAdmin.edit.statusOpen",
+          "tournamentDashboard.status.running"
+        ]
+      },
+      {
+        "value": "알 수 없는 이벤트",
+        "keys": [
+          "profilePage.unknownEvent",
+          "payrollPage.unknownEvent"
+        ]
+      },
+      {
+        "value": "급여",
+        "keys": [
+          "profilePage.tablePay",
+          "payrollPage.tablePay"
+        ]
+      },
+      {
+        "value": "총 근무 시간",
+        "keys": [
+          "payrollPage.totalHours",
+          "attendance.labels.totalHours"
+        ]
+      },
+      {
+        "value": "근무시간",
+        "keys": [
+          "payrollPage.tableHours",
+          "payroll.details.workHours"
+        ]
+      },
+      {
+        "value": "설정",
+        "keys": [
+          "shiftSchedule.settings",
+          "settings.title"
+        ]
+      },
+      {
+        "value": "알림 설정",
+        "keys": [
+          "shiftSchedule.notificationSettings",
+          "notifications.settings.title"
+        ]
+      },
+      {
+        "value": "출근",
+        "keys": [
+          "attendance.status.checked_in",
+          "qr.checkInBadge"
+        ]
+      },
+      {
+        "value": "퇴근",
+        "keys": [
+          "attendance.status.checked_out",
+          "qr.checkOutBadge"
+        ]
+      },
+      {
+        "value": "예정 시간",
+        "keys": [
+          "attendance.labels.scheduled",
+          "attendance.scheduledTimes"
+        ]
+      },
+      {
+        "value": "실제 시간",
+        "keys": [
+          "attendance.labels.actual",
+          "attendance.actualTimes"
+        ]
+      },
+      {
+        "value": "다시 시도",
+        "keys": [
+          "errors.retry",
+          "qr.retry"
+        ]
+      },
+      {
+        "value": "문의하기",
+        "keys": [
+          "support.tabs.inquiry",
+          "support.inquiry.title"
+        ]
+      },
+      {
+        "value": "보통",
+        "keys": [
+          "report.severity.medium",
+          "settings.security.passwordMedium"
+        ]
+      },
+      {
+        "value": "알림",
+        "keys": [
+          "notifications.title",
+          "settings.tabs.notifications"
+        ]
+      },
+      {
+        "value": "필수 동의 항목",
+        "keys": [
+          "consent.required",
+          "settings.consent.required"
+        ]
+      },
+      {
+        "value": "선택 동의 항목",
+        "keys": [
+          "consent.optional",
+          "settings.consent.optional"
+        ]
+      },
+      {
+        "value": "이용약관",
+        "keys": [
+          "consent.termsOfService",
+          "legal.termsOfService.title"
+        ]
+      },
+      {
+        "value": "개인정보처리방침",
+        "keys": [
+          "consent.privacyPolicy",
+          "legal.privacyPolicy.title"
+        ]
+      },
+      {
+        "value": "동의 관리",
+        "keys": [
+          "settings.tabs.consent",
+          "settings.consent.title"
+        ]
+      },
+      {
+        "value": "계정 관리",
+        "keys": [
+          "settings.tabs.account",
+          "settings.account.title"
+        ]
+      },
+      {
+        "value": "버전",
+        "keys": [
+          "settings.consent.version",
+          "legal.version"
+        ]
+      },
+      {
+        "value": "안내",
+        "keys": [
+          "settings.consent.infoTitle",
+          "settings.security.infoTitle"
+        ]
+      },
+      {
+        "value": "비밀번호 변경",
+        "keys": [
+          "settings.security.password",
+          "settings.security.changePassword"
+        ]
+      },
+      {
+        "value": "비밀번호 확인",
+        "keys": [
+          "settings.security.confirmPassword",
+          "settings.account.confirmPassword"
+        ]
+      },
+      {
+        "value": "비밀번호가 일치하지 않습니다.",
+        "keys": [
+          "settings.security.passwordMismatch",
+          "settings.account.wrongPassword"
+        ]
+      }
+    ]
+  },
+  "en": {
+    "total": 1090,
+    "duplicateGroups": 110,
+    "removableKeys": 194,
+    "groups": [
+      {
+        "value": "Name",
+        "keys": [
+          "signUp.nameLabel",
+          "signUp.namePlaceholder",
+          "approvalPage.nameHeader",
+          "staffNew.labelName",
+          "editUserModal.labelName",
+          "participants.tableHeaderName",
+          "participants.modalLabelName",
+          "participantDetailModal.labelName",
+          "historyDetail.name",
+          "report.targetName"
+        ]
+      },
+      {
+        "value": "Loading...",
+        "keys": [
+          "loading",
+          "layout.loading",
+          "common.messages.loading",
+          "payrollAdmin.buttonLoading",
+          "participants.loading",
+          "tables.loading",
+          "historyDetail.loading",
+          "tournamentDashboard.loading",
+          "notifications.loading"
+        ]
+      },
+      {
+        "value": "Cancel",
+        "keys": [
+          "common.cancel",
+          "participants.modalButtonCancel",
+          "moveSeatModal.buttonCancel",
+          "jobBoard.applyModal.cancel",
+          "jobPosting.announcement.cancelButton",
+          "profilePage.cancel",
+          "shiftSchedule.cancel",
+          "settings.security.password.cancel",
+          "settings.account.deleteAccount.modal.cancel"
+        ]
+      },
+      {
+        "value": "Email Address",
+        "keys": [
+          "login.emailLabel",
+          "login.emailPlaceholder",
+          "forgotPassword.emailLabel",
+          "forgotPassword.emailPlaceholder",
+          "signUp.emailLabel",
+          "signUp.emailPlaceholder",
+          "staffNew.labelEmail"
+        ]
+      },
+      {
+        "value": "Date",
+        "keys": [
+          "historyDetail.date",
+          "historyPage.date",
+          "jobPostingAdmin.manage.date",
+          "profilePage.tableDate",
+          "payrollPage.tableDate",
+          "attendance.date",
+          "report.eventDate"
+        ]
+      },
+      {
+        "value": "Edit",
+        "keys": [
+          "userManagement.edit",
+          "common.edit",
+          "participants.actionEdit",
+          "participantDetailModal.buttonEdit",
+          "jobPostingAdmin.manage.edit",
+          "exceptions.edit"
+        ]
+      },
+      {
+        "value": "Status",
+        "keys": [
+          "payrollAdmin.tableHeaderStatus",
+          "participants.tableHeaderStatus",
+          "participantDetailModal.labelStatus",
+          "jobPostingAdmin.edit.status",
+          "profilePage.tableStatus",
+          "payrollPage.tableStatus"
+        ]
+      },
+      {
+        "value": "Submitting...",
+        "keys": [
+          "common.messages.submitting",
+          "jobBoard.preQuestion.submitting",
+          "jobPostingAdmin.form.submitting",
+          "support.inquiry.submitting",
+          "report.submitting"
+        ]
+      },
+      {
+        "value": "Pending",
+        "keys": [
+          "payrollAdmin.status.pending",
+          "profilePage.statusPending",
+          "payrollPage.pendingAmount",
+          "payrollPage.statusPending",
+          "report.status.pending"
+        ]
+      },
+      {
+        "value": "N/A",
+        "keys": [
+          "dealerEvents.dateNotAvailable",
+          "tables.dealerNotApplicable",
+          "moveSeatModal.notApplicable",
+          "participantDetailModal.notAvailable",
+          "profilePage.notAvailable"
+        ]
+      },
+      {
+        "value": "Other",
+        "keys": [
+          "locations.other",
+          "report.types.other.label",
+          "inquiry.categories.other.label",
+          "settings.account.deleteAccount.modal.reason.other"
+        ]
+      },
+      {
+        "value": "Gender",
+        "keys": [
+          "signUp.genderLabel",
+          "staffListPage.gender",
+          "jobPostingAdmin.applicants.gender",
+          "profile.gender"
+        ]
+      },
+      {
+        "value": "Participants",
+        "keys": [
+          "nav.participants",
+          "prizes.participants",
+          "historyDetail.participants",
+          "historyPage.participants"
+        ]
+      },
+      {
+        "value": "Delete",
+        "keys": [
+          "userManagement.delete",
+          "common.delete",
+          "participants.actionDelete",
+          "jobPostingAdmin.manage.delete"
+        ]
+      },
+      {
+        "value": "Phone",
+        "keys": [
+          "staffListPage.phone",
+          "participants.tableHeaderPhone",
+          "participants.modalLabelPhone",
+          "participantDetailModal.labelPhone"
+        ]
+      },
+      {
+        "value": "Save",
+        "keys": [
+          "common.save",
+          "participantDetailModal.buttonSave",
+          "availableTimes.saveButton",
+          "shiftSchedule.save"
+        ]
+      },
+      {
+        "value": "Paid",
+        "keys": [
+          "payrollAdmin.status.paid",
+          "profilePage.statusPaid",
+          "payrollPage.paidAmount",
+          "payrollPage.statusPaid"
+        ]
+      },
+      {
+        "value": "Location",
+        "keys": [
+          "participants.tableHeaderLocation",
+          "jobBoard.filters.location",
+          "jobPostingAdmin.form.location",
+          "jobPostingAdmin.manage.location"
+        ]
+      },
+      {
+        "value": "Confirmed",
+        "keys": [
+          "jobBoard.confirmed",
+          "jobPostingAdmin.applicants.statusValue.confirmed",
+          "jobPostingAdmin.applicants.status_confirmed",
+          "jobPostingAdmin.applicants.confirmed"
+        ]
+      },
+      {
+        "value": "Payroll History",
+        "keys": [
+          "profilePage.payrollHistory",
+          "profilePage.viewPayroll",
+          "payrollPage.title",
+          "payrollPage.payrollHistory"
+        ]
+      },
+      {
+        "value": "Password",
+        "keys": [
+          "login.passwordLabel",
+          "login.passwordPlaceholder",
+          "signUp.passwordLabel"
+        ]
+      },
+      {
+        "value": "Confirm",
+        "keys": [
+          "modal.confirm",
+          "common.confirm",
+          "jobPostingAdmin.applicants.confirm"
+        ]
+      },
+      {
+        "value": "Error",
+        "keys": [
+          "dashboard.errorPrefix",
+          "payrollPage.error",
+          "shiftSchedule.error"
+        ]
+      },
+      {
+        "value": "Email",
+        "keys": [
+          "approvalPage.emailHeader",
+          "staffListPage.email",
+          "editUserModal.labelEmail"
+        ]
+      },
+      {
+        "value": "Search",
+        "keys": [
+          "staffListPage.search",
+          "common.search",
+          "jobBoard.filters.search.label"
+        ]
+      },
+      {
+        "value": "Age",
+        "keys": [
+          "staffListPage.age",
+          "jobPostingAdmin.applicants.age",
+          "profilePage.age"
+        ]
+      },
+      {
+        "value": "Close",
+        "keys": [
+          "common.close",
+          "participantDetailModal.buttonClose",
+          "jobPostingAdmin.applicants.close"
+        ]
+      },
+      {
+        "value": "All",
+        "keys": [
+          "common.all",
+          "support.faq.all",
+          "notifications.filters.all"
+        ]
+      },
+      {
+        "value": "Chips",
+        "keys": [
+          "participants.tableHeaderChips",
+          "participants.modalLabelChips",
+          "participantDetailModal.labelChips"
+        ]
+      },
+      {
+        "value": "Event",
+        "keys": [
+          "profilePage.tableEvent",
+          "payrollPage.tableEvent",
+          "report.eventTitle"
+        ]
+      },
+      {
+        "value": "Total Hours",
+        "keys": [
+          "payrollPage.totalHours",
+          "attendance.labels.totalHours",
+          "payroll.summary.totalHours"
+        ]
+      },
+      {
+        "value": "Total Pay",
+        "keys": [
+          "payrollPage.totalPay",
+          "payroll.summary.totalPay",
+          "payroll.details.totalPay"
+        ]
+      },
+      {
+        "value": "Submit Inquiry",
+        "keys": [
+          "support.tabs.inquiry",
+          "support.inquiry.title",
+          "support.inquiry.submit"
+        ]
+      },
+      {
+        "value": "Terms of Service",
+        "keys": [
+          "consent.termsOfService",
+          "legal.termsOfService.title",
+          "legal.termsOfService.pageTitle"
+        ]
+      },
+      {
+        "value": "Privacy Policy",
+        "keys": [
+          "consent.privacyPolicy",
+          "legal.privacyPolicy.title",
+          "legal.privacyPolicy.pageTitle"
+        ]
+      },
+      {
+        "value": "Male",
+        "keys": [
+          "gender.male",
+          "signUp.genderMale"
+        ]
+      },
+      {
+        "value": "Female",
+        "keys": [
+          "gender.female",
+          "signUp.genderFemale"
+        ]
+      },
+      {
+        "value": "Failed to log in. Please check your email and password.",
+        "keys": [
+          "login.errorMessage",
+          "adminLogin.errorMessage"
+        ]
+      },
+      {
+        "value": "Your account is pending approval. Please contact an administrator.",
+        "keys": [
+          "login.approvalPending",
+          "adminLogin.approvalPending"
+        ]
+      },
+      {
+        "value": "An error occurred during Google Sign-In. Please try again later.",
+        "keys": [
+          "login.googleSignInError",
+          "googleSignIn.error"
+        ]
+      },
+      {
+        "value": "Sending...",
+        "keys": [
+          "forgotPassword.sendingButton",
+          "jobPosting.announcement.sending"
+        ]
+      },
+      {
+        "value": "Back to Login",
+        "keys": [
+          "forgotPassword.backToLogin",
+          "signUp.backToLogin"
+        ]
+      },
+      {
+        "value": "Sign Up",
+        "keys": [
+          "signUp.title",
+          "signUp.signUpButton"
+        ]
+      },
+      {
+        "value": "Phone Number",
+        "keys": [
+          "signUp.phoneLabel",
+          "signUp.phonePlaceholder"
+        ]
+      },
+      {
+        "value": "Staff",
+        "keys": [
+          "signUp.roleStaff",
+          "staffNew.roleStaff"
+        ]
+      },
+      {
+        "value": "Job Board",
+        "keys": [
+          "nav.jobBoard",
+          "jobBoard.title"
+        ]
+      },
+      {
+        "value": "Process Payroll",
+        "keys": [
+          "nav.processPayroll",
+          "dashboard.processPayrollLink"
+        ]
+      },
+      {
+        "value": "User Management",
+        "keys": [
+          "nav.userManagement",
+          "userManagement.title"
+        ]
+      },
+      {
+        "value": "CEO Dashboard",
+        "keys": [
+          "nav.ceoDashboard",
+          "dashboard.ceo.title"
+        ]
+      },
+      {
+        "value": "Actions",
+        "keys": [
+          "approvalPage.actionsHeader",
+          "participants.tableHeaderActions"
+        ]
+      },
+      {
+        "value": "You do not have permission to view this page.",
+        "keys": [
+          "userManagement.accessDenied",
+          "staffNew.accessDeniedView"
+        ]
+      },
+      {
+        "value": "Role",
+        "keys": [
+          "staffNew.labelRole",
+          "editUserModal.labelRole"
+        ]
+      },
+      {
+        "value": "Unknown User",
+        "keys": [
+          "staffListPage.unknownUser",
+          "jobPostingAdmin.unknownUser"
+        ]
+      },
+      {
+        "value": "Searching...",
+        "keys": [
+          "staffListPage.searching",
+          "common.messages.searching"
+        ]
+      },
+      {
+        "value": "Add Temporary Staff",
+        "keys": [
+          "staffListPage.addTempStaff",
+          "staffListPage.addTempStaffBtn"
+        ]
+      },
+      {
+        "value": "Experience",
+        "keys": [
+          "staffListPage.experience",
+          "jobPostingAdmin.applicants.experience"
+        ]
+      },
+      {
+        "value": "Nationality",
+        "keys": [
+          "staffListPage.nationality",
+          "profilePage.nationality"
+        ]
+      },
+      {
+        "value": "Notes",
+        "keys": [
+          "staffListPage.notes",
+          "profilePage.notes"
+        ]
+      },
+      {
+        "value": "Security",
+        "keys": [
+          "roles.security",
+          "settings.tabs.security"
+        ]
+      },
+      {
+        "value": "Required field",
+        "keys": [
+          "common.requiredField",
+          "jobBoard.preQuestion.requiredField"
+        ]
+      },
+      {
+        "value": "Add",
+        "keys": [
+          "common.add",
+          "participants.modalButtonAdd"
+        ]
+      },
+      {
+        "value": "Remove",
+        "keys": [
+          "common.remove",
+          "jobPostingAdmin.form.remove"
+        ]
+      },
+      {
+        "value": "Generating...",
+        "keys": [
+          "common.messages.generating",
+          "shiftSchedule.generating"
+        ]
+      },
+      {
+        "value": "Waiting",
+        "keys": [
+          "participants.locationWaiting",
+          "tableCard.waiting"
+        ]
+      },
+      {
+        "value": "Empty Seats:",
+        "keys": [
+          "tables.infoEmptySeats",
+          "tableDetailModal.infoEmptySeats"
+        ]
+      },
+      {
+        "value": "Max Seats:",
+        "keys": [
+          "tables.labelMaxSeats",
+          "tableDetailModal.labelMaxSeats"
+        ]
+      },
+      {
+        "value": "Unknown",
+        "keys": [
+          "tables.participantUnknown",
+          "tableDetailModal.participantUnknown"
+        ]
+      },
+      {
+        "value": "Table {{number}}",
+        "keys": [
+          "tableDetailModal.defaultTableName",
+          "moveSeatModal.defaultTableName"
+        ]
+      },
+      {
+        "value": "Details",
+        "keys": [
+          "playerActionModal.showDetails",
+          "historyPage.details"
+        ]
+      },
+      {
+        "value": "Name:",
+        "keys": [
+          "moveSeatModal.labelName",
+          "profilePage.name"
+        ]
+      },
+      {
+        "value": "Break Time",
+        "keys": [
+          "blinds.breakTime",
+          "attendance.labels.breakTime"
+        ]
+      },
+      {
+        "value": "Total Prize Pool",
+        "keys": [
+          "prizes.totalPrizePool",
+          "historyDetail.prizePool"
+        ]
+      },
+      {
+        "value": "Send Announcement",
+        "keys": [
+          "announcements.title",
+          "jobPosting.announcement.button"
+        ]
+      },
+      {
+        "value": "Error: {{message}}",
+        "keys": [
+          "availableTimes.status.error",
+          "profilePage.error"
+        ]
+      },
+      {
+        "value": "Available Dealers",
+        "keys": [
+          "dealerRotation.availableDealers",
+          "shiftSchedule.availableDealers"
+        ]
+      },
+      {
+        "value": "No dealers available",
+        "keys": [
+          "dealerRotation.noDealersAvailable",
+          "shiftSchedule.noDealersAvailable"
+        ]
+      },
+      {
+        "value": "Winner",
+        "keys": [
+          "historyDetail.winner",
+          "historyPage.winner"
+        ]
+      },
+      {
+        "value": "Are you sure you want to cancel your application?",
+        "keys": [
+          "jobBoard.alerts.confirmCancel",
+          "jobBoard.alerts.cancelMessage"
+        ]
+      },
+      {
+        "value": "Applied",
+        "keys": [
+          "jobBoard.applied",
+          "jobPostingAdmin.applicants.statusValue.applied"
+        ]
+      },
+      {
+        "value": "Login Required",
+        "keys": [
+          "jobBoard.loginRequired",
+          "support.inquiry.loginRequired"
+        ]
+      },
+      {
+        "value": "Start Date",
+        "keys": [
+          "jobBoard.filters.startDate",
+          "jobPostingAdmin.form.startDate"
+        ]
+      },
+      {
+        "value": "End Date",
+        "keys": [
+          "jobBoard.filters.endDate",
+          "jobPostingAdmin.form.endDate"
+        ]
+      },
+      {
+        "value": "Message",
+        "keys": [
+          "jobPosting.announcement.messageLabel",
+          "support.inquiry.message"
+        ]
+      },
+      {
+        "value": "Employment Type",
+        "keys": [
+          "jobPostingAdmin.form.type",
+          "jobPostingAdmin.manage.type"
+        ]
+      },
+      {
+        "value": "Application",
+        "keys": [
+          "jobPostingAdmin.form.typeApplication",
+          "jobPostingAdmin.manage.typeApplication"
+        ]
+      },
+      {
+        "value": "Fixed",
+        "keys": [
+          "jobPostingAdmin.form.typeFixed",
+          "jobPostingAdmin.manage.typeFixed"
+        ]
+      },
+      {
+        "value": "Add Question",
+        "keys": [
+          "jobPostingAdmin.form.addPreQuestion",
+          "jobPostingAdmin.form.addQuestion"
+        ]
+      },
+      {
+        "value": "Remove Question",
+        "keys": [
+          "jobPostingAdmin.form.removePreQuestion",
+          "jobPostingAdmin.form.removeQuestion"
+        ]
+      },
+      {
+        "value": "Short Text",
+        "keys": [
+          "jobPostingAdmin.form.typeText",
+          "jobPostingAdmin.form.questionTypeText"
+        ]
+      },
+      {
+        "value": "Long Text",
+        "keys": [
+          "jobPostingAdmin.form.typeTextarea",
+          "jobPostingAdmin.form.questionTypeTextarea"
+        ]
+      },
+      {
+        "value": "Multiple Choice",
+        "keys": [
+          "jobPostingAdmin.form.typeSelect",
+          "jobPostingAdmin.form.questionTypeSelect"
+        ]
+      },
+      {
+        "value": "Required",
+        "keys": [
+          "jobPostingAdmin.form.requiredQuestion",
+          "jobPostingAdmin.form.questionRequired"
+        ]
+      },
+      {
+        "value": "Time",
+        "keys": [
+          "jobPostingAdmin.form.time",
+          "jobPostingAdmin.manage.time"
+        ]
+      },
+      {
+        "value": "Open",
+        "keys": [
+          "jobPostingAdmin.edit.statusOpen",
+          "inquiry.status.open"
+        ]
+      },
+      {
+        "value": "Closed",
+        "keys": [
+          "jobPostingAdmin.edit.statusClosed",
+          "inquiry.status.closed"
+        ]
+      },
+      {
+        "value": "Hours",
+        "keys": [
+          "profilePage.tableHours",
+          "payrollPage.tableHours"
+        ]
+      },
+      {
+        "value": "Pay",
+        "keys": [
+          "profilePage.tablePay",
+          "payrollPage.tablePay"
+        ]
+      },
+      {
+        "value": "Settings",
+        "keys": [
+          "shiftSchedule.settings",
+          "settings.title"
+        ]
+      },
+      {
+        "value": "Start Time",
+        "keys": [
+          "shiftSchedule.startTime",
+          "notifications.settings.startTime"
+        ]
+      },
+      {
+        "value": "Notification Settings",
+        "keys": [
+          "shiftSchedule.notificationSettings",
+          "notifications.settings.title"
+        ]
+      },
+      {
+        "value": "Overtime",
+        "keys": [
+          "payroll.summary.overtimeHours",
+          "payroll.details.overtime"
+        ]
+      },
+      {
+        "value": "Exceptions",
+        "keys": [
+          "payroll.summary.exceptions",
+          "payroll.details.exceptions"
+        ]
+      },
+      {
+        "value": "My Inquiries",
+        "keys": [
+          "support.tabs.myInquiries",
+          "support.myInquiries.title"
+        ]
+      },
+      {
+        "value": "Submit Report",
+        "keys": [
+          "report.title",
+          "report.submit"
+        ]
+      },
+      {
+        "value": "Medium",
+        "keys": [
+          "report.severity.medium",
+          "settings.security.password.strength.medium"
+        ]
+      },
+      {
+        "value": "Notifications",
+        "keys": [
+          "notifications.title",
+          "settings.tabs.notifications"
+        ]
+      },
+      {
+        "value": "Failed to update consent preferences.",
+        "keys": [
+          "consent.errors.updateFailed",
+          "settings.consent.updateFailed"
+        ]
+      },
+      {
+        "value": "Consent Management",
+        "keys": [
+          "settings.tabs.consent",
+          "settings.consent.title"
+        ]
+      },
+      {
+        "value": "Account Management",
+        "keys": [
+          "settings.tabs.account",
+          "settings.account.title"
+        ]
+      },
+      {
+        "value": "Change Password",
+        "keys": [
+          "settings.security.password.changeButton",
+          "settings.security.password.confirm"
+        ]
+      }
+    ]
+  },
+  "analyzedAt": "2025-10-23T09:29:17.715Z"
+}

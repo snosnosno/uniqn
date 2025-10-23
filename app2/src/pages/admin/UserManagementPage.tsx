@@ -121,8 +121,8 @@ const UserManagementPage: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-4">
                                 <span className="text-sm capitalize text-gray-600 bg-gray-200 px-2 py-1 rounded-full">{user.role}</span>
-                                <button onClick={() => handleOpenEditModal(user)} className="text-blue-600 hover:text-blue-800">{t('userManagement.edit')}</button>
-                                <button onClick={() => handleDeleteClick(user)} className="text-red-600 hover:text-red-800">{t('userManagement.delete')}</button>
+                                <button onClick={() => handleOpenEditModal(user)} className="text-blue-600 hover:text-blue-800">{t('common.edit')}</button>
+                                <button onClick={() => handleDeleteClick(user)} className="text-red-600 hover:text-red-800">{t('common.delete')}</button>
                             </div>
                         </li>
                     )) : (
@@ -149,7 +149,7 @@ const UserManagementPage: React.FC = () => {
             onConfirm={handleDeleteConfirm}
             title={t('userManagement.confirmDelete')}
             message={userToDelete ? `${userToDelete.name} (${userToDelete.email})` : ''}
-            confirmText={t('userManagement.delete')}
+            confirmText={t('common.delete')}
             cancelText={t('common.cancel')}
             isDangerous={true}
             isLoading={isDeleting}

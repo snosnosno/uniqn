@@ -13,7 +13,7 @@ const TournamentDashboard = () => {
     const [isSeeding, setIsSeeding] = useState(false);
 
     if (!context) {
-        return <div>{t('tournamentDashboard.loading')}</div>;
+        return <div>{t('common.messages.loading')}</div>;
     }
 
     const { state } = context;

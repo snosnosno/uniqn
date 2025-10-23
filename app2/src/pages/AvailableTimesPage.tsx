@@ -99,7 +99,7 @@ const AvailableTimesPage = () => {
         onClick={handleSubmit}
         className="mt-6 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
       >
-        {t('availableTimes.saveButton')}
+        {t('common.save')}
       </button>
     </div>
   );

@@ -1,0 +1,496 @@
+{
+  "totalSavings": 129,
+  "savingsPercentage": 11,
+  "suggestions": [
+    {
+      "priority": 10,
+      "type": "move-to-common",
+      "value": "이름",
+      "newKey": "common.name",
+      "oldKeys": [
+        "signUp.nameLabel",
+        "signUp.namePlaceholder",
+        "approvalPage.nameHeader",
+        "staffNew.labelName",
+        "editUserModal.labelName",
+        "participants.tableHeaderName",
+        "participants.modalLabelName",
+        "participantDetailModal.labelName",
+        "historyDetail.name",
+        "report.targetName"
+      ],
+      "savings": 9
+    },
+    {
+      "priority": 9,
+      "type": "use-existing-common",
+      "value": "로딩 중...",
+      "keepKey": "common.messages.loading",
+      "removeKeys": [
+        "loading",
+        "layout.loading",
+        "payrollAdmin.buttonLoading",
+        "participants.loading",
+        "tables.loading",
+        "historyDetail.loading",
+        "tournamentDashboard.loading",
+        "notifications.loading"
+      ],
+      "savings": 8
+    },
+    {
+      "priority": 7,
+      "type": "move-to-common",
+      "value": "이메일 주소",
+      "newKey": "common.email",
+      "oldKeys": [
+        "login.emailLabel",
+        "login.emailPlaceholder",
+        "forgotPassword.emailLabel",
+        "forgotPassword.emailPlaceholder",
+        "signUp.emailLabel",
+        "signUp.emailPlaceholder",
+        "staffNew.labelEmail"
+      ],
+      "savings": 6
+    },
+    {
+      "priority": 7,
+      "type": "use-existing-common",
+      "value": "수정",
+      "keepKey": "common.edit",
+      "removeKeys": [
+        "userManagement.edit",
+        "participants.actionEdit",
+        "participants.modalButtonUpdate",
+        "participantDetailModal.buttonEdit",
+        "jobPostingAdmin.manage.edit",
+        "exceptions.edit"
+      ],
+      "savings": 6
+    },
+    {
+      "priority": 7,
+      "type": "use-existing-common",
+      "value": "취소",
+      "keepKey": "common.cancel",
+      "removeKeys": [
+        "participants.modalButtonCancel",
+        "moveSeatModal.buttonCancel",
+        "jobBoard.applyModal.cancel",
+        "jobPosting.announcement.cancelButton",
+        "profilePage.cancel",
+        "shiftSchedule.cancel"
+      ],
+      "savings": 6
+    },
+    {
+      "priority": 7,
+      "type": "move-to-common",
+      "value": "날짜",
+      "newKey": "common.date",
+      "oldKeys": [
+        "historyDetail.date",
+        "historyPage.date",
+        "jobPostingAdmin.manage.date",
+        "profilePage.tableDate",
+        "payrollPage.tableDate",
+        "attendance.date",
+        "report.eventDate"
+      ],
+      "savings": 6
+    },
+    {
+      "priority": 6,
+      "type": "move-to-common",
+      "value": "연락처",
+      "newKey": "common.phone",
+      "oldKeys": [
+        "signUp.phoneLabel",
+        "signUp.phonePlaceholder",
+        "participants.tableHeaderPhone",
+        "participants.modalLabelPhone",
+        "participantDetailModal.labelPhone",
+        "profile.phone"
+      ],
+      "savings": 5
+    },
+    {
+      "priority": 6,
+      "type": "use-existing-common",
+      "value": "삭제",
+      "keepKey": "common.delete",
+      "removeKeys": [
+        "userManagement.delete",
+        "common.remove",
+        "participants.actionDelete",
+        "jobPostingAdmin.form.remove",
+        "jobPostingAdmin.manage.delete"
+      ],
+      "savings": 5
+    },
+    {
+      "priority": 6,
+      "type": "move-to-common",
+      "value": "상태",
+      "newKey": "common.status",
+      "oldKeys": [
+        "payrollAdmin.tableHeaderStatus",
+        "participants.tableHeaderStatus",
+        "participantDetailModal.labelStatus",
+        "jobPostingAdmin.edit.status",
+        "profilePage.tableStatus",
+        "payrollPage.tableStatus"
+      ],
+      "savings": 5
+    },
+    {
+      "priority": 5,
+      "type": "use-existing-common",
+      "value": "검색",
+      "keepKey": "common.search",
+      "removeKeys": [
+        "staffListPage.search",
+        "jobBoard.search.label",
+        "jobBoard.search.button",
+        "jobBoard.filters.search.label"
+      ],
+      "savings": 4
+    },
+    {
+      "priority": 5,
+      "type": "use-existing-common",
+      "value": "전체",
+      "keepKey": "common.all",
+      "removeKeys": [
+        "jobBoard.filters.allMonths",
+        "jobBoard.filters.allDays",
+        "support.faq.all",
+        "notifications.filters.all"
+      ],
+      "savings": 4
+    },
+    {
+      "priority": 5,
+      "type": "use-existing-common",
+      "value": "제출 중...",
+      "keepKey": "common.messages.submitting",
+      "removeKeys": [
+        "jobBoard.preQuestion.submitting",
+        "jobPostingAdmin.form.submitting",
+        "support.inquiry.submitting",
+        "report.submitting"
+      ],
+      "savings": 4
+    },
+    {
+      "priority": 5,
+      "type": "move-to-common",
+      "value": "지원",
+      "newKey": "common.field",
+      "oldKeys": [
+        "jobBoard.types.application",
+        "jobBoard.applyModal.submit",
+        "jobPostingAdmin.form.typeApplication",
+        "jobPostingAdmin.manage.typeApplication",
+        "jobPostingAdmin.applicants.statusValue.applied"
+      ],
+      "savings": 4
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "기타",
+      "newKey": "common.field",
+      "oldKeys": [
+        "locations.other",
+        "report.types.other.label",
+        "inquiry.categories.other.label",
+        "settings.account.reason.other"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "성별",
+      "newKey": "common.field",
+      "oldKeys": [
+        "signUp.genderLabel",
+        "staffListPage.gender",
+        "jobPostingAdmin.applicants.gender",
+        "profile.gender"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "이메일",
+      "newKey": "common.field",
+      "oldKeys": [
+        "approvalPage.emailHeader",
+        "staffListPage.email",
+        "editUserModal.labelEmail",
+        "profile.email"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "나이",
+      "newKey": "common.field",
+      "oldKeys": [
+        "staffListPage.age",
+        "jobPostingAdmin.applicants.age",
+        "profile.age",
+        "profilePage.age"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "use-existing-common",
+      "value": "저장",
+      "keepKey": "common.save",
+      "removeKeys": [
+        "participantDetailModal.buttonSave",
+        "availableTimes.saveButton",
+        "shiftSchedule.save"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "대기중",
+      "newKey": "common.field",
+      "oldKeys": [
+        "participants.locationWaiting",
+        "payrollPage.pendingAmount",
+        "tableCard.waiting",
+        "report.status.pending"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "지역",
+      "newKey": "common.location",
+      "oldKeys": [
+        "jobBoard.filters.location",
+        "jobPostingAdmin.form.location",
+        "jobPostingAdmin.manage.location",
+        "profile.region"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "확정",
+      "newKey": "common.field",
+      "oldKeys": [
+        "jobBoard.confirmed",
+        "jobPostingAdmin.applicants.confirm",
+        "jobPostingAdmin.applicants.statusValue.confirmed",
+        "jobPostingAdmin.applicants.confirmed"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 4,
+      "type": "move-to-common",
+      "value": "급여 내역",
+      "newKey": "common.field",
+      "oldKeys": [
+        "profilePage.payrollHistory",
+        "profilePage.viewPayroll",
+        "payrollPage.title",
+        "payrollPage.payrollHistory"
+      ],
+      "savings": 3
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "비밀번호",
+      "newKey": "common.field",
+      "oldKeys": [
+        "login.passwordLabel",
+        "login.passwordPlaceholder",
+        "signUp.passwordLabel"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "참가자",
+      "newKey": "common.field",
+      "oldKeys": [
+        "nav.participants",
+        "prizes.participants",
+        "historyDetail.participants"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "오류",
+      "newKey": "common.field",
+      "oldKeys": [
+        "dashboard.errorPrefix",
+        "payrollPage.error",
+        "shiftSchedule.error"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "역할",
+      "newKey": "common.field",
+      "oldKeys": [
+        "staffNew.labelRole",
+        "editUserModal.labelRole",
+        "jobBoard.filters.role"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "use-existing-common",
+      "value": "생성 중...",
+      "keepKey": "common.messages.generating",
+      "removeKeys": [
+        "staffNew.buttonCreating",
+        "shiftSchedule.generating"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "경력",
+      "newKey": "common.field",
+      "oldKeys": [
+        "staffListPage.experience",
+        "jobPostingAdmin.applicants.experience",
+        "profile.experience"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "use-existing-common",
+      "value": "닫기",
+      "keepKey": "common.close",
+      "removeKeys": [
+        "participantDetailModal.buttonClose",
+        "jobPostingAdmin.applicants.close"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "지급 완료",
+      "newKey": "common.field",
+      "oldKeys": [
+        "payrollAdmin.status.paid",
+        "profilePage.statusPaid",
+        "payrollPage.paidAmount"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "해당 없음",
+      "newKey": "common.field",
+      "oldKeys": [
+        "dealerEvents.dateNotAvailable",
+        "tables.dealerNotApplicable",
+        "moveSeatModal.notApplicable"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "칩",
+      "newKey": "common.field",
+      "oldKeys": [
+        "participants.tableHeaderChips",
+        "participants.modalLabelChips",
+        "participantDetailModal.labelChips"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "고정",
+      "newKey": "common.field",
+      "oldKeys": [
+        "jobBoard.types.fixed",
+        "jobPostingAdmin.form.typeFixed",
+        "jobPostingAdmin.manage.typeFixed"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "지원하기",
+      "newKey": "common.field",
+      "oldKeys": [
+        "jobBoard.apply",
+        "jobBoard.applyNow",
+        "jobBoard.applyModal.title"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "시간",
+      "newKey": "common.time",
+      "oldKeys": [
+        "jobPostingAdmin.form.time",
+        "jobPostingAdmin.manage.time",
+        "profilePage.tableHours"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "이벤트",
+      "newKey": "common.field",
+      "oldKeys": [
+        "profilePage.tableEvent",
+        "payrollPage.tableEvent",
+        "report.eventTitle"
+      ],
+      "savings": 2
+    },
+    {
+      "priority": 3,
+      "type": "move-to-common",
+      "value": "총 급여",
+      "newKey": "common.field",
+      "oldKeys": [
+        "payrollPage.totalPay",
+        "payroll.summary.totalPay",
+        "payroll.details.totalPay"
+      ],
+      "savings": 2
+    }
+  ],
+  "createdAt": "2025-10-23T09:30:14.876Z"
+}

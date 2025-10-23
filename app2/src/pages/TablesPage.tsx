@@ -498,7 +498,7 @@ const TablesPage: React.FC = () => {
         }
     };
 
-    if (tablesLoading || participantsLoading || settingsLoading) return <div className="p-4">{t('tables.loading')}</div>;
+    if (tablesLoading || participantsLoading || settingsLoading) return <div className="p-4">{t('common.messages.loading')}</div>;
     if (tablesError || participantsError) return <div className="p-4 text-red-500">{t('tables.error')} {tablesError?.message || participantsError?.message}</div>;
 
     const totalEmptySeats = tables

@@ -1,7 +1,6 @@
 {
   "approve": "승인",
   "reject": "거절",
-  "loading": "로딩 중...",
   "locations": {
     "seoul": "서울",
     "gyeonggi": "경기",
@@ -121,8 +120,7 @@
   },
   "layout": {
     "title": "T-홀덤",
-    "subtitle": "토너먼트 관리",
-    "loading": "로딩 중..."
+    "subtitle": "토너먼트 관리"
   },
   "dashboard": {
     "loading": "대시보드 로딩 중...",
@@ -162,9 +160,7 @@
     "fetchError": "사용자 목록을 불러오는 데 실패했습니다.",
     "confirmDelete": "정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "deleteSuccess": "사용자가 성공적으로 삭제되었습니다.",
-    "deleteError": "사용자 삭제에 실패했습니다.",
-    "edit": "수정",
-    "delete": "삭제"
+    "deleteError": "사용자 삭제에 실패했습니다."
   },
   "staffNew": {
     "accessDeniedAction": "이 작업을 수행할 권한이 없습니다.",
@@ -196,7 +192,6 @@
     "searchExistingUser": "기존 사용자 검색",
     "searchPlaceholder": "이름, 이메일, 전화번호로 검색...",
     "searching": "검색중...",
-    "search": "검색",
     "noName": "이름 없음",
     "selectedUser": "선택된 사용자",
     "addSelectedUser": "이 사용자를 스태프로 추가",
@@ -256,7 +251,6 @@
     "delete": "삭제",
     "edit": "수정",
     "add": "추가",
-    "remove": "삭제",
     "search": "검색",
     "messages": {
       "loading": "로딩 중...",
@@ -273,7 +267,6 @@
     "errorCalculate": "급여를 계산하는 데 실패했습니다.",
     "title": "급여 관리",
     "selectEvent": "이벤트 선택",
-    "buttonLoading": "로딩 중...",
     "buttonLoadPayrolls": "급여 불러오기",
     "buttonCalculating": "계산 중...",
     "buttonCalculateAll": "전체 급여 계산하기",
@@ -296,7 +289,6 @@
     "dateInvalid": "유효하지 않은 날짜"
   },
   "participants": {
-    "loading": "로딩 중...",
     "errorParticipants": "참가자 로딩 오류:",
     "errorTables": "테이블 로딩 오류:",
     "confirmDelete": "정말로 삭제하시겠습니까?",
@@ -310,19 +302,14 @@
     "tableHeaderChips": "칩",
     "tableHeaderLocation": "위치",
     "tableHeaderActions": "관리",
-    "actionEdit": "수정",
-    "actionDelete": "삭제",
     "modalTitleEdit": "참가자 수정",
     "modalTitleAdd": "참가자 추가",
     "modalLabelName": "이름",
     "modalLabelPhone": "연락처",
     "modalLabelChips": "칩",
-    "modalButtonCancel": "취소",
-    "modalButtonUpdate": "수정",
     "modalButtonAdd": "추가"
   },
   "tables": {
-    "loading": "로딩 중...",
     "error": "오류:",
     "errorMoveFailed": "자리 이동에 실패했습니다:",
     "title": "테이블 현황",
@@ -364,7 +351,6 @@
     "statusOccupied": "(자리 있음)",
     "statusEmpty": "(빈 자리)",
     "statusUnavailable": "(이동 불가)",
-    "buttonCancel": "취소",
     "buttonConfirm": "이동 확인"
   },
   "blinds": {
@@ -408,9 +394,7 @@
     "statusBusted": "탈락",
     "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
     "notAvailable": "없음",
-    "buttonClose": "닫기",
-    "buttonSave": "저장",
-    "buttonEdit": "수정"
+    "buttonClose": "닫기"
   },
   "qrScannerModal": {
     "title": "QR 코드 스캐너",
@@ -453,8 +437,7 @@
       "loading": "데이터 로딩 중...",
       "error": "오류: {{message}}",
       "loginRequired": "로그인 후 이용해주세요."
-    },
-    "saveButton": "저장"
+    }
   },
   "dealerRotation": {
     "loading": "스태프 및 테이블 정보 로딩 중...",
@@ -468,7 +451,6 @@
     "noDealersOnBreak": "휴식 중인 딜러 없음"
   },
   "historyDetail": {
-    "loading": "로딩 중...",
     "title": "{{name}} 결과",
     "backToList": "목록으로",
     "date": "날짜",
@@ -506,9 +488,7 @@
       "selectAssignment": "시간대와 역할을 선택해주세요."
     },
     "search": {
-      "label": "검색",
-      "placeholder": "공고 제목, 설명으로 검색...",
-      "button": "검색"
+      "placeholder": "공고 제목, 설명으로 검색..."
     },
     "filters": {
       "location": "지역",
@@ -520,12 +500,9 @@
       "startDate": "시작일",
       "endDate": "종료일",
       "month": "월",
-      "allMonths": "전체",
       "day": "일",
-      "allDays": "전체",
       "reset": "초기화",
       "search": {
-        "label": "검색",
         "placeholder": "공고 제목, 설명으로 검색..."
       }
     },
@@ -551,7 +528,6 @@
       "modalTitle": "사전질문",
       "noQuestions": "사전질문이 없습니다.",
       "submit": "사전질문 제출",
-      "submitting": "제출 중...",
       "success": "사전질문이 성공적으로 제출되었습니다!",
       "error": "사전질문 제출 중 오류가 발생했습니다.",
       "completed": "✓ 사전질문 완료",
@@ -565,7 +541,6 @@
       "selectAssignment": "시간 및 역할 선택",
       "selectPlaceholder": "시간과 역할을 선택하세요",
       "full": "마감",
-      "cancel": "취소",
       "submit": "지원",
       "confirm": "지원 확정",
       "success": "지원이 완료되었습니다!",
@@ -588,7 +563,6 @@
       "targetStaff": "수신 대상",
       "staffCount": "{{count}}명의 확정된 스태프",
       "postingInfo": "공고 정보",
-      "cancelButton": "취소",
       "sendButton": "전송",
       "sending": "전송 중..."
     },
@@ -676,8 +650,6 @@
       "typeFixed": "고정",
       "matching": "매칭 중...",
       "button": "자동 매칭",
-      "edit": "수정",
-      "delete": "삭제",
       "applicants": "지원자",
       "location": "지역",
       "date": "날짜",
@@ -738,7 +710,6 @@
     "error": "오류: {{message}}",
     "viewProfileLogin": "프로필을 보려면 로그인해주세요.",
     "ratings": "개 평점",
-    "cancel": "취소",
     "editProfile": "프로필 수정",
     "profileDetails": "프로필 상세 정보",
     "name": "이름:",
@@ -831,7 +802,6 @@
     "dummyAnnouncement2": "10분간 휴식 시간을 갖겠습니다."
   },
   "tournamentDashboard": {
-    "loading": "로딩 중...",
     "seeding": {
       "success": "테스트 데이터가 성공적으로 생성되었습니다! 페이지를 다시 로드합니다.",
       "skipped": "테스트 데이터가 이미 존재하여 건너뜁니다.",
@@ -932,8 +902,6 @@
     "autoSaveChanges": "변경 사항 자동 저장",
     "notificationSettings": "알림 설정",
     "conflictNotifications": "예약 충돌 알림",
-    "cancel": "취소",
-    "save": "저장",
     "assignedDealer": "명 배정됨",
     "minuteInterval": "분 간격"
   },
@@ -1015,7 +983,6 @@
     },
     "managerNote": "매니저 메모",
     "managerNotePlaceholder": "예외 상황에 대한 설명을 입력하세요...",
-    "edit": "수정",
     "note": "메모",
     "updateSuccess": "예외 상황이 업데이트되었습니다",
     "updateError": "예외 상황 업데이트에 실패했습니다"
@@ -1054,7 +1021,6 @@
     },
     "faq": {
       "title": "자주 묻는 질문",
-      "all": "전체",
       "noResults": "해당 카테고리에 FAQ가 없습니다."
     },
     "inquiry": {
@@ -1067,7 +1033,6 @@
       "message": "내용",
       "messagePlaceholder": "문의 내용을 자세히 작성해주세요",
       "submit": "문의 제출",
-      "submitting": "제출 중...",
       "success": "문의가 성공적으로 제출되었습니다!",
       "error": "문의 제출 중 오류가 발생했습니다."
     },
@@ -1129,7 +1094,6 @@
       "processing": "신고 접수 후 관리자가 검토하여 처리합니다."
     },
     "submit": "신고 제출",
-    "submitting": "제출 중...",
     "status": {
       "pending": "대기중",
       "reviewed": "검토중",
@@ -1197,13 +1161,11 @@
   },
   "notifications": {
     "title": "알림",
-    "loading": "로딩 중...",
     "noNotifications": "알림이 없습니다",
     "markAllAsRead": "모두 읽음",
     "viewAll": "모두 보기",
     "deleteAllRead": "읽은 알림 모두 삭제",
     "filters": {
-      "all": "전체",
       "unread": "안읽음",
       "read": "읽음"
     },
