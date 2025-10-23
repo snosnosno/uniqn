@@ -148,7 +148,7 @@ const Login: React.FC = () => {
   */
 
   return (
-    <AuthLayout title={t('login.title')}>
+    <AuthLayout title={t('common.login')}>
       <form className="space-y-6" onSubmit={handleLogin}>
         <FormField
           id="email"
@@ -223,7 +223,7 @@ const Login: React.FC = () => {
                 : 'bg-indigo-600 hover:bg-indigo-700'
             } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
           >
-            {isBlocked ? t('login.blockedButton', '차단됨') : t('login.loginButton')}
+            {isBlocked ? t('login.blockedButton', '차단됨') : t('common.login')}
           </button>
         </div>
       </form>

@@ -1,6 +1,5 @@
 {
   "approve": "Approve",
-  "reject": "Reject",
   "locations": {
     "seoul": "Seoul",
     "gyeonggi": "Gyeonggi",
@@ -21,13 +20,8 @@
     "jeju": "Jeju",
     "overseas": "Overseas"
   },
-  "gender": {
-    "male": "Male",
-    "female": "Female"
-  },
+  "gender": {},
   "login": {
-    "title": "Login",
-    "loginButton": "Sign In",
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot your password?",
     "orContinueWith": "Or continue with",
@@ -57,7 +51,6 @@
     "title": "Sign Up",
     "passwordPlaceholder": "Password (min. 6 characters)",
     "roleTitle": "Account Type",
-    "roleStaff": "Staff",
     "roleManager": "Admin Member",
     "managerApprovalNotice": "Admin Member registration requires operator approval.\nPlease submit your registration request.",
     "signUpButton": "Sign Up",
@@ -73,13 +66,9 @@
     "emailInUseError": "This email address is already in use.",
     "invalidEmailError": "The email address format is not valid.",
     "weakPasswordError": "The password is too weak. Please use a stronger password.",
-    "backToLogin": "Back to Login",
-    "genderMale": "Male",
-    "genderFemale": "Female"
+    "backToLogin": "Back to Login"
   },
-  "modal": {
-    "confirm": "Confirm"
-  },
+  "modal": {},
   "nav": {
     "dashboard": "Dashboard",
     "jobBoard": "Job Board",
@@ -90,7 +79,6 @@
     "managePostings": "Manage Postings",
     "shiftSchedule": "Shift Schedule",
     "processPayroll": "Process Payroll",
-    "tables": "Tables",
     "blinds": "Blinds",
     "prizes": "Prizes",
     "announcements": "Announcements",
@@ -149,9 +137,7 @@
     "alertSuccess": "Staff created successfully!",
     "errorUnknown": "An unknown error occurred.",
     "title": "Add New Staff",
-    "roleStaff": "Staff",
     "roleAdmin": "Admin",
-    "buttonCreating": "Creating...",
     "buttonCreate": "Create Staff"
   },
   "staffListPage": {
@@ -249,7 +235,18 @@
     "error": "Error",
     "experience": "Experience",
     "notApplicable": "N/A",
-    "chips": "Chips"
+    "chips": "Chips",
+    "fixed": "Fixed",
+    "apply": "Apply",
+    "event": "Event",
+    "totalPay": "Total Pay",
+    "reject": "Reject",
+    "male": "Male",
+    "female": "Female",
+    "login": "Login",
+    "staff": "Staff",
+    "table": "Table",
+    "totalHours": "Total Hours"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -360,7 +357,6 @@
   "participantDetailModal": {
     "title": "Participant Details",
     "editTitle": "Edit Participant Info",
-    "labelTable": "Table",
     "statusActive": "Active",
     "statusBusted": "Busted",
     "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
@@ -451,7 +447,6 @@
     "applying": "Applying...",
     "cancelling": "Cancelling...",
     "applied": "Applied",
-    "applyNow": "Apply",
     "cancelApplication": "Cancel Application",
     "viewDetails": "View Details",
     "loginRequired": "Login Required",
@@ -471,7 +466,6 @@
       "selectOption": "Select an option"
     },
     "applyModal": {
-      "title": "Apply for '{{postTitle}}'",
       "selectAssignment": "Select Time & Role",
       "selectPlaceholder": "Select a time and role",
       "full": "Full",
@@ -530,7 +524,6 @@
     "form": {
       "postingTitle": "Posting Title",
       "type": "Employment Type",
-      "typeFixed": "Fixed",
       "rolesAndCounts": "Roles & Headcount",
       "roleName": "Role Name",
       "roleNamePlaceholder": "e.g., Dealer, Floor",
@@ -581,7 +574,6 @@
       "loading": "Loading postings...",
       "people": "people",
       "type": "Employment Type",
-      "typeFixed": "Fixed",
       "matching": "Matching...",
       "button": "Auto Match",
       "applicants": "Applicants"
@@ -601,9 +593,7 @@
       "selectRole": "Select role",
       "viewProfile": "View Profile",
       "ageUnit": " years old",
-      "statusValue": {
-        "rejected": "Rejected"
-      },
+      "statusValue": {},
       "status_confirmed": "Confirmed"
     },
     "unknownUser": "Unknown User"
@@ -639,7 +629,6 @@
     "editDetails": "Edit Details",
     "saveChanges": "Save Changes",
     "loadingPayroll": "Loading payroll history...",
-    "tableEvent": "Event",
     "tableHours": "Hours",
     "tablePay": "Pay",
     "noPayroll": "No payroll history available.",
@@ -673,9 +662,6 @@
     "goBack": "Go Back",
     "adminView": "Admin View",
     "totalEvents": "Total Events",
-    "totalHours": "Total Hours",
-    "totalPay": "Total Pay",
-    "tableEvent": "Event",
     "tableHours": "Hours",
     "tablePay": "Pay",
     "statusPending": "Pending",
@@ -756,7 +742,6 @@
     "assignedDealers": "Assigned Dealers",
     "workLogsGenerated": "Work logs for this date have already been generated",
     "workLogsNotGenerated": "Generate work logs after completing the schedule",
-    "generating": "Generating...",
     "regenerateWorkLogs": "Regenerate Work Logs",
     "generateWorkLogs": "Generate Work Logs",
     "startTime": "Start Time",
@@ -790,7 +775,6 @@
       "checkOut": "Check Out Time",
       "scheduled": "Scheduled Time",
       "actual": "Actual Time",
-      "totalHours": "Total Hours",
       "attendanceStatus": "Attendance Status",
       "workingHours": "Working Hours",
       "breakTime": "Break Time"
@@ -875,10 +859,8 @@
     "noDataToExport": "No payroll data to export.",
     "summary": {
       "title": "Payroll Summary",
-      "totalHours": "Total Hours",
       "regularHours": "Regular",
       "overtimeHours": "Overtime",
-      "totalPay": "Total Pay",
       "basePay": "Base Pay",
       "exceptions": "Exceptions",
       "deductions": "Deductions"
@@ -888,8 +870,7 @@
       "staffName": "Staff Name",
       "workHours": "Work Hours",
       "overtime": "Overtime",
-      "exceptions": "Exceptions",
-      "totalPay": "Total Pay"
+      "exceptions": "Exceptions"
     }
   },
   "support": {
@@ -928,7 +909,6 @@
   "report": {
     "title": "Submit Report",
     "targetInfo": "Report Target",
-    "eventTitle": "Event",
     "type": "Report Type",
     "types": {
       "tardiness": {

@@ -73,7 +73,7 @@ const ApprovalPage: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                         <button onClick={() => handleApproval(user.id, 'approve')} className="btn btn-success btn-sm">{t('approve')}</button>
-                                        <button onClick={() => handleApproval(user.id, 'reject')} className="btn btn-danger btn-sm">{t('reject')}</button>
+                                        <button onClick={() => handleApproval(user.id, 'reject')} className="btn btn-danger btn-sm">{t('common.reject')}</button>
                                     </td>
                                 </tr>
                             ))

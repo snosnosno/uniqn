@@ -1,128 +1,15 @@
 {
   "ko": {
-    "total": 1061,
-    "duplicateGroups": 109,
-    "removableKeys": 141,
+    "total": 1012,
+    "duplicateGroups": 92,
+    "removableKeys": 99,
     "groups": [
-      {
-        "value": "지원",
-        "keys": [
-          "jobBoard.types.application",
-          "jobBoard.applyModal.submit",
-          "jobPostingAdmin.form.typeApplication",
-          "jobPostingAdmin.manage.typeApplication",
-          "jobPostingAdmin.applicants.statusValue.applied"
-        ]
-      },
-      {
-        "value": "기타",
-        "keys": [
-          "locations.other",
-          "report.types.other.label",
-          "inquiry.categories.other.label",
-          "settings.account.reason.other"
-        ]
-      },
-      {
-        "value": "성별",
-        "keys": [
-          "signUp.genderLabel",
-          "staffListPage.gender",
-          "jobPostingAdmin.applicants.gender",
-          "profile.gender"
-        ]
-      },
-      {
-        "value": "이메일",
-        "keys": [
-          "approvalPage.emailHeader",
-          "staffListPage.email",
-          "editUserModal.labelEmail",
-          "profile.email"
-        ]
-      },
-      {
-        "value": "나이",
-        "keys": [
-          "staffListPage.age",
-          "jobPostingAdmin.applicants.age",
-          "profile.age",
-          "profilePage.age"
-        ]
-      },
-      {
-        "value": "대기중",
-        "keys": [
-          "participants.locationWaiting",
-          "payrollPage.pendingAmount",
-          "tableCard.waiting",
-          "report.status.pending"
-        ]
-      },
-      {
-        "value": "확정",
-        "keys": [
-          "jobBoard.confirmed",
-          "jobPostingAdmin.applicants.confirm",
-          "jobPostingAdmin.applicants.statusValue.confirmed",
-          "jobPostingAdmin.applicants.confirmed"
-        ]
-      },
-      {
-        "value": "급여 내역",
-        "keys": [
-          "profilePage.payrollHistory",
-          "profilePage.viewPayroll",
-          "payrollPage.title",
-          "payrollPage.payrollHistory"
-        ]
-      },
-      {
-        "value": "비밀번호",
-        "keys": [
-          "login.passwordLabel",
-          "login.passwordPlaceholder",
-          "signUp.passwordLabel"
-        ]
-      },
-      {
-        "value": "참가자",
-        "keys": [
-          "nav.participants",
-          "prizes.participants",
-          "historyDetail.participants"
-        ]
-      },
-      {
-        "value": "오류",
-        "keys": [
-          "dashboard.errorPrefix",
-          "payrollPage.error",
-          "shiftSchedule.error"
-        ]
-      },
-      {
-        "value": "역할",
-        "keys": [
-          "staffNew.labelRole",
-          "editUserModal.labelRole",
-          "jobBoard.filters.role"
-        ]
-      },
       {
         "value": "생성 중...",
         "keys": [
           "staffNew.buttonCreating",
           "common.messages.generating",
           "shiftSchedule.generating"
-        ]
-      },
-      {
-        "value": "경력",
-        "keys": [
-          "staffListPage.experience",
-          "jobPostingAdmin.applicants.experience",
-          "profile.experience"
         ]
       },
       {
@@ -139,30 +26,6 @@
           "common.location",
           "jobPostingAdmin.form.location",
           "profile.region"
-        ]
-      },
-      {
-        "value": "지급 완료",
-        "keys": [
-          "payrollAdmin.status.paid",
-          "profilePage.statusPaid",
-          "payrollPage.paidAmount"
-        ]
-      },
-      {
-        "value": "해당 없음",
-        "keys": [
-          "dealerEvents.dateNotAvailable",
-          "tables.dealerNotApplicable",
-          "moveSeatModal.notApplicable"
-        ]
-      },
-      {
-        "value": "칩",
-        "keys": [
-          "participants.tableHeaderChips",
-          "participants.modalLabelChips",
-          "participantDetailModal.labelChips"
         ]
       },
       {
@@ -363,13 +226,6 @@
         "keys": [
           "staffListPage.nationality",
           "profilePage.nationality"
-        ]
-      },
-      {
-        "value": "없음",
-        "keys": [
-          "common.none",
-          "participantDetailModal.notAvailable"
         ]
       },
       {
@@ -802,124 +658,10 @@
     ]
   },
   "en": {
-    "total": 1023,
-    "duplicateGroups": 97,
-    "removableKeys": 129,
+    "total": 981,
+    "duplicateGroups": 81,
+    "removableKeys": 90,
     "groups": [
-      {
-        "value": "Pending",
-        "keys": [
-          "payrollAdmin.status.pending",
-          "profilePage.statusPending",
-          "payrollPage.pendingAmount",
-          "payrollPage.statusPending",
-          "report.status.pending"
-        ]
-      },
-      {
-        "value": "N/A",
-        "keys": [
-          "dealerEvents.dateNotAvailable",
-          "tables.dealerNotApplicable",
-          "moveSeatModal.notApplicable",
-          "participantDetailModal.notAvailable",
-          "profilePage.notAvailable"
-        ]
-      },
-      {
-        "value": "Other",
-        "keys": [
-          "locations.other",
-          "report.types.other.label",
-          "inquiry.categories.other.label",
-          "settings.account.deleteAccount.modal.reason.other"
-        ]
-      },
-      {
-        "value": "Gender",
-        "keys": [
-          "signUp.genderLabel",
-          "staffListPage.gender",
-          "jobPostingAdmin.applicants.gender",
-          "profile.gender"
-        ]
-      },
-      {
-        "value": "Participants",
-        "keys": [
-          "nav.participants",
-          "prizes.participants",
-          "historyDetail.participants",
-          "historyPage.participants"
-        ]
-      },
-      {
-        "value": "Paid",
-        "keys": [
-          "payrollAdmin.status.paid",
-          "profilePage.statusPaid",
-          "payrollPage.paidAmount",
-          "payrollPage.statusPaid"
-        ]
-      },
-      {
-        "value": "Confirmed",
-        "keys": [
-          "jobBoard.confirmed",
-          "jobPostingAdmin.applicants.statusValue.confirmed",
-          "jobPostingAdmin.applicants.status_confirmed",
-          "jobPostingAdmin.applicants.confirmed"
-        ]
-      },
-      {
-        "value": "Payroll History",
-        "keys": [
-          "profilePage.payrollHistory",
-          "profilePage.viewPayroll",
-          "payrollPage.title",
-          "payrollPage.payrollHistory"
-        ]
-      },
-      {
-        "value": "Password",
-        "keys": [
-          "login.passwordLabel",
-          "login.passwordPlaceholder",
-          "signUp.passwordLabel"
-        ]
-      },
-      {
-        "value": "Confirm",
-        "keys": [
-          "modal.confirm",
-          "common.confirm",
-          "jobPostingAdmin.applicants.confirm"
-        ]
-      },
-      {
-        "value": "Error",
-        "keys": [
-          "dashboard.errorPrefix",
-          "payrollPage.error",
-          "shiftSchedule.error"
-        ]
-      },
-      {
-        "value": "Email",
-        "keys": [
-          "approvalPage.emailHeader",
-          "staffListPage.email",
-          "editUserModal.labelEmail"
-        ]
-      },
-      {
-        "value": "Age",
-        "keys": [
-          "staffListPage.age",
-          "jobPostingAdmin.applicants.age",
-          "profilePage.age"
-        ]
-      },
       {
         "value": "Close",
         "keys": [
@@ -937,11 +679,11 @@
         ]
       },
       {
-        "value": "Chips",
+        "value": "Pending",
         "keys": [
-          "participants.tableHeaderChips",
-          "participants.modalLabelChips",
-          "participantDetailModal.labelChips"
+          "payrollAdmin.status.pending",
+          "profilePage.statusPending",
+          "payrollPage.statusPending"
         ]
       },
       {
@@ -1056,6 +798,13 @@
         ]
       },
       {
+        "value": "Confirm",
+        "keys": [
+          "modal.confirm",
+          "common.confirm"
+        ]
+      },
+      {
         "value": "Job Board",
         "keys": [
           "nav.jobBoard",
@@ -1098,13 +847,6 @@
         ]
       },
       {
-        "value": "Role",
-        "keys": [
-          "staffNew.labelRole",
-          "editUserModal.labelRole"
-        ]
-      },
-      {
         "value": "Unknown User",
         "keys": [
           "staffListPage.unknownUser",
@@ -1130,13 +872,6 @@
         "keys": [
           "staffListPage.phone",
           "common.phone"
-        ]
-      },
-      {
-        "value": "Experience",
-        "keys": [
-          "staffListPage.experience",
-          "jobPostingAdmin.applicants.experience"
         ]
       },
       {
@@ -1196,10 +931,10 @@
         ]
       },
       {
-        "value": "Waiting",
+        "value": "Other",
         "keys": [
-          "participants.locationWaiting",
-          "tableCard.waiting"
+          "common.other",
+          "settings.account.deleteAccount.modal.reason.other"
         ]
       },
       {
@@ -1301,13 +1036,6 @@
         ]
       },
       {
-        "value": "Applied",
-        "keys": [
-          "jobBoard.applied",
-          "jobPostingAdmin.applicants.statusValue.applied"
-        ]
-      },
-      {
         "value": "Login Required",
         "keys": [
           "jobBoard.loginRequired",
@@ -1340,13 +1068,6 @@
         "keys": [
           "jobPostingAdmin.form.type",
           "jobPostingAdmin.manage.type"
-        ]
-      },
-      {
-        "value": "Application",
-        "keys": [
-          "jobPostingAdmin.form.typeApplication",
-          "jobPostingAdmin.manage.typeApplication"
         ]
       },
       {
@@ -1519,5 +1240,5 @@
       }
     ]
   },
-  "analyzedAt": "2025-10-23T09:42:24.419Z"
+  "analyzedAt": "2025-10-23T09:48:48.612Z"
 }

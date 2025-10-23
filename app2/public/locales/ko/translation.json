@@ -1,6 +1,5 @@
 {
   "approve": "승인",
-  "reject": "거절",
   "locations": {
     "seoul": "서울",
     "gyeonggi": "경기",
@@ -21,13 +20,8 @@
     "jeju": "제주",
     "overseas": "해외"
   },
-  "gender": {
-    "male": "남성",
-    "female": "여성"
-  },
+  "gender": {},
   "login": {
-    "title": "로그인",
-    "loginButton": "로그인",
     "rememberMe": "로그인 상태 유지",
     "forgotPassword": "비밀번호를 잊으셨나요?",
     "orContinueWith": "또는 다음으로 계속",
@@ -57,7 +51,6 @@
     "title": "회원가입",
     "passwordPlaceholder": "비밀번호 (6자 이상)",
     "roleTitle": "가입 유형",
-    "roleStaff": "스태프",
     "roleManager": "관리자회원",
     "managerApprovalNotice": "관리자회원은 운영자의 가입 승인이 필요합니다.\n가입요청을 해주세요.",
     "signUpButton": "가입하기",
@@ -73,13 +66,9 @@
     "emailInUseError": "이미 사용 중인 이메일 주소입니다.",
     "invalidEmailError": "유효하지 않은 이메일 주소 형식입니다.",
     "weakPasswordError": "비밀번호가 너무 취약합니다. 더 강력한 비밀번호를 사용해주세요.",
-    "backToLogin": "로그인으로 돌아가기",
-    "genderMale": "남성",
-    "genderFemale": "여성"
+    "backToLogin": "로그인으로 돌아가기"
   },
-  "modal": {
-    "confirm": "확인"
-  },
+  "modal": {},
   "nav": {
     "dashboard": "대시보드",
     "jobBoard": "구인구직",
@@ -90,7 +79,6 @@
     "managePostings": "공고 관리",
     "shiftSchedule": "교대 관리",
     "processPayroll": "급여 처리",
-    "tables": "테이블",
     "blinds": "블라인드",
     "prizes": "프라이즈",
     "announcements": "공지사항",
@@ -149,9 +137,7 @@
     "alertSuccess": "스태프가 성공적으로 생성되었습니다!",
     "errorUnknown": "알 수 없는 오류가 발생했습니다.",
     "title": "새 스태프 추가",
-    "roleStaff": "스태프",
     "roleAdmin": "관리자",
-    "buttonCreating": "생성 중...",
     "buttonCreate": "스태프 생성"
   },
   "staffListPage": {
@@ -249,7 +235,18 @@
     "error": "오류",
     "experience": "경력",
     "notApplicable": "해당 없음",
-    "chips": "칩"
+    "chips": "칩",
+    "fixed": "고정",
+    "apply": "지원하기",
+    "event": "이벤트",
+    "totalPay": "총 급여",
+    "reject": "거절",
+    "male": "남성",
+    "female": "여성",
+    "login": "로그인",
+    "staff": "스태프",
+    "table": "테이블",
+    "totalHours": "총 근무 시간"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -360,7 +357,6 @@
   "participantDetailModal": {
     "title": "참가자 상세 정보",
     "editTitle": "참가자 정보 수정",
-    "labelTable": "테이블",
     "statusActive": "참가중",
     "statusBusted": "탈락",
     "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
@@ -469,13 +465,9 @@
         "placeholder": "공고 제목, 설명으로 검색..."
       }
     },
-    "types": {
-      "fixed": "고정"
-    },
+    "types": {},
     "noResults": "검색 결과가 없습니다.",
     "loadMore": "더 보기",
-    "apply": "지원하기",
-    "applyNow": "지원하기",
     "applying": "지원 중...",
     "cancelApplication": "지원 취소",
     "cancelling": "취소 중...",
@@ -497,7 +489,6 @@
       "selectOption": "옵션을 선택하세요"
     },
     "applyModal": {
-      "title": "지원하기",
       "selectTimeAndRole": "시간대와 역할을 선택하세요:",
       "selectAssignment": "시간 및 역할 선택",
       "selectPlaceholder": "시간과 역할을 선택하세요",
@@ -553,7 +544,6 @@
     "form": {
       "postingTitle": "공고 제목",
       "type": "고용 형태",
-      "typeFixed": "고정",
       "rolesAndCounts": "역할 및 필요 인원",
       "roleName": "역할 이름",
       "roleNamePlaceholder": "예: 딜러, 플로어",
@@ -604,7 +594,6 @@
       "loading": "공고 로딩 중...",
       "people": "명",
       "type": "고용 형태",
-      "typeFixed": "고정",
       "matching": "매칭 중...",
       "button": "자동 매칭",
       "applicants": "지원자",
@@ -625,9 +614,7 @@
       "selectRole": "역할 선택",
       "viewProfile": "프로필 보기",
       "ageUnit": "세",
-      "statusValue": {
-        "rejected": "거절"
-      },
+      "statusValue": {},
       "status_applied": "지원함",
       "status_confirmed": "확정됨"
     },
@@ -664,7 +651,6 @@
     "editDetails": "정보 수정",
     "saveChanges": "변경사항 저장",
     "loadingPayroll": "급여 내역 로딩 중...",
-    "tableEvent": "이벤트",
     "tableHours": "시간",
     "tablePay": "급여",
     "noPayroll": "급여 내역이 없습니다.",
@@ -698,9 +684,6 @@
     "goBack": "뒤로 가기",
     "adminView": "관리자 조회",
     "totalEvents": "총 이벤트 수",
-    "totalHours": "총 근무 시간",
-    "totalPay": "총 급여",
-    "tableEvent": "이벤트",
     "tableHours": "근무시간",
     "tablePay": "급여",
     "statusPending": "지급대기",
@@ -807,7 +790,6 @@
     "assignedDealers": "배정된 딜러",
     "workLogsGenerated": "이 날짜의 근무기록이 이미 생성되었습니다",
     "workLogsNotGenerated": "스케줄 완료 후 근무기록을 생성하세요",
-    "generating": "생성 중...",
     "regenerateWorkLogs": "근무기록 재생성",
     "generateWorkLogs": "근무기록 생성",
     "startTime": "출근시간",
@@ -841,7 +823,6 @@
       "checkOut": "퇴근 시간",
       "scheduled": "예정 시간",
       "actual": "실제 시간",
-      "totalHours": "총 근무 시간",
       "attendanceStatus": "출석 상태",
       "workingHours": "근무 시간",
       "breakTime": "휴식 시간"
@@ -917,10 +898,8 @@
     "noDataToExport": "내보낼 급여 데이터가 없습니다.",
     "summary": {
       "title": "급여 계산 요약",
-      "totalHours": "총 근무시간",
       "regularHours": "정규",
       "overtimeHours": "초과",
-      "totalPay": "총 급여",
       "basePay": "기본급",
       "exceptions": "예외 사항",
       "deductions": "공제액"
@@ -930,8 +909,7 @@
       "staffName": "스태프명",
       "workHours": "근무시간",
       "overtime": "초과근무",
-      "exceptions": "예외사항",
-      "totalPay": "총 급여"
+      "exceptions": "예외사항"
     }
   },
   "support": {
@@ -970,7 +948,6 @@
   "report": {
     "title": "신고하기",
     "targetInfo": "신고 대상",
-    "eventTitle": "이벤트",
     "type": "신고 유형",
     "types": {
       "tardiness": {

@@ -89,7 +89,7 @@ const StaffNewPage: React.FC = () => {
               onChange={handleChange}
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
             >
-              <option value="staff">{t('staffNew.roleStaff')}</option>
+              <option value="staff">{t('common.staff')}</option>
               <option value="admin">{t('staffNew.roleAdmin')}</option>
             </select>
           </div>
@@ -100,7 +100,7 @@ const StaffNewPage: React.FC = () => {
               disabled={isSubmitting}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
             >
-              {isSubmitting ? t('staffNew.buttonCreating') : t('staffNew.buttonCreate')}
+              {isSubmitting ? t('common.messages.generating') : t('staffNew.buttonCreate')}
             </button>
           </div>
         </form>

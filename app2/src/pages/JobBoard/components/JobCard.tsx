@@ -96,11 +96,11 @@ const JobCard: React.FC<JobCardProps> = ({
           : post.preQuestions && post.preQuestions.length > 0
             ? (
               <div className="text-center">
-                <div>{t('jobBoard.apply')}</div>
+                <div>{t('common.apply')}</div>
                 <div className="text-xs">{t('jobBoard.preQuestions')}</div>
               </div>
             )
-            : t('jobBoard.apply')}
+            : t('common.apply')}
       </button>
     );
   };

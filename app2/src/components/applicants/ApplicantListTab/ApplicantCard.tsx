@@ -77,9 +77,9 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
             <span className="ml-1">
               {applicant.gender ? (
                 applicant.gender.toLowerCase() === 'male'
-                  ? t('gender.male')
+                  ? t('common.male')
                   : applicant.gender.toLowerCase() === 'female'
-                  ? t('gender.female')
+                  ? t('common.female')
                   : applicant.gender
               ) : t('common.none')}
             </span>

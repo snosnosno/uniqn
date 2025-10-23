@@ -149,7 +149,7 @@ const SignUp: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700">{t('signUp.roleTitle')}</label>
             <div className="flex items-center mt-2">
               <input type="radio" id="staff" name="role" value="staff" checked={role === 'staff'} onChange={() => setRole('staff')} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"/>
-              <label htmlFor="staff" className="ml-2 block text-sm text-gray-900">{t('signUp.roleStaff')}</label>
+              <label htmlFor="staff" className="ml-2 block text-sm text-gray-900">{t('common.staff')}</label>
               <input type="radio" id="manager" name="role" value="manager" checked={role === 'manager'} onChange={() => setRole('manager')} className="ml-4 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"/>
               <label htmlFor="manager" className="ml-2 block text-sm text-gray-900">{t('signUp.roleManager')}</label>
             </div>
@@ -235,7 +235,7 @@ const SignUp: React.FC = () => {
         <p>{modalInfo.message}</p>
         <div className="text-right mt-4">
           <button onClick={handleModalClose} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-            {t('modal.confirm')}
+            {t('common.confirm')}
           </button>
         </div>
       </Modal>
