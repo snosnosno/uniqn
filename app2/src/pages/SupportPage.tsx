@@ -346,7 +346,7 @@ const SupportPage: React.FC = () => {
                     : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                {t('support.faq.all', '전체')}
+                {t('common.all')}
               </button>
 
               {INQUIRY_CATEGORIES.map((category) => (

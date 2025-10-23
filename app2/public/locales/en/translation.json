@@ -184,6 +184,7 @@
     "cashier": "Cashier"
   },
   "common": {
+    "back": "Back",
     "close": "Close",
     "cancel": "Cancel",
     "save": "Save",

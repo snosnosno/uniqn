@@ -149,7 +149,7 @@ export const INQUIRY_CATEGORIES: InquiryCategoryInfo[] = [
   },
   {
     key: 'other',
-    labelKey: 'inquiry.categories.other.label',
+    labelKey: 'common.other',
     descriptionKey: 'inquiry.categories.other.description',
     icon: '❓'
   }

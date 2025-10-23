@@ -242,7 +242,11 @@ const ProfilePage = () => {
 
     const genderDisplay = (genderKey: string | undefined) => {
         if (!genderKey) return t('profilePage.notProvided');
-        return t(`gender.${genderKey.toLowerCase()}`, genderKey);
+        // gender.male, gender.female -> common.male, common.female
+        const normalizedGender = genderKey.toLowerCase();
+        if (normalizedGender === 'male') return t('common.male');
+        if (normalizedGender === 'female') return t('common.female');
+        return genderKey;
     };
 
 
@@ -333,7 +337,7 @@ const ProfilePage = () => {
                                     <p>{genderDisplay(profile.gender)}</p>
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-gray-600">{t('profilePage.age', '나이')}</p>
+                                    <p className="font-semibold text-gray-600">{t('common.age')}</p>
                                     <p>{profile.age ? `${profile.age}세` : t('profilePage.notProvided')}</p>
                                 </div>
                                 <div>
@@ -446,7 +450,7 @@ const ProfilePage = () => {
                                 </div>
                                 <div>
                                     <label htmlFor="age" className="block text-sm font-medium text-gray-700">
-                                        {t('profilePage.age', '나이')} <span className="text-red-500">*</span>
+                                        {t('common.age')} <span className="text-red-500">*</span>
                                     </label>
                                     <input type="number" name="age" id="age" value={formData.age ? formData.age.toString() : ''} onChange={handleChange} min="18" max="100" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                                 </div>

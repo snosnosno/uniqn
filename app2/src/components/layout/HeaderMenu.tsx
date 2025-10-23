@@ -195,7 +195,7 @@ export const HeaderMenu: React.FC = () => {
                   <hr className="my-2 border-t border-gray-200" />
                   <NavItem to="/app/tournaments" label="토너먼트 관리" Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
                   <NavItem to="/app/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/app/tables" label={t('nav.tables', 'Tables')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
+                  <NavItem to="/app/tables" label={t('common.table')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
 
                   {/* Admin and Manager 메뉴 */}
                   {(role === 'admin' || role === 'manager') && (
