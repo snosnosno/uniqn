@@ -819,8 +819,11 @@
   "attendance": {
     "status": {
       "not_started": "출근 전",
+      "notStarted": "출근 전",
       "checked_in": "출근",
+      "checkedIn": "출근",
       "checked_out": "퇴근",
+      "checkedOut": "퇴근",
       "absent": "결근"
     },
     "labels": {

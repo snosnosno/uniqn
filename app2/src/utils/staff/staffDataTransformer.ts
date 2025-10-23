@@ -8,6 +8,7 @@
 
 import type { WorkLog } from '../../types/unifiedData';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
+import { logger } from '../logger';
 
 export interface StaffData {
   id: string;
@@ -48,15 +49,85 @@ export function transformWorkLogsToStaffData(
   currentJobPostingId?: string
 ): StaffData[] {
   if (!workLogs || workLogs.size === 0 || !currentJobPostingId) {
+    logger.info('🔍 [transformWorkLogsToStaffData] Early return', {
+      component: 'staffDataTransformer',
+      data: {
+        hasWorkLogs: !!workLogs,
+        workLogsSize: workLogs?.size || 0,
+        currentJobPostingId,
+      },
+    });
     return [];
   }
 
   // WorkLog에서 고유한 스태프 정보 추출 (중복 제거)
   const staffMap = new Map<string, StaffData>();
 
+  // 디버깅: eventId별 WorkLog 통계 (eventId 추출 로직 적용)
+  const workLogsByEvent = new Map<string, number>();
+  Array.from(workLogs.values()).forEach(wl => {
+    let eventId = wl.eventId;
+
+    // eventId가 없으면 ID에서 추출
+    if (!eventId && wl.id) {
+      const datePattern = /(\d{4}-\d{2}-\d{2})$/;
+      const dateMatch = wl.id.match(datePattern);
+      if (dateMatch) {
+        const withoutDate = wl.id.replace(`_${dateMatch[1]}`, '');
+        const firstUnderscoreIndex = withoutDate.indexOf('_');
+        if (firstUnderscoreIndex > 0) {
+          eventId = withoutDate.substring(0, firstUnderscoreIndex);
+        }
+      }
+    }
+
+    if (eventId) {
+      const count = workLogsByEvent.get(eventId) || 0;
+      workLogsByEvent.set(eventId, count + 1);
+    }
+  });
+
+  logger.info('🔍 [transformWorkLogsToStaffData] WorkLog 분석', {
+    component: 'staffDataTransformer',
+    data: {
+      totalWorkLogs: workLogs.size,
+      currentJobPostingId,
+      workLogsByEvent: Object.fromEntries(workLogsByEvent),
+      matchingWorkLogs: workLogsByEvent.get(currentJobPostingId) || 0,
+    },
+  });
+
   Array.from(workLogs.values()).forEach(workLog => {
     // ✅ eventId 필터링 - 현재 공고의 WorkLog만 처리
-    if (workLog.eventId !== currentJobPostingId) return;
+    // 🔧 eventId가 없는 경우 WorkLog ID에서 추출 시도
+    let eventId = workLog.eventId;
+
+    if (!eventId && workLog.id) {
+      // WorkLog ID 형식: {eventId}_{staffId}_{date}
+      // 예: PUXhDb46VSQSdggQnwOw_HPjouZZmvQYHBvGVm6ZKKFgENOR2_0_2025-10-23
+      // 마지막 부분이 YYYY-MM-DD 형식의 날짜이므로 날짜 패턴으로 분리
+      const datePattern = /(\d{4}-\d{2}-\d{2})$/;
+      const dateMatch = workLog.id.match(datePattern);
+
+      if (dateMatch) {
+        // 날짜 부분 제거: PUXhDb46VSQSdggQnwOw_HPjouZZmvQYHBvGVm6ZKKFgENOR2_0
+        const withoutDate = workLog.id.replace(`_${dateMatch[1]}`, '');
+        // 첫 번째 언더스코어까지가 eventId
+        const firstUnderscoreIndex = withoutDate.indexOf('_');
+        if (firstUnderscoreIndex > 0) {
+          eventId = withoutDate.substring(0, firstUnderscoreIndex);
+          logger.info('🔧 [transformWorkLogsToStaffData] eventId 추출', {
+            component: 'staffDataTransformer',
+            data: {
+              workLogId: workLog.id,
+              extractedEventId: eventId,
+            },
+          });
+        }
+      }
+    }
+
+    if (eventId !== currentJobPostingId) return;
 
     const staffInfo = workLog.staffInfo;
     const assignmentInfo = workLog.assignmentInfo;
@@ -107,7 +178,18 @@ export function transformWorkLogsToStaffData(
     }
   });
 
-  return Array.from(staffMap.values());
+  const result = Array.from(staffMap.values());
+
+  logger.info('🔍 [transformWorkLogsToStaffData] 변환 결과', {
+    component: 'staffDataTransformer',
+    data: {
+      staffCount: result.length,
+      staffIds: result.map(s => s.id),
+      staffNames: result.map(s => s.name),
+    },
+  });
+
+  return result;
 }
 
 /**

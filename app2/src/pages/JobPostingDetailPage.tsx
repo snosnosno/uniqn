@@ -33,27 +33,27 @@ interface TabConfig {
 }
 
 const allTabs: TabConfig[] = [
-  { 
-    id: 'applicants', 
-    label: '지원자', 
+  {
+    id: 'applicants',
+    label: '지원자',
     component: ApplicantListTab,
     requiredPermission: { resource: 'jobPostings', action: 'manageApplicants' }
   },
-  { 
-    id: 'staff', 
-    label: '스태프', 
+  {
+    id: 'staff',
+    label: '스태프',
     component: StaffManagementTab,
     requiredPermission: { resource: 'jobPostings', action: 'manageApplicants' }
   },
-  { 
-    id: 'shifts', 
-    label: '시프트', 
+  {
+    id: 'shifts',
+    label: '시프트',
     component: ShiftManagementTab,
-    allowedRoles: ['admin', 'manager']
+    allowedRoles: ['admin', 'manager', 'staff']  // ✅ Staff 추가 - 본인 공고에서 시프트 관리 가능
   },
-  { 
-    id: 'payroll', 
-    label: '정산', 
+  {
+    id: 'payroll',
+    label: '정산',
     component: EnhancedPayrollTab,
     allowedRoles: ['admin', 'manager', 'staff']
   },

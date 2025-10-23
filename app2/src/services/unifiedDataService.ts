@@ -145,11 +145,29 @@ const transformStaffData = (doc: DocumentData): Staff => ({
 });
 */
 
-const transformWorkLogData = (doc: DocumentData): WorkLog => ({
+const transformWorkLogData = (doc: DocumentData): WorkLog => {
+  // 🔧 eventId 추출: doc.eventId가 없으면 ID에서 추출
+  let eventId = doc.eventId || '';
+
+  if (!eventId && doc.id) {
+    // WorkLog ID 형식: {eventId}_{staffId}_{date}
+    const datePattern = /(\d{4}-\d{2}-\d{2})$/;
+    const dateMatch = doc.id.match(datePattern);
+
+    if (dateMatch) {
+      const withoutDate = doc.id.replace(`_${dateMatch[1]}`, '');
+      const firstUnderscoreIndex = withoutDate.indexOf('_');
+      if (firstUnderscoreIndex > 0) {
+        eventId = withoutDate.substring(0, firstUnderscoreIndex);
+      }
+    }
+  }
+
+  return {
   id: doc.id,
   staffId: doc.staffId,
   staffName: doc.staffName || '',
-  eventId: doc.eventId || '',
+  eventId: eventId,
   date: doc.date || '',
   
   // 🚀 새로 추가된 필드들
@@ -195,7 +213,8 @@ const transformWorkLogData = (doc: DocumentData): WorkLog => ({
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
   createdBy: doc.createdBy
-});
+  };
+};
 
 const transformAttendanceData = (doc: DocumentData): AttendanceRecord => ({
   id: doc.id,
@@ -340,10 +359,10 @@ export class UnifiedDataService {
   }
 
   /**
-   * 관리자 권한 확인
+   * 관리자 권한 확인 (Admin, Manager, Staff 모두 전체 WorkLog 접근 가능)
    */
   private isAdmin(): boolean {
-    return this.userRole === 'admin' || this.userRole === 'manager';
+    return this.userRole === 'admin' || this.userRole === 'manager' || this.userRole === 'staff';
   }
 
   /**
@@ -500,6 +519,16 @@ export class UnifiedDataService {
         { includeMetadataChanges: true }, // 🔥 메타데이터 변경도 감지하여 실시간성 강화
         (snapshot: QuerySnapshot) => {
           const _queryTime = _endTimer(); // 성능 추적용
+
+          logger.info('🔍 [WorkLog Subscription] 사용자 권한 확인', {
+            component: 'unifiedDataService',
+            data: {
+              currentUserId: this.currentUserId,
+              userRole: this.userRole,
+              isAdmin: this.isAdmin(),
+              snapshotSize: snapshot.size,
+            },
+          });
 
           // WorkLogs 데이터 업데이트 처리
           const workLogsData: WorkLog[] = [];

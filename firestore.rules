@@ -357,13 +357,9 @@ service cloud.firestore {
 
     // --- Work Logs Collection (표준 필드명 + 최적화 지원) ---
     match /workLogs/{workLogId} {
-      // 표준 필드명 기반 권한 체크 (최적화 쿼리 지원)
-      allow read: if isSignedIn() && (
-        hasValidRole() ||
-        request.auth.uid == resource.data.staffId ||  // 표준 필드명 사용
-        (resource.data.keys().hasAny(['staffInfo']) && request.auth.uid == resource.data.staffInfo.userId) ||  // 하위 호환성
-        request.auth.uid == resource.data.dealerId  // 레거시 필드 하위 호환성
-      );
+      // ✅ 쿼리 지원을 위해 hasValidRole()만으로 읽기 허용
+      // (개별 문서 접근은 resource.data 체크 가능하지만, 쿼리는 불가능)
+      allow read: if isSignedIn() && hasValidRole();
 
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
       // 표준 필드명 기반 검증 (staffId, eventId 필수)
@@ -376,8 +372,13 @@ service cloud.firestore {
       // 관리자 및 유효한 역할을 가진 사용자가 수정 가능
       allow update: if isSignedIn() && hasValidRole();
 
-      // 관리자만 삭제 가능
-      allow delete: if isPrivileged();
+      // 삭제 권한: Admin/Manager 또는 해당 공고 작성자 (Staff 포함)
+      allow delete: if isSignedIn() && (
+        isPrivileged() ||
+        (hasValidRole() &&
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+      );
     }
 
     // --- Participants Collection ---

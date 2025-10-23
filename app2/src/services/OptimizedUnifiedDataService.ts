@@ -229,11 +229,29 @@ const transformStaffData = (doc: DocumentData): Staff => ({
   residentId: doc.residentId,
 });
 
-const transformWorkLogData = (doc: DocumentData): WorkLog => ({
+const transformWorkLogData = (doc: DocumentData): WorkLog => {
+  // 🔧 eventId 추출: doc.eventId가 없으면 ID에서 추출
+  let eventId = doc.eventId || '';
+
+  if (!eventId && doc.id) {
+    // WorkLog ID 형식: {eventId}_{staffId}_{date}
+    const datePattern = /(\d{4}-\d{2}-\d{2})$/;
+    const dateMatch = doc.id.match(datePattern);
+
+    if (dateMatch) {
+      const withoutDate = doc.id.replace(`_${dateMatch[1]}`, '');
+      const firstUnderscoreIndex = withoutDate.indexOf('_');
+      if (firstUnderscoreIndex > 0) {
+        eventId = withoutDate.substring(0, firstUnderscoreIndex);
+      }
+    }
+  }
+
+  return {
   id: doc.id,
   staffId: doc.staffId,
   staffName: doc.staffName || '',
-  eventId: doc.eventId || '',
+  eventId: eventId,
   date: doc.date || '',
 
   // 필수 필드들 (타입에 맞게 조정)
@@ -281,7 +299,8 @@ const transformWorkLogData = (doc: DocumentData): WorkLog => ({
   status: doc.status || 'not_started',
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
-} as WorkLog);
+  } as WorkLog;
+};
 
 const transformAttendanceRecordData = (doc: DocumentData): AttendanceRecord => ({
   id: doc.id,
@@ -365,14 +384,14 @@ class OptimizedUnifiedDataService {
   private cache = new MemoryCache();
 
   /**
-   * 사용자 역할 확인
+   * 사용자 역할 확인 (Admin, Manager, Staff 모두 전체 WorkLog 접근 가능)
    */
   private isAdmin(): boolean {
     // AuthContext에서 관리하는 role 사용
     if (!this.userRole) {
       return false;
     }
-    return this.userRole === 'admin' || this.userRole === 'manager';
+    return this.userRole === 'admin' || this.userRole === 'manager' || this.userRole === 'staff';
   }
 
   private getUserRole(): 'admin' | 'manager' | 'staff' {
@@ -389,16 +408,8 @@ class OptimizedUnifiedDataService {
   private getOptimizedWorkLogsQuery(userId: string, userRole: string) {
     const baseQuery = collection(db, 'workLogs');
 
-    if (userRole === 'staff') {
-      // 스태프는 자신의 기록만
-      return query(
-        baseQuery,
-        where('staffId', '==', userId),
-        orderBy('date', 'desc'),
-        limit(50) // 최근 50개만
-      );
-    } else if (userRole === 'manager') {
-      // 매니저는 최근 3개월만
+    if (userRole === 'staff' || userRole === 'manager') {
+      // 스태프와 매니저는 최근 3개월만 (동일한 권한)
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -708,10 +719,28 @@ class OptimizedUnifiedDataService {
         (snapshot: QuerySnapshot) => {
           const _queryTime = endTimer(); // 성능 측정용 (향후 사용 예정)
 
+          logger.info('🔍 [WorkLog Subscription] 사용자 권한 확인', {
+            component: 'OptimizedUnifiedDataService',
+            data: {
+              currentUserId: userId,
+              userRole: userRole,
+              isAdmin: this.isAdmin(),
+              snapshotSize: snapshot.size,
+            },
+          });
+
           const data = snapshot.docs.map(doc => transformWorkLogData({
             id: doc.id,
             ...doc.data()
           }));
+
+          logger.info('🔍 [WorkLog Subscription] 변환 완료', {
+            component: 'OptimizedUnifiedDataService',
+            data: {
+              transformedCount: data.length,
+              sampleEventIds: data.slice(0, 3).map(w => ({ id: w.id, eventId: w.eventId })),
+            },
+          });
 
           // 캐시 저장
           this.cache.set(cacheKey, data, 'workLogs');

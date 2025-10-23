@@ -98,6 +98,20 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       filters,
     });
 
+  // 🔍 디버깅: state.workLogs 확인
+  useEffect(() => {
+    logger.info('🔍 [StaffManagementTab] state.workLogs 확인', {
+      component: 'StaffManagementTab',
+      data: {
+        workLogsSize: state.workLogs.size,
+        workLogsKeys: Array.from(state.workLogs.keys()),
+        jobPostingId: jobPosting?.id,
+        loading: loading.workLogs,
+        error: error.workLogs,
+      },
+    });
+  }, [state.workLogs, jobPosting?.id, loading.workLogs, error.workLogs]);
+
   const selection = useStaffSelection();
 
   const modals = useStaffModals();
