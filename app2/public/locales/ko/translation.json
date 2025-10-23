@@ -235,12 +235,10 @@
     "close": "닫기",
     "cancel": "취소",
     "save": "저장",
-    "saving": "저장 중...",
     "all": "전체",
     "sort": "정렬",
     "none": "없음",
     "refresh": "새로고침",
-    "loading": "로딩 중...",
     "comingSoon": "향후 업데이트 예정",
     "closeNotification": "알림 닫기",
     "requiredField": "필수 항목",
@@ -255,7 +253,19 @@
     "preQuestionAnswer": "사전질문 답변",
     "applying": "지원중",
     "confirm": "확인",
-    "delete": "삭제"
+    "delete": "삭제",
+    "edit": "수정",
+    "add": "추가",
+    "remove": "삭제",
+    "search": "검색",
+    "messages": {
+      "loading": "로딩 중...",
+      "saving": "저장 중...",
+      "submitting": "제출 중...",
+      "generating": "생성 중...",
+      "searching": "검색중...",
+      "processing": "처리 중..."
+    }
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -407,11 +417,15 @@
     "scanMessage": "출석 체크를 위해 QR 코드를 스캔해주세요."
   },
   "attendancePage": {
-    "title": "출석 QR 코드 스캔",
-    "lastScanned": "마지막 스캔: {{scanResult}}",
-    "submitting": "출석 정보 제출 중...",
-    "success": "출석이 성공적으로 기록되었습니다!",
-    "fail": "출석 기록에 실패했습니다."
+    "title": "QR 출석",
+    "lastScanned": "QR 코드 스캔됨",
+    "submitting": "처리 중...",
+    "success": "출석이 완료되었습니다",
+    "fail": "출석 처리에 실패했습니다",
+    "howToUse": "사용 방법",
+    "guide1": "관리자가 생성한 QR 코드를 스캔하세요.",
+    "guide2": "출근과 퇴근은 각각 다른 QR 코드입니다.",
+    "guide3": "QR 코드는 1분마다 자동으로 변경됩니다."
   },
   "availableTimes": {
     "title": "주간 근무 가능 시간 설정",
@@ -603,8 +617,6 @@
       "postingClosed": "모든 역할이 채워졌습니다. 구인 공고가 마감되었습니다."
     },
     "create": {
-      "selectOptions": "옵션 선택",
-      "removeQuestion": "질문 삭제",
       "title": "공고 생성",
       "button": "공고 작성",
       "postingTitle": "공고 제목",
@@ -617,17 +629,11 @@
       "staffNeeded": "필요 인원",
       "addRole": "역할 추가",
       "remove": "삭제",
-      "dealer": "딜러",
-      "floor": "플로어",
-      "registration": "등록",
-      "serving": "서빙",
-      "tournament_director": "토너먼트 디렉터",
-      "chip_master": "칩 마스터",
-      "security": "보안요원",
-      "cashier": "캐셔",
       "description": "설명 / 조건",
       "detailedAddress": "상세 주소",
       "detailedAddressPlaceholder": "상세 주소를 입력하세요",
+      "contactPhone": "문의 연락처",
+      "contactPhonePlaceholder": "문의 연락처를 입력하세요 (최대 25자)",
       "preQuestions": "사전질문 (선택사항)",
       "question": "질문",
       "addPreQuestion": "질문 추가",
@@ -655,7 +661,9 @@
       "time": "시간",
       "timeAndRoles": "시간대 및 역할",
       "addTimeSlot": "시간대 추가",
-      "removeTimeSlot": "시간대 삭제"
+      "removeTimeSlot": "시간대 삭제",
+      "selectOptions": "옵션 선택",
+      "removeQuestion": "질문 삭제"
     },
     "manage": {
       "title": "구인 공고 관리",
@@ -686,17 +694,11 @@
       "staffNeeded": "필요 인원",
       "addRole": "역할 추가",
       "remove": "삭제",
-      "dealer": "딜러",
-      "floor": "플로어",
-      "registration": "레지",
-      "serving": "서빙",
-      "tournament_director": "토너먼트 디렉터",
-      "chip_master": "칩 마스터",
-      "security": "보안요원",
-      "cashier": "캐셔",
       "description": "설명",
       "detailedAddress": "상세 주소",
       "detailedAddressPlaceholder": "상세 주소를 입력하세요",
+      "contactPhone": "문의 연락처",
+      "contactPhonePlaceholder": "문의 연락처를 입력하세요 (최대 25자)",
       "usePreQuestions": "사전질문 사용",
       "preQuestions": "사전질문 (선택사항)",
       "question": "질문",
@@ -982,11 +984,8 @@
   "attendance": {
     "status": {
       "not_started": "출근 전",
-      "notStarted": "출근 전",
       "checked_in": "출근",
       "checked_out": "퇴근",
-      "checkedIn": "출근",
-      "checkedOut": "퇴근",
       "absent": "결근"
     },
     "labels": {
@@ -1310,17 +1309,6 @@
     "info2": "출근과 퇴근은 각각 별도의 QR 코드를 사용합니다.",
     "info3": "각 QR 코드는 한 번만 사용 가능하며, 2분 후 만료됩니다.",
     "info4": "퇴근 시간은 {{interval}}분 단위로 자동 조정됩니다."
-  },
-  "attendancePage": {
-    "title": "QR 출석",
-    "lastScanned": "QR 코드 스캔됨",
-    "submitting": "처리 중...",
-    "success": "출석이 완료되었습니다",
-    "fail": "출석 처리에 실패했습니다",
-    "howToUse": "사용 방법",
-    "guide1": "관리자가 생성한 QR 코드를 스캔하세요.",
-    "guide2": "출근과 퇴근은 각각 다른 QR 코드입니다.",
-    "guide3": "QR 코드는 1분마다 자동으로 변경됩니다."
   },
   "consent": {
     "title": "서비스 이용 동의",
