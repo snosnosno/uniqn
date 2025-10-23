@@ -1,0 +1,321 @@
+🔍 중복 번역 값 분석 중...
+
+=== 한국어 (ko.json) ===
+
+총 109개의 중복 그룹 발견
+
+1. 값: "지원"
+   키 개수: 5개
+   키 목록:
+     - jobBoard.types.application
+     - jobBoard.applyModal.submit
+     - jobPostingAdmin.form.typeApplication
+     - jobPostingAdmin.manage.typeApplication
+     - jobPostingAdmin.applicants.statusValue.applied
+
+2. 값: "기타"
+   키 개수: 4개
+   키 목록:
+     - locations.other
+     - report.types.other.label
+     - inquiry.categories.other.label
+     - settings.account.reason.other
+
+3. 값: "성별"
+   키 개수: 4개
+   키 목록:
+     - signUp.genderLabel
+     - staffListPage.gender
+     - jobPostingAdmin.applicants.gender
+     - profile.gender
+
+4. 값: "이메일"
+   키 개수: 4개
+   키 목록:
+     - approvalPage.emailHeader
+     - staffListPage.email
+     - editUserModal.labelEmail
+     - profile.email
+
+5. 값: "나이"
+   키 개수: 4개
+   키 목록:
+     - staffListPage.age
+     - jobPostingAdmin.applicants.age
+     - profile.age
+     - profilePage.age
+
+6. 값: "대기중"
+   키 개수: 4개
+   키 목록:
+     - participants.locationWaiting
+     - payrollPage.pendingAmount
+     - tableCard.waiting
+     - report.status.pending
+
+7. 값: "확정"
+   키 개수: 4개
+   키 목록:
+     - jobBoard.confirmed
+     - jobPostingAdmin.applicants.confirm
+     - jobPostingAdmin.applicants.statusValue.confirmed
+     - jobPostingAdmin.applicants.confirmed
+
+8. 값: "급여 내역"
+   키 개수: 4개
+   키 목록:
+     - profilePage.payrollHistory
+     - profilePage.viewPayroll
+     - payrollPage.title
+     - payrollPage.payrollHistory
+
+9. 값: "비밀번호"
+   키 개수: 3개
+   키 목록:
+     - login.passwordLabel
+     - login.passwordPlaceholder
+     - signUp.passwordLabel
+
+10. 값: "참가자"
+   키 개수: 3개
+   키 목록:
+     - nav.participants
+     - prizes.participants
+     - historyDetail.participants
+
+11. 값: "오류"
+   키 개수: 3개
+   키 목록:
+     - dashboard.errorPrefix
+     - payrollPage.error
+     - shiftSchedule.error
+
+12. 값: "역할"
+   키 개수: 3개
+   키 목록:
+     - staffNew.labelRole
+     - editUserModal.labelRole
+     - jobBoard.filters.role
+
+13. 값: "생성 중..."
+   키 개수: 3개
+   키 목록:
+     - staffNew.buttonCreating
+     - common.messages.generating
+     - shiftSchedule.generating
+
+14. 값: "경력"
+   키 개수: 3개
+   키 목록:
+     - staffListPage.experience
+     - jobPostingAdmin.applicants.experience
+     - profile.experience
+
+15. 값: "닫기"
+   키 개수: 3개
+   키 목록:
+     - common.close
+     - participantDetailModal.buttonClose
+     - jobPostingAdmin.applicants.close
+
+16. 값: "지역"
+   키 개수: 3개
+   키 목록:
+     - common.location
+     - jobPostingAdmin.form.location
+     - profile.region
+
+17. 값: "지급 완료"
+   키 개수: 3개
+   키 목록:
+     - payrollAdmin.status.paid
+     - profilePage.statusPaid
+     - payrollPage.paidAmount
+
+18. 값: "해당 없음"
+   키 개수: 3개
+   키 목록:
+     - dealerEvents.dateNotAvailable
+     - tables.dealerNotApplicable
+     - moveSeatModal.notApplicable
+
+19. 값: "칩"
+   키 개수: 3개
+   키 목록:
+     - participants.tableHeaderChips
+     - participants.modalLabelChips
+     - participantDetailModal.labelChips
+
+20. 값: "고정"
+   키 개수: 3개
+   키 목록:
+     - jobBoard.types.fixed
+     - jobPostingAdmin.form.typeFixed
+     - jobPostingAdmin.manage.typeFixed
+
+... 그 외 89개 그룹
+
+
+=== 영어 (en.json) ===
+
+총 97개의 중복 그룹 발견
+
+1. 값: "Pending"
+   키 개수: 5개
+   키 목록:
+     - payrollAdmin.status.pending
+     - profilePage.statusPending
+     - payrollPage.pendingAmount
+     - payrollPage.statusPending
+     - report.status.pending
+
+2. 값: "N/A"
+   키 개수: 5개
+   키 목록:
+     - dealerEvents.dateNotAvailable
+     - tables.dealerNotApplicable
+     - moveSeatModal.notApplicable
+     - participantDetailModal.notAvailable
+     - profilePage.notAvailable
+
+3. 값: "Other"
+   키 개수: 4개
+   키 목록:
+     - locations.other
+     - report.types.other.label
+     - inquiry.categories.other.label
+     - settings.account.deleteAccount.modal.reason.other
+
+4. 값: "Gender"
+   키 개수: 4개
+   키 목록:
+     - signUp.genderLabel
+     - staffListPage.gender
+     - jobPostingAdmin.applicants.gender
+     - profile.gender
+
+5. 값: "Participants"
+   키 개수: 4개
+   키 목록:
+     - nav.participants
+     - prizes.participants
+     - historyDetail.participants
+     - historyPage.participants
+
+6. 값: "Paid"
+   키 개수: 4개
+   키 목록:
+     - payrollAdmin.status.paid
+     - profilePage.statusPaid
+     - payrollPage.paidAmount
+     - payrollPage.statusPaid
+
+7. 값: "Confirmed"
+   키 개수: 4개
+   키 목록:
+     - jobBoard.confirmed
+     - jobPostingAdmin.applicants.statusValue.confirmed
+     - jobPostingAdmin.applicants.status_confirmed
+     - jobPostingAdmin.applicants.confirmed
+
+8. 값: "Payroll History"
+   키 개수: 4개
+   키 목록:
+     - profilePage.payrollHistory
+     - profilePage.viewPayroll
+     - payrollPage.title
+     - payrollPage.payrollHistory
+
+9. 값: "Password"
+   키 개수: 3개
+   키 목록:
+     - login.passwordLabel
+     - login.passwordPlaceholder
+     - signUp.passwordLabel
+
+10. 값: "Confirm"
+   키 개수: 3개
+   키 목록:
+     - modal.confirm
+     - common.confirm
+     - jobPostingAdmin.applicants.confirm
+
+11. 값: "Error"
+   키 개수: 3개
+   키 목록:
+     - dashboard.errorPrefix
+     - payrollPage.error
+     - shiftSchedule.error
+
+12. 값: "Email"
+   키 개수: 3개
+   키 목록:
+     - approvalPage.emailHeader
+     - staffListPage.email
+     - editUserModal.labelEmail
+
+13. 값: "Age"
+   키 개수: 3개
+   키 목록:
+     - staffListPage.age
+     - jobPostingAdmin.applicants.age
+     - profilePage.age
+
+14. 값: "Close"
+   키 개수: 3개
+   키 목록:
+     - common.close
+     - participantDetailModal.buttonClose
+     - jobPostingAdmin.applicants.close
+
+15. 값: "Cancel"
+   키 개수: 3개
+   키 목록:
+     - common.cancel
+     - settings.security.password.cancel
+     - settings.account.deleteAccount.modal.cancel
+
+16. 값: "Chips"
+   키 개수: 3개
+   키 목록:
+     - participants.tableHeaderChips
+     - participants.modalLabelChips
+     - participantDetailModal.labelChips
+
+17. 값: "Event"
+   키 개수: 3개
+   키 목록:
+     - profilePage.tableEvent
+     - payrollPage.tableEvent
+     - report.eventTitle
+
+18. 값: "Total Hours"
+   키 개수: 3개
+   키 목록:
+     - payrollPage.totalHours
+     - attendance.labels.totalHours
+     - payroll.summary.totalHours
+
+19. 값: "Total Pay"
+   키 개수: 3개
+   키 목록:
+     - payrollPage.totalPay
+     - payroll.summary.totalPay
+     - payroll.details.totalPay
+
+20. 값: "Submit Inquiry"
+   키 개수: 3개
+   키 목록:
+     - support.tabs.inquiry
+     - support.inquiry.title
+     - support.inquiry.submit
+
+... 그 외 77개 그룹
+
+
+📊 최적화 가능성:
+
+한국어: 141개 키를 제거 가능 (13%)
+영어: 129개 키를 제거 가능 (13%)
+
+📄 상세 리포트: C:\Users\user\Desktop\T-HOLDEM\app2\translation-duplicates.json

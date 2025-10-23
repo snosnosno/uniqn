@@ -166,7 +166,7 @@ const ParticipantsPage: React.FC = () => {
   };
 
   const getParticipantLocation = useCallback((participantId: string) => {
-    return participantLocations.get(participantId) || t('participants.locationWaiting');
+    return participantLocations.get(participantId) || t('common.status.pending');
   }, [participantLocations, t]);
 
   // 체크박스 관련 함수들
@@ -437,7 +437,7 @@ const ParticipantsPage: React.FC = () => {
               <th className="px-4 py-2">{t('common.name')}</th>
               <th className="px-4 py-2">ID</th>
               <th className="px-4 py-2">{t('common.phone')}</th>
-              <th className="px-4 py-2">{t('participants.tableHeaderChips')}</th>
+              <th className="px-4 py-2">{t('common.chips')}</th>
               <th className="px-4 py-2 whitespace-nowrap">{t('common.location')}</th>
               <th className="px-4 py-2">기타</th>
               <th className="px-4 py-2">비고</th>
@@ -551,7 +551,7 @@ const ParticipantsPage: React.FC = () => {
             />
           </div>
            <div>
-            <label className="block text-sm font-medium mb-1">{t('participants.modalLabelChips')}</label>
+            <label className="block text-sm font-medium mb-1">{t('common.chips')}</label>
             <input
               key="participant-chips-input"
               type="number"

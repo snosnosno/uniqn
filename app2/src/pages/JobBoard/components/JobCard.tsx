@@ -79,7 +79,7 @@ const JobCard: React.FC<JobCardProps> = ({
           className="w-full bg-green-600 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="지원이 확정된 공고입니다"
         >
-          {t('jobBoard.confirmed')}
+          {t('common.status.confirmed')}
         </button>
       );
     }

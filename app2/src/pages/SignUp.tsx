@@ -184,7 +184,7 @@ const SignUp: React.FC = () => {
           <FormField id="email" label={t('common.emailAddress')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('common.emailAddress')} required />
 
           <div>
-            <FormField id="password" label={t('signUp.passwordLabel')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('signUp.passwordPlaceholder')} required />
+            <FormField id="password" label={t('common.password')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('signUp.passwordPlaceholder')} required />
             {/* 비밀번호 강도 표시 */}
             {password && (
               <div className="mt-2">

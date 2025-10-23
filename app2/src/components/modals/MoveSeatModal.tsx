@@ -90,7 +90,7 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
                                 .find(s => s.pId === movingParticipant.id);
   const currentTable = filteredTables.find(t => t.id === currentSeatInfo?.tId);
   const currentTableName = currentTable?.name || t('moveSeatModal.defaultTableName', { number: currentTable?.tableNumber });
-  const currentLocation = currentSeatInfo ? `${currentTableName} - ${currentSeatInfo.sIdx + 1}${t('moveSeatModal.seatSuffix')}` : t('moveSeatModal.notApplicable');
+  const currentLocation = currentSeatInfo ? `${currentTableName} - ${currentSeatInfo.sIdx + 1}${t('moveSeatModal.seatSuffix')}` : t('common.notApplicable');
 
   const footerButtons = (
     <ModalFooter>

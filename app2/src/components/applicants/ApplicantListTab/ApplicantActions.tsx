@@ -69,7 +69,7 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
           className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
           disabled={!selectedAssignment}
         >
-          {t('jobPostingAdmin.applicants.confirm')}
+          {t('common.status.confirmed')}
         </button>
       </div>
     );

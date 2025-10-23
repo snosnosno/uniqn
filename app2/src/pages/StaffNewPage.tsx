@@ -81,7 +81,7 @@ const StaffNewPage: React.FC = () => {
             />
           </div>
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">{t('staffNew.labelRole')}</label>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700">{t('common.role')}</label>
             <select
               name="role"
               id="role"

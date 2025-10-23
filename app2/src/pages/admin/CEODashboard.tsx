@@ -71,7 +71,7 @@ const CEODashboard: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 text-center text-red-600 bg-red-50 rounded-md">
-        {t('dashboard.errorPrefix')}: {error}
+        {t('common.error')}: {error}
       </div>
     );
   }

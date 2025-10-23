@@ -121,7 +121,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
             {/* Role Filter */}
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('jobBoard.filters.role')}
+                {t('common.role')}
               </label>
               <select
                 id="role"

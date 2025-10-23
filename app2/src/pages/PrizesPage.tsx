@@ -88,7 +88,7 @@ const PrizesPage: React.FC = () => {
           <p className="text-xl font-bold">{formatCurrency(prizePool)}</p>
         </div>
         <div className="bg-gray-700 p-3 rounded-lg">
-          <p className="text-sm text-gray-400">{t('prizes.participants')}</p>
+          <p className="text-sm text-gray-400">{t('common.participants')}</p>
           <p className="text-xl font-bold">{totalPlayers}</p>
         </div>
         <div className="bg-gray-700 p-3 rounded-lg">

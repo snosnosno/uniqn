@@ -558,7 +558,7 @@ const ShiftSchedulePage: React.FC = () => {
       {/* 에러 표시 */}
       {scheduleError ? <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700">
-            {t('shiftSchedule.error')}: {scheduleError.message}
+            {t('common.error')}: {scheduleError.message}
           </p>
         </div> : null}
     </div>

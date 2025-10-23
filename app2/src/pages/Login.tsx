@@ -162,11 +162,11 @@ const Login: React.FC = () => {
         />
         <FormField
           id="password"
-          label={t('login.passwordLabel')}
+          label={t('common.password')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder={t('login.passwordPlaceholder')}
+          placeholder={t('common.password')}
           required
           autoComplete="current-password"
         />

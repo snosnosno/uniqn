@@ -277,7 +277,7 @@ const ProfilePage = () => {
 
                             <div className="flex items-center justify-center md:justify-start mt-2">
                                 <StarIcon className="h-6 w-6 text-yellow-400 mr-1" />
-                                <span className="text-lg font-semibold text-gray-700">{profile.rating?.toFixed(1) || t('profilePage.notAvailable')}</span>
+                                <span className="text-lg font-semibold text-gray-700">{profile.rating?.toFixed(1) || t('common.notApplicable')}</span>
                                 <span className="text-sm text-gray-500 ml-2">({profile.ratingCount || 0} {t('profilePage.ratings')})</span>
                             </div>
                         </div>

@@ -159,7 +159,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">{t('editUserModal.labelEmail')}</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">{t('common.email')}</label>
             <input
               type="email"
               name="email"
@@ -170,7 +170,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">{t('editUserModal.labelRole')}</label>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700">{t('common.role')}</label>
             <select
               name="role"
               id="role"

@@ -148,7 +148,7 @@ const TablesPage: React.FC = () => {
 
     // getStaffName - 향후 사용 예정
     // const getStaffName = (_staffId: string | null): string => {
-    //     return t('tables.dealerNotApplicable');
+    //     return t('common.notApplicable');
     // };
 
     const handlePlayerSelect = (participant: Participant | null, table: Table, seatIndex: number, event?: React.MouseEvent) => {

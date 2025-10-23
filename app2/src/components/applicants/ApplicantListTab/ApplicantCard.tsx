@@ -73,7 +73,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         {/* 기본 정보: 2x2 컴팩트 그리드 */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-600">
           <div>
-            <span className="font-medium">{t('profile.gender')}:</span>
+            <span className="font-medium">{t('common.gender')}:</span>
             <span className="ml-1">
               {applicant.gender ? (
                 applicant.gender.toLowerCase() === 'male'
@@ -86,7 +86,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
           </div>
 
           <div>
-            <span className="font-medium">{t('profile.age')}:</span>
+            <span className="font-medium">{t('common.age')}:</span>
             <span className="ml-1">{applicant.age || t('common.none')}</span>
           </div>
 
@@ -96,7 +96,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
           </div>
 
           <div>
-            <span className="font-medium">{t('profile.experience')}:</span>
+            <span className="font-medium">{t('common.experience')}:</span>
             <span className="ml-1">{applicant.experience || t('common.none')}</span>
           </div>
         </div>
@@ -104,7 +104,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         {/* 연락처 정보: 한 줄로 컴팩트하게 */}
         <div className="text-sm text-gray-600 space-y-1">
           <div>
-            <span className="font-medium">{t('profile.email')}:</span>
+            <span className="font-medium">{t('common.email')}:</span>
             <span className="ml-1 text-xs break-all">{applicant.email || t('common.none')}</span>
           </div>
           <div>

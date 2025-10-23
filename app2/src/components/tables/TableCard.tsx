@@ -183,7 +183,7 @@ const TableCard: React.FC<TableCardProps> = ({
       </div>
 
       {isStandby ? <div className="absolute inset-0 bg-gray-400 bg-opacity-50 flex items-center justify-center rounded-lg pointer-events-none">
-              <span className="text-white font-bold text-lg bg-black bg-opacity-50 px-4 py-2 rounded">{t('tableCard.waiting')}</span>
+              <span className="text-white font-bold text-lg bg-black bg-opacity-50 px-4 py-2 rounded">{t('common.status.pending')}</span>
           </div> : null}
     </div>
   );

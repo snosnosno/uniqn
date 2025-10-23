@@ -19,8 +19,7 @@
     "ulsan": "울산",
     "gyeongnam": "경남",
     "jeju": "제주",
-    "overseas": "해외",
-    "other": "기타"
+    "overseas": "해외"
   },
   "gender": {
     "male": "남성",
@@ -28,8 +27,6 @@
   },
   "login": {
     "title": "로그인",
-    "passwordLabel": "비밀번호",
-    "passwordPlaceholder": "비밀번호",
     "loginButton": "로그인",
     "rememberMe": "로그인 상태 유지",
     "forgotPassword": "비밀번호를 잊으셨나요?",
@@ -58,7 +55,6 @@
   },
   "signUp": {
     "title": "회원가입",
-    "passwordLabel": "비밀번호",
     "passwordPlaceholder": "비밀번호 (6자 이상)",
     "roleTitle": "가입 유형",
     "roleStaff": "스태프",
@@ -78,7 +74,6 @@
     "invalidEmailError": "유효하지 않은 이메일 주소 형식입니다.",
     "weakPasswordError": "비밀번호가 너무 취약합니다. 더 강력한 비밀번호를 사용해주세요.",
     "backToLogin": "로그인으로 돌아가기",
-    "genderLabel": "성별",
     "genderMale": "남성",
     "genderFemale": "여성"
   },
@@ -95,7 +90,6 @@
     "managePostings": "공고 관리",
     "shiftSchedule": "교대 관리",
     "processPayroll": "급여 처리",
-    "participants": "참가자",
     "tables": "테이블",
     "blinds": "블라인드",
     "prizes": "프라이즈",
@@ -114,7 +108,6 @@
   },
   "dashboard": {
     "loading": "대시보드 로딩 중...",
-    "errorPrefix": "오류",
     "title": "관리자 대시보드",
     "ongoingEvents": "진행중인 이벤트",
     "totalDealers": "총 딜러 수",
@@ -136,7 +129,6 @@
     "title": "가입 승인 대기 목록",
     "fetchError": "승인 대기 목록을 불러오는 데 실패했습니다.",
     "processError": "{{action}} 요청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
-    "emailHeader": "이메일",
     "actionsHeader": "작업",
     "noPending": "현재 승인 대기 중인 사용자가 없습니다."
   },
@@ -157,7 +149,6 @@
     "alertSuccess": "스태프가 성공적으로 생성되었습니다!",
     "errorUnknown": "알 수 없는 오류가 발생했습니다.",
     "title": "새 스태프 추가",
-    "labelRole": "역할",
     "roleStaff": "스태프",
     "roleAdmin": "관리자",
     "buttonCreating": "생성 중...",
@@ -184,11 +175,7 @@
     "addSelectedUser": "이 사용자를 스태프로 추가",
     "addTempStaff": "임시 스태프 추가",
     "nameRequired": "이름 *",
-    "email": "이메일",
     "phone": "전화번호",
-    "gender": "성별",
-    "age": "나이",
-    "experience": "경력",
     "nationality": "국적",
     "notes": "비고",
     "addTempStaffBtn": "임시 스태프 추가",
@@ -198,9 +185,7 @@
   "editUserModal": {
     "title": "사용자 정보 수정",
     "updateSuccess": "사용자 정보가 성공적으로 업데이트되었습니다!",
-    "updateError": "사용자 정보 업데이트에 실패했습니다.",
-    "labelEmail": "이메일",
-    "labelRole": "역할"
+    "updateError": "사용자 정보 업데이트에 실패했습니다."
   },
   "roles": {
     "dealer": "딜러",
@@ -252,7 +237,19 @@
     "phone": "연락처",
     "status": "상태",
     "location": "지역",
-    "time": "시간"
+    "time": "시간",
+    "application": "지원",
+    "other": "기타",
+    "gender": "성별",
+    "email": "이메일",
+    "age": "나이",
+    "payrollHistory": "급여 내역",
+    "password": "비밀번호",
+    "participants": "참가자",
+    "error": "오류",
+    "experience": "경력",
+    "notApplicable": "해당 없음",
+    "chips": "칩"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -268,8 +265,7 @@
     "tableHeaderAmount": "금액",
     "unknownDealer": "알 수 없는 딜러",
     "status": {
-      "pending": "지급 대기중",
-      "paid": "지급 완료"
+      "pending": "지급 대기중"
     }
   },
   "dealerEvents": {
@@ -277,22 +273,18 @@
     "title": "지원 가능한 이벤트 목록",
     "applyButton": "지금 지원하기",
     "noEvents": "현재 모집 중인 이벤트가 없습니다.",
-    "dateNotAvailable": "해당 없음",
     "dateInvalid": "유효하지 않은 날짜"
   },
   "participants": {
     "errorParticipants": "참가자 로딩 오류:",
     "errorTables": "테이블 로딩 오류:",
     "confirmDelete": "정말로 삭제하시겠습니까?",
-    "locationWaiting": "대기중",
     "title": "참가자 관리",
     "searchPlaceholder": "이름으로 검색",
     "addNew": "+ 참가자 추가",
-    "tableHeaderChips": "칩",
     "tableHeaderActions": "관리",
     "modalTitleEdit": "참가자 수정",
     "modalTitleAdd": "참가자 추가",
-    "modalLabelChips": "칩",
     "modalButtonAdd": "추가"
   },
   "tables": {
@@ -308,8 +300,7 @@
     "infoEmptySeats": "빈 자리:",
     "labelMaxSeats": "최대 좌석:",
     "participantEmpty": "빈 자리",
-    "participantUnknown": "알 수 없음",
-    "dealerNotApplicable": "해당 없음"
+    "participantUnknown": "알 수 없음"
   },
   "tableDetailModal": {
     "changeBorderColorTitle": "테두리 색상 변경",
@@ -332,7 +323,6 @@
     "labelName": "이름:",
     "labelCurrentLocation": "현재 위치:",
     "seatSuffix": "번 좌석",
-    "notApplicable": "해당 없음",
     "defaultTableName": "테이블 {{number}}",
     "statusOccupied": "(자리 있음)",
     "statusEmpty": "(빈 자리)",
@@ -356,7 +346,6 @@
     "alertSaved": "상금 분배가 저장되었습니다.",
     "title": "상금 계산기",
     "totalPrizePool": "총상금",
-    "participants": "참가자",
     "itm": "ITM",
     "adjustManually": "수동으로 상금 조정",
     "totalDistributed": "분배된 총액:",
@@ -371,12 +360,10 @@
   "participantDetailModal": {
     "title": "참가자 상세 정보",
     "editTitle": "참가자 정보 수정",
-    "labelChips": "칩",
     "labelTable": "테이블",
     "statusActive": "참가중",
     "statusBusted": "탈락",
     "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
-    "notAvailable": "없음",
     "buttonClose": "닫기"
   },
   "qrScannerModal": {
@@ -436,7 +423,6 @@
   "historyDetail": {
     "title": "{{name}} 결과",
     "backToList": "목록으로",
-    "participants": "참가자",
     "playerCount": "{{count}}명",
     "prizePool": "총상금",
     "currency": "{{amount}}원",
@@ -448,7 +434,6 @@
   "historyPage": {
     "title": "토너먼트 기록",
     "tournamentName": "대회명",
-    "participants": "참가자 수",
     "winner": "우승자",
     "details": "상세",
     "viewResults": "결과 보기"
@@ -474,7 +459,6 @@
       "allLocations": "전체 지역",
       "type": "고용형태",
       "allTypes": "전체 유형",
-      "role": "역할",
       "allRoles": "전체 역할",
       "startDate": "시작일",
       "endDate": "종료일",
@@ -486,7 +470,6 @@
       }
     },
     "types": {
-      "application": "지원",
       "fixed": "고정"
     },
     "noResults": "검색 결과가 없습니다.",
@@ -496,7 +479,6 @@
     "applying": "지원 중...",
     "cancelApplication": "지원 취소",
     "cancelling": "취소 중...",
-    "confirmed": "확정",
     "viewDetails": "자세히 보기",
     "loginRequired": "로그인 필요",
     "applied": "지원완료",
@@ -520,7 +502,6 @@
       "selectAssignment": "시간 및 역할 선택",
       "selectPlaceholder": "시간과 역할을 선택하세요",
       "full": "마감",
-      "submit": "지원",
       "confirm": "지원 확정",
       "success": "지원이 완료되었습니다!",
       "error": "지원 중 오류가 발생했습니다.",
@@ -572,7 +553,6 @@
     "form": {
       "postingTitle": "공고 제목",
       "type": "고용 형태",
-      "typeApplication": "지원",
       "typeFixed": "고정",
       "rolesAndCounts": "역할 및 필요 인원",
       "roleName": "역할 이름",
@@ -624,7 +604,6 @@
       "loading": "공고 로딩 중...",
       "people": "명",
       "type": "고용 형태",
-      "typeApplication": "지원",
       "typeFixed": "고정",
       "matching": "매칭 중...",
       "button": "자동 매칭",
@@ -644,31 +623,20 @@
       "status": "상태: ",
       "as": " (으)로",
       "selectRole": "역할 선택",
-      "confirm": "확정",
       "viewProfile": "프로필 보기",
-      "gender": "성별",
-      "age": "나이",
       "ageUnit": "세",
-      "experience": "경력",
       "statusValue": {
-        "applied": "지원",
-        "confirmed": "확정",
         "rejected": "거절"
       },
       "status_applied": "지원함",
-      "status_confirmed": "확정됨",
-      "confirmed": "확정"
+      "status_confirmed": "확정됨"
     },
     "unknownUser": "알 수 없는 사용자"
   },
   "profile": {
     "residentId": "주민등록번호",
-    "gender": "성별",
     "region": "지역",
-    "age": "나이",
-    "experience": "경력",
-    "selectRegion": "지역을 선택하세요",
-    "email": "이메일"
+    "selectRegion": "지역을 선택하세요"
   },
   "profilePage": {
     "eventIdMissing": "이벤트 ID가 없습니다",
@@ -695,15 +663,12 @@
     "hourlyRate": "시급:",
     "editDetails": "정보 수정",
     "saveChanges": "변경사항 저장",
-    "payrollHistory": "급여 내역",
     "loadingPayroll": "급여 내역 로딩 중...",
     "tableEvent": "이벤트",
     "tableHours": "시간",
     "tablePay": "급여",
     "noPayroll": "급여 내역이 없습니다.",
-    "statusPaid": "지급 완료",
     "statusPending": "지급 대기중",
-    "notAvailable": "정보 없음",
     "nationality": "국적",
     "bankName": "은행명",
     "bankAccount": "계좌번호",
@@ -712,10 +677,8 @@
     "notes": "기타 사항",
     "selectExperience": "경력을 선택하세요",
     "selectNationality": "국적을 선택하세요",
-    "age": "나이",
     "residentId": "주민등록번호:",
-    "gender": "성별:",
-    "viewPayroll": "급여 내역"
+    "gender": "성별:"
   },
   "profileImage": {
     "uploadSuccess": "프로필 사진이 업로드되었습니다.",
@@ -725,7 +688,6 @@
     "deleteError": "프로필 사진 삭제에 실패했습니다."
   },
   "payrollPage": {
-    "title": "급여 내역",
     "loading": "급여 데이터를 불러오는 중...",
     "accessDenied": "접근 권한이 없습니다.",
     "accessDeniedMessage": "본인의 급여내역만 조회할 수 있습니다.",
@@ -734,18 +696,13 @@
     "eventIdMissing": "이벤트 ID 없음",
     "unknownEvent": "알 수 없는 이벤트",
     "goBack": "뒤로 가기",
-    "error": "오류",
     "adminView": "관리자 조회",
     "totalEvents": "총 이벤트 수",
     "totalHours": "총 근무 시간",
     "totalPay": "총 급여",
-    "paidAmount": "지급 완료",
-    "pendingAmount": "대기중",
-    "payrollHistory": "급여 내역",
     "tableEvent": "이벤트",
     "tableHours": "근무시간",
     "tablePay": "급여",
-    "statusPaid": "지급완료",
     "statusPending": "지급대기",
     "noPayroll": "급여 내역이 없습니다",
     "noPayrollMessage": "아직 급여 내역이 생성되지 않았습니다."
@@ -801,8 +758,7 @@
     "loading": "사용자 정보 로딩 중..."
   },
   "tableCard": {
-    "dealer": "딜러:",
-    "waiting": "대기중"
+    "dealer": "딜러:"
   },
   "days": {
     "0": "일",
@@ -848,7 +804,6 @@
     "noDealersAvailable": "사용 가능한 딜러가 없습니다",
     "availableTables": "사용 가능한 테이블",
     "noTablesAvailable": "사용 가능한 테이블이 없습니다",
-    "error": "오류",
     "assignedDealers": "배정된 딜러",
     "workLogsGenerated": "이 날짜의 근무기록이 이미 생성되었습니다",
     "workLogsNotGenerated": "스케줄 완료 후 근무기록을 생성하세요",
@@ -1035,7 +990,6 @@
         "description": "예의에 어긋나거나 부적절한 언행"
       },
       "other": {
-        "label": "기타",
         "description": "위에 해당하지 않는 기타 문제"
       }
     },
@@ -1061,7 +1015,6 @@
     },
     "submit": "신고 제출",
     "status": {
-      "pending": "대기중",
       "reviewed": "검토중",
       "resolved": "해결됨",
       "dismissed": "기각됨"
@@ -1085,9 +1038,7 @@
         "label": "신고",
         "description": "스태프 신고 관련 문의"
       },
-      "other": {
-        "label": "기타"
-      }
+      "other": {}
     },
     "status": {
       "open": "열림",
@@ -1326,8 +1277,7 @@
         "privacyConcerns": "개인정보 보호 우려",
         "switchingService": "다른 서비스로 전환",
         "tooManyEmails": "알림이 너무 많음",
-        "difficultToUse": "사용이 어려움",
-        "other": "기타"
+        "difficultToUse": "사용이 어려움"
       },
       "additionalFeedback": "추가 의견",
       "feedbackPlaceholder": "개선이 필요한 점을 알려주세요 (선택사항)",

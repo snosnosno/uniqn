@@ -1,149 +1,9 @@
 {
   "ko": {
-    "total": 1133,
-    "duplicateGroups": 120,
-    "removableKeys": 212,
+    "total": 1061,
+    "duplicateGroups": 109,
+    "removableKeys": 141,
     "groups": [
-      {
-        "value": "이름",
-        "keys": [
-          "signUp.nameLabel",
-          "signUp.namePlaceholder",
-          "approvalPage.nameHeader",
-          "staffNew.labelName",
-          "editUserModal.labelName",
-          "participants.tableHeaderName",
-          "participants.modalLabelName",
-          "participantDetailModal.labelName",
-          "historyDetail.name",
-          "report.targetName"
-        ]
-      },
-      {
-        "value": "로딩 중...",
-        "keys": [
-          "loading",
-          "layout.loading",
-          "common.messages.loading",
-          "payrollAdmin.buttonLoading",
-          "participants.loading",
-          "tables.loading",
-          "historyDetail.loading",
-          "tournamentDashboard.loading",
-          "notifications.loading"
-        ]
-      },
-      {
-        "value": "이메일 주소",
-        "keys": [
-          "login.emailLabel",
-          "login.emailPlaceholder",
-          "forgotPassword.emailLabel",
-          "forgotPassword.emailPlaceholder",
-          "signUp.emailLabel",
-          "signUp.emailPlaceholder",
-          "staffNew.labelEmail"
-        ]
-      },
-      {
-        "value": "수정",
-        "keys": [
-          "userManagement.edit",
-          "common.edit",
-          "participants.actionEdit",
-          "participants.modalButtonUpdate",
-          "participantDetailModal.buttonEdit",
-          "jobPostingAdmin.manage.edit",
-          "exceptions.edit"
-        ]
-      },
-      {
-        "value": "취소",
-        "keys": [
-          "common.cancel",
-          "participants.modalButtonCancel",
-          "moveSeatModal.buttonCancel",
-          "jobBoard.applyModal.cancel",
-          "jobPosting.announcement.cancelButton",
-          "profilePage.cancel",
-          "shiftSchedule.cancel"
-        ]
-      },
-      {
-        "value": "날짜",
-        "keys": [
-          "historyDetail.date",
-          "historyPage.date",
-          "jobPostingAdmin.manage.date",
-          "profilePage.tableDate",
-          "payrollPage.tableDate",
-          "attendance.date",
-          "report.eventDate"
-        ]
-      },
-      {
-        "value": "연락처",
-        "keys": [
-          "signUp.phoneLabel",
-          "signUp.phonePlaceholder",
-          "participants.tableHeaderPhone",
-          "participants.modalLabelPhone",
-          "participantDetailModal.labelPhone",
-          "profile.phone"
-        ]
-      },
-      {
-        "value": "삭제",
-        "keys": [
-          "userManagement.delete",
-          "common.delete",
-          "common.remove",
-          "participants.actionDelete",
-          "jobPostingAdmin.form.remove",
-          "jobPostingAdmin.manage.delete"
-        ]
-      },
-      {
-        "value": "상태",
-        "keys": [
-          "payrollAdmin.tableHeaderStatus",
-          "participants.tableHeaderStatus",
-          "participantDetailModal.labelStatus",
-          "jobPostingAdmin.edit.status",
-          "profilePage.tableStatus",
-          "payrollPage.tableStatus"
-        ]
-      },
-      {
-        "value": "검색",
-        "keys": [
-          "staffListPage.search",
-          "common.search",
-          "jobBoard.search.label",
-          "jobBoard.search.button",
-          "jobBoard.filters.search.label"
-        ]
-      },
-      {
-        "value": "전체",
-        "keys": [
-          "common.all",
-          "jobBoard.filters.allMonths",
-          "jobBoard.filters.allDays",
-          "support.faq.all",
-          "notifications.filters.all"
-        ]
-      },
-      {
-        "value": "제출 중...",
-        "keys": [
-          "common.messages.submitting",
-          "jobBoard.preQuestion.submitting",
-          "jobPostingAdmin.form.submitting",
-          "support.inquiry.submitting",
-          "report.submitting"
-        ]
-      },
       {
         "value": "지원",
         "keys": [
@@ -191,30 +51,12 @@
         ]
       },
       {
-        "value": "저장",
-        "keys": [
-          "common.save",
-          "participantDetailModal.buttonSave",
-          "availableTimes.saveButton",
-          "shiftSchedule.save"
-        ]
-      },
-      {
         "value": "대기중",
         "keys": [
           "participants.locationWaiting",
           "payrollPage.pendingAmount",
           "tableCard.waiting",
           "report.status.pending"
-        ]
-      },
-      {
-        "value": "지역",
-        "keys": [
-          "jobBoard.filters.location",
-          "jobPostingAdmin.form.location",
-          "jobPostingAdmin.manage.location",
-          "profile.region"
         ]
       },
       {
@@ -292,6 +134,14 @@
         ]
       },
       {
+        "value": "지역",
+        "keys": [
+          "common.location",
+          "jobPostingAdmin.form.location",
+          "profile.region"
+        ]
+      },
+      {
         "value": "지급 완료",
         "keys": [
           "payrollAdmin.status.paid",
@@ -329,14 +179,6 @@
           "jobBoard.apply",
           "jobBoard.applyNow",
           "jobBoard.applyModal.title"
-        ]
-      },
-      {
-        "value": "시간",
-        "keys": [
-          "jobPostingAdmin.form.time",
-          "jobPostingAdmin.manage.time",
-          "profilePage.tableHours"
         ]
       },
       {
@@ -545,6 +387,13 @@
         ]
       },
       {
+        "value": "삭제",
+        "keys": [
+          "common.delete",
+          "jobPostingAdmin.form.remove"
+        ]
+      },
+      {
         "value": "추가",
         "keys": [
           "common.add",
@@ -552,10 +401,24 @@
         ]
       },
       {
+        "value": "제출 중...",
+        "keys": [
+          "common.messages.submitting",
+          "jobPostingAdmin.form.submitting"
+        ]
+      },
+      {
         "value": "처리 중...",
         "keys": [
           "common.messages.processing",
           "attendancePage.submitting"
+        ]
+      },
+      {
+        "value": "시간",
+        "keys": [
+          "common.time",
+          "profilePage.tableHours"
         ]
       },
       {
@@ -939,109 +802,10 @@
     ]
   },
   "en": {
-    "total": 1090,
-    "duplicateGroups": 110,
-    "removableKeys": 194,
+    "total": 1023,
+    "duplicateGroups": 97,
+    "removableKeys": 129,
     "groups": [
-      {
-        "value": "Name",
-        "keys": [
-          "signUp.nameLabel",
-          "signUp.namePlaceholder",
-          "approvalPage.nameHeader",
-          "staffNew.labelName",
-          "editUserModal.labelName",
-          "participants.tableHeaderName",
-          "participants.modalLabelName",
-          "participantDetailModal.labelName",
-          "historyDetail.name",
-          "report.targetName"
-        ]
-      },
-      {
-        "value": "Loading...",
-        "keys": [
-          "loading",
-          "layout.loading",
-          "common.messages.loading",
-          "payrollAdmin.buttonLoading",
-          "participants.loading",
-          "tables.loading",
-          "historyDetail.loading",
-          "tournamentDashboard.loading",
-          "notifications.loading"
-        ]
-      },
-      {
-        "value": "Cancel",
-        "keys": [
-          "common.cancel",
-          "participants.modalButtonCancel",
-          "moveSeatModal.buttonCancel",
-          "jobBoard.applyModal.cancel",
-          "jobPosting.announcement.cancelButton",
-          "profilePage.cancel",
-          "shiftSchedule.cancel",
-          "settings.security.password.cancel",
-          "settings.account.deleteAccount.modal.cancel"
-        ]
-      },
-      {
-        "value": "Email Address",
-        "keys": [
-          "login.emailLabel",
-          "login.emailPlaceholder",
-          "forgotPassword.emailLabel",
-          "forgotPassword.emailPlaceholder",
-          "signUp.emailLabel",
-          "signUp.emailPlaceholder",
-          "staffNew.labelEmail"
-        ]
-      },
-      {
-        "value": "Date",
-        "keys": [
-          "historyDetail.date",
-          "historyPage.date",
-          "jobPostingAdmin.manage.date",
-          "profilePage.tableDate",
-          "payrollPage.tableDate",
-          "attendance.date",
-          "report.eventDate"
-        ]
-      },
-      {
-        "value": "Edit",
-        "keys": [
-          "userManagement.edit",
-          "common.edit",
-          "participants.actionEdit",
-          "participantDetailModal.buttonEdit",
-          "jobPostingAdmin.manage.edit",
-          "exceptions.edit"
-        ]
-      },
-      {
-        "value": "Status",
-        "keys": [
-          "payrollAdmin.tableHeaderStatus",
-          "participants.tableHeaderStatus",
-          "participantDetailModal.labelStatus",
-          "jobPostingAdmin.edit.status",
-          "profilePage.tableStatus",
-          "payrollPage.tableStatus"
-        ]
-      },
-      {
-        "value": "Submitting...",
-        "keys": [
-          "common.messages.submitting",
-          "jobBoard.preQuestion.submitting",
-          "jobPostingAdmin.form.submitting",
-          "support.inquiry.submitting",
-          "report.submitting"
-        ]
-      },
       {
         "value": "Pending",
         "keys": [
@@ -1090,48 +854,12 @@
         ]
       },
       {
-        "value": "Delete",
-        "keys": [
-          "userManagement.delete",
-          "common.delete",
-          "participants.actionDelete",
-          "jobPostingAdmin.manage.delete"
-        ]
-      },
-      {
-        "value": "Phone",
-        "keys": [
-          "staffListPage.phone",
-          "participants.tableHeaderPhone",
-          "participants.modalLabelPhone",
-          "participantDetailModal.labelPhone"
-        ]
-      },
-      {
-        "value": "Save",
-        "keys": [
-          "common.save",
-          "participantDetailModal.buttonSave",
-          "availableTimes.saveButton",
-          "shiftSchedule.save"
-        ]
-      },
-      {
         "value": "Paid",
         "keys": [
           "payrollAdmin.status.paid",
           "profilePage.statusPaid",
           "payrollPage.paidAmount",
           "payrollPage.statusPaid"
-        ]
-      },
-      {
-        "value": "Location",
-        "keys": [
-          "participants.tableHeaderLocation",
-          "jobBoard.filters.location",
-          "jobPostingAdmin.form.location",
-          "jobPostingAdmin.manage.location"
         ]
       },
       {
@@ -1185,14 +913,6 @@
         ]
       },
       {
-        "value": "Search",
-        "keys": [
-          "staffListPage.search",
-          "common.search",
-          "jobBoard.filters.search.label"
-        ]
-      },
-      {
         "value": "Age",
         "keys": [
           "staffListPage.age",
@@ -1209,11 +929,11 @@
         ]
       },
       {
-        "value": "All",
+        "value": "Cancel",
         "keys": [
-          "common.all",
-          "support.faq.all",
-          "notifications.filters.all"
+          "common.cancel",
+          "settings.security.password.cancel",
+          "settings.account.deleteAccount.modal.cancel"
         ]
       },
       {
@@ -1329,13 +1049,6 @@
         ]
       },
       {
-        "value": "Phone Number",
-        "keys": [
-          "signUp.phoneLabel",
-          "signUp.phonePlaceholder"
-        ]
-      },
-      {
         "value": "Staff",
         "keys": [
           "signUp.roleStaff",
@@ -1413,6 +1126,13 @@
         ]
       },
       {
+        "value": "Phone",
+        "keys": [
+          "staffListPage.phone",
+          "common.phone"
+        ]
+      },
+      {
         "value": "Experience",
         "keys": [
           "staffListPage.experience",
@@ -1455,10 +1175,10 @@
         ]
       },
       {
-        "value": "Remove",
+        "value": "Submitting...",
         "keys": [
-          "common.remove",
-          "jobPostingAdmin.form.remove"
+          "common.messages.submitting",
+          "jobPostingAdmin.form.submitting"
         ]
       },
       {
@@ -1466,6 +1186,13 @@
         "keys": [
           "common.messages.generating",
           "shiftSchedule.generating"
+        ]
+      },
+      {
+        "value": "Location",
+        "keys": [
+          "common.location",
+          "jobPostingAdmin.form.location"
         ]
       },
       {
@@ -1672,13 +1399,6 @@
         ]
       },
       {
-        "value": "Time",
-        "keys": [
-          "jobPostingAdmin.form.time",
-          "jobPostingAdmin.manage.time"
-        ]
-      },
-      {
         "value": "Open",
         "keys": [
           "jobPostingAdmin.edit.statusOpen",
@@ -1799,5 +1519,5 @@
       }
     ]
   },
-  "analyzedAt": "2025-10-23T09:29:17.715Z"
+  "analyzedAt": "2025-10-23T09:42:24.419Z"
 }

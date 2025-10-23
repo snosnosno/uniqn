@@ -19,8 +19,7 @@
     "ulsan": "Ulsan",
     "gyeongnam": "Gyeongnam",
     "jeju": "Jeju",
-    "overseas": "Overseas",
-    "other": "Other"
+    "overseas": "Overseas"
   },
   "gender": {
     "male": "Male",
@@ -28,8 +27,6 @@
   },
   "login": {
     "title": "Login",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "Password",
     "loginButton": "Sign In",
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot your password?",
@@ -58,7 +55,6 @@
   },
   "signUp": {
     "title": "Sign Up",
-    "passwordLabel": "Password",
     "passwordPlaceholder": "Password (min. 6 characters)",
     "roleTitle": "Account Type",
     "roleStaff": "Staff",
@@ -78,7 +74,6 @@
     "invalidEmailError": "The email address format is not valid.",
     "weakPasswordError": "The password is too weak. Please use a stronger password.",
     "backToLogin": "Back to Login",
-    "genderLabel": "Gender",
     "genderMale": "Male",
     "genderFemale": "Female"
   },
@@ -95,7 +90,6 @@
     "managePostings": "Manage Postings",
     "shiftSchedule": "Shift Schedule",
     "processPayroll": "Process Payroll",
-    "participants": "Participants",
     "tables": "Tables",
     "blinds": "Blinds",
     "prizes": "Prizes",
@@ -114,7 +108,6 @@
   },
   "dashboard": {
     "loading": "Loading dashboard...",
-    "errorPrefix": "Error",
     "title": "Admin Dashboard",
     "ongoingEvents": "Ongoing Events",
     "totalDealers": "Total Dealers",
@@ -136,7 +129,6 @@
     "title": "Pending Registration Approvals",
     "fetchError": "Failed to fetch pending approvals.",
     "processError": "Failed to process {{action}} request. Please try again.",
-    "emailHeader": "Email",
     "actionsHeader": "Actions",
     "noPending": "There are no users awaiting approval."
   },
@@ -157,7 +149,6 @@
     "alertSuccess": "Staff created successfully!",
     "errorUnknown": "An unknown error occurred.",
     "title": "Add New Staff",
-    "labelRole": "Role",
     "roleStaff": "Staff",
     "roleAdmin": "Admin",
     "buttonCreating": "Creating...",
@@ -184,11 +175,7 @@
     "addSelectedUser": "Add this user as staff",
     "addTempStaff": "Add Temporary Staff",
     "nameRequired": "Name *",
-    "email": "Email",
     "phone": "Phone",
-    "gender": "Gender",
-    "age": "Age",
-    "experience": "Experience",
     "nationality": "Nationality",
     "notes": "Notes",
     "addTempStaffBtn": "Add Temporary Staff",
@@ -198,9 +185,7 @@
   "editUserModal": {
     "title": "Edit User Information",
     "updateSuccess": "User updated successfully!",
-    "updateError": "Failed to update user.",
-    "labelEmail": "Email",
-    "labelRole": "Role"
+    "updateError": "Failed to update user."
   },
   "roles": {
     "dealer": "Dealer",
@@ -252,7 +237,19 @@
     "phone": "Phone",
     "status": "Status",
     "location": "Location",
-    "time": "Time"
+    "time": "Time",
+    "application": "Application",
+    "other": "Other",
+    "gender": "Gender",
+    "email": "Email",
+    "age": "Age",
+    "payrollHistory": "Payroll History",
+    "password": "Password",
+    "participants": "Participants",
+    "error": "Error",
+    "experience": "Experience",
+    "notApplicable": "N/A",
+    "chips": "Chips"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -268,8 +265,7 @@
     "tableHeaderAmount": "Amount",
     "unknownDealer": "Unknown Dealer",
     "status": {
-      "pending": "Pending",
-      "paid": "Paid"
+      "pending": "Pending"
     }
   },
   "dealerEvents": {
@@ -277,22 +273,18 @@
     "title": "Available Events to Apply For",
     "applyButton": "Apply Now",
     "noEvents": "No events are currently recruiting.",
-    "dateNotAvailable": "N/A",
     "dateInvalid": "Invalid Date"
   },
   "participants": {
     "errorParticipants": "Error loading participants:",
     "errorTables": "Error loading tables:",
     "confirmDelete": "Are you sure you want to delete?",
-    "locationWaiting": "Waiting",
     "title": "Participant Management",
     "searchPlaceholder": "Search by name",
     "addNew": "+ Add Participant",
-    "tableHeaderChips": "Chips",
     "tableHeaderActions": "Actions",
     "modalTitleEdit": "Edit Participant",
     "modalTitleAdd": "Add Participant",
-    "modalLabelChips": "Chips",
     "modalButtonAdd": "Add"
   },
   "tables": {
@@ -308,8 +300,7 @@
     "infoEmptySeats": "Empty Seats:",
     "labelMaxSeats": "Max Seats:",
     "participantEmpty": "Empty",
-    "participantUnknown": "Unknown",
-    "dealerNotApplicable": "N/A"
+    "participantUnknown": "Unknown"
   },
   "tableDetailModal": {
     "changeBorderColorTitle": "Change Border Color",
@@ -332,7 +323,6 @@
     "labelName": "Name:",
     "labelCurrentLocation": "Current Location:",
     "seatSuffix": "Seat",
-    "notApplicable": "N/A",
     "defaultTableName": "Table {{number}}",
     "statusOccupied": "(Occupied)",
     "statusEmpty": "(Empty)",
@@ -356,7 +346,6 @@
     "alertSaved": "Prize distribution saved.",
     "title": "Prize Calculator",
     "totalPrizePool": "Total Prize Pool",
-    "participants": "Participants",
     "itm": "ITM",
     "adjustManually": "Adjust Prizes Manually",
     "totalDistributed": "Total Distributed:",
@@ -371,12 +360,10 @@
   "participantDetailModal": {
     "title": "Participant Details",
     "editTitle": "Edit Participant Info",
-    "labelChips": "Chips",
     "labelTable": "Table",
     "statusActive": "Active",
     "statusBusted": "Busted",
     "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
-    "notAvailable": "N/A",
     "buttonClose": "Close"
   },
   "qrScannerModal": {
@@ -432,7 +419,6 @@
   "historyDetail": {
     "title": "{{name}} Results",
     "backToList": "Back to List",
-    "participants": "Participants",
     "playerCount": "{{count}} players",
     "prizePool": "Total Prize Pool",
     "currency": "${{amount, currency}}",
@@ -444,7 +430,6 @@
   "historyPage": {
     "title": "Tournament History",
     "tournamentName": "Tournament Name",
-    "participants": "Participants",
     "winner": "Winner",
     "details": "Details",
     "viewResults": "View Results"
@@ -470,7 +455,6 @@
     "cancelApplication": "Cancel Application",
     "viewDetails": "View Details",
     "loginRequired": "Login Required",
-    "confirmed": "Confirmed",
     "preQuestions": "(Pre-screening)",
     "unknownApplicant": "Unknown Applicant",
     "preQuestion": {
@@ -546,7 +530,6 @@
     "form": {
       "postingTitle": "Posting Title",
       "type": "Employment Type",
-      "typeApplication": "Application",
       "typeFixed": "Fixed",
       "rolesAndCounts": "Roles & Headcount",
       "roleName": "Role Name",
@@ -598,7 +581,6 @@
       "loading": "Loading postings...",
       "people": "people",
       "type": "Employment Type",
-      "typeApplication": "Application",
       "typeFixed": "Fixed",
       "matching": "Matching...",
       "button": "Auto Match",
@@ -617,25 +599,17 @@
       "status": "Status: ",
       "as": " as ",
       "selectRole": "Select role",
-      "confirm": "Confirm",
       "viewProfile": "View Profile",
-      "gender": "Gender",
-      "age": "Age",
       "ageUnit": " years old",
-      "experience": "Experience",
       "statusValue": {
-        "applied": "Applied",
-        "confirmed": "Confirmed",
         "rejected": "Rejected"
       },
-      "status_confirmed": "Confirmed",
-      "confirmed": "Confirmed"
+      "status_confirmed": "Confirmed"
     },
     "unknownUser": "Unknown User"
   },
   "profile": {
     "residentId": "Resident ID",
-    "gender": "Gender",
     "region": "Region",
     "selectRegion": "Please select a region"
   },
@@ -664,15 +638,12 @@
     "hourlyRate": "Hourly Rate:",
     "editDetails": "Edit Details",
     "saveChanges": "Save Changes",
-    "payrollHistory": "Payroll History",
     "loadingPayroll": "Loading payroll history...",
     "tableEvent": "Event",
     "tableHours": "Hours",
     "tablePay": "Pay",
     "noPayroll": "No payroll history available.",
-    "statusPaid": "Paid",
     "statusPending": "Pending",
-    "notAvailable": "N/A",
     "nationality": "Nationality",
     "bankName": "Bank Name",
     "bankAccount": "Account Number",
@@ -681,10 +652,8 @@
     "notes": "Notes",
     "selectExperience": "Please select your years of experience",
     "selectNationality": "Please select your nationality",
-    "age": "Age",
     "residentId": "Resident ID:",
-    "gender": "Gender:",
-    "viewPayroll": "Payroll History"
+    "gender": "Gender:"
   },
   "profileImage": {
     "uploadSuccess": "Profile image uploaded successfully.",
@@ -694,7 +663,6 @@
     "deleteError": "Failed to delete profile image."
   },
   "payrollPage": {
-    "title": "Payroll History",
     "loading": "Loading payroll data...",
     "accessDenied": "Access denied.",
     "accessDeniedMessage": "You can only view your own payroll history.",
@@ -703,18 +671,13 @@
     "eventIdMissing": "Event ID missing",
     "unknownEvent": "Unknown event",
     "goBack": "Go Back",
-    "error": "Error",
     "adminView": "Admin View",
     "totalEvents": "Total Events",
     "totalHours": "Total Hours",
     "totalPay": "Total Pay",
-    "paidAmount": "Paid",
-    "pendingAmount": "Pending",
-    "payrollHistory": "Payroll History",
     "tableEvent": "Event",
     "tableHours": "Hours",
     "tablePay": "Pay",
-    "statusPaid": "Paid",
     "statusPending": "Pending",
     "noPayroll": "No payroll history",
     "noPayrollMessage": "No payroll history has been generated yet."
@@ -770,8 +733,7 @@
     "loading": "Loading user..."
   },
   "tableCard": {
-    "dealer": "Dealer:",
-    "waiting": "Waiting"
+    "dealer": "Dealer:"
   },
   "tournament": {
     "initialName": "T-Holdem Initial Tournament"
@@ -791,7 +753,6 @@
     "noDealersAvailable": "No dealers available",
     "availableTables": "Available Tables",
     "noTablesAvailable": "No tables available",
-    "error": "Error",
     "assignedDealers": "Assigned Dealers",
     "workLogsGenerated": "Work logs for this date have already been generated",
     "workLogsNotGenerated": "Generate work logs after completing the schedule",
@@ -987,7 +948,6 @@
         "description": "Improper conduct or inappropriate language"
       },
       "other": {
-        "label": "Other",
         "description": "Other issues not listed above"
       }
     },
@@ -1013,7 +973,6 @@
     },
     "submit": "Submit Report",
     "status": {
-      "pending": "Pending",
       "reviewed": "Under Review",
       "resolved": "Resolved",
       "dismissed": "Dismissed"
@@ -1033,9 +992,7 @@
       "account": {
         "label": "Account Inquiry"
       },
-      "other": {
-        "label": "Other"
-      }
+      "other": {}
     },
     "status": {
       "open": "Open",
