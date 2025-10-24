@@ -203,7 +203,7 @@ export const migrateJobPostings = functions.https.onCall(async (data, context) =
 export const requestRegistration = functions.https.onCall(async (data) => {
     functions.logger.info("requestRegistration called with data:", data);
 
-    const { email, password, name, role, phone, gender } = data;
+    const { email, password, name, role, phone, gender, consents } = data;
 
     if (!email || !password || !name || !role) {
         functions.logger.error("Validation failed: Missing required fields.", { data });
@@ -230,12 +230,60 @@ export const requestRegistration = functions.https.onCall(async (data) => {
             displayNameForAuth += ' [PENDING_MANAGER]';
         }
 
-        await admin.auth().createUser({
+        const userRecord = await admin.auth().createUser({
             email,
             password,
             displayName: displayNameForAuth,
             disabled: isManager,
         });
+
+        // Save consent data to Firestore if provided
+        if (consents && userRecord.uid) {
+            try {
+                const consentRef = db.collection('users').doc(userRecord.uid).collection('consents').doc('current');
+
+                const consentData = {
+                    version: '1.0.0',
+                    userId: userRecord.uid,
+                    termsOfService: {
+                        agreed: consents.termsOfService?.agreed ?? true,
+                        version: consents.termsOfService?.version ?? '1.0.0',
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    },
+                    privacyPolicy: {
+                        agreed: consents.privacyPolicy?.agreed ?? true,
+                        version: consents.privacyPolicy?.version ?? '1.0.0',
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    },
+                    ...(consents.marketing?.agreed && {
+                        marketing: {
+                            agreed: consents.marketing.agreed,
+                            agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        },
+                    }),
+                    ...(consents.locationService?.agreed && {
+                        locationService: {
+                            agreed: consents.locationService.agreed,
+                            agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        },
+                    }),
+                    ...(consents.pushNotification?.agreed && {
+                        pushNotification: {
+                            agreed: consents.pushNotification.agreed,
+                            agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        },
+                    }),
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                };
+
+                await consentRef.set(consentData);
+                functions.logger.info(`Consent data saved for user ${userRecord.uid}`);
+            } catch (consentError: any) {
+                functions.logger.error("Error saving consent data:", consentError);
+                // Don't fail the registration if consent saving fails
+            }
+        }
 
         return { success: true, message: `Registration for ${name} as ${role} is processing.` };
 

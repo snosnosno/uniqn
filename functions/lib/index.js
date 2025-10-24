@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendJobPostingAnnouncement = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendJobPostingAnnouncement = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -47,6 +47,13 @@ var onWorkTimeChanged_1 = require("./notifications/onWorkTimeChanged");
 Object.defineProperty(exports, "onWorkTimeChanged", { enumerable: true, get: function () { return onWorkTimeChanged_1.onWorkTimeChanged; } });
 var broadcastNewJobPosting_1 = require("./notifications/broadcastNewJobPosting");
 Object.defineProperty(exports, "broadcastNewJobPosting", { enumerable: true, get: function () { return broadcastNewJobPosting_1.broadcastNewJobPosting; } });
+// --- Account Management Functions ---
+var scheduledDeletion_1 = require("./account/scheduledDeletion");
+Object.defineProperty(exports, "processScheduledDeletions", { enumerable: true, get: function () { return scheduledDeletion_1.processScheduledDeletions; } });
+Object.defineProperty(exports, "forceDeleteAccount", { enumerable: true, get: function () { return scheduledDeletion_1.forceDeleteAccount; } });
+var loginNotification_1 = require("./account/loginNotification");
+Object.defineProperty(exports, "sendLoginNotification", { enumerable: true, get: function () { return loginNotification_1.sendLoginNotification; } });
+Object.defineProperty(exports, "recordLoginFailure", { enumerable: true, get: function () { return loginNotification_1.recordLoginFailure; } });
 // --- Existing Functions (placeholders for brevity) ---
 exports.onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { });
 exports.onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { });
@@ -196,8 +203,9 @@ exports.migrateJobPostings = functions.https.onCall(async (data, context) => {
  * - Passes extra data (phone, gender) via displayName for the trigger.
  */
 exports.requestRegistration = functions.https.onCall(async (data) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     functions.logger.info("requestRegistration called with data:", data);
-    const { email, password, name, role, phone, gender } = data;
+    const { email, password, name, role, phone, gender, consents } = data;
     if (!email || !password || !name || !role) {
         functions.logger.error("Validation failed: Missing required fields.", { data });
         throw new functions.https.HttpsError('invalid-argument', 'Missing required fields for registration.');
@@ -216,12 +224,48 @@ exports.requestRegistration = functions.https.onCall(async (data) => {
         if (isManager) {
             displayNameForAuth += ' [PENDING_MANAGER]';
         }
-        await admin.auth().createUser({
+        const userRecord = await admin.auth().createUser({
             email,
             password,
             displayName: displayNameForAuth,
             disabled: isManager,
         });
+        // Save consent data to Firestore if provided
+        if (consents && userRecord.uid) {
+            try {
+                const consentRef = db.collection('users').doc(userRecord.uid).collection('consents').doc('current');
+                const consentData = Object.assign(Object.assign(Object.assign(Object.assign({ version: '1.0.0', userId: userRecord.uid, termsOfService: {
+                        agreed: (_b = (_a = consents.termsOfService) === null || _a === void 0 ? void 0 : _a.agreed) !== null && _b !== void 0 ? _b : true,
+                        version: (_d = (_c = consents.termsOfService) === null || _c === void 0 ? void 0 : _c.version) !== null && _d !== void 0 ? _d : '1.0.0',
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    }, privacyPolicy: {
+                        agreed: (_f = (_e = consents.privacyPolicy) === null || _e === void 0 ? void 0 : _e.agreed) !== null && _f !== void 0 ? _f : true,
+                        version: (_h = (_g = consents.privacyPolicy) === null || _g === void 0 ? void 0 : _g.version) !== null && _h !== void 0 ? _h : '1.0.0',
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    } }, (((_j = consents.marketing) === null || _j === void 0 ? void 0 : _j.agreed) && {
+                    marketing: {
+                        agreed: consents.marketing.agreed,
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    },
+                })), (((_k = consents.locationService) === null || _k === void 0 ? void 0 : _k.agreed) && {
+                    locationService: {
+                        agreed: consents.locationService.agreed,
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    },
+                })), (((_l = consents.pushNotification) === null || _l === void 0 ? void 0 : _l.agreed) && {
+                    pushNotification: {
+                        agreed: consents.pushNotification.agreed,
+                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    },
+                })), { createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+                await consentRef.set(consentData);
+                functions.logger.info(`Consent data saved for user ${userRecord.uid}`);
+            }
+            catch (consentError) {
+                functions.logger.error("Error saving consent data:", consentError);
+                // Don't fail the registration if consent saving fails
+            }
+        }
         return { success: true, message: `Registration for ${name} as ${role} is processing.` };
     }
     catch (error) {

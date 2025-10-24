@@ -77,6 +77,7 @@ const SignUp: React.FC = () => {
         phone,
         role,
         gender,
+        consents, // 동의 정보 추가
       });
 
       // 회원가입 성공 후 이메일 인증 발송

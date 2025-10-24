@@ -38,8 +38,9 @@ describe('staffDataTransformer', () => {
         id: 'wl-1',
         eventId: 'event-1',
         staffId: 'user-1',
+        staffName: '김철수',
         date: '2025-02-04',
-        status: 'scheduled',
+        status: 'not_started',
         staffInfo: {
           userId: 'user-1',
           name: '김철수',
@@ -63,8 +64,9 @@ describe('staffDataTransformer', () => {
         id: 'wl-2',
         eventId: 'event-2',
         staffId: 'user-2',
+        staffName: '이영희',
         date: '2025-02-04',
-        status: 'scheduled',
+        status: 'not_started',
         staffInfo: {
           userId: 'user-2',
           name: '이영희',
@@ -125,9 +127,11 @@ describe('staffDataTransformer', () => {
         id: 'wl-1',
         eventId: 'event-1',
         staffId: 'user-123_1', // 복합 ID
+        staffName: '김철수',
         date: '2025-02-04',
-        status: 'scheduled',
+        status: 'not_started',
         staffInfo: {
+          userId: 'user-123',
           name: '김철수',
           isActive: true,
         },
@@ -157,8 +161,9 @@ describe('staffDataTransformer', () => {
         id: 'wl-1',
         eventId: 'event-1',
         staffId: 'user-1',
+        staffName: '김철수',
         date: '2025-02-04',
-        status: 'scheduled',
+        status: 'not_started',
         staffInfo: {
           userId: 'user-1',
           name: '김철수',
