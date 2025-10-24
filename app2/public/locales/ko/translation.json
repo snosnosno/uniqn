@@ -18,7 +18,8 @@
     "ulsan": "울산",
     "gyeongnam": "경남",
     "jeju": "제주",
-    "overseas": "해외"
+    "overseas": "해외",
+    "other": "기타"
   },
   "gender": {},
   "login": {
@@ -675,6 +676,7 @@
     "uploadSuccess": "프로필 사진이 업로드되었습니다.",
     "deleteSuccess": "프로필 사진이 삭제되었습니다.",
     "currentImage": "현재 프로필 사진",
+    "selectImage": "이미지 선택",
     "uploadError": "프로필 사진 업로드에 실패했습니다.",
     "deleteError": "프로필 사진 삭제에 실패했습니다."
   },
@@ -956,6 +958,9 @@
   "report": {
     "title": "신고하기",
     "targetInfo": "신고 대상",
+    "targetName": "이름",
+    "eventTitle": "이벤트",
+    "eventDate": "날짜",
     "type": "신고 유형",
     "types": {
       "tardiness": {
@@ -975,6 +980,7 @@
         "description": "예의에 어긋나거나 부적절한 언행"
       },
       "other": {
+        "label": "기타",
         "description": "위에 해당하지 않는 기타 문제"
       }
     },
