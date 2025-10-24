@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { JobPosting } from '../../types/jobPosting';
 import { RoleSalaryConfig } from '../../types/payroll';
@@ -7,7 +7,7 @@ import { logger } from '../../utils/logger';
 interface RoleSalarySettingsProps {
   roles: string[];
   jobPosting: JobPosting | null;
-  onUpdate: (roleSalaries: RoleSalaryConfig) => void;
+  onUpdate: (roleSalaries: RoleSalaryConfig) => Promise<void>;
   className?: string;
 }
 
@@ -55,6 +55,15 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
   }, [roles, jobPosting]);
 
   const [salaryConfig, setSalaryConfig] = useState<RoleSalaryConfig>(initialSalaryConfig);
+  const [tempSalaryConfig, setTempSalaryConfig] = useState<RoleSalaryConfig>(initialSalaryConfig);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // initialSalaryConfig 변경 시 tempSalaryConfig 동기화
+  useEffect(() => {
+    setTempSalaryConfig(initialSalaryConfig);
+    setSalaryConfig(initialSalaryConfig);
+  }, [initialSalaryConfig]);
 
   // 급여 유형 한글 라벨 - 향후 UI에서 사용 예정
   // const getSalaryTypeLabel = useCallback((type: string) => {
@@ -67,34 +76,34 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
   //   return labels[type] || type;
   // }, []);
 
-  // 역할별 급여 변경 핸들러
+  // 역할별 급여 변경 핸들러 (임시 상태만 변경)
   const handleSalaryChange = useCallback((
     role: string,
     field: 'salaryType' | 'salaryAmount',
     value: string | number
   ) => {
-    const currentConfig = salaryConfig[role] || { salaryType: 'hourly' as const, salaryAmount: 15000 };
-    
+    const currentConfig = tempSalaryConfig[role] || { salaryType: 'hourly' as const, salaryAmount: 15000 };
+
     const newConfig: RoleSalaryConfig = {
-      ...salaryConfig,
+      ...tempSalaryConfig,
       [role]: {
         ...currentConfig,
         [field]: field === 'salaryAmount' ? parseFloat(value.toString()) || 0 : value
       } as RoleSalaryConfig[string]
     };
-    
-    setSalaryConfig(newConfig);
-    onUpdate(newConfig);
-    
-    logger.info(`역할별 급여 변경: ${role} - ${field} = ${value}`, {
+
+    setTempSalaryConfig(newConfig);
+    setHasChanges(true);
+
+    logger.info(`역할별 급여 변경 (임시): ${role} - ${field} = ${value}`, {
       component: 'RoleSalarySettings',
       operation: 'updateSalary'
     });
-  }, [salaryConfig, onUpdate]);
+  }, [tempSalaryConfig]);
 
-  // 모든 역할에 같은 설정 적용
+  // 모든 역할에 같은 설정 적용 (임시 상태만 변경)
   const handleApplyToAll = useCallback((templateRole: string) => {
-    const template = salaryConfig[templateRole];
+    const template = tempSalaryConfig[templateRole];
     if (!template) return;
 
     const newConfig: RoleSalaryConfig = {};
@@ -105,14 +114,36 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
       };
     });
 
-    setSalaryConfig(newConfig);
-    onUpdate(newConfig);
+    setTempSalaryConfig(newConfig);
+    setHasChanges(true);
 
-    logger.info(`모든 역할에 급여 설정 적용: ${templateRole}`, {
+    logger.info(`모든 역할에 급여 설정 적용 (임시): ${templateRole}`, {
       component: 'RoleSalarySettings',
       operation: 'applyToAll'
     });
-  }, [salaryConfig, roles, onUpdate]);
+  }, [tempSalaryConfig, roles]);
+
+  // 적용 버튼 핸들러
+  const handleApply = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await onUpdate(tempSalaryConfig);
+      setSalaryConfig(tempSalaryConfig);
+      setHasChanges(false);
+
+      logger.info('급여 설정 적용', {
+        component: 'RoleSalarySettings',
+        operation: 'apply',
+        data: tempSalaryConfig
+      });
+    } catch (error) {
+      logger.error('급여 설정 적용 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'RoleSalarySettings'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [tempSalaryConfig, onUpdate]);
 
   return (
     <div className={`bg-white rounded-lg shadow ${className}`}>
@@ -175,7 +206,7 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
                       급여 유형
                     </label>
                     <select
-                      value={salaryConfig[role]?.salaryType || 'hourly'}
+                      value={tempSalaryConfig[role]?.salaryType || 'hourly'}
                       onChange={(e) => handleSalaryChange(role, 'salaryType', e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                     >
@@ -196,7 +227,7 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
                         type="number"
                         min="0"
                         step="1000"
-                        value={salaryConfig[role]?.salaryAmount || 0}
+                        value={tempSalaryConfig[role]?.salaryAmount || 0}
                         onChange={(e) => handleSalaryChange(role, 'salaryAmount', e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="0"
@@ -221,12 +252,23 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
                 <div className="mt-2 text-sm text-blue-700">
                   <ul className="list-disc pl-5 space-y-1">
                     <li>역할별로 다른 급여 유형과 금액을 설정할 수 있습니다</li>
-                    <li>설정 변경 시 정산 금액이 실시간으로 재계산됩니다</li>
+                    <li>'적용하기' 버튼을 눌러야 정산 금액이 재계산됩니다</li>
                     <li>'모든 역할에 적용' 버튼으로 일괄 설정이 가능합니다</li>
                   </ul>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 적용 버튼 */}
+          <div className="flex justify-end pt-4 border-t">
+            <button
+              onClick={handleApply}
+              disabled={!hasChanges || isSaving}
+              className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isSaving ? '저장 중...' : '적용하기'}
+            </button>
           </div>
         </div>
       )}

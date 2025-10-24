@@ -452,19 +452,48 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     }));
   }, []);
   
-  const updateRoleSalarySettings = useCallback((roleSalaries: RoleSalaryConfig) => {
-    // 역할별 급여 설정 전체 업데이트
-    const updates: Record<string, { salaryType: string; salaryAmount: number }> = {};
+  const updateRoleSalarySettings = useCallback(async (roleSalaries: RoleSalaryConfig) => {
+    if (!jobPosting?.id) {
+      logger.warn('JobPosting ID가 없어 급여 설정을 저장할 수 없습니다.', {
+        component: 'EnhancedPayrollTab'
+      });
+      return;
+    }
 
-    Object.entries(roleSalaries).forEach(([role, config]) => {
-      updates[role] = {
-        salaryType: config.salaryType,
-        salaryAmount: config.salaryAmount
-      };
-    });
+    try {
+      // 역할별 급여 설정 전체 업데이트
+      const updates: Record<string, { salaryType: string; salaryAmount: number }> = {};
 
-    setRoleSalaryOverrides(updates);
-  }, []);
+      Object.entries(roleSalaries).forEach(([role, config]) => {
+        updates[role] = {
+          salaryType: config.salaryType,
+          salaryAmount: config.salaryAmount
+        };
+      });
+
+      // Firebase에 저장
+      const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
+      await updateDoc(jobPostingRef, {
+        roleSalaries: updates,
+        useRoleSalary: true,
+        updatedAt: Timestamp.now()
+      });
+
+      // 로컬 상태 업데이트
+      setRoleSalaryOverrides(updates);
+
+      logger.info('급여 설정 저장 완료', {
+        component: 'EnhancedPayrollTab',
+        data: { jobPostingId: jobPosting.id, roleSalaries: updates }
+      });
+    } catch (error) {
+      logger.error('급여 설정 저장 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'EnhancedPayrollTab',
+        data: { jobPostingId: jobPosting.id }
+      });
+      throw error;
+    }
+  }, [jobPosting]);
 
   // 세금 설정 업데이트
   const updateTaxSettings = useCallback(async (taxSettings: NonNullable<JobPosting['taxSettings']>) => {
