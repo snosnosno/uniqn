@@ -50,7 +50,7 @@ export const Layout = memo(() => {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="content-safe px-1 sm:px-4 md:px-6 lg:px-8 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100">
+      <main className="content-safe px-1 sm:px-4 md:px-6 lg:px-8 pt-18 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100">
         <React.Suspense fallback={<div>{t('common.messages.loading')}</div>}>
           <Outlet />
         </React.Suspense>
