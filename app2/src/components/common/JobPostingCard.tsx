@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { logger } from '../../utils/logger';
+import { extractNameFromDisplayName, extractNicknameFromDisplayName } from '../../utils/userUtils';
 
 export interface JobPostingCardProps {
   post: JobPosting & { applicationCount?: number };
@@ -31,6 +35,134 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const { formatDateDisplay } = useDateUtils();
+  const [creatorInfo, setCreatorInfo] = useState<{ name: string; nickname?: string } | null>(null);
+
+  // 구인자 정보 가져오기
+  useEffect(() => {
+    const fetchCreatorInfo = async () => {
+      if (!post.createdBy) {
+        logger.warn('구인자 정보 없음: createdBy 필드가 없습니다', {
+          component: 'JobPostingCard',
+          data: { postId: post.id, title: post.title }
+        });
+        return;
+      }
+
+      try {
+        logger.info('구인자 정보 조회 시작', {
+          component: 'JobPostingCard',
+          data: { postId: post.id, createdBy: post.createdBy }
+        });
+
+        // 1. 프로필의 name, nickname 확인
+        const profileDocRef = doc(db, 'users', post.createdBy, 'profile', 'basic');
+        const profileDoc = await getDoc(profileDocRef);
+
+        if (profileDoc.exists()) {
+          const profileData = profileDoc.data();
+          const profileName = profileData?.name;
+          const profileNickname = profileData?.nickname;
+
+          if (profileName) {
+            logger.info('프로필에서 구인자 이름 발견', {
+              component: 'JobPostingCard',
+              data: { name: profileName, nickname: profileNickname }
+            });
+
+            // exactOptionalPropertyTypes를 위해 조건부로 객체 생성
+            if (profileNickname) {
+              setCreatorInfo({ name: profileName, nickname: profileNickname });
+            } else {
+              setCreatorInfo({ name: profileName });
+            }
+            return;
+          }
+        }
+
+        // 2. users 문서에서 여러 필드 확인
+        const userDocRef = doc(db, 'users', post.createdBy);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+
+          // displayName이 있으면 이름과 닉네임 추출
+          if (userData?.displayName) {
+            const name = extractNameFromDisplayName(userData.displayName);
+            const nickname = extractNicknameFromDisplayName(userData.displayName);
+
+            logger.info('users 문서의 displayName에서 구인자 정보 발견', {
+              component: 'JobPostingCard',
+              data: { displayName: userData.displayName, extractedName: name, extractedNickname: nickname }
+            });
+
+            // exactOptionalPropertyTypes를 위해 조건부로 객체 생성
+            if (nickname) {
+              setCreatorInfo({ name, nickname });
+            } else {
+              setCreatorInfo({ name });
+            }
+            return;
+          }
+
+          // name과 nickname 필드가 있으면 사용
+          if (userData?.name) {
+            logger.info('users 문서의 name 필드에서 구인자 이름 발견', {
+              component: 'JobPostingCard',
+              data: { name: userData.name, nickname: userData.nickname }
+            });
+
+            // exactOptionalPropertyTypes를 위해 조건부로 객체 생성
+            if (userData.nickname) {
+              setCreatorInfo({ name: userData.name, nickname: userData.nickname });
+            } else {
+              setCreatorInfo({ name: userData.name });
+            }
+            return;
+          }
+
+          // email을 fallback으로 사용
+          if (userData?.email) {
+            logger.info('users 문서의 email을 fallback으로 사용', {
+              component: 'JobPostingCard',
+              data: { email: userData.email }
+            });
+            setCreatorInfo({ name: userData.email });
+            return;
+          }
+
+          logger.warn('users 문서에 이름 정보가 없습니다', {
+            component: 'JobPostingCard',
+            data: { userId: post.createdBy, availableFields: Object.keys(userData) }
+          });
+        } else {
+          logger.warn('users 문서가 존재하지 않습니다', {
+            component: 'JobPostingCard',
+            data: { userId: post.createdBy }
+          });
+        }
+      } catch (error) {
+        logger.error('구인자 정보 조회 오류', error instanceof Error ? error : new Error(String(error)), {
+          component: 'JobPostingCard',
+          data: { postId: post.id, createdBy: post.createdBy }
+        });
+      }
+    };
+
+    fetchCreatorInfo();
+  }, [post.createdBy, post.id, post.title]);
+
+  // 구인자 표시 텍스트 생성
+  const getCreatorDisplayText = () => {
+    if (!creatorInfo) return '';
+
+    // 닉네임이 있으면 "이름(닉네임)" 형식으로 표시
+    if (creatorInfo.nickname) {
+      return `구인자: ${creatorInfo.name}(${creatorInfo.nickname})`;
+    }
+
+    return `구인자: ${creatorInfo.name}`;
+  };
 
   // 날짜 변환 처리
   const formatDate = (date: string | Date | { toDate: () => Date } | { seconds: number } | null | undefined): string => {
@@ -286,7 +418,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
     if ((post.dateSpecificRequirements || []).length > 0) {
       return (
-        <div className="mb-4">
+        <div className="mb-2">
           <div className="space-y-2">
             {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => {
               // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
@@ -529,15 +661,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 </span>
               </div>
 
-              {/* 문의 연락처 */}
-              {post.contactPhone && (
-                <div className={getInfoItemClasses()}>
-                  <span className="flex items-center">
-                    <span className="mr-2">📞</span>
-                    <span className="break-words">{post.contactPhone}</span>
-                  </span>
-                </div>
-              )}
+              {/* 문의 연락처는 하단으로 이동 */}
 
               {/* 유형 (관리자용) */}
               {variant === 'admin-list' && post.type && (
@@ -635,6 +759,25 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* 문의 연락처 및 구인자 정보 - 카드 하단 */}
+        {(post.contactPhone || creatorInfo) && (
+          <div className="mt-2 flex justify-between items-center gap-1">
+            {/* 문의 연락처 - 왼쪽 */}
+            {post.contactPhone && (
+              <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                📞 {post.contactPhone}
+              </span>
+            )}
+
+            {/* 구인자 정보 - 오른쪽 */}
+            {creatorInfo && (
+              <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                {getCreatorDisplayText()}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* 관리자용 - 생성/수정 정보 */}
         {variant === 'admin-list' && (
