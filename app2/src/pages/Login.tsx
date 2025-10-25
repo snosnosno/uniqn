@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
 import { useNavigate, Link } from "react-router-dom";
+import { FirebaseError } from 'firebase/app';
+import { sendEmailVerification } from 'firebase/auth';
 
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from "../components/FormField";
+import Modal from '../components/ui/Modal';
 // 카카오 로그인 기능 - 나중에 다시 활성화 예정
 // import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 import { useAuth } from "../contexts/AuthContext";
 // import { KakaoUserInfo, KakaoAuthResponse } from '../utils/kakaoSdk';
 import { recordLoginAttempt, isLoginBlocked, formatBlockTime } from '../services/authSecurity';
+import { secureStorage } from '../utils/secureStorage';
+import { toast } from '../utils/toast';
 
 
 const Login: React.FC = () => {
@@ -21,15 +26,47 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle /* , signInWithKakao */ } = useAuth();
+  const { signIn, signInWithGoogle, currentUser /* , signInWithKakao */ } = useAuth();
 
-  // 컴포넌트 마운트 시 이전 설정 불러오기 및 차단 상태 확인
+  // 🔍 디버깅: 환경 변수 확인 (개발 환경에서만)
   useEffect(() => {
-    const savedRememberMe = localStorage.getItem('rememberMe');
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('Firebase API Key (first 10 chars):', {
+        component: 'Login',
+        data: {
+          apiKey: process.env.REACT_APP_FIREBASE_API_KEY?.slice(0, 10) + '...',
+          projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID
+        }
+      });
+    }
+  }, []);
+
+  // 차단 상태 확인 함수 (메모이제이션)
+  const checkBlockStatus = useCallback(async () => {
+    try {
+      const blockStatus = await isLoginBlocked(email);
+      if (blockStatus.isBlocked && blockStatus.remainingTime) {
+        setIsBlocked(true);
+        setAttempts(blockStatus.attempts || 0);
+        setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
+      } else {
+        setIsBlocked(false);
+        setAttempts(blockStatus.attempts || 0);
+        setError('');
+      }
+    } catch (error) {
+      logger.error('로그인 차단 상태 확인 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'Login' });
+    }
+  }, [email, t]);
+
+  // 컴포넌트 마운트 시 이전 설정 불러오기
+  useEffect(() => {
+    const savedRememberMe = secureStorage.getItem('rememberMe');
     if (savedRememberMe) {
       try {
-        // boolean 값만 허용 (암호화된 문자열은 무시)
         const parsed = JSON.parse(savedRememberMe);
         if (typeof parsed === 'boolean') {
           setRememberMe(parsed);
@@ -38,93 +75,163 @@ const Login: React.FC = () => {
             data: { rememberMe: parsed }
           });
         } else {
-          // 잘못된 형식의 데이터는 제거
-          localStorage.removeItem('rememberMe');
+          secureStorage.removeItem('rememberMe');
         }
       } catch (error) {
-        // JSON 파싱 실패 시 (암호화된 데이터 등) 제거
         logger.debug('로그인 설정 파싱 실패, 초기화합니다', { component: 'Login' });
-        localStorage.removeItem('rememberMe');
+        secureStorage.removeItem('rememberMe');
       }
     }
+  }, []);
 
-    // 로그인 차단 상태 확인
-    const checkBlockStatus = async () => {
-      try {
-        const blockStatus = await isLoginBlocked(email);
-        if (blockStatus.isBlocked && blockStatus.remainingTime) {
-          setIsBlocked(true);
-          setAttempts(blockStatus.attempts || 0);
-          setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
-        } else {
-          setAttempts(blockStatus.attempts || 0);
-        }
-      } catch (error) {
-        logger.error('로그인 차단 상태 확인 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'Login' });
-      }
-    };
+  // 이메일 변경 시 차단 상태 확인 (debounce)
+  useEffect(() => {
+    if (!email) return;
 
-    checkBlockStatus();
-  }, [email, t]);
+    const timer = setTimeout(() => {
+      checkBlockStatus();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [email, checkBlockStatus]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // 차단 상태 재확인
-    try {
-      const blockStatus = await isLoginBlocked(email);
-      if (blockStatus.isBlocked && blockStatus.remainingTime) {
-        setIsBlocked(true);
-        setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
-        return;
-      }
-    } catch (blockCheckError) {
-      logger.error('로그인 차단 상태 재확인 실패:', blockCheckError instanceof Error ? blockCheckError : new Error(String(blockCheckError)), { component: 'Login' });
+    // 차단 상태 확인 (이미 메모이제이션된 함수 재사용)
+    if (isBlocked) {
+      setError(t('login.blockedMessage', '로그인이 차단되었습니다.'));
+      return;
     }
 
     try {
-      await signIn(email, password, rememberMe);
+      const userCredential = await signIn(email, password, rememberMe);
 
       // 로그인 성공 시 시도 기록
       await recordLoginAttempt(email, true);
 
+      // 이메일 인증 확인
+      if (userCredential?.user && !userCredential.user.emailVerified) {
+        setShowEmailVerificationModal(true);
+        logger.warn('이메일 미인증 사용자 로그인', {
+          component: 'Login',
+          data: { email }
+        });
+        return;
+      }
+
       navigate("/app");
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 로그인 실패 시 시도 기록
       await recordLoginAttempt(email, false);
 
-      if (err.code === 'auth/user-disabled') {
-        setError(t('adminLogin.approvalPending'));
-      } else {
-        setError(t('adminLogin.errorMessage'));
-      }
-
-      logger.error('로그인 실패:', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
-
-      // 차단 상태 업데이트 확인
-      try {
-        const blockStatus = await isLoginBlocked(email);
-        if (blockStatus.isBlocked && blockStatus.remainingTime) {
-          setIsBlocked(true);
-          setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
-        } else {
-          setAttempts(blockStatus.attempts || 0);
+      // FirebaseError 타입 체크
+      if (err instanceof FirebaseError) {
+        switch (err.code) {
+          case 'auth/user-disabled':
+            setError(t('adminLogin.approvalPending', '계정이 비활성화되었습니다. 관리자에게 문의하세요.'));
+            break;
+          case 'auth/invalid-credential':
+          case 'auth/wrong-password':
+          case 'auth/user-not-found':
+            setError(t('adminLogin.errorMessage', '이메일 또는 비밀번호가 올바르지 않습니다.'));
+            break;
+          case 'auth/too-many-requests':
+            setError(t('login.tooManyRequests', '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.'));
+            break;
+          case 'auth/network-request-failed':
+            setError(t('login.networkError', '네트워크 연결을 확인해주세요.'));
+            break;
+          default:
+            setError(t('adminLogin.errorMessage', '로그인에 실패했습니다.'));
         }
-      } catch (blockUpdateError) {
-        logger.error('차단 상태 업데이트 확인 실패:', blockUpdateError instanceof Error ? blockUpdateError : new Error(String(blockUpdateError)), { component: 'Login' });
+        logger.error('로그인 실패 (Firebase):', err, {
+          component: 'Login',
+          data: { code: err.code, email }
+        });
+      } else {
+        setError(t('adminLogin.errorMessage', '로그인에 실패했습니다.'));
+        logger.error('로그인 실패 (Unknown):', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
       }
+
+      // 차단 상태 업데이트 (메모이제이션된 함수 재사용)
+      await checkBlockStatus();
     }
   };
 
   const handleGoogleSignIn = async () => {
     setError('');
     try {
-      await signInWithGoogle();
+      const userCredential = await signInWithGoogle();
+
+      // 이메일 인증 확인 (구글은 자동 인증이지만 체크)
+      if (userCredential?.user && !userCredential.user.emailVerified) {
+        setShowEmailVerificationModal(true);
+        logger.warn('이메일 미인증 사용자 로그인 (Google)', {
+          component: 'Login',
+          data: { email: userCredential.user.email }
+        });
+        return;
+      }
+
       navigate('/app');
-    } catch (err: any) {
-      setError(t('googleSignIn.error'));
-      logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
+    } catch (err: unknown) {
+      // FirebaseError 타입 체크
+      if (err instanceof FirebaseError) {
+        switch (err.code) {
+          case 'auth/popup-blocked':
+            setError(t('googleSignIn.popupBlocked', '팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.'));
+            break;
+          case 'auth/popup-closed-by-user':
+            setError(t('googleSignIn.popupClosed', '로그인이 취소되었습니다.'));
+            break;
+          case 'auth/network-request-failed':
+            setError(t('login.networkError', '네트워크 연결을 확인해주세요.'));
+            break;
+          case 'auth/cancelled-popup-request':
+            // 여러 팝업 요청 시 발생, 무시
+            break;
+          default:
+            setError(t('googleSignIn.error', '구글 로그인에 실패했습니다.'));
+        }
+        logger.error('Google Sign-In Error (Firebase):', err, {
+          component: 'Login',
+          data: { code: err.code }
+        });
+      } else {
+        setError(t('googleSignIn.error', '구글 로그인에 실패했습니다.'));
+        logger.error('Google Sign-In Error (Unknown):', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
+      }
+    }
+  };
+
+  // 이메일 재발송 핸들러
+  const handleResendEmailVerification = async () => {
+    if (!currentUser) return;
+
+    setIsResendingEmail(true);
+    try {
+      await sendEmailVerification(currentUser);
+      logger.info('이메일 인증 재발송 성공', {
+        component: 'Login',
+        data: { email: currentUser.email }
+      });
+      toast.success(t('login.emailVerificationResent', '인증 이메일이 재발송되었습니다.'));
+      setShowEmailVerificationModal(false);
+    } catch (err: unknown) {
+      if (err instanceof FirebaseError) {
+        logger.error('이메일 인증 재발송 실패 (Firebase):', err, {
+          component: 'Login',
+          data: { code: err.code }
+        });
+        toast.error(t('login.emailVerificationResendFailed', '이메일 재발송에 실패했습니다.'));
+      } else {
+        logger.error('이메일 인증 재발송 실패 (Unknown):', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
+        toast.error(t('login.emailVerificationResendFailed', '이메일 재발송에 실패했습니다.'));
+      }
+    } finally {
+      setIsResendingEmail(false);
     }
   };
 
@@ -173,10 +280,14 @@ const Login: React.FC = () => {
         
         {/* 보안 상태 표시 */}
         {attempts > 0 && !isBlocked && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div
+            className="bg-yellow-50 border-l-4 border-yellow-400 p-4"
+            role="alert"
+            aria-live="polite"
+          >
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
@@ -189,7 +300,15 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        {error ? <p className="text-red-500 text-sm text-center">{error}</p> : null}
+        {error && (
+          <div
+            className="text-red-500 text-sm text-center"
+            role="alert"
+            aria-live="assertive"
+          >
+            {error}
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -217,6 +336,8 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={isBlocked}
+            aria-disabled={isBlocked}
+            aria-busy={false}
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
               isBlocked
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -268,6 +389,39 @@ const Login: React.FC = () => {
           {t('login.noAccount')}
         </Link>
       </div>
+
+      {/* 이메일 인증 모달 */}
+      <Modal
+        isOpen={showEmailVerificationModal}
+        onClose={() => setShowEmailVerificationModal(false)}
+        title={t('login.emailVerificationRequired', '이메일 인증이 필요합니다')}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            {t('login.emailVerificationMessage', '계정을 사용하기 위해서는 이메일 인증이 필요합니다. 인증 이메일을 확인해주세요.')}
+          </p>
+          <p className="text-sm text-gray-600">
+            {t('login.emailVerificationCheck', '이메일을 받지 못하셨나요? 스팸 폴더를 확인해주세요.')}
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setShowEmailVerificationModal(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              {t('common.close', '닫기')}
+            </button>
+            <button
+              onClick={handleResendEmailVerification}
+              disabled={isResendingEmail}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isResendingEmail
+                ? t('login.emailVerificationResending', '재발송 중...')
+                : t('login.emailVerificationResend', '인증 이메일 재발송')}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AuthLayout>
   );
 };

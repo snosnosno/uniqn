@@ -29,14 +29,28 @@
     "noAccount": "Don't have an account? Sign Up",
     "errorMessage": "Failed to log in. Please check your email and password.",
     "approvalPending": "Your account is pending approval. Please contact an administrator.",
-    "googleSignInError": "An error occurred during Google Sign-In. Please try again later."
+    "googleSignInError": "An error occurred during Google Sign-In. Please try again later.",
+    "blockedMessage": "Too many login attempts. Please try again later.",
+    "blockedButton": "Blocked",
+    "attemptWarning": "Login failure count increased. Account will be blocked for 15 minutes after 5 failed attempts.",
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "networkError": "Please check your network connection.",
+    "emailVerificationRequired": "Email Verification Required",
+    "emailVerificationMessage": "Email verification is required to use your account. Please check your verification email.",
+    "emailVerificationCheck": "Didn't receive the email? Please check your spam folder.",
+    "emailVerificationResend": "Resend Verification Email",
+    "emailVerificationResending": "Resending...",
+    "emailVerificationResent": "Verification email has been resent.",
+    "emailVerificationResendFailed": "Failed to resend verification email."
   },
   "adminLogin": {
     "approvalPending": "Your account is pending approval. Please contact an administrator.",
     "errorMessage": "Failed to log in. Please check your email and password."
   },
   "googleSignIn": {
-    "error": "An error occurred during Google Sign-In. Please try again later."
+    "error": "An error occurred during Google Sign-In. Please try again later.",
+    "popupBlocked": "Popup blocked. Please check your browser settings.",
+    "popupClosed": "Login was cancelled."
   },
   "forgotPassword": {
     "title": "Reset Password",
@@ -46,6 +60,9 @@
     "successMessage": "A password reset link has been sent to your email. Please check your inbox.",
     "errorMessage": "An error occurred. Please check the email address and try again.",
     "backToLogin": "Back to Login"
+    ,"genderLabel": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female"
   },
   "signUp": {
     "title": "Sign Up",
@@ -67,6 +84,9 @@
     "invalidEmailError": "The email address format is not valid.",
     "weakPasswordError": "The password is too weak. Please use a stronger password.",
     "backToLogin": "Back to Login"
+    ,"genderLabel": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female"
   },
   "modal": {},
   "nav": {
