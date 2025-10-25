@@ -294,7 +294,7 @@ const ProfilePage = () => {
                                         title={t('settings.title', '설정')}
                                     >
                                         <Cog6ToothIcon className="h-5 w-5" />
-                                        <span className="hidden sm:inline">{t('settings.title', '설정')}</span>
+                                        <span>{t('settings.title', '설정')}</span>
                                     </Link>
                                     <button
                                         onClick={handleEditClick}
