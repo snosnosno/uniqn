@@ -44,18 +44,18 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
     <div className="mb-6">
 
       {/* Filter Form */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Location Filter */}
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 {t('common.location')}
               </label>
               <select
                 id="location"
                 value={filters.location}
                 onChange={(e) => handleFilterChange('location', e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               >
                 <option value="all">{t('jobBoard.filters.allLocations')}</option>
                 <option value="서울">{t('locations.seoul')}</option>
@@ -80,14 +80,14 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
 
             {/* Month Filter */}
             <div>
-              <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="month" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 {t('jobBoard.filters.month')}
               </label>
               <select
                 id="month"
                 value={filters.month}
                 onChange={(e) => handleFilterChange('month', e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               >
                 <option value="">{t('common.all')}</option>
                 {[...Array(12)].map((_, i) => (
@@ -100,14 +100,14 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
 
             {/* Day Filter */}
             <div>
-              <label htmlFor="day" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="day" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 {t('jobBoard.filters.day')}
               </label>
               <select
                 id="day"
                 value={filters.day}
                 onChange={(e) => handleFilterChange('day', e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               >
                 <option value="">{t('common.all')}</option>
                 {[...Array(31)].map((_, i) => (
@@ -120,14 +120,14 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
 
             {/* Role Filter */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 {t('common.role')}
               </label>
               <select
                 id="role"
                 value={filters.role}
                 onChange={(e) => handleFilterChange('role', e.target.value)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               >
                 <option value="all">{t('jobBoard.filters.allRoles')}</option>
                 <option value="dealer">{t('roles.dealer')}</option>
@@ -145,17 +145,17 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
           {/* Reset Button */}
           <div className="mt-4 flex justify-end items-center gap-4">
             {hasActiveFilters() && (
-              <span className="text-sm text-blue-600 font-medium">
+              <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                 필터 적용 중
               </span>
             )}
             <button
               onClick={resetFilters}
               disabled={!hasActiveFilters()}
-              className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
-                hasActiveFilters() 
-                  ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
-                  : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
+              className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors ${
+                hasActiveFilters()
+                  ? 'text-white bg-blue-600 dark:bg-blue-700 border border-blue-600 dark:border-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600'
+                  : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-not-allowed'
               }`}
               aria-label="필터 초기화"
             >

@@ -35,11 +35,11 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
     }
   };
 
@@ -181,13 +181,13 @@ const ApplicationCard: React.FC<{
   isProcessing: string | null;
   t: (key: string) => string;
 }> = ({ application, onViewDetail, onCancel, isProcessing, t: _t }) => (
-  <div className="bg-white rounded-lg shadow-md p-4 border">
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
     <div className="flex justify-between items-start mb-3">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {application.postTitle || '제목 없음'}
         </h3>
-        <div className="text-sm text-gray-500 mt-1">
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           지원일: {formatDateOnly(application.appliedAt)}
         </div>
       </div>
@@ -195,7 +195,7 @@ const ApplicationCard: React.FC<{
     </div>
 
     {application.jobPosting && (
-      <div className="mb-3 text-sm text-gray-600">
+      <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">
         <p>📍 주소: {application.jobPosting.location}
           {application.jobPosting.district && ` ${application.jobPosting.district}`}
           {application.jobPosting.detailedAddress && ` - ${application.jobPosting.detailedAddress}`}
@@ -204,7 +204,7 @@ const ApplicationCard: React.FC<{
     )}
 
     <div>
-      <h4 className="font-medium text-gray-900 mb-2">지원한 시간대</h4>
+      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">지원한 시간대</h4>
       
       {/* 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요) */}
       {(() => {
@@ -221,8 +221,8 @@ const ApplicationCard: React.FC<{
           );
         } else {
           return (
-            <div className="bg-gray-50 rounded-lg p-2">
-              <div className="text-gray-500 text-sm">지원 정보 없음</div>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+              <div className="text-gray-500 dark:text-gray-400 text-sm">지원 정보 없음</div>
             </div>
           );
         }
@@ -233,7 +233,7 @@ const ApplicationCard: React.FC<{
           {onViewDetail && application.jobPosting && (
             <button
               onClick={() => onViewDetail(application.postId)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex-1 sm:flex-initial"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 text-sm flex-1 sm:flex-initial"
               aria-label="공고 상세정보 보기"
             >
               자세히보기
@@ -243,7 +243,7 @@ const ApplicationCard: React.FC<{
             <button
               onClick={() => onCancel(application.postId)}
               disabled={isProcessing === application.postId}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm flex-1 sm:flex-initial"
+              className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm flex-1 sm:flex-initial"
             >
               {isProcessing === application.postId ? '취소 중...' : '지원 취소'}
             </button>
@@ -292,11 +292,11 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
   if (applications.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-500 text-lg mb-2">📋</div>
-        <p className="text-gray-500 mb-4">아직 지원한 공고가 없습니다.</p>
+        <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">📋</div>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">아직 지원한 공고가 없습니다.</p>
         <button
           onClick={onTabChange}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600"
         >
           구인 공고 보러가기
         </button>
@@ -307,11 +307,11 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-xl font-semibold">내 지원 현황 ({applications.length}건)</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">내 지원 현황 ({applications.length}건)</h2>
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-sm"
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm"
         >
           {loading ? '새로고침 중...' : '🔄 새로고침'}
         </button>

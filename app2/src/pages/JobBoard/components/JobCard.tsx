@@ -32,12 +32,12 @@ const JobCard: React.FC<JobCardProps> = ({
         {/* 자세히보기 버튼 */}
         <button
           onClick={() => onViewDetail(post)}
-          className="flex-1 sm:w-full bg-blue-600 text-white py-2 px-3 rounded hover:bg-blue-700 text-sm font-medium"
+          className="flex-1 sm:w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-3 rounded hover:bg-blue-700 dark:hover:bg-blue-600 text-sm font-medium"
           aria-label={`${post.title} 상세정보 보기`}
         >
           {t('jobBoard.viewDetails')}
         </button>
-        
+
         {/* 지원하기 버튼 */}
         <div className="flex-1 sm:w-full">
           {renderActionButton()}
@@ -52,7 +52,7 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-gray-300 text-gray-500 py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="로그인이 필요합니다"
         >
           {t('jobBoard.loginRequired')}
@@ -64,7 +64,7 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-gray-500 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-gray-500 dark:bg-gray-600 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="이미 지원완료한 공고입니다"
         >
           {t('jobBoard.applied')}
@@ -76,7 +76,7 @@ const JobCard: React.FC<JobCardProps> = ({
       return (
         <button
           disabled
-          className="w-full bg-green-600 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
+          className="w-full bg-green-600 dark:bg-green-700 text-white py-2 px-3 rounded cursor-not-allowed text-sm font-medium"
           aria-label="지원이 확정된 공고입니다"
         >
           {t('common.status.confirmed')}
@@ -88,7 +88,7 @@ const JobCard: React.FC<JobCardProps> = ({
       <button
         onClick={() => onApply(post)}
         disabled={isProcessing}
-        className="w-full bg-green-600 text-white py-2 px-3 rounded hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
+        className="w-full bg-green-600 dark:bg-green-700 text-white py-2 px-3 rounded hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm font-medium"
         aria-label={`${post.title}에 지원하기`}
       >
         {isProcessing
