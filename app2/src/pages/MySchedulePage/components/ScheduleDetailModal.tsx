@@ -545,41 +545,41 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/5 shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-11/12 md:w-4/5 lg:w-3/5 shadow-lg rounded-md bg-white dark:bg-gray-800">
         {/* 헤더 */}
-        <div className="flex justify-between items-center pb-4 border-b">
+        <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-              <span className="text-indigo-600 font-medium text-sm">
+            <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+              <span className="text-indigo-600 dark:text-indigo-400 font-medium text-sm">
                 {schedule?.eventName?.charAt(0) || 'S'}
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 일정 상세
               </h3>
-              <p className="text-sm text-gray-500">{schedule?.role}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{schedule?.role}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
         {/* 탭 네비게이션 */}
-        <div className="flex space-x-1 mt-4 bg-gray-100 p-1 rounded-lg">
+        <div className="flex space-x-1 mt-4 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
               }`}
             >
               <span>{tab.icon}</span>
@@ -593,17 +593,17 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">기본 정보</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 dark:text-gray-200 mb-3">기본 정보</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">공고:</span>
-                    <span className="text-sm text-gray-900">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">공고:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
                       {schedule.snapshotData?.title || jobPosting?.title || schedule.eventName}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">역할:</span>
-                    <span className="text-sm text-gray-900">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">역할:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
                       {(() => {
                         const targetWorkLog = getTargetWorkLog();
                         // 🔥 WorkLog 우선: WorkLog가 있으면 WorkLog 역할, 없으면 Schedule 역할
@@ -613,12 +613,12 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">날짜:</span>
-                    <span className="text-sm text-gray-900">{formatDate(schedule.date)}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">날짜:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">{formatDate(schedule.date)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">장소:</span>
-                    <span className="text-sm text-gray-900">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">장소:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
                       {getSnapshotOrFallback(schedule, jobPosting).location()}
                     </span>
                   </div>
@@ -626,16 +626,16 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     const detailedAddress = getSnapshotOrFallback(schedule, jobPosting).detailedAddress();
                     return detailedAddress && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">상세주소:</span>
-                        <span className="text-sm text-gray-900">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">상세주소:</span>
+                        <span className="text-sm text-gray-900 dark:text-gray-100">
                           {detailedAddress}
                         </span>
                       </div>
                     );
                   })()}
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">근무시간:</span>
-                    <span className="text-sm text-gray-900">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">근무시간:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
                       {(() => {
                         const targetWorkLog = getTargetWorkLog();
 
@@ -654,7 +654,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">상태:</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">상태:</span>
                     <span className={`text-sm px-2 py-1 rounded-full ${typeDisplay.color}`}>
                       {typeDisplay.text}
                     </span>
@@ -663,7 +663,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">급여 정보</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">급여 정보</h4>
                 <div className="space-y-2">
                   {/* 급여 설정 소스 표시 (스냅샷 우선) */}
                   {(() => {
@@ -680,50 +680,50 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     if (useRoleSalary && effectiveRole && roleSalaries?.[effectiveRole]) {
                       return (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">설정:</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
                           <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">역할별 급여</span>
                         </div>
                       );
                     } else if (salaryType) {
                       return (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">설정:</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
                           <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">공고 기본급여</span>
                         </div>
                       );
                     } else {
                       return (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">설정:</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
                           <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">시스템 기본값</span>
                         </div>
                       );
                     }
                   })()}
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">급여 유형:</span>
-                    <span className="text-sm text-gray-900">{getSalaryTypeLabel(salaryInfo.salaryType)}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">급여 유형:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">{getSalaryTypeLabel(salaryInfo.salaryType)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {salaryInfo.salaryType === 'hourly' ? '시급:' : 
                        salaryInfo.salaryType === 'daily' ? '일급:' : 
                        salaryInfo.salaryType === 'monthly' ? '월급:' : '급여:'}
                     </span>
-                    <span className="text-sm text-gray-900">
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
                       {salaryInfo.baseSalary.toLocaleString('ko-KR')}원
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">예상 기본급:</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">예상 기본급:</span>
                     <span className="text-sm font-medium text-gray-900">
                       {salaryInfo.basePay.toLocaleString('ko-KR')}원
                     </span>
                   </div>
                   {salaryInfo.tax !== undefined && salaryInfo.tax > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">세금:</span>
-                      <span className="text-sm text-gray-900">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">세금:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
                         {salaryInfo.taxRate !== undefined && salaryInfo.taxRate > 0
                           ? `${salaryInfo.taxRate}%`
                           : '고정 세금'}
@@ -733,7 +733,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   {/* 🔥 정산 금액은 스냅샷 사용 시 표시하지 않음 (오래된 캐시 값일 수 있음) */}
                   {!schedule.snapshotData && schedule.payrollAmount && schedule.payrollAmount !== salaryInfo.basePay && (
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">정산 금액:</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">정산 금액:</span>
                       <span className="text-sm font-medium text-indigo-600">
                         {schedule.payrollAmount.toLocaleString('ko-KR')}원
                       </span>
@@ -744,17 +744,17 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             </div>
             
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">근무 요약</h4>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">근무 요약</h4>
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-900">{salaryInfo.totalDays}</div>
                   <div className="text-xs text-gray-500">근무일수</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-900">{salaryInfo.totalHours.toFixed(1)}</div>
                   <div className="text-xs text-gray-500">근무시간</div>
                 </div>
-                <div className="bg-indigo-50 rounded-lg p-3 text-center">
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-indigo-600">
                     {salaryInfo.basePay.toLocaleString('ko-KR')}
                   </div>
@@ -768,7 +768,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     <div className="text-xs text-gray-500">세후 급여</div>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-gray-900">
                       {(schedule.payrollAmount || (salaryInfo.totalHours * salaryInfo.baseSalary)).toLocaleString('ko-KR')}
                     </div>
@@ -781,8 +781,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             {/* 메모 */}
             {schedule.notes && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">메모</h4>
-                <p className="text-sm text-gray-600">{schedule.notes}</p>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">메모</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{schedule.notes}</p>
               </div>
             )}
           </div>
@@ -791,12 +791,12 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         {/* 근무 탭 */}
         {activeTab === 'work' && (
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-4">📅 근무 내역</h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">📅 근무 내역</h4>
             {workHistory.length > 0 ? (
               <div className="space-y-4">
                 <div className="border rounded-lg overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           날짜
@@ -866,9 +866,9 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 </div>
                 
                 {/* 총 근무시간 합계 */}
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">총 근무시간</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">총 근무시간</span>
                     <span className="text-lg font-bold text-blue-600">
                       {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
                     </span>
@@ -892,11 +892,11 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           <div className="space-y-6">
             {/* 기본급 계산 */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">💰 기본급 계산</h4>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">💰 기본급 계산</h4>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-300">
                       {getSalaryTypeLabel(salaryInfo.salaryType)} × {salaryInfo.salaryType === 'hourly' ? `${salaryInfo.totalHours.toFixed(1)}시간` : `${salaryInfo.totalDays}일`}
                     </span>
                     <span className="font-medium text-gray-900">
@@ -904,7 +904,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">기본급 합계</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">기본급 합계</span>
                     <span className="text-base font-bold text-gray-900">
                       {(salaryInfo.totalHours * salaryInfo.baseSalary).toLocaleString('ko-KR')}원
                     </span>
@@ -915,30 +915,30 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
             {/* 수당 정보 */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">🎁 수당 설정</h4>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">🎁 수당 설정</h4>
 
               {/* 일당 계산 과정 표시 */}
               {salaryInfo.allowances?.dailyRates && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">일당 기반 계산</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">일당 기반 계산</span>
                     <span className="text-sm font-medium text-gray-900">{salaryInfo.allowances.workDays || 1}일 근무</span>
                   </div>
                   {salaryInfo.allowances.dailyRates.meal && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">식비: {salaryInfo.allowances.dailyRates.meal.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
+                      <span className="text-gray-600 dark:text-gray-300">식비: {salaryInfo.allowances.dailyRates.meal.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
                       <span className="text-gray-900 font-medium">= {(salaryInfo.allowances.meal || 0).toLocaleString('ko-KR')}원</span>
                     </div>
                   )}
                   {salaryInfo.allowances.dailyRates.transportation && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">교통비: {salaryInfo.allowances.dailyRates.transportation.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
+                      <span className="text-gray-600 dark:text-gray-300">교통비: {salaryInfo.allowances.dailyRates.transportation.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
                       <span className="text-gray-900 font-medium">= {(salaryInfo.allowances.transportation || 0).toLocaleString('ko-KR')}원</span>
                     </div>
                   )}
                   {salaryInfo.allowances.dailyRates.accommodation && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">숙소비: {salaryInfo.allowances.dailyRates.accommodation.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
+                      <span className="text-gray-600 dark:text-gray-300">숙소비: {salaryInfo.allowances.dailyRates.accommodation.toLocaleString('ko-KR')}원 × {salaryInfo.allowances.workDays || 1}일</span>
                       <span className="text-gray-900 font-medium">= {(salaryInfo.allowances.accommodation || 0).toLocaleString('ko-KR')}원</span>
                     </div>
                   )}
@@ -947,16 +947,16 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             </div>
 
             {/* 총 계산 */}
-            <div className="bg-indigo-50 rounded-lg p-4">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">기본급</span>
+                  <span className="text-gray-600 dark:text-gray-300">기본급</span>
                   <span className="text-gray-900">
                     {(salaryInfo.totalHours * salaryInfo.baseSalary).toLocaleString('ko-KR')}원
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">수당 합계</span>
+                  <span className="text-gray-600 dark:text-gray-300">수당 합계</span>
                   <span className="text-gray-900">
                     {(() => {
                       const totalAllowances =
@@ -971,7 +971,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 </div>
                 {salaryInfo.tax !== undefined && salaryInfo.tax > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">세금</span>
+                    <span className="text-gray-600 dark:text-gray-300">세금</span>
                     <span className="text-red-600">
                       -{salaryInfo.tax.toLocaleString('ko-KR')}원
                     </span>
@@ -1006,7 +1006,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             </div>
 
             {/* 계산 안내 */}
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <FaInfoCircle className="w-4 h-4 text-blue-600" />
                 <p className="text-sm font-medium text-blue-700">급여 계산 안내</p>

@@ -259,18 +259,18 @@ const MySchedulePage: React.FC = () => {
           <div
             key={schedule.id}
             onClick={() => handleEventClick(schedule)}
-            className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-              isToday ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+            className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 ${
+              isToday ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400' : ''
             }`}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 flex-1">
                 {renderStatusIcon(schedule)}
-                <h4 className="font-semibold text-gray-900 truncate">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                   {schedule.eventName}
                 </h4>
                 {isToday && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium rounded-full">
                     오늘
                   </span>
                 )}
@@ -282,9 +282,9 @@ const MySchedulePage: React.FC = () => {
               </span>
             </div>
 
-            <div className="space-y-1 text-sm text-gray-600">
+            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-2">
-                <FaCalendarAlt className="text-gray-400 w-3 h-3" />
+                <FaCalendarAlt className="text-gray-400 dark:text-gray-500 w-3 h-3" />
                 <span>
                   {new Date(schedule.date).toLocaleDateString('ko-KR', {
                     month: 'long',
@@ -293,22 +293,22 @@ const MySchedulePage: React.FC = () => {
                   })}
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <FaClock className="text-gray-400 w-3 h-3" />
+                <FaClock className="text-gray-400 dark:text-gray-500 w-3 h-3" />
                 <span>
                   {formatTime(schedule.startTime, { defaultValue: '미정' })} - {formatTime(schedule.endTime, { defaultValue: '미정' })}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <FaInfoCircle className="text-gray-400 w-3 h-3" />
+                <FaInfoCircle className="text-gray-400 dark:text-gray-500 w-3 h-3" />
                 <span>{schedule.role}</span>
               </div>
 
               {schedule.location && (
                 <div className="flex items-center gap-2">
-                  <FaMapMarkerAlt className="text-gray-400 w-3 h-3" />
+                  <FaMapMarkerAlt className="text-gray-400 dark:text-gray-500 w-3 h-3" />
                   <span className="truncate">{schedule.location}</span>
                 </div>
               )}
@@ -363,20 +363,20 @@ const MySchedulePage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">내 스케줄</h1>
-            <p className="text-gray-600 mt-1">근무 일정을 확인하고 관리하세요</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">내 스케줄</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">근무 일정을 확인하고 관리하세요</p>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* 뷰 토글 버튼 (모바일) */}
             {isMobile && (
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('calendar')}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'calendar' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-200'
+                    viewMode === 'calendar'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   title="캘린더 뷰"
                 >
@@ -385,9 +385,9 @@ const MySchedulePage: React.FC = () => {
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-200'
+                    viewMode === 'list'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   title="리스트 뷰"
                 >
@@ -395,12 +395,12 @@ const MySchedulePage: React.FC = () => {
                 </button>
               </div>
             )}
-            
-            
+
+
             {/* 새로고침 버튼 */}
             <button
               onClick={refreshData}
-              className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="새로고침"
             >
               <FaSync className="w-5 h-5" />
@@ -424,11 +424,11 @@ const MySchedulePage: React.FC = () => {
       {/* 메인 콘텐츠 */}
       {isMobile && viewMode === 'list' ? (
         /* 모바일 가상화 리스트 뷰 */
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           {schedules.length === 0 ? (
             <div className="p-8 text-center">
-              <FaCalendarAlt className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">등록된 일정이 없습니다.</p>
+              <FaCalendarAlt className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-300">등록된 일정이 없습니다.</p>
             </div>
           ) : (
             <div style={{ height: `${listHeight}px`, minHeight: '400px' }}>

@@ -52,6 +52,19 @@
   --leading-body: 1.8;
 }
 
+/* 다크모드 CSS 변수 */
+.dark {
+  /* 다크모드 색상 변수 */
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-background: #111827;
+  --color-border: #4b5563;
+
+  /* 그림자 변수 (다크모드) */
+  --shadow-default: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -60,7 +73,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   @apply bg-gray-50 text-gray-900;
-  
+  @apply dark:bg-gray-900 dark:text-gray-50;
+
   /* 한글 최적화 */
   letter-spacing: -0.02em;
   word-break: keep-all;
@@ -312,9 +326,31 @@ code {
     }
   }
   
-  /* 다크 모드 지원 (향후 구현) */
-  @media (prefers-color-scheme: dark) {
-    /* 다크 모드 스타일은 추후 구현 */
+  /* 다크 모드 컴포넌트 스타일 */
+  .dark .card {
+    @apply bg-gray-800 border border-gray-700;
+  }
+
+  .dark .btn-ghost {
+    @apply text-gray-300 hover:bg-gray-800;
+  }
+
+  .dark .input-field {
+    @apply bg-gray-800 text-gray-50 border-gray-600;
+    @apply placeholder-gray-400;
+    @apply focus:border-primary-400 focus:ring-primary-400;
+  }
+
+  .dark .skeleton {
+    @apply bg-gray-700;
+  }
+
+  .dark .skeleton-text {
+    @apply bg-gray-700;
+  }
+
+  .dark .skeleton-card {
+    @apply bg-gray-700;
   }
 
   /* Safe Area 지원 - iOS notch, Android navigation 대응 */

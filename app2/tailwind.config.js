@@ -2,6 +2,7 @@
 const { colors } = require('./src/styles/tokens/colors');
 
 module.exports = {
+  darkMode: 'class', // 다크모드 활성화 (클래스 기반)
   content: [
     "./src/**/*.{js,jsx,ts,tsx}"
   ],
