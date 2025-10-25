@@ -175,7 +175,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
               }
               
               return (
-                <div key={dateIndex} className="bg-gray-50 p-3 rounded-lg">
+                <div key={dateIndex} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                   <div className="text-sm font-medium text-blue-600 mb-2">
                     📅 {dateDisplay} 일정
                   </div>
@@ -234,7 +234,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
           <h4 className="font-semibold mb-3">📋 사전질문</h4>
           <div className="space-y-3">
             {jobPosting.preQuestions.map((question: any, index: number) => (
-              <div key={index} className="bg-gray-50 p-3 rounded-lg">
+              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                 <p className="text-sm font-medium">
                   {index + 1}. {typeof question === 'object' ? question.question : question}
                   {typeof question === 'object' && question.required && <span className="text-red-500 ml-1">*</span>}

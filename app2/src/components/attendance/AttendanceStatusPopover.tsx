@@ -486,7 +486,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       {/* 로딩 오버레이 */}
       {isUpdating && (
         <div className="fixed inset-0 bg-black bg-opacity-10 z-30 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-4 shadow-lg">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         </div>

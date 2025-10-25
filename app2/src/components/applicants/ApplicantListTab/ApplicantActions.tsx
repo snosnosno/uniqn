@@ -38,7 +38,7 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
         <select
           value={''}
           onChange={(e) => onAssignmentChange(e.target.value)}
-          className="text-sm border border-gray-300 rounded px-2 py-1"
+          className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
           
@@ -64,9 +64,9 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
             )
           )}
         </select>
-        <button 
+        <button
           onClick={onConfirm}
-          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+          className="px-3 py-1 bg-green-500 dark:bg-green-600 text-white rounded hover:bg-green-600 dark:hover:bg-green-700 text-sm"
           disabled={!selectedAssignment}
         >
           {t('common.status.confirmed')}
@@ -93,9 +93,9 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
           <button 
             onClick={onCancelConfirmation}
             className={`px-3 py-1 text-white rounded text-sm font-medium ${
-              canEdit 
-                ? 'bg-red-500 hover:bg-red-600 cursor-pointer' 
-                : 'bg-gray-400 cursor-not-allowed'
+              canEdit
+                ? 'bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 cursor-pointer'
+                : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
             }`}
             disabled={!canEdit}
             title={!canEdit ? '권한이 없습니다' : '확정을 취소합니다'}

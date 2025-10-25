@@ -235,8 +235,8 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
       </div>
 
       {applicants.length === 0 ? (
-        <div className="bg-gray-50 p-6 rounded-lg text-center">
-          <p className="text-gray-600">{t('jobPostingAdmin.applicants.none')}</p>
+        <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
+          <p className="text-gray-600 dark:text-gray-300">{t('jobPostingAdmin.applicants.none')}</p>
         </div>
       ) : (
         <div className="space-y-4">

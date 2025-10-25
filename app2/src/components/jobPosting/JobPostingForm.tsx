@@ -109,7 +109,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-gray-900">공고 작성</h2>
         <div className="flex space-x-2">
@@ -246,7 +246,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           </div>
 
           {formData.useRoleSalary ? (
-            <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+            <div className="space-y-3 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
               <div className="text-sm text-gray-600 mb-2">
                 각 역할별로 급여를 설정하세요. 기본값: 시급 20,000원
               </div>

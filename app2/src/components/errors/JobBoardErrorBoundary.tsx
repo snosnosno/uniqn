@@ -36,7 +36,7 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md border border-red-200 text-center">
+    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md border border-red-200 dark:border-red-700 text-center">
       <div className="mb-4">
         <svg 
           className="w-16 h-16 text-red-500 mx-auto mb-4" 
@@ -51,10 +51,10 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" 
           />
         </svg>
-        <h3 className="text-lg font-semibold text-red-700 mb-2">
+        <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">
           {t('errors.title')}
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-gray-300 mb-4">
           {getErrorMessage(error)}
         </p>
       </div>
@@ -62,23 +62,23 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={onRetry}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
         >
           {t('errors.retry')}
         </button>
         <button
           onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+          className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors"
         >
           {t('errors.refresh')}
         </button>
       </div>
       
       {process.env.NODE_ENV === 'development' && error ? <details className="mt-4 text-left">
-          <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+          <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
             {t('errors.details')}
           </summary>
-          <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
+          <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs overflow-auto">
             {error.stack}
           </pre>
         </details> : null}

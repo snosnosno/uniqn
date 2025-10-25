@@ -353,9 +353,9 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                       );
                       
                       return (
-                        <label key={`${groupKey}-time-${timeIndex}-role-${roleIndex}-unified`} 
+                        <label key={`${groupKey}-time-${timeIndex}-role-${roleIndex}-unified`}
                           className={`flex items-center justify-between p-2 rounded border ${
-                            isRoleSelected ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                            isRoleSelected ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                           } ${hasConflict ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                           <div className="flex items-center">
                             <input
@@ -363,7 +363,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                               checked={isRoleSelected}
                               onChange={(e) => handleMultiDayRoleToggle(dateGroup.dates, timeGroup.timeSlot, role, e.target.checked)}
                               disabled={!canEdit || hasConflict}
-                              className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:bg-gray-300"
+                              className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded disabled:bg-gray-300 dark:disabled:bg-gray-600"
                             />
                             <span className="ml-2 text-xs sm:text-sm">
                               <span className="font-medium text-gray-800">
@@ -455,9 +455,9 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                             });
                           
                           return (
-                            <label key={`${timeGroup.time}-${role}-unified-${roleIndex}`} 
+                            <label key={`${timeGroup.time}-${role}-unified-${roleIndex}`}
                               className={`flex items-center justify-between p-2 rounded border ${
-                                isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                                isSelected ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                               } ${hasOtherSelectionInSameDate ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                               <div className="flex items-center">
                                 <input
@@ -465,7 +465,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                                   checked={isSelected}
                                   onChange={(e) => onAssignmentToggle(optionValue, e.target.checked)}
                                   disabled={!canEdit || hasOtherSelectionInSameDate}
-                                  className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-300"
+                                  className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:bg-gray-300 dark:disabled:bg-gray-600"
                                 />
                                 <span className="ml-2 text-xs sm:text-sm">
                                   <span className="font-medium text-gray-800">
@@ -500,8 +500,8 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
           disabled={selectedAssignments.length === 0 || !canEdit}
           className={`w-full flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             selectedAssignments.length > 0 && canEdit
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              ? 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
           }`}
         >
           ✓ 선택한 시간 확정 ({selectedAssignments.length}개)

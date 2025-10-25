@@ -166,7 +166,7 @@ const AssignmentDisplay: React.FC<AssignmentDisplayProps> = ({ assignments, stat
   return (
     <div className="space-y-2">
       {dateGroups.map((group) => (
-        <div key={group.dateKey} className="bg-gray-50 rounded-lg p-2">
+        <div key={group.dateKey} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
           {/* 시간대별 역할 표시 - 확정 상태에서는 간소화 */}
           <div className="space-y-1">
             {group.timeSlots.map((timeSlot, slotIndex) => (
