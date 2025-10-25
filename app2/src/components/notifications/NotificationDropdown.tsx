@@ -123,12 +123,12 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
       {/* 알림 버튼 */}
       <button
         onClick={toggleDropdown}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label={t('notifications.title', '알림')}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <FaBell className="w-5 h-5 text-gray-700" />
+        <FaBell className="w-5 h-5 text-gray-700 dark:text-gray-200" />
         <NotificationBadge count={unreadCount} />
       </button>
 
@@ -142,24 +142,24 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
           />
 
           {/* 드롭다운 컨테이너 */}
-          <div className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-[80vh] overflow-hidden flex flex-col">
             {/* 헤더 */}
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                 {t('notifications.title', '알림')}
               </h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
                     {t('notifications.markAllAsRead', '모두 읽음')}
                   </button>
                 )}
                 <button
                   onClick={handleSettings}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label={t('notifications.settings.title', '알림 설정')}
                   title={t('notifications.settings.title', '알림 설정')}
                 >

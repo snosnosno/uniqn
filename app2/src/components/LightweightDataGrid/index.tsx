@@ -93,13 +93,13 @@ const ValidationTooltip: React.FC<{
   if (relevantViolations.length === 0) return null;
 
   return (
-    <div className="absolute z-10 bg-white border rounded shadow-lg p-2 text-xs w-64 top-full left-0 mt-1">
+    <div className="absolute z-10 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg p-2 text-xs w-64 top-full left-0 mt-1">
       {relevantViolations.map((violation, index) => (
         <div key={index} className="mb-1 last:mb-0">
           <div className={`flex items-center gap-1 ${
-            violation.severity === 'error' ? 'text-red-600' : 
-            violation.severity === 'warning' ? 'text-yellow-600' : 
-            'text-blue-600'
+            violation.severity === 'error' ? 'text-red-600 dark:text-red-400' :
+            violation.severity === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+            'text-blue-600 dark:text-blue-400'
           }`}>
             {violation.severity === 'error' ? <ExclamationIcon className="w-3 h-3" /> :
              violation.severity === 'warning' ? <InformationCircleIcon className="w-3 h-3" /> :
@@ -107,7 +107,7 @@ const ValidationTooltip: React.FC<{
             <span className="font-medium">{violation.message}</span>
           </div>
           {violation.suggestedFix && (
-            <div className="text-gray-600 ml-4 mt-1">
+            <div className="text-gray-600 dark:text-gray-300 ml-4 mt-1">
               제안: {violation.suggestedFix}
             </div>
           )}
@@ -127,7 +127,7 @@ const ValidationSummary: React.FC<{
 
   if (validationResult.isValid && validationResult.violations.length === 0) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-green-700">
+      <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-md text-green-700 dark:text-green-300">
         <CheckCircleIcon className="w-4 h-4" />
         <span className="text-sm font-medium">모든 교대 규칙을 준수합니다</span>
       </div>
@@ -137,19 +137,19 @@ const ValidationSummary: React.FC<{
   return (
     <div className="space-y-2">
       {errorCount > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-red-700">
+        <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md text-red-700 dark:text-red-300">
           <ExclamationIcon className="w-4 h-4" />
           <span className="text-sm font-medium">{errorCount}개의 오류가 있습니다</span>
         </div>
       )}
       {warningCount > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700">
+        <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-md text-yellow-700 dark:text-yellow-300">
           <InformationCircleIcon className="w-4 h-4" />
           <span className="text-sm font-medium">{warningCount}개의 경고가 있습니다</span>
         </div>
       )}
       {infoCount > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-blue-700">
+        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md text-blue-700 dark:text-blue-300">
           <InformationCircleIcon className="w-4 h-4" />
           <span className="text-sm font-medium">{infoCount}개의 정보가 있습니다</span>
         </div>
@@ -280,7 +280,7 @@ const CellEditor: React.FC<{
       value={value}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
-      className="w-full h-full px-1 border-none outline-none bg-white text-sm"
+      className="w-full h-full px-1 border-none outline-none bg-white dark:bg-gray-700 dark:text-gray-100 text-sm"
       autoFocus
     >
       {availableOptions.map(option => (
@@ -400,18 +400,18 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
       {validationResult && <ValidationSummary validationResult={validationResult} />}
       
       {/* 데이터 그리드 */}
-      <div 
-        className="border rounded-lg overflow-auto bg-white shadow-sm"
+      <div
+        className="border dark:border-gray-700 rounded-lg overflow-auto bg-white dark:bg-gray-800 shadow-sm"
         style={{ height: `${height}px` }}
       >
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 bg-gray-50 border-b">
+          <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-700">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
-                    className="px-2 py-3 text-left text-sm font-medium text-gray-700 border-r last:border-r-0"
+                    className="px-2 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 border-r dark:border-gray-700 last:border-r-0"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder
@@ -444,7 +444,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
               </tr>
             ) : (
               table.getRowModel().rows.map(row => (
-                <tr key={row.id} className="hover:bg-gray-50">
+                <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   {row.getVisibleCells().map(cell => (
                     <td
                       key={cell.id}

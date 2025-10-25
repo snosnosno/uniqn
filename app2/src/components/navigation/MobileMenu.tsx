@@ -211,12 +211,12 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         `}
       >
         {/* 헤더 */}
-        <div className="bg-primary-500 text-white p-4">
+        <div className="bg-primary-500 dark:bg-primary-600 text-white p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">UNIQN</h2>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-primary-600 rounded transition-colors"
+              className="p-1 hover:bg-primary-600 dark:hover:bg-primary-700 rounded transition-colors"
               aria-label="메뉴 닫기"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +263,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               
               {/* 하위 메뉴 */}
               {item.children && expandedItems.includes(item.path) && (
-                <div className="bg-gray-50">
+                <div className="bg-gray-50 dark:bg-gray-700">
                   {item.children.map((child) => (
                     <button
                       key={child.path}
@@ -288,11 +288,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
           {currentUser ? (
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
               <span>로그아웃</span>
@@ -303,7 +303,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 navigate('/login');
                 onClose();
               }}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-600 dark:hover:bg-primary-700 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 

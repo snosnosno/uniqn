@@ -136,14 +136,14 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
       </div>
 
       {/* 선택된 스태프 목록 */}
-      <div className="p-4 bg-background-secondary border border-border-light rounded-lg mb-4">
+      <div className="p-4 bg-background-secondary dark:bg-gray-700 border border-border-light dark:border-gray-600 rounded-lg mb-4">
         <h4 className="text-sm font-medium text-text-primary mb-2">선택된 스태프</h4>
         <div className="max-h-24 overflow-y-auto">
           <div className="flex flex-wrap gap-2">
             {selectedStaff.map(staff => (
               <span
                 key={staff.id}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
               >
                 {staff.name || '이름 미정'}
               </span>
@@ -219,7 +219,7 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
           <div className="space-y-4">
             {!showDeleteConfirm ? (
               <>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
@@ -227,10 +227,10 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">
+                      <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
                         위험한 작업입니다
                       </h3>
-                      <div className="mt-2 text-sm text-red-700">
+                      <div className="mt-2 text-sm text-red-700 dark:text-red-400">
                         <p>
                           선택된 {selectedStaff.length}명의 스태프가 영구적으로 삭제됩니다.
                           이 작업은 되돌릴 수 없습니다.
@@ -241,8 +241,8 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700">삭제될 스태프:</h4>
-                  <div className="max-h-32 overflow-y-auto bg-gray-50 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">삭제될 스태프:</h4>
+                  <div className="max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                     {selectedStaff.map(staff => (
                       <div key={staff.id} className="flex items-center justify-between py-1">
                         <span className="text-sm text-gray-700">
@@ -258,7 +258,7 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
               </>
             ) : (
               <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

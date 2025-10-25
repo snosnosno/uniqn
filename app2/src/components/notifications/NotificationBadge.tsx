@@ -46,7 +46,7 @@ export const NotificationBadge = memo<NotificationBadgeProps>(({
   if (variant === 'dot') {
     return (
       <span
-        className={`absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white ${className}`}
+        className={`absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800 ${className}`}
         aria-label={`${count}개의 읽지 않은 알림`}
       />
     );
@@ -57,7 +57,7 @@ export const NotificationBadge = memo<NotificationBadgeProps>(({
 
   return (
     <span
-      className={`absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white ${className}`}
+      className={`absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800 ${className}`}
       aria-label={`${count}개의 읽지 않은 알림`}
     >
       {displayCount}

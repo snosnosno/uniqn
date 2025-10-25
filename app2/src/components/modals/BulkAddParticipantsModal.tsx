@@ -101,7 +101,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
           <label className="block text-sm font-medium mb-2">
             입력 형식
           </label>
-          <div className="bg-background-secondary p-3 rounded text-sm">
+          <div className="bg-background-secondary dark:bg-gray-700 p-3 rounded text-sm">
             <p className="font-semibold mb-1">형식 1: 이름,칩</p>
             <p className="font-semibold mb-1">형식 2: 이름,전화번호,칩</p>
             <p className="text-text-secondary mt-2">
@@ -144,9 +144,9 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
               </div>
             </div>
             
-            <div className="max-h-64 overflow-y-auto border rounded-lg">
+            <div className="max-h-64 overflow-y-auto border dark:border-gray-700 rounded-lg">
               <table className="w-full text-sm">
-                <thead className="bg-background-secondary sticky top-0">
+                <thead className="bg-background-secondary dark:bg-gray-700 sticky top-0">
                   <tr>
                     <th className="px-3 py-2 text-left">상태</th>
                     <th className="px-3 py-2 text-left">이름</th>
@@ -157,9 +157,9 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
                 </thead>
                 <tbody>
                   {parsedData.map((participant, index) => (
-                    <tr 
-                      key={index} 
-                      className={`border-b ${!participant.isValid ? 'bg-red-50' : ''}`}
+                    <tr
+                      key={index}
+                      className={`border-b dark:border-gray-700 ${!participant.isValid ? 'bg-red-50 dark:bg-red-900/30' : ''}`}
                     >
                       <td className="px-3 py-2">
                         {participant.isValid ? (
