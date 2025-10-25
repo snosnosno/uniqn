@@ -139,7 +139,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
               <article
                 key={target.id}
                 data-testid={`target-card-${target.id}`}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg hover:shadow-xl target-card transition-all duration-300 p-8 group border border-gray-200"
+                className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl shadow-lg hover:shadow-xl target-card transition-all duration-300 p-8 group border border-gray-200 dark:border-gray-600"
                 aria-labelledby={`target-title-${target.id}`}
                 aria-describedby={`target-description-${target.id}`}
               >
@@ -148,14 +148,14 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                   data-testid={`target-icon-${target.id}`}
                   className="mb-6"
                 >
-                  <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 transition-all duration-300 group-hover:scale-110">
-                    <IconComponent className="w-10 h-10 text-blue-600" />
+                  <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-all duration-300 group-hover:scale-110">
+                    <IconComponent className="w-10 h-10 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
 
                 {/* 타겟 이름 */}
                 <div className="mb-4">
-                  <span className="inline-block px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                  <span className="inline-block px-3 py-1 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-700">
                     {target.name}
                   </span>
                 </div>
@@ -163,7 +163,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 {/* 제목 */}
                 <h3
                   id={`target-title-${target.id}`}
-                  className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors duration-300"
+                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
                 >
                   {target.title}
                 </h3>
@@ -171,7 +171,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 {/* 설명 */}
                 <p
                   id={`target-description-${target.id}`}
-                  className="text-gray-600 mb-6 leading-relaxed"
+                  className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed"
                 >
                   {target.description}
                 </p>
@@ -185,7 +185,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                         className="flex items-start"
                       >
                         <svg
-                          className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0"
+                          className="w-5 h-5 text-green-500 dark:text-green-400 mr-3 mt-0.5 flex-shrink-0"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -198,7 +198,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                             d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        <span className="text-gray-700 font-medium">
+                        <span className="text-gray-700 dark:text-gray-200 font-medium">
                           {benefit}
                         </span>
                       </li>
@@ -208,7 +208,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
 
                 {/* CTA 버튼 */}
                 <button
-                  className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 group-hover:shadow-lg"
+                  className="w-full bg-blue-600 dark:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:bg-blue-700 dark:focus:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 group-hover:shadow-lg"
                   onClick={() => handleTargetClick(target.id)}
                   onKeyDown={(e) => handleKeyDown(e, target.id)}
                   aria-label={`${target.name} 솔루션 자세히 보기 - ${target.title}`}
@@ -219,7 +219,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 {/* 장식 요소 */}
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <svg
-                    className="w-6 h-6 text-blue-300"
+                    className="w-6 h-6 text-blue-300 dark:text-blue-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -241,9 +241,9 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
         {/* 빈 상태 처리 */}
         {targets.length === 0 && (
           <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-12 h-12 text-gray-400"
+                className="w-12 h-12 text-gray-400 dark:text-gray-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -257,7 +257,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               타겟 그룹이 없습니다
             </h3>
             <p className="text-gray-600">
@@ -269,15 +269,15 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
         {/* 추가 정보 */}
         {targets.length > 0 && (
           <div className="text-center mt-16">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl p-8">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 어떤 분야에서 활동하시나요?
               </h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
                 Experience UNIQN solutions optimized for your work environment.
                 각 분야별 전문가들이 설계한 맞춤형 기능으로 더욱 효율적인 업무가 가능합니다.
               </p>
-              <button className="inline-flex items-center px-6 py-3 text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors duration-300 font-semibold">
+              <button className="inline-flex items-center px-6 py-3 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-500 rounded-lg hover:bg-blue-600 hover:text-white dark:hover:bg-blue-700 transition-colors duration-300 font-semibold">
                 상담 신청하기
                 <svg
                   className="ml-2 w-5 h-5"

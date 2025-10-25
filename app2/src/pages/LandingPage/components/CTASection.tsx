@@ -37,13 +37,13 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
   return (
     <section
       data-testid="cta-section"
-      className="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden"
+      className="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 dark:from-blue-800 dark:via-blue-900 dark:to-indigo-950 relative overflow-hidden"
     >
       {/* 배경 패턴 */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-1/4 left-1/6 w-32 h-32 bg-white rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/6 w-48 h-48 bg-blue-300 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-indigo-300 rounded-full blur-2xl" />
+      <div className="absolute inset-0 opacity-10 dark:opacity-5">
+        <div className="absolute top-1/4 left-1/6 w-32 h-32 bg-white dark:bg-blue-200 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/6 w-48 h-48 bg-blue-300 dark:bg-blue-400 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-indigo-300 dark:bg-indigo-400 rounded-full blur-2xl" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -215,7 +215,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
         </div>
 
         {/* 긴급성 메시지 */}
-        <div className="mt-12 bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 border border-white border-opacity-20">
+        <div className="mt-12 bg-white dark:bg-gray-800 bg-opacity-10 dark:bg-opacity-20 backdrop-blur-sm rounded-2xl p-6 border border-white dark:border-gray-600 border-opacity-20 dark:border-opacity-30">
           <div className="flex items-center justify-center mb-4">
             <svg
               className="w-6 h-6 text-yellow-400 mr-2"

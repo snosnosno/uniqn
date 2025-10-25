@@ -147,18 +147,18 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
       </h2>
       {questions.length > 0 && (
         <div className="mt-2">
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
             <span>진행률: {getProgress()}%</span>
             <span>{questions.length}개 질문</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${getProgress()}%` }}
             />
           </div>
           {/* 지원 완료시 수정불가 안내 문구 */}
-          <div className="mt-2 text-xs text-red-600 font-medium">
+          <div className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium">
             ※ 지원 완료시 수정불가
           </div>
         </div>
@@ -170,14 +170,14 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     <ModalFooter>
       <button
         onClick={onClose}
-        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+        className="px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         {t('common.cancel')}
       </button>
       <button
         onClick={handleSubmit}
         disabled={isSubmitting}
-        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isSubmitting 
           ? t('common.messages.submitting')
@@ -198,7 +198,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     >
         
       {questions.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">
+        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
           {t('jobBoard.preQuestion.noQuestions')}
         </p>
       ) : (
@@ -206,10 +206,10 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
           {questions.map((question, index) => (
             <div key={question.id} className="space-y-2">
               {/* 질문 제목 */}
-              <label className="block text-sm font-medium text-gray-900">
-                <span className="text-blue-600 font-semibold">Q{index + 1}.</span>{' '}
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">Q{index + 1}.</span>{' '}
                 {question.question}
-                {question.required ? <span className="text-red-500 ml-1">*</span> : null}
+                {question.required ? <span className="text-red-500 dark:text-red-400 ml-1">*</span> : null}
               </label>
               
               {/* 질문 타입별 입력 컴포넌트 */}
@@ -219,7 +219,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                   value={answers[question.id] || ''}
                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                   placeholder={t('jobBoard.preQuestion.answerPlaceholder')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 />
               )}
               
@@ -229,7 +229,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                   placeholder={t('jobBoard.preQuestion.answerPlaceholder')}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
                 />
               )}
               
@@ -237,7 +237,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                 <select
                   value={answers[question.id] || ''}
                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 >
                   <option value="">
                     {t('jobBoard.preQuestion.selectOption')}

@@ -63,11 +63,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
   return (
     <section
       data-testid="hero-section"
-      className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 px-4 lg:px-8"
+      className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 dark:from-blue-950 dark:via-indigo-950 dark:to-gray-900 px-4 lg:px-8"
       aria-label="UNIQN Tournament Management Platform Main Section"
     >
       {/* 배경 오버레이 */}
-      <div className="absolute inset-0 bg-black bg-opacity-40" />
+      <div className="absolute inset-0 bg-black bg-opacity-40 dark:bg-opacity-60" />
 
       {/* 메인 콘텐츠 */}
       <div className="relative z-10 max-w-4xl mx-auto text-center text-white">
@@ -78,14 +78,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
 
         {/* 부제목 */}
         {content.subtitle && (
-          <h2 className="text-xl md:text-2xl font-medium mb-4 text-blue-100">
+          <h2 className="text-xl md:text-2xl font-medium mb-4 text-blue-100 dark:text-blue-200">
             {content.subtitle}
           </h2>
         )}
 
         {/* 설명 */}
         {content.description && (
-          <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed text-gray-200">
+          <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed text-gray-200 dark:text-gray-300">
             {content.description}
           </p>
         )}
@@ -96,7 +96,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
             <button
               onClick={handleCtaClick}
               onKeyDown={handleKeyDown}
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 rounded-lg shadow-lg hover:shadow-xl cta-button focus:outline-none focus:ring-4 focus:ring-blue-300"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 focus:bg-blue-700 dark:focus:bg-blue-600 rounded-lg shadow-lg hover:shadow-xl cta-button focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-500"
               aria-label={`${content.ctaText} - 회원가입 페이지로 이동`}
             >
               {content.ctaText}
@@ -138,13 +138,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
       </div>
 
       {/* 장식적 요소 */}
-      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent" />
+      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white dark:from-gray-900 to-transparent" />
 
       {/* 배경 패턴 */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white rounded-full blur-3xl" />
-        <div className="absolute top-3/4 right-1/4 w-48 h-48 bg-blue-300 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/3 w-24 h-24 bg-indigo-300 rounded-full blur-2xl" />
+      <div className="absolute inset-0 opacity-10 dark:opacity-5">
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white dark:bg-blue-200 rounded-full blur-3xl" />
+        <div className="absolute top-3/4 right-1/4 w-48 h-48 bg-blue-300 dark:bg-blue-400 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/3 w-24 h-24 bg-indigo-300 dark:bg-indigo-400 rounded-full blur-2xl" />
       </div>
     </section>
   );

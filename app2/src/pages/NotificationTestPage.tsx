@@ -221,30 +221,30 @@ const NotificationTestPage: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">🔔 알림 테스트</h1>
-          <p className="text-gray-600">로그인이 필요합니다.</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">🔔 알림 테스트</h1>
+          <p className="text-gray-600 dark:text-gray-300">로그인이 필요합니다.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       {/* 헤더 */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg p-6 mb-6">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-800 dark:to-indigo-800 rounded-lg shadow-lg p-6 mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">🔔 알림 시스템 테스트</h1>
-        <p className="text-purple-100">8가지 알림 타입을 테스트할 수 있습니다</p>
-        <p className="text-purple-200 text-sm mt-2">현재 사용자: {currentUser.email || currentUser.uid}</p>
+        <p className="text-purple-100 dark:text-purple-200">8가지 알림 타입을 테스트할 수 있습니다</p>
+        <p className="text-purple-200 dark:text-purple-300 text-sm mt-2">현재 사용자: {currentUser.email || currentUser.uid}</p>
       </div>
 
       {/* 상태 메시지 */}
       {status && (
         <div className={`mb-6 p-4 rounded-lg ${
-          status.type === 'success' ? 'bg-green-50 text-green-800' :
-          status.type === 'error' ? 'bg-red-50 text-red-800' :
-          'bg-blue-50 text-blue-800'
+          status.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+          status.type === 'error' ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+          'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
         }`}>
           {status.message}
         </div>
@@ -255,29 +255,29 @@ const NotificationTestPage: React.FC = () => {
         <button
           onClick={createAllNotifications}
           disabled={loading}
-          className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
         >
           {loading ? '생성 중...' : '🚀 전체 알림 테스트 (8개)'}
         </button>
       </div>
 
       {/* 시스템 알림 */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">📢 시스템 알림 (4개)</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">📢 시스템 알림 (4개)</h2>
         <div className="space-y-4">
           {Object.entries(testNotifications).slice(0, 4).map(([type, data]) => (
-            <div key={type} className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
+            <div key={type} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
               <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900">{data.title}</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
                 <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
                   {getPriorityText(data.priority)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-3">{data.body}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
               <button
                 onClick={() => createNotification(type)}
                 disabled={loading}
-                className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300"
+                className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
               >
                 테스트
               </button>
@@ -287,22 +287,22 @@ const NotificationTestPage: React.FC = () => {
       </div>
 
       {/* 근무 알림 */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">💼 근무 알림 (3개)</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">💼 근무 알림 (3개)</h2>
         <div className="space-y-4">
           {Object.entries(testNotifications).slice(4, 7).map(([type, data]) => (
-            <div key={type} className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
+            <div key={type} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
               <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900">{data.title}</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
                 <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
                   {getPriorityText(data.priority)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-3">{data.body}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
               <button
                 onClick={() => createNotification(type)}
                 disabled={loading}
-                className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300"
+                className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
               >
                 테스트
               </button>
@@ -312,22 +312,22 @@ const NotificationTestPage: React.FC = () => {
       </div>
 
       {/* 일정 알림 */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 pb-3 border-b-2">📅 일정 알림 (1개)</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">📅 일정 알림 (1개)</h2>
         <div className="space-y-4">
           {Object.entries(testNotifications).slice(7, 8).map(([type, data]) => (
-            <div key={type} className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
+            <div key={type} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
               <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900">{data.title}</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
                 <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
                   {getPriorityText(data.priority)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-3">{data.body}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
               <button
                 onClick={() => createNotification(type)}
                 disabled={loading}
-                className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300"
+                className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
               >
                 테스트
               </button>

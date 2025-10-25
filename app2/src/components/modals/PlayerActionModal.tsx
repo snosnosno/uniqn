@@ -64,12 +64,12 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
         style={{ top: `${adjustedPosition.top}px`, left: `${adjustedPosition.left}px` }}
         onClick={(e) => e.stopPropagation()}
     >
-            <div className="bg-white rounded-lg shadow-2xl border-2 border-gray-300 w-48">
-                <ul className="divide-y divide-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-2 border-gray-300 dark:border-gray-600 w-48">
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                     <li>
                         <button
                             onClick={onShowDetails}
-                            className="w-full text-left px-4 py-4 text-base text-gray-700 hover:bg-gray-100 flex items-center touch-manipulation"
+                            className="w-full text-left px-4 py-4 text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center touch-manipulation"
                         >
                             {t('playerActionModal.showDetails')}
                         </button>
@@ -77,7 +77,7 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
                     <li>
                         <button
                             onClick={onMoveSeat}
-                            className="w-full text-left px-4 py-4 text-base text-gray-700 hover:bg-gray-100 flex items-center touch-manipulation"
+                            className="w-full text-left px-4 py-4 text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center touch-manipulation"
                         >
                             {t('playerActionModal.moveSeat')}
                         </button>
@@ -85,7 +85,7 @@ const PlayerActionModal: React.FC<PlayerActionModalProps> = ({
                     <li>
                         <button
                             onClick={_onBustOut}
-                            className="w-full text-left px-4 py-4 text-base text-red-600 hover:bg-red-50 flex items-center font-semibold touch-manipulation"
+                            className="w-full text-left px-4 py-4 text-base text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center font-semibold touch-manipulation"
                         >
                             {t('playerActionModal.bustOut')}
                         </button>

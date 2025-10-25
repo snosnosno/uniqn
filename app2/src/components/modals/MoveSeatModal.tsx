@@ -113,10 +113,10 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
       aria-label={t('moveSeatModal.title', { name: movingParticipant.name })}
     >
       <div
-        className="mb-4 bg-blue-50 p-3 rounded-lg"
+        className="mb-4 bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
-        <h4 className="font-bold text-blue-800">{t('moveSeatModal.sectionTitle')}</h4>
+        <h4 className="font-bold text-blue-800 dark:text-blue-300">{t('moveSeatModal.sectionTitle')}</h4>
         <p><strong>{t('moveSeatModal.labelName')}</strong> {movingParticipant.name}</p>
         {currentTournamentName && (
           <p><strong>토너먼트:</strong> {currentTournamentName}</p>
@@ -128,7 +128,7 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {filteredTables.map(table => (
-          <div key={table.id} className={`border rounded-lg p-3 ${table.status !== 'open' ? 'bg-gray-100 opacity-70' : ''}`}>
+          <div key={table.id} className={`border dark:border-gray-700 rounded-lg p-3 ${table.status !== 'open' ? 'bg-gray-100 dark:bg-gray-700 opacity-70' : ''}`}>
             <h4 className="font-bold text-lg mb-2">
               {table.name || t('moveSeatModal.defaultTableName', { number: table.tableNumber })} 
               <span className="text-sm font-normal text-gray-500">({table.status})</span>
