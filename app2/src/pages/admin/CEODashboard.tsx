@@ -85,20 +85,20 @@ const CEODashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{t('dashboard.ceo.title', 'CEO 대시보드')}</h1>
-          <p className="text-gray-600 mt-2">{t('dashboard.ceo.subtitle', '비즈니스 현황을 한눈에')}</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('dashboard.ceo.title', 'CEO 대시보드')}</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">{t('dashboard.ceo.subtitle', '비즈니스 현황을 한눈에')}</p>
         </div>
         <div className="text-right">
-          <div className="flex items-center space-x-2 text-sm text-gray-500">
+          <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
             <ClockIcon className="h-4 w-4" />
             <span>{t('dashboard.ceo.lastUpdated', '마지막 업데이트')}: {lastUpdated.toLocaleTimeString()}</span>
           </div>
           <div className="mt-1 flex items-center space-x-1">
             <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-xs text-green-600">{t('dashboard.ceo.realtime', '실시간')}</span>
+            <span className="text-xs text-green-600 dark:text-green-400">{t('dashboard.ceo.realtime', '실시간')}</span>
           </div>
         </div>
       </div>
@@ -198,23 +198,23 @@ const CEODashboard: React.FC = () => {
         >
           <div className="space-y-3">
             {data.jobPostings.map((job) => (
-              <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div>
-                  <p className="font-semibold text-gray-700">{job.title}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-semibold text-gray-700 dark:text-gray-200">{job.title}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {job.startDate} ~ {job.endDate}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-indigo-600">{job.applicants}명 지원</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{job.applicants}명 지원</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {t('dashboard.ceo.positions', '모집')}: {job.positions}명
                   </p>
                 </div>
               </div>
             ))}
             {data.jobPostings.length === 0 && (
-              <p className="text-center text-gray-500">{t('dashboard.ceo.noActivePostings', '활성 공고 없음')}</p>
+              <p className="text-center text-gray-500 dark:text-gray-400">{t('dashboard.ceo.noActivePostings', '활성 공고 없음')}</p>
             )}
           </div>
         </DashboardCard>

@@ -54,7 +54,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ className = '' }) => {
       </button>
 
       {/* 날짜 선택기 */}
-      <div className="relative flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm">
+      <div className="relative flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 shadow-sm">
         <input
           type="date"
           value={selectedDate}
@@ -64,7 +64,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ className = '' }) => {
               setSelectedDate(newDate);
             }
           }}
-          className="border-none outline-none bg-transparent text-sm font-medium text-gray-700 cursor-pointer"
+          className="border-none outline-none bg-transparent text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer"
           list="available-dates"
         />
         <datalist id="available-dates">

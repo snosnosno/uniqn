@@ -311,7 +311,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
         </h3>
 
         {/* 이용약관 동의 */}
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
@@ -325,20 +325,20 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             />
             <div className="ml-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {t('consent.termsOfService')}
                   <span className="ml-1 text-red-500">*</span>
                 </span>
                 <button
                   type="button"
                   onClick={openTermsModal}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                   aria-label={t('consent.viewDetails')}
                 >
                   {t('consent.viewDetails')}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('consent.termsOfServiceDescription')}
               </p>
             </div>
@@ -346,7 +346,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
         </div>
 
         {/* 개인정보처리방침 동의 */}
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
@@ -383,12 +383,12 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
 
       {/* 선택 동의 항목 */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('consent.optional')}
         </h3>
 
         {/* 마케팅 수신 동의 */}
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
@@ -398,10 +398,10 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               aria-label={t('consent.marketing')}
             />
             <div className="ml-3 flex-1">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {t('consent.marketing')}
               </span>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('consent.marketingDescription')}
               </p>
             </div>
@@ -409,7 +409,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
         </div>
 
         {/* 위치 서비스 동의 */}
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
@@ -421,10 +421,10 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               aria-label={t('consent.locationService')}
             />
             <div className="ml-3 flex-1">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {t('consent.locationService')}
               </span>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('consent.locationServiceDescription')}
               </p>
             </div>
@@ -432,7 +432,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
         </div>
 
         {/* 푸시 알림 동의 */}
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
@@ -444,10 +444,10 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               aria-label={t('consent.pushNotification')}
             />
             <div className="ml-3 flex-1">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {t('consent.pushNotification')}
               </span>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('consent.pushNotificationDescription')}
               </p>
             </div>

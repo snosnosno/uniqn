@@ -168,22 +168,22 @@ export const AccountDangerZone: React.FC = () => {
 
       {/* 계정 삭제 버튼 (대기 중이 아닐 때만 표시) */}
       {!isPending && (
-        <div className="border-2 border-red-200 rounded-lg p-6 bg-white">
+        <div className="border-2 border-red-200 dark:border-red-800 rounded-lg p-6 bg-white dark:bg-gray-800">
           <div className="flex items-start space-x-3 mb-4">
-            <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <ExclamationTriangleIcon className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                 {t('settings.account.deleteAccount')}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 {t('settings.account.deleteAccountDescription')}
               </p>
             </div>
           </div>
 
           {/* 삭제 시 영향 안내 */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {t('settings.account.deletionEffects')}
             </h4>
             <ul className="space-y-2 text-sm text-gray-700">

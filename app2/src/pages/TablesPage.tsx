@@ -528,17 +528,17 @@ const TablesPage: React.FC = () => {
             <TournamentSelector dateFilter={dateFilterForSelector} />
 
             {!state.tournamentId ? (
-                <div className="bg-white shadow-md rounded-lg p-8 text-center">
-                    <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
-                    <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
+                <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
                 </div>
             ) : (
                 <>
             {/* Header */}
-            <div className="mb-6 bg-white p-4 rounded-lg shadow">
+            <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
                     <div className="flex items-center gap-3 mb-3 md:mb-0">
-                        <h1 className="text-3xl font-bold text-gray-800">{t('tables.title')}</h1>
+                        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('tables.title')}</h1>
                         <button
                             onClick={handleExportToExcel}
                             className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
@@ -646,7 +646,7 @@ const TablesPage: React.FC = () => {
 
                 {/* 범례 (전체 보기 모드) */}
                 {(state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) && legend.length > 0 && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex flex-wrap items-center gap-3">
                             {legend.map(item => {
                                 const emoji = COLOR_EMOJIS[item.color] || '⚪';
@@ -686,11 +686,11 @@ const TablesPage: React.FC = () => {
 
             {/* 대기 중 참가자 섹션 */}
             {waitingParticipants.length > 0 && (
-                <div className="mb-6 bg-white p-4 rounded-lg shadow">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">대기 중 참가자</h2>
+                <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">대기 중 참가자</h2>
                     <div className="overflow-x-auto">
                         <table className="w-full table-auto">
-                            <thead className="bg-gray-200">
+                            <thead className="bg-gray-200 dark:bg-gray-700">
                                 <tr>
                                     <th className="px-4 py-2 text-left">이름</th>
                                     <th className="px-4 py-2 text-left">ID</th>
@@ -701,7 +701,7 @@ const TablesPage: React.FC = () => {
                             </thead>
                             <tbody>
                                 {waitingParticipants.map((participant) => (
-                                    <tr key={participant.id} className="border-b hover:bg-gray-50">
+                                    <tr key={participant.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700">
                                         <td className="px-4 py-2">{participant.name}</td>
                                         <td className="px-4 py-2">{participant.userId || '-'}</td>
                                         <td className="px-4 py-2">{participant.chips}</td>

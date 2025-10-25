@@ -431,10 +431,10 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
             <div className="p-4">
               <div className="space-y-4">
                 {requirement.timeSlots.map((timeSlot, timeSlotIndex) => (
-                  <div key={timeSlotIndex} className="border border-gray-200 rounded-md p-4 bg-white">
+                  <div key={timeSlotIndex} className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-white dark:bg-gray-800">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           ⏰ 시간대 {timeSlotIndex + 1}
                         </span>
                         {requirement.timeSlots.length > 1 && (

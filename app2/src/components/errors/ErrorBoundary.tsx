@@ -47,11 +47,11 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-          <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+          <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900 rounded-full">
               <svg
-                className="w-6 h-6 text-red-600"
+                className="w-6 h-6 text-red-600 dark:text-red-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -64,15 +64,15 @@ class ErrorBoundary extends Component<Props, State> {
                 />
               </svg>
             </div>
-            <h1 className="mt-4 text-xl font-semibold text-center text-gray-900">
+            <h1 className="mt-4 text-xl font-semibold text-center text-gray-900 dark:text-gray-100">
               문제가 발생했습니다
             </h1>
-            <p className="mt-2 text-sm text-center text-gray-600">
+            <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-300">
               예기치 않은 오류가 발생했습니다. 페이지를 새로고침하거나 나중에 다시 시도해주세요.
             </p>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-4">
-                <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   오류 세부정보
                 </summary>
                 <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">

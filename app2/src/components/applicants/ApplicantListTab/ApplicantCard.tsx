@@ -44,19 +44,19 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
   } : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2.5">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 sm:p-2.5">
       {/* 모바일 최적화된 레이아웃 */}
       <div className="space-y-2">
-        
+
         {/* 상단: 이름, 프로필 보기 버튼, 상태 */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-medium text-gray-900 text-base">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 text-base">
               {applicant.applicantName}
             </h4>
             <button
               onClick={() => setIsProfileModalOpen(true)}
-              className="text-xs text-blue-600 hover:text-blue-800 hover:underline bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition-colors"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2 py-1 rounded-md transition-colors"
             >
               (프로필 보기)
             </button>
@@ -177,11 +177,11 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
                     const allApplications = Array.from(processedApplications.values());
                     
                     return (
-                      <div className="mt-2 p-2 rounded-lg border bg-green-50 border-green-200">
+                      <div className="mt-2 p-2 rounded-lg border bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700">
                         <div className="space-y-1">
                           {allApplications.map((group, groupIndex) => {
                             return (
-                              <div key={groupIndex} className="bg-white p-2 rounded border text-sm font-medium text-gray-700">
+                              <div key={groupIndex} className="bg-white dark:bg-gray-700 p-2 rounded border dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 📅 {group.displayDateRange} ⏰ {group.time} 👤 {group.roles.filter((role: string) => role).map((role: string) => t(`roles.${role}`) || role).join(', ')}
                               </div>
                             );
@@ -190,11 +190,11 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
                       </div>
                     );
                   })()}
-                  
+
                   {/* 기존 단일 선택 지원자 표시 */}
                   {applicantSelections.length === 0 && (applicant.assignedDate || applicant.assignedTime || applicant.assignedRole) && (
-                    <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
-                      <div className="text-sm bg-white p-2 rounded border font-medium text-gray-700">
+                    <div className="mt-2 p-2 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700">
+                      <div className="text-sm bg-white dark:bg-gray-700 p-2 rounded border dark:border-gray-600 font-medium text-gray-700 dark:text-gray-200">
                         📅 {applicant.assignedDate ? formatDateDisplay(applicant.assignedDate) : ''} ⏰ {applicant.assignedTime} 👤 {applicant.assignedRole ? (t(`roles.${applicant.assignedRole}`) || applicant.assignedRole) : ''}
                       </div>
                     </div>

@@ -55,7 +55,7 @@ const Loading: React.FC<LoadingProps> = ({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 bg-white">
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-white dark:bg-gray-900">
         {spinner}
       </div>
     );
@@ -64,7 +64,7 @@ const Loading: React.FC<LoadingProps> = ({
   if (overlay) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-        <div className="bg-white rounded-lg p-6 shadow-xl">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
           {spinner}
         </div>
       </div>

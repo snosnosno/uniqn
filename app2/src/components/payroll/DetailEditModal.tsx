@@ -370,20 +370,20 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/5 shadow-lg rounded-md bg-white">
+      <div className="relative top-20 mx-auto p-5 border dark:border-gray-700 w-11/12 md:w-4/5 lg:w-3/5 shadow-lg rounded-md bg-white dark:bg-gray-800">
         {/* 헤더 */}
-        <div className="flex justify-between items-center pb-4 border-b">
+        <div className="flex justify-between items-center pb-4 border-b dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-              <span className="text-indigo-600 font-medium text-sm">
+            <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+              <span className="text-indigo-600 dark:text-indigo-300 font-medium text-sm">
                 {staff.staffName.charAt(0)}
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 {staff.staffName} 정산 상세
               </h3>
-              <p className="text-sm text-gray-500">{staff.role}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{staff.role}</p>
             </div>
           </div>
           <button

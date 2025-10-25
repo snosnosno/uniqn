@@ -165,17 +165,17 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
 
         {showPreview ? (
           /* 미리보기 */
-          <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
+          <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-700">
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{title || '(제목 없음)'}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{title || '(제목 없음)'}</h3>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityBadgeStyle(priority)}`}>
                 {getPriorityLabel(priority)}
               </span>
             </div>
-            <div className="whitespace-pre-wrap text-gray-700 mb-4">
+            <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-200 mb-4">
               {content || '(내용 없음)'}
             </div>
-            <div className="text-sm text-gray-500 space-y-1">
+            <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
               <p>• 공개 시작: {new Date(startDate).toLocaleString('ko-KR')}</p>
               {hasEndDate && endDate && (
                 <p>• 공개 종료: {new Date(endDate).toLocaleString('ko-KR')}</p>
@@ -299,18 +299,18 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
         )}
 
         {/* 버튼 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || validationErrors.length > 0}
-            className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 text-white bg-blue-600 dark:bg-blue-700 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? '등록 중...' : '등록하기'}
           </button>

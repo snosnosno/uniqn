@@ -695,7 +695,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       return (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                          <span className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">시스템 기본값</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">시스템 기본값</span>
                         </div>
                       );
                     }

@@ -90,25 +90,25 @@ const ConsentPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
           {t('consent.title', '약관 동의')}
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
           {t('consent.description', '서비스 이용을 위해 약관 동의가 필요합니다.')}
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <ConsentManager
             isSignupMode={true}
             onChange={setConsents}
           />
 
           {error && (
-            <p className="mt-4 text-red-500 text-sm text-center" role="alert">
+            <p className="mt-4 text-red-500 dark:text-red-400 text-sm text-center" role="alert">
               {error}
             </p>
           )}
@@ -117,7 +117,7 @@ const ConsentPage: React.FC = () => {
             <button
               onClick={handleSubmit}
               disabled={isLoading || !consents}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:bg-indigo-400 dark:disabled:bg-indigo-600 disabled:cursor-not-allowed"
             >
               {isLoading ? t('common.processing', '처리 중...') : t('consent.submit', '동의하고 계속하기')}
             </button>

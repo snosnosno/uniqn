@@ -213,10 +213,10 @@ const NotificationSettingsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{t('notifications.settings.loadFailed')}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">{t('notifications.settings.loadFailed')}</p>
           <button
             onClick={() => navigate(-1)}
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             {t('common.back')}
           </button>
@@ -226,14 +226,14 @@ const NotificationSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* 헤더 */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
             <button
               onClick={() => navigate(-1)}
-              className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="mr-4 p-2 hover:bg-gray-100 dark:bg-gray-700 rounded-lg transition-colors"
             >
               <ArrowLeftIcon className="h-6 w-6" />
             </button>
@@ -246,19 +246,19 @@ const NotificationSettingsPage: React.FC = () => {
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* 전체 알림 설정 */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {settings.enabled ? (
-                <BellIcon className="h-6 w-6 text-blue-600" />
+                <BellIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               ) : (
-                <BellSlashIcon className="h-6 w-6 text-gray-400" />
+                <BellSlashIcon className="h-6 w-6 text-gray-400 dark:text-gray-500" />
               )}
               <div>
                 <h2 className="text-lg font-semibold">
                   {t('notifications.settings.globalEnabled')}
                 </h2>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {t('notifications.settings.globalDescription')}
                 </p>
               </div>
@@ -269,13 +269,13 @@ const NotificationSettingsPage: React.FC = () => {
               className={`
                 relative inline-flex h-6 w-11 items-center rounded-full
                 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                ${settings.enabled ? 'bg-blue-600' : 'bg-gray-200'}
+                ${settings.enabled ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                 ${saving ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
               <span
                 className={`
-                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-800 transition-transform
                   ${settings.enabled ? 'translate-x-6' : 'translate-x-1'}
                 `}
               />
@@ -285,12 +285,12 @@ const NotificationSettingsPage: React.FC = () => {
 
         {/* 카테고리별 설정 */}
         {(['system', 'work', 'schedule'] as NotificationCategory[]).map((category) => (
-          <div key={category} className="bg-white rounded-lg shadow p-6">
+          <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             {/* 카테고리 헤더 */}
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">{getCategoryName(category)}</h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {getCategoryDescription(category)}
                 </p>
               </div>
@@ -300,13 +300,13 @@ const NotificationSettingsPage: React.FC = () => {
                 className={`
                   relative inline-flex h-6 w-11 items-center rounded-full
                   transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                  ${settings.categories[category].enabled ? 'bg-blue-600' : 'bg-gray-200'}
+                  ${settings.categories[category].enabled ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                   ${saving || !settings.enabled ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
               >
                 <span
                   className={`
-                    inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                    inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-800 transition-transform
                     ${settings.categories[category].enabled ? 'translate-x-6' : 'translate-x-1'}
                   `}
                 />
@@ -318,20 +318,20 @@ const NotificationSettingsPage: React.FC = () => {
               <div className="space-y-3 mt-4 pt-4 border-t">
                 {getTypesByCategory(category).map((type) => (
                   <div key={type} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">{getTypeName(type)}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200">{getTypeName(type)}</span>
                     <button
                       onClick={() => handleToggleType(type)}
                       disabled={saving || !settings.enabled}
                       className={`
                         relative inline-flex h-5 w-9 items-center rounded-full
                         transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                        ${settings.types?.[type] ?? true ? 'bg-blue-600' : 'bg-gray-200'}
+                        ${settings.types?.[type] ?? true ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                         ${saving || !settings.enabled ? 'opacity-50 cursor-not-allowed' : ''}
                       `}
                     >
                       <span
                         className={`
-                          inline-block h-3 w-3 transform rounded-full bg-white transition-transform
+                          inline-block h-3 w-3 transform rounded-full bg-white dark:bg-gray-800 transition-transform
                           ${(settings.types?.[type] ?? true) ? 'translate-x-5' : 'translate-x-1'}
                         `}
                       />
@@ -344,15 +344,15 @@ const NotificationSettingsPage: React.FC = () => {
         ))}
 
         {/* 조용한 시간대 설정 */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <ClockIcon className="h-6 w-6 text-blue-600" />
+              <ClockIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               <div>
                 <h3 className="text-lg font-semibold">
                   {t('notifications.settings.quietHours')}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {t('notifications.settings.quietHoursDescription')}
                 </p>
               </div>
@@ -363,13 +363,13 @@ const NotificationSettingsPage: React.FC = () => {
               className={`
                 relative inline-flex h-6 w-11 items-center rounded-full
                 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                ${settings.quietHours?.enabled ? 'bg-blue-600' : 'bg-gray-200'}
+                ${settings.quietHours?.enabled ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                 ${saving || !settings.enabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
               <span
                 className={`
-                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-800 transition-transform
                   ${settings.quietHours?.enabled ? 'translate-x-6' : 'translate-x-1'}
                 `}
               />
@@ -380,7 +380,7 @@ const NotificationSettingsPage: React.FC = () => {
           {settings.quietHours?.enabled && (
             <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   {t('notifications.settings.startTime')}
                 </label>
                 <input
@@ -388,11 +388,11 @@ const NotificationSettingsPage: React.FC = () => {
                   value={settings.quietHours.start}
                   onChange={(e) => handleQuietHoursTimeChange('start', e.target.value)}
                   disabled={saving || !settings.enabled}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   {t('notifications.settings.endTime')}
                 </label>
                 <input
@@ -400,7 +400,7 @@ const NotificationSettingsPage: React.FC = () => {
                   value={settings.quietHours.end}
                   onChange={(e) => handleQuietHoursTimeChange('end', e.target.value)}
                   disabled={saving || !settings.enabled}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>

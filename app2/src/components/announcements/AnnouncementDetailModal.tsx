@@ -185,7 +185,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
           {/* 닫기 버튼 */}
           <button
             onClick={onClose}
-            className={`px-6 py-2 text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors ${
+            className={`px-6 py-2 text-white bg-gray-600 dark:bg-gray-700 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors ${
               !isAdmin ? 'w-full' : ''
             }`}
           >

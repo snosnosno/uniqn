@@ -130,16 +130,16 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
   return (
     <section
       data-testid="feature-section"
-      className="py-20 bg-gray-50"
+      className="py-20 bg-gray-50 dark:bg-gray-900"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 섹션 헤더 */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {content.title}
           </h2>
           {content.subtitle && (
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               {content.subtitle}
             </p>
           )}

@@ -41,26 +41,26 @@ const PrivacyPolicyPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* 헤더 (인쇄 시 숨김) */}
-      <div className="bg-white border-b sticky top-0 z-10 print:hidden">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10 print:hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <button
                 onClick={handleGoBack}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="mr-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 aria-label={t('common.back')}
               >
-                <ArrowLeftIcon className="h-6 w-6" />
+                <ArrowLeftIcon className="h-6 w-6 dark:text-gray-200" />
               </button>
-              <h1 className="text-xl font-semibold">
+              <h1 className="text-xl font-semibold dark:text-gray-100">
                 {t('legal.privacyPolicy.title')}
               </h1>
             </div>
             <button
               onClick={handlePrint}
-              className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               aria-label={t('common.print')}
             >
               <PrinterIcon className="h-5 w-5" />
@@ -72,13 +72,13 @@ const PrivacyPolicyPage: React.FC = () => {
 
       {/* 본문 */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-8 print:shadow-none">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 print:shadow-none">
           {/* 헤더 정보 */}
-          <div className="border-b pb-6 mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="border-b dark:border-gray-700 pb-6 mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
               {t('legal.privacyPolicy.title')}
             </h1>
-            <div className="mt-4 flex items-center space-x-4 text-sm text-gray-600">
+            <div className="mt-4 flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
               <span>
                 {t('legal.version')}: 1.0.0
               </span>
@@ -229,23 +229,23 @@ const PrivacyPolicyPage: React.FC = () => {
                     회사는 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 외부 전문업체에 위탁하여 운영하고 있습니다.
                   </p>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             수탁업체
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             위탁 업무 내용
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             Google Firebase
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">
                             회원 인증, 데이터베이스 관리, 알림 발송
                           </td>
                         </tr>

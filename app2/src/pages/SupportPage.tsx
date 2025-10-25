@@ -45,12 +45,12 @@ const FAQItemComponent: React.FC<FAQItemComponentProps> = ({ faq, isOpen, onTogg
   const { t } = useTranslation();
 
   return (
-    <div className="border border-gray-200 rounded-lg">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
       <button
         onClick={onToggle}
-        className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50 dark:bg-gray-900 transition-colors"
       >
-        <span className="font-medium text-gray-900">
+        <span className="font-medium text-gray-900 dark:text-gray-100">
           {t(faq.questionKey)}
         </span>
         {isOpen ? (
@@ -61,7 +61,7 @@ const FAQItemComponent: React.FC<FAQItemComponentProps> = ({ faq, isOpen, onTogg
       </button>
 
       {isOpen && (
-        <div className="px-4 pb-3 text-gray-600 border-t border-gray-100">
+        <div className="px-4 pb-3 text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700">
           <div className="pt-3">
             {t(faq.answerKey)}
           </div>
@@ -276,26 +276,26 @@ const SupportPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             {t('support.title', '고객 지원')}
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             {t('support.subtitle', 'FAQ를 확인하거나 문의사항을 보내주세요')}
           </p>
         </div>
 
         {/* 탭 네비게이션 */}
-        <div className="flex border-b border-gray-200 mb-8">
+        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
           <button
             onClick={() => setActiveTab('faq')}
             className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
               activeTab === 'faq'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:border-gray-600'
             }`}
           >
             <FaQuestionCircle className="w-4 h-4 inline mr-2" />
@@ -306,8 +306,8 @@ const SupportPage: React.FC = () => {
             onClick={() => setActiveTab('inquiry')}
             className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
               activeTab === 'inquiry'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:border-gray-600'
             }`}
           >
             <FaEnvelope className="w-4 h-4 inline mr-2" />
@@ -319,13 +319,13 @@ const SupportPage: React.FC = () => {
               onClick={() => setActiveTab('my-inquiries')}
               className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
                 activeTab === 'my-inquiries'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:border-gray-600'
               }`}
             >
               {t('support.tabs.myInquiries', '내 문의')}
               {myInquiries.length > 0 && (
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs rounded-full">
                   {myInquiries.length}
                 </span>
               )}
@@ -342,8 +342,8 @@ const SupportPage: React.FC = () => {
                 onClick={() => setSelectedFAQCategory('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedFAQCategory === 'all'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
                 }`}
               >
                 {t('common.all')}
@@ -355,8 +355,8 @@ const SupportPage: React.FC = () => {
                   onClick={() => setSelectedFAQCategory(category.key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedFAQCategory === category.key
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900'
                   }`}
                 >
                   <span className="mr-1">{category.icon}</span>
@@ -377,7 +377,7 @@ const SupportPage: React.FC = () => {
               ))}
 
               {filteredFAQs.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   {t('support.faq.noResults', '해당 카테고리에 FAQ가 없습니다.')}
                 </div>
               )}
@@ -387,21 +387,21 @@ const SupportPage: React.FC = () => {
 
         {/* 문의하기 탭 */}
         {activeTab === 'inquiry' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             {!currentUser ? (
               <div className="text-center py-8">
                 <FaExclamationTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   {t('support.inquiry.loginRequired', '로그인이 필요합니다')}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   {t('support.inquiry.loginMessage', '문의를 작성하려면 먼저 로그인해주세요.')}
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmitInquiry} className="space-y-6">
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     {t('support.inquiry.category', '문의 분류')}
                   </label>
                   <select
@@ -411,7 +411,7 @@ const SupportPage: React.FC = () => {
                       ...prev,
                       category: e.target.value as InquiryCategory
                     }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-400"
                   >
                     {INQUIRY_CATEGORIES.map((category) => (
                       <option key={category.key} value={category.key}>
@@ -422,7 +422,7 @@ const SupportPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     {t('support.inquiry.subject', '제목')}
                   </label>
                   <input
@@ -431,13 +431,13 @@ const SupportPage: React.FC = () => {
                     value={inquiryForm.subject}
                     onChange={(e) => setInquiryForm(prev => ({ ...prev, subject: e.target.value }))}
                     placeholder={t('support.inquiry.subjectPlaceholder', '문의 제목을 입력해주세요')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-400"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     {t('support.inquiry.message', '내용')}
                   </label>
                   <textarea
@@ -446,7 +446,7 @@ const SupportPage: React.FC = () => {
                     onChange={(e) => setInquiryForm(prev => ({ ...prev, message: e.target.value }))}
                     placeholder={t('support.inquiry.messagePlaceholder', '문의 내용을 자세히 작성해주세요')}
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-400 resize-none"
                     required
                   />
                 </div>
@@ -454,7 +454,7 @@ const SupportPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center">
@@ -480,33 +480,33 @@ const SupportPage: React.FC = () => {
             {loadingInquiries ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-600">{t('support.myInquiries.loading', '문의 내역을 불러오는 중...')}</p>
+                <p className="text-gray-600 dark:text-gray-300">{t('support.myInquiries.loading', '문의 내역을 불러오는 중...')}</p>
               </div>
             ) : inquiriesError ? (
-              <div className="text-center py-8 bg-white rounded-lg">
+              <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg">
                 <FaExclamationTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   문의 내역 조회 실패
                 </h3>
-                <p className="text-gray-600 mb-4">{inquiriesError}</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">{inquiriesError}</p>
                 <button
                   onClick={() => {
                     setInquiriesError(null);
                     setActiveTab('faq');
                     setTimeout(() => setActiveTab('my-inquiries'), 100);
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   다시 시도
                 </button>
               </div>
             ) : myInquiries.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-lg">
+              <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg">
                 <FaEnvelope className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   {t('support.myInquiries.empty', '문의 내역이 없습니다')}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   {t('support.myInquiries.emptyMessage', '문의사항이 있으시면 언제든지 문의해주세요.')}
                 </p>
               </div>
@@ -514,18 +514,18 @@ const SupportPage: React.FC = () => {
               myInquiries.map((inquiry) => {
                 const statusStyle = INQUIRY_STATUS_STYLES[inquiry.status];
                 return (
-                  <div key={inquiry.id} className="bg-white rounded-lg shadow-sm p-6">
+                  <div key={inquiry.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center mb-1">
-                          <h3 className="font-medium text-gray-900">{inquiry.subject}</h3>
+                          <h3 className="font-medium text-gray-900 dark:text-gray-100">{inquiry.subject}</h3>
                           {inquiry.category === 'report' && (
-                            <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                            <span className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
                               🚨 신고
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                           {inquiry.createdAt.toDate().toLocaleDateString('ko-KR', {
                             year: 'numeric',
                             month: 'long',
@@ -540,27 +540,27 @@ const SupportPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="text-gray-700 mb-4 whitespace-pre-wrap">
+                    <div className="text-gray-700 dark:text-gray-200 mb-4 whitespace-pre-wrap">
                       {inquiry.message}
                     </div>
 
                     {/* 신고 메타데이터 표시 */}
                     {inquiry.category === 'report' && inquiry.reportMetadata && (
                       <div className="mb-4">
-                        <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                          <h4 className="font-medium text-red-800 mb-2 text-sm">신고 상세 정보</h4>
+                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 text-sm">신고 상세 정보</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                             <div>
-                              <span className="font-medium text-red-700">신고 대상:</span>
-                              <span className="ml-1 text-red-800">{inquiry.reportMetadata.targetName}</span>
+                              <span className="font-medium text-red-700 dark:text-red-300">신고 대상:</span>
+                              <span className="ml-1 text-red-800 dark:text-red-200">{inquiry.reportMetadata.targetName}</span>
                             </div>
                             <div>
-                              <span className="font-medium text-red-700">이벤트:</span>
-                              <span className="ml-1 text-red-800">{inquiry.reportMetadata.eventTitle}</span>
+                              <span className="font-medium text-red-700 dark:text-red-300">이벤트:</span>
+                              <span className="ml-1 text-red-800 dark:text-red-200">{inquiry.reportMetadata.eventTitle}</span>
                             </div>
                             <div className="sm:col-span-2">
-                              <span className="font-medium text-red-700">날짜:</span>
-                              <span className="ml-1 text-red-800">{inquiry.reportMetadata.date}</span>
+                              <span className="font-medium text-red-700 dark:text-red-300">날짜:</span>
+                              <span className="ml-1 text-red-800 dark:text-red-200">{inquiry.reportMetadata.date}</span>
                             </div>
                           </div>
                         </div>
@@ -568,13 +568,13 @@ const SupportPage: React.FC = () => {
                     )}
 
                     {inquiry.response && (
-                      <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-                        <h4 className="font-medium text-blue-900 mb-2">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-blue-400 dark:border-blue-600">
+                        <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
                           {t('support.myInquiries.response', '답변')}
                         </h4>
-                        <p className="text-blue-800 whitespace-pre-wrap">{inquiry.response}</p>
+                        <p className="text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{inquiry.response}</p>
                         {inquiry.respondedAt && (
-                          <p className="text-xs text-blue-600 mt-2">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                             {inquiry.respondedAt.toDate().toLocaleDateString('ko-KR', {
                               year: 'numeric',
                               month: 'long',

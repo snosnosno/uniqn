@@ -161,7 +161,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
       
       {/* 스태프 카드 리스트 */}
       {isExpanded && (
-        <div className="p-4 space-y-3 bg-white">
+        <div className="p-4 space-y-3 bg-white dark:bg-gray-800">
           {staffList.map((staff) => (
             <StaffCard
               key={staff.id}

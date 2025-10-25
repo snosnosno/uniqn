@@ -333,7 +333,7 @@ const ParticipantsPage: React.FC = () => {
   const dateFilterForSelector = state.tournamentId === 'ALL' ? null : selectedDate;
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       {/* 날짜 선택기 (전체 보기 모드가 아닐 때만 표시) */}
       {state.tournamentId !== 'ALL' && state.tournamentId && (
         <div className="mb-4">
@@ -344,16 +344,16 @@ const ParticipantsPage: React.FC = () => {
       <TournamentSelector dateFilter={dateFilterForSelector} />
 
       {!state.tournamentId ? (
-        <div className="bg-white shadow-md rounded-lg p-8 text-center">
-          <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
-          <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
         </div>
       ) : (
         <>
       {/* Header */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow">
+      <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-          <h1 className="text-3xl font-bold text-gray-800 mb-3 md:mb-0">{t('participants.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-3 md:mb-0">{t('participants.title')}</h1>
           <div className="flex flex-wrap items-center gap-2 md:space-x-3 md:gap-0">
             <button
               onClick={() => setIsBulkModalOpen(true)}
@@ -420,9 +420,9 @@ const ParticipantsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+      <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-x-auto">
         <table className="w-full table-auto">
-          <thead className="bg-gray-200">
+          <thead className="bg-gray-200 dark:bg-gray-700">
             <tr>
               <th className="px-4 py-2">
                 <input
@@ -447,7 +447,7 @@ const ParticipantsPage: React.FC = () => {
           </thead>
           <tbody>
             {filteredParticipants.map((p: Participant) => (
-              <tr key={p.id} className="border-b hover:bg-gray-50">
+              <tr key={p.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700">
                 <td className="px-4 py-2">
                   <input
                     type="checkbox"

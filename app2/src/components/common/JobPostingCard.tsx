@@ -231,11 +231,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
   // variant별 레이아웃 클래스
   const getContainerClasses = () => {
-    const baseClasses = 'bg-white shadow rounded-lg';
-    
+    const baseClasses = 'bg-white dark:bg-gray-800 shadow rounded-lg';
+
     switch (variant) {
       case 'admin-list':
-        return `${baseClasses} hover:bg-gray-50`;
+        return `${baseClasses} hover:bg-gray-50 dark:hover:bg-gray-700`;
       case 'user-card':
         return `${baseClasses} overflow-hidden`;
       case 'detail-info':
@@ -765,14 +765,14 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           <div className="mt-2 flex justify-between items-center gap-1">
             {/* 문의 연락처 - 왼쪽 */}
             {post.contactPhone && (
-              <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                 📞 {post.contactPhone}
               </span>
             )}
 
             {/* 구인자 정보 - 오른쪽 */}
             {creatorInfo && (
-              <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                 {getCreatorDisplayText()}
               </span>
             )}

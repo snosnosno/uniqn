@@ -77,36 +77,36 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center bg-yellow-100 rounded-full mb-4">
-            <svg className="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center bg-yellow-100 dark:bg-yellow-900 rounded-full mb-4">
+            <svg className="h-8 w-8 text-yellow-600 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             {t('emailVerification.title', '이메일 인증')}
           </h2>
-          <p className="text-gray-600 mb-1">
+          <p className="text-gray-600 dark:text-gray-300 mb-1">
             {t('emailVerification.subtitle', '계정을 활성화하려면 이메일 인증이 필요합니다.')}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentUser?.email}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="space-y-4">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 dark:border-blue-600 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 text-blue-400 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-blue-700 dark:text-blue-200">
                     {t('emailVerification.instructions', '인증 메일을 확인하고 링크를 클릭하세요. 메일이 오지 않으면 스팸함도 확인해보세요.')}
                   </p>
                 </div>
@@ -116,7 +116,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
             <div className="flex flex-col space-y-3">
               <button
                 onClick={handleCheckVerification}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 {t('emailVerification.checkButton', '인증 확인')}
               </button>
@@ -124,7 +124,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
               <button
                 onClick={handleResendEmail}
                 disabled={!canResend || isResending}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isResending
                   ? t('emailVerification.resending', '발송 중...')

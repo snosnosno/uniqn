@@ -305,46 +305,46 @@ const InquiryManagementPage: React.FC = () => {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow border">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
             <FaEnvelope className="h-8 w-8 text-blue-500" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">전체 문의</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">전체 문의</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
             <FaClock className="h-8 w-8 text-red-500" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">대기중</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.open}</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">대기중</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.open}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
             <FaReply className="h-8 w-8 text-yellow-500" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">처리중</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">처리중</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.inProgress}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
             <FaCheck className="h-8 w-8 text-green-500" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">완료</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.closed}</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">완료</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.closed}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* 필터 및 검색 */}
-      <div className="bg-white p-4 rounded-lg shadow border mb-6">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* 검색 */}
           <div className="relative">
@@ -411,35 +411,35 @@ const InquiryManagementPage: React.FC = () => {
       </div>
 
       {/* 문의 목록 */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   문의 정보
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   작성자
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   카테고리
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   상태
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   작성일
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   작업
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredInquiries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     조건에 맞는 문의가 없습니다.
                   </td>
                 </tr>
@@ -449,7 +449,7 @@ const InquiryManagementPage: React.FC = () => {
                   const statusStyle = INQUIRY_STATUS_STYLES[inquiry.status];
 
                   return (
-                    <tr key={inquiry.id} className="hover:bg-gray-50">
+                    <tr key={inquiry.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4">
                         <div>
                           <div className="flex items-center">
