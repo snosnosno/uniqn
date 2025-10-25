@@ -113,10 +113,8 @@ export const sendSystemAnnouncement = functions.https.onCall(
         );
       }
 
-      // 5. 모든 활성 사용자 조회
-      const usersSnapshot = await db.collection('users')
-        .where('isActive', '==', true)
-        .get();
+      // 5. 모든 사용자 조회 (isActive 필드 없이 전체 조회)
+      const usersSnapshot = await db.collection('users').get();
 
       const totalUsers = usersSnapshot.size;
       functions.logger.info('전체 활성 사용자 조회 완료', { totalUsers });
