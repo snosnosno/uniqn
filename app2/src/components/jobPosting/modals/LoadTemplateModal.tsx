@@ -61,7 +61,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           <div className="max-h-96 overflow-y-auto">
             <div className="grid gap-3">
               {templates.map((template) => (
-                <div key={template.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={template.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{template.name}</h4>

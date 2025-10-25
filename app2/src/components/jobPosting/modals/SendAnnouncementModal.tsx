@@ -134,7 +134,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
       aria-labelledby="announcement-modal-title"
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -199,7 +199,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
               onChange={handleTitleChange}
               placeholder={t('jobPosting.announcement.titlePlaceholder')}
               disabled={isSending || confirmedStaff.length === 0}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               maxLength={50}
               autoFocus
             />
@@ -220,7 +220,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
               onChange={handleMessageChange}
               placeholder={t('jobPosting.announcement.messagePlaceholder')}
               disabled={isSending || confirmedStaff.length === 0}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               rows={6}
               maxLength={500}
             />
@@ -235,7 +235,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 {t('jobPosting.announcement.targetStaff')}
               </h3>
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                 <p className="text-sm text-gray-600 mb-2">
                   {t('jobPosting.announcement.staffCount', { count: uniqueStaff.length })}
                 </p>
@@ -269,11 +269,11 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t bg-gray-50">
+        <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
           <button
             onClick={handleCancel}
             disabled={isSending}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t('common.cancel')}
           </button>

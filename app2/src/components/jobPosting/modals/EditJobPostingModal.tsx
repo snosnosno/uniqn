@@ -255,7 +255,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
           </div>
 
           {formData.useRoleSalary ? (
-            <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+            <div className="space-y-3 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
               <div className="text-sm text-gray-600 mb-2">
                 각 역할별로 급여를 설정하세요. 기본값: 시급 20,000원
               </div>

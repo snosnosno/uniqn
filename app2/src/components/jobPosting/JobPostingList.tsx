@@ -81,10 +81,10 @@ const JobPostingList: React.FC<JobPostingListProps> = React.memo(({
 
   if (loading) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="text-center py-8">
           <LoadingSpinner />
-          <p className="text-gray-500 mt-2">공고 목록을 불러오는 중...</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">공고 목록을 불러오는 중...</p>
         </div>
       </div>
     );
@@ -92,23 +92,23 @@ const JobPostingList: React.FC<JobPostingListProps> = React.memo(({
 
   if (jobPostings.length === 0) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-2">📋</div>
-          <p className="text-gray-500">등록된 공고가 없습니다.</p>
-          <p className="text-sm text-gray-400 mt-1">새 공고를 작성해보세요.</p>
+          <div className="text-gray-400 dark:text-gray-500 text-4xl mb-2">📋</div>
+          <p className="text-gray-500 dark:text-gray-400">등록된 공고가 없습니다.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">새 공고를 작성해보세요.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900">등록된 공고 ({jobPostings.length}개)</h2>
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">등록된 공고 ({jobPostings.length}개)</h2>
       </div>
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {jobPostings.map((post) => (
           <JobPostingCard
             key={post.id}

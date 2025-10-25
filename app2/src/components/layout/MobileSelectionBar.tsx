@@ -23,12 +23,12 @@ const MobileSelectionBar: React.FC<MobileSelectionBarProps> = ({
   isAllSelected
 }) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 md:hidden z-50 mobile-selection-bar">
+    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t dark:border-gray-700 shadow-lg p-4 md:hidden z-50 mobile-selection-bar">
       <div className="space-y-3">
         {/* 선택 정보 및 액션 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <span className="font-semibold text-lg">
+            <span className="font-semibold text-lg text-gray-900 dark:text-gray-100">
               {selectedCount}명 선택
             </span>
             <button
