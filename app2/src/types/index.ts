@@ -138,6 +138,25 @@ export {
   convertTimestamp
 } from './notification';
 
+// 시스템 공지사항 타입
+export type {
+  SystemAnnouncement,
+  AnnouncementPriority,
+  AnnouncementStatus as SystemAnnouncementStatus,
+  CreateSystemAnnouncementInput,
+  UpdateSystemAnnouncementInput,
+  SendSystemAnnouncementRequest,
+  SendSystemAnnouncementResponse,
+  SystemAnnouncementFilter
+} from './systemAnnouncement';
+
+export {
+  validateSystemAnnouncement,
+  getPriorityLabel,
+  getPriorityColor,
+  getPriorityBadgeStyle
+} from './systemAnnouncement';
+
 // ============================================================================
 // 통합된 Person 타입 (NEW)
 // ============================================================================

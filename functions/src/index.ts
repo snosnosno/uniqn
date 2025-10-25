@@ -13,6 +13,7 @@ const corsHandler = cors({ origin: true });
 
 // --- Notification Functions ---
 export { sendJobPostingAnnouncement } from './notifications/sendJobPostingAnnouncement';
+export { sendSystemAnnouncement } from './notifications/sendSystemAnnouncement';
 export { onApplicationSubmitted } from './notifications/onApplicationSubmitted';
 export { onApplicationStatusChanged } from './notifications/onApplicationStatusChanged';
 export { onWorkTimeChanged } from './notifications/onWorkTimeChanged';

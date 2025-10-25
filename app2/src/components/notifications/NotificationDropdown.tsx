@@ -74,12 +74,8 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
     navigate('/app/notification-settings');
   }, [navigate, closeDropdown]);
 
-  /**
-   * 알림 아이템 클릭
-   */
-  const handleNotificationClick = useCallback(() => {
-    closeDropdown();
-  }, [closeDropdown]);
+  // 알림 아이템 클릭 시 자동으로 페이지 이동되므로 별도 핸들러 불필요
+  // NotificationItem의 기본 라우팅 로직 사용
 
   /**
    * 외부 클릭 감지
@@ -188,7 +184,6 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
                     <NotificationItem
                       key={notification.id}
                       notification={notification}
-                      onClick={handleNotificationClick}
                       onMarkAsRead={markAsRead}
                       compact
                     />
@@ -197,17 +192,15 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
               )}
             </div>
 
-            {/* 푸터 */}
-            {recentNotifications.length > 0 && (
-              <div className="p-3 border-t border-gray-200">
-                <button
-                  onClick={handleViewAll}
-                  className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  {t('notifications.viewAll', '모두 보기')}
-                </button>
-              </div>
-            )}
+            {/* 푸터 - 항상 알림센터 버튼 표시 */}
+            <div className="p-3 border-t border-gray-200">
+              <button
+                onClick={handleViewAll}
+                className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {t('notifications.notificationCenter', '알림센터')}
+              </button>
+            </div>
           </div>
         </>
       )}

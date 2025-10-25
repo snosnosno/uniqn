@@ -39,7 +39,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     color: 'blue',
     defaultPriority: 'medium',
     category: 'system',
-    route: (relatedId) => relatedId ? `/app/jobs/${relatedId}` : '/app/jobs',
+    route: (relatedId) => '/app/jobs', // 구인구직 페이지로 이동
   },
   system_announcement: {
     icon: '🔔',
