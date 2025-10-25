@@ -3,6 +3,7 @@ import { UnifiedWorkLog } from '../types/unified/workLog';
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { logger } from './logger';
 import { calculateWorkHours as calculateWorkHoursFromMapper } from './workLogMapper';
+import { ScheduleEvent } from '../types/schedule';
 
 /**
  * 통합 급여 계산 유틸리티
@@ -32,14 +33,21 @@ export interface PayrollCalculationResult {
 }
 
 /**
- * 역할별 급여 정보 가져오기
+ * 역할별 급여 정보 가져오기 (스냅샷 우선 폴백 지원)
+ *
+ * @param role - 역할
+ * @param jobPosting - 공고 데이터 (선택)
+ * @param roleSalaryOverrides - 급여 오버라이드 (선택)
+ * @param snapshot - 스냅샷 데이터 (선택, Schedule에서 추출)
+ * @returns 급여 타입 및 금액
  */
 export function getRoleSalaryInfo(
   role: string,
   jobPosting?: JobPosting | null,
-  roleSalaryOverrides?: Record<string, any>
+  roleSalaryOverrides?: Record<string, any>,
+  snapshot?: ScheduleEvent['snapshotData']
 ): { salaryType: string; salaryAmount: number } {
-  // 오버라이드 설정이 있는 경우 우선 사용
+  // 1순위: 오버라이드 설정
   const override = roleSalaryOverrides?.[role];
   if (override) {
     return {
@@ -47,8 +55,27 @@ export function getRoleSalaryInfo(
       salaryAmount: override.salaryAmount
     };
   }
-  
-  // 역할별 급여 설정이 있는 경우 우선 사용
+
+  // 2순위: 스냅샷 데이터 (역할별 급여)
+  if (snapshot?.salary.useRoleSalary && snapshot.salary.roleSalaries?.[role]) {
+    const snapshotRoleSalary = snapshot.salary.roleSalaries[role];
+    if (snapshotRoleSalary) {
+      return {
+        salaryType: snapshotRoleSalary.type === 'negotiable' ? 'other' : snapshotRoleSalary.type,
+        salaryAmount: snapshotRoleSalary.amount || 0
+      };
+    }
+  }
+
+  // 3순위: 스냅샷 데이터 (기본 급여)
+  if (snapshot?.salary) {
+    return {
+      salaryType: snapshot.salary.type,
+      salaryAmount: snapshot.salary.amount
+    };
+  }
+
+  // 4순위: JobPosting (역할별 급여)
   if (jobPosting?.useRoleSalary && jobPosting.roleSalaries?.[role]) {
     const roleSalary = jobPosting.roleSalaries[role];
     if (roleSalary) {
@@ -58,14 +85,14 @@ export function getRoleSalaryInfo(
       };
     }
   }
-  
-  // 기본 급여 설정 사용
+
+  // 5순위: JobPosting (기본 급여)
   const baseSalaryType = jobPosting?.salaryType || 'hourly';
   const salaryType = baseSalaryType === 'negotiable' ? 'other' : baseSalaryType;
-  const salaryAmount = jobPosting?.salaryAmount ? 
-    parseFloat(jobPosting.salaryAmount) : 
+  const salaryAmount = jobPosting?.salaryAmount ?
+    parseFloat(jobPosting.salaryAmount) :
     (DEFAULT_HOURLY_RATES[role] || DEFAULT_HOURLY_RATES['default'] || 10000);
-  
+
   return { salaryType, salaryAmount };
 }
 
@@ -103,9 +130,37 @@ export function calculateBasePay(
 }
 
 /**
- * 수당 계산
+ * 수당 계산 (스냅샷 우선 폴백 지원)
+ *
+ * @param jobPosting - 공고 데이터 (선택)
+ * @param totalDays - 총 근무일수
+ * @param snapshot - 스냅샷 데이터 (선택)
+ * @returns 수당 정보
  */
-export function calculateAllowances(jobPosting?: JobPosting | null, totalDays: number = 1): PayrollCalculationResult['allowances'] {
+export function calculateAllowances(
+  jobPosting?: JobPosting | null,
+  totalDays: number = 1,
+  snapshot?: ScheduleEvent['snapshotData']
+): PayrollCalculationResult['allowances'] {
+  // 1순위: 스냅샷 데이터
+  if (snapshot?.allowances) {
+    const snapshotAllowances = snapshot.allowances;
+    return {
+      meal: snapshotAllowances.meal || 0,
+      transportation: snapshotAllowances.transportation || 0,
+      accommodation: snapshotAllowances.accommodation || 0,
+      bonus: 0,
+      other: 0,
+      dailyRates: {
+        ...(snapshotAllowances.meal !== undefined && { meal: snapshotAllowances.meal }),
+        ...(snapshotAllowances.transportation !== undefined && { transportation: snapshotAllowances.transportation }),
+        ...(snapshotAllowances.accommodation !== undefined && { accommodation: snapshotAllowances.accommodation })
+      },
+      workDays: totalDays
+    };
+  }
+
+  // 2순위: JobPosting
   const benefits = jobPosting?.benefits;
   const isPerDay = benefits?.isPerDay !== false; // 기본값은 true (일당 계산)
 

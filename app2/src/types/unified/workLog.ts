@@ -128,15 +128,36 @@ export interface UnifiedWorkLog {
   // 메타데이터
   /** 비고 */
   notes?: string;
-  
+
   /** 생성 시간 */
   createdAt?: Timestamp;
-  
+
   /** 수정 시간 */
   updatedAt?: Timestamp;
-  
+
   /** 생성자 */
   createdBy?: string;
+
+  // 🔥 스냅샷 데이터 (공고 삭제 대비)
+  /** 공고 삭제 시 보존할 스냅샷 데이터 */
+  snapshotData?: {
+    title?: string;
+    salary: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other';
+      amount: number;
+      useRoleSalary?: boolean;
+      roleSalaries?: Record<string, { type: string; amount: number }>;
+    };
+    allowances?: { meal?: number; transportation?: number; accommodation?: number };
+    taxSettings?: { enabled: boolean; taxRate?: number; taxAmount?: number };
+    location: string;
+    detailedAddress?: string;
+    district?: string;
+    contactPhone?: string;
+    createdBy: string;
+    snapshotAt: Timestamp;
+    snapshotReason?: 'confirmed' | 'worklog_created' | 'posting_deleted';
+  };
 }
 
 /**

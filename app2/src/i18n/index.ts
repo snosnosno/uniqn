@@ -39,6 +39,23 @@ const resources = {
           collapse: '정보 접기',
           section: '공고 상세 정보'
         }
+      },
+      notifications: {
+        filters: {
+          all: '전체',
+          unread: '읽지 않음',
+          system: '시스템',
+          work: '근무',
+          schedule: '일정',
+          finance: '급여'
+        }
+      },
+      common: {
+        status: {
+          confirmed: '확정됨',
+          pending: '대기 중',
+          rejected: '거절됨'
+        }
       }
     }
   }

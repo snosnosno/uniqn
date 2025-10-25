@@ -103,7 +103,9 @@ export const processApplicationData = async (
       sourceId: docId,
       applicationId: docId,
       // assignedTime 추가 (formatEventTime에서 사용)
-      ...(assignedTime && { assignedTime: assignedTime })
+      ...(assignedTime && { assignedTime: assignedTime }),
+      // 🔥 스냅샷 데이터 포함 (공고 삭제 대비)
+      ...((data as any).snapshotData && { snapshotData: (data as any).snapshotData })
     };
     
     // 🚀 dateAssignments 구조 최우선 처리 (날짜 기반 구조 - 최신 버전)
@@ -378,7 +380,9 @@ export const processWorkLogData = async (
     // 급여 계산 정보 추가 (정산 상태 없이)
     ...(totalWorkMinutes > 0 && {
       payrollAmount: payrollAmount
-    })
+    }),
+    // 🔥 스냅샷 데이터 포함 (공고 삭제 대비)
+    ...((data as any).snapshotData && { snapshotData: (data as any).snapshotData })
   };
 };
 

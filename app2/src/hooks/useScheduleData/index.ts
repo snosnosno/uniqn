@@ -10,6 +10,7 @@ import type { Application, WorkLog } from '../../types/unifiedData';
 import { UseScheduleDataReturn } from './types';
 import { processApplicationData, processWorkLogData } from './dataProcessors';
 import { filterSchedules, createDefaultFilters } from './filterUtils';
+import { calculatePayroll } from '../../utils/payrollCalculations';
 
 /**
  * 스케줄 데이터를 관리하는 커스텀 훅
@@ -18,7 +19,7 @@ import { filterSchedules, createDefaultFilters } from './filterUtils';
 const useScheduleData = (): UseScheduleDataReturn => {
   const { currentUser } = useAuth();
   const context = useUnifiedDataContext();
-  const { staff: _staff, workLogs, applications, loading: _contextLoading, error: _contextError } = context.state;
+  const { staff: _staff, workLogs, applications, jobPostings, loading: _contextLoading, error: _contextError } = context.state;
   const [filters, setFilters] = useState(createDefaultFilters());
   const [_lastRefresh, _setLastRefresh] = useState(Date.now());
 
@@ -214,15 +215,91 @@ const useScheduleData = (): UseScheduleDataReturn => {
       }
     });
 
-    // 이번달 수입 계산 (완료된 일정만)
-    const thisMonthEarnings = thisMonthCompletedEvents.reduce(
-      (sum, event) => sum + (event.payrollAmount || 0), 0
-    );
+    // 🔥 이번달 수입 계산 (완료된 일정만) - 스냅샷 우선, 세후 급여 사용
+    const thisMonthEarnings = thisMonthCompletedEvents.reduce((sum, event) => {
+      // WorkLog 찾기 (Map.get 사용)
+      const workLog = workLogs.get(event.id);
+      if (!workLog) return sum + (event.payrollAmount || 0);
 
-    // 총 수입 계산 (완료된 일정만)
-    const totalEarnings = completedEvents.reduce(
-      (sum, event) => sum + (event.payrollAmount || 0), 0
-    );
+      // JobPosting 찾기 (스냅샷 우선)
+      const jobPosting = event.snapshotData ? {
+        id: event.eventId,
+        title: event.snapshotData.title || '근무',
+        location: event.snapshotData.location,
+        salaryType: event.snapshotData.salary.type,
+        salaryAmount: String(event.snapshotData.salary.amount),
+        useRoleSalary: event.snapshotData.salary.useRoleSalary,
+        roleSalaries: event.snapshotData.salary.roleSalaries,
+        benefits: {
+          mealAllowance: event.snapshotData.allowances?.meal || 0,
+          transportation: event.snapshotData.allowances?.transportation || 0,
+          accommodation: event.snapshotData.allowances?.accommodation || 0
+        },
+        taxSettings: event.snapshotData.taxSettings
+      } as any : jobPostings.get(event.eventId);
+
+      if (!jobPosting) return sum + (event.payrollAmount || 0);
+
+      // 급여 계산
+      const payroll = calculatePayroll([workLog as any], workLog.role || '', jobPosting);
+      const totalAmount = payroll.totalPayment;
+
+      // 세금 계산 (스냅샷 우선)
+      const taxSettings = event.snapshotData?.taxSettings || jobPosting?.taxSettings;
+      if (taxSettings?.enabled) {
+        const tax = taxSettings.taxAmount
+          ? taxSettings.taxAmount
+          : Math.round(totalAmount * (taxSettings.taxRate || 3.3) / 100);
+        const afterTaxAmount = totalAmount - tax;
+        return sum + afterTaxAmount;
+      }
+
+      // 세금 없으면 총 지급액
+      return sum + totalAmount;
+    }, 0);
+
+    // 🔥 총 수입 계산 (완료된 일정만) - 스냅샷 우선, 세후 급여 사용
+    const totalEarnings = completedEvents.reduce((sum, event) => {
+      // WorkLog 찾기 (Map.get 사용)
+      const workLog = workLogs.get(event.id);
+      if (!workLog) return sum + (event.payrollAmount || 0);
+
+      // JobPosting 찾기 (스냅샷 우선, Map.get 사용)
+      const jobPosting = event.snapshotData ? {
+        id: event.eventId,
+        title: event.snapshotData.title || '근무',
+        location: event.snapshotData.location,
+        salaryType: event.snapshotData.salary.type,
+        salaryAmount: String(event.snapshotData.salary.amount),
+        useRoleSalary: event.snapshotData.salary.useRoleSalary,
+        roleSalaries: event.snapshotData.salary.roleSalaries,
+        benefits: {
+          mealAllowance: event.snapshotData.allowances?.meal || 0,
+          transportation: event.snapshotData.allowances?.transportation || 0,
+          accommodation: event.snapshotData.allowances?.accommodation || 0
+        },
+        taxSettings: event.snapshotData.taxSettings
+      } as any : jobPostings.get(event.eventId);
+
+      if (!jobPosting) return sum + (event.payrollAmount || 0);
+
+      // 급여 계산
+      const payroll = calculatePayroll([workLog as any], workLog.role || '', jobPosting);
+      const totalAmount = payroll.totalPayment;
+
+      // 세금 계산 (스냅샷 우선)
+      const taxSettings = event.snapshotData?.taxSettings || jobPosting?.taxSettings;
+      if (taxSettings?.enabled) {
+        const tax = taxSettings.taxAmount
+          ? taxSettings.taxAmount
+          : Math.round(totalAmount * (taxSettings.taxRate || 3.3) / 100);
+        const afterTaxAmount = totalAmount - tax;
+        return sum + afterTaxAmount;
+      }
+
+      // 세금 없으면 총 지급액
+      return sum + totalAmount;
+    }, 0);
 
     return {
       totalSchedules: filteredSchedules.length,
@@ -232,7 +309,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       thisMonthEarnings,
       hoursWorked: Math.round(totalHoursWorked)
     };
-  }, [filteredSchedules]);
+  }, [filteredSchedules, workLogs, jobPostings]);
 
   // 새로고침 함수 (UnifiedDataContext는 자동 실시간 동기화)
   const refreshData = useCallback(() => {

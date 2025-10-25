@@ -14,6 +14,7 @@ import { JobPosting } from '../../../types/jobPosting/jobPosting';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { logger } from '../../../utils/logger';
+import { getSnapshotOrFallback } from '../../../utils/scheduleSnapshot';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { UnifiedWorkLog } from '../../../types/unified/workLog';
 import ReportModal from '../../../components/modals/ReportModal';
@@ -53,6 +54,20 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         return;
       }
 
+      // 🔍 디버깅: 스냅샷 데이터 확인
+      logger.info('🔍 [DEBUG] Schedule 데이터 확인', {
+        component: 'ScheduleDetailModal',
+        data: {
+          scheduleId: schedule.id,
+          eventId: schedule.eventId,
+          sourceCollection: schedule.sourceCollection,
+          hasSnapshotData: !!schedule.snapshotData,
+          snapshotLocation: schedule.snapshotData?.location,
+          scheduleLocation: schedule.location,
+          snapshotDataKeys: schedule.snapshotData ? Object.keys(schedule.snapshotData) : []
+        }
+      });
+
       setLoadingJobPosting(true);
       try {
         const jobPostingDoc = await getDoc(doc(db, 'jobPostings', schedule.eventId));
@@ -64,9 +79,12 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           setJobPosting(jobPostingData);
         } else {
           setJobPosting(null);
-          logger.warn('ScheduleDetailModal - JobPosting 문서 없음', {
+          logger.warn('ScheduleDetailModal - JobPosting 문서 없음 (스냅샷 사용 필요)', {
             component: 'ScheduleDetailModal',
-            data: { eventId: schedule.eventId }
+            data: {
+              eventId: schedule.eventId,
+              hasSnapshot: !!schedule.snapshotData
+            }
           });
         }
       } catch (error) {
@@ -138,19 +156,23 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     return labels[role] || role;
   }, []);
 
-  // 신고 핸들러
+  // 신고 핸들러 (스냅샷 우선 폴백)
   const handleReport = useCallback(() => {
-    if (!jobPosting?.createdBy) {
+    if (!schedule) return;
+
+    const createdBy = getSnapshotOrFallback(schedule, jobPosting).createdBy();
+
+    if (!createdBy) {
       logger.warn('신고 대상 정보가 없습니다', { component: 'ScheduleDetailModal' });
       return;
     }
 
     setReportTarget({
-      id: jobPosting.createdBy,
+      id: createdBy,
       name: '구인자' // JobPosting에서 사용자 이름 정보가 없으므로 기본값 사용
     });
     setIsReportModalOpen(true);
-  }, [jobPosting]);
+  }, [schedule, jobPosting]);
 
   const handleReportModalClose = useCallback(() => {
     setIsReportModalOpen(false);
@@ -232,27 +254,57 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     // 근무시간 계산 (WorkLog 기준)
     const totalHours = calculateWorkHours(workLogData as any);
 
-    // 급여 계산 (WorkLog 기준)
-    const totalPay = calculateSingleWorkLogPayroll(workLogData as any, effectiveRole || 'staff', jobPosting);
+    // 🔥 스냅샷 우선: jobPosting이 없으면 스냅샷으로 가상 JobPosting 생성
+    const effectiveJobPosting = jobPosting || (schedule.snapshotData ? {
+      id: schedule.eventId,
+      title: schedule.snapshotData.title || '근무',
+      location: schedule.snapshotData.location,
+      detailedAddress: schedule.snapshotData.detailedAddress,
+      district: schedule.snapshotData.district,
+      salaryType: schedule.snapshotData.salary.type,
+      salaryAmount: String(schedule.snapshotData.salary.amount),
+      useRoleSalary: schedule.snapshotData.salary.useRoleSalary,
+      roleSalaries: schedule.snapshotData.salary.roleSalaries,
+      benefits: {
+        mealAllowance: schedule.snapshotData.allowances?.meal || 0,
+        transportation: schedule.snapshotData.allowances?.transportation || 0,
+        accommodation: schedule.snapshotData.allowances?.accommodation || 0
+      },
+      taxSettings: schedule.snapshotData.taxSettings,
+      createdBy: schedule.snapshotData.createdBy
+    } as any : null);
 
-    // 급여 정보 추출 (WorkLog 역할 기준)
+    // 급여 계산 (WorkLog 기준, 스냅샷 폴백)
+    const totalPay = calculateSingleWorkLogPayroll(workLogData as any, effectiveRole || 'staff', effectiveJobPosting);
+
+    // 급여 정보 추출 (WorkLog 역할 기준, 스냅샷 우선)
     const { getRoleSalaryInfo } = await import('../../../utils/payrollCalculations');
-    const { salaryType, salaryAmount } = getRoleSalaryInfo(effectiveRole || 'staff', jobPosting);
+    const { salaryType, salaryAmount } = getRoleSalaryInfo(
+      effectiveRole || 'staff',
+      effectiveJobPosting, // 🔥 스냅샷 폴백이 적용된 effectiveJobPosting 사용
+      undefined,
+      schedule.snapshotData // 스냅샷 데이터 전달
+    );
 
-    // 수당 계산 추가
-    const allowances = calculateAllowances(jobPosting, 1); // 1일 기준
+    // 수당 계산 추가 (스냅샷 우선)
+    const allowances = calculateAllowances(
+      effectiveJobPosting, // 🔥 스냅샷 폴백이 적용된 effectiveJobPosting 사용
+      1, // 1일 기준
+      schedule.snapshotData // 스냅샷 데이터 전달
+    );
 
-    // 세금 계산
-    const totalAmount = totalPay + (allowances.meal || 0) + (allowances.transportation || 0) +
-                        (allowances.accommodation || 0) + (allowances.bonus || 0) + (allowances.other || 0);
+    // 세금 계산 (스냅샷 우선)
+    // 🔥 totalPay는 이미 수당이 포함되어 있으므로 중복 추가 방지
+    const totalAmount = totalPay;
 
     let tax = 0;
     let taxRate: number | undefined;
     let afterTaxAmount = totalAmount;
 
-    if (jobPosting?.taxSettings?.enabled) {
-      const taxSettings = jobPosting.taxSettings;
+    // 스냅샷 또는 JobPosting에서 세금 설정 가져오기
+    const taxSettings = schedule.snapshotData?.taxSettings || jobPosting?.taxSettings;
 
+    if (taxSettings?.enabled) {
       if (taxSettings.taxRate !== undefined && taxSettings.taxRate > 0) {
         // 세율 기반 계산
         taxRate = taxSettings.taxRate;
@@ -265,7 +317,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       afterTaxAmount = totalAmount - tax;
     }
 
-    logger.debug('ScheduleDetailModal - 급여 정보 계산 (WorkLog 우선)', {
+    logger.info('🔍 [DEBUG] 급여 정보 계산 상세', {
       component: 'ScheduleDetailModal',
       data: {
         hasWorkLog: !!targetWorkLog,
@@ -274,11 +326,23 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         salaryAmount,
         totalHours,
         totalPay,
+        totalAmount,
         hasJobPosting: !!jobPosting,
+        hasEffectiveJobPosting: !!effectiveJobPosting,
+        hasSnapshot: !!schedule.snapshotData,
         allowances,
         tax,
         taxRate,
-        afterTaxAmount
+        afterTaxAmount,
+        calculationBreakdown: {
+          basePay: totalPay,
+          mealAllowance: allowances.meal || 0,
+          transportationAllowance: allowances.transportation || 0,
+          accommodationAllowance: allowances.accommodation || 0,
+          totalBeforeTax: totalAmount,
+          taxCalculation: `${totalAmount} × ${taxRate}% = ${tax}`,
+          finalAmount: afterTaxAmount
+        }
       }
     });
 
@@ -287,7 +351,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       baseSalary: salaryAmount,
       totalHours,
       totalDays: 1, // 일정은 하루
-      basePay: schedule.payrollAmount || totalPay,
+      basePay: totalPay, // 🔥 항상 최신 계산 값 사용
       allowances,
       ...(tax > 0 && { tax }),
       ...(taxRate !== undefined && { taxRate }),
@@ -533,7 +597,9 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">공고:</span>
-                    <span className="text-sm text-gray-900">{schedule.eventName}</span>
+                    <span className="text-sm text-gray-900">
+                      {schedule.snapshotData?.title || jobPosting?.title || schedule.eventName}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">역할:</span>
@@ -553,17 +619,20 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">장소:</span>
                     <span className="text-sm text-gray-900">
-                      {(jobPosting?.location || schedule.location) || '미정'}
+                      {getSnapshotOrFallback(schedule, jobPosting).location()}
                     </span>
                   </div>
-                  {(jobPosting?.detailedAddress || schedule.detailedAddress) && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">상세주소:</span>
-                      <span className="text-sm text-gray-900">
-                        {jobPosting?.detailedAddress || schedule.detailedAddress}
-                      </span>
-                    </div>
-                  )}
+                  {(() => {
+                    const detailedAddress = getSnapshotOrFallback(schedule, jobPosting).detailedAddress();
+                    return detailedAddress && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">상세주소:</span>
+                        <span className="text-sm text-gray-900">
+                          {detailedAddress}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">근무시간:</span>
                     <span className="text-sm text-gray-900">
@@ -596,20 +665,26 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">급여 정보</h4>
                 <div className="space-y-2">
-                  {/* 급여 설정 소스 표시 */}
+                  {/* 급여 설정 소스 표시 (스냅샷 우선) */}
                   {(() => {
                     const targetWorkLog = getTargetWorkLog();
                     // 🔥 WorkLog 우선: WorkLog가 있으면 WorkLog 역할, 없으면 Schedule 역할
                     const effectiveRole = targetWorkLog ? targetWorkLog.role : (schedule.role || 'staff');
 
-                    if (jobPosting?.useRoleSalary && effectiveRole && jobPosting.roleSalaries?.[effectiveRole]) {
+                    // 스냅샷 또는 JobPosting에서 급여 설정 확인
+                    const snapshotSalary = schedule.snapshotData?.salary;
+                    const useRoleSalary = snapshotSalary?.useRoleSalary ?? jobPosting?.useRoleSalary;
+                    const roleSalaries = snapshotSalary?.roleSalaries || jobPosting?.roleSalaries;
+                    const salaryType = snapshotSalary?.type || jobPosting?.salaryType;
+
+                    if (useRoleSalary && effectiveRole && roleSalaries?.[effectiveRole]) {
                       return (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500">설정:</span>
                           <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">역할별 급여</span>
                         </div>
                       );
-                    } else if (jobPosting?.salaryType) {
+                    } else if (salaryType) {
                       return (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500">설정:</span>
@@ -655,7 +730,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       </span>
                     </div>
                   )}
-                  {schedule.payrollAmount && schedule.payrollAmount !== salaryInfo.basePay && (
+                  {/* 🔥 정산 금액은 스냅샷 사용 시 표시하지 않음 (오래된 캐시 값일 수 있음) */}
+                  {!schedule.snapshotData && schedule.payrollAmount && schedule.payrollAmount !== salaryInfo.basePay && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">정산 금액:</span>
                       <span className="text-sm font-medium text-indigo-600">
@@ -680,7 +756,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 </div>
                 <div className="bg-indigo-50 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-indigo-600">
-                    {(schedule.payrollAmount || (salaryInfo.totalHours * salaryInfo.baseSalary)).toLocaleString('ko-KR')}
+                    {salaryInfo.basePay.toLocaleString('ko-KR')}
                   </div>
                   <div className="text-xs text-gray-500">총 지급액</div>
                 </div>
@@ -913,7 +989,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                         (salaryInfo.allowances?.bonus || 0) +
                         (salaryInfo.allowances?.other || 0);
                       const totalPay = basePay + totalAllowances;
-                      return (schedule.payrollAmount || totalPay).toLocaleString('ko-KR') + '원';
+                      // 🔥 항상 최신 계산 값 사용 (schedule.payrollAmount는 오래된 값일 수 있음)
+                      return totalPay.toLocaleString('ko-KR') + '원';
                     })()}
                   </span>
                 </div>
@@ -966,8 +1043,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             </button>
           )}
 
-          {/* 신고 버튼 */}
-          {jobPosting?.createdBy && (
+          {/* 신고 버튼 (스냅샷 우선 폴백) */}
+          {getSnapshotOrFallback(schedule, jobPosting).createdBy() && (
             <button
               onClick={handleReport}
               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center gap-2"

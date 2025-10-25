@@ -135,6 +135,63 @@ export interface ScheduleEvent {
   
   /** Application ID (applications 소스인 경우) */
   applicationId?: string;
+
+  /**
+   * 공고 삭제 대비 스냅샷 데이터
+   * @description JobPosting 삭제 후에도 급여 계산 및 정보 표시를 위한 스냅샷
+   *
+   * 생성 시점:
+   * - 지원 확정 시 (confirmed 상태 전환)
+   * - WorkLog 생성 시
+   * - 공고 삭제 전 (자동 트리거)
+   *
+   * 우선순위:
+   * 1. snapshotData (최우선)
+   * 2. JobPosting (공고 존재 시)
+   * 3. Schedule 기본값 (fallback)
+   */
+  snapshotData?: {
+    /** 공고 제목 (High - 사용자 경험) */
+    title?: string;
+
+    /** 급여 정보 (Critical - 급여 계산 필수) */
+    salary: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other';
+      amount: number;
+      useRoleSalary?: boolean;
+      roleSalaries?: Record<string, {
+        type: string;
+        amount: number;
+      }>;
+    };
+
+    /** 수당 정보 (Critical - 급여 계산 필수) */
+    allowances?: {
+      meal?: number;
+      transportation?: number;
+      accommodation?: number;
+    };
+
+    /** 세금 설정 (Critical - 급여 계산 필수) */
+    taxSettings?: {
+      enabled: boolean;
+      taxRate?: number;
+      taxAmount?: number;
+    };
+
+    /** 장소 정보 (High - 사용자 경험) */
+    location: string;
+    detailedAddress?: string;
+    district?: string;
+    contactPhone?: string;
+
+    /** 신고 기능 (High - 신고 기능 유지) */
+    createdBy: string;
+
+    /** 스냅샷 메타 정보 (Low - 추적용) */
+    snapshotAt: Timestamp;
+    snapshotReason?: 'confirmed' | 'worklog_created' | 'posting_deleted';
+  };
 }
 
 /**

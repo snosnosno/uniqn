@@ -100,6 +100,26 @@ export interface WorkLog {
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   createdBy?: string;  // 생성자 ID
+
+  // 🔥 스냅샷 데이터 (공고 삭제 대비)
+  snapshotData?: {
+    title?: string;
+    salary: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other';
+      amount: number;
+      useRoleSalary?: boolean;
+      roleSalaries?: Record<string, { type: string; amount: number }>;
+    };
+    allowances?: { meal?: number; transportation?: number; accommodation?: number };
+    taxSettings?: { enabled: boolean; taxRate?: number; taxAmount?: number };
+    location: string;
+    detailedAddress?: string;
+    district?: string;
+    contactPhone?: string;
+    createdBy: string;
+    snapshotAt: Timestamp;
+    snapshotReason?: 'confirmed' | 'worklog_created' | 'posting_deleted';
+  };
 }
 
 export interface AttendanceRecord {

@@ -227,7 +227,11 @@
     "emailAddress": "이메일 주소",
     "date": "날짜",
     "phone": "연락처",
-    "status": "상태",
+    "status": {
+      "confirmed": "확정됨",
+      "pending": "대기 중",
+      "rejected": "거절됨"
+    },
     "location": "지역",
     "time": "시간",
     "application": "지원",
@@ -495,6 +499,7 @@
       "selectOption": "옵션을 선택하세요"
     },
     "applyModal": {
+      "title": "공고 지원",
       "selectTimeAndRole": "시간대와 역할을 선택하세요:",
       "selectAssignment": "시간 및 역할 선택",
       "selectPlaceholder": "시간과 역할을 선택하세요",

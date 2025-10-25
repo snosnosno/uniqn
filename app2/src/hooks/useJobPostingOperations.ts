@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { logger } from '../utils/logger';
-import { collection, addDoc, query, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, updateDoc, deleteDoc, doc, getDoc, getDocs, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
@@ -9,6 +9,8 @@ import { usePermissions } from './usePermissions';
 import { JobPosting, JobPostingFormData } from '../types/jobPosting';
 import { prepareFormDataForFirebase } from '../utils/jobPosting/jobPostingHelpers';
 import { validateJobPostingForm } from '../utils/jobPosting/formValidation';
+import { createSnapshotFromJobPosting } from '../utils/scheduleSnapshot';
+import { ScheduleEvent } from '../types/schedule';
 
 export const useJobPostingOperations = () => {
   const { currentUser } = useAuth();
@@ -117,12 +119,103 @@ export const useJobPostingOperations = () => {
     setDeleteConfirmPost({ id: postId, title });
   }, []);
 
-  // 공고 삭제 확인
+  // 공고 삭제 확인 (스냅샷 자동 생성 포함)
   const handleDeleteJobPostingConfirm = useCallback(async () => {
     if (!deleteConfirmPost) return false;
 
     try {
-      await deleteDoc(doc(db, 'jobPostings', deleteConfirmPost.id));
+      const postId = deleteConfirmPost.id;
+
+      // 1. 공고 데이터 조회 (스냅샷 생성용)
+      const jobPostingDoc = await getDoc(doc(db, 'jobPostings', postId));
+      if (!jobPostingDoc.exists()) {
+        logger.warn('삭제할 공고를 찾을 수 없습니다', {
+          component: 'useJobPostingOperations',
+          data: { postId }
+        });
+        setDeleteConfirmPost(null);
+        return false;
+      }
+
+      const jobPosting = { id: jobPostingDoc.id, ...jobPostingDoc.data() } as JobPosting;
+
+      // 2. 관련 Schedule 문서 조회 (applications, workLogs에서 생성된 Schedule)
+      // Note: Schedule은 런타임에 생성되는 가상 데이터이므로,
+      // 실제로는 applications와 workLogs에 스냅샷을 추가해야 함
+
+      const batch = writeBatch(db);
+      let snapshotCount = 0;
+
+      // 2-1. Applications에 스냅샷 추가
+      const applicationsQuery = query(
+        collection(db, 'applications'),
+        where('eventId', '==', postId)
+      );
+      const applicationsSnap = await getDocs(applicationsQuery);
+
+      applicationsSnap.forEach((appDoc) => {
+        const appData = appDoc.data();
+        // 스냅샷이 없거나 오래된 경우에만 생성
+        if (!appData.snapshotData) {
+          const snapshot = createSnapshotFromJobPosting(
+            jobPosting,
+            appData.role || undefined,
+            'posting_deleted'
+          );
+
+          batch.update(doc(db, 'applications', appDoc.id), {
+            snapshotData: snapshot
+          });
+          snapshotCount++;
+        }
+      });
+
+      // 2-2. WorkLogs에 스냅샷 추가
+      const workLogsQuery = query(
+        collection(db, 'workLogs'),
+        where('eventId', '==', postId)
+      );
+      const workLogsSnap = await getDocs(workLogsQuery);
+
+      workLogsSnap.forEach((workLogDoc) => {
+        const workLogData = workLogDoc.data();
+        // 스냅샷이 없거나 오래된 경우에만 생성
+        if (!workLogData.snapshotData) {
+          const snapshot = createSnapshotFromJobPosting(
+            jobPosting,
+            workLogData.role || undefined,
+            'posting_deleted'
+          );
+
+          batch.update(doc(db, 'workLogs', workLogDoc.id), {
+            snapshotData: snapshot
+          });
+          snapshotCount++;
+        }
+      });
+
+      // 3. 스냅샷 일괄 저장
+      if (snapshotCount > 0) {
+        await batch.commit();
+        logger.info('공고 삭제 전 스냅샷 생성 완료', {
+          component: 'useJobPostingOperations',
+          data: {
+            postId,
+            snapshotCount,
+            applications: applicationsSnap.size,
+            workLogs: workLogsSnap.size
+          }
+        });
+      }
+
+      // 4. 공고 삭제
+      await deleteDoc(doc(db, 'jobPostings', postId));
+
+      logger.info('공고 삭제 완료', {
+        component: 'useJobPostingOperations',
+        data: { postId, snapshotCount }
+      });
+
       setDeleteConfirmPost(null);
       return true;
     } catch (error) {

@@ -15,7 +15,6 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { logger } from '../utils/logger';
-// import { unifiedDataService } from '../services/unifiedDataService'; // 백업용 (향후 제거 예정)
 import { optimizedUnifiedDataService } from '../services/OptimizedUnifiedDataService';
 import { useAuth } from './AuthContext';
 import {

@@ -299,6 +299,9 @@ const transformWorkLogData = (doc: DocumentData): WorkLog => {
   status: doc.status || 'not_started',
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
+
+  // 🔥 스냅샷 데이터 (공고 삭제 대비)
+  ...(doc.snapshotData && { snapshotData: doc.snapshotData })
   } as WorkLog;
 };
 

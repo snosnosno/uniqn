@@ -153,6 +153,19 @@ export function parseTimeToTimestamp(timeStr: string, baseDate: string): Timesta
  */
 export function normalizeWorkLog(data: any): UnifiedWorkLog {
   try {
+    // 🔍 디버깅: snapshotData 확인
+    if (data.snapshotData) {
+      logger.info('🔍 [DEBUG] normalizeWorkLog - snapshotData 발견', {
+        component: 'workLogMapper',
+        data: {
+          workLogId: data.id,
+          hasSnapshotData: true,
+          snapshotLocation: data.snapshotData.location,
+          snapshotDataKeys: Object.keys(data.snapshotData)
+        }
+      });
+    }
+
     // 기본 필드 매핑
     const normalized: UnifiedWorkLog = {
       id: data.id || '',
@@ -216,9 +229,12 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       notes: data.notes || '',
       createdAt: data.createdAt || Timestamp.now(),
       updatedAt: data.updatedAt || Timestamp.now(),
-      createdBy: data.createdBy || data.staffId || ''
+      createdBy: data.createdBy || data.staffId || '',
+
+      // 🔥 스냅샷 데이터 (공고 삭제 대비)
+      ...(data.snapshotData && { snapshotData: data.snapshotData })
     };
-    
+
     return normalized;
   } catch (error) {
     logger.error('WorkLog 정규화 실패', error as Error, {
