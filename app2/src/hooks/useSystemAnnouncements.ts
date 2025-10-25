@@ -28,28 +28,13 @@ import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './useToast';
+import { extractNameFromDisplayName } from '../utils/userUtils';
 import type {
   SystemAnnouncement,
   CreateSystemAnnouncementInput,
   UpdateSystemAnnouncementInput,
   SystemAnnouncementFilter
 } from '../types';
-
-/**
- * displayName에서 이름만 추출
- * @example "김승호 [{"phone":"010-1234-5678","gender":"male"}]" → "김승호"
- */
-function extractNameFromDisplayName(displayName: string | null | undefined): string {
-  if (!displayName) return '관리자';
-
-  // JSON 배열 형식이 포함된 경우 이름만 추출
-  const match = displayName.match(/^(.+?)\s*\[/);
-  if (match && match[1]) {
-    return match[1].trim();
-  }
-
-  return displayName;
-}
 
 export interface UseSystemAnnouncementsReturn {
   // 데이터

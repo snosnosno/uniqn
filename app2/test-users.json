@@ -1,0 +1,33 @@
+{"users": [
+{
+  "localId": "JCn16jZSMoULYLzKMNxEqCoSkph2",
+  "email": "tmdgh2qn@gmail.com",
+  "emailVerified": true,
+  "displayName": "김스노",
+  "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocLsqYjA8ievNkmZteMGUMdBqlu8pIvAUnjpRxmuzuy-cE_M_IUN=s96-c",
+  "lastSignedInAt": "1761389612722",
+  "createdAt": "1761389612722",
+  "customAttributes": "{\"role\":\"manager\"}",
+  "providerUserInfo": [
+    {
+      "providerId": "google.com",
+      "rawId": "106117864576288641546",
+      "email": "tmdgh2qn@gmail.com",
+      "displayName": "김스노",
+      "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocLsqYjA8ievNkmZteMGUMdBqlu8pIvAUnjpRxmuzuy-cE_M_IUN=s96-c"
+    }
+  ]
+},
+{
+  "localId": "m3EIRVZG3pU0E34o4Lb6iGHE2RD2",
+  "email": "tmdgh1qn@naver.com",
+  "emailVerified": true,
+  "passwordHash": "bHiEICB4obvvQLM4SheE3PBzqGzqYkmscvIrBBBd6EKuuKtFmj+6WzUWnBnhKtzPBzvLvz24eOdvVmabjjd4ug==",
+  "salt": "c6o5IDQKjY4JPQ==",
+  "displayName": "김승호 [{\"role\":\"manager\",\"phone\":\"010-9800-9039\",\"gender\":\"male\",\"nickname\":\"김스노\"}]",
+  "lastSignedInAt": "1761392850700",
+  "createdAt": "1761389280713",
+  "disabled": false,
+  "customAttributes": "{\"role\":\"manager\"}",
+  "providerUserInfo": []
+}]}

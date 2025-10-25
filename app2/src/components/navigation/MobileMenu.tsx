@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSwipeGestureReact } from '../../hooks/useSwipeGesture';
 import { FEATURE_FLAGS, FeatureFlag } from '../../config/features';
+import { getUserDisplayName } from '../../utils/userUtils';
 
 interface MenuItem {
   path: string;
@@ -212,7 +213,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         {/* 헤더 */}
         <div className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">T-HOLDEM</h2>
+            <h2 className="text-xl font-bold">UNIQN</h2>
             <button
               onClick={onClose}
               className="p-1 hover:bg-primary-600 rounded transition-colors"
@@ -226,7 +227,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
           
           {currentUser && (
             <div className="text-base">
-              <p className="font-medium">{currentUser.displayName || currentUser.email}</p>
+              <p className="font-medium">{getUserDisplayName(currentUser.displayName, currentUser.email)}</p>
               <p className="opacity-90 text-sm">{role}</p>
             </div>
           )}

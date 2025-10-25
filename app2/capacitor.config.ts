@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tholdem.app',
-  appName: 'T-HOLDEM',
+  appId: 'com.uniqn.app',
+  appName: 'UNIQN',
   webDir: 'build',
   server: {
     androidScheme: 'https',

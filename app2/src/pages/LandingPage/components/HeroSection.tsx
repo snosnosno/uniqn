@@ -16,16 +16,16 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
   // 페이지 제목 설정
   useEffect(() => {
-    document.title = 'T-HOLDEM - 홀덤 토너먼트 관리 플랫폼';
+    document.title = 'UNIQN - Tournament Management Platform';
 
     // 메타 태그 설정
     const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement;
     if (metaDescription) {
-      metaDescription.content = '홀덤 토너먼트 운영, 스태프 관리, 구인공고를 한번에 관리하는 스마트한 플랫폼';
+      metaDescription.content = 'Smart platform for tournament management, staff management, and job postings all in one place';
     } else {
       const meta = document.createElement('meta');
       meta.name = 'description';
-      meta.content = '홀덤 토너먼트 운영, 스태프 관리, 구인공고를 한번에 관리하는 스마트한 플랫폼';
+      meta.content = 'Smart platform for tournament management, staff management, and job postings all in one place';
       document.head.appendChild(meta);
     }
 
@@ -42,8 +42,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
       }
     };
 
-    setOgMeta('og:title', 'T-HOLDEM - 홀덤 토너먼트 관리 플랫폼');
-    setOgMeta('og:description', '홀덤 토너먼트 운영, 스태프 관리, 구인공고를 한번에 관리하는 스마트한 플랫폼');
+    setOgMeta('og:title', 'UNIQN - Tournament Management Platform');
+    setOgMeta('og:description', 'Smart platform for tournament management, staff management, and job postings all in one place');
     setOgMeta('og:type', 'website');
   }, []);
 
@@ -64,7 +64,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
     <section
       data-testid="hero-section"
       className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 px-4 lg:px-8"
-      aria-label="T-HOLDEM 홀덤 토너먼트 관리 플랫폼 메인 섹션"
+      aria-label="UNIQN Tournament Management Platform Main Section"
     >
       {/* 배경 오버레이 */}
       <div className="absolute inset-0 bg-black bg-opacity-40" />
@@ -73,7 +73,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
       <div className="relative z-10 max-w-4xl mx-auto text-center text-white">
         {/* 메인 제목 */}
         <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-          {content.title || 'T-HOLDEM과 함께하는 스마트한 토너먼트 운영'}
+          {content.title || 'Smart Tournament Management with UNIQN'}
         </h1>
 
         {/* 부제목 */}

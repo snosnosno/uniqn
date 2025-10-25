@@ -133,7 +133,7 @@
     "ceoDashboard": "CEO Dashboard"
   },
   "layout": {
-    "title": "T-Holdem",
+    "title": "UNIQN",
     "subtitle": "Tournament Management"
   },
   "dashboard": {
@@ -765,7 +765,7 @@
     "dealer": "Dealer:"
   },
   "tournament": {
-    "initialName": "T-Holdem Initial Tournament"
+    "initialName": "UNIQN Initial Tournament"
   },
   "shiftSchedule": {
     "title": "Shift Schedule Management",

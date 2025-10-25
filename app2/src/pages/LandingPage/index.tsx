@@ -30,8 +30,8 @@ const SectionLoader: React.FC = () => (
 
 // 랜딩페이지 콘텐츠 데이터
 const heroContent: HeroContent = {
-  title: 'T-HOLDEM과 함께하는 스마트한 토너먼트 운영',
-  subtitle: '홀덤 토너먼트 운영의 모든 것',
+  title: 'Smart Tournament Management with UNIQN',
+  subtitle: 'Complete Tournament Management Solution',
   description: '효율적인 스태프 관리와 원활한 토너먼트 운영을 위한 원스톱 솔루션입니다.',
   ctaText: '무료로 시작하기',
   ctaLink: '/signup',
@@ -39,7 +39,7 @@ const heroContent: HeroContent = {
 
 const featureContent: FeatureSectionType = {
   title: '주요 기능',
-  subtitle: 'T-HOLDEM이 제공하는 강력한 기능들',
+  subtitle: 'Powerful features provided by UNIQN',
   features: [
     {
       id: 'job-posting',
@@ -89,8 +89,8 @@ const targetGroups: TargetGroup[] = [
   },
   {
     id: 'poker-rooms',
-    name: '홀덤펍',
-    title: '홀덤펍 운영의 새로운 표준',
+    name: 'Poker Rooms',
+    title: 'New Standard for Poker Room Operations',
     description: '효율적인 게임 관리와 고객 서비스로 매출을 극대화하세요.',
     benefits: [
       '테이블 관리 시스템',
@@ -99,7 +99,7 @@ const targetGroups: TargetGroup[] = [
       '예약 관리 기능',
     ],
     icon: 'home',
-    ctaText: '홀덤펍 솔루션 보기',
+    ctaText: 'View Poker Room Solution',
   },
   {
     id: 'staff',
@@ -119,7 +119,7 @@ const targetGroups: TargetGroup[] = [
 
 const ctaContent: CTASectionType = {
   title: '지금 바로 시작하세요',
-  description: 'T-HOLDEM과 함께 더 효율적이고 체계적인 토너먼트 운영을 경험해보세요. 무료 체험으로 시작할 수 있습니다.',
+  description: 'Experience more efficient and systematic tournament management with UNIQN. Start with a free trial.',
   primaryCTA: {
     text: '무료로 시작하기',
     link: '/signup',

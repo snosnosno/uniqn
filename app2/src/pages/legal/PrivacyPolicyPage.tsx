@@ -2,7 +2,7 @@
  * 개인정보처리방침 페이지
  *
  * @description
- * T-HOLDEM 서비스 개인정보처리방침을 표시하는 페이지
+ * UNIQN 서비스 개인정보처리방침을 표시하는 페이지
  * - 정적 콘텐츠 표시
  * - 버전 정보 포함
  * - 인쇄 가능한 레이아웃
@@ -100,7 +100,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">1. 개인정보의 수집 및 이용 목적</h2>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    T-HOLDEM(이하 "회사")은 다음의 목적을 위하여 개인정보를 수집 및 이용합니다. 수집된 개인정보는 다음의 목적 이외의 용도로는 사용되지 않으며, 이용 목적이 변경될 시에는 사전 동의를 구할 것입니다.
+                    UNIQN(이하 "회사")은 다음의 목적을 위하여 개인정보를 수집 및 이용합니다. 수집된 개인정보는 다음의 목적 이외의 용도로는 사용되지 않으며, 이용 목적이 변경될 시에는 사전 동의를 구할 것입니다.
                   </p>
                   <div className="space-y-4">
                     <div>
@@ -350,7 +350,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">1. Purpose of Collection and Use of Personal Information</h2>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    T-HOLDEM (hereinafter referred to as "Company") collects and uses personal information for the following purposes. The collected personal information will not be used for purposes other than the following, and prior consent will be obtained if the purpose of use changes.
+                    UNIQN (hereinafter referred to as "Company") collects and uses personal information for the following purposes. The collected personal information will not be used for purposes other than the following, and prior consent will be obtained if the purpose of use changes.
                   </p>
                   <div className="space-y-4">
                     <div>

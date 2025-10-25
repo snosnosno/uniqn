@@ -38,7 +38,7 @@ interface CacheConfig {
 }
 
 const DEFAULT_CONFIG: CacheConfig = {
-  dbName: 'T-HOLDEM-Cache',
+  dbName: 'UNIQN-Cache',
   storeName: 'unified-data',
   version: 1,
   maxSize: 50 * 1024 * 1024, // 50MB

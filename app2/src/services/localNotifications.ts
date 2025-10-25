@@ -93,7 +93,7 @@ const showWebNotification = (notification: NotificationData) => {
     new Notification(notification.title, {
       body: notification.body,
       icon: '/favicon.ico',
-      tag: `tholdem-${notification.id}`
+      tag: `uniqn-${notification.id}`
     });
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then((permission) => {
@@ -101,7 +101,7 @@ const showWebNotification = (notification: NotificationData) => {
         new Notification(notification.title, {
           body: notification.body,
           icon: '/favicon.ico',
-          tag: `tholdem-${notification.id}`
+          tag: `uniqn-${notification.id}`
         });
       }
     });

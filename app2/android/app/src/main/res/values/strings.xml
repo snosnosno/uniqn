@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">T-HOLDEM</string>
-    <string name="title_activity_main">T-HOLDEM</string>
-    <string name="package_name">com.tholdem.app</string>
-    <string name="custom_url_scheme">com.tholdem.app</string>
+    <string name="app_name">UNIQN</string>
+    <string name="title_activity_main">UNIQN</string>
+    <string name="package_name">com.uniqn.app</string>
+    <string name="custom_url_scheme">com.uniqn.app</string>
 </resources>

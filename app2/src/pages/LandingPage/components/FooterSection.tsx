@@ -21,10 +21,10 @@ const FooterSection: React.FC = () => {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                 T
               </div>
-              <span className="text-xl font-bold">T-HOLDEM</span>
+              <span className="text-xl font-bold">UNIQN</span>
             </div>
             <p className="text-gray-300 mb-4 leading-relaxed">
-              홀덤 토너먼트 운영, 스태프 관리, 구인공고를 한번에 관리하는 스마트한 플랫폼입니다.
+              Smart platform for tournament management, staff management, and job postings all in one place.
               효율적인 운영과 체계적인 관리로 더 나은 토너먼트 경험을 제공합니다.
             </p>
             <div className="flex space-x-4">
@@ -125,7 +125,7 @@ const FooterSection: React.FC = () => {
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-gray-400 text-sm">
-              © {currentYear} T-HOLDEM. All rights reserved.
+              © {currentYear} UNIQN. All rights reserved.
             </div>
             <div className="flex space-x-6 text-sm">
               <button
@@ -157,7 +157,7 @@ const FooterSection: React.FC = () => {
         <div className="mt-8 pt-8 border-t border-gray-800">
           <div className="text-center text-gray-400 text-sm">
             <p className="mb-2">
-              T-HOLDEM은 홀덤 토너먼트 운영의 효율성을 높이고, 체계적인 관리를 통해
+              UNIQN improves tournament management efficiency through systematic management
               더 나은 게임 환경을 제공하는 것을 목표로 합니다.
             </p>
             <p>

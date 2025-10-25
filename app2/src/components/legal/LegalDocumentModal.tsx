@@ -225,7 +225,7 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제1조 (목적)</h2>
             <p className="text-gray-700 leading-relaxed">
-              이 약관은 T-HOLDEM(이하 "회사"라 함)이 제공하는 토너먼트 관리 서비스(이하 "서비스"라 함)의 이용과 관련하여
+              이 약관은 UNIQN(이하 "회사"라 함)이 제공하는 토너먼트 관리 서비스(이하 "서비스"라 함)의 이용과 관련하여
               회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
             </p>
           </section>
@@ -344,7 +344,7 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Article 1 (Purpose)</h2>
             <p className="text-gray-700 leading-relaxed">
-              These Terms and Conditions govern the rights, obligations, and responsibilities between T-HOLDEM (hereinafter "Company")
+              These Terms and Conditions govern the rights, obligations, and responsibilities between UNIQN (hereinafter "Company")
               and users regarding the use of tournament management services (hereinafter "Services").
             </p>
           </section>

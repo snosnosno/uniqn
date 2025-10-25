@@ -1,4 +1,4 @@
-package com.tholdem.app;
+package com.uniqn.app;
 
 import com.getcapacitor.BridgeActivity;
 

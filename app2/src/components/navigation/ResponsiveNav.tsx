@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useBreakpoint } from '../../hooks/useMediaQuery';
 import { useAuth } from '../../contexts/AuthContext';
 import { FEATURE_FLAGS, FeatureFlag } from '../../config/features';
+import { getUserDisplayName, getUserInitial } from '../../utils/userUtils';
 import BottomTabBar from './BottomTabBar';
 import MobileMenu from './MobileMenu';
 
@@ -65,7 +66,7 @@ const ResponsiveNav: React.FC = () => {
               )}
               
               <Link to="/" className="flex items-center space-x-2">
-                <span className="text-xl font-bold text-primary-600">T-HOLDEM</span>
+                <span className="text-xl font-bold text-primary-600">UNIQN</span>
               </Link>
             </div>
 
@@ -104,10 +105,10 @@ const ResponsiveNav: React.FC = () => {
                     className="flex items-center space-x-2 text-base text-gray-700 hover:text-gray-900"
                   >
                     <div className="w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
-                      {currentUser.displayName?.[0]?.toUpperCase() || currentUser.email?.[0]?.toUpperCase()}
+                      {getUserInitial(currentUser.displayName, currentUser.email)}
                     </div>
                     {isDesktop && (
-                      <span className="font-medium">{currentUser.displayName || currentUser.email}</span>
+                      <span className="font-medium">{getUserDisplayName(currentUser.displayName, currentUser.email)}</span>
                     )}
                   </Link>
                 </div>

@@ -2,7 +2,7 @@
  * 이용약관 페이지
  *
  * @description
- * T-HOLDEM 서비스 이용약관을 표시하는 페이지
+ * UNIQN 서비스 이용약관을 표시하는 페이지
  * - 정적 콘텐츠 표시
  * - 버전 정보 포함
  * - 인쇄 가능한 레이아웃
@@ -99,7 +99,7 @@ const TermsOfServicePage: React.FC = () => {
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제1조 (목적)</h2>
                   <p className="text-gray-700 leading-relaxed">
-                    본 약관은 T-HOLDEM(이하 "회사"라 합니다)이 제공하는 홀덤 포커 토너먼트 운영 플랫폼 서비스(이하 "서비스"라 합니다)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+                    본 약관은 UNIQN(이하 "회사"라 합니다)이 제공하는 토너먼트 운영 플랫폼 서비스(이하 "서비스"라 합니다)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
                   </p>
                 </section>
 
@@ -107,7 +107,7 @@ const TermsOfServicePage: React.FC = () => {
                   <h2 className="text-xl font-semibold mb-4">제2조 (정의)</h2>
                   <ol className="list-decimal list-inside space-y-2 text-gray-700">
                     <li>
-                      "서비스"란 회사가 제공하는 홀덤 포커 토너먼트 관리, 스태프 관리, 구인구직, 급여 정산 등의 온라인 플랫폼 서비스를 의미합니다.
+                      "서비스"란 회사가 제공하는 토너먼트 관리, 스태프 관리, 구인구직, 급여 정산 등의 온라인 플랫폼 서비스를 의미합니다.
                     </li>
                     <li>
                       "이용자"란 본 약관에 따라 회사가 제공하는 서비스를 이용하는 회원 및 비회원을 의미합니다.
@@ -170,7 +170,7 @@ const TermsOfServicePage: React.FC = () => {
                     <li>
                       회사는 다음과 같은 서비스를 제공합니다:
                       <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
-                        <li>홀덤 포커 토너먼트 운영 관리</li>
+                        <li>토너먼트 운영 관리</li>
                         <li>스태프 및 참가자 관리</li>
                         <li>구인구직 매칭 서비스</li>
                         <li>근무 기록 및 급여 정산 시스템</li>
@@ -262,7 +262,7 @@ const TermsOfServicePage: React.FC = () => {
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 1 (Purpose)</h2>
                   <p className="text-gray-700 leading-relaxed">
-                    These Terms of Service (hereinafter referred to as "Terms") are intended to define the rights, obligations, responsibilities, and other necessary matters between T-HOLDEM (hereinafter referred to as "Company") and users regarding the use of the poker tournament management platform service (hereinafter referred to as "Service") provided by the Company.
+                    These Terms of Service (hereinafter referred to as "Terms") are intended to define the rights, obligations, responsibilities, and other necessary matters between UNIQN (hereinafter referred to as "Company") and users regarding the use of the poker tournament management platform service (hereinafter referred to as "Service") provided by the Company.
                   </p>
                 </section>
 

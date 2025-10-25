@@ -161,7 +161,7 @@ export const HeaderMenu: React.FC = () => {
             <div className={`border-b border-gray-200 ${isMobile ? 'p-6' : 'p-4'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-2xl' : 'text-lg'}`}>{t('layout.title', 'T-HOLDEM')}</h2>
+                  <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-2xl' : 'text-lg'}`}>{t('layout.title', 'UNIQN')}</h2>
                   <p className={`text-gray-500 ${isMobile ? 'text-base' : 'text-sm'}`}>{t('layout.subtitle', 'Tournament Management System')}</p>
                 </div>
                 {isMobile ? <button

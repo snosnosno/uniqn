@@ -134,7 +134,7 @@
     "ceoDashboard": "CEO 대시보드"
   },
   "layout": {
-    "title": "T-홀덤",
+    "title": "UNIQN",
     "subtitle": "토너먼트 관리"
   },
   "dashboard": {
@@ -821,7 +821,7 @@
     "12": "12월"
   },
   "tournament": {
-    "initialName": "T-Holdem 초기 토너먼트"
+    "initialName": "UNIQN Initial Tournament"
   },
   "kakaoLogin": {
     "button": "카카오로 로그인"

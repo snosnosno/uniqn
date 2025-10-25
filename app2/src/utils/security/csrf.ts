@@ -5,8 +5,8 @@ import { logger } from '../logger';
  */
 
 // CSRF 토큰 저장 키
-const CSRF_TOKEN_KEY = 't-holdem-csrf-token';
-const CSRF_TOKEN_EXPIRY_KEY = 't-holdem-csrf-expiry';
+const CSRF_TOKEN_KEY = 'uniqn-csrf-token';
+const CSRF_TOKEN_EXPIRY_KEY = 'uniqn-csrf-expiry';
 
 // 토큰 유효 시간 (1시간)
 const TOKEN_LIFETIME_MS = 60 * 60 * 1000;

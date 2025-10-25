@@ -32,7 +32,7 @@ import { logger } from './logger';
  */
 
 // 암호화 키 - 환경 변수에서 가져오거나 fallback 사용
-const SECRET_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'tholdem-default-encryption-key-2025';
+const SECRET_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'uniqn-default-encryption-key-2025';
 
 // 프로덕션 환경에서는 반드시 환경 변수로 키를 설정해야 함 (강제)
 if (!process.env.REACT_APP_ENCRYPTION_KEY) {

@@ -90,7 +90,7 @@ const initialState = {
   currentLevel: 0,
   tournamentStatus: 'pending' as const,
   settings: {
-    name: "T-Holdem 초기 토너먼트",
+    name: "UNIQN Initial Tournament",
     startingChips: 30000,
     seatsPerTable: 9,
     blindLevels: [

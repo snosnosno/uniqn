@@ -101,7 +101,7 @@ class AnalyticsIntegration {
     // GA4 기본 설정
     if (typeof gtag !== 'undefined') {
       gtag('config', process.env.REACT_APP_GA_MEASUREMENT_ID || 'GA_MEASUREMENT_ID', {
-        page_title: 'T-HOLDEM Landing Page',
+        page_title: 'UNIQN Landing Page',
         page_location: window.location.href,
         custom_map: {
           custom_dimension_1: 'landing_page_section',

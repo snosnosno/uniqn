@@ -2,7 +2,7 @@
  * FeatureSection 컴포넌트
  *
  * TDD GREEN 단계: 테스트를 통과하는 주요 기능 섹션 구현
- * T-HOLDEM의 4가지 핵심 기능을 카드 형태로 표시
+ * UNIQN의 4가지 핵심 기능을 카드 형태로 표시
  */
 
 import React from 'react';
@@ -150,7 +150,7 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
           data-testid="features-grid"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
           role="region"
-          aria-label="T-HOLDEM 주요 기능 목록"
+          aria-label="UNIQN 주요 기능 목록"
         >
           {content.features.map((feature) => {
             const IconComponent = getIcon(feature.icon);

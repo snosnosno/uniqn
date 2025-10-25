@@ -1,5 +1,5 @@
 /**
- * T-HOLDEM 랜딩페이지 TypeScript 인터페이스 정의
+ * UNIQN Landing Page TypeScript Interface Definitions
  *
  * @description 랜딩페이지에서 사용되는 모든 데이터 타입을 정의합니다.
  * 이 파일은 data-model.md 문서를 기반으로 작성되었습니다.
@@ -40,11 +40,11 @@ export interface FeatureSection {
 }
 
 /**
- * 타겟 그룹 타입 (대회사, 홀덤펍, 스태프)
+ * 타겟 그룹 타입 (대회사, 포커룸, 스태프)
  */
 export interface TargetGroup {
   id: string;
-  name: string;             // 타겟 그룹명 (대회사, 홀덤펍, 스태프)
+  name: string;             // 타겟 그룹명 (대회사, 포커룸, 스태프)
   title: string;            // 타겟별 제목
   description: string;      // 타겟별 설명
   benefits: string[];       // 타겟별 혜택

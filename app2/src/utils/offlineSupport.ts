@@ -240,7 +240,7 @@ export const useOfflineStatus = () => {
  * 로컬 스토리지 기반 캐시 관리
  */
 export class LocalCache {
-  private readonly prefix = 'tholdem_cache_';
+  private readonly prefix = 'uniqn_cache_';
   private readonly maxAge = 24 * 60 * 60 * 1000; // 24시간
 
   public set(key: string, data: any, ttl?: number): void {

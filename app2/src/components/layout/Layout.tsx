@@ -23,7 +23,7 @@ export const Layout = memo(() => {
           {/* 로고 및 제목 */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-              <h1 className="text-xl font-bold text-gray-800">{t('layout.title', 'T-HOLDEM')}</h1>
+              <h1 className="text-xl font-bold text-gray-800">{t('layout.title', 'UNIQN')}</h1>
               <span className="ml-2 text-sm text-gray-500 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
             </Link>
           </div>

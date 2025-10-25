@@ -2,7 +2,7 @@
  * TargetSection 컴포넌트
  *
  * TDD GREEN 단계: 테스트를 통과하는 타겟 그룹 섹션 구현
- * 대회사, 홀덤펍, 스태프 등 3개 타겟 그룹별 맞춤형 솔루션 소개
+ * 대회사, 포커룸, 스태프 등 3개 타겟 그룹별 맞춤형 솔루션 소개
  */
 
 import React from 'react';
@@ -274,7 +274,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 어떤 분야에서 활동하시나요?
               </h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                여러분의 업무 환경에 최적화된 T-HOLDEM 솔루션을 경험해보세요.
+                Experience UNIQN solutions optimized for your work environment.
                 각 분야별 전문가들이 설계한 맞춤형 기능으로 더욱 효율적인 업무가 가능합니다.
               </p>
               <button className="inline-flex items-center px-6 py-3 text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors duration-300 font-semibold">

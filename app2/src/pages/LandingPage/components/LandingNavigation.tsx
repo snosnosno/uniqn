@@ -96,7 +96,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
               <span className={`transition-colors duration-300 ${
                 isScrolled ? 'text-gray-900' : 'text-white'
               }`}>
-                T-HOLDEM
+                UNIQN
               </span>
             </button>
           </div>
