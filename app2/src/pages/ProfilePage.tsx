@@ -13,6 +13,7 @@ import ProfileImageUpload from '../components/profile/ProfileImageUpload';
 
 interface ProfileData {
   name: string;
+  nickname?: string;
   phone: string;
   email: string;
   role: string;
@@ -275,6 +276,11 @@ const ProfilePage = () => {
 
                         <div className="flex-1 text-center md:text-left">
                             <h1 className="text-3xl font-bold text-gray-800">{profile.name}</h1>
+                            {profile.nickname && (
+                                <div className="mt-1">
+                                    <span className="text-lg text-gray-500">@{profile.nickname}</span>
+                                </div>
+                            )}
                             <div className="mt-1">
                                 <span className="text-lg text-gray-600">{getNationalityDisplay(profile.nationality)}</span>
                             </div>
@@ -387,6 +393,19 @@ const ProfilePage = () => {
                                 <div>
                                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('profilePage.name')}</label>
                                     <input type="text" name="name" id="name" value={formData.name || ''} readOnly className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-100" />
+                                </div>
+                                <div>
+                                    <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">{t('signUp.nickname', '닉네임')}</label>
+                                    <input
+                                        type="text"
+                                        name="nickname"
+                                        id="nickname"
+                                        value={formData.nickname || ''}
+                                        onChange={handleChange}
+                                        maxLength={15}
+                                        placeholder={t('signUp.nicknamePlaceholder', '닉네임을 입력하세요')}
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">

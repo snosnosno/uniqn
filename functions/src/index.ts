@@ -204,39 +204,40 @@ export const migrateJobPostings = functions.https.onCall(async (data, context) =
 export const requestRegistration = functions.https.onCall(async (data) => {
     functions.logger.info("requestRegistration called with data:", data);
 
-    const { email, password, name, role, phone, gender, consents } = data;
+    const { email, password, name, nickname, role, phone, gender, consents } = data;
 
     if (!email || !password || !name || !role) {
         functions.logger.error("Validation failed: Missing required fields.", { data });
         throw new functions.https.HttpsError('invalid-argument', 'Missing required fields for registration.');
-    if (role !== 'staff' && role !== 'manager') {
-        functions.logger.error("Validation failed: Invalid role.", { role });
-        throw new functions.https.HttpsError('invalid-argument', 'Role must be either "staff" or "manager".');
     }
+    if (role !== 'manager') {
+        functions.logger.error("Validation failed: Invalid role.", { role });
+        throw new functions.https.HttpsError('invalid-argument', 'Role must be "manager".');
     }
 
     try {
-        const isManager = role === 'manager';
-
         // Combine extra profile data into a parsable JSON string.
         const extraData = JSON.stringify({
+            role, // role 정보 추가
             ...(phone && { phone }),
             ...(gender && { gender }),
+            ...(nickname && { nickname }),
         });
 
         // Build the displayName with embedded markers for the trigger to parse.
-        // Format: "Real Name [{...extraData}] [PENDING_MANAGER]"
-        let displayNameForAuth = `${name} [${extraData}]`;
-        if (isManager) {
-            displayNameForAuth += ' [PENDING_MANAGER]';
-        }
+        // Format: "Real Name [{...extraData}]"
+        const displayNameForAuth = `${name} [${extraData}]`;
 
         const userRecord = await admin.auth().createUser({
             email,
             password,
             displayName: displayNameForAuth,
-            disabled: isManager,
+            disabled: false, // 모든 사용자 즉시 활성화
+            emailVerified: false, // 이메일 미인증 상태로 생성
         });
+
+        // 이메일 인증은 클라이언트에서 sendEmailVerification() 호출로 처리
+        functions.logger.info(`User created successfully: ${email}. Email verification will be sent from client.`);
 
         // Save consent data to Firestore if provided
         if (consents && userRecord.uid) {
@@ -390,7 +391,7 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
 
     functions.logger.info(`New user: ${email} (UID: ${uid}). Parsing displayName: "${displayName}"`);
 
-        let initialRole = 'staff';
+    let initialRole = 'staff';
     let finalDisplayName = "Unnamed User";
     let extraData: { [key: string]: any } = { phone: phoneNumber || null };
 
@@ -402,7 +403,7 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
             .replace(/\[PENDING_MANAGER\]/g, '')
             .replace(/\[(\{.*\})\]/g, '')
             .trim();
-        
+
         if (finalDisplayName === "") finalDisplayName = "Unnamed User";
 
         if (pendingManagerMatch) initialRole = 'pending_manager';
@@ -411,11 +412,20 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
             try {
                 const parsedData = JSON.parse(extraDataMatch[1]);
                 extraData = { ...extraData, ...parsedData };
+
+                // extraData에 role이 있으면 우선 사용
+                if (parsedData.role) {
+                    initialRole = parsedData.role;
+                    functions.logger.info(`Using role from extraData: ${initialRole}`);
+                }
             } catch (e) {
                 functions.logger.error(`Failed to parse extra data from displayName for UID ${uid}`, { displayName, e });
             }
         }
     }
+
+    // role은 Firestore 문서에 저장하지만 extraData에서는 제거 (중복 방지)
+    const { role: _, ...extraDataWithoutRole } = extraData;
 
     try {
         await userRef.set({
@@ -423,7 +433,7 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
             email: email,
             role: initialRole,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            ...extraData,
+            ...extraDataWithoutRole,
         });
 
         await admin.auth().setCustomUserClaims(uid, { role: initialRole });

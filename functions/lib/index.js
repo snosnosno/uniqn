@@ -22,11 +22,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendJobPostingAnnouncement = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -39,6 +50,8 @@ const corsHandler = (0, cors_1.default)({ origin: true });
 // --- Notification Functions ---
 var sendJobPostingAnnouncement_1 = require("./notifications/sendJobPostingAnnouncement");
 Object.defineProperty(exports, "sendJobPostingAnnouncement", { enumerable: true, get: function () { return sendJobPostingAnnouncement_1.sendJobPostingAnnouncement; } });
+var sendSystemAnnouncement_1 = require("./notifications/sendSystemAnnouncement");
+Object.defineProperty(exports, "sendSystemAnnouncement", { enumerable: true, get: function () { return sendSystemAnnouncement_1.sendSystemAnnouncement; } });
 var onApplicationSubmitted_1 = require("./notifications/onApplicationSubmitted");
 Object.defineProperty(exports, "onApplicationSubmitted", { enumerable: true, get: function () { return onApplicationSubmitted_1.onApplicationSubmitted; } });
 var onApplicationStatusChanged_1 = require("./notifications/onApplicationStatusChanged");
@@ -205,31 +218,30 @@ exports.migrateJobPostings = functions.https.onCall(async (data, context) => {
 exports.requestRegistration = functions.https.onCall(async (data) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     functions.logger.info("requestRegistration called with data:", data);
-    const { email, password, name, role, phone, gender, consents } = data;
+    const { email, password, name, nickname, role, phone, gender, consents } = data;
     if (!email || !password || !name || !role) {
         functions.logger.error("Validation failed: Missing required fields.", { data });
         throw new functions.https.HttpsError('invalid-argument', 'Missing required fields for registration.');
-        if (role !== 'staff' && role !== 'manager') {
-            functions.logger.error("Validation failed: Invalid role.", { role });
-            throw new functions.https.HttpsError('invalid-argument', 'Role must be either "staff" or "manager".');
-        }
+    }
+    if (role !== 'manager') {
+        functions.logger.error("Validation failed: Invalid role.", { role });
+        throw new functions.https.HttpsError('invalid-argument', 'Role must be "manager".');
     }
     try {
-        const isManager = role === 'manager';
         // Combine extra profile data into a parsable JSON string.
-        const extraData = JSON.stringify(Object.assign(Object.assign({}, (phone && { phone })), (gender && { gender })));
+        const extraData = JSON.stringify(Object.assign(Object.assign(Object.assign({ role }, (phone && { phone })), (gender && { gender })), (nickname && { nickname })));
         // Build the displayName with embedded markers for the trigger to parse.
-        // Format: "Real Name [{...extraData}] [PENDING_MANAGER]"
-        let displayNameForAuth = `${name} [${extraData}]`;
-        if (isManager) {
-            displayNameForAuth += ' [PENDING_MANAGER]';
-        }
+        // Format: "Real Name [{...extraData}]"
+        const displayNameForAuth = `${name} [${extraData}]`;
         const userRecord = await admin.auth().createUser({
             email,
             password,
             displayName: displayNameForAuth,
-            disabled: isManager,
+            disabled: false,
+            emailVerified: false, // 이메일 미인증 상태로 생성
         });
+        // 이메일 인증은 클라이언트에서 sendEmailVerification() 호출로 처리
+        functions.logger.info(`User created successfully: ${email}. Email verification will be sent from client.`);
         // Save consent data to Firestore if provided
         if (consents && userRecord.uid) {
             try {
@@ -379,14 +391,21 @@ exports.createUserData = functions.auth.user().onCreate(async (user) => {
             try {
                 const parsedData = JSON.parse(extraDataMatch[1]);
                 extraData = Object.assign(Object.assign({}, extraData), parsedData);
+                // extraData에 role이 있으면 우선 사용
+                if (parsedData.role) {
+                    initialRole = parsedData.role;
+                    functions.logger.info(`Using role from extraData: ${initialRole}`);
+                }
             }
             catch (e) {
                 functions.logger.error(`Failed to parse extra data from displayName for UID ${uid}`, { displayName, e });
             }
         }
     }
+    // role은 Firestore 문서에 저장하지만 extraData에서는 제거 (중복 방지)
+    const { role: _ } = extraData, extraDataWithoutRole = __rest(extraData, ["role"]);
     try {
-        await userRef.set(Object.assign({ name: finalDisplayName, email: email, role: initialRole, createdAt: admin.firestore.FieldValue.serverTimestamp() }, extraData));
+        await userRef.set(Object.assign({ name: finalDisplayName, email: email, role: initialRole, createdAt: admin.firestore.FieldValue.serverTimestamp() }, extraDataWithoutRole));
         await admin.auth().setCustomUserClaims(uid, { role: initialRole });
         if (initialRole === 'pending_manager') {
             await admin.auth().updateUser(uid, { disabled: true });

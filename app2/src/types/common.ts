@@ -230,19 +230,22 @@ export interface FormErrors {
 export interface User extends FirebaseDocument {
   /** 이메일 주소 */
   email: string;
-  
+
   /** 사용자 이름 */
   name: string;
-  
+
+  /** 닉네임 */
+  nickname?: string;
+
   /** 사용자 역할 */
   role: 'admin' | 'manager' | 'dealer' | 'staff' | 'user';
-  
+
   /** 전화번호 */
   phone?: string;
-  
+
   /** 프로필 이미지 URL */
   profileImage?: string;
-  
+
   /** 활성 상태 */
   isActive: boolean;
 }

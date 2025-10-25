@@ -10,6 +10,7 @@ import { FEATURE_FLAGS } from './config/features';
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import ConsentPage from './pages/ConsentPage';
 import RequireEmailVerification from './components/auth/RequireEmailVerification';
 
 // Coming Soon page
@@ -179,6 +180,7 @@ const App: React.FC = () => {
                 <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/consent" element={<ConsentPage />} />
 
                   {/* Legal Documents - Public Access (회원가입 시 확인 가능해야 함) */}
                   <Route path="/terms-of-service" element={<Suspense fallback={<LoadingSpinner />}><TermsOfServicePage /></Suspense>} />

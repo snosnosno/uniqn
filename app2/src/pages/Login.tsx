@@ -5,6 +5,7 @@ import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
 import { useNavigate, Link } from "react-router-dom";
 import { FirebaseError } from 'firebase/app';
 import { sendEmailVerification } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from "../components/FormField";
@@ -172,6 +173,21 @@ const Login: React.FC = () => {
           component: 'Login',
           data: { email: userCredential.user.email }
         });
+        return;
+      }
+
+      // 동의 여부 확인
+      const db = getFirestore();
+      const consentRef = doc(db, 'users', userCredential.user.uid, 'consents', 'current');
+      const consentDoc = await getDoc(consentRef);
+
+      if (!consentDoc.exists()) {
+        // 동의 내역이 없으면 약관 동의 페이지로 이동
+        logger.info('동의 내역 없음, 약관 동의 페이지로 이동', {
+          component: 'Login',
+          data: { userId: userCredential.user.uid }
+        });
+        navigate('/consent', { state: { from: '/app' } });
         return;
       }
 
