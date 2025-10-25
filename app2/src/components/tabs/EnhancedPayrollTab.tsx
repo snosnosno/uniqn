@@ -212,12 +212,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [workLogs, confirmedStaff, jobPosting, startDate, endDate, memoizedRoleSalaryOverrides, memoizedStaffAllowanceOverrides, calculatePayroll]);
 
   useEffect(() => {
-    // 임시로 조건을 단순화 - 디버깅용
     if (
       !calculationLoading &&
       workLogs.length > 0
-      // confirmedStaffCount > 0 &&  // 임시로 주석 처리
-      // lastCalculationKey.current !== calculationKey  // 임시로 주석 처리
     ) {
       lastCalculationKey.current = calculationKey;
       hasCalculated.current = true;
