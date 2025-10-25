@@ -702,6 +702,42 @@ service cloud.firestore {
       allow delete: if request.auth.token.role == 'admin';
     }
 
+    // --- System Announcements Collection (시스템 공지사항) ---
+    match /systemAnnouncements/{announcementId} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 생성: 관리자와 매니저만 가능
+      allow create: if isPrivileged() &&
+        request.resource.data.keys().hasAll(['title', 'content', 'priority', 'startDate', 'createdBy', 'createdByName', 'isActive', 'viewCount']) &&
+        isSafeText(request.resource.data.title, 100) &&
+        isSafeText(request.resource.data.content, 2000) &&
+        request.resource.data.priority in ['normal', 'important', 'urgent'] &&
+        request.resource.data.startDate is timestamp &&
+        (!('endDate' in request.resource.data) || request.resource.data.endDate is timestamp || request.resource.data.endDate == null) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.isActive is bool &&
+        request.resource.data.viewCount is number;
+
+      // 수정: 관리자와 매니저만 가능
+      allow update: if isPrivileged();
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Job Posting Announcements Collection (공고별 공지) ---
+    match /jobPostingAnnouncements/{announcementId} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 생성: 관리자와 매니저만 가능
+      allow create: if isPrivileged();
+
+      // 수정/삭제: 관리자만 가능
+      allow update, delete: if request.auth.token.role == 'admin';
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;
