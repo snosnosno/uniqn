@@ -124,15 +124,15 @@ export const NotificationItem = memo<NotificationItemProps>(({
 
   // 읽지 않은 알림 스타일
   const unreadStyles = notification.isRead
-    ? 'bg-white'
-    : 'bg-blue-50 border-l-4 border-blue-500';
+    ? 'bg-white dark:bg-gray-800'
+    : 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-600';
 
   // 간소화 버전 (드롭다운용)
   if (compact) {
     return (
       <div
         onClick={handleClick}
-        className={`p-3 cursor-pointer hover:bg-gray-100 transition-colors ${unreadStyles} ${className}`}
+        className={`p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${unreadStyles} ${className}`}
       >
         <div className="flex items-start gap-3">
           {/* 아이콘 */}
@@ -140,20 +140,20 @@ export const NotificationItem = memo<NotificationItemProps>(({
 
           {/* 내용 */}
           <div className="flex-1 min-w-0">
-            <p className={`text-sm ${notification.isRead ? 'text-gray-700' : 'font-semibold text-gray-900'}`}>
+            <p className={`text-sm ${notification.isRead ? 'text-gray-700 dark:text-gray-300' : 'font-semibold text-gray-900 dark:text-gray-100'}`}>
               {notification.title}
             </p>
-            <p className="text-xs text-gray-500 truncate mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
               {notification.body}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               {getRelativeTime()}
             </p>
           </div>
 
           {/* 읽지 않음 표시 */}
           {!notification.isRead && (
-            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
+            <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1" />
           )}
         </div>
       </div>
@@ -164,7 +164,7 @@ export const NotificationItem = memo<NotificationItemProps>(({
   return (
     <div
       onClick={handleClick}
-      className={`p-4 border border-gray-200 rounded-lg cursor-pointer hover:shadow-md transition-all ${unreadStyles} ${className}`}
+      className={`p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:shadow-md transition-all ${unreadStyles} ${className}`}
     >
       <div className="flex items-start gap-4">
         {/* 아이콘 */}
@@ -175,15 +175,15 @@ export const NotificationItem = memo<NotificationItemProps>(({
         {/* 내용 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className={`text-sm ${notification.isRead ? 'text-gray-700' : 'font-bold text-gray-900'}`}>
+            <h3 className={`text-sm ${notification.isRead ? 'text-gray-700 dark:text-gray-300' : 'font-bold text-gray-900 dark:text-gray-100'}`}>
               {notification.title}
             </h3>
-            <span className="text-xs text-gray-500 flex-shrink-0">
+            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
               {getRelativeTime()}
             </span>
           </div>
 
-          <p className="text-sm text-gray-600 mb-2">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
             {notification.body}
           </p>
 
@@ -193,7 +193,7 @@ export const NotificationItem = memo<NotificationItemProps>(({
               {!notification.isRead && onMarkAsRead && (
                 <button
                   onClick={handleMarkAsRead}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                 >
                   읽음
                 </button>
@@ -201,7 +201,7 @@ export const NotificationItem = memo<NotificationItemProps>(({
               {onDelete && (
                 <button
                   onClick={handleDelete}
-                  className="text-xs text-gray-500 hover:text-red-600 font-medium"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 font-medium"
                 >
                   삭제
                 </button>
@@ -212,7 +212,7 @@ export const NotificationItem = memo<NotificationItemProps>(({
 
         {/* 읽지 않음 표시 */}
         {!notification.isRead && (
-          <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
+          <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1" />
         )}
       </div>
     </div>

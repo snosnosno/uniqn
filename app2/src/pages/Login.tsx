@@ -297,18 +297,18 @@ const Login: React.FC = () => {
         {/* 보안 상태 표시 */}
         {attempts > 0 && !isBlocked && (
           <div
-            className="bg-yellow-50 border-l-4 border-yellow-400 p-4"
+            className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 p-4"
             role="alert"
             aria-live="polite"
           >
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <svg className="h-5 w-5 text-yellow-400 dark:text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-yellow-700">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
                   {t('login.attemptWarning', `로그인 실패: ${attempts}회. 5회 실패 시 15분간 차단됩니다.`)}
                 </p>
               </div>
@@ -318,7 +318,7 @@ const Login: React.FC = () => {
 
         {error && (
           <div
-            className="text-red-500 text-sm text-center"
+            className="text-red-500 dark:text-red-400 text-sm text-center"
             role="alert"
             aria-live="assertive"
           >
@@ -334,15 +334,15 @@ const Login: React.FC = () => {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
               disabled={isBlocked}
             />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
               {t('login.rememberMe', '로그인 상태 유지')}
             </label>
           </div>
           <div className="text-sm">
-            <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link to="/forgot-password" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
               {t('login.forgotPassword')}
             </Link>
           </div>
@@ -368,10 +368,10 @@ const Login: React.FC = () => {
       <div className="mt-6">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
+            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">{t('login.orContinueWith')}</span>
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">{t('login.orContinueWith')}</span>
           </div>
         </div>
 
@@ -379,10 +379,10 @@ const Login: React.FC = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={isBlocked}
-            className={`w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
+            className={`w-full inline-flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium ${
               isBlocked
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-gray-500 hover:bg-gray-50'
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 cursor-not-allowed'
+                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >
             <FaGoogle className="h-5 w-5" />
@@ -401,7 +401,7 @@ const Login: React.FC = () => {
       </div>
 
       <div className="mt-4 text-sm text-center">
-        <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <Link to="/signup" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
           {t('login.noAccount')}
         </Link>
       </div>
@@ -413,23 +413,23 @@ const Login: React.FC = () => {
         title={t('login.emailVerificationRequired', '이메일 인증이 필요합니다')}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('login.emailVerificationMessage', '계정을 사용하기 위해서는 이메일 인증이 필요합니다. 인증 이메일을 확인해주세요.')}
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('login.emailVerificationCheck', '이메일을 받지 못하셨나요? 스팸 폴더를 확인해주세요.')}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setShowEmailVerificationModal(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               {t('common.close', '닫기')}
             </button>
             <button
               onClick={handleResendEmailVerification}
               disabled={isResendingEmail}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isResendingEmail
                 ? t('login.emailVerificationResending', '재발송 중...')

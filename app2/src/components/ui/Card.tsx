@@ -49,17 +49,17 @@ const Card: React.FC<CardProps> = ({
 }) => {
   // 기본 클래스
   const baseClasses = [
-    'bg-white',
+    'bg-white dark:bg-gray-800',
     'rounded-lg',
     'transition-all duration-200',
   ];
 
   // Variant 스타일
   const variantClasses = {
-    default: 'shadow-md',
-    elevated: 'shadow-lg',
-    outlined: 'border-2 border-gray-200',
-    filled: 'bg-gray-50 shadow-sm',
+    default: 'shadow-md dark:shadow-gray-900/50',
+    elevated: 'shadow-lg dark:shadow-gray-900/70',
+    outlined: 'border-2 border-gray-200 dark:border-gray-700',
+    filled: 'bg-gray-50 dark:bg-gray-700 shadow-sm',
   };
 
   // 크기별 기본 패딩 (padding prop이 'none'이 아닐 때만 적용)
@@ -79,9 +79,9 @@ const Card: React.FC<CardProps> = ({
 
   // 상호작용 스타일
   const interactionClasses = [
-    hoverable && 'hover:shadow-lg hover:scale-[1.02]',
+    hoverable && 'hover:shadow-lg dark:hover:shadow-gray-900/70 hover:scale-[1.02]',
     clickable && 'cursor-pointer',
-    selected && 'ring-2 ring-primary-500 bg-primary-50',
+    selected && 'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:ring-primary-400',
     disabled && 'opacity-50 cursor-not-allowed',
   ].filter(Boolean);
 
@@ -112,17 +112,17 @@ const Card: React.FC<CardProps> = ({
   const cardContent = (
     <>
       {header && (
-        <div className={`card-header ${padding !== 'none' ? 'border-b border-gray-200 pb-4 mb-4' : ''}`}>
+        <div className={`card-header ${padding !== 'none' ? 'border-b border-gray-200 dark:border-gray-700 pb-4 mb-4' : ''}`}>
           {header}
         </div>
       )}
-      
+
       <div className="card-body">
         {children}
       </div>
-      
+
       {footer && (
-        <div className={`card-footer ${padding !== 'none' ? 'border-t border-gray-200 pt-4 mt-4' : ''}`}>
+        <div className={`card-footer ${padding !== 'none' ? 'border-t border-gray-200 dark:border-gray-700 pt-4 mt-4' : ''}`}>
           {footer}
         </div>
       )}
@@ -174,14 +174,14 @@ export const CardHeader: React.FC<{
     return (
       <div className={`flex items-start justify-between ${className}`}>
         <div>
-          {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+          {title && <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{title}</h3>}
+          {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
         </div>
         {action && <div className="ml-4 flex-shrink-0">{action}</div>}
       </div>
     );
   }
-  
+
   return <div className={className}>{children}</div>;
 };
 

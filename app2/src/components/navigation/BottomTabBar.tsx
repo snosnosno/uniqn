@@ -101,12 +101,12 @@ const BottomTabBar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40 md:hidden">
       <div className="flex justify-around items-center h-16">
         {filteredTabs.map((tab) => {
-          const isActive = location.pathname === tab.path || 
+          const isActive = location.pathname === tab.path ||
                           (tab.path !== '/' && location.pathname.startsWith(tab.path));
-          
+
           return (
             <button
               key={tab.path}
@@ -114,16 +114,16 @@ const BottomTabBar: React.FC = () => {
               className={`
                 flex flex-col items-center justify-center flex-1 h-full px-2
                 transition-colors duration-200
-                ${isActive 
-                  ? 'text-primary-500' 
-                  : 'text-gray-400 hover:text-gray-600'
+                ${isActive
+                  ? 'text-primary-500 dark:text-primary-400'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                 }
               `}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
             >
               <span className={`
-                ${isActive ? 'scale-110' : ''} 
+                ${isActive ? 'scale-110' : ''}
                 transition-transform duration-200
               `}>
                 {tab.icon}

@@ -247,7 +247,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               {/* 모바일: 메뉴 버튼을 이름과 같은 줄에 */}
               <button
                 onClick={toggleActions}
-                className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors sm:hidden"
+                className="p-1.5 sm:p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors sm:hidden"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -298,7 +298,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
               {/* 데스크톱: 메뉴 버튼 */}
               <button
                 onClick={toggleActions}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors hidden sm:block"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors hidden sm:block"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -310,14 +310,14 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
             {onSelect && (
               <div className="absolute top-2 right-2">
                 {isSelected ? (
-                  <div className="bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                  <div className="bg-primary-500 dark:bg-primary-600 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span className="hidden sm:inline">선택됨</span>
                   </div>
                 ) : (
-                  <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium border border-gray-200">
+                  <div className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-600">
                     <span className="hidden sm:inline">선택</span>
                   </div>
                 )}
@@ -328,7 +328,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
         
         <CardBody className="p-0" id={`staff-${staff.id}-details`}>
           {!showActions && onSelect ? (
-            <div className="mt-2 flex items-center justify-center text-xs text-gray-400">
+            <div className="mt-2 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500">
               <span className="flex items-center space-x-1">
                 <span>←</span>
                 <span>액션</span>

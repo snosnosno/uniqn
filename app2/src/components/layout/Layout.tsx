@@ -16,24 +16,24 @@ export const Layout = memo(() => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-800 font-sans safe-area-all">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-50 font-sans safe-area-all transition-colors duration-200">
       {/* 헤더 */}
-      <header className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50 header-safe">
+      <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-50 header-safe border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-2 sm:px-4 md:px-6 py-3 h-16">
           {/* 로고 및 제목 */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-              <h1 className="text-xl font-bold text-gray-800">{t('layout.title', 'UNIQN')}</h1>
-              <span className="ml-2 text-sm text-gray-500 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
+              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-50">{t('layout.title', 'UNIQN')}</h1>
+              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
             </Link>
           </div>
-          
+
           {/* 헤더 버튼들 */}
           <div className="flex items-center gap-2">
             {/* 출석체크 버튼 */}
             <button
               onClick={handleAttendanceClick}
-              className={`flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-100 text-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`flex items-center justify-center rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 isMobile ? 'p-3 w-12 h-12' : 'p-2 w-10 h-10'
               }`}
               aria-label={t('nav.attendance', 'Attendance')}
@@ -42,7 +42,7 @@ export const Layout = memo(() => {
             >
               <FaQrcode className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
             </button>
-            
+
             {/* 헤더 메뉴 */}
             <HeaderMenu />
           </div>
@@ -50,8 +50,8 @@ export const Layout = memo(() => {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="content-safe px-1 sm:px-4 md:px-6 lg:px-8 pt-18 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100">
-        <React.Suspense fallback={<div>{t('common.messages.loading')}</div>}>
+      <main className="content-safe px-1 sm:px-4 md:px-6 lg:px-8 pt-18 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100 dark:bg-gray-900">
+        <React.Suspense fallback={<div className="text-gray-700 dark:text-gray-300">{t('common.messages.loading')}</div>}>
           <Outlet />
         </React.Suspense>
       </main>

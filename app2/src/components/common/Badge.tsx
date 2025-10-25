@@ -26,19 +26,19 @@ const Badge: React.FC<BadgeProps> = ({
   const getVariantClasses = () => {
     switch (variant) {
       case 'primary':
-        return 'badge-primary';
+        return 'badge-primary dark:bg-primary-900/30 dark:text-primary-300';
       case 'secondary':
-        return 'bg-secondary-100 text-secondary-800';
+        return 'bg-secondary-100 text-secondary-800 dark:bg-secondary-900/30 dark:text-secondary-300';
       case 'success':
-        return 'badge-success';
+        return 'badge-success dark:bg-success-dark/30 dark:text-success-light';
       case 'warning':
-        return 'badge-warning';
+        return 'badge-warning dark:bg-warning-dark/30 dark:text-warning-light';
       case 'danger':
-        return 'badge-error';
+        return 'badge-error dark:bg-error-dark/30 dark:text-error-light';
       case 'info':
-        return 'bg-info-light/20 text-info-dark';
+        return 'bg-info-light/20 text-info-dark dark:bg-info-dark/30 dark:text-info-light';
       default:
-        return 'bg-gray-200 text-text-secondary';
+        return 'bg-gray-200 text-text-secondary dark:bg-gray-700 dark:text-gray-300';
     }
   };
 

@@ -375,12 +375,12 @@ const SignUp: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">{t('signUp.genderLabel', '성별')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('signUp.genderLabel', '성별')}</label>
             <div className="flex items-center mt-2" role="radiogroup" aria-label={t('signUp.genderLabel', '성별')}>
-                <input type="radio" id="male" name="gender" value="male" checked={gender === 'male'} onChange={() => setGender('male')} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" required aria-label={t('signUp.genderMale', '남성')}/>
-                <label htmlFor="male" className="ml-2 block text-sm text-gray-900">{t('signUp.genderMale', '남성')}</label>
-                <input type="radio" id="female" name="gender" value="female" checked={gender === 'female'} onChange={() => setGender('female')} className="ml-4 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" aria-label={t('signUp.genderFemale', '여성')}/>
-                <label htmlFor="female" className="ml-2 block text-sm text-gray-900">{t('signUp.genderFemale', '여성')}</label>
+                <input type="radio" id="male" name="gender" value="male" checked={gender === 'male'} onChange={() => setGender('male')} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700" required aria-label={t('signUp.genderMale', '남성')}/>
+                <label htmlFor="male" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">{t('signUp.genderMale', '남성')}</label>
+                <input type="radio" id="female" name="gender" value="female" checked={gender === 'female'} onChange={() => setGender('female')} className="ml-4 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700" aria-label={t('signUp.genderFemale', '여성')}/>
+                <label htmlFor="female" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">{t('signUp.genderFemale', '여성')}</label>
             </div>
           </div>
 
@@ -436,14 +436,14 @@ const SignUp: React.FC = () => {
           </div>
 
           {/* 동의 관리 */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <ConsentManager
               isSignupMode={true}
               onChange={setConsents}
             />
           </div>
 
-          {error ? <p className="text-red-500 text-sm text-center" role="alert">{error}</p> : null}
+          {error ? <p className="text-red-500 dark:text-red-400 text-sm text-center" role="alert">{error}</p> : null}
 
           <button
             type="submit"
@@ -464,10 +464,10 @@ const SignUp: React.FC = () => {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">{t('login.orContinueWith')}</span>
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">{t('login.orContinueWith')}</span>
             </div>
           </div>
 
@@ -475,7 +475,7 @@ const SignUp: React.FC = () => {
             <button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <ArrowPathIcon className="animate-spin h-5 w-5 mr-2" />
@@ -488,14 +488,14 @@ const SignUp: React.FC = () => {
         </div>
 
         <div className="mt-4 text-sm text-center">
-          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">{t('signUp.backToLogin')}</Link>
+          <Link to="/login" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">{t('signUp.backToLogin')}</Link>
         </div>
       </AuthLayout>
       
       <Modal isOpen={modalInfo.isOpen} onClose={handleModalClose} title={modalInfo.title}>
-        <p>{modalInfo.message}</p>
+        <p className="text-gray-900 dark:text-gray-100">{modalInfo.message}</p>
         <div className="text-right mt-4">
-          <button onClick={handleModalClose} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+          <button onClick={handleModalClose} className="bg-indigo-600 dark:bg-indigo-700 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600">
             {t('common.confirm')}
           </button>
         </div>

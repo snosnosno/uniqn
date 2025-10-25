@@ -33,6 +33,8 @@ import { UnifiedDataProvider } from './contexts/UnifiedDataContext';
 import { TournamentDataProvider } from './contexts/TournamentDataContext';
 // DateFilterContext - 날짜 선택 상태 관리
 import { DateFilterProvider } from './contexts/DateFilterContext';
+// ThemeContext - 다크모드 지원
+import { ThemeProvider } from './contexts/ThemeContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
@@ -165,14 +167,15 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <FirebaseErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <CapacitorInitializer>
-              <UnifiedDataProvider>
-                <TournamentProvider>
-                  <TournamentDataProvider>
-                    <DateFilterProvider>
-                      {/* 네트워크 상태 표시 */}
-                      <NetworkStatusIndicator position="top" />
+          <ThemeProvider>
+            <AuthProvider>
+              <CapacitorInitializer>
+                <UnifiedDataProvider>
+                  <TournamentProvider>
+                    <TournamentDataProvider>
+                      <DateFilterProvider>
+                        {/* 네트워크 상태 표시 */}
+                        <NetworkStatusIndicator position="top" />
 
               <Routes>
                 {/* Public Routes */}
@@ -273,13 +276,14 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
-                    </DateFilterProvider>
-                  </TournamentDataProvider>
-                </TournamentProvider>
-              </UnifiedDataProvider>
-            </CapacitorInitializer>
-          </AuthProvider>
-          <ToastContainer />
+                      </DateFilterProvider>
+                    </TournamentDataProvider>
+                  </TournamentProvider>
+                </UnifiedDataProvider>
+              </CapacitorInitializer>
+            </AuthProvider>
+            <ToastContainer />
+          </ThemeProvider>
         </QueryClientProvider>
       </FirebaseErrorBoundary>
     </ErrorBoundary>

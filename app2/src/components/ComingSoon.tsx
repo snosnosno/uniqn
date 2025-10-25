@@ -78,49 +78,49 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="text-center max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="text-center max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
         {/* 아이콘 */}
         <div className="text-7xl mb-4 animate-bounce">
           {icon}
         </div>
 
         {/* 제목 */}
-        <h2 className="text-3xl font-bold text-gray-800">
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
           준비 중입니다
         </h2>
 
         {/* 기능 이름 */}
-        <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg inline-block">
+        <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg inline-block">
           <p className="text-lg font-semibold">
             {feature}
           </p>
         </div>
 
         {/* 설명 */}
-        <p className="text-gray-600 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           {description}
         </p>
 
         {/* 예상 출시 시기 */}
         {estimatedRelease && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500 mb-1">예상 출시</p>
-            <p className="text-base font-medium text-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">예상 출시</p>
+            <p className="text-base font-medium text-gray-700 dark:text-gray-200">
               {estimatedRelease}
             </p>
           </div>
         )}
 
         {/* 구분선 */}
-        <div className="border-t border-gray-200 my-6"></div>
+        <div className="border-t border-gray-200 dark:border-gray-700 my-6"></div>
 
         {/* 안내 메시지 */}
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 p-4 rounded">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-yellow-400"
+                className="h-5 w-5 text-yellow-400 dark:text-yellow-500"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -132,7 +132,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-yellow-700">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 현재 업데이트 작업이 진행 중입니다.
                 <br />
                 더 나은 서비스를 위해 최선을 다하고 있습니다.
@@ -146,7 +146,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           {/* 돌아가기 버튼 */}
           <button
             onClick={handleBack}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg font-medium"
+            className="w-full px-6 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-md hover:shadow-lg font-medium"
           >
             {backButtonText}
           </button>
@@ -154,15 +154,15 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           {/* 홈으로 가기 버튼 */}
           <button
             onClick={() => navigate('/')}
-            className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            className="w-full px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
           >
             홈으로 가기
           </button>
         </div>
 
         {/* 푸터 */}
-        <div className="pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400">
+        <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             문의사항이 있으시면 고객센터로 연락해주세요.
           </p>
         </div>

@@ -19,14 +19,14 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = React.memo(({
 
   return (
     <div className={`flex flex-col items-center justify-center p-4 ${className}`}>
-      <div 
-        className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-300 border-t-blue-600`}
+      <div
+        className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400`}
         role="status"
         aria-label="Loading"
       >
         <span className="sr-only">Loading...</span>
       </div>
-      {text ? <p className="mt-2 text-sm text-gray-600">{text}</p> : null}
+      {text ? <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{text}</p> : null}
     </div>
   );
 });

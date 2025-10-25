@@ -43,11 +43,11 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
     ref
   ) => {
     const baseStyles = 'rounded-lg transition-all duration-200';
-    
+
     const variantStyles = {
-      default: 'bg-white border border-gray-200',
-      elevated: 'bg-white shadow-lg',
-      bordered: 'bg-white border-2 border-gray-300',
+      default: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
+      elevated: 'bg-white dark:bg-gray-800 shadow-lg',
+      bordered: 'bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600',
       ghost: 'bg-transparent',
     };
     
@@ -61,7 +61,7 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
     const interactiveStyles = onClick ? 'cursor-pointer' : '';
     
     const hoverStyles = hover && !disabled
-      ? 'hover:shadow-md hover:border-gray-300 hover:-translate-y-0.5'
+      ? 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5'
       : '';
     
     const activeStyles = active

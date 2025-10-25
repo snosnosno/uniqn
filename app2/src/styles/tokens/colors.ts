@@ -79,7 +79,7 @@ export const colors = {
     950: '#030712',
   },
 
-  // 배경 색상
+  // 배경 색상 (라이트 모드)
   background: {
     primary: '#ffffff',
     secondary: '#f9fafb',
@@ -90,7 +90,7 @@ export const colors = {
     disabled: '#e5e7eb',
   },
 
-  // 텍스트 색상
+  // 텍스트 색상 (라이트 모드)
   text: {
     primary: '#111827',
     secondary: '#4b5563',
@@ -101,11 +101,43 @@ export const colors = {
     linkHover: '#1d4ed8',
   },
 
-  // 보더 색상
+  // 보더 색상 (라이트 모드)
   border: {
     light: '#e5e7eb',
     DEFAULT: '#d1d5db',
     dark: '#9ca3af',
+    focus: '#3b82f6',
+    error: '#ef4444',
+    success: '#22c55e',
+  },
+
+  // 다크모드 배경 색상
+  backgroundDark: {
+    primary: '#111827',    // gray-900
+    secondary: '#1f2937',  // gray-800
+    tertiary: '#374151',   // gray-700
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    hover: '#1f2937',
+    selected: '#1e3a8a',   // primary-900
+    disabled: '#4b5563',   // gray-600
+  },
+
+  // 다크모드 텍스트 색상
+  textDark: {
+    primary: '#f9fafb',    // gray-50
+    secondary: '#d1d5db',  // gray-300
+    tertiary: '#9ca3af',   // gray-400
+    disabled: '#6b7280',   // gray-500
+    inverse: '#111827',    // gray-900
+    link: '#60a5fa',       // primary-400
+    linkHover: '#3b82f6',  // primary-500
+  },
+
+  // 다크모드 보더 색상
+  borderDark: {
+    light: '#374151',      // gray-700
+    DEFAULT: '#4b5563',    // gray-600
+    dark: '#6b7280',       // gray-500
     focus: '#3b82f6',
     error: '#ef4444',
     success: '#22c55e',

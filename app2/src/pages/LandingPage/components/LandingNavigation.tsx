@@ -78,7 +78,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg'
+          ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg'
           : 'bg-transparent'
       }`}
     >
@@ -90,11 +90,11 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
               onClick={() => scrollToSection('hero')}
               className="flex items-center space-x-2 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
             >
-              <div className={`w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm transition-colors duration-300`}>
+              <div className={`w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-700 flex items-center justify-center text-white font-bold text-sm transition-colors duration-300`}>
                 T
               </div>
               <span className={`transition-colors duration-300 ${
-                isScrolled ? 'text-gray-900' : 'text-white'
+                isScrolled ? 'text-gray-900 dark:text-gray-100' : 'text-white'
               }`}>
                 UNIQN
               </span>

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**T-HOLDEM 프로젝트 개발 가이드** - Claude Code (claude.ai/code) 전용
+**UNIQN 프로젝트 개발 가이드** - Claude Code (claude.ai/code) 전용
 
 ## 🎯 **최우선 지침** (모든 작업에서 필수 준수)
 
@@ -20,7 +20,7 @@
 
 ## 📌 프로젝트 개요
 
-**T-HOLDEM** - 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼
+**UNIQN** - 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼
 
 - **프로젝트 ID**: tholdem-ebc18  
 - **배포 URL**: https://tholdem-ebc18.web.app
@@ -30,7 +30,7 @@
 
 ### 🗂️ 프로젝트 구조
 ```
-📁 T-HOLDEM/                    # 프로젝트 루트
+📁 UNIQN/                    # 프로젝트 루트
 ├── 📁 app2/                    # 메인 애플리케이션 (React 18 + TypeScript)
 │   ├── 📁 src/                 # 소스 코드
 │   ├── 📁 public/              # 정적 자산

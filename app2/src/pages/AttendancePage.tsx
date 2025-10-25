@@ -33,8 +33,8 @@ const AttendancePage: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <p className="text-gray-600">{t('common.pleaseLogin', '로그인이 필요합니다.')}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <p className="text-gray-600 dark:text-gray-300">{t('common.pleaseLogin', '로그인이 필요합니다.')}</p>
       </div>
     );
   }
@@ -48,12 +48,12 @@ const AttendancePage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 text-center">
           {t('attendancePage.title', '내 QR 출석')}
         </h1>
-        <p className="text-center text-gray-600 mb-8">
+        <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
           {t('attendancePage.subtitle', '매니저에게 QR 코드를 보여주세요')}
         </p>
 

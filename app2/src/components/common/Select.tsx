@@ -40,12 +40,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     
     return (
       <div className={`${fullWidth ? 'w-full' : ''} ${className}`}>
-        {label ? <label 
+        {label ? <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             {label}
-            {required ? <span className="text-red-500 ml-1">*</span> : null}
+            {required ? <span className="text-red-500 dark:text-red-400 ml-1">*</span> : null}
           </label> : null}
         <select
           ref={ref}
@@ -53,11 +53,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           onChange={handleChange}
           className={`
             block w-full px-3 py-2 border rounded-md shadow-sm
+            bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-            disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
-            ${error 
-              ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-              : 'border-gray-300'
+            disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed
+            ${error
+              ? 'border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500'
+              : 'border-gray-300 dark:border-gray-600'
             }
           `}
           {...props}
@@ -66,8 +67,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               {placeholder}
             </option> : null}
           {options.map((option) => (
-            <option 
-              key={option.value} 
+            <option
+              key={option.value}
               value={option.value}
               disabled={option.disabled}
             >
@@ -75,8 +76,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error ? <p className="mt-1 text-sm text-red-600">{error}</p> : null}
-        {helperText && !error ? <p className="mt-1 text-sm text-gray-500">{helperText}</p> : null}
+        {error ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+        {helperText && !error ? <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{helperText}</p> : null}
       </div>
     );
   }

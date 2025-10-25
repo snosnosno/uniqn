@@ -129,16 +129,16 @@ const Modal: React.FC<ModalProps> = ({
       >
         <div
           ref={modalRef}
-          className={`relative bg-white rounded-lg shadow-xl transform transition-all w-full ${sizeClasses[size]} animate-fade-in`}
+          className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all w-full ${sizeClasses[size]} animate-fade-in`}
           tabIndex={-1}
           aria-label={ariaLabel || (typeof title === 'string' ? title : undefined)}
         >
           {/* 헤더 */}
           {(title || showCloseButton) && (
-            <div className="flex items-start justify-between p-4 border-b border-gray-200">
+            <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               {title && (
                 typeof title === 'string' ? (
-                  <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
+                  <h3 id="modal-title" className="text-lg font-semibold text-gray-900 dark:text-gray-50">
                     {title}
                   </h3>
                 ) : (
@@ -148,7 +148,7 @@ const Modal: React.FC<ModalProps> = ({
               {showCloseButton && (
                 <button
                   type="button"
-                  className="ml-auto bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 p-1"
+                  className="ml-auto bg-white dark:bg-gray-800 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 p-1"
                   onClick={onClose}
                   aria-label="닫기"
                 >
@@ -167,7 +167,7 @@ const Modal: React.FC<ModalProps> = ({
 
           {/* 푸터 */}
           {footer && (
-            <div className="flex items-center justify-end space-x-2 p-4 border-t border-gray-200">
+            <div className="flex items-center justify-end space-x-2 p-4 border-t border-gray-200 dark:border-gray-700">
               {footer}
             </div>
           )}
@@ -191,7 +191,7 @@ export const ModalHeader: React.FC<{
   className?: string;
 }> = ({ children, className = '' }) => {
   return (
-    <div className={`text-lg font-semibold text-gray-900 ${className}`}>
+    <div className={`text-lg font-semibold text-gray-900 dark:text-gray-50 ${className}`}>
       {children}
     </div>
   );
@@ -205,7 +205,7 @@ export const ModalBody: React.FC<{
   className?: string;
 }> = ({ children, className = '' }) => {
   return (
-    <div className={`text-gray-700 ${className}`}>
+    <div className={`text-gray-700 dark:text-gray-300 ${className}`}>
       {children}
     </div>
   );

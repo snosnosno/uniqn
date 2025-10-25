@@ -43,10 +43,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
   const baseClasses = [
     'block',
     'px-3 py-2',
-    'text-gray-900',
-    'bg-white',
+    'text-gray-900 dark:text-gray-50',
+    'bg-white dark:bg-gray-700',
     'border rounded-lg',
-    'placeholder-gray-400',
+    'placeholder-gray-400 dark:placeholder-gray-500',
     'transition-colors duration-200',
     'focus:outline-none focus:ring-2 focus:ring-opacity-50',
   ];
@@ -63,11 +63,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
     : success
     ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
-    : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500';
+    : 'border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500';
 
   // 비활성화 스타일
   const disabledClasses = disabled
-    ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
+    ? 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
     : '';
 
   // 너비 스타일
@@ -99,7 +99,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
   const PasswordToggleIcon = () => (
     <button
       type="button"
-      className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+      className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:text-gray-600 dark:focus:text-gray-300"
       onClick={() => setShowPassword(!showPassword)}
       tabIndex={-1}
       aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
@@ -130,20 +130,20 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
-      
+
       <div className="relative">
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-400">{leftIcon}</span>
+            <span className="text-gray-400 dark:text-gray-500">{leftIcon}</span>
           </div>
         )}
-        
+
         <input
           ref={ref}
           id={inputId}
@@ -152,33 +152,33 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
           disabled={disabled}
           aria-invalid={!!error}
           aria-describedby={
-            error ? `${inputId}-error` : 
-            helperText ? `${inputId}-helper` : 
+            error ? `${inputId}-error` :
+            helperText ? `${inputId}-helper` :
             undefined
           }
           aria-required={required}
           {...props}
         />
-        
+
         {(rightIcon || (showPasswordToggle && type === 'password')) && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
             {showPasswordToggle && type === 'password' ? (
               <PasswordToggleIcon />
             ) : (
-              <span className="text-gray-400">{rightIcon}</span>
+              <span className="text-gray-400 dark:text-gray-500">{rightIcon}</span>
             )}
           </div>
         )}
       </div>
-      
+
       {error && (
-        <p id={`${inputId}-error`} className="mt-1 text-sm text-red-600" role="alert">
+        <p id={`${inputId}-error`} className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
           {error}
         </p>
       )}
-      
+
       {!error && helperText && (
-        <p id={`${inputId}-helper`} className="mt-1 text-sm text-gray-500">
+        <p id={`${inputId}-helper`} className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {helperText}
         </p>
       )}

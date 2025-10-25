@@ -391,7 +391,7 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
 
     functions.logger.info(`New user: ${email} (UID: ${uid}). Parsing displayName: "${displayName}"`);
 
-    let initialRole = 'staff';
+    let initialRole = 'manager';
     let finalDisplayName = "Unnamed User";
     let extraData: { [key: string]: any } = { phone: phoneNumber || null };
 
@@ -438,9 +438,11 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
 
         await admin.auth().setCustomUserClaims(uid, { role: initialRole });
 
-        if (initialRole === 'pending_manager') {
-             await admin.auth().updateUser(uid, { disabled: true });
-        }
+        // displayName을 정상적인 이름으로 업데이트 (JSON 데이터 제거)
+        await admin.auth().updateUser(uid, {
+            displayName: finalDisplayName,
+            ...(initialRole === 'pending_manager' && { disabled: true })
+        });
 
         functions.logger.info(`Successfully created Firestore document/claims for UID: ${uid}`);
     } catch (error) {

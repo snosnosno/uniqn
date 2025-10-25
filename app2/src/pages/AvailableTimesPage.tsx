@@ -68,25 +68,25 @@ const AvailableTimesPage = () => {
     }
   };
 
-  if (loading) return <p>{t('availableTimes.status.loading')}</p>;
-  if (error) return <p>{t('availableTimes.status.error', { message: error.message })}</p>;
-  if (!currentUser) return <p>{t('availableTimes.status.loginRequired')}</p>;
+  if (loading) return <p className="text-gray-900 dark:text-gray-100">{t('availableTimes.status.loading')}</p>;
+  if (error) return <p className="text-red-600 dark:text-red-400">{t('availableTimes.status.error', { message: error.message })}</p>;
+  if (!currentUser) return <p className="text-gray-600 dark:text-gray-400">{t('availableTimes.status.loginRequired')}</p>;
 
   return (
     <div className="container">
-      <h1 className="text-2xl font-bold mb-4">{t('availableTimes.title')}</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('availableTimes.title')}</h1>
       <div className="space-y-4">
         {dayKeys.map(dayKey => (
           <div key={dayKey}>
-            <h3 className="font-semibold text-lg mb-2">{t(`availableTimes.days.${dayKey}`)}</h3>
+            <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">{t(`availableTimes.days.${dayKey}`)}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {timeKeys.map(timeKey => (
-                <label key={timeKey} className="flex items-center space-x-2">
+                <label key={timeKey} className="flex items-center space-x-2 text-gray-900 dark:text-gray-100">
                   <input
                     type="checkbox"
                     checked={availability[dayKey]?.includes(timeKey) || false}
                     onChange={() => handleCheckboxChange(dayKey, timeKey)}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                   />
                   <span>{t(`availableTimes.times.${timeKey}`)}</span>
                 </label>
@@ -97,7 +97,7 @@ const AvailableTimesPage = () => {
       </div>
       <button
         onClick={handleSubmit}
-        className="mt-6 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+        className="mt-6 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600"
       >
         {t('common.save')}
       </button>

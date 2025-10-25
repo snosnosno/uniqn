@@ -1,8 +1,8 @@
-# T-HOLDEM 토너먼트 관리 플랫폼
+# UNIQN 토너먼트 관리 플랫폼
 
 [![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)](./CHANGELOG.md)
 
-**T-HOLDEM**은 홀덤 포커 토너먼트 운영의 모든 과정을 디지털화하여, 운영 효율성을 극대화하는 것을 목표로 하는 종합 관리 플랫폼입니다.
+**UNIQN**은 홀덤 포커 토너먼트 운영의 모든 과정을 디지털화하여, 운영 효율성을 극대화하는 것을 목표로 하는 종합 관리 플랫폼입니다.
 
 ---
 
@@ -51,7 +51,7 @@
 ```bash
 # 1. 프로젝트 클론
 git clone <repository-url>
-cd T-HOLDEM/app2
+cd UNIQN/app2
 
 # 2. 의존성 설치
 npm install

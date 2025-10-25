@@ -26,13 +26,13 @@ const InfoCard: React.FC<InfoCardProps> = ({
   const getColorClasses = () => {
     switch (type) {
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-700';
+        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-700';
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300';
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-700';
+        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300';
       default:
-        return 'bg-blue-50 border-blue-200 text-blue-700';
+        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300';
     }
   };
 

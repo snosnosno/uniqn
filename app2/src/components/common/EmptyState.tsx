@@ -26,13 +26,13 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div className={`text-center py-8 ${className}`}>
       {icon && (
-        <div className="text-gray-400 text-4xl mb-2">
+        <div className="text-gray-400 dark:text-gray-500 text-4xl mb-2">
           {icon}
         </div>
       )}
-      <p className="text-gray-500">{title}</p>
+      <p className="text-gray-500 dark:text-gray-400">{title}</p>
       {description && (
-        <p className="text-sm text-gray-400 mt-1">{description}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{description}</p>
       )}
       {action && (
         <div className="mt-4">

@@ -37,11 +37,11 @@ const Skeleton: React.FC<SkeletonProps> = ({
   const getAnimationClasses = () => {
     switch (animation) {
       case 'wave':
-        return 'animate-shimmer bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%]';
+        return 'animate-shimmer bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 bg-[length:200%_100%]';
       case 'none':
-        return 'bg-gray-200';
+        return 'bg-gray-200 dark:bg-gray-700';
       default:
-        return 'animate-pulse bg-gray-200';
+        return 'animate-pulse bg-gray-200 dark:bg-gray-700';
     }
   };
 
