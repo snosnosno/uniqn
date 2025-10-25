@@ -3,6 +3,7 @@ import JobBoardErrorBoundary from '../../components/errors/JobBoardErrorBoundary
 import JobPostingSkeleton from '../../components/JobPostingSkeleton';
 import PreQuestionModal from '../../components/modals/PreQuestionModal';
 import ConfirmModal from '../../components/modals/ConfirmModal';
+import IncompleteProfileModal from '../../components/modals/IncompleteProfileModal';
 import JobFiltersComponent from './JobFilters';
 import JobListTab from './components/JobListTab';
 import MyApplicationsTab from './components/MyApplicationsTab';
@@ -39,7 +40,10 @@ const JobBoardPage = () => {
     loadMoreRef,
     isDetailModalOpen,
     selectedDetailPost,
-    
+    isIncompleteProfileModalOpen,
+    setIsIncompleteProfileModalOpen,
+    missingProfileFields,
+
     // 함수
     handleFilterChange,
     handleOpenApplyModal,
@@ -54,11 +58,11 @@ const JobBoardPage = () => {
     handleBackToPreQuestions,
     handleOpenDetailModal,
     handleCloseDetailModal,
-    
+
     // 유틸리티
     currentUser,
     t,
-    
+
     // 사전질문 관련
     preQuestionAnswers
   } = useJobBoard();
@@ -217,6 +221,13 @@ const JobBoardPage = () => {
           isOpen={isDetailModalOpen}
           onClose={handleCloseDetailModal}
           jobPosting={selectedDetailPost}
+        />
+
+        {/* Incomplete Profile Modal */}
+        <IncompleteProfileModal
+          isOpen={isIncompleteProfileModalOpen}
+          onClose={() => setIsIncompleteProfileModalOpen(false)}
+          missingFieldLabels={missingProfileFields}
         />
 
         {/* Cancel Application Confirmation Modal */}

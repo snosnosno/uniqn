@@ -74,7 +74,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
         <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded-md">
           💡 <strong>저장될 내용:</strong>
           <ul className="mt-2 space-y-1 ml-4 list-disc">
-            <li>제목, 공고 타입, 지역 정보 (시/군/구 포함)</li>
+            <li>제목, 공고 타입, 지역 정보 (시/군/구, 상세주소, 문의 연락처 포함)</li>
             <li>시간대 및 역할 설정</li>
             <li>일자별 요구사항 설정</li>
             <li>급여 정보 (급여 유형, 금액)</li>

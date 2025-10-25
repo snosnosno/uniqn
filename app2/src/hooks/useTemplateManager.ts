@@ -51,6 +51,7 @@ export const useTemplateManager = () => {
           location: formData.location,
           ...(formData.district && { district: formData.district }),
           ...(formData.detailedAddress && { detailedAddress: formData.detailedAddress }),
+          ...(formData.contactPhone && { contactPhone: formData.contactPhone }),
           ...(formData.salaryType && { salaryType: formData.salaryType }),
           ...(formData.salaryAmount && { salaryAmount: formData.salaryAmount }),
           ...(formData.benefits && { benefits: formData.benefits }),

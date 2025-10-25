@@ -13,6 +13,7 @@ import { logger } from '../../../utils/logger';
 import { JobPosting, PreQuestionAnswer } from '../../../types/jobPosting';
 import { Assignment } from '../../../types/application';
 import { sortJobPostingsByPriority } from '../../../utils/jobPosting/sortingUtils';
+import { validateRequiredProfileFields } from '../../../utils/profile/profileValidation';
 
 export interface JobFilters {
   location: string;
@@ -59,10 +60,14 @@ export const useJobBoard = () => {
   // 모달 상태
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [isPreQuestionModalOpen, setIsPreQuestionModalOpen] = useState(false);
-  
+  const [isIncompleteProfileModalOpen, setIsIncompleteProfileModalOpen] = useState(false);
+
   // 사전질문 상태
   const [preQuestionCompleted, setPreQuestionCompleted] = useState<Map<string, boolean>>(new Map());
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<Map<string, PreQuestionAnswer[]>>(new Map());
+
+  // 프로필 미완성 상태
+  const [missingProfileFields, setMissingProfileFields] = useState<string[]>([]);
   
   // UnifiedDataContext 먼저 선언
   const unifiedContext = useUnifiedData();
@@ -232,12 +237,42 @@ export const useJobBoard = () => {
     setSelectedAssignments([]);
   };
   
-  const handleOpenApplyModal = (post: JobPosting) => {
+  const handleOpenApplyModal = async (post: JobPosting) => {
     // 이미 지원한 경우는 바로 리턴 (지원완료 상태에서는 수정 불가)
     if (appliedJobs.get(post.id)) {
       return;
     }
-    
+
+    // 사용자 로그인 확인
+    if (!currentUser) {
+      showError(t('jobBoard.alerts.loginRequired'));
+      return;
+    }
+
+    // 프로필 필수 필드 검증
+    try {
+      const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
+
+      if (!profileDoc.exists()) {
+        showError(t('jobBoard.alerts.profileNotFound'));
+        return;
+      }
+
+      const profileData = profileDoc.data();
+      const validation = validateRequiredProfileFields(profileData);
+
+      // 필수 필드가 누락된 경우
+      if (!validation.isValid) {
+        setMissingProfileFields(validation.missingFieldLabels);
+        setIsIncompleteProfileModalOpen(true);
+        return;
+      }
+    } catch (error) {
+      logger.error('Error checking profile fields', error instanceof Error ? error : new Error(String(error)), { component: 'useJobBoard' });
+      showError('프로필 정보를 확인하는 중 오류가 발생했습니다.');
+      return;
+    }
+
     // 사전질문이 있고 아직 답변하지 않은 경우
     if (post.preQuestions && post.preQuestions.length > 0 && !preQuestionCompleted.get(post.id)) {
       setSelectedPost(post);
@@ -517,6 +552,9 @@ export const useJobBoard = () => {
     isDetailModalOpen,
     selectedDetailPost,
     cancelConfirmPostId,
+    isIncompleteProfileModalOpen,
+    setIsIncompleteProfileModalOpen,
+    missingProfileFields,
 
     // 함수
     handleFilterChange,
@@ -531,11 +569,11 @@ export const useJobBoard = () => {
     handleBackToPreQuestions,
     handleOpenDetailModal,
     handleCloseDetailModal,
-    
+
     // 유틸리티
     currentUser,
     t,
-    
+
     // 사전질문 관련
     preQuestionAnswers
   };
