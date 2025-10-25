@@ -103,15 +103,15 @@ const UserManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">{t('userManagement.title')}</h1>
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('userManagement.title')}</h1>
                 <Link to="/app/admin/staff/new" className="btn btn-primary">
                     {t('userManagement.addNew')}
                 </Link>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
                 <ul className="divide-y divide-gray-200">
                     {userList.length > 0 ? userList.map(user => (
                         <li key={user.id} className="p-4 flex justify-between items-center">

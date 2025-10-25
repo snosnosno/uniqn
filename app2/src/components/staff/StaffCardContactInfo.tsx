@@ -16,7 +16,7 @@ const StaffCardContactInfo: React.FC<StaffCardContactInfoProps> = React.memo(({
   const hasContactInfo = phone || email;
   
   return (
-    <div className="border-t border-gray-200 p-4 bg-gray-50">
+    <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-700">
       <div className="space-y-4">
         {/* 연락처 정보 */}
         <div>
@@ -33,7 +33,7 @@ const StaffCardContactInfo: React.FC<StaffCardContactInfoProps> = React.memo(({
                   </div>
                   <a
                     href={`tel:${phone}`}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors"
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 rounded hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
                     통화
@@ -51,7 +51,7 @@ const StaffCardContactInfo: React.FC<StaffCardContactInfoProps> = React.memo(({
                   </div>
                   <a
                     href={`mailto:${email}`}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors flex-shrink-0 ml-2"
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0 ml-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     메일

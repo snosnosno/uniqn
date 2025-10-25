@@ -32,7 +32,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
       {/* 강도 프로그레스 바 */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
             {t('passwordStrength.title', '비밀번호 강도')}
           </span>
           <span
@@ -44,7 +44,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
         </div>
 
         {/* 프로그레스 바 */}
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
             className="h-2 rounded-full transition-all duration-300 ease-in-out"
             style={{
@@ -58,7 +58,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
       {/* 요구사항 체크리스트 */}
       {showRequirements && checks && (
         <div className="space-y-2">
-          <div className="text-sm font-medium text-gray-700 mb-2">
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             {t('passwordStrength.requirements', '비밀번호 요구사항')}
           </div>
 
@@ -66,7 +66,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             {/* 길이 체크 */}
             <div className="flex items-center text-sm">
               <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                checks.length ? 'bg-green-500' : 'bg-gray-300'
+                checks.length ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
               }`}>
                 {checks.length && (
                   <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
                   </svg>
                 )}
               </div>
-              <span className={checks.length ? 'text-green-600' : 'text-gray-500'}>
+              <span className={checks.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                 {t('passwordStrength.length', '8자 이상')}
               </span>
             </div>
@@ -82,7 +82,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             {/* 영문자 체크 */}
             <div className="flex items-center text-sm">
               <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                checks.hasEnglish ? 'bg-green-500' : 'bg-gray-300'
+                checks.hasEnglish ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
               }`}>
                 {checks.hasEnglish && (
                   <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +90,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
                   </svg>
                 )}
               </div>
-              <span className={checks.hasEnglish ? 'text-green-600' : 'text-gray-500'}>
+              <span className={checks.hasEnglish ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                 {t('passwordStrength.english', '영문자 포함')}
               </span>
             </div>
@@ -98,7 +98,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             {/* 숫자 체크 */}
             <div className="flex items-center text-sm">
               <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                checks.hasNumbers ? 'bg-green-500' : 'bg-gray-300'
+                checks.hasNumbers ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
               }`}>
                 {checks.hasNumbers && (
                   <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +106,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
                   </svg>
                 )}
               </div>
-              <span className={checks.hasNumbers ? 'text-green-600' : 'text-gray-500'}>
+              <span className={checks.hasNumbers ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                 {t('passwordStrength.numbers', '숫자 포함')}
               </span>
             </div>
@@ -114,12 +114,12 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             {/* 특수문자 보너스 (선택사항) */}
             {checks.hasSpecialChars && (
               <div className="flex items-center text-sm">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center mr-2 bg-blue-500">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center mr-2 bg-blue-500 dark:bg-blue-600">
                   <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                <span className="text-blue-600">
+                <span className="text-blue-600 dark:text-blue-400">
                   {t('passwordStrength.specialChars', '특수문자 포함 (보너스 +10점)')}
                 </span>
               </div>

@@ -29,15 +29,15 @@ export const SimpleBarChart: React.FC<SimpleBarChartProps> = React.memo(({
           return (
             <div key={index} className="flex-1 flex flex-col items-center justify-end h-full">
               {showValues && (
-                <div className="text-sm font-semibold text-gray-700 mb-1">
+                <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
                   {item.value}{unit}
                 </div>
               )}
-              <div 
+              <div
                 className={`w-full rounded-t-lg transition-all duration-500 ${item.color || 'bg-blue-500'}`}
                 style={{ height: `${barHeight}%` }}
               />
-              <div className="text-xs text-gray-600 mt-2 text-center">
+              <div className="text-xs text-gray-600 dark:text-gray-300 mt-2 text-center">
                 {item.label}
               </div>
             </div>
@@ -121,12 +121,12 @@ export const SimplePieChart: React.FC<SimplePieChartProps> = React.memo(({
       <div className="absolute top-0 right-0 -mr-32 text-sm">
         {data.map((item, index) => (
           <div key={index} className="flex items-center space-x-2 mb-1">
-            <div 
-              className="w-3 h-3 rounded-sm" 
+            <div
+              className="w-3 h-3 rounded-sm"
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-gray-600">{item.label}</span>
-            <span className="text-gray-800 font-medium">{item.value}</span>
+            <span className="text-gray-600 dark:text-gray-300">{item.label}</span>
+            <span className="text-gray-800 dark:text-gray-100 font-medium">{item.value}</span>
           </div>
         ))}
       </div>

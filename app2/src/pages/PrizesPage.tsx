@@ -70,11 +70,11 @@ const PrizesPage: React.FC = () => {
   const totalManualPayout = manualPayouts.reduce((sum, v) => sum + v, 0);
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <TournamentSelector />
 
       {!state.tournamentId ? (
-        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
           <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
           <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
         </div>

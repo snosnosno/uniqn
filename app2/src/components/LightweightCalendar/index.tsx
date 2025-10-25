@@ -127,14 +127,14 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
   // 월 뷰 렌더링
   const renderMonthView = () => {
     return (
-      <div className="grid grid-cols-7 gap-px bg-gray-200">
+      <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700">
         {/* 요일 헤더 */}
         {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
           <div
             key={day}
             className={`
-              bg-gray-50 py-2 text-center text-sm font-medium
-              ${idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-gray-700'}
+              bg-gray-50 dark:bg-gray-800 py-2 text-center text-sm font-medium
+              ${idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-gray-700 dark:text-gray-200'}
             `}
           >
             {day}
@@ -154,10 +154,10 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
               key={idx}
               onClick={() => handleDateCellClick(day)}
               className={`
-                bg-white p-1 min-h-[120px] cursor-pointer
-                hover:bg-gray-50 transition-colors
+                bg-white dark:bg-gray-800 p-1 min-h-[120px] cursor-pointer
+                hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
                 ${!isCurrentMonth ? 'opacity-40' : ''}
-                ${isSelectedDay ? 'bg-blue-50' : ''}
+                ${isSelectedDay ? 'bg-blue-50 dark:bg-blue-900/30' : ''}
               `}
             >
               <div className={`
@@ -239,19 +239,19 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
       {/* 캘린더 헤더 */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
         <div className="flex items-center space-x-4">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ChevronRightIcon className="w-5 h-5" />
           </button>

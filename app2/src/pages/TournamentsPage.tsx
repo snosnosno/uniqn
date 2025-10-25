@@ -220,7 +220,7 @@ const TournamentsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 bg-gray-100 min-h-screen">
+      <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
         <div className="text-center">로딩 중...</div>
       </div>
     );
@@ -228,14 +228,14 @@ const TournamentsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-gray-100 min-h-screen">
+      <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
         <div className="text-red-500">토너먼트 목록을 불러오는데 실패했습니다: {error.message}</div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-800">토너먼트 관리</h1>
         <div className="flex gap-2">
@@ -265,7 +265,7 @@ const TournamentsPage: React.FC = () => {
       </div>
 
       {visibleTournaments.length === 0 ? (
-        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
           <p className="text-gray-500 mb-4">생성된 토너먼트가 없습니다.</p>
           <button
             onClick={handleOpenCreateModal}
@@ -283,7 +283,7 @@ const TournamentsPage: React.FC = () => {
             const count = getItemCount(dateKey);
 
             return (
-              <div key={dateKey} className="bg-white shadow-md rounded-lg overflow-hidden">
+              <div key={dateKey} className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
                 {/* 날짜 섹션 헤더 */}
                 <button
                   onClick={() => toggleExpansion(dateKey)}
@@ -314,13 +314,13 @@ const TournamentsPage: React.FC = () => {
                       {tournamentsInDate.map((tournament) => (
             <div
               key={tournament.id}
-              className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow border-l-8"
+              className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow border-l-8"
               style={{ borderLeftColor: tournament.color || TOURNAMENT_COLORS[0] }}
             >
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{COLOR_EMOJIS[tournament.color || TOURNAMENT_COLORS[0]]}</span>
-                  <h3 className="text-xl font-bold text-gray-800">{tournament.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tournament.name}</h3>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(tournament.status)}`}>
                   {getStatusLabel(tournament.status)}

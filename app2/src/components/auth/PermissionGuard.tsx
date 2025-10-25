@@ -45,21 +45,21 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
     // 기본 접근 거부 페이지
     return (
       <div className="container mx-auto p-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6 text-center">
           <div className="text-red-600 text-6xl mb-4">🚫</div>
-          <h2 className="text-2xl font-bold text-red-800 mb-2">접근 권한이 없습니다</h2>
-          <p className="text-red-600 mb-4">
+          <h2 className="text-2xl font-bold text-red-800 dark:text-red-300 mb-2">접근 권한이 없습니다</h2>
+          <p className="text-red-600 dark:text-red-400 mb-4">
             이 페이지에 접근할 권한이 없습니다. 관리자에게 문의하세요.
           </p>
           <button
             onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 mr-2"
+            className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-800 mr-2"
           >
             이전 페이지로
           </button>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded hover:bg-gray-700 dark:hover:bg-gray-800"
           >
             홈으로 이동
           </button>
@@ -138,12 +138,12 @@ export const JobPostingAccessGuard: React.FC<JobPostingAccessGuardProps> = ({
     }
     
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="text-yellow-800">
+      <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+        <div className="text-yellow-800 dark:text-yellow-300">
           <p className="font-medium">접근 제한</p>
           <p className="text-sm">
-            {requireManagement 
-              ? '공고 관리 권한이 필요합니다.' 
+            {requireManagement
+              ? '공고 관리 권한이 필요합니다.'
               : '공고 조회 권한이 필요합니다.'
             }
           </p>

@@ -58,7 +58,7 @@ const TournamentDashboard = () => {
     }
 
     const StatCard = ({ title, value, icon: Icon, color }: StatCardProps) => (
-        <div className="bg-white p-6 rounded-lg shadow-md flex items-center">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center">
             <div className={`p-3 rounded-full mr-4 ${color}`}>
                 <Icon className="w-6 h-6 text-white" />
             </div>
@@ -79,7 +79,7 @@ const TournamentDashboard = () => {
                     <button
                         onClick={handleSetupTestData}
                         disabled={isSeeding}
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
                         {isSeeding ? t('tournamentDashboard.devTools.buttonSeeding') : t('tournamentDashboard.devTools.button')}
                     </button>
@@ -110,8 +110,8 @@ const TournamentDashboard = () => {
                 />
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4 text-gray-800">{t('tournamentDashboard.status.title')}</h2>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">{t('tournamentDashboard.status.title')}</h2>
                 <p className={`text-lg font-semibold ${tournamentStatus === 'running' ? 'text-green-500' : 'text-red-500'}`}>
                     {t(`tournamentDashboard.status.${tournamentStatus}`)}
                 </p>

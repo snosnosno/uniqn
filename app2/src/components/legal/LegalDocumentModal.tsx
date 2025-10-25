@@ -144,11 +144,11 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
       {/* 모달 */}
       <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-0 sm:p-4">
         <div
-          className="bg-white w-full h-full sm:max-w-4xl sm:max-h-[90vh] sm:rounded-lg shadow-2xl flex flex-col"
+          className="bg-white dark:bg-gray-800 w-full h-full sm:max-w-4xl sm:max-h-[90vh] sm:rounded-lg shadow-2xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* 헤더 */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b bg-white sticky top-0 z-10">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 z-10">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex-1 mr-4">
               {title}
             </h2>
@@ -157,7 +157,7 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
               {/* 인쇄 버튼 (데스크톱만) */}
               <button
                 onClick={handlePrint}
-                className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 aria-label={t('common.print', '인쇄')}
               >
                 <PrinterIcon className="h-5 w-5" />
@@ -167,7 +167,7 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
               {/* 닫기 버튼 */}
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 aria-label={t('common.close', '닫기')}
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -187,7 +187,7 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
           </div>
 
           {/* 하단 닫기 버튼 (모바일 편의성) */}
-          <div className="border-t bg-white px-4 py-4 sm:hidden">
+          <div className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4 sm:hidden">
             <button
               onClick={onClose}
               className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
@@ -458,7 +458,7 @@ const PrivacyPolicyContent: React.FC = () => {
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제6조 (개인정보 보호책임자)</h2>
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <p className="text-gray-700"><strong>담당자:</strong> 개인정보 관리책임자</p>
               <p className="text-gray-700"><strong>이메일:</strong> privacy@tholdem.com</p>
               <p className="text-gray-700"><strong>전화:</strong> 02-1234-5678</p>

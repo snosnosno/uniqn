@@ -225,9 +225,9 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
-      <div className="absolute bottom-0 left-0 right-0 bg-white h-2/3 border-t shadow-xl">
+      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 h-2/3 border-t shadow-xl">
         {/* 헤더 */}
-        <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
           <div className="flex items-center space-x-4">
             <h2 className="text-lg font-semibold">🛠️ UnifiedData DevTools</h2>
             <div className="text-sm text-gray-500">
@@ -251,7 +251,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
         </div>
 
         {/* 탭 네비게이션 */}
-        <div className="flex border-b bg-gray-50">
+        <div className="flex border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
           {[
             { id: 'overview', label: '📊 개요' },
             { id: 'data', label: '💾 데이터' },
@@ -278,7 +278,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 성능 메트릭 */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">📈 실시간 성능 지표</h3>
                 <div className="space-y-2">
                   {performanceMetrics.map((metric, index) => (
@@ -297,7 +297,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               </div>
 
               {/* 캐시 상태 */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">⚡ 캐시 상태</h3>
                 {cacheStats ? (
                   <div className="space-y-2">
@@ -332,23 +332,23 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               <h3 className="font-semibold">💾 데이터 컬렉션 상태</h3>
               <div className="grid gap-4">
                 {collectionDetails.map((collection) => (
-                  <div key={collection.name} className="bg-gray-50 rounded-lg p-4">
+                  <div key={collection.name} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="font-medium">{collection.name}</h4>
                       <div className="flex items-center space-x-2">
                         {collection.isLoading && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">로딩중</span>
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">로딩중</span>
                         )}
                         {collection.hasError && (
-                          <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">에러</span>
+                          <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded">에러</span>
                         )}
-                        <span className="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded">
+                        <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 px-2 py-1 rounded">
                           {collection.size}개
                         </span>
                       </div>
                     </div>
                     {collection.hasError && (
-                      <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                      <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-2 rounded">
                         {collection.errorMessage}
                       </div>
                     )}

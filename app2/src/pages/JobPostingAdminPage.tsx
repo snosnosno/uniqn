@@ -61,7 +61,7 @@ const JobPostingAdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
       <div className="w-full px-2 sm:px-4 lg:px-6">
         {/* 헤더 */}
         <div className="mb-8">

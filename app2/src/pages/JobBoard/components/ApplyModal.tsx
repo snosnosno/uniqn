@@ -239,7 +239,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white h-[95vh] sm:h-[85vh] flex flex-col">
+      <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 h-[95vh] sm:h-[85vh] flex flex-col">
         <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
           {t('jobBoard.applyModal.title', { postTitle: jobPosting.title })}
         </h3>
@@ -335,8 +335,8 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                 <label 
                                   key={roleIndex} 
                                   className={`flex items-center p-2 rounded cursor-pointer ${
-                                    isFull ? 'bg-gray-100 cursor-not-allowed' : 
-                                    isGroupChecked ? 'bg-blue-100 border border-blue-300' : 'bg-white/50 hover:bg-white border border-blue-200'
+                                    isFull ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' :
+                                    isGroupChecked ? 'bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700' : 'bg-white/50 dark:bg-gray-700/50 hover:bg-white dark:hover:bg-gray-700 border border-blue-200 dark:border-blue-600'
                                   }`}
                                 >
                                   <input
@@ -442,8 +442,8 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                           <label 
                             key={roleIndex} 
                             className={`flex items-center p-2 rounded cursor-pointer ${
-                              isFull ? 'bg-gray-100 cursor-not-allowed' : 
-                              isSelected ? 'bg-green-100 border border-green-300' : 'bg-white hover:bg-gray-50'
+                              isFull ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' :
+                              isSelected ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700' : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
                             }`}
                           >
                             <input
@@ -494,7 +494,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           <div className="flex space-x-2">
             <button 
               onClick={onClose} 
-              className="py-3 px-6 sm:py-2 sm:px-4 bg-gray-500 text-white rounded hover:bg-gray-700 min-h-[48px] text-sm sm:text-base"
+              className="py-3 px-6 sm:py-2 sm:px-4 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-700 dark:hover:bg-gray-700 min-h-[48px] text-sm sm:text-base"
             >
               {t('common.cancel')}
             </button>

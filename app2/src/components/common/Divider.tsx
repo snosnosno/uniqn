@@ -22,7 +22,7 @@ const Divider: React.FC<DividerProps> = ({
 }) => {
   if (orientation === 'vertical') {
     return (
-      <div className={`inline-block min-h-[1em] w-0.5 self-stretch bg-gray-200 ${className}`} />
+      <div className={`inline-block min-h-[1em] w-0.5 self-stretch bg-gray-200 dark:bg-gray-700 ${className}`} />
     );
   }
 
@@ -38,15 +38,15 @@ const Divider: React.FC<DividerProps> = ({
         className={`relative flex items-center ${className}`}
       >
         <div className={`flex items-center w-full ${alignClasses[textAlign]}`}>
-          <div className="before:content-[''] before:h-px before:bg-gray-200" />
-          <span className="text-sm text-gray-500 whitespace-nowrap">{children}</span>
-          <div className="after:content-[''] after:h-px after:bg-gray-200" />
+          <div className="before:content-[''] before:h-px before:bg-gray-200 dark:before:bg-gray-700" />
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{children}</span>
+          <div className="after:content-[''] after:h-px after:bg-gray-200 dark:after:bg-gray-700" />
         </div>
       </div>
     );
   }
 
-  return <hr className={`border-gray-200 ${className}`} />;
+  return <hr className={`border-gray-200 dark:border-gray-700 ${className}`} />;
 };
 
 export default Divider;

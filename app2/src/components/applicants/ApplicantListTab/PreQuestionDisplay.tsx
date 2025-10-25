@@ -14,16 +14,16 @@ const PreQuestionDisplay: React.FC<PreQuestionDisplayProps> = ({ applicant }) =>
   }
 
   return (
-    <div className="mt-3 p-2 w-full bg-blue-50 rounded-lg border border-blue-200">
+    <div className="mt-3 p-2 w-full bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
       <div className="space-y-2">
         {applicant.preQuestionAnswers.map((answer, index) => (
           <div key={index} className="text-sm">
-            <p className="font-medium text-gray-700">
+            <p className="font-medium text-gray-700 dark:text-gray-200">
               Q{index + 1}. {answer.question}
               {answer.required ? <span className="text-red-500 ml-1">*</span> : null}
             </p>
-            <p className="text-gray-600 ml-4 mt-1">
-              ▶ {answer.answer || <span className="text-gray-400">(답변 없음)</span>}
+            <p className="text-gray-600 dark:text-gray-300 ml-4 mt-1">
+              ▶ {answer.answer || <span className="text-gray-400 dark:text-gray-500">(답변 없음)</span>}
             </p>
           </div>
         ))}
