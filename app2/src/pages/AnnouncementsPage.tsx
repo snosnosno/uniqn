@@ -29,7 +29,7 @@ import {
 
 const AnnouncementsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, role } = useAuth();
   const {
     announcements,
     activeAnnouncements,
@@ -146,7 +146,7 @@ const AnnouncementsPage: React.FC = () => {
           </div>
 
           {/* 관리자 전용: 등록 버튼 */}
-          {isAdmin && (
+          {role === 'admin' && (
             <button
               onClick={() => setIsCreateModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-1.5"
