@@ -188,7 +188,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
           <div className="space-y-4">
             {/* 제목 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 제목 <span className="text-red-500">*</span>
               </label>
               <input
@@ -197,16 +197,16 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={100}
                 placeholder="공지사항 제목을 입력하세요"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <p className="mt-1 text-sm text-gray-500 text-right">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 text-right">
                 {title.length}/100자
               </p>
             </div>
 
             {/* 내용 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 내용 <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -215,16 +215,16 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
                 maxLength={2000}
                 rows={10}
                 placeholder="공지사항 내용을 입력하세요"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
-              <p className="mt-1 text-sm text-gray-500 text-right">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 text-right">
                 {content.length}/2000자
               </p>
             </div>
 
             {/* 우선순위 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 우선순위 <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -234,8 +234,8 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
                     onClick={() => setPriority(option.value)}
                     className={`px-4 py-3 rounded-lg border-2 transition-all ${
                       priority === option.value
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                        : 'border-gray-300 hover:border-gray-400 text-gray-700'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-200'
                     }`}
                   >
                     <span className={getPriorityBadgeStyle(option.value).replace('border', '')}>
@@ -250,20 +250,20 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 시작일 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   공개 시작일 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="datetime-local"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               {/* 종료일 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   <input
                     type="checkbox"
                     checked={hasEndDate}
@@ -277,8 +277,8 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   disabled={!hasEndDate}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    !hasEndDate ? 'bg-gray-100 cursor-not-allowed' : ''
+                  className={`w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    !hasEndDate ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''
                   }`}
                 />
               </div>
@@ -286,9 +286,9 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
 
             {/* 유효성 검증 에러 */}
             {validationErrors.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-red-800 mb-2">⚠️ 입력 오류</p>
-                <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">⚠️ 입력 오류</p>
+                <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-400 space-y-1">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}

@@ -599,11 +599,11 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       </div>
 
       {/* 요약 정보 */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <div className="flex justify-around items-center mb-3">
           <div className="text-center">
-            <h3 className="text-xs font-medium text-gray-500 mb-1">총 인원</h3>
-            <p className="text-xl font-bold text-gray-900">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">총 인원</h3>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {summary?.totalStaff || 0}명
             </p>
           </div>
@@ -655,9 +655,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       />
 
       {/* 상세 내역 테이블 */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">📋 상세 내역</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">📋 상세 내역</h3>
           <div className="flex gap-2">
             <button
               onClick={toggleSelectAll}
@@ -704,10 +704,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {staffWorkData.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     정산 데이터가 없습니다.
                   </td>
                 </tr>
@@ -791,10 +791,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
       {/* CSV 내보내기 확인 모달 */}
       {showExportConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             {/* 헤더 */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">CSV 내보내기 확인</h3>
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">CSV 내보내기 확인</h3>
             </div>
 
             {/* 내용 */}
@@ -825,10 +825,10 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
             </div>
 
             {/* 버튼 */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-lg flex justify-end gap-3">
               <button
                 onClick={() => setShowExportConfirmModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
               >
                 취소
               </button>

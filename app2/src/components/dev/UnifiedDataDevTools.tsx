@@ -371,30 +371,30 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               </div>
               
               {cacheStats && (
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-2xl font-bold text-green-600">{cacheStats.hits}</div>
-                      <div className="text-sm text-gray-600">캐시 히트</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{cacheStats.hits}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">캐시 히트</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-red-600">{cacheStats.misses}</div>
-                      <div className="text-sm text-gray-600">캐시 미스</div>
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">{cacheStats.misses}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">캐시 미스</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-blue-600">{cacheStats.hitRate}%</div>
-                      <div className="text-sm text-gray-600">히트율</div>
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{cacheStats.hitRate}%</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">히트율</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-purple-600">{cacheStats.sizeMB}MB</div>
-                      <div className="text-sm text-gray-600">사용 용량</div>
+                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{cacheStats.sizeMB}MB</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">사용 용량</div>
                     </div>
                   </div>
-                  
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="bg-white p-3 rounded text-sm">
-                      <div className="font-medium mb-2">캐시 효율성 분석</div>
-                      <div className="text-gray-600">
+
+                  <div className="mt-4 pt-4 border-t dark:border-gray-600">
+                    <div className="bg-white dark:bg-gray-800 p-3 rounded text-sm">
+                      <div className="font-medium mb-2 dark:text-gray-100">캐시 효율성 분석</div>
+                      <div className="text-gray-600 dark:text-gray-300">
                         {cacheStats.hitRate >= 80 ? '🟢 매우 좋음 - 캐시가 효과적으로 작동하고 있습니다.' :
                          cacheStats.hitRate >= 60 ? '🟡 보통 - 캐시 성능을 개선할 수 있습니다.' :
                          '🔴 나쁨 - 캐시 전략을 재검토하세요.'}
@@ -412,7 +412,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {performanceMetrics.map((metric, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4">
+                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-sm">{metric.name}</h4>
                       <div className={`w-3 h-3 rounded-full ${

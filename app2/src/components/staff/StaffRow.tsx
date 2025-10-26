@@ -300,7 +300,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
                 onShowProfile(staff.id);
               }
             }}
-            className="text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left inline-block"
+            className="text-sm font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 px-3 py-1 rounded-md border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm transition-all duration-200 text-left inline-block"
           >
             {memoizedStaffData.displayName}
           </button>

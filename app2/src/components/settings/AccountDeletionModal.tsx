@@ -163,12 +163,12 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
         />
 
         {/* 모달 콘텐츠 */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6">
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
-              <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-600 dark:text-red-500" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {t('settings.account.confirmDeletion')}
               </h2>
             </div>

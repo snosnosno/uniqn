@@ -130,10 +130,10 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
       </div>
 
       {requirements.map((requirement, requirementIndex) => (
-        <div key={requirementIndex} className="border border-gray-300 rounded-lg overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 flex justify-between items-center border-b border-gray-200">
+        <div key={requirementIndex} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-semibold text-gray-700">📅</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">📅</span>
               <DateDropdownSelector
                 value={toDropdownValue(typeof requirement.date === 'string' ? requirement.date : '')}
                 onChange={(value) => handleDateChange(requirementIndex, value)}
@@ -249,9 +249,9 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                       const displayValue = isCustomRole && !PREDEFINED_ROLES.includes(role.name) ? 'other' : role.name;
                       
                       return (
-                        <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                        <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                           <div className="flex-1">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                               역할명
                             </label>
                             <div className="space-y-2">

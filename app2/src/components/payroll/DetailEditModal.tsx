@@ -402,8 +402,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
               }`}
             >
               <span>{tab.icon}</span>
@@ -533,9 +533,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {workHistory.map((history, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                               <div className="flex items-center gap-2">
                                 <span>{history.date}</span>

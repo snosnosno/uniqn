@@ -476,9 +476,9 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             
             {/* 미리보기 */}
             {(combineTime(startHour, startMinute) || combineTime(endHour, endMinute)) && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-2">적용될 시간</h4>
-                <div className="text-lg font-mono">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-2">적용될 시간</h4>
+                <div className="text-lg font-mono dark:text-gray-100">
                   {combineTime(startHour, startMinute) || '변경 없음'} ~ {combineTime(endHour, endMinute) || '미정'}
                 </div>
               </div>
@@ -494,11 +494,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
                 출석 상태 선택
               </label>
               <div className="space-y-2">
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                   <input
                     type="radio"
                     value="not_started"
@@ -508,11 +508,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   />
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-gray-500 rounded-full mr-2"></div>
-                    <span className="font-medium">출근 전</span>
+                    <span className="font-medium dark:text-gray-100">출근 전</span>
                   </div>
                 </label>
-                
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+
+                <label className="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                   <input
                     type="radio"
                     value="checked_in"

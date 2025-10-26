@@ -186,10 +186,10 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         />
 
         {/* 모달 콘텐츠 */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               {t('settings.security.changePassword')}
             </h2>
             <button
