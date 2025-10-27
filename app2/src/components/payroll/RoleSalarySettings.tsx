@@ -146,31 +146,31 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
   }, [tempSalaryConfig, onUpdate]);
 
   return (
-    <div className={`bg-white rounded-lg shadow ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow ${className}`}>
       {/* 헤더 */}
-      <div className="px-6 py-4 border-b">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full flex items-center justify-between text-left"
         >
           <div className="flex items-center gap-2">
-            <Cog6ToothIcon className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-medium text-gray-900">급여 설정</h3>
-            <span className="text-sm text-gray-500">
+            <Cog6ToothIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">급여 설정</h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               ({roles.length}개)
             </span>
           </div>
           <div className="flex items-center gap-2">
             {!isExpanded && (
-              <span className="text-sm text-gray-500">
-                {Object.values(salaryConfig).some(config => config.salaryType !== 'hourly') 
-                  ? '개별 설정됨' 
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {Object.values(salaryConfig).some(config => config.salaryType !== 'hourly')
+                  ? '개별 설정됨'
                   : '기본 설정'
                 }
               </span>
             )}
             <svg
-              className={`w-5 h-5 transform transition-transform ${
+              className={`w-5 h-5 text-gray-900 dark:text-gray-100 transform transition-transform ${
                 isExpanded ? 'rotate-180' : ''
               }`}
               fill="none"
@@ -188,27 +188,27 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
         <div className="p-6">
           <div className="space-y-6">
             {roles.map(role => (
-              <div key={role} className="border rounded-lg p-4 bg-gray-50">
+              <div key={role} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                 <div className="flex justify-between items-start mb-4">
-                  <h4 className="text-sm font-medium text-gray-900">{role}</h4>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">{role}</h4>
                   <button
                     onClick={() => handleApplyToAll(role)}
-                    className="text-xs text-indigo-600 hover:text-indigo-800"
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                   >
                     모든 역할에 적용
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   {/* 급여 유형 */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       급여 유형
                     </label>
                     <select
                       value={tempSalaryConfig[role]?.salaryType || 'hourly'}
                       onChange={(e) => handleSalaryChange(role, 'salaryType', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value="hourly">시급</option>
                       <option value="daily">일급</option>
@@ -219,7 +219,7 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
 
                   {/* 급여 금액 */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       급여 금액
                     </label>
                     <div className="relative">
@@ -229,10 +229,10 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
                         step="1000"
                         value={tempSalaryConfig[role]?.salaryAmount || 0}
                         onChange={(e) => handleSalaryChange(role, 'salaryAmount', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="0"
                       />
-                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400">
                         원
                       </span>
                     </div>
@@ -243,13 +243,13 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
           </div>
 
           {/* 안내 메시지 */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
                   급여 설정 안내
                 </h3>
-                <div className="mt-2 text-sm text-blue-700">
+                <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
                   <ul className="list-disc pl-5 space-y-1">
                     <li>역할별로 다른 급여 유형과 금액을 설정할 수 있습니다</li>
                     <li>'적용하기' 버튼을 눌러야 정산 금액이 재계산됩니다</li>
@@ -261,11 +261,11 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
           </div>
 
           {/* 적용 버튼 */}
-          <div className="flex justify-end pt-4 border-t">
+          <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handleApply}
               disabled={!hasChanges || isSaving}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isSaving ? '저장 중...' : '적용하기'}
             </button>

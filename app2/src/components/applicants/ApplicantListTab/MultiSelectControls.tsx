@@ -302,13 +302,13 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
             const { dateGroup, timeGroup, groupKey, timeIndex } = card;
             
             return (
-              <div key={`${groupKey}-time-${timeIndex}-unified`} className="border border-green-300 rounded-lg overflow-hidden">
+              <div key={`${groupKey}-time-${timeIndex}-unified`} className="border border-green-300 dark:border-green-700 rounded-lg overflow-hidden">
                 {/* 날짜 범위 헤더 */}
-                <div className="bg-green-100 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200">
+                <div className="bg-green-100 dark:bg-green-900/30 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200 dark:border-green-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <span className="text-sm sm:text-base">📅</span>
-                      <div className="text-xs sm:text-sm font-medium text-green-800">
+                      <div className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">
                         {(() => {
                           // 여러 날인 경우 두 줄로 표시
                           if (dateGroup.dayCount > 1) {
@@ -366,16 +366,16 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                               className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded disabled:bg-gray-300 dark:disabled:bg-gray-600"
                             />
                             <span className="ml-2 text-xs sm:text-sm">
-                              <span className="font-medium text-gray-800">
+                              <span className="font-medium text-gray-800 dark:text-gray-200">
                                 {role ? (t(`roles.${role}`) || role) : ''}
                               </span>
                               {(() => {
                                 const counts = getStaffCounts(jobPosting, applications, role, timeGroup.timeSlot);
                                 return (
-                                  <span className="text-gray-500 ml-1">({counts.confirmed}/{counts.required})</span>
+                                  <span className="text-gray-500 dark:text-gray-400 ml-1">({counts.confirmed}/{counts.required})</span>
                                 );
                               })()}
-                              <span className="font-medium text-gray-700 ml-2">{timeGroup.timeSlot}</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 ml-2">{timeGroup.timeSlot}</span>
                             </span>
                           </div>
                         </label>
@@ -411,24 +411,24 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
             const timeGroups = Array.from(timeGroupsMap.values());
             
             return (
-              <div key={`${dateGroup.date}-unified-${cardIndex}`} className="border border-green-300 rounded-lg overflow-hidden">
+              <div key={`${dateGroup.date}-unified-${cardIndex}`} className="border border-green-300 dark:border-green-700 rounded-lg overflow-hidden">
                 {/* 날짜 헤더 */}
-                <div className="bg-green-100 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200">
+                <div className="bg-green-100 dark:bg-green-900/30 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200 dark:border-green-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <span className="text-sm sm:text-base">📅</span>
-                      <span className="text-xs sm:text-sm font-medium text-green-800">
+                      <span className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">
                         {dateGroup.date === 'no-date' ? '날짜 미정' : dateGroup.displayDate} (1일)
                       </span>
                     </div>
-                    <span className="text-xs text-gray-500 hidden sm:block">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                       {dateGroup.selectedCount}개 선택됨
                     </span>
                   </div>
                 </div>
 
                 {/* 시간대별로 그룹화된 선택 항목들 */}
-                <div className="divide-y divide-green-100">
+                <div className="divide-y divide-green-100 dark:divide-green-800">
                   {timeGroups.map((timeGroup, timeGroupIndex: number) => (
                     <div key={`${dateGroup.date}-${timeGroup.time}-unified-${timeGroupIndex}`} className="p-2 sm:p-3">
                       <div className="space-y-2">
@@ -468,16 +468,16 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                                   className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:bg-gray-300 dark:disabled:bg-gray-600"
                                 />
                                 <span className="ml-2 text-xs sm:text-sm">
-                                  <span className="font-medium text-gray-800">
+                                  <span className="font-medium text-gray-800 dark:text-gray-200">
                                     {role ? (t(`roles.${role}`) || role) : ''}
                                   </span>
                                   {role && (() => {
                                     const counts = getStaffCounts(jobPosting, applications, role, timeGroup.time, safeDateString);
                                     return (
-                                      <span className="text-gray-500 ml-1">({counts.confirmed}/{counts.required})</span>
+                                      <span className="text-gray-500 dark:text-gray-400 ml-1">({counts.confirmed}/{counts.required})</span>
                                     );
                                   })()}
-                                  <span className="font-medium text-gray-700 ml-2">{timeGroup.time}</span>
+                                  <span className="font-medium text-gray-700 dark:text-gray-300 ml-2">{timeGroup.time}</span>
                                 </span>
                               </div>
                             </label>
@@ -494,7 +494,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       </div>
       
       {/* 확정 버튼 */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={onConfirm}
           disabled={selectedAssignments.length === 0 || !canEdit}

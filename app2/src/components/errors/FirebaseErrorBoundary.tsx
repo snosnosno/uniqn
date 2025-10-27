@@ -114,17 +114,17 @@ class FirebaseErrorBoundary extends Component<Props, State> {
                   >
                     🔄 긴급 재설정
                   </button>
-                  
+
                   <button
                     onClick={this.handleRetry}
-                    className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                    className="w-full bg-gray-600 dark:bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 dark:hover:bg-gray-800 transition-colors"
                   >
                     🔄 다시 시도
                   </button>
-                  
+
                   <button
                     onClick={() => window.location.reload()}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    className="w-full bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
                   >
                     🔄 페이지 새로고침
                   </button>
@@ -132,10 +132,10 @@ class FirebaseErrorBoundary extends Component<Props, State> {
               )}
 
               {this.state.error ? <details className="mt-4 text-left">
-                  <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
+                  <summary className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
                     오류 세부 정보
                   </summary>
-                  <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto max-h-32">
+                  <pre className="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-auto max-h-32">
                     {this.state.error.message}
                   </pre>
                 </details> : null}

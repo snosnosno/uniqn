@@ -189,7 +189,7 @@ export const SecuritySettings: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400" />
       </div>
     );
   }
@@ -200,7 +200,7 @@ export const SecuritySettings: React.FC = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">{t('settings.security.loadFailed')}</p>
+        <p className="text-red-600 dark:text-red-400">{t('settings.security.loadFailed')}</p>
       </div>
     );
   }
@@ -209,17 +209,17 @@ export const SecuritySettings: React.FC = () => {
     <div className="space-y-8">
       {/* 비밀번호 변경 */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
           <KeyIcon className="h-5 w-5 mr-2" />
           {t('settings.security.password')}
         </h3>
-        <div className="border rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-4">
+        <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             {t('settings.security.passwordDescription')}
           </p>
           <button
             onClick={handleOpenPasswordModal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
           >
             {t('settings.security.changePassword')}
           </button>
@@ -228,19 +228,19 @@ export const SecuritySettings: React.FC = () => {
 
       {/* 로그인 알림 설정 */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center">
           <BellIcon className="h-5 w-5 mr-2" />
           {t('settings.security.loginNotifications')}
         </h3>
         <div className="space-y-4">
           {/* 알림 활성화 */}
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h4 className="font-medium text-gray-900 mb-1">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                   {t('settings.security.enableNotifications')}
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {t('settings.security.enableNotificationsDescription')}
                 </p>
               </div>
@@ -252,7 +252,7 @@ export const SecuritySettings: React.FC = () => {
                   rounded-full border-2 border-transparent transition-colors
                   duration-200 ease-in-out focus:outline-none focus:ring-2
                   focus:ring-blue-500 focus:ring-offset-2
-                  ${loginNotificationSettings?.enabled ? 'bg-blue-600' : 'bg-gray-200'}
+                  ${loginNotificationSettings?.enabled ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                   ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
                 role="switch"
@@ -274,13 +274,13 @@ export const SecuritySettings: React.FC = () => {
           {loginNotificationSettings?.enabled && (
             <>
               {/* 새 기기 알림 */}
-              <div className="border rounded-lg p-4 ml-4">
+              <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 ml-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-1">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                       {t('settings.security.newDeviceNotification')}
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {t('settings.security.newDeviceNotificationDescription')}
                     </p>
                   </div>
@@ -292,7 +292,7 @@ export const SecuritySettings: React.FC = () => {
                       rounded-full border-2 border-transparent transition-colors
                       duration-200 ease-in-out focus:outline-none focus:ring-2
                       focus:ring-blue-500 focus:ring-offset-2
-                      ${loginNotificationSettings?.notifyOnNewDevice ? 'bg-blue-600' : 'bg-gray-200'}
+                      ${loginNotificationSettings?.notifyOnNewDevice ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                       ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
                     role="switch"
@@ -311,13 +311,13 @@ export const SecuritySettings: React.FC = () => {
               </div>
 
               {/* 새 위치 알림 */}
-              <div className="border rounded-lg p-4 ml-4">
+              <div className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 ml-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-1">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                       {t('settings.security.newLocationNotification')}
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {t('settings.security.newLocationNotificationDescription')}
                     </p>
                   </div>
@@ -329,7 +329,7 @@ export const SecuritySettings: React.FC = () => {
                       rounded-full border-2 border-transparent transition-colors
                       duration-200 ease-in-out focus:outline-none focus:ring-2
                       focus:ring-blue-500 focus:ring-offset-2
-                      ${loginNotificationSettings?.notifyOnNewLocation ? 'bg-blue-600' : 'bg-gray-200'}
+                      ${loginNotificationSettings?.notifyOnNewLocation ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                       ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
                     role="switch"
@@ -348,16 +348,16 @@ export const SecuritySettings: React.FC = () => {
               </div>
 
               {/* 의심스러운 활동 알림 */}
-              <div className="border rounded-lg p-4 ml-4 bg-amber-50 border-amber-200">
+              <div className="border border-amber-200 dark:border-amber-800 rounded-lg p-4 ml-4 bg-amber-50 dark:bg-amber-900/20">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-1">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                       {t('settings.security.suspiciousActivityNotification')}
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {t('settings.security.suspiciousActivityNotificationDescription')}
                     </p>
-                    <p className="text-xs text-amber-700 mt-2">
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
                       {t('settings.security.recommendedSetting')}
                     </p>
                   </div>
@@ -369,7 +369,7 @@ export const SecuritySettings: React.FC = () => {
                       rounded-full border-2 border-transparent transition-colors
                       duration-200 ease-in-out focus:outline-none focus:ring-2
                       focus:ring-blue-500 focus:ring-offset-2
-                      ${loginNotificationSettings?.notifyOnSuspiciousActivity ? 'bg-blue-600' : 'bg-gray-200'}
+                      ${loginNotificationSettings?.notifyOnSuspiciousActivity ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                       ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
                     role="switch"
@@ -392,10 +392,10 @@ export const SecuritySettings: React.FC = () => {
       </div>
 
       {/* 안내 메시지 */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-900">
+          <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-900 dark:text-blue-300">
             <p className="font-medium mb-1">
               {t('settings.security.infoTitle')}
             </p>

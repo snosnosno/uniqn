@@ -93,10 +93,10 @@ export const AccountDangerZone: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 경고 안내 */}
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-red-900">
+          <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-red-900 dark:text-red-300">
             <p className="font-medium mb-1">
               {t('settings.account.dangerZoneWarning')}
             </p>
@@ -107,43 +107,43 @@ export const AccountDangerZone: React.FC = () => {
 
       {/* 삭제 대기 중 상태 */}
       {isPending && deletionRequest && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
           <div className="flex items-start space-x-3 mb-4">
-            <InformationCircleIcon className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            <InformationCircleIcon className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-lg font-semibold text-amber-900 mb-1">
+              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300 mb-1">
                 {t('settings.account.deletionPending')}
               </h3>
-              <p className="text-sm text-amber-800">
+              <p className="text-sm text-amber-800 dark:text-amber-400">
                 {t('settings.account.deletionPendingDescription')}
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-t border-amber-200">
-              <span className="text-sm text-amber-900">
+            <div className="flex items-center justify-between py-2 border-t border-amber-200 dark:border-amber-700">
+              <span className="text-sm text-amber-900 dark:text-amber-300">
                 {t('settings.account.requestedAt')}
               </span>
-              <span className="text-sm font-medium text-amber-900">
+              <span className="text-sm font-medium text-amber-900 dark:text-amber-300">
                 {formatDate(deletionRequest.requestedAt || null)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between py-2 border-t border-amber-200">
-              <span className="text-sm text-amber-900">
+            <div className="flex items-center justify-between py-2 border-t border-amber-200 dark:border-amber-700">
+              <span className="text-sm text-amber-900 dark:text-amber-300">
                 {t('settings.account.scheduledDeletionAt')}
               </span>
-              <span className="text-sm font-medium text-amber-900">
+              <span className="text-sm font-medium text-amber-900 dark:text-amber-300">
                 {formatDate(scheduledDate)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between py-2 border-t border-amber-200">
-              <span className="text-sm text-amber-900">
+            <div className="flex items-center justify-between py-2 border-t border-amber-200 dark:border-amber-700">
+              <span className="text-sm text-amber-900 dark:text-amber-300">
                 {t('settings.account.remainingDays')}
               </span>
-              <span className="text-lg font-bold text-amber-900">
+              <span className="text-lg font-bold text-amber-900 dark:text-amber-300">
                 {remainingDays} {t('common.days')}
               </span>
             </div>
@@ -153,14 +153,14 @@ export const AccountDangerZone: React.FC = () => {
           <button
             onClick={handleCancelDeletion}
             disabled={isCancelling}
-            className="mt-6 w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-6 w-full px-4 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCancelling
               ? t('common.processing')
               : t('settings.account.cancelDeletion')}
           </button>
 
-          <p className="mt-3 text-xs text-amber-700 text-center">
+          <p className="mt-3 text-xs text-amber-700 dark:text-amber-400 text-center">
             {t('settings.account.cancelDeletionNote')}
           </p>
         </div>
@@ -186,7 +186,7 @@ export const AccountDangerZone: React.FC = () => {
             <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {t('settings.account.deletionEffects')}
             </h4>
-            <ul className="space-y-2 text-sm text-gray-700">
+            <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
                 <span>{t('settings.account.deletionEffect1')}</span>
@@ -207,10 +207,10 @@ export const AccountDangerZone: React.FC = () => {
           </div>
 
           {/* 유예 기간 안내 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
             <div className="flex items-start space-x-2">
-              <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-900">
+              <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-900 dark:text-blue-300">
                 <p className="font-medium mb-1">
                   {t('settings.account.gracePeriodTitle')}
                 </p>
@@ -222,12 +222,12 @@ export const AccountDangerZone: React.FC = () => {
           {/* 삭제 요청 버튼 */}
           <button
             onClick={handleOpenDeletionModal}
-            className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+            className="w-full px-4 py-3 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors font-semibold"
           >
             {t('settings.account.requestDeletion')}
           </button>
 
-          <p className="mt-3 text-xs text-gray-500 text-center">
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 text-center">
             {t('settings.account.irreversibleAction')}
           </p>
         </div>

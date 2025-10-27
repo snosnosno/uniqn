@@ -289,16 +289,16 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
       )}
 
       {/* 전체 동의 */}
-      <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+      <div className="border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
         <label className="flex items-center cursor-pointer">
           <input
             type="checkbox"
             checked={isAllAgreed}
             onChange={handleToggleAll}
-            className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
             aria-label={t('consent.agreeAll')}
           />
-          <span className="ml-3 text-base font-semibold text-gray-900">
+          <span className="ml-3 text-base font-semibold text-gray-900 dark:text-gray-100">
             {t('consent.agreeAll')}
           </span>
         </label>
@@ -457,7 +457,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
 
       {/* 필수 동의 안내 */}
       {isSignupMode && !hasRequiredConsents && (
-        <div className="flex items-start space-x-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-start space-x-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
           <ExclamationCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <p>{t('consent.requiredWarning')}</p>
         </div>

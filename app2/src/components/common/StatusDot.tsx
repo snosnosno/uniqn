@@ -27,19 +27,19 @@ const StatusDot: React.FC<StatusDotProps> = ({
     switch (status) {
       case 'online':
       case 'success':
-        return 'bg-green-500';
+        return 'bg-green-500 dark:bg-green-600';
       case 'offline':
-        return 'bg-gray-400';
+        return 'bg-gray-400 dark:bg-gray-600';
       case 'busy':
       case 'error':
-        return 'bg-red-500';
+        return 'bg-red-500 dark:bg-red-600';
       case 'away':
       case 'warning':
-        return 'bg-yellow-500';
+        return 'bg-yellow-500 dark:bg-yellow-600';
       case 'info':
-        return 'bg-blue-500';
+        return 'bg-blue-500 dark:bg-blue-600';
       default:
-        return 'bg-gray-400';
+        return 'bg-gray-400 dark:bg-gray-600';
     }
   };
 
@@ -71,7 +71,7 @@ const StatusDot: React.FC<StatusDotProps> = ({
     return (
       <span className="inline-flex items-center space-x-2">
         {dotElement}
-        <span className="text-sm text-gray-700">{label}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
       </span>
     );
   }

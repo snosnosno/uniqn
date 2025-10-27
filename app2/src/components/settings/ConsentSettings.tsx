@@ -155,7 +155,7 @@ export const ConsentSettings: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400" />
       </div>
     );
   }
@@ -166,8 +166,8 @@ export const ConsentSettings: React.FC = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-gray-700">{t('settings.consent.loadFailed')}</p>
+        <XCircleIcon className="h-12 w-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+        <p className="text-gray-700 dark:text-gray-300">{t('settings.consent.loadFailed')}</p>
       </div>
     );
   }
@@ -178,8 +178,8 @@ export const ConsentSettings: React.FC = () => {
   if (!consent) {
     return (
       <div className="text-center py-12">
-        <InformationCircleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-700">{t('settings.consent.noConsent')}</p>
+        <InformationCircleIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+        <p className="text-gray-700 dark:text-gray-300">{t('settings.consent.noConsent')}</p>
       </div>
     );
   }
@@ -188,25 +188,25 @@ export const ConsentSettings: React.FC = () => {
     <div className="space-y-8">
       {/* 필수 동의 (읽기 전용) */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-gray-900">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
           {t('settings.consent.required')}
         </h3>
         <div className="space-y-4">
           {/* 이용약관 */}
-          <div className="border rounded-lg p-4 bg-gray-50">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
-                  <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                  <span className="font-medium text-gray-900">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 dark:text-green-400" />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
                     {t('consent.termsOfService')}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                   {t('settings.consent.agreedAt')}:{' '}
                   {formatDate(consent.termsOfService.agreedAt)}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {t('settings.consent.version')}: {consent.termsOfService.version}
                 </p>
               </div>
@@ -214,49 +214,49 @@ export const ConsentSettings: React.FC = () => {
           </div>
 
           {/* 개인정보처리방침 */}
-          <div className="border rounded-lg p-4 bg-gray-50">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
-                  <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                  <span className="font-medium text-gray-900">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 dark:text-green-400" />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
                     {t('consent.privacyPolicy')}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                   {t('settings.consent.agreedAt')}:{' '}
                   {formatDate(consent.privacyPolicy.agreedAt)}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {t('settings.consent.version')}: {consent.privacyPolicy.version}
                 </p>
               </div>
             </div>
           </div>
         </div>
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
           {t('settings.consent.requiredNote')}
         </p>
       </div>
 
       {/* 선택 동의 (변경 가능) */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-gray-900">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
           {t('settings.consent.optional')}
         </h3>
         <div className="space-y-4">
           {/* 마케팅 수신 동의 */}
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h4 className="font-medium text-gray-900 mb-1">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                   {t('consent.marketing')}
                 </h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   {t('consent.marketingDescription')}
                 </p>
                 {isMarketingAgreed && consent.marketing && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {t('settings.consent.agreedAt')}:{' '}
                     {formatDate(consent.marketing.agreedAt)}
                   </p>
@@ -270,7 +270,7 @@ export const ConsentSettings: React.FC = () => {
                   rounded-full border-2 border-transparent transition-colors
                   duration-200 ease-in-out focus:outline-none focus:ring-2
                   focus:ring-blue-500 focus:ring-offset-2
-                  ${isMarketingAgreed ? 'bg-blue-600' : 'bg-gray-200'}
+                  ${isMarketingAgreed ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                   ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
                 role="switch"
@@ -290,17 +290,17 @@ export const ConsentSettings: React.FC = () => {
           </div>
 
           {/* 위치 서비스 동의 */}
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h4 className="font-medium text-gray-900 mb-1">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                   {t('consent.locationService')}
                 </h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   {t('consent.locationServiceDescription')}
                 </p>
                 {isLocationServiceAgreed && consent.locationService && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {t('settings.consent.agreedAt')}:{' '}
                     {formatDate(consent.locationService.agreedAt)}
                   </p>
@@ -314,7 +314,7 @@ export const ConsentSettings: React.FC = () => {
                   rounded-full border-2 border-transparent transition-colors
                   duration-200 ease-in-out focus:outline-none focus:ring-2
                   focus:ring-blue-500 focus:ring-offset-2
-                  ${isLocationServiceAgreed ? 'bg-blue-600' : 'bg-gray-200'}
+                  ${isLocationServiceAgreed ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                   ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
                 role="switch"
@@ -334,17 +334,17 @@ export const ConsentSettings: React.FC = () => {
           </div>
 
           {/* 푸시 알림 동의 */}
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h4 className="font-medium text-gray-900 mb-1">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
                   {t('consent.pushNotification')}
                 </h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   {t('consent.pushNotificationDescription')}
                 </p>
                 {isPushNotificationAgreed && consent.pushNotification && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {t('settings.consent.agreedAt')}:{' '}
                     {formatDate(consent.pushNotification.agreedAt)}
                   </p>
@@ -358,7 +358,7 @@ export const ConsentSettings: React.FC = () => {
                   rounded-full border-2 border-transparent transition-colors
                   duration-200 ease-in-out focus:outline-none focus:ring-2
                   focus:ring-blue-500 focus:ring-offset-2
-                  ${isPushNotificationAgreed ? 'bg-blue-600' : 'bg-gray-200'}
+                  ${isPushNotificationAgreed ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                   ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
                 role="switch"
@@ -377,16 +377,16 @@ export const ConsentSettings: React.FC = () => {
             </div>
           </div>
         </div>
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
           {t('settings.consent.optionalNote')}
         </p>
       </div>
 
       {/* 안내 메시지 */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-900">
+          <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-900 dark:text-blue-300">
             <p className="font-medium mb-1">
               {t('settings.consent.infoTitle')}
             </p>

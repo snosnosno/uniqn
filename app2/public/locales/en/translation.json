@@ -264,6 +264,7 @@
     "emailAddress": "Email Address",
     "date": "Date",
     "phone": "Phone",
+    "statusLabel": "Status",
     "status": "Status",
     "location": "Location",
     "time": "Time",

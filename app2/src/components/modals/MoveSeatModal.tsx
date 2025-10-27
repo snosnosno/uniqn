@@ -144,9 +144,9 @@ const MoveSeatModal: React.FC<MoveSeatModalProps> = ({
                     key={seatIndex}
                     onClick={() => handleSeatSelect(table.id, seatIndex, participantId, table.status)}
                     className={`relative p-2 rounded-md h-16 flex flex-col justify-center items-center text-xs group
-                      ${isCurrentSeat ? 'bg-yellow-200 text-yellow-800 border-2 border-yellow-500' :
-                        isSelectable ? 'cursor-pointer bg-green-100 text-green-800 border-2 border-dashed border-green-400 hover:bg-green-200' :
-                        'bg-gray-300 text-gray-600'}
+                      ${isCurrentSeat ? 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border-2 border-yellow-500 dark:border-yellow-700' :
+                        isSelectable ? 'cursor-pointer bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-2 border-dashed border-green-400 dark:border-green-700 hover:bg-green-200 dark:hover:bg-green-900/50' :
+                        'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}
                       ${isSelected ? 'ring-4 ring-blue-500' : ''}
                     `}
                     title={isCurrentSeat ? '현재 위치' : isSelectable ? '이동 가능한 자리' : '이동 불가능한 자리'}

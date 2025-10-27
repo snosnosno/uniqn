@@ -269,6 +269,7 @@
     "emailAddress": "이메일 주소",
     "date": "날짜",
     "phone": "연락처",
+    "statusLabel": "상태",
     "status": {
       "confirmed": "확정됨",
       "pending": "대기 중",

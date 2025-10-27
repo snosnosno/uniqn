@@ -56,9 +56,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">{jobPosting.title}</h3>
             <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-              jobPosting.recruitmentType === 'fixed' 
-                ? 'bg-purple-100 text-purple-800' 
-                : 'bg-blue-100 text-blue-800'
+              jobPosting.recruitmentType === 'fixed'
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
             }`}>
               {jobPosting.recruitmentType === 'fixed' ? '고정' : '지원'}
             </span>

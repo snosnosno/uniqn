@@ -279,7 +279,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       {/* 현재 프로필 이미지 표시 */}
       <div className="flex flex-col items-center space-y-4">
         <div className="relative">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
             {currentImageUrl ? (
               <img
                 src={currentImageUrl}
@@ -287,7 +287,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             )}
@@ -307,7 +307,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
             {t('profileImage.selectImage', '이미지 선택')}
           </button>
@@ -316,7 +316,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
             <button
               onClick={deleteImage}
               disabled={isUploading}
-              className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
             >
               {t('profileImage.deleteImage', '삭제')}
             </button>
@@ -327,16 +327,16 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
         {isUploading && (
           <div className="w-full max-w-xs">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-indigo-700">
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400">
                 {t('profileImage.uploading', '업로드 중...')}
               </span>
-              <span className="text-sm font-medium text-indigo-700">
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400">
                 {uploadProgress}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                className="bg-indigo-600 dark:bg-indigo-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -347,8 +347,8 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       {/* 이미지 크롭 모달 */}
       {showCropper && imageSrc && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-auto">
-            <h3 className="text-lg font-medium mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-auto">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
               {t('profileImage.cropTitle', '이미지 자르기')}
             </h3>
 
@@ -372,14 +372,14 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
             <div className="flex justify-end space-x-3">
               <button
                 onClick={cancelCrop}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               >
                 {t('profileImage.cancel', '취소')}
               </button>
               <button
                 onClick={uploadImage}
                 disabled={!completedCrop || isUploading}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 border border-transparent rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 {isUploading
                   ? t('profileImage.uploading', '업로드 중...')

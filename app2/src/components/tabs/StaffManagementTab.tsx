@@ -191,13 +191,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
 
   const getTimeSlotColor = useCallback((timeSlot?: string) => {
-    if (!timeSlot) return 'bg-gray-100 text-gray-800';
+    if (!timeSlot) return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     const colors = {
-      '09:00~18:00': 'bg-blue-100 text-blue-800',
-      '18:00~24:00': 'bg-green-100 text-green-800',
-      '24:00~06:00': 'bg-purple-100 text-purple-800',
+      '09:00~18:00': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
+      '18:00~24:00': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+      '24:00~06:00': 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
     };
-    return colors[timeSlot as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[timeSlot as keyof typeof colors] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
   }, []);
 
   const getStaffWorkLog = useCallback(

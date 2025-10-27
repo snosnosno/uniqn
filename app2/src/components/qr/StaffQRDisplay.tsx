@@ -95,8 +95,8 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-        <p className="text-gray-600">QR 코드를 생성하는 중...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400" />
+        <p className="text-gray-600 dark:text-gray-300">QR 코드를 생성하는 중...</p>
       </div>
     );
   }
@@ -107,7 +107,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="text-red-600 text-center">
+        <div className="text-red-600 dark:text-red-400 text-center">
           <svg
             className="h-12 w-12 mx-auto mb-4"
             fill="none"
@@ -126,7 +126,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
         </div>
         <button
           onClick={handleRefresh}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
         >
           다시 시도
         </button>
@@ -140,10 +140,10 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   if (!qrString || !qrMetadata) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <p className="text-gray-600">QR 코드를 불러올 수 없습니다.</p>
+        <p className="text-gray-600 dark:text-gray-300">QR 코드를 불러올 수 없습니다.</p>
         <button
           onClick={handleRefresh}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
         >
           다시 시도
         </button>
@@ -164,12 +164,12 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
       </div>
 
       {/* QR 주소 표시 (수동 입력용) */}
-      <div className="w-full max-w-md bg-gray-50 rounded-xl p-4 space-y-2">
+      <div className="w-full max-w-md bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 font-medium">QR 주소 (수동 입력용)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">QR 주소 (수동 입력용)</span>
           <button
             onClick={handleCopyQRString}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -177,12 +177,12 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
             복사
           </button>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
-          <code className="text-xs text-gray-700 break-all font-mono leading-relaxed">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <code className="text-xs text-gray-700 dark:text-gray-300 break-all font-mono leading-relaxed">
             {qrString}
           </code>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           💡 관리자가 수동 입력 모드를 사용할 경우 위 주소를 전달하세요
         </p>
       </div>
@@ -192,15 +192,15 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
         <div
           className={`text-4xl font-bold font-mono ${
             remainingSeconds <= 30
-              ? 'text-red-600 animate-pulse'
+              ? 'text-red-600 dark:text-red-400 animate-pulse'
               : remainingSeconds <= 60
-              ? 'text-orange-600'
-              : 'text-blue-600'
+              ? 'text-orange-600 dark:text-orange-400'
+              : 'text-blue-600 dark:text-blue-400'
           }`}
         >
           {formatCountdown(remainingSeconds)}
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {remainingSeconds <= 30
             ? '곧 QR이 자동으로 갱신됩니다'
             : 'QR 유효 시간'}
@@ -208,30 +208,30 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
       </div>
 
       {/* 사용자 정보 */}
-      <div className="w-full max-w-md bg-gray-50 rounded-xl p-4 space-y-3">
+      <div className="w-full max-w-md bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-gray-600 text-sm">이름</span>
-          <span className="font-semibold">{userName}</span>
+          <span className="text-gray-600 dark:text-gray-400 text-sm">이름</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{userName}</span>
         </div>
 
         {qrMetadata.lastUsedAt && (
           <div className="flex justify-between items-center">
-            <span className="text-gray-600 text-sm">마지막 사용</span>
-            <span className="font-semibold text-sm">
+            <span className="text-gray-600 dark:text-gray-400 text-sm">마지막 사용</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
               {new Date(qrMetadata.lastUsedAt.toMillis()).toLocaleString('ko-KR')}
             </span>
           </div>
         )}
 
         <div className="flex justify-between items-center">
-          <span className="text-gray-600 text-sm">총 스캔 횟수</span>
-          <span className="font-semibold">{qrMetadata.totalScanCount}회</span>
+          <span className="text-gray-600 dark:text-gray-400 text-sm">총 스캔 횟수</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{qrMetadata.totalScanCount}회</span>
         </div>
 
         {qrMetadata.regenerationCount > 0 && (
           <div className="flex justify-between items-center">
-            <span className="text-gray-600 text-sm">재생성 횟수</span>
-            <span className="font-semibold">{qrMetadata.regenerationCount}회</span>
+            <span className="text-gray-600 dark:text-gray-400 text-sm">재생성 횟수</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{qrMetadata.regenerationCount}회</span>
           </div>
         )}
       </div>
@@ -240,23 +240,23 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
       <div className="flex gap-3 w-full max-w-md">
         <button
           onClick={handleRefresh}
-          className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="flex-1 px-4 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
         >
           즉시 갱신
         </button>
         <button
           onClick={handleRegenerate}
-          className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
         >
           QR 재발급
         </button>
       </div>
 
       {/* 안내 문구 */}
-      <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+      <div className="w-full max-w-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
         <div className="flex items-start space-x-2">
           <svg
-            className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0"
+            className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -268,9 +268,9 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <div className="text-sm text-blue-800 space-y-1">
+          <div className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
             <p className="font-semibold">QR 출석 체크 방법</p>
-            <ul className="list-disc list-inside space-y-1 text-blue-700">
+            <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-400">
               <li>매니저에게 QR 코드를 보여주세요</li>
               <li>QR은 3분마다 자동으로 갱신됩니다</li>
               <li>타인에게 QR을 공유하지 마세요</li>

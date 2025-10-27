@@ -173,17 +173,17 @@ const AssignmentDisplay: React.FC<AssignmentDisplayProps> = ({ assignments, stat
               <div key={slotIndex}>
                 {status === 'confirmed' ? (
                   // 확정 상태: 날짜 시간 역할 순서로 한 줄 표시
-                  <div className="text-sm text-gray-700 font-medium">
+                  <div className="text-sm text-gray-700 dark:text-gray-300 font-medium">
                     📅 {group.dateDisplay} ⏰ {timeSlot.timeSlot} 👤 {timeSlot.roles.filter(role => role).map(role => t(`roles.${role}`) || role).join(', ')}
                   </div>
                 ) : (
                   // 대기/확정되지 않은 상태: 기존 표시 방식 유지
                   <>
                     {/* 날짜 헤더 */}
-                    <div className="text-blue-600 font-medium mb-2 flex items-center space-x-2">
+                    <div className="text-blue-600 dark:text-blue-400 font-medium mb-2 flex items-center space-x-2">
                       <span>📅 {group.dateDisplay}</span>
                     </div>
-                    <div className="ml-4 flex items-center space-x-2 text-gray-700">
+                    <div className="ml-4 flex items-center space-x-2 text-gray-700 dark:text-gray-300">
                       <span>⏰ {timeSlot.timeSlot}</span>
                       <span>-</span>
                       <div className="font-medium">
@@ -191,7 +191,7 @@ const AssignmentDisplay: React.FC<AssignmentDisplayProps> = ({ assignments, stat
                           // 그룹 선택: 여러 역할을 배지로 표시
                           <div className="flex flex-wrap gap-1">
                             {timeSlot.roles.filter(role => role).map((role, roleIndex) => (
-                              <span key={roleIndex} className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-sm">
+                              <span key={roleIndex} className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded text-sm">
                                 {t(`roles.${role}`) || role}
                               </span>
                             ))}

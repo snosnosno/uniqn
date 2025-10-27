@@ -139,13 +139,13 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-          <h2 id="announcement-modal-title" className="text-lg sm:text-xl font-bold text-gray-900">
+          <h2 id="announcement-modal-title" className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {t('jobPosting.announcement.modalTitle')}
           </h2>
           <button
             onClick={handleCancel}
             disabled={isSending}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
             aria-label={t('common.cancel')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,14 +158,14 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
         <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           {/* 확정된 스태프가 없을 때 안내 메시지 */}
           {confirmedStaff.length === 0 && (
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">ℹ️</span>
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-yellow-800 mb-1">
+                  <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">
                     수신 대상이 없습니다
                   </h4>
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
                     공지를 전송하려면 먼저 스태프를 확정해야 합니다.
                     <br />
                     확정된 스태프에게만 공지를 전송할 수 있습니다.
@@ -177,8 +177,8 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
 
           {/* 에러 메시지 */}
           {errors.length > 0 && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <ul className="text-sm text-red-600 list-disc list-inside">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside">
                 {errors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
@@ -188,7 +188,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
 
           {/* 제목 입력 */}
           <div className="mb-4">
-            <label htmlFor="announcement-title" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="announcement-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('jobPosting.announcement.titleLabel')}
               <span className="text-red-500 ml-1">*</span>
             </label>
@@ -203,14 +203,14 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
               maxLength={50}
               autoFocus
             />
-            <div className="mt-1 text-xs text-gray-500 text-right">
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
               {title.length} / 50
             </div>
           </div>
 
           {/* 내용 입력 */}
           <div className="mb-4">
-            <label htmlFor="announcement-message" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="announcement-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('jobPosting.announcement.messageLabel')}
               <span className="text-red-500 ml-1">*</span>
             </label>
@@ -224,7 +224,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
               rows={6}
               maxLength={500}
             />
-            <div className="mt-1 text-xs text-gray-500 text-right">
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
               {announcementMessage.length} / 500
             </div>
           </div>
@@ -232,19 +232,19 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           {/* 수신 대상 */}
           {confirmedStaff.length > 0 && (
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('jobPosting.announcement.targetStaff')}
               </h3>
               <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                   {t('jobPosting.announcement.staffCount', { count: uniqueStaff.length })}
                 </p>
                 <div className="max-h-32 overflow-y-auto space-y-1">
                   {uniqueStaff.map((staff, index) => (
-                    <div key={staff.userId} className="flex items-center text-sm text-gray-700">
+                    <div key={staff.userId} className="flex items-center text-sm text-gray-700 dark:text-gray-300">
                       <span className="w-6 text-gray-400">{index + 1}.</span>
                       <span className="font-medium">{staff.name}</span>
-                      <span className="ml-2 text-gray-500">({staff.role})</span>
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">({staff.role})</span>
                     </div>
                   ))}
                 </div>
@@ -253,15 +253,15 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           )}
 
           {/* 공고 정보 */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-600 font-medium mb-1">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
               📍 {t('jobPosting.announcement.postingInfo')}
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               {jobPosting.title}
             </p>
             {jobPosting.location && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 위치: {jobPosting.location}
               </p>
             )}
@@ -280,7 +280,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           <button
             onClick={handleSend}
             disabled={isSending || !title.trim() || !announcementMessage.trim() || confirmedStaff.length === 0}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSending ? (
               <>

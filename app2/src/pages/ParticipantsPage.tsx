@@ -442,7 +442,7 @@ const ParticipantsPage: React.FC = () => {
               <th className="px-4 py-2">기타</th>
               <th className="px-4 py-2">비고</th>
               <th className="px-4 py-2">{t('participants.tableHeaderActions')}</th>
-              <th className="px-4 py-2">{t('common.status')}</th>
+              <th className="px-4 py-2">{t('common.statusLabel')}</th>
             </tr>
           </thead>
           <tbody>

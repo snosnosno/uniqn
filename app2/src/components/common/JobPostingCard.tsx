@@ -437,10 +437,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               
               return (
                 <div key={dateIndex} className="">
-                  <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
                     📅 {dateDisplay}
                     {expandedDates.length > 0 && (
-                      <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
                         {expandedDates.length}일
                       </span>
                     )}
@@ -616,11 +616,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               {/* 상태 배지 (모집중/마감) */}
               {showStatus && post.status && (
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  post.status === 'open' 
-                    ? 'bg-green-100 text-green-800'
+                  post.status === 'open'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                     : post.status === 'closed'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
+                    ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                 }`}>
                   {getStatusDisplayName(post.status)}
                 </span>
@@ -629,9 +629,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               {/* 모집타입 배지 (고정/지원) */}
               {post.recruitmentType && (
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  post.recruitmentType === 'fixed' 
-                    ? 'bg-purple-100 text-purple-800' 
-                    : 'bg-blue-100 text-blue-800'
+                  post.recruitmentType === 'fixed'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
                 }`}>
                   {post.recruitmentType === 'fixed' ? '고정' : '지원'}
                 </span>

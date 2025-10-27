@@ -359,7 +359,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               {selectedStaff.map((staff) => (
                 <span
                   key={staff.id}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
                 >
                   {staff.name}
                 </span>
@@ -399,23 +399,23 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         {/* 시간 편집 모드 */}
         {editMode === 'time' ? (
           <div className="space-y-4">
-            <div className="bg-yellow-50 p-3 rounded-lg">
-              <p className="text-sm text-yellow-800">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-300">
                 ⚠️ 설정한 시간이 선택된 모든 스태프에게 동일하게 적용됩니다.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               {/* 시작 시간 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   시작 시간
                 </label>
                 <div className="flex space-x-2">
                   <select
                     value={startHour}
                     onChange={(e) => setStartHour(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">시</option>
                     {hourOptions.map((option) => (
@@ -427,7 +427,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   <select
                     value={startMinute}
                     onChange={(e) => setStartMinute(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">분</option>
                     {minuteOptions.map((option) => (
@@ -438,18 +438,18 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   </select>
                 </div>
               </div>
-              
+
               {/* 종료 시간 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   종료 시간
-                  <span className="text-gray-500 text-xs ml-1">(선택사항)</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-xs ml-1">(선택사항)</span>
                 </label>
                 <div className="flex space-x-2">
                   <select
                     value={endHour}
                     onChange={(e) => setEndHour(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">시</option>
                     {hourOptions.map((option) => (
@@ -461,7 +461,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   <select
                     value={endMinute}
                     onChange={(e) => setEndMinute(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">분</option>
                     {minuteOptions.map((option) => (
@@ -487,8 +487,8 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         ) : (
           /* 출석 상태 편집 모드 */
           <div className="space-y-4">
-            <div className="bg-yellow-50 p-3 rounded-lg">
-              <p className="text-sm text-yellow-800">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-300">
                 ⚠️ 선택한 출석 상태가 모든 스태프에게 동일하게 적용됩니다.
               </p>
             </div>
@@ -521,12 +521,12 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     className="mr-3"
                   />
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-green-500 dark:bg-green-600 rounded-full mr-2"></div>
                     <span className="font-medium">출근</span>
                   </div>
                 </label>
                 
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                   <input
                     type="radio"
                     value="checked_out"
@@ -536,7 +536,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   />
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    <span className="font-medium">퇴근</span>
+                    <span className="font-medium dark:text-gray-100">퇴근</span>
                   </div>
                 </label>
               </div>
@@ -546,9 +546,9 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
 
         {/* 유효성 검사 오류 */}
         {validationErrors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 className="font-semibold text-red-800 mb-2">오류</h4>
-            <ul className="list-disc list-inside text-red-700 space-y-1">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">오류</h4>
+            <ul className="list-disc list-inside text-red-700 dark:text-red-400 space-y-1">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}

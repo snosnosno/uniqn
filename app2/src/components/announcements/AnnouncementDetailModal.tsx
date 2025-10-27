@@ -73,9 +73,9 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
     >
       <div className="space-y-6">
         {/* 헤더 */}
-        <div className="border-b border-gray-200 pb-4">
+        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <div className="flex items-start justify-between mb-3">
-            <h2 className="text-2xl font-bold text-gray-900 flex-1 pr-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex-1 pr-4">
               {announcement.title}
             </h2>
             <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getPriorityBadgeStyle(announcement.priority)}`}>
@@ -84,7 +84,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
           </div>
 
           {/* 메타 정보 */}
-          <div className="text-sm text-gray-600 space-y-1">
+          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
             <p>
               <span className="font-medium">작성자:</span>{' '}
               {announcement.createdByName}
@@ -127,22 +127,22 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
 
         {/* 본문 */}
         <div className="prose max-w-none">
-          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+          <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
             {announcement.content}
           </div>
         </div>
 
         {/* 전송 결과 (있는 경우) */}
         {announcement.sendResult && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-blue-900 mb-2">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
               📊 알림 전송 결과
             </p>
-            <div className="text-sm text-blue-800 space-y-1">
+            <div className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
               <p>• 전체 사용자: {announcement.sendResult.totalUsers.toLocaleString()}명</p>
               <p>• 전송 성공: {announcement.sendResult.successCount.toLocaleString()}명</p>
               {announcement.sendResult.failedCount > 0 && (
-                <p className="text-red-600">
+                <p className="text-red-600 dark:text-red-400">
                   • 전송 실패: {announcement.sendResult.failedCount.toLocaleString()}명
                 </p>
               )}
@@ -163,19 +163,19 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
         )}
 
         {/* 버튼 */}
-        <div className="flex justify-between pt-4 border-t border-gray-200">
+        <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
           {/* 관리자 버튼 */}
           {isAdmin && (
             <div className="flex space-x-2">
               <button
                 onClick={handleEdit}
-                className="px-4 py-2 text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors"
+                className="px-4 py-2 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               >
                 ✏️ 수정
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-red-700 bg-red-50 border border-red-300 rounded-lg hover:bg-red-100 transition-colors"
+                className="px-4 py-2 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
               >
                 🗑️ 삭제
               </button>

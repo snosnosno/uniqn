@@ -189,25 +189,25 @@ const ReportModal: React.FC<ReportModalProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <FaExclamationTriangle className="w-6 h-6 text-red-500 mr-3" />
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               {t('report.title', '신고하기')}
             </h2>
           </div>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
           >
-            <XMarkIcon className="w-5 h-5 text-gray-400" />
+            <XMarkIcon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           </button>
         </div>
 
         {/* 신고 대상 정보 */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h3 className="font-medium text-gray-900 mb-2">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
             {t('report.targetInfo', '신고 대상')}
           </h3>
-          <div className="text-sm text-gray-600 space-y-1">
+          <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
             <div>
               <span className="font-medium">{t('report.targetName', '이름')}:</span> {targetUser.name}
             </div>
@@ -223,7 +223,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 신고 유형 선택 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               {t('report.type', '신고 유형')}
             </label>
             <div className="grid grid-cols-1 gap-3">
@@ -232,8 +232,8 @@ const ReportModal: React.FC<ReportModalProps> = ({
                   key={typeOption.key}
                   className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                     reportType === typeOption.key
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-400'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800'
                   }`}
                 >
                   <input
@@ -245,18 +245,18 @@ const ReportModal: React.FC<ReportModalProps> = ({
                     className="mt-1 w-4 h-4 text-red-600 focus:ring-red-500"
                   />
                   <div className="ml-3 flex-1">
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">
                       {t(typeOption.labelKey)}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {t(typeOption.descriptionKey)}
                     </div>
                     <div className="mt-1">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        typeOption.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                        typeOption.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                        typeOption.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        typeOption.severity === 'critical' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                        typeOption.severity === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                        typeOption.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}>
                         {t(`report.severity.${typeOption.severity}`, typeOption.severity)}
                       </span>
@@ -269,7 +269,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
 
           {/* 상세 설명 */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('report.description', '상세 설명')}
               <span className="text-red-500 ml-1">*</span>
             </label>
@@ -283,22 +283,22 @@ const ReportModal: React.FC<ReportModalProps> = ({
                   : t('report.descriptionPlaceholder.default', '발생한 상황을 구체적으로 설명해주세요')
               }
               rows={5}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
               required
             />
             {reportType === 'other' && (
-              <div className="mt-2 text-xs text-gray-500 flex items-center">
-                <FaInfoCircle className="w-3 h-3 mr-1 text-blue-500" />
+              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                <FaInfoCircle className="w-3 h-3 mr-1 text-blue-500 dark:text-blue-400" />
                 {t('report.otherTypeNotice', '기타 유형은 10자 이상의 자세한 설명이 필요합니다.')}
               </div>
             )}
           </div>
 
           {/* 경고 메시지 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
             <div className="flex items-start">
-              <FaInfoCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="text-sm text-yellow-800">
+              <FaInfoCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
+              <div className="text-sm text-yellow-800 dark:text-yellow-300">
                 <p className="font-medium mb-1">
                   {t('report.warning.title', '신고 전 확인사항')}
                 </p>
@@ -317,7 +317,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
             >
               {t('common.cancel', '취소')}
             </button>

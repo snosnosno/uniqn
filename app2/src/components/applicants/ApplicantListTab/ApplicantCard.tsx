@@ -62,16 +62,16 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
             </button>
           </div>
           <span className={`px-2 py-1 rounded-full text-xs ${
-            applicant.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-            applicant.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-            'bg-yellow-100 text-yellow-800'
+            applicant.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+            applicant.status === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
           }`}>
             {t(`jobPostingAdmin.applicants.status_${applicant.status}`)}
           </span>
         </div>
         
         {/* 기본 정보: 2x2 컴팩트 그리드 */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-600">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
           <div>
             <span className="font-medium">{t('common.gender')}:</span>
             <span className="ml-1">
@@ -102,7 +102,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         </div>
         
         {/* 연락처 정보: 한 줄로 컴팩트하게 */}
-        <div className="text-sm text-gray-600 space-y-1">
+        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
           <div>
             <span className="font-medium">{t('common.email')}:</span>
             <span className="ml-1 text-xs break-all">{applicant.email || t('common.none')}</span>
@@ -114,7 +114,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         </div>
 
         {/* 사전질문 답변: 컴팩트하게 */}
-        <div className="border-l-2 border-gray-200 pl-2">
+        <div className="border-l-2 border-gray-200 dark:border-gray-700 pl-2">
           <PreQuestionDisplay applicant={applicant} />
         </div>
 

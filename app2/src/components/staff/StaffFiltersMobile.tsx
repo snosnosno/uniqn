@@ -93,9 +93,9 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             <button
               onClick={onMultiSelectToggle}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                multiSelectMode 
-                  ? 'bg-purple-100 text-purple-700 border border-purple-300' 
-                  : 'bg-gray-100 text-gray-700 border border-gray-300'
+                multiSelectMode
+                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
               }`}
             >
               {multiSelectMode ? '선택 모드' : '선택 모드'}
@@ -235,7 +235,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
         {multiSelectMode && selectedCount > 0 && onBulkActions && (
           <button
             onClick={onBulkActions}
-            className="w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+            className="w-full py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-xl font-medium hover:bg-purple-700 dark:hover:bg-purple-800 transition-colors"
           >
             선택된 {selectedCount}명 일괄 작업
           </button>
@@ -278,11 +278,11 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             </span>
           )}
           {filters.selectedRole !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
               역할: {filters.selectedRole}
               <button
                 onClick={() => handleRoleChange('all')}
-                className="ml-2 text-purple-600 hover:text-purple-800"
+                className="ml-2 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200"
               >
                 ×
               </button>

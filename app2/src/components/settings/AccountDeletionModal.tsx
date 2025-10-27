@@ -175,7 +175,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
             <button
               onClick={handleClose}
               disabled={isSubmitting}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label={t('common.close')}
             >
               <XMarkIcon className="h-6 w-6" />
@@ -183,11 +183,11 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
           </div>
 
           {/* 경고 메시지 */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-red-900 font-medium mb-2">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <p className="text-sm text-red-900 dark:text-red-300 font-medium mb-2">
               {t('settings.account.finalWarning')}
             </p>
-            <ul className="space-y-1 text-sm text-red-800">
+            <ul className="space-y-1 text-sm text-red-800 dark:text-red-400">
               <li>• {t('settings.account.deletionEffect1')}</li>
               <li>• {t('settings.account.deletionEffect2')}</li>
               <li>• {t('settings.account.deletionEffect3')}</li>
@@ -200,10 +200,10 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
             <div>
               <label
                 htmlFor="reasonCategory"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t('settings.account.deletionReason')}{' '}
-                <span className="text-gray-500 font-normal">
+                <span className="text-gray-500 dark:text-gray-400 font-normal">
                   ({t('common.optional')})
                 </span>
               </label>
@@ -214,7 +214,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                   setReasonCategory(e.target.value as DeletionReasonCategory | '')
                 }
                 disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="">
                   {t('settings.account.selectReason')}
@@ -232,10 +232,10 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
               <div>
                 <label
                   htmlFor="reasonText"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   {t('settings.account.additionalFeedback')}{' '}
-                  <span className="text-gray-500 font-normal">
+                  <span className="text-gray-500 dark:text-gray-400 font-normal">
                     ({t('common.optional')})
                   </span>
                 </label>
@@ -246,10 +246,10 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                   disabled={isSubmitting}
                   rows={3}
                   maxLength={500}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder={t('settings.account.feedbackPlaceholder')}
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {reasonText.length}/500
                 </p>
               </div>
@@ -259,7 +259,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t('settings.account.confirmPassword')}
               </label>
@@ -270,13 +270,13 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label={showPassword ? t('common.hide') : t('common.show')}
                 >
                   {showPassword ? (
@@ -286,14 +286,14 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                   )}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('settings.account.confirmPasswordDescription')}
               </p>
             </div>
 
             {/* 유예 기간 안내 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-900">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-900 dark:text-blue-300">
                 <span className="font-medium">
                   {t('settings.account.gracePeriodNote')}
                 </span>
@@ -303,17 +303,17 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
             </div>
 
             {/* 최종 확인 체크박스 */}
-            <div className="border-t pt-4">
+            <div className="border-t dark:border-gray-700 pt-4">
               <label className="flex items-start space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isConfirmed}
                   onChange={(e) => setIsConfirmed(e.target.checked)}
                   disabled={isSubmitting}
-                  className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 mt-0.5"
+                  className="h-5 w-5 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 mt-0.5"
                   required
                 />
-                <span className="text-sm text-gray-900">
+                <span className="text-sm text-gray-900 dark:text-gray-100">
                   {t('settings.account.confirmCheckbox')}
                 </span>
               </label>
@@ -325,14 +325,14 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={!isValid || isSubmitting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                className="flex-1 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
               >
                 {isSubmitting
                   ? t('common.processing')

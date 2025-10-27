@@ -196,11 +196,11 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   const getAttendanceStatus = () => {
     const status = attendanceRecord?.status || workLogRecord?.workLog?.status || 'not_started';
     const statusMap: { [key: string]: { label: string; color: string } } = {
-      'not_started': { label: '출근 전', color: 'text-gray-600 bg-gray-100' },
-      'checked_in': { label: '출근', color: 'text-green-600 bg-green-100' },
-      'checked_out': { label: '퇴근', color: 'text-blue-600 bg-blue-100' }
+      'not_started': { label: '출근 전', color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700' },
+      'checked_in': { label: '출근', color: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30' },
+      'checked_out': { label: '퇴근', color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' }
     };
-    
+
     return statusMap[status] || statusMap['not_started'];
   };
 
@@ -281,38 +281,38 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
     >
       <div className="space-y-6">
         {loading && (
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="absolute inset-0 bg-white dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center z-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
           </div>
         )}
         {/* 헤더 - 이름과 역할 */}
-        <div className="text-center pb-4 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">
+        <div className="text-center pb-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
             {staff.name || '이름 미정'}
           </h2>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
             {getNationalityDisplay(extendedStaff.nationality)}
           </p>
           {extendedStaff.rating && (
             <div className="flex items-center justify-center mb-2">
               <FaStar className="w-5 h-5 text-yellow-400 mr-1" />
-              <span className="font-medium">평점 {extendedStaff.rating.toFixed(1)}</span>
-              <span className="text-gray-500 ml-1">({extendedStaff.ratingCount || 0}개 평점)</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">평점 {extendedStaff.rating.toFixed(1)}</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">({extendedStaff.ratingCount || 0}개 평점)</span>
             </div>
           )}
         </div>
 
         {/* 사전질문 답변 */}
         {preQuestionAnswers && preQuestionAnswers.length > 0 && (
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">사전질문 답변</h3>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">사전질문 답변</h3>
             <div className="space-y-3">
               {preQuestionAnswers.map((answer, index) => (
-                <div key={answer.questionId || index} className="border-l-2 border-yellow-300 pl-3">
-                  <p className="text-xs font-medium text-gray-600 mb-1">
+                <div key={answer.questionId || index} className="border-l-2 border-yellow-300 dark:border-yellow-700 pl-3">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                     Q{index + 1}. {answer.question}
                   </p>
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     {answer.answer || '답변 없음'}
                   </p>
                 </div>
@@ -322,78 +322,78 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         )}
 
         {/* 연락처 정보 */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <div className="space-y-3">
             {staff.phone ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm">
-                  <FaPhone className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-900">{staff.phone}</span>
+                  <FaPhone className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
+                  <span className="text-gray-900 dark:text-gray-100">{staff.phone}</span>
                 </div>
                 <a
                   href={`tel:${staff.phone}`}
-                  className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm font-medium hover:bg-green-200 transition-colors"
+                  className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                 >
                   전화하기
                 </a>
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">전화번호 없음</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic">전화번호 없음</p>
             )}
-            
+
             {staff.email ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm">
-                  <FaEnvelope className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-900 break-all">{staff.email}</span>
+                  <FaEnvelope className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
+                  <span className="text-gray-900 dark:text-gray-100 break-all">{staff.email}</span>
                 </div>
                 <a
                   href={`mailto:${staff.email}`}
-                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-200 transition-colors"
+                  className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                 >
                   이메일
                 </a>
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">이메일 없음</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic">이메일 없음</p>
             )}
           </div>
         </div>
 
         {/* 상세 정보 */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-gray-500 mb-1">성별</p>
-              <p className="font-medium text-gray-900">{genderDisplay(extendedStaff.gender)}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">성별</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{genderDisplay(extendedStaff.gender)}</p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">나이</p>
-              <p className="font-medium text-gray-900">{extendedStaff.age ? `${extendedStaff.age}세` : '제공되지 않음'}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">나이</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{extendedStaff.age ? `${extendedStaff.age}세` : '제공되지 않음'}</p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">지역</p>
-              <p className="font-medium text-gray-900">{getRegionDisplay(extendedStaff.region)}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">지역</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{getRegionDisplay(extendedStaff.region)}</p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">경력</p>
-              <p className="font-medium text-gray-900">{extendedStaff.experience || '제공되지 않음'}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-1">경력</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{extendedStaff.experience || '제공되지 않음'}</p>
             </div>
           </div>
         </div>
 
         {/* 이력 */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">이력</h3>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">이력</h3>
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
             {extendedStaff.history || '제공되지 않음'}
           </p>
         </div>
 
         {/* 기타 사항 */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">기타 사항</h3>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">기타 사항</h3>
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
             {extendedStaff.notes || staff.notes || '없음'}
           </p>
         </div>

@@ -63,18 +63,18 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {date === '날짜 미정' ? (
-                <span className="text-gray-500">📅 날짜 미정</span>
+                <span className="text-gray-500 dark:text-gray-400">📅 날짜 미정</span>
               ) : (
                 <span>📅 {date}</span>
               )}
             </div>
-            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
               {staffCount}명
             </div>
             {multiSelectMode && selectedInGroup > 0 && (
-              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                 {selectedInGroup}명 선택
               </div>
             )}

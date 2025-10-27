@@ -27,7 +27,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-700">사전질문</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">사전질문</h4>
         <Button
           type="button"
           variant="secondary"
@@ -39,9 +39,9 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
       </div>
 
       {preQuestions.map((question, questionIndex) => (
-        <div key={question.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+        <div key={question.id} className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               질문 {questionIndex + 1}
             </span>
             {preQuestions.length > 1 && (
@@ -58,7 +58,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
 
           {/* 질문 내용 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               질문 내용
             </label>
             <Input
@@ -73,7 +73,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
           {/* 질문 타입 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 질문 타입
               </label>
               <Select
@@ -88,7 +88,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 필수 여부
               </label>
               <Select
@@ -106,7 +106,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
           {question.type === 'select' && (
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   선택 옵션
                 </label>
                 <Button

@@ -129,7 +129,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
 
   const modalTitle = (
     <div className="flex items-center justify-between w-full">
-      <span className="text-lg font-semibold text-gray-900">
+      <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {`${table.name || t('tableDetailModal.defaultTableName', { number: table.tableNumber })} (${filledSeats}/${totalSeats})`}
       </span>
       <div className="flex items-center gap-2">
@@ -140,7 +140,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
             onChange={(e) => {e.stopPropagation(); setTableName(e.target.value);}}
             onBlur={handleNameUpdate}
             onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate(e)}
-            className="w-32 px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-32 px-2 py-1 text-sm border border-blue-500 dark:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             autoFocus
             onClick={(e) => e.stopPropagation()}
             placeholder={t('tableDetailModal.defaultTableName', { number: table.tableNumber })}
@@ -148,7 +148,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
         ) : (
           <button
             onClick={(e) => { e.stopPropagation(); setIsEditingName(true); }}
-            className="flex items-center gap-1 px-2 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title="테이블 이름 수정"
           >
             ✏️ 편집
@@ -159,7 +159,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
             value={table.tournamentId || ''}
             onChange={handleTournamentChange}
             onClick={(e) => e.stopPropagation()}
-            className="select select-bordered select-sm"
+            className="select select-bordered select-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
           >
             <option value="">토너먼트 선택</option>
             {sameDateTournaments.map((tournament) => (
@@ -184,24 +184,24 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
     >
       <div className="relative">
           {isDimmed ? <div className="absolute inset-0 bg-black bg-opacity-50 z-10 rounded-md" aria-hidden="true"></div> : null}
-          
-          <div className="flex justify-between items-center mb-4 pb-4 border-b">
+
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDeleteTableClick}
-                className="btn btn-sm bg-gray-500 hover:bg-gray-600 text-white border-none"
+                className="btn btn-sm bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white border-none"
               >
                 테이블 삭제
               </button>
             </div>
             <div className="flex items-center gap-2">
                 <div className="flex items-center space-x-2">
-                    <label htmlFor="max-seats-modal" className="text-sm font-semibold">{t('tableDetailModal.labelMaxSeats')}</label>
+                    <label htmlFor="max-seats-modal" className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('tableDetailModal.labelMaxSeats')}</label>
                     <select
                         id="max-seats-modal"
                         value={totalSeats}
                         onChange={(e) => handleMaxSeatsChange(parseInt(e.target.value, 10))}
-                        className="select select-bordered select-sm"
+                        className="select select-bordered select-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {Array.from({ length: 8 }, (_, i) => i + 4).map(num => (
@@ -219,7 +219,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
                 )}
                 <button
                   onClick={handleCloseTableClick}
-                  className="btn btn-sm bg-red-500 hover:bg-red-600 text-white border-none"
+                  className="btn btn-sm bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white border-none"
                 >
                   {t('tableDetailModal.buttonClose')}
                 </button>

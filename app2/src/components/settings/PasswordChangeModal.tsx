@@ -79,9 +79,9 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
    * 비밀번호 강도 색상
    */
   const strengthColor = useMemo(() => {
-    if (strengthLevel === 'weak') return 'bg-red-500';
-    if (strengthLevel === 'medium') return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (strengthLevel === 'weak') return 'bg-red-500 dark:bg-red-600';
+    if (strengthLevel === 'medium') return 'bg-yellow-500 dark:bg-yellow-600';
+    return 'bg-green-500 dark:bg-green-600';
   }, [strengthLevel]);
 
   /**
