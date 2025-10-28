@@ -132,7 +132,7 @@ const VirtualizedTableRow: React.FC<{
   const hasContact = !!(staff.phone || staff.email);
 
   return (
-    <div style={style} className="flex w-full border-b border-gray-200 hover:bg-gray-50 transition-colors">
+    <div style={style} className="flex w-full border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
       {/* 출근 시간 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
         <button
@@ -197,12 +197,12 @@ const VirtualizedTableRow: React.FC<{
       
       {/* 역할 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-32">
-        <div className="text-sm text-gray-900 truncate">{roleDisplay}</div>
+        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">{roleDisplay}</div>
       </div>
       
       {/* 연락처 열 */}
       <div className="px-4 py-4 flex-shrink-0 w-40">
-        <div className="text-sm text-gray-900 space-y-1">
+        <div className="text-sm text-gray-900 dark:text-gray-100 space-y-1">
           {staff.phone && (
             <div className="flex items-center">
               <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -310,8 +310,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
 
   if (staffList.length === 0) {
     return (
-      <div className="bg-gray-50 p-6 rounded-lg text-center">
-        <p className="text-gray-600">표시할 스태프가 없습니다.</p>
+      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
+        <p className="text-gray-600 dark:text-gray-300">표시할 스태프가 없습니다.</p>
       </div>
     );
   }
@@ -319,7 +319,7 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* 테이블 헤더 */}
-      <div className="flex w-full bg-gray-50 border-b border-gray-200">
+      <div className="flex w-full bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           출근
         </div>
