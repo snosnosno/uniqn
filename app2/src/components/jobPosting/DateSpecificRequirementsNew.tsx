@@ -304,7 +304,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-700">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">
           일자별 인원 요구사항
         </h4>
         <div className="flex items-center space-x-2">
@@ -354,11 +354,11 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         const dateStr = getDateString(requirement.date);
         
         return (
-          <div key={`${dateStr}-${requirementIndex}`} className="border border-gray-300 rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+          <div key={`${dateStr}-${requirementIndex}`} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-semibold text-gray-700"></span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-200"></span>
                   <DateDropdownSelector
                     value={toDropdownValue(dateStr)}
                     onChange={(value) => handleDateChange(requirementIndex, value)}
@@ -379,7 +379,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
               {/* 여러 날 선택 시 종료일 표시 */}
               {requirement.timeSlots[0]?.duration?.type === 'multi' && (
                 <div className="flex items-center space-x-2 mt-2 ml-6">
-                  <span className="text-sm text-gray-600">~</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-300">~</span>
                   <DateDropdownSelector
                     value={toDropdownValue(requirement.timeSlots[0]?.duration?.endDate || dateStr)}
                     onChange={(value) => handleDurationEndDateChange(requirementIndex, fromDropdownValue(value))}
@@ -399,7 +399,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                       onChange={() => handleDurationTypeChange(requirementIndex, 'single')}
                       className="text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor={`single-${requirementIndex}`} className="text-sm text-gray-700">
+                    <label htmlFor={`single-${requirementIndex}`} className="text-sm text-gray-700 dark:text-gray-200">
                       단일 날짜
                     </label>
                   </div>
@@ -412,7 +412,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                       onChange={() => handleDurationTypeChange(requirementIndex, 'multi')}
                       className="text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor={`multi-${requirementIndex}`} className="text-sm text-gray-700">
+                    <label htmlFor={`multi-${requirementIndex}`} className="text-sm text-gray-700 dark:text-gray-200">
                       여러 날
                     </label>
                   </div>
@@ -459,16 +459,16 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           onChange={(e) => 
                             onDateSpecificTimeToBeAnnouncedToggle(requirementIndex, timeSlotIndex, e.target.checked)
                           }
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-700">시간 미정</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">시간 미정</span>
                       </label>
                     </div>
 
                     {/* 시간 입력 또는 미정 설명 */}
                     {timeSlot.isTimeToBeAnnounced ? (
                       <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                           미정 시간 설명
                         </label>
                         <input
@@ -478,12 +478,12 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                             onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
                           placeholder="예시 : 추후공지"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
                         />
                       </div>
                     ) : (
                       <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                           시간
                         </label>
                         <input
@@ -492,7 +492,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           onChange={(e) =>
                             onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
@@ -500,7 +500,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                     {/* 역할 관리 */}
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <h5 className="text-sm font-medium text-gray-700">필요 역할</h5>
+                        <h5 className="text-sm font-medium text-gray-700 dark:text-gray-200">필요 역할</h5>
                         <Button
                           type="button"
                           variant="secondary"
@@ -517,7 +517,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                         const displayValue = isCustomRole && !PREDEFINED_ROLES.includes(role.name) ? 'other' : role.name;
                         
                         return (
-                          <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                          <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                             <div className="flex-1">
                               <label className="block text-xs font-medium text-gray-600 mb-1">
                                 역할명
@@ -553,7 +553,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                       onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value || 'other');
                                     }}
                                     placeholder="역할명을 입력하세요"
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               </div>
@@ -599,7 +599,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
                                   onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
                                 }}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>
                             
@@ -621,7 +621,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                 ))}
 
                 {requirement.timeSlots.length === 0 && (
-                  <div className="text-center py-6 text-gray-500">
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                     <p className="text-sm">시간대를 추가해주세요.</p>
                   </div>
                 )}
@@ -632,7 +632,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       })}
 
       {requirements.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>날짜별 요구사항을 추가해주세요.</p>
           <p className="text-xs mt-1">연속되지 않은 날짜도 자유롭게 추가할 수 있습니다.</p>
           <Button
