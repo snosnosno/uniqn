@@ -350,7 +350,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                       e.target.checked,
                                       ts.duration
                                     )}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:cursor-not-allowed"
                                   />
                                   <span className={`ml-3 ${
                                     isFull ? 'text-gray-400' : 'text-gray-700'
@@ -451,7 +451,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                               checked={isSelected}
                               disabled={isFull}
                               onChange={(e) => onAssignmentChange(assignment, e.target.checked)}
-                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded disabled:cursor-not-allowed"
                             />
                             <span className={`ml-3 text-sm ${
                               isFull ? 'text-gray-400' : 'text-gray-700'
@@ -474,7 +474,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               }
             })
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <p>지원 가능한 시간대가 없습니다.</p>
             </div>
           )}

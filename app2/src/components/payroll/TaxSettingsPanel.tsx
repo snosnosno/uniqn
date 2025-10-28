@@ -68,7 +68,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
           className="w-full flex items-center justify-between text-left"
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium text-gray-900">💸 세금 설정</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">💸 세금 설정</h3>
             {enabled && (
               <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                 활성화됨
@@ -77,7 +77,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
           </div>
           <div className="flex items-center gap-2">
             {!isExpanded && (
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 {getSummary()}
               </span>
             )}
@@ -100,16 +100,16 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
         <div className="p-6">
           <div className="space-y-4">
             {/* 세금 적용 토글 */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">세금 적용</span>
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">세금 적용</span>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={enabled}
                   onChange={(e) => setEnabled(e.target.checked)}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <span className="text-sm text-gray-700">{enabled ? '활성화' : '비활성화'}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{enabled ? '활성화' : '비활성화'}</span>
               </label>
             </div>
 
@@ -123,9 +123,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                       value="rate"
                       checked={taxType === 'rate'}
                       onChange={(e) => setTaxType(e.target.value as 'rate' | 'amount')}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600"
                     />
-                    <span className="text-sm text-gray-700">세율 (%)</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200">세율 (%)</span>
                   </label>
                   <label className="flex items-center gap-2">
                     <input
@@ -133,9 +133,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                       value="amount"
                       checked={taxType === 'amount'}
                       onChange={(e) => setTaxType(e.target.value as 'rate' | 'amount')}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600"
                     />
-                    <span className="text-sm text-gray-700">고정 세금 (원)</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200">고정 세금 (원)</span>
                   </label>
                 </div>
 
@@ -151,11 +151,11 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                         min="0"
                         max="100"
                         step="0.1"
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                       />
-                      <span className="text-sm text-gray-500">%</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
                       (예: 3.3% = 원천징수세)
                     </span>
                   </div>
@@ -172,9 +172,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                         onChange={(e) => setTaxAmount(parseInt(e.target.value) || 0)}
                         min="0"
                         step="1000"
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                       />
-                      <span className="text-sm text-gray-500">원</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
                     </div>
                   </div>
                 )}

@@ -279,10 +279,10 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
       {/* 헤더 */}
       {isSignupMode && (
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {t('consent.title')}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
             {t('consent.description')}
           </p>
         </div>
@@ -295,7 +295,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             type="checkbox"
             checked={isAllAgreed}
             onChange={handleToggleAll}
-            className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+            className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded focus:ring-blue-500"
             aria-label={t('consent.agreeAll')}
           />
           <span className="ml-3 text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -306,7 +306,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
 
       {/* 필수 동의 항목 */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('consent.required')}
         </h3>
 
@@ -319,7 +319,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               onChange={(e) =>
                 handleConsentChange('termsOfService', e.target.checked)
               }
-              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+              className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.termsOfService')}
               required
             />
@@ -354,13 +354,13 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               onChange={(e) =>
                 handleConsentChange('privacyPolicy', e.target.checked)
               }
-              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+              className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.privacyPolicy')}
               required
             />
             <div className="ml-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {t('consent.privacyPolicy')}
                   <span className="ml-1 text-red-500">*</span>
                 </span>
@@ -373,7 +373,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
                   {t('consent.viewDetails')}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t('consent.privacyPolicyDescription')}
               </p>
             </div>
@@ -394,7 +394,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               type="checkbox"
               checked={consents.marketing?.agreed ?? false}
               onChange={(e) => handleConsentChange('marketing', e.target.checked)}
-              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+              className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.marketing')}
             />
             <div className="ml-3 flex-1">
@@ -417,7 +417,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               onChange={(e) =>
                 handleConsentChange('locationService', e.target.checked)
               }
-              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+              className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.locationService')}
             />
             <div className="ml-3 flex-1">
@@ -440,7 +440,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               onChange={(e) =>
                 handleConsentChange('pushNotification', e.target.checked)
               }
-              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+              className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.pushNotification')}
             />
             <div className="ml-3 flex-1">
@@ -475,7 +475,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             ${
               hasRequiredConsents && !isSubmitting
                 ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-                : 'bg-gray-300 cursor-not-allowed'
+                : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
             }
           `}
           aria-label={submitButtonText || t('common.next')}

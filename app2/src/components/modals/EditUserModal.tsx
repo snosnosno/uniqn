@@ -120,7 +120,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       <button
         type="button"
         onClick={onClose}
-        className="py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+        className="py-2 px-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600"
       >
         {t('common.cancel')}
       </button>
@@ -147,36 +147,36 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       <form id="edit-user-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('common.name')}</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.name')}</label>
             <input
               type="text"
               name="name"
               id="name"
               value={formData.name}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm"
               required
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">{t('common.email')}</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.email')}</label>
             <input
               type="email"
               name="email"
               id="email"
               value={user.email}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-300"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-300"
               disabled
             />
           </div>
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">{t('common.role')}</label>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.role')}</label>
             <select
               name="role"
               id="role"
               value={formData.role}
               onChange={handleChange}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 rounded-md"
             >
               <option value="dealer">{t('roles.dealer')}</option>
               <option value="manager">{t('roles.manager')}</option>
@@ -185,13 +185,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             </select>
           </div>
           <div>
-            <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">{t('profilePage.nationality', '국적')}</label>
+            <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.nationality', '국적')}</label>
             <select
               name="nationality"
               id="nationality"
               value={formData.nationality}
               onChange={handleChange}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 rounded-md"
             >
               <option value="">{t('profilePage.selectNationality', '국적을 선택하세요')}</option>
               {countries.map(country => (
@@ -202,7 +202,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             </select>
           </div>
           <div>
-            <label htmlFor="age" className="block text-sm font-medium text-gray-700">{t('profilePage.age', '나이')}</label>
+            <label htmlFor="age" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.age', '나이')}</label>
             <input
               type="number"
               name="age"
@@ -211,39 +211,39 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
               onChange={handleChange}
               min="18"
               max="100"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm"
             />
           </div>
           <div>
-            <label htmlFor="bankName" className="block text-sm font-medium text-gray-700">{t('profilePage.bankName', '은행명')}</label>
+            <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.bankName', '은행명')}</label>
             <input
               type="text"
               name="bankName"
               id="bankName"
               value={formData.bankName}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm"
             />
           </div>
           <div>
-            <label htmlFor="bankAccount" className="block text-sm font-medium text-gray-700">{t('profilePage.bankAccount', '계좌번호')}</label>
+            <label htmlFor="bankAccount" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.bankAccount', '계좌번호')}</label>
             <input
               type="text"
               name="bankAccount"
               id="bankAccount"
               value={formData.bankAccount}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm"
             />
           </div>
           <div>
-            <label htmlFor="experience" className="block text-sm font-medium text-gray-700">{t('profilePage.experience')}</label>
+            <label htmlFor="experience" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.experience')}</label>
             <select
                 name="experience"
                 id="experience"
                 value={formData.experience}
                 onChange={handleChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 rounded-md"
             >
                 <option value="">{t('profilePage.selectExperience', '경력을 선택하세요')}</option>
                 {experienceLevels.map(level => (
@@ -252,26 +252,26 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             </select>
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="history" className="block text-sm font-medium text-gray-700">{t('profilePage.history')}</label>
+            <label htmlFor="history" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.history')}</label>
             <textarea
               name="history"
               id="history"
               value={formData.history}
               onChange={handleChange}
               rows={4}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm"
               placeholder={t('profilePage.historyPlaceholder')}
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">{t('profilePage.notes', '기타 사항')}</label>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.notes', '기타 사항')}</label>
             <textarea
               name="notes"
               id="notes"
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md shadow-sm"
             />
           </div>
         </div>
