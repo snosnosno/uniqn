@@ -388,14 +388,14 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
         {/* 탭 네비게이션 */}
-        <div className="flex space-x-1 mt-4 bg-gray-100 p-1 rounded-lg">
+        <div className="flex space-x-1 mt-4 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -419,45 +419,45 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">기본 정보</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">기본 정보</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">이름:</span>
-                      <span className="text-sm text-gray-900">{staff.staffName}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">이름:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{staff.staffName}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">역할:</span>
-                      <span className="text-sm text-gray-900">{staff.role}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">역할:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{staff.role}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">연락처:</span>
-                      <span className="text-sm text-gray-900">{staff.phone || '미등록'}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">연락처:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{staff.phone || '미등록'}</span>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">급여 정보</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">급여 정보</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">급여 유형:</span>
-                      <span className="text-sm text-gray-900">{getSalaryTypeLabel(staff.salaryType)}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">급여 유형:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{getSalaryTypeLabel(staff.salaryType)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">기본 급여:</span>
-                      <span className="text-sm text-gray-900">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">기본 급여:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
                         {staff.baseSalary.toLocaleString('ko-KR')}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">기본급:</span>
-                      <span className="text-sm text-gray-900">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">기본급:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
                         {staff.basePay.toLocaleString('ko-KR')}
                       </span>
                     </div>
                     {staff.tax !== undefined && staff.tax > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">세금:</span>
-                        <span className="text-sm text-gray-900">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">세금:</span>
+                        <span className="text-sm text-gray-900 dark:text-gray-100">
                           {staff.taxRate !== undefined && staff.taxRate > 0
                             ? `${staff.taxRate}%`
                             : '고정 세금'}
@@ -467,35 +467,35 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">근무 요약</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">근무 요약</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-gray-900">{staff.totalDays}</div>
-                    <div className="text-xs text-gray-500">근무일수</div>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{staff.totalDays}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">근무일수</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-gray-900">{staff.totalHours.toFixed(1)}</div>
-                    <div className="text-xs text-gray-500">근무시간</div>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{staff.totalHours.toFixed(1)}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">근무시간</div>
                   </div>
-                  <div className="bg-indigo-50 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-indigo-600">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                       {staff.totalAmount.toLocaleString('ko-KR')}
                     </div>
-                    <div className="text-xs text-gray-500">총 지급액</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">총 지급액</div>
                   </div>
                   {staff.afterTaxAmount !== undefined && staff.afterTaxAmount > 0 ? (
-                    <div className="bg-green-50 rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold text-green-600">
+                    <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400">
                         {staff.afterTaxAmount.toLocaleString('ko-KR')}
                       </div>
-                      <div className="text-xs text-gray-500">세후 급여</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-lg font-bold text-gray-400">-</div>
-                      <div className="text-xs text-gray-500">세후 급여</div>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-gray-400 dark:text-gray-500">-</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
                     </div>
                   )}
                 </div>
@@ -506,29 +506,29 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           {/* 근무내역 탭 */}
           {activeTab === 'work' && (
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-4">📅 근무 내역</h4>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">📅 근무 내역</h4>
               {workHistory.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="border rounded-lg overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                  <div className="border dark:border-gray-600 rounded-lg overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             날짜
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             역할
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             시작시간
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             종료시간
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             근무시간
                           </th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             상태
                           </th>
                         </tr>
@@ -536,13 +536,13 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {workHistory.map((history, index) => (
                           <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                               <div className="flex items-center gap-2">
                                 <span>{history.date}</span>
-                                <span className="text-xs text-gray-500">({history.dayName})</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">({history.dayName})</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                                 history.role === 'floor' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
                                 history.role === 'dealer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
@@ -555,13 +555,13 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                                  history.role}
                               </span>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                               {history.startTime}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                               {history.endTime}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right font-medium">
                               {history.workHours}시간
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-center">
