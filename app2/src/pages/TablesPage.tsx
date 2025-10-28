@@ -498,8 +498,8 @@ const TablesPage: React.FC = () => {
         }
     };
 
-    if (tablesLoading || participantsLoading || settingsLoading) return <div className="p-4">{t('common.messages.loading')}</div>;
-    if (tablesError || participantsError) return <div className="p-4 text-red-500">{t('tables.error')} {tablesError?.message || participantsError?.message}</div>;
+    if (tablesLoading || participantsLoading || settingsLoading) return <div className="p-4 text-gray-900 dark:text-gray-100">{t('common.messages.loading')}</div>;
+    if (tablesError || participantsError) return <div className="p-4 text-red-500 dark:text-red-400">{t('tables.error')} {tablesError?.message || participantsError?.message}</div>;
 
     const totalEmptySeats = tables
         .filter(t => t.status === 'open')
@@ -517,7 +517,7 @@ const TablesPage: React.FC = () => {
     const dateFilterForSelector = state.tournamentId === 'ALL' ? null : selectedDate;
 
     return (
-        <div className="p-4 bg-gray-100 min-h-screen" onClick={handleContainerClick}>
+        <div className="p-4 bg-gray-100 dark:bg-gray-900 min-h-screen" onClick={handleContainerClick}>
             {/* 날짜 선택기 (전체 보기 모드가 아닐 때만 표시) */}
             {state.tournamentId !== 'ALL' && state.tournamentId && (
                 <div className="mb-4">
@@ -541,7 +541,7 @@ const TablesPage: React.FC = () => {
                         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('tables.title')}</h1>
                         <button
                             onClick={handleExportToExcel}
-                            className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                            className="btn btn-secondary bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm"
                             disabled={tablesLoading || participantsLoading || tables.length === 0}
                         >
                             {t('tables.exportExcel')}
@@ -599,7 +599,7 @@ const TablesPage: React.FC = () => {
                                     }
                                 });
                             }}
-                            className="btn btn-secondary bg-green-600 hover:bg-green-700 text-white text-sm"
+                            className="btn btn-secondary bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white text-sm"
                             disabled={tablesLoading || participantsLoading || state.tournamentId === 'ALL'}
                         >
                             {t('common.chipRebalance')}
@@ -612,9 +612,9 @@ const TablesPage: React.FC = () => {
 
                 {/* 선택 모드 활성화 시 할당 UI */}
                 {isSelectionMode && (state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                         <div className="flex flex-wrap items-center gap-3">
-                            <label className="font-semibold text-gray-700">토너먼트 선택:</label>
+                            <label className="font-semibold text-gray-700 dark:text-gray-200">토너먼트 선택:</label>
                             <select
                                 value={targetTournamentId}
                                 onChange={(e) => setTargetTournamentId(e.target.value)}
@@ -653,8 +653,8 @@ const TablesPage: React.FC = () => {
                                 return (
                                     <div key={item.id} className="flex items-center gap-2">
                                         <span style={{ color: item.color }} className="text-lg">{emoji}</span>
-                                        <span className="text-sm font-medium">{item.name}</span>
-                                        <span className="text-sm text-gray-600">({item.count})</span>
+                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.name}</span>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">({item.count})</span>
                                     </div>
                                 );
                             })}
@@ -662,13 +662,13 @@ const TablesPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className="flex justify-between items-center text-gray-600">
+                <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
                     <div className="flex items-center space-x-6">
-                        <div className="flex items-center"><FaThList className="w-5 h-5 mr-2 text-blue-500" /> {t('tables.infoTables')} <span className="font-bold ml-1">{tables.length}</span></div>
-                        <div className="flex items-center"><FaUserPlus className="w-5 h-5 mr-2 text-green-500" /> {t('tables.infoEmptySeats')} <span className="font-bold ml-1">{totalEmptySeats}</span></div>
+                        <div className="flex items-center"><FaThList className="w-5 h-5 mr-2 text-blue-500 dark:text-blue-400" /> {t('tables.infoTables')} <span className="font-bold ml-1">{tables.length}</span></div>
+                        <div className="flex items-center"><FaUserPlus className="w-5 h-5 mr-2 text-green-500 dark:text-green-400" /> {t('tables.infoEmptySeats')} <span className="font-bold ml-1">{totalEmptySeats}</span></div>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <label htmlFor="max-seats" className="font-semibold">{t('tables.labelMaxSeats')}</label>
+                        <label htmlFor="max-seats" className="font-semibold text-gray-900 dark:text-gray-100">{t('tables.labelMaxSeats')}</label>
                         <select
                             id="max-seats"
                             value={settings.maxSeatsPerTable || 9}
@@ -692,20 +692,20 @@ const TablesPage: React.FC = () => {
                         <table className="w-full table-auto">
                             <thead className="bg-gray-200 dark:bg-gray-700">
                                 <tr>
-                                    <th className="px-4 py-2 text-left">이름</th>
-                                    <th className="px-4 py-2 text-left">ID</th>
-                                    <th className="px-4 py-2 text-left">칩</th>
-                                    <th className="px-4 py-2 text-left">위치</th>
-                                    <th className="px-4 py-2 text-center">배정</th>
+                                    <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">이름</th>
+                                    <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">ID</th>
+                                    <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">칩</th>
+                                    <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">위치</th>
+                                    <th className="px-4 py-2 text-center text-gray-900 dark:text-gray-100">배정</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {waitingParticipants.map((participant) => (
                                     <tr key={participant.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700">
-                                        <td className="px-4 py-2">{participant.name}</td>
-                                        <td className="px-4 py-2">{participant.userId || '-'}</td>
-                                        <td className="px-4 py-2">{participant.chips}</td>
-                                        <td className="px-4 py-2 text-gray-500">대기중</td>
+                                        <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{participant.name}</td>
+                                        <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{participant.userId || '-'}</td>
+                                        <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{participant.chips}</td>
+                                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400">대기중</td>
                                         <td className="px-4 py-2">
                                             <div className="flex justify-center gap-2">
                                                 <button
@@ -846,7 +846,7 @@ const TablesPage: React.FC = () => {
                         className="space-y-4"
                     >
                         <div>
-                            <label className="block text-sm font-medium mb-1">이름</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">이름</label>
                             <input
                                 type="text"
                                 value={editingParticipant.name}
@@ -856,7 +856,7 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">ID</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">ID</label>
                             <input
                                 type="text"
                                 value={editingParticipant.userId || ''}
@@ -866,7 +866,7 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">전화번호</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">전화번호</label>
                             <input
                                 type="text"
                                 value={editingParticipant.phone || ''}
@@ -875,7 +875,7 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">칩</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">칩</label>
                             <input
                                 type="number"
                                 value={editingParticipant.chips}
@@ -884,7 +884,7 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">기타</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">기타</label>
                             <input
                                 type="text"
                                 value={editingParticipant.etc || ''}
@@ -894,7 +894,7 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">비고</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">비고</label>
                             <input
                                 type="text"
                                 value={editingParticipant.note || ''}
@@ -904,7 +904,7 @@ const TablesPage: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">상태</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">상태</label>
                             <select
                                 value={editingParticipant.status}
                                 onChange={e => setEditingParticipant(p => p ? { ...p, status: e.target.value as 'active' | 'busted' | 'no-show' } : null)}
@@ -935,7 +935,7 @@ const TablesPage: React.FC = () => {
                                                 toast.error('테이블에 배정되지 않은 참가자입니다.');
                                             }
                                         }}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                        className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
                                     >
                                         자리 이동
                                     </button>

@@ -180,7 +180,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
       <div className="flex min-h-full items-center justify-center p-4">
         {/* 배경 오버레이 */}
         <div
-          className="fixed inset-0 bg-black bg-opacity-25 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-25 dark:bg-opacity-40 transition-opacity"
           onClick={handleClose}
           aria-hidden="true"
         />
@@ -195,7 +195,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             <button
               onClick={handleClose}
               disabled={isSubmitting}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label={t('common.close')}
             >
               <XMarkIcon className="h-6 w-6" />
@@ -208,7 +208,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             <div>
               <label
                 htmlFor="currentPassword"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t('settings.security.currentPassword')}
               </label>
@@ -219,13 +219,13 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label={showCurrentPassword ? t('common.hide') : t('common.show')}
                 >
                   {showCurrentPassword ? (
@@ -241,7 +241,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             <div>
               <label
                 htmlFor="newPassword"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t('settings.security.newPassword')}
               </label>
@@ -252,14 +252,14 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                   minLength={8}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label={showNewPassword ? t('common.hide') : t('common.show')}
                 >
                   {showNewPassword ? (
@@ -274,12 +274,12 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               {newPassword.length > 0 && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       {t('settings.security.passwordStrength')}
                     </span>
-                    <span className="text-xs font-medium">{strengthText}</span>
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100">{strengthText}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all ${strengthColor}`}
                       style={{ width: `${passwordStrength}%` }}
@@ -289,16 +289,16 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               )}
 
               {/* 비밀번호 요구사항 */}
-              <ul className="mt-2 text-xs text-gray-600 space-y-1">
-                <li className={newPassword.length >= 8 ? 'text-green-600 font-medium' : ''}>
+              <ul className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                <li className={newPassword.length >= 8 ? 'text-green-600 dark:text-green-400 font-medium' : ''}>
                   {newPassword.length >= 8 ? '✓' : '•'} 최소 8자 이상
                 </li>
-                <li className={/\d/.test(newPassword) ? 'text-green-600 font-medium' : ''}>
+                <li className={/\d/.test(newPassword) ? 'text-green-600 dark:text-green-400 font-medium' : ''}>
                   {/\d/.test(newPassword) ? '✓' : '•'} 숫자 포함 (0-9)
                 </li>
                 <li
                   className={
-                    /[@$!%*?&]/.test(newPassword) ? 'text-green-600 font-medium' : ''
+                    /[@$!%*?&]/.test(newPassword) ? 'text-green-600 dark:text-green-400 font-medium' : ''
                   }
                 >
                   {/[@$!%*?&]/.test(newPassword) ? '✓' : '•'} 특수문자 포함 (@$!%*?&)
@@ -310,7 +310,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t('settings.security.confirmPassword')}
               </label>
@@ -321,13 +321,13 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   aria-label={showConfirmPassword ? t('common.hide') : t('common.show')}
                 >
                   {showConfirmPassword ? (

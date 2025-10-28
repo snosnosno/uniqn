@@ -75,7 +75,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ className = '' }) => {
 
         {/* 날짜 표시 (읽기 쉬운 형식) */}
         {selectedDate && (
-          <span className="text-xs text-gray-500 hidden md:inline-block">
+          <span className="text-xs text-gray-500 dark:text-gray-400 hidden md:inline-block">
             ({formatDateDisplay(selectedDate)})
           </span>
         )}
@@ -92,7 +92,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ className = '' }) => {
       </button>
 
       {/* 구분선 */}
-      <div className="hidden md:block w-px h-6 bg-gray-300"></div>
+      <div className="hidden md:block w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
 
       {/* 빠른 이동 버튼 */}
       <button
@@ -106,7 +106,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ className = '' }) => {
 
       {/* 날짜 없을 때 메시지 */}
       {availableDates.length === 0 && (
-        <span className="text-sm text-gray-500 ml-2">
+        <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
           ⚠️ 토너먼트를 먼저 생성해주세요
         </span>
       )}

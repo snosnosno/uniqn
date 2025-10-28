@@ -313,7 +313,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg text-gray-500">공고 정보를 불러올 수 없습니다.</div>
+          <div className="text-lg text-gray-500 dark:text-gray-400">공고 정보를 불러올 수 없습니다.</div>
         </div>
       </div>
     );
@@ -323,8 +323,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 ml-4">{t('common.loading')}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 ml-4">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -335,12 +335,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       <div className="p-1 sm:p-4">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium">{jobPosting.title} - 스태프 관리</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{jobPosting.title} - 스태프 관리</h3>
 
           {/* 데스크톱 컨트롤 */}
           {!isMobile && !isTablet && (
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600 font-medium">
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                 총 {uniqueStaffCount}명
                 {filteredStaffCount !== uniqueStaffCount &&
                   ` (${filteredStaffCount}명 필터됨)`}
@@ -351,7 +351,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   placeholder="스태프 검색..."
                   value={filters.searchTerm}
                   onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                  className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               {canEdit && (
@@ -360,8 +360,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     onClick={handleMultiSelectToggle}
                     className={`px-3 py-2 rounded-md transition-colors flex items-center space-x-2 ${
                       selection.multiSelectMode
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                     title={selection.multiSelectMode ? '선택 모드 종료' : '스태프를 선택하여 일괄 수정'}
                   >
@@ -376,7 +376,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     <>
                       <button
                         onClick={() => modals.bulkTimeEditModal.open()}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2"
+                        className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 flex items-center space-x-2"
                         title={`선택된 ${selection.selectedStaff.size}명 일괄 수정`}
                       >
                         <svg
@@ -399,7 +399,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                           selection.selectAll(staffData.map(s => s.id));
                           modals.bulkTimeEditModal.open();
                         }}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
                         title={`전체 ${uniqueStaffCount}명 수정`}
                       >
                         전체 수정
@@ -410,7 +410,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               )}
               <button
                 onClick={() => modals.qrModal.open()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
                 QR 스캔
               </button>

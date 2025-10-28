@@ -340,7 +340,7 @@ const SignUp: React.FC = () => {
               required
             />
             {nameError && (
-              <p className="mt-1 text-sm text-red-600" role="alert">{nameError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{nameError}</p>
             )}
           </div>
 
@@ -354,7 +354,7 @@ const SignUp: React.FC = () => {
               maxLength={15}
             />
             {nicknameError && (
-              <p className="mt-1 text-sm text-red-600" role="alert">{nicknameError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{nicknameError}</p>
             )}
           </div>
 
@@ -370,7 +370,7 @@ const SignUp: React.FC = () => {
               required
             />
             {phoneError && (
-              <p className="mt-1 text-sm text-red-600" role="alert">{phoneError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{phoneError}</p>
             )}
           </div>
 
@@ -395,7 +395,7 @@ const SignUp: React.FC = () => {
               required
             />
             {emailError && (
-              <p className="mt-1 text-sm text-red-600" role="alert">{emailError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{emailError}</p>
             )}
           </div>
 
@@ -410,7 +410,7 @@ const SignUp: React.FC = () => {
               required
             />
             {passwordError && (
-              <p className="mt-1 text-sm text-red-600" role="alert">{passwordError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{passwordError}</p>
             )}
             {/* 비밀번호 강도 표시 */}
             {password && (
@@ -431,7 +431,7 @@ const SignUp: React.FC = () => {
               required
             />
             {confirmPasswordError && (
-              <p className="mt-1 text-sm text-red-600" role="alert">{confirmPasswordError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{confirmPasswordError}</p>
             )}
           </div>
 
@@ -448,7 +448,7 @@ const SignUp: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading || !consents}
-            className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+            className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:bg-indigo-400 dark:disabled:bg-indigo-600 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
