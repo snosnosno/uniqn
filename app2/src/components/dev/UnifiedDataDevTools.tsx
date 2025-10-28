@@ -227,10 +227,10 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
       <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 h-2/3 border-t shadow-xl">
         {/* 헤더 */}
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 dark:bg-gray-700">
           <div className="flex items-center space-x-4">
             <h2 className="text-lg font-semibold">🛠️ UnifiedData DevTools</h2>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               새로고침 #{refreshCount} • {new Date().toLocaleTimeString()}
             </div>
           </div>
@@ -251,7 +251,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
         </div>
 
         {/* 탭 네비게이션 */}
-        <div className="flex border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+        <div className="flex border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 dark:bg-gray-700">
           {[
             { id: 'overview', label: '📊 개요' },
             { id: 'data', label: '💾 데이터' },
@@ -278,12 +278,12 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 성능 메트릭 */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">📈 실시간 성능 지표</h3>
                 <div className="space-y-2">
                   {performanceMetrics.map((metric, index) => (
                     <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{metric.name}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">{metric.name}</span>
                       <div className="flex items-center space-x-1">
                         <span className="font-mono text-sm">{metric.value}{metric.unit}</span>
                         <div className={`w-2 h-2 rounded-full ${
@@ -297,20 +297,20 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               </div>
 
               {/* 캐시 상태 */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">⚡ 캐시 상태</h3>
                 {cacheStats ? (
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">히트율</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">히트율</span>
                       <span className="font-mono text-sm">{cacheStats.hitRate}%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">캐시 크기</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">캐시 크기</span>
                       <span className="font-mono text-sm">{cacheStats.sizeMB}MB</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">총 요청</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">총 요청</span>
                       <span className="font-mono text-sm">{cacheStats.totalEntries}</span>
                     </div>
                     <button
@@ -321,7 +321,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                     </button>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-500">캐시 데이터 로딩 중...</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">캐시 데이터 로딩 중...</div>
                 )}
               </div>
             </div>
@@ -332,7 +332,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               <h3 className="font-semibold">💾 데이터 컬렉션 상태</h3>
               <div className="grid gap-4">
                 {collectionDetails.map((collection) => (
-                  <div key={collection.name} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div key={collection.name} className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4">
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="font-medium">{collection.name}</h4>
                       <div className="flex items-center space-x-2">
@@ -371,7 +371,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               </div>
               
               {cacheStats && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400">{cacheStats.hits}</div>
@@ -412,7 +412,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {performanceMetrics.map((metric, index) => (
-                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div key={index} className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-sm">{metric.name}</h4>
                       <div className={`w-3 h-3 rounded-full ${
@@ -421,7 +421,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                       }`} />
                     </div>
                     <div className="text-2xl font-bold">
-                      {metric.value}<span className="text-sm text-gray-500">{metric.unit}</span>
+                      {metric.value}<span className="text-sm text-gray-500 dark:text-gray-400">{metric.unit}</span>
                     </div>
                   </div>
                 ))}
@@ -470,7 +470,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               <div className="bg-black text-green-400 rounded-lg p-4 h-80 overflow-auto font-mono text-xs">
                 {logEntries.map((log) => (
                   <div key={log.id} className="mb-2">
-                    <span className="text-gray-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
+                    <span className="text-gray-500 dark:text-gray-400">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
                     <span className={`ml-2 ${
                       log.level === 'error' ? 'text-red-400' :
                       log.level === 'warning' ? 'text-yellow-400' : 'text-green-400'
@@ -482,7 +482,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                   </div>
                 ))}
                 {logEntries.length === 0 && (
-                  <div className="text-gray-500">로그가 없습니다. 로그 기록이 {isRecordingLogs ? '활성화' : '비활성화'}되어 있습니다.</div>
+                  <div className="text-gray-500 dark:text-gray-400">로그가 없습니다. 로그 기록이 {isRecordingLogs ? '활성화' : '비활성화'}되어 있습니다.</div>
                 )}
               </div>
             </div>

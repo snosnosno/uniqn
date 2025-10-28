@@ -155,8 +155,8 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   // 스태프 리스트가 비어있는 경우
   if (staffList.length === 0) {
     return (
-      <div className="bg-gray-50 p-6 rounded-lg text-center">
-        <p className="text-gray-600">표시할 스태프가 없습니다.</p>
+      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
+        <p className="text-gray-600 dark:text-gray-300">표시할 스태프가 없습니다.</p>
       </div>
     );
   }

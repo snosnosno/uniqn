@@ -164,7 +164,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
       </div>
 
       {/* QR 주소 표시 (수동 입력용) */}
-      <div className="w-full max-w-md bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2">
+      <div className="w-full max-w-md bg-gray-50 dark:bg-gray-700 dark:bg-gray-800 rounded-xl p-4 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">QR 주소 (수동 입력용)</span>
           <button
@@ -208,7 +208,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
       </div>
 
       {/* 사용자 정보 */}
-      <div className="w-full max-w-md bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
+      <div className="w-full max-w-md bg-gray-50 dark:bg-gray-700 dark:bg-gray-800 rounded-xl p-4 space-y-3">
         <div className="flex justify-between items-center">
           <span className="text-gray-600 dark:text-gray-400 text-sm">이름</span>
           <span className="font-semibold text-gray-900 dark:text-gray-100">{userName}</span>

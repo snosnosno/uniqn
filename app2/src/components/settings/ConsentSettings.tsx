@@ -193,7 +193,7 @@ export const ConsentSettings: React.FC = () => {
         </h3>
         <div className="space-y-4">
           {/* 이용약관 */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
@@ -214,7 +214,7 @@ export const ConsentSettings: React.FC = () => {
           </div>
 
           {/* 개인정보처리방침 */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 dark:bg-gray-800">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">

@@ -71,7 +71,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
     <div className="mb-4 space-y-4">
       {/* 상단 통계 및 모드 전환 */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
           <div className="font-medium">
             총 {totalStaffCount}명의 스태프
           </div>
@@ -95,7 +95,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 multiSelectMode
                   ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                  : 'bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 dark:border-gray-600'
               }`}
             >
               {multiSelectMode ? '선택 모드' : '선택 모드'}
@@ -106,7 +106,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2 rounded-lg transition-colors ${
-              showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+              showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-700'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +126,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
         <input
           type="text"
           placeholder="스태프 이름, 역할, 연락처로 검색..."
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
           value={filters.searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
         />
@@ -146,7 +146,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {showFilters && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">필터 옵션</h3>
+            <h3 className="font-medium text-gray-900 dark:text-gray-100">필터 옵션</h3>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -163,7 +163,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">날짜</label>
               <select
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedDate}
                 onChange={(e) => handleDateChange(e.target.value)}
               >
@@ -180,7 +180,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">역할</label>
               <select
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedRole}
                 onChange={(e) => handleRoleChange(e.target.value)}
               >
@@ -197,7 +197,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">출석 상태</label>
               <select
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedStatus}
                 onChange={(e) => handleStatusChange(e.target.value)}
               >
@@ -214,7 +214,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             <h4 className="font-medium text-gray-900 mb-3">표시 옵션</h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">날짜별 그룹화</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">날짜별 그룹화</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -222,7 +222,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
                     onChange={(e) => onGroupByDateChange(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-200 after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-200 after:border-gray-300 dark:border-gray-600 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500"></div>
                 </label>
               </div>
             </div>
