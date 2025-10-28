@@ -308,7 +308,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             
             return (
               <div key={index} className="mb-3">
-                <div className="font-medium text-gray-700 mb-1 flex items-center text-sm">
+                <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
                   📅 {dateDisplay} 일정
                 </div>
               <div className="ml-4 space-y-1">
@@ -327,7 +327,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                             );
                             const isFull = confirmedCount >= role.count;
                             return (
-                              <div key={roleIndex} className="text-sm text-gray-600">
+                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
                                 {roleIndex === 0 ? (
                                   <>
                                     <span className="font-medium text-orange-600">
@@ -369,10 +369,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                             );
                             const isFull = confirmedCount >= role.count;
                             return (
-                              <div key={roleIndex} className="text-sm text-gray-600">
+                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
                                 {roleIndex === 0 ? (
                                   <>
-                                    <span className="font-medium text-gray-700">{ts.time}</span>
+                                    <span className="font-medium text-gray-700 dark:text-gray-200">{ts.time}</span>
                                     <span className="ml-3">
                                       {t(`roles.${role.name}`, role.name)}: {role.count}명
                                       <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
@@ -480,7 +480,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                             const displayCount = expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
                             const isFull = displayCount >= r.count;
                             return (
-                              <div key={roleIndex} className="text-sm text-gray-600">
+                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
                                 {roleIndex === 0 ? (
                                   <>
                                     <span className="font-medium text-orange-600">
@@ -546,10 +546,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                             const displayCount = expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
                             const isFull = displayCount >= r.count;
                             return (
-                              <div key={roleIndex} className="text-sm text-gray-600">
+                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
                                 {roleIndex === 0 ? (
                                   <>
-                                    <span className="font-medium text-gray-700">{ts.time}</span>
+                                    <span className="font-medium text-gray-700 dark:text-gray-200">{ts.time}</span>
                                     <span className="ml-3">
                                       {t(`roles.${r.name}`, r.name)}: {r.count}명
                                       {expandedDates.length > 0 && (
@@ -607,7 +607,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           <div className={variant === 'user-card' ? 'flex-1 mb-4 lg:mb-0' : 'flex-1 min-w-0'}>
             {/* 제목과 상태/타입 배지 */}
             <div className="flex items-center space-x-2 mb-2">
-              <h3 className={`font-medium text-gray-900 truncate ${
+              <h3 className={`font-medium text-gray-900 dark:text-gray-100 truncate ${
                 variant === 'user-card' ? 'text-base sm:text-lg font-semibold break-words max-w-full' : 'text-lg'
               }`}>
                 {post.title}
@@ -680,7 +680,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   <span className="flex items-start">
                     <span className="mr-2 mt-0.5">💰</span>
                     <div className="break-words">
-                      <span className="font-medium text-gray-700">역할별 급여</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">역할별 급여</span>
                       <div className="mt-1 space-y-0.5">
                         {Object.entries(post.roleSalaries).slice(0, 3).map(([role, salary]) => (
                           <div key={role} className="text-xs text-gray-600">
@@ -791,7 +791,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
         {/* 관리자용 액션 버튼 - 카드 하단에 균등 배치 */}
         {renderActions && variant === 'admin-list' && (
-          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             {renderActions(post)}
           </div>
         )}
