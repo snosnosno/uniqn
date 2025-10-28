@@ -91,8 +91,8 @@ const VirtualizedTableRow: React.FC<{
       return {
         displayStartTime: '',
         displayEndTime: '미정',
-        startTimeColor: 'bg-gray-100 text-gray-500',
-        endTimeColor: 'bg-gray-100 text-gray-500',
+        startTimeColor: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
+        endTimeColor: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
         hasEndTime: false
       };
     }
@@ -114,7 +114,7 @@ const VirtualizedTableRow: React.FC<{
       displayStartTime: formatTimeDisplay(startTime),
       displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
       startTimeColor: getTimeSlotColor(startTime),
-      endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 text-gray-500',
+      endTimeColor: endTime ? getTimeSlotColor(endTime) : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
       hasEndTime: !!endTime,
       hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
@@ -162,7 +162,7 @@ const VirtualizedTableRow: React.FC<{
           disabled={!data.canEdit}
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
             data.canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
-          } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && data.canEdit ? 'hover:bg-gray-200' : ''}`}
+          } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && data.canEdit ? 'hover:bg-gray-200 dark:hover:bg-gray-600' : ''}`}
           title={!data.canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
         >
           {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
@@ -172,7 +172,7 @@ const VirtualizedTableRow: React.FC<{
       {/* 이름 열 */}
       <div className="px-4 py-4 flex-1 min-w-0 flex items-center">
         <div className="flex-shrink-0 h-8 w-8">
-          <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-700">
+          <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-200">
             {avatarInitial}
           </div>
         </div>
@@ -188,7 +188,7 @@ const VirtualizedTableRow: React.FC<{
             {displayName}
           </button>
           {showDate && staff.assignedDate && (
-            <div className="text-sm text-gray-500 truncate">
+            <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
               📅 {formattedDate}
             </div>
           )}
@@ -205,27 +205,27 @@ const VirtualizedTableRow: React.FC<{
         <div className="text-sm text-gray-900 dark:text-gray-100 space-y-1">
           {staff.phone && (
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-              <a href={`tel:${staff.phone}`} className="text-blue-600 hover:text-blue-800 transition-colors truncate">
+              <a href={`tel:${staff.phone}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors truncate">
                 {staff.phone}
               </a>
             </div>
           )}
           {staff.email && (
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
-              <a href={`mailto:${staff.email}`} className="text-blue-600 hover:text-blue-800 transition-colors truncate">
+              <a href={`mailto:${staff.email}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors truncate">
                 {staff.email.length > 15 ? `${staff.email.substring(0, 15)}...` : staff.email}
               </a>
             </div>
           )}
           {!hasContact && (
-            <span className="text-gray-400 text-xs">연락처 없음</span>
+            <span className="text-gray-400 dark:text-gray-500 text-xs">연락처 없음</span>
           )}
         </div>
       </div>
@@ -251,9 +251,9 @@ const VirtualizedTableRow: React.FC<{
             onClick={() => onDeleteStaff(staff.id)}
             disabled={!data.canEdit}
             className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-              data.canEdit 
-                ? 'text-red-600 hover:text-red-800 hover:bg-red-50' 
-                : 'text-gray-400 cursor-not-allowed'
+              data.canEdit
+                ? 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
             title={data.canEdit ? "스태프 삭제" : "수정 권한이 없습니다"}
           >
@@ -319,26 +319,26 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* 테이블 헤더 */}
-      <div className="flex w-full bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div className="flex w-full bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           출근
         </div>
-        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           퇴근
         </div>
-        <div className="px-4 py-3 flex-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           이름
         </div>
-        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           역할
         </div>
-        <div className="px-4 py-3 flex-shrink-0 w-40 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-shrink-0 w-40 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           연락처
         </div>
-        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           출석
         </div>
-        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           작업
         </div>
       </div>

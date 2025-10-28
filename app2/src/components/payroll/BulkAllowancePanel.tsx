@@ -205,7 +205,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
 
       {/* 수당 설정 */}
       <div className="space-y-4 mb-6">
-        <h4 className="text-sm font-medium text-gray-700">수당 항목</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">수당 항목</h4>
         
         {/* 식비 */}
         <div className="flex items-center justify-between">
@@ -216,7 +216,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               onChange={() => handleAllowanceToggle('meal')}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <span className="ml-2 text-sm text-gray-700">식비</span>
+            <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">식비</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -224,7 +224,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               value={allowances.meal.amount}
               onChange={(e) => handleAllowanceAmountChange('meal', e.target.value)}
               disabled={!allowances.meal.enabled}
-              className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-32 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-600"
               placeholder="0"
             />
             <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
@@ -240,7 +240,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               onChange={() => handleAllowanceToggle('transportation')}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <span className="ml-2 text-sm text-gray-700">교통비</span>
+            <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">교통비</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -248,7 +248,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               value={allowances.transportation.amount}
               onChange={(e) => handleAllowanceAmountChange('transportation', e.target.value)}
               disabled={!allowances.transportation.enabled}
-              className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-32 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-600"
               placeholder="0"
             />
             <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
@@ -264,7 +264,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               onChange={() => handleAllowanceToggle('accommodation')}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <span className="ml-2 text-sm text-gray-700">숙소비</span>
+            <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">숙소비</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -272,7 +272,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               value={allowances.accommodation.amount}
               onChange={(e) => handleAllowanceAmountChange('accommodation', e.target.value)}
               disabled={!allowances.accommodation.enabled}
-              className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-32 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-600"
               placeholder="0"
             />
             <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
@@ -288,7 +288,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               onChange={() => handleAllowanceToggle('bonus')}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <span className="ml-2 text-sm text-gray-700">보너스</span>
+            <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">보너스</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -296,7 +296,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               value={allowances.bonus.amount}
               onChange={(e) => handleAllowanceAmountChange('bonus', e.target.value)}
               disabled={!allowances.bonus.enabled}
-              className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-32 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-600"
               placeholder="0"
             />
             <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
@@ -313,7 +313,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 onChange={() => handleAllowanceToggle('other')}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
-              <span className="ml-2 text-sm text-gray-700">기타</span>
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">기타</span>
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -321,7 +321,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 value={allowances.other.amount}
                 onChange={(e) => handleAllowanceAmountChange('other', e.target.value)}
                 disabled={!allowances.other.enabled}
-                className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+                className="w-32 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-600"
                 placeholder="0"
               />
               <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
@@ -332,7 +332,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               type="text"
               value={allowances.other.description}
               onChange={(e) => handleOtherDescriptionChange(e.target.value)}
-              className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="기타 수당 설명 (예: 야간수당)"
             />
           )}
@@ -340,10 +340,10 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
       </div>
 
       {/* 총 수당 및 적용 버튼 */}
-      <div className="flex items-center justify-between pt-4 border-t">
+      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-sm">
           <span className="text-gray-500 dark:text-gray-400">총 수당:</span>
-          <span className="ml-2 text-lg font-semibold text-indigo-600">
+          <span className="ml-2 text-lg font-semibold text-indigo-600 dark:text-indigo-400">
             {getTotalAllowances().toLocaleString()}원
           </span>
         </div>

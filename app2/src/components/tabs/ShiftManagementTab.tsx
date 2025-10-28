@@ -48,7 +48,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
       <div className="flex justify-between items-center mb-6">
         <div>
           <h3 className="text-lg font-medium">{jobPosting.title} - 시프트 관리</h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
             스태프 교대 스케줄 및 시간 관리
           </p>
         </div>
@@ -76,7 +76,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           
@@ -119,11 +119,11 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             </h4>
 
             <div className="text-center py-12">
-              <FaCalendarAlt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h5 className="text-lg font-semibold text-gray-600 mb-2">
+              <FaCalendarAlt className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <h5 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">
                 교대관리 기능
               </h5>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
                 스태프들의 교대 근무 관리 기능이 향후 업데이트될 예정입니다.
               </p>
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
@@ -154,14 +154,14 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                     </span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{staffMember.name}</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">{staffMember.name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {(staffMember as any).assignedRole || staffMember.role} | {(staffMember as any).assignedTime || staffMember.assignedTime || '시간 미정'}
                     </p>
                   </div>
                 </div>
               )) : (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   할당된 스태프가 없습니다.
                 </p>
               )}
@@ -190,7 +190,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
                 if (dateReq && dateReq.timeSlots?.length > 0) {
                   return dateReq.timeSlots.map((timeSlot: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                       <span className="font-medium text-gray-700 dark:text-gray-300">
                         {timeSlot.time}
                       </span>
@@ -201,7 +201,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                   ));
                 } else {
                   return (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                       선택된 날짜에 설정된 시간대가 없습니다.
                     </p>
                   );
@@ -217,7 +217,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
               교대 상태
             </h4>
             <div className="text-center py-8">
-              <div className="text-gray-400 text-4xl mb-3">🔄</div>
+              <div className="text-gray-400 dark:text-gray-500 text-4xl mb-3">🔄</div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 교대 상태 추적 기능이<br/>향후 추가될 예정입니다.
               </p>

@@ -307,7 +307,7 @@ const ShiftSchedulePage: React.FC = () => {
 
       {/* 헤더 섹션 */}
       <div className="mb-6 opacity-75">
-        <h1 className="text-3xl font-bold text-gray-600 mb-2">
+        <h1 className="text-3xl font-bold text-gray-600 dark:text-gray-300 mb-2">
           {t('shiftSchedule.title')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400">{t('shiftSchedule.subtitle')}</p>
@@ -329,22 +329,22 @@ const ShiftSchedulePage: React.FC = () => {
                 type="date"
                 value={selectedDate}
                 disabled={true}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-300 cursor-not-allowed"
               />
-              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">({formatDate(selectedDate)})</span>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">({formatDate(selectedDate)})</span>
             </div>
           </div>
           
           {/* 시간 간격 선택 - 비활성화됨 */}
           {schedule ? <div className="flex items-center gap-4 opacity-50">
               <div className="flex items-center gap-2">
-                <FaClock className="w-5 h-5 text-gray-400" />
+                <FaClock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <label className="font-semibold text-gray-500 dark:text-gray-400">
                   {t('shiftSchedule.timeInterval')}:
                 </label>
               </div>
               <div className="w-64">
-                <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 text-sm cursor-not-allowed">
+                <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed">
                   업데이트 예정
                 </div>
               </div>
@@ -442,11 +442,11 @@ const ShiftSchedulePage: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <FaCalendarAlt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                <FaCalendarAlt className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">
                   {t('shiftSchedule.noSchedule')}
                 </h3>
-                <p className="text-gray-500 mb-4">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
                   {formatDate(selectedDate)} {t('shiftSchedule.noScheduleMessage')}
                 </p>
                 <button 
@@ -478,7 +478,7 @@ const ShiftSchedulePage: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{dealer.staffName}</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{dealer.staffName}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
                     </div>
                     <button
@@ -501,8 +501,8 @@ const ShiftSchedulePage: React.FC = () => {
             </h2>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {dealersNotInSchedule.map(dealer => (
-                <div key={dealer.id} className="flex items-center bg-gray-50 p-3 rounded-lg shadow-sm">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
+                <div key={dealer.id} className="flex items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+                  <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3">
                     <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
                       {dealer.name.charAt(0)}
                     </span>
@@ -521,7 +521,7 @@ const ShiftSchedulePage: React.FC = () => {
                 </div>
               ))}
               {dealersNotInSchedule.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   {schedule ? t('shiftSchedule.allDealersAssigned') : t('shiftSchedule.noDealersAvailable')}
                 </p>
               )}
@@ -536,7 +536,7 @@ const ShiftSchedulePage: React.FC = () => {
             </h2>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {tables?.map(table => (
-                <div key={table.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div key={table.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                   <span className="font-medium text-gray-700 dark:text-gray-300">
                     Table {table.tableNumber}
                   </span>
@@ -546,7 +546,7 @@ const ShiftSchedulePage: React.FC = () => {
                 </div>
               ))}
               {(!tables || tables.length === 0) && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   {t('shiftSchedule.noTablesAvailable')}
                 </p>
               )}

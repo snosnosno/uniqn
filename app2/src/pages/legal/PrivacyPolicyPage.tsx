@@ -94,7 +94,7 @@ const PrivacyPolicyPage: React.FC = () => {
           </div>
 
           {/* 콘텐츠 */}
-          <div className="prose prose-gray max-w-none">
+          <div className="prose prose-gray dark:prose-invert max-w-none">
             {currentLanguage === 'ko' ? (
               <>
                 <section className="mb-8">
@@ -349,13 +349,13 @@ const PrivacyPolicyPage: React.FC = () => {
               <>
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">1. Purpose of Collection and Use of Personal Information</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     UNIQN (hereinafter referred to as "Company") collects and uses personal information for the following purposes. The collected personal information will not be used for purposes other than the following, and prior consent will be obtained if the purpose of use changes.
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">A. Membership Registration and Management</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Membership Registration and Management</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>Identity verification for membership services</li>
                         <li>Personal identification and prevention of fraudulent use</li>
                         <li>Prevention of unauthorized use and confirmation of intention to join</li>
@@ -365,8 +365,8 @@ const PrivacyPolicyPage: React.FC = () => {
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">B. Service Provision</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Service Provision</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>Tournament operation and management</li>
                         <li>Staff and participant management</li>
                         <li>Job matching service provision</li>
@@ -376,8 +376,8 @@ const PrivacyPolicyPage: React.FC = () => {
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">C. Marketing and Advertising</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">C. Marketing and Advertising</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>New service development and customized service provision</li>
                         <li>Event and promotional information provision</li>
                         <li>Service usage statistics and access frequency analysis</li>
@@ -390,8 +390,8 @@ const PrivacyPolicyPage: React.FC = () => {
                   <h2 className="text-xl font-semibold mb-4">2. Personal Information Items Collected</h2>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">A. Required Items</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Required Items</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>Email address</li>
                         <li>Password (encrypted storage)</li>
                         <li>Name</li>
@@ -399,8 +399,8 @@ const PrivacyPolicyPage: React.FC = () => {
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">B. Optional Items</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Optional Items</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>Profile photo</li>
                         <li>Address</li>
                         <li>Date of birth</li>
@@ -409,8 +409,8 @@ const PrivacyPolicyPage: React.FC = () => {
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">C. Automatically Collected Items</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">C. Automatically Collected Items</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>IP address</li>
                         <li>Cookies</li>
                         <li>Service usage records</li>
@@ -424,18 +424,18 @@ const PrivacyPolicyPage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">3. Retention and Use Period of Personal Information</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company processes and retains personal information within the retention and use period prescribed by law or the retention and use period consented to by the data subject when collecting personal information.
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">A. Member Information</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Member Information</h3>
                       <p className="text-gray-700 ml-4">
                         Until membership withdrawal (however, if an investigation is in progress due to violation of relevant laws, until the completion of the investigation)
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">B. Retention in Accordance with Relevant Laws</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Retention in Accordance with Relevant Laws</h3>
                       <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700">
                         <li>
                           Records on contracts or withdrawal of offers: 5 years
@@ -475,7 +475,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">5. Outsourcing of Personal Information Processing</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company outsources personal information processing tasks to external specialized companies as follows to provide services.
                   </p>
                   <div className="overflow-x-auto">
@@ -508,14 +508,14 @@ const PrivacyPolicyPage: React.FC = () => {
                   <h2 className="text-xl font-semibold mb-4">6. Procedure and Method for Destruction of Personal Information</h2>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">A. Destruction Procedure</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Destruction Procedure</h3>
                       <p className="text-gray-700 ml-4">
                         Information entered by users for membership registration is moved to a separate DB (or separate file cabinet for paper) after the purpose is achieved and stored for a certain period according to internal policies and other relevant laws (refer to retention and use period) before being destroyed.
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">B. Destruction Method</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Destruction Method</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>Electronic files: Deleted using technical methods that prevent record reproduction</li>
                         <li>Personal information printed on paper: Shredded or incinerated</li>
                       </ul>
@@ -525,7 +525,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">7. Rights and Obligations of Data Subjects and Exercise Methods</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     Users may exercise the following rights as data subjects:
                   </p>
                   <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700">
@@ -541,7 +541,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">8. Personal Information Protection Officer</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company designates a Personal Information Protection Officer as follows to be in charge of overall personal information processing tasks and to handle complaints and remedy damages related to personal information processing.
                   </p>
                   <div className="bg-gray-50 border rounded-lg p-6">
@@ -555,7 +555,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">9. Measures to Ensure Safety of Personal Information</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company takes the following measures to ensure the safety of personal information:
                   </p>
                   <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700">
@@ -567,20 +567,20 @@ const PrivacyPolicyPage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">10. Installation, Operation, and Refusal of Automatic Personal Information Collection Devices</h2>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company uses 'cookies' that store usage information and retrieve it from time to time to provide users with individually customized services.
                   </p>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">A. Purpose of Cookie Use</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Purpose of Cookie Use</h3>
+                      <ul className="list-disc list-inside ml-4 space-y-1 text-gray-700 dark:text-gray-300">
                         <li>Automatic login function</li>
                         <li>Service usage frequency and pattern analysis</li>
                         <li>Customized service provision</li>
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">B. Method to Refuse Cookie Settings</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Method to Refuse Cookie Settings</h3>
                       <p className="text-gray-700 ml-4">
                         Users can refuse to store cookies through option settings in Tools &gt; Internet Options &gt; Privacy menu at the top of the web browser. However, refusing to set cookies may cause difficulties in using the service.
                       </p>

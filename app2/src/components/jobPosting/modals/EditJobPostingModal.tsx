@@ -246,7 +246,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               id="useRoleSalary-edit"
               checked={formData.useRoleSalary || false}
               onChange={(e) => handleRoleSalaryToggle(e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
               disabled={isUpdating}
             />
             <label htmlFor="useRoleSalary-edit" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -415,10 +415,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 id="benefit-guaranteedHours-edit"
                 checked={!!formData.benefits?.guaranteedHours}
                 onChange={(e) => handleBenefitToggle('guaranteedHours', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isUpdating}
               />
-              <label htmlFor="benefit-guaranteedHours-edit" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-guaranteedHours-edit" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 보장시간
               </label>
               {formData.benefits?.guaranteedHours !== undefined && (
@@ -441,10 +441,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 id="benefit-clothing-edit"
                 checked={!!formData.benefits?.clothing}
                 onChange={(e) => handleBenefitToggle('clothing', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isUpdating}
               />
-              <label htmlFor="benefit-clothing-edit" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-clothing-edit" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 복장
               </label>
               {formData.benefits?.clothing !== undefined && (
@@ -467,10 +467,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 id="benefit-meal-edit"
                 checked={!!formData.benefits?.meal}
                 onChange={(e) => handleBenefitToggle('meal', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isUpdating}
               />
-              <label htmlFor="benefit-meal-edit" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-meal-edit" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 식사
               </label>
               {formData.benefits?.meal !== undefined && (
@@ -493,10 +493,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 id="benefit-transportation-edit"
                 checked={!!formData.benefits?.transportation}
                 onChange={(e) => handleBenefitToggle('transportation', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isUpdating}
               />
-              <label htmlFor="benefit-transportation-edit" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-transportation-edit" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 교통비
               </label>
               {formData.benefits?.transportation !== undefined && (
@@ -519,10 +519,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 id="benefit-mealAllowance-edit"
                 checked={!!formData.benefits?.mealAllowance}
                 onChange={(e) => handleBenefitToggle('mealAllowance', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isUpdating}
               />
-              <label htmlFor="benefit-mealAllowance-edit" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-mealAllowance-edit" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 식비
               </label>
               {formData.benefits?.mealAllowance !== undefined && (
@@ -545,10 +545,10 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                 id="benefit-accommodation-edit"
                 checked={!!formData.benefits?.accommodation}
                 onChange={(e) => handleBenefitToggle('accommodation', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isUpdating}
               />
-              <label htmlFor="benefit-accommodation-edit" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-accommodation-edit" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 숙소
               </label>
               {formData.benefits?.accommodation !== undefined && (
@@ -584,7 +584,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               id="usesPreQuestions-edit"
               checked={'usesPreQuestions' in formData ? formData.usesPreQuestions : false}
               onChange={(e) => handlePreQuestionsToggle(e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
               disabled={isUpdating}
             />
             <label htmlFor="usesPreQuestions-edit" className="text-sm text-gray-700 dark:text-gray-300">
@@ -613,7 +613,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
           <textarea
             name="description"
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder:text-xs"
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder:text-xs"
             value={formData.description}
             onChange={handleFormChange}
             placeholder="추가 설명을 입력하세요&#10;예시 : 경력 1년이상,TDA숙지자 등등"
