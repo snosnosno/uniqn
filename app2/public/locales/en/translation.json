@@ -768,6 +768,10 @@
   "tournament": {
     "initialName": "UNIQN Initial Tournament"
   },
+  "theme": {
+    "switchToLight": "Switch to Light Mode",
+    "switchToDark": "Switch to Dark Mode"
+  },
   "shiftSchedule": {
     "title": "Shift Schedule Management",
     "subtitle": "Manage dealer shift schedules and generate work logs",

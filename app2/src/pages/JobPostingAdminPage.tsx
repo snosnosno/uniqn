@@ -67,7 +67,7 @@ const JobPostingAdminPage = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('common.jobManagement')}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('common.jobManagement')}</h1>
             </div>
             
             {canCreateJobPostings && (

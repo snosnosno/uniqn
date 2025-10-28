@@ -108,13 +108,13 @@ const LazyImage: React.FC<LazyImageProps> = ({
   if (hasError) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-200 ${className}`}
+        className={`flex items-center justify-center bg-gray-200 dark:bg-gray-800 ${className}`}
         style={{ width, height }}
         role="img"
         aria-label={alt}
       >
         <svg
-          className="w-12 h-12 text-gray-400"
+          className="w-12 h-12 text-gray-400 dark:text-gray-600"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -191,7 +191,7 @@ export const ImageGallery: React.FC<{
           <button
             key={index}
             onClick={() => setSelectedIndex(index)}
-            className="relative aspect-square overflow-hidden rounded-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="relative aspect-square overflow-hidden rounded-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             aria-label={`이미지 ${index + 1} 보기: ${image.alt}`}
           >
             <LazyImage
@@ -216,7 +216,7 @@ export const ImageGallery: React.FC<{
             aria-label="이미지 확대 보기"
           >
             <button
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 dark:hover:text-gray-400 z-10"
               onClick={() => setSelectedIndex(null)}
               aria-label="닫기"
             >
@@ -235,7 +235,7 @@ export const ImageGallery: React.FC<{
           {/* 이전/다음 버튼 */}
           {selectedIndex > 0 && (
             <button
-              className="absolute left-4 text-white hover:text-gray-300"
+              className="absolute left-4 text-white hover:text-gray-300 dark:hover:text-gray-400"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedIndex(selectedIndex - 1);
@@ -250,7 +250,7 @@ export const ImageGallery: React.FC<{
           
           {selectedIndex < images.length - 1 && (
             <button
-              className="absolute right-4 text-white hover:text-gray-300"
+              className="absolute right-4 text-white hover:text-gray-300 dark:hover:text-gray-400"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedIndex(selectedIndex + 1);

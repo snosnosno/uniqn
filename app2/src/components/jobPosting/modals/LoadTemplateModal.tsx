@@ -49,7 +49,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
         {templatesLoading ? (
           <div className="text-center py-4">
             <LoadingSpinner />
-            <p className="text-gray-500 mt-2">템플릿 목록을 불러오는 중...</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">템플릿 목록을 불러오는 중...</p>
           </div>
         ) : templates.length === 0 ? (
           <EmptyState
@@ -64,7 +64,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                 <div key={template.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{template.name}</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100">{template.name}</h4>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="info" size="sm" icon="📍">
                           {template.templateData.location}
@@ -80,11 +80,11 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                         )}
                       </div>
                       {template.templateData.benefits && Object.keys(template.templateData.benefits).length > 0 && (
-                        <div className="mt-2 text-xs text-gray-600">
-                          <span className="text-green-700">✅ {getBenefitDisplayNames(template.templateData.benefits).join(', ')}</span>
+                        <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                          <span className="text-green-700 dark:text-green-400">✅ {getBenefitDisplayNames(template.templateData.benefits).join(', ')}</span>
                         </div>
                       )}
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         생성: {formatDateDisplay(template.createdAt)}
                       </p>
                     </div>

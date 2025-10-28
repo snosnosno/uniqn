@@ -162,7 +162,7 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       <List
         height={Math.min(height, staffList.length * itemHeight)}
         width="100%"

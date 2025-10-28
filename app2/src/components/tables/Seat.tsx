@@ -24,9 +24,9 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, par
 
   const getBackgroundColor = () => {
     if (participantId) {
-      return 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 active:bg-blue-300 transition-colors duration-150';
+      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 active:bg-blue-300 dark:active:bg-blue-900/60 transition-colors duration-150';
     }
-    return 'bg-gray-200 border-2 border-dashed border-gray-400';
+    return 'bg-gray-200 dark:bg-gray-700 border-2 border-dashed border-gray-400 dark:border-gray-600';
   };
 
   const handleClick = (event: React.MouseEvent) => {
@@ -74,7 +74,7 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, par
       <span className="font-bold text-sm">{seatIndex + 1}</span>
       <span className="font-semibold truncate w-full text-center">{participantName}</span>
       {participant && participant.chips !== undefined && (
-        <span className="text-green-600 font-bold text-xs mt-1">
+        <span className="text-green-600 dark:text-green-400 font-bold text-xs mt-1">
           {participant.chips.toLocaleString()}
         </span>
       )}

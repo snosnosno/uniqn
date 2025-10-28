@@ -63,19 +63,19 @@ const TournamentDashboard = () => {
                 <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
-                <p className="text-sm text-gray-500">{title}</p>
-                <p className="text-2xl font-bold text-gray-800">{value}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{value}</p>
             </div>
         </div>
     );
 
     return (
-        <div className="container text-gray-800">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">{t('tournamentDashboard.title')}</h1>
+        <div className="container text-gray-800 dark:text-gray-100">
+            <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">{t('tournamentDashboard.title')}</h1>
 
             {process.env.NODE_ENV === 'development' && (
-                <div className="mb-4 p-4 border border-red-400 bg-red-50 rounded-lg">
-                    <h3 className="text-lg font-bold text-red-700 mb-2">{t('tournamentDashboard.devTools.title')}</h3>
+                <div className="mb-4 p-4 border border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                    <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">{t('tournamentDashboard.devTools.title')}</h3>
                     <button
                         onClick={handleSetupTestData}
                         disabled={isSeeding}
@@ -83,7 +83,7 @@ const TournamentDashboard = () => {
                     >
                         {isSeeding ? t('tournamentDashboard.devTools.buttonSeeding') : t('tournamentDashboard.devTools.button')}
                     </button>
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                         {t('tournamentDashboard.devTools.description')}
                     </p>
                 </div>
@@ -112,10 +112,10 @@ const TournamentDashboard = () => {
 
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                 <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">{t('tournamentDashboard.status.title')}</h2>
-                <p className={`text-lg font-semibold ${tournamentStatus === 'running' ? 'text-green-500' : 'text-red-500'}`}>
+                <p className={`text-lg font-semibold ${tournamentStatus === 'running' ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                     {t(`tournamentDashboard.status.${tournamentStatus}`)}
                 </p>
-                <p className="text-gray-600 mt-2">
+                <p className="text-gray-600 dark:text-gray-300 mt-2">
                     {t('tournamentDashboard.status.welcome')}
                 </p>
             </div>

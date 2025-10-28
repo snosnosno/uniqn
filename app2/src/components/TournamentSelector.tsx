@@ -50,8 +50,8 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '',
 
   if (loading) {
     return (
-      <div className={`bg-white shadow-sm rounded-lg p-4 mb-4 ${className}`}>
-        <div className="text-gray-500 text-sm">로딩 중...</div>
+      <div className={`bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 mb-4 ${className}`}>
+        <div className="text-gray-500 dark:text-gray-400 text-sm">로딩 중...</div>
       </div>
     );
   }
@@ -59,9 +59,9 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '',
   const selectedTournament = tournaments.find((t) => t.id === state.tournamentId);
 
   return (
-    <div className={`bg-white shadow-sm rounded-lg p-4 mb-4 ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 mb-4 ${className}`}>
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">
           🏆 토너먼트:
         </label>
         <select
@@ -105,7 +105,7 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '',
       </div>
 
       {selectedTournament && (
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
           {selectedTournament.location && `📍 ${selectedTournament.location} | `}
           상태: {selectedTournament.status === 'upcoming' && '예정'}
           {selectedTournament.status === 'active' && '진행 중'}

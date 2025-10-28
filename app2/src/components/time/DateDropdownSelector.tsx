@@ -91,7 +91,7 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      {label ? <label className="block text-sm font-medium text-gray-700">
+      {label ? <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
           {label}
         </label> : null}
       
@@ -101,7 +101,7 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
             value={value.year || ''}
             onChange={(e) => handleDateChange('year', e.target.value)}
             disabled={disabled}
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
+            className="flex-1 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-600"
           >
             <option value="">년도</option>
             {availableYears.map(year => (

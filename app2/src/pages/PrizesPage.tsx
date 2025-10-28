@@ -75,34 +75,34 @@ const PrizesPage: React.FC = () => {
 
       {!state.tournamentId ? (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
-          <p className="text-gray-500 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
-          <p className="text-sm text-gray-400">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.</p>
         </div>
       ) : (
         <div className="card">
-      <h2 className="text-2xl font-bold mb-4">{t('prizes.title')}</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('prizes.title')}</h2>
 
       <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-        <div className="bg-gray-700 p-3 rounded-lg">
-          <p className="text-sm text-gray-400">{t('prizes.totalPrizePool')}</p>
-          <p className="text-xl font-bold">{formatCurrency(prizePool)}</p>
+        <div className="bg-gray-700 dark:bg-gray-600 p-3 rounded-lg">
+          <p className="text-sm text-gray-400 dark:text-gray-300">{t('prizes.totalPrizePool')}</p>
+          <p className="text-xl font-bold text-white">{formatCurrency(prizePool)}</p>
         </div>
-        <div className="bg-gray-700 p-3 rounded-lg">
-          <p className="text-sm text-gray-400">{t('common.participants')}</p>
-          <p className="text-xl font-bold">{totalPlayers}</p>
+        <div className="bg-gray-700 dark:bg-gray-600 p-3 rounded-lg">
+          <p className="text-sm text-gray-400 dark:text-gray-300">{t('common.participants')}</p>
+          <p className="text-xl font-bold text-white">{totalPlayers}</p>
         </div>
-        <div className="bg-gray-700 p-3 rounded-lg">
-          <p className="text-sm text-gray-400">{t('prizes.itm')}</p>
-          <p className="text-xl font-bold">{itmCount}</p>
+        <div className="bg-gray-700 dark:bg-gray-600 p-3 rounded-lg">
+          <p className="text-sm text-gray-400 dark:text-gray-300">{t('prizes.itm')}</p>
+          <p className="text-xl font-bold text-white">{itmCount}</p>
         </div>
       </div>
-      
+
       <div className="flex items-center justify-between mb-4">
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-2 cursor-pointer text-gray-900 dark:text-gray-100">
           <input type="checkbox" checked={isManual} onChange={e => setIsManual(e.target.checked)} className="rounded" />
           {t('prizes.adjustManually')}
         </label>
-        {isManual ? <div className={`text-sm ${totalManualPayout > prizePool ? 'text-red-500' : 'text-gray-400'}`}>
+        {isManual ? <div className={`text-sm ${totalManualPayout > prizePool ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-300'}`}>
             {t('prizes.totalDistributed')} {formatCurrency(totalManualPayout)}
           </div> : null}
       </div>
@@ -110,7 +110,7 @@ const PrizesPage: React.FC = () => {
       <div className="space-y-2 mb-4">
         {(isManual ? manualPayouts : calculatedPayouts).map((payout, i) => (
           <div key={i} className="flex items-center gap-4">
-            <span className="font-semibold w-12 text-lg">{t('prizes.rank', { rank: i + 1 })}</span>
+            <span className="font-semibold w-12 text-lg text-gray-900 dark:text-gray-100">{t('prizes.rank', { rank: i + 1 })}</span>
             {isManual ? (
                <input
                  type="number"
@@ -119,7 +119,7 @@ const PrizesPage: React.FC = () => {
                  className="input-field !mt-0 flex-grow"
                />
             ) : (
-              <span className="text-lg font-mono bg-gray-800 px-3 py-1 rounded-md">{formatCurrency(payout)}</span>
+              <span className="text-lg font-mono bg-gray-800 dark:bg-gray-700 text-white dark:text-gray-100 px-3 py-1 rounded-md">{formatCurrency(payout)}</span>
             )}
           </div>
         ))}

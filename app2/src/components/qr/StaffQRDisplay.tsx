@@ -154,7 +154,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   return (
     <div className="flex flex-col items-center space-y-6 py-6 px-4">
       {/* QR 코드 */}
-      <div className="bg-white p-6 rounded-2xl shadow-lg">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
         <QRCodeCanvas
           value={qrString}
           size={280}

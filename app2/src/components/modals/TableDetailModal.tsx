@@ -189,7 +189,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDeleteTableClick}
-                className="btn btn-sm bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white border-none"
+                className="btn btn-sm bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white dark:text-gray-100 border-none"
               >
                 테이블 삭제
               </button>

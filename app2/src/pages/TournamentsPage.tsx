@@ -171,11 +171,11 @@ const TournamentsPage: React.FC = () => {
   const getStatusColor = (status: Tournament['status']) => {
     switch (status) {
       case 'upcoming':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'completed':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     }
   };
 
@@ -237,7 +237,7 @@ const TournamentsPage: React.FC = () => {
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-800">토너먼트 관리</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">토너먼트 관리</h1>
         <div className="flex gap-2">
           <button
             onClick={collapseAll}
@@ -266,7 +266,7 @@ const TournamentsPage: React.FC = () => {
 
       {visibleTournaments.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
-          <p className="text-gray-500 mb-4">생성된 토너먼트가 없습니다.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">생성된 토너먼트가 없습니다.</p>
           <button
             onClick={handleOpenCreateModal}
             className="btn btn-primary"
@@ -287,22 +287,22 @@ const TournamentsPage: React.FC = () => {
                 {/* 날짜 섹션 헤더 */}
                 <button
                   onClick={() => toggleExpansion(dateKey)}
-                  className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 transition-colors"
+                  className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 hover:from-blue-100 hover:to-blue-150 dark:hover:from-blue-900/40 dark:hover:to-blue-800/40 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     {expanded ? (
-                      <FaChevronDown className="w-5 h-5 text-blue-600" />
+                      <FaChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     ) : (
-                      <span className="text-blue-600 text-xl">▶</span>
+                      <span className="text-blue-600 dark:text-blue-400 text-xl">▶</span>
                     )}
-                    <h2 className="text-xl font-bold text-gray-800">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
                       {getDateLabel(dateKey)}
-                      <span className="ml-2 text-sm font-normal text-gray-600">
+                      <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
                         ({count}개)
                       </span>
                     </h2>
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
                     {dateKey}
                   </div>
                 </button>

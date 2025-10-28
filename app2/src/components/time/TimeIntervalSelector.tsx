@@ -66,35 +66,35 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
         onClick={toggleExpanded}
         disabled={disabled}
         className={`
-          w-full flex items-center justify-between 
-          border border-gray-300 rounded-lg bg-white 
-          hover:border-blue-500 hover:shadow-sm
+          w-full flex items-center justify-between
+          border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800
+          hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-sm
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-all duration-200
           ${sizeClasses[size]}
-          ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'}
-          ${isExpanded ? 'border-blue-500 shadow-sm' : ''}
+          ${disabled ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'cursor-pointer'}
+          ${isExpanded ? 'border-blue-500 dark:border-blue-400 shadow-sm' : ''}
         `}
       >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <FaClock className={`text-blue-600 ${iconSizes[size]}`} />
-            <span className="font-medium text-gray-700">
+            <FaClock className={`text-blue-600 dark:text-blue-400 ${iconSizes[size]}`} />
+            <span className="font-medium text-gray-700 dark:text-gray-200">
               {selectedIntervalInfo?.icon} {selectedIntervalInfo?.label}
             </span>
           </div>
           
         </div>
         <div className="flex items-center">
-          {isExpanded ? 
-            <FaChevronUp className={`text-gray-400 ${iconSizes[size]}`} /> : 
-            <FaChevronDown className={`text-gray-400 ${iconSizes[size]}`} />
+          {isExpanded ?
+            <FaChevronUp className={`text-gray-400 dark:text-gray-500 ${iconSizes[size]}`} /> :
+            <FaChevronDown className={`text-gray-400 dark:text-gray-500 ${iconSizes[size]}`} />
           }
         </div>
       </button>
       
       {/* 드롭다운 옵션들 */}
-      {isExpanded ? <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+      {isExpanded ? <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
           <div className="py-1">
             {TIME_INTERVALS.map((interval) => {
               const isSelected = interval.value === selectedInterval;
@@ -106,15 +106,15 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
                   type="button"
                   onClick={() => handleIntervalSelect(interval)}
                   className={`
-                    w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors
-                    ${isSelected ? 'bg-blue-100 text-blue-800' : 'text-gray-700'}
+                    w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors
+                    ${isSelected ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'}
                   `}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{interval.icon}</span>
                       <span className="font-medium">{interval.label}</span>
-                      {isSelected ? <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                      {isSelected ? <span className="text-xs bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
                           선택됨
                         </span> : null}
                     </div>
@@ -127,9 +127,9 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
           </div>
           
           {/* 정보 섹션 */}
-          <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-            <div className="flex items-start gap-2 text-xs text-gray-600">
-              <FaInfo className="w-3 h-3 mt-0.5 text-blue-500" />
+          <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-700">
+            <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+              <FaInfo className="w-3 h-3 mt-0.5 text-blue-500 dark:text-blue-400" />
               <div>
                 <p className="font-medium mb-1">시간 간격 안내</p>
                 <ul className="space-y-1">

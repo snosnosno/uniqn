@@ -95,11 +95,11 @@ const UserManagementPage: React.FC = () => {
   }
 
   if (error) {
-      return <div className="p-6 text-red-500">{error}</div>
+      return <div className="p-6 text-red-500 dark:text-red-400">{error}</div>
   }
 
   if (!isAdmin) {
-      return <div className="p-6 text-red-500">{t('userManagement.accessDenied')}</div>
+      return <div className="p-6 text-red-500 dark:text-red-400">{t('userManagement.accessDenied')}</div>
   }
 
   return (
@@ -112,21 +112,21 @@ const UserManagementPage: React.FC = () => {
                 </Link>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-                <ul className="divide-y divide-gray-200">
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                     {userList.length > 0 ? userList.map(user => (
                         <li key={user.id} className="p-4 flex justify-between items-center">
                             <div>
-                                <p className="font-semibold text-gray-900">{user.name}</p>
-                                <p className="text-sm text-gray-500">{user.email}</p>
+                                <p className="font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                             </div>
                             <div className="flex items-center space-x-4">
-                                <span className="text-sm capitalize text-gray-600 bg-gray-200 px-2 py-1 rounded-full">{user.role}</span>
-                                <button onClick={() => handleOpenEditModal(user)} className="text-blue-600 hover:text-blue-800">{t('common.edit')}</button>
-                                <button onClick={() => handleDeleteClick(user)} className="text-red-600 hover:text-red-800">{t('common.delete')}</button>
+                                <span className="text-sm capitalize text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">{user.role}</span>
+                                <button onClick={() => handleOpenEditModal(user)} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">{t('common.edit')}</button>
+                                <button onClick={() => handleDeleteClick(user)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">{t('common.delete')}</button>
                             </div>
                         </li>
                     )) : (
-                        <p className="text-center text-gray-500 py-4">{t('userManagement.noUsersFound')}</p>
+                        <p className="text-center text-gray-500 dark:text-gray-400 py-4">{t('userManagement.noUsersFound')}</p>
                     )}
                 </ul>
             </div>

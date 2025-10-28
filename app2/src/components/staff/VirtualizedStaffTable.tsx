@@ -183,7 +183,7 @@ const VirtualizedTableRow: React.FC<{
                 onShowProfile(staff.id);
               }
             }}
-            className="text-sm font-medium text-gray-900 truncate bg-white hover:bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left inline-block"
+            className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 px-3 py-1 rounded-md border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm transition-all duration-200 text-left inline-block"
           >
             {displayName}
           </button>
@@ -317,7 +317,7 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* 테이블 헤더 */}
       <div className="flex w-full bg-gray-50 border-b border-gray-200">
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

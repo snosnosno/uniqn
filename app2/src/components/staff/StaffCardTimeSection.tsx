@@ -39,8 +39,8 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
             }
           }}
           disabled={!isTimeEditable}
-          className={`w-full inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200 ${
-            isTimeEditable ? 'hover:bg-gray-50 hover:border-gray-300 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+          className={`w-full inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 ${
+            isTimeEditable ? 'hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-500 cursor-pointer' : 'opacity-50 cursor-not-allowed'
           } transition-all`}
           title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "근무 시간 수정"}
         >
@@ -66,7 +66,7 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
         disabled={!isTimeEditable}
         className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${startTimeColor} ${
           isTimeEditable ? 'hover:opacity-80 cursor-pointer' : 'opacity-50 cursor-not-allowed'
-        } transition-opacity whitespace-nowrap border border-gray-200`}
+        } transition-opacity whitespace-nowrap border border-gray-200 dark:border-gray-600`}
         title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "근무 시간 수정"}
       >
         <span>출근: {displayStartTime}</span>
@@ -82,7 +82,7 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(({
         disabled={!isTimeEditable}
         className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${endTimeColor} ${
           isTimeEditable ? 'hover:opacity-80 cursor-pointer' : 'opacity-50 cursor-not-allowed'
-        } transition-opacity whitespace-nowrap border border-gray-200`}
+        } transition-opacity whitespace-nowrap border border-gray-200 dark:border-gray-600`}
         title={!canEdit ? "수정 권한이 없습니다" : multiSelectMode ? "다중 선택 모드에서는 시간을 수정할 수 없습니다" : "근무 시간 수정"}
       >
         <span>퇴근: {displayEndTime}</span>

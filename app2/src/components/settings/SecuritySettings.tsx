@@ -261,7 +261,7 @@ export const SecuritySettings: React.FC = () => {
                 <span
                   className={`
                     pointer-events-none inline-block h-5 w-5 transform
-                    rounded-full bg-white shadow ring-0 transition duration-200
+                    rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                     ease-in-out
                     ${loginNotificationSettings?.enabled ? 'translate-x-5' : 'translate-x-0'}
                   `}
@@ -301,7 +301,7 @@ export const SecuritySettings: React.FC = () => {
                     <span
                       className={`
                         pointer-events-none inline-block h-5 w-5 transform
-                        rounded-full bg-white shadow ring-0 transition duration-200
+                        rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                         ease-in-out
                         ${loginNotificationSettings?.notifyOnNewDevice ? 'translate-x-5' : 'translate-x-0'}
                       `}
@@ -338,7 +338,7 @@ export const SecuritySettings: React.FC = () => {
                     <span
                       className={`
                         pointer-events-none inline-block h-5 w-5 transform
-                        rounded-full bg-white shadow ring-0 transition duration-200
+                        rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                         ease-in-out
                         ${loginNotificationSettings?.notifyOnNewLocation ? 'translate-x-5' : 'translate-x-0'}
                       `}
@@ -378,7 +378,7 @@ export const SecuritySettings: React.FC = () => {
                     <span
                       className={`
                         pointer-events-none inline-block h-5 w-5 transform
-                        rounded-full bg-white shadow ring-0 transition duration-200
+                        rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                         ease-in-out
                         ${loginNotificationSettings?.notifyOnSuspiciousActivity ? 'translate-x-5' : 'translate-x-0'}
                       `}

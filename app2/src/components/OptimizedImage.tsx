@@ -130,7 +130,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
       {/* 에러 상태 */}
       {hasError && isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-sm">
           이미지를 불러올 수 없습니다
         </div>
       )}

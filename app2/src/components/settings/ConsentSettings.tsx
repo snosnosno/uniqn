@@ -280,7 +280,7 @@ export const ConsentSettings: React.FC = () => {
                 <span
                   className={`
                     pointer-events-none inline-block h-5 w-5 transform
-                    rounded-full bg-white shadow ring-0 transition duration-200
+                    rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                     ease-in-out
                     ${isMarketingAgreed ? 'translate-x-5' : 'translate-x-0'}
                   `}
@@ -324,7 +324,7 @@ export const ConsentSettings: React.FC = () => {
                 <span
                   className={`
                     pointer-events-none inline-block h-5 w-5 transform
-                    rounded-full bg-white shadow ring-0 transition duration-200
+                    rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                     ease-in-out
                     ${isLocationServiceAgreed ? 'translate-x-5' : 'translate-x-0'}
                   `}
@@ -368,7 +368,7 @@ export const ConsentSettings: React.FC = () => {
                 <span
                   className={`
                     pointer-events-none inline-block h-5 w-5 transform
-                    rounded-full bg-white shadow ring-0 transition duration-200
+                    rounded-full bg-white dark:bg-gray-200 shadow ring-0 transition duration-200
                     ease-in-out
                     ${isPushNotificationAgreed ? 'translate-x-5' : 'translate-x-0'}
                   `}

@@ -86,12 +86,12 @@ const TableCard: React.FC<TableCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative p-4 rounded-lg flex flex-col transition-shadow duration-100 bg-white shadow-md hover:shadow-xl border-4 min-h-[200px]`}
+      className={`relative p-4 rounded-lg flex flex-col transition-shadow duration-100 bg-white dark:bg-gray-800 shadow-md hover:shadow-xl border-4 dark:border-gray-700 min-h-[200px]`}
       onClick={onTableClick}
     >
       {/* Card Header */}
       <div
-        className="w-full flex justify-between items-center mb-3 pb-2 border-b"
+        className="w-full flex justify-between items-center mb-3 pb-2 border-b dark:border-gray-700"
       >
         <div className="flex items-center gap-2 flex-1">
           {/* 선택 모드 체크박스 */}
@@ -107,7 +107,7 @@ const TableCard: React.FC<TableCardProps> = ({
             />
           )}
           <h3
-              className={`font-bold text-lg truncate ${!isMobile && !isSelectionMode ? 'cursor-grab' : ''}`}
+              className={`font-bold text-lg truncate text-gray-900 dark:text-gray-100 ${!isMobile && !isSelectionMode ? 'cursor-grab' : ''}`}
               {...(!isSelectionMode ? listeners : {})}
               {...(!isSelectionMode ? attributes : {})}
           >
@@ -115,19 +115,19 @@ const TableCard: React.FC<TableCardProps> = ({
           </h3>
         </div>
         <div className="flex items-center gap-3">
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                 <FaUsers className="w-4 h-4 mr-1" />
                 <span>{playerCount}/{maxSeats}</span>
             </div>
             {totalChips > 0 && (
-                <div className="flex items-center text-sm font-semibold text-green-600">
+                <div className="flex items-center text-sm font-semibold text-green-600 dark:text-green-400">
                     <FaMoneyBillWave className="w-4 h-4 mr-1" />
                     <span>{totalChips.toLocaleString()}</span>
                 </div>
             )}
         </div>
         <button
-            className="p-2 rounded-full hover:bg-gray-200"
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
             onClick={(e) => {
                 e.stopPropagation();
                 onTableClick();
@@ -139,7 +139,7 @@ const TableCard: React.FC<TableCardProps> = ({
 
       {/* Dealer Info */}
       <div className="w-full text-center mb-3">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('tableCard.dealer')} {getDealerName(table.assignedStaffId || null)}
         </p>
       </div>
@@ -150,7 +150,7 @@ const TableCard: React.FC<TableCardProps> = ({
           <div key={seat.seatNumber} className="text-center">
             {seat.name ? (
               <div
-                className="border rounded p-1 bg-gray-50 cursor-pointer hover:bg-blue-50 transition-colors"
+                className="border dark:border-gray-600 rounded p-1 bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation(); // 테이블 카드 클릭 방지
                   if (onPlayerSelect && seat.participant) {
@@ -161,19 +161,19 @@ const TableCard: React.FC<TableCardProps> = ({
                   }
                 }}
               >
-                <div className="text-xs font-medium truncate">
+                <div className="text-xs font-medium truncate text-gray-900 dark:text-gray-100">
                   {seat.seatNumber}. {seat.name}
                 </div>
-                <div className="text-xs text-green-600 font-bold">
+                <div className="text-xs text-green-600 dark:text-green-400 font-bold">
                   {seat.chips.toLocaleString()}
                 </div>
               </div>
             ) : (
-              <div className="border border-dashed rounded p-1 opacity-50">
-                <div className="text-xs text-gray-400">
+              <div className="border dark:border-gray-600 border-dashed rounded p-1 opacity-50">
+                <div className="text-xs text-gray-400 dark:text-gray-500">
                   {seat.seatNumber}. 빈자리
                 </div>
-                <div className="text-xs text-gray-300">
+                <div className="text-xs text-gray-300 dark:text-gray-600">
                   -
                 </div>
               </div>

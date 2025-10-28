@@ -205,7 +205,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         ref={menuRef}
         {...swipeGesture}
         className={`
-          fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-50
+          fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-800 shadow-xl z-50
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -241,8 +241,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 onClick={() => item.children ? toggleExpanded(item.path) : handleMenuClick(item.path)}
                 className={`
                   w-full flex items-center justify-between px-4 py-3
-                  hover:bg-gray-50 transition-colors
-                  ${location.pathname === item.path ? 'bg-primary-50 text-primary-600 border-l-4 border-primary-500' : 'text-gray-700'}
+                  hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                  ${location.pathname === item.path ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 border-l-4 border-primary-500 dark:border-primary-400' : 'text-gray-700 dark:text-gray-200'}
                 `}
               >
                 <div className="flex items-center space-x-3">

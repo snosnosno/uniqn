@@ -74,7 +74,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
 
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-4">
       {/* 날짜 헤더 */}
       <div 
         className="bg-blue-600 px-4 py-3 cursor-pointer hover:bg-blue-700 active:bg-blue-800 transition-colors duration-150"
@@ -122,7 +122,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
             </div>
             
             <div className="flex items-center space-x-2">
-              <div className="bg-white bg-opacity-25 rounded-full px-3 py-1.5">
+              <div className="bg-white dark:bg-gray-800 bg-opacity-25 dark:bg-opacity-50 rounded-full px-3 py-1.5">
                 <span className="text-white text-sm font-semibold">
                   {staffCount}명
                 </span>
@@ -139,7 +139,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                   )}
                   <button
                     onClick={handleGroupSelect}
-                    className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full px-3 py-1.5 transition-all"
+                    className="bg-white dark:bg-gray-800 bg-opacity-20 dark:bg-opacity-40 hover:bg-opacity-30 dark:hover:bg-opacity-60 rounded-full px-3 py-1.5 transition-all"
                   >
                     <span className="text-white text-sm font-semibold">
                       {selectedCount === staffList.length ? '그룹 해제' : '그룹 선택'}

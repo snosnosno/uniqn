@@ -12,25 +12,25 @@ const FooterSection: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-gray-900 dark:bg-black text-white dark:text-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* 회사 정보 */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                 T
               </div>
               <span className="text-xl font-bold">UNIQN</span>
             </div>
-            <p className="text-gray-300 mb-4 leading-relaxed">
+            <p className="text-gray-300 dark:text-gray-400 mb-4 leading-relaxed">
               Smart platform for tournament management, staff management, and job postings all in one place.
               효율적인 운영과 체계적인 관리로 더 나은 토너먼트 경험을 제공합니다.
             </p>
             <div className="flex space-x-4">
               <a
                 href="mailto:contact@tholdem.com"
-                className="text-gray-300 hover:text-white transition-colors duration-300"
+                className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
                 aria-label="이메일"
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -39,7 +39,7 @@ const FooterSection: React.FC = () => {
               </a>
               <a
                 href="tel:+82-2-1234-5678"
-                className="text-gray-300 hover:text-white transition-colors duration-300"
+                className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
                 aria-label="전화"
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -50,7 +50,7 @@ const FooterSection: React.FC = () => {
                 href="https://github.com/tholdem"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-300 hover:text-white transition-colors duration-300"
+                className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
                 aria-label="GitHub"
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -65,22 +65,22 @@ const FooterSection: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">서비스</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#features" className="text-gray-300 hover:text-white transition-colors duration-300">
+                <a href="#features" className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300">
                   주요 기능
                 </a>
               </li>
               <li>
-                <a href="#targets" className="text-gray-300 hover:text-white transition-colors duration-300">
+                <a href="#targets" className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300">
                   솔루션
                 </a>
               </li>
               <li>
-                <span className="text-gray-400 cursor-not-allowed">
+                <span className="text-gray-400 dark:text-gray-500 cursor-not-allowed">
                   요금제 (준비중)
                 </span>
               </li>
               <li>
-                <span className="text-gray-400 cursor-not-allowed">
+                <span className="text-gray-400 dark:text-gray-500 cursor-not-allowed">
                   API 문서 (준비중)
                 </span>
               </li>
@@ -94,25 +94,25 @@ const FooterSection: React.FC = () => {
               <li>
                 <a
                   href="mailto:support@tholdem.com"
-                  className="text-gray-300 hover:text-white transition-colors duration-300"
+                  className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
                 >
                   고객 지원
                 </a>
               </li>
               <li>
-                <span className="text-gray-400 cursor-not-allowed">
+                <span className="text-gray-400 dark:text-gray-500 cursor-not-allowed">
                   도움말 센터 (준비중)
                 </span>
               </li>
               <li>
-                <span className="text-gray-400 cursor-not-allowed">
+                <span className="text-gray-400 dark:text-gray-500 cursor-not-allowed">
                   FAQ (준비중)
                 </span>
               </li>
               <li>
                 <a
                   href="mailto:contact@tholdem.com"
-                  className="text-gray-300 hover:text-white transition-colors duration-300"
+                  className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
                 >
                   문의하기
                 </a>
@@ -122,9 +122,9 @@ const FooterSection: React.FC = () => {
         </div>
 
         {/* 하단 정보 */}
-        <div className="border-t border-gray-800 mt-12 pt-8">
+        <div className="border-t border-gray-800 dark:border-gray-700 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-400 dark:text-gray-500 text-sm">
               © {currentYear} UNIQN. All rights reserved.
             </div>
             <div className="flex space-x-6 text-sm">
@@ -133,7 +133,7 @@ const FooterSection: React.FC = () => {
                   // 이용약관 모달 또는 페이지 이동
                   toast.info('이용약관 페이지가 준비 중입니다.');
                 }}
-                className="text-gray-400 hover:text-white transition-colors duration-300"
+                className="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
               >
                 이용약관
               </button>
@@ -142,11 +142,11 @@ const FooterSection: React.FC = () => {
                   // 개인정보처리방침 모달 또는 페이지 이동
                   toast.info('개인정보처리방침 페이지가 준비 중입니다.');
                 }}
-                className="text-gray-400 hover:text-white transition-colors duration-300"
+                className="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
               >
                 개인정보처리방침
               </button>
-              <span className="text-gray-500">
+              <span className="text-gray-500 dark:text-gray-600">
                 버전 0.2.0
               </span>
             </div>
@@ -154,8 +154,8 @@ const FooterSection: React.FC = () => {
         </div>
 
         {/* 추가 정보 */}
-        <div className="mt-8 pt-8 border-t border-gray-800">
-          <div className="text-center text-gray-400 text-sm">
+        <div className="mt-8 pt-8 border-t border-gray-800 dark:border-gray-700">
+          <div className="text-center text-gray-400 dark:text-gray-500 text-sm">
             <p className="mb-2">
               UNIQN improves tournament management efficiency through systematic management
               더 나은 게임 환경을 제공하는 것을 목표로 합니다.

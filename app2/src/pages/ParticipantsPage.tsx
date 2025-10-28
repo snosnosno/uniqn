@@ -424,7 +424,7 @@ const ParticipantsPage: React.FC = () => {
         <table className="w-full table-auto">
           <thead className="bg-gray-200 dark:bg-gray-700">
             <tr>
-              <th className="px-4 py-2">
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">
                 <input
                   type="checkbox"
                   checked={isAllSelected}
@@ -434,20 +434,20 @@ const ParticipantsPage: React.FC = () => {
                   tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                 />
               </th>
-              <th className="px-4 py-2">{t('common.name')}</th>
-              <th className="px-4 py-2">ID</th>
-              <th className="px-4 py-2">{t('common.phone')}</th>
-              <th className="px-4 py-2">{t('common.chips')}</th>
-              <th className="px-4 py-2 whitespace-nowrap">{t('common.location')}</th>
-              <th className="px-4 py-2">기타</th>
-              <th className="px-4 py-2">비고</th>
-              <th className="px-4 py-2">{t('participants.tableHeaderActions')}</th>
-              <th className="px-4 py-2">{t('common.statusLabel')}</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">{t('common.name')}</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">ID</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">{t('common.phone')}</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">{t('common.chips')}</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">{t('common.location')}</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">기타</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">비고</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">{t('participants.tableHeaderActions')}</th>
+              <th className="px-4 py-2 text-gray-900 dark:text-gray-100">{t('common.statusLabel')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredParticipants.map((p: Participant) => (
-              <tr key={p.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700">
+              <tr key={p.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                 <td className="px-4 py-2">
                   <input
                     type="checkbox"

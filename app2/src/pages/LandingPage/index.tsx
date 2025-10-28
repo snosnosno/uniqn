@@ -25,7 +25,7 @@ const CTASection = lazy(() => import('./components/CTASection'));
 
 // 간단한 로딩 컴포넌트
 const SectionLoader: React.FC = () => (
-  <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg"></div>
+  <div className="w-full h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg"></div>
 );
 
 // 랜딩페이지 콘텐츠 데이터
@@ -369,7 +369,7 @@ const LandingPage: React.FC = () => {
         className="fixed right-6 top-1/2 transform -translate-y-1/2 z-40 hidden lg:block floating-nav"
         aria-label="페이지 섹션 네비게이션"
       >
-        <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-full p-3 shadow-lg">
+        <div className="bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-90 backdrop-blur-sm rounded-full p-3 shadow-lg">
           {[
             { id: 'hero', label: '홈' },
             { id: 'features', label: '기능' },
@@ -391,8 +391,8 @@ const LandingPage: React.FC = () => {
               className={`
                 block w-3 h-3 rounded-full mb-3 last:mb-0 floating-nav-dot focus-visible
                 ${activeSection === section.id
-                  ? 'bg-blue-600 scale-125 active'
-                  : 'bg-gray-300 hover:bg-gray-400'
+                  ? 'bg-blue-600 dark:bg-blue-500 scale-125 active'
+                  : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
                 }
               `}
               aria-label={`${section.label} 섹션으로 이동`}
@@ -404,7 +404,7 @@ const LandingPage: React.FC = () => {
 
       {/* 분석 에러 처리 */}
       {analytics.error && process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed bottom-4 right-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg shadow-lg z-50">
           <strong className="font-bold">분석 오류:</strong>
           <span className="block sm:inline ml-1">{analytics.error}</span>
         </div>

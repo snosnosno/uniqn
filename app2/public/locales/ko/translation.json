@@ -824,6 +824,10 @@
   "tournament": {
     "initialName": "UNIQN Initial Tournament"
   },
+  "theme": {
+    "switchToLight": "라이트 모드로 전환",
+    "switchToDark": "다크 모드로 전환"
+  },
   "kakaoLogin": {
     "button": "카카오로 로그인"
   },

@@ -111,7 +111,7 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
                 }
               });
             }}
-            className="ml-4 px-2 py-1 bg-white bg-opacity-20 rounded text-xs hover:bg-opacity-30 transition-colors"
+            className="ml-4 px-2 py-1 bg-white dark:bg-gray-800 bg-opacity-20 dark:bg-opacity-40 rounded text-xs hover:bg-opacity-30 dark:hover:bg-opacity-60 transition-colors"
           >
             다시 시도
           </button>
