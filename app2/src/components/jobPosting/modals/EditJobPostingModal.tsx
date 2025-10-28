@@ -145,7 +145,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
         {/* 기본 정보 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               대회명(매장명) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -161,7 +161,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               모집 유형
             </label>
             <Select
@@ -178,7 +178,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 지역 <span className="text-red-500">*</span>
               </label>
               <Select
@@ -192,7 +192,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 시/군/구
               </label>
               <Input
@@ -208,7 +208,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               상세 주소
             </label>
             <Input
@@ -223,7 +223,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               문의 연락처
             </label>
             <Input
@@ -249,14 +249,14 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               disabled={isUpdating}
             />
-            <label htmlFor="useRoleSalary-edit" className="ml-2 text-sm font-medium text-gray-700">
+            <label htmlFor="useRoleSalary-edit" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               역할별 급여 설정
             </label>
           </div>
 
           {formData.useRoleSalary ? (
             <div className="space-y-3 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-              <div className="text-sm text-gray-600 mb-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 각 역할별로 급여를 설정하세요. 기본값: 시급 20,000원
               </div>
 
@@ -320,7 +320,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   {/* 급여 금액 */}
                   <div className="col-span-3">
                     {salary.salaryType === 'negotiable' ? (
-                      <div className="text-gray-500 text-sm py-2">급여 협의</div>
+                      <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>
                     ) : (
                       <Input
                         type="text"
@@ -362,7 +362,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
             // 기존 통합 급여 입력
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   급여 유형 <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -383,11 +383,11 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   급여 금액 <span className="text-red-500">*</span>
                 </label>
                 {formData.salaryType === 'negotiable' ? (
-                  <div className="text-gray-500 text-sm py-2">급여 협의</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>
                 ) : (
                   <Input
                     type="text"
@@ -406,7 +406,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
         {/* 복리후생 */}
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700">복리후생 (제공되는 정보만 입력)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">복리후생 (제공되는 정보만 입력)</label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 보장시간 */}
             <div className="flex items-center space-x-2">
@@ -587,7 +587,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               disabled={isUpdating}
             />
-            <label htmlFor="usesPreQuestions-edit" className="text-sm text-gray-700">
+            <label htmlFor="usesPreQuestions-edit" className="text-sm text-gray-700 dark:text-gray-300">
               사전질문 사용(추가 질문)
             </label>
           </div>
@@ -607,7 +607,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
         {/* 상세 설명 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             상세 설명
           </label>
           <textarea
@@ -623,7 +623,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
         {/* 상태 설정 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             상태
           </label>
           <Select

@@ -310,7 +310,7 @@ const ShiftSchedulePage: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-600 mb-2">
           {t('shiftSchedule.title')}
         </h1>
-        <p className="text-gray-500">{t('shiftSchedule.subtitle')}</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('shiftSchedule.subtitle')}</p>
       </div>
 
       {/* 날짜 선택 및 컨트롤 바 */}
@@ -320,7 +320,7 @@ const ShiftSchedulePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <FaCalendarAlt className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-              <label className="text-sm sm:text-base font-semibold text-gray-700">
+              <label className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300">
                 {t('shiftSchedule.selectDate')}:
               </label>
             </div>
@@ -339,7 +339,7 @@ const ShiftSchedulePage: React.FC = () => {
           {schedule ? <div className="flex items-center gap-4 opacity-50">
               <div className="flex items-center gap-2">
                 <FaClock className="w-5 h-5 text-gray-400" />
-                <label className="font-semibold text-gray-500">
+                <label className="font-semibold text-gray-500 dark:text-gray-400">
                   {t('shiftSchedule.timeInterval')}:
                 </label>
               </div>
@@ -409,7 +409,7 @@ const ShiftSchedulePage: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
               <FaTable className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.scheduleGrid')}
-              {schedule ? <span className="ml-2 text-sm font-normal text-gray-500">
+              {schedule ? <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                   ({schedule.timeInterval}{t('shiftSchedule.minuteInterval')})
                 </span> : null}
             </h2>
@@ -417,7 +417,7 @@ const ShiftSchedulePage: React.FC = () => {
             {schedule ? (
               <div className="space-y-4">
                 {/* 시간 슬롯 정보 */}
-                <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-1">
                     <FaClock className="w-4 h-4" />
                     <span>{schedule.startTime} - {schedule.endTime}</span>
@@ -479,7 +479,7 @@ const ShiftSchedulePage: React.FC = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-800">{dealer.staffName}</p>
-                      <p className="text-sm text-gray-500">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
                     </div>
                     <button
                       disabled={true}
@@ -503,13 +503,13 @@ const ShiftSchedulePage: React.FC = () => {
               {dealersNotInSchedule.map(dealer => (
                 <div key={dealer.id} className="flex items-center bg-gray-50 p-3 rounded-lg shadow-sm">
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-semibold text-gray-600">
+                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
                       {dealer.name.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800">{dealer.name}</p>
-                    <p className="text-sm text-gray-500">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
                   </div>
                   {schedule ? <button
                       disabled={true}
@@ -537,10 +537,10 @@ const ShiftSchedulePage: React.FC = () => {
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {tables?.map(table => (
                 <div key={table.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
                     Table {table.tableNumber}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {table.status || 'open'}
                   </span>
                 </div>
@@ -581,7 +581,7 @@ const ShiftSchedulePage: React.FC = () => {
               <label className="block text-sm font-medium mb-2">
                 {t('shiftSchedule.defaultWorkTimeSettings')}
               </label>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-gray-300">
                 새로운 스케줄 생성 시 사용되는 기본 시간 설정입니다.
               </div>
               </div>

@@ -98,14 +98,14 @@ const TermsOfServicePage: React.FC = () => {
               <>
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제1조 (목적)</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     본 약관은 UNIQN(이하 "회사"라 합니다)이 제공하는 토너먼트 운영 플랫폼 서비스(이하 "서비스"라 합니다)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
                   </p>
                 </section>
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제2조 (정의)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       "서비스"란 회사가 제공하는 토너먼트 관리, 스태프 관리, 구인구직, 급여 정산 등의 온라인 플랫폼 서비스를 의미합니다.
                     </li>
@@ -123,7 +123,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제3조 (약관의 효력 및 변경)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       본 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력이 발생합니다.
                     </li>
@@ -138,7 +138,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제4조 (회원가입)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       이용자는 회사가 정한 가입 양식에 따라 회원정보를 기입한 후 본 약관과 개인정보처리방침에 동의한다는 의사표시를 함으로써 회원가입을 신청합니다.
                     </li>
@@ -159,14 +159,14 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제5조 (회원정보의 변경)</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     회원은 개인정보관리화면을 통하여 언제든지 본인의 개인정보를 열람하고 수정할 수 있습니다. 회원은 회원가입신청 시 기재한 사항이 변경되었을 경우 온라인으로 수정을 하거나 기타 방법으로 회사에 대하여 그 변경사항을 알려야 합니다.
                   </p>
                 </section>
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제6조 (서비스의 제공)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       회사는 다음과 같은 서비스를 제공합니다:
                       <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
@@ -186,7 +186,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제7조 (서비스의 변경 및 중지)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       회사는 상당한 이유가 있는 경우에 운영상, 기술상의 필요에 따라 제공하고 있는 전부 또는 일부 서비스를 변경할 수 있습니다.
                     </li>
@@ -198,7 +198,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제8조 (회원탈퇴 및 자격상실)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       회원은 언제든지 서비스 내 계정관리 메뉴를 통하여 이용계약 해지 신청을 할 수 있으며, 회사는 관련법 등이 정하는 바에 따라 이를 즉시 처리하여야 합니다.
                     </li>
@@ -218,14 +218,14 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제9조 (개인정보보호)</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     회사는 관계법령이 정하는 바에 따라 회원의 개인정보를 보호하기 위해 노력합니다. 개인정보의 보호 및 사용에 대해서는 관련법 및 회사의 개인정보처리방침이 적용됩니다. 다만, 회사의 공식 사이트 이외의 링크된 사이트에서는 회사의 개인정보처리방침이 적용되지 않습니다.
                   </p>
                 </section>
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제10조 (책임제한)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       회사는 천재지변 또는 이에 준하는 불가항력으로 인하여 서비스를 제공할 수 없는 경우에는 서비스 제공에 관한 책임이 면제됩니다.
                     </li>
@@ -240,7 +240,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">제11조 (준거법 및 재판관할)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       본 약관의 해석 및 회사와 이용자 간의 분쟁에 대하여는 대한민국의 법을 적용합니다.
                     </li>
@@ -252,7 +252,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">부칙</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     본 약관은 2025년 1월 1일부터 시행됩니다.
                   </p>
                 </section>
@@ -261,14 +261,14 @@ const TermsOfServicePage: React.FC = () => {
               <>
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 1 (Purpose)</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     These Terms of Service (hereinafter referred to as "Terms") are intended to define the rights, obligations, responsibilities, and other necessary matters between UNIQN (hereinafter referred to as "Company") and users regarding the use of the poker tournament management platform service (hereinafter referred to as "Service") provided by the Company.
                   </p>
                 </section>
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 2 (Definitions)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       "Service" means the online platform service provided by the Company, including poker tournament management, staff management, recruitment, payroll settlement, etc.
                     </li>
@@ -286,7 +286,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 3 (Effect and Amendment of Terms)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       These Terms shall take effect by being posted on the Service screen or notified to members by other means.
                     </li>
@@ -301,7 +301,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 4 (Membership Registration)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       Users apply for membership registration by filling in member information according to the registration form set by the Company and expressing their intention to agree to these Terms and the Privacy Policy.
                     </li>
@@ -322,14 +322,14 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 5 (Change of Member Information)</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     Members may view and modify their personal information at any time through the personal information management screen. Members must inform the Company of any changes to the information provided during membership registration by making online modifications or through other means.
                   </p>
                 </section>
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 6 (Provision of Service)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       The Company provides the following services:
                       <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
@@ -349,7 +349,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 7 (Change and Suspension of Service)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       The Company may change all or part of the Service it provides for operational or technical needs if there are reasonable grounds.
                     </li>
@@ -361,7 +361,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 8 (Member Withdrawal and Disqualification)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       Members may apply for termination of the service agreement at any time through the account management menu in the Service, and the Company must process it immediately in accordance with relevant laws.
                     </li>
@@ -381,14 +381,14 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 9 (Personal Information Protection)</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     The Company strives to protect members' personal information as prescribed by relevant laws. The protection and use of personal information shall be governed by relevant laws and the Company's Privacy Policy. However, the Company's Privacy Policy does not apply to linked sites other than the Company's official site.
                   </p>
                 </section>
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 10 (Limitation of Liability)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       The Company shall be exempt from liability for providing the Service if it is unable to provide the Service due to force majeure such as natural disasters or equivalent circumstances.
                     </li>
@@ -403,7 +403,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Article 11 (Governing Law and Jurisdiction)</h2>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
                     <li>
                       The laws of the Republic of Korea shall apply to the interpretation of these Terms and disputes between the Company and users.
                     </li>
@@ -415,7 +415,7 @@ const TermsOfServicePage: React.FC = () => {
 
                 <section className="mb-8">
                   <h2 className="text-xl font-semibold mb-4">Addendum</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     These Terms shall be effective from January 1, 2025.
                   </p>
                 </section>

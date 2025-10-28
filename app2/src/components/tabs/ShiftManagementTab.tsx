@@ -26,7 +26,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg text-gray-500">공고 정보를 불러올 수 없습니다.</div>
+          <div className="text-lg text-gray-500 dark:text-gray-400">공고 정보를 불러올 수 없습니다.</div>
         </div>
       </div>
     );
@@ -52,7 +52,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             스태프 교대 스케줄 및 시간 관리
           </p>
         </div>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
           {t('common.comingSoon', '향후 업데이트 예정')}
         </div>
       </div>
@@ -68,7 +68,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <FaCalendarAlt className="w-5 h-5 text-blue-600" />
-              <label className="font-semibold text-gray-700">
+              <label className="font-semibold text-gray-700 dark:text-gray-300">
                 {t('shiftSchedule.selectDate', '날짜 선택')}:
               </label>
             </div>
@@ -126,7 +126,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
               <p className="text-gray-500 mb-4">
                 스태프들의 교대 근무 관리 기능이 향후 업데이트될 예정입니다.
               </p>
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                 <p>• 교대 일정 관리</p>
                 <p>• 근무 시간 자동 기록</p>
                 <p>• 교대 알림 시스템</p>
@@ -155,7 +155,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800">{staffMember.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {(staffMember as any).assignedRole || staffMember.role} | {(staffMember as any).assignedTime || staffMember.assignedTime || '시간 미정'}
                     </p>
                   </div>
@@ -191,10 +191,10 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                 if (dateReq && dateReq.timeSlots?.length > 0) {
                   return dateReq.timeSlots.map((timeSlot: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="font-medium text-gray-700">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
                         {timeSlot.time}
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
                         {timeSlot.roles?.length || 0} 역할
                       </span>
                     </div>
@@ -218,7 +218,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             </h4>
             <div className="text-center py-8">
               <div className="text-gray-400 text-4xl mb-3">🔄</div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 교대 상태 추적 기능이<br/>향후 추가될 예정입니다.
               </p>
             </div>
@@ -230,21 +230,21 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
       <div className="mt-6 bg-white p-6 rounded-lg shadow">
         <h4 className="text-lg font-medium text-gray-900 mb-4">예정된 교대관리 기능</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 border border-gray-200 rounded-lg">
+          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <h5 className="font-medium text-gray-800 mb-2">🔄 교대 일정</h5>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               스태프들의 교대 일정을 체계적으로 관리합니다.
             </p>
           </div>
-          <div className="p-4 border border-gray-200 rounded-lg">
+          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <h5 className="font-medium text-gray-800 mb-2">⏰ 자동 기록</h5>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               교대 시간에 맞춰 자동으로 근무 시간을 기록합니다.
             </p>
           </div>
-          <div className="p-4 border border-gray-200 rounded-lg">
+          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <h5 className="font-medium text-gray-800 mb-2">📋 출석 관리</h5>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               실시간으로 스태프 출석 상황을 추적하고 관리합니다.
             </p>
           </div>
