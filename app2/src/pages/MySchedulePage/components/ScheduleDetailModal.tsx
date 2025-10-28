@@ -748,31 +748,31 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{salaryInfo.totalDays}</div>
-                  <div className="text-xs text-gray-500">근무일수</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">근무일수</div>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{salaryInfo.totalHours.toFixed(1)}</div>
-                  <div className="text-xs text-gray-500">근무시간</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">근무시간</div>
                 </div>
                 <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-indigo-600">
                     {salaryInfo.basePay.toLocaleString('ko-KR')}
                   </div>
-                  <div className="text-xs text-gray-500">총 지급액</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">총 지급액</div>
                 </div>
                 {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 ? (
                   <div className="bg-green-50 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-green-600">
                       {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}
                     </div>
-                    <div className="text-xs text-gray-500">세후 급여</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
                   </div>
                 ) : (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
                       {(schedule.payrollAmount || (salaryInfo.totalHours * salaryInfo.baseSalary)).toLocaleString('ko-KR')}
                     </div>
-                    <div className="text-xs text-gray-500">세후 급여</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
                   </div>
                 )}
               </div>
@@ -798,22 +798,22 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           날짜
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           역할
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           시작시간
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           종료시간
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           근무시간
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           상태
                         </th>
                       </tr>
@@ -824,15 +824,15 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             <div className="flex items-center gap-2">
                               <span>{history.date}</span>
-                              <span className="text-xs text-gray-500">({history.dayName})</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({history.dayName})</span>
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                               history.role === 'floor' ? 'bg-purple-100 text-purple-800' :
-                              history.role === 'dealer' ? 'bg-blue-100 text-blue-800' :
-                              history.role === 'manager' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
+                              history.role === 'dealer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
+                              history.role === 'manager' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
+                              'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                             }`}>
                               {getRoleLabel(history.role)}
                             </span>
@@ -848,10 +848,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              history.status === 'checked_out' ? 'bg-green-100 text-green-800' :
-                              history.status === 'checked_in' ? 'bg-blue-100 text-blue-800' :
-                              history.status === 'not_started' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
+                              history.status === 'checked_out' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
+                              history.status === 'checked_in' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
+                              history.status === 'not_started' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
+                              'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                             }`}>
                               {history.status === 'checked_out' ? '퇴근' :
                                history.status === 'checked_in' ? '출근' :
@@ -873,13 +873,13 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
                     </span>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     총 {workHistory.length}일 근무
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <div className="text-4xl mb-2">📋</div>
                 <p className="text-sm">근무 내역이 없습니다.</p>
               </div>
@@ -978,7 +978,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   </div>
                 )}
                 <div className="border-t border-indigo-200 pt-2 flex justify-between">
-                  <span className="text-base font-medium text-gray-800">총 지급액</span>
+                  <span className="text-base font-medium text-gray-800 dark:text-gray-200">총 지급액</span>
                   <span className="text-lg font-bold text-indigo-600">
                     {(() => {
                       const basePay = salaryInfo.totalHours * salaryInfo.baseSalary;

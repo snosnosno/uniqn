@@ -506,7 +506,7 @@ const ParticipantsPage: React.FC = () => {
           {/* 토너먼트 정보 표시 */}
           {currentTournament && (
             <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-200">
                 <span className="font-semibold">토너먼트:</span> {currentTournament.name}
               </p>
             </div>
