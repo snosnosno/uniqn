@@ -86,11 +86,11 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
           {/* 메타 정보 */}
           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
             <p>
-              <span className="font-medium">작성자:</span>{' '}
+              <span className="font-medium text-gray-700 dark:text-gray-300">작성자:</span>{' '}
               {announcement.createdByName}
             </p>
             <p>
-              <span className="font-medium">작성일:</span>{' '}
+              <span className="font-medium text-gray-700 dark:text-gray-300">작성일:</span>{' '}
               {format(
                 announcement.createdAt instanceof Date
                   ? announcement.createdAt
@@ -100,7 +100,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
               )}
             </p>
             <p>
-              <span className="font-medium">공개 기간:</span>{' '}
+              <span className="font-medium text-gray-700 dark:text-gray-300">공개 기간:</span>{' '}
               {format(
                 announcement.startDate instanceof Date
                   ? announcement.startDate
@@ -119,14 +119,14 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
                 : ' ~ 무기한'}
             </p>
             <p>
-              <span className="font-medium">조회수:</span>{' '}
+              <span className="font-medium text-gray-700 dark:text-gray-300">조회수:</span>{' '}
               {announcement.viewCount.toLocaleString()}회
             </p>
           </div>
         </div>
 
         {/* 본문 */}
-        <div className="prose max-w-none">
+        <div className="prose dark:prose-invert max-w-none">
           <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
             {announcement.content}
           </div>

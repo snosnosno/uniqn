@@ -50,8 +50,8 @@ const ApprovalPage: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="p-6 text-center">{t('common.messages.loading')}</div>;
-    if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
+    if (loading) return <div className="p-6 text-center text-gray-900 dark:text-gray-100">{t('common.messages.loading')}</div>;
+    if (error) return <div className="p-6 text-center text-red-500 dark:text-red-400">{error}</div>;
 
     return (
         <div className="p-6">

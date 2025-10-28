@@ -34,7 +34,7 @@ export const SimpleBarChart: React.FC<SimpleBarChartProps> = React.memo(({
                 </div>
               )}
               <div
-                className={`w-full rounded-t-lg transition-all duration-500 ${item.color || 'bg-blue-500'}`}
+                className={`w-full rounded-t-lg transition-all duration-500 ${item.color || 'bg-blue-500 dark:bg-blue-400'}`}
                 style={{ height: `${barHeight}%` }}
               />
               <div className="text-xs text-gray-600 dark:text-gray-300 mt-2 text-center">
@@ -192,8 +192,9 @@ export const SimpleLineChart: React.FC<SimpleLineChartProps> = React.memo(({
                 y1={y}
                 x2={width - padding}
                 y2={y}
-                stroke="#E5E7EB"
+                stroke="currentColor"
                 strokeWidth="1"
+                className="text-gray-200 dark:text-gray-700"
               />
             );
           })}

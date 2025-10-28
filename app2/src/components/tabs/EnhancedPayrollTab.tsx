@@ -567,7 +567,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
         </div>
       </div>
     );
@@ -576,9 +576,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-red-800 mb-2">오류 발생</h3>
-          <p className="text-red-600">{error || '알 수 없는 오류가 발생했습니다.'}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-red-800 dark:text-red-300 mb-2">오류 발생</h3>
+          <p className="text-red-600 dark:text-red-400">{error || '알 수 없는 오류가 발생했습니다.'}</p>
         </div>
       </div>
     );

@@ -293,7 +293,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 
   return (
     <div className="space-y-3">
-      
+
       {/* 통합된 그룹 및 개별 선택 - 날짜순으로 정렬된 2x2 그리드 */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
         {allSortedCards.map((card, cardIndex) => {
@@ -320,7 +320,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                               const firstFormatted = formatDateDisplay(firstDate);
                               const lastFormatted = formatDateDisplay(lastDate);
                               return (
-                                <div className="leading-tight">
+                                <div className="leading-tight text-green-800 dark:text-green-300">
                                   <div>{firstFormatted} ~</div>
                                   <div>{lastFormatted}({dateGroup.dayCount}일)</div>
                                 </div>
@@ -336,7 +336,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                 </div>
                 
                 {/* 역할별 체크박스들 */}
-                <div className="p-2 sm:p-3">
+                <div className="p-2 sm:p-3 bg-white dark:bg-gray-800">
                   <div className="space-y-2">
                     {timeGroup.roles.map((role: string, roleIndex: number) => {
                       const isRoleSelected = isMultiDayRoleSelected(dateGroup.dates, timeGroup.timeSlot, role);

@@ -260,7 +260,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               타겟 그룹이 없습니다
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               곧 다양한 맞춤형 솔루션을 제공할 예정입니다.
             </p>
           </div>
@@ -273,11 +273,11 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 어떤 분야에서 활동하시나요?
               </h3>
-              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
                 Experience UNIQN solutions optimized for your work environment.
                 각 분야별 전문가들이 설계한 맞춤형 기능으로 더욱 효율적인 업무가 가능합니다.
               </p>
-              <button className="inline-flex items-center px-6 py-3 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-500 rounded-lg hover:bg-blue-600 hover:text-white dark:hover:bg-blue-700 transition-colors duration-300 font-semibold">
+              <button className="inline-flex items-center px-6 py-3 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-500 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 hover:text-white dark:hover:text-white transition-colors duration-300 font-semibold">
                 상담 신청하기
                 <svg
                   className="ml-2 w-5 h-5"

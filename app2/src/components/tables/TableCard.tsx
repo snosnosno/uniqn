@@ -103,7 +103,7 @@ const TableCard: React.FC<TableCardProps> = ({
                 e.stopPropagation();
                 onSelect?.(e.target.checked);
               }}
-              className="w-5 h-5 cursor-pointer"
+              className="w-5 h-5 cursor-pointer rounded border-gray-300 dark:border-gray-600"
             />
           )}
           <h3
@@ -116,12 +116,12 @@ const TableCard: React.FC<TableCardProps> = ({
         </div>
         <div className="flex items-center gap-3">
             <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <FaUsers className="w-4 h-4 mr-1" />
+                <FaUsers className="w-4 h-4 mr-1 text-gray-600 dark:text-gray-300" />
                 <span>{playerCount}/{maxSeats}</span>
             </div>
             {totalChips > 0 && (
                 <div className="flex items-center text-sm font-semibold text-green-600 dark:text-green-400">
-                    <FaMoneyBillWave className="w-4 h-4 mr-1" />
+                    <FaMoneyBillWave className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
                     <span>{totalChips.toLocaleString()}</span>
                 </div>
             )}
@@ -133,7 +133,7 @@ const TableCard: React.FC<TableCardProps> = ({
                 onTableClick();
             }}
         >
-            <FaEllipsisV className="w-4 h-4" />
+            <FaEllipsisV className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
 
@@ -182,8 +182,8 @@ const TableCard: React.FC<TableCardProps> = ({
         ))}
       </div>
 
-      {isStandby ? <div className="absolute inset-0 bg-gray-400 bg-opacity-50 flex items-center justify-center rounded-lg pointer-events-none">
-              <span className="text-white font-bold text-lg bg-black bg-opacity-50 px-4 py-2 rounded">{t('common.status.pending')}</span>
+      {isStandby ? <div className="absolute inset-0 bg-gray-400 dark:bg-gray-600 bg-opacity-50 dark:bg-opacity-60 flex items-center justify-center rounded-lg pointer-events-none">
+              <span className="text-white font-bold text-lg bg-black dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 px-4 py-2 rounded">{t('common.status.pending')}</span>
           </div> : null}
     </div>
   );

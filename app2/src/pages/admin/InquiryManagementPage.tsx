@@ -288,7 +288,7 @@ const InquiryManagementPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
       </div>
     );
   }
@@ -307,7 +307,7 @@ const InquiryManagementPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
-            <FaEnvelope className="h-8 w-8 text-blue-500" />
+            <FaEnvelope className="h-8 w-8 text-blue-500 dark:text-blue-400" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">전체 문의</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
@@ -316,7 +316,7 @@ const InquiryManagementPage: React.FC = () => {
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
-            <FaClock className="h-8 w-8 text-red-500" />
+            <FaClock className="h-8 w-8 text-red-500 dark:text-red-400" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">대기중</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.open}</p>
@@ -325,7 +325,7 @@ const InquiryManagementPage: React.FC = () => {
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
-            <FaReply className="h-8 w-8 text-yellow-500" />
+            <FaReply className="h-8 w-8 text-yellow-500 dark:text-yellow-400" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">처리중</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.inProgress}</p>
@@ -334,7 +334,7 @@ const InquiryManagementPage: React.FC = () => {
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
-            <FaCheck className="h-8 w-8 text-green-500" />
+            <FaCheck className="h-8 w-8 text-green-500 dark:text-green-400" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">완료</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.closed}</p>

@@ -55,9 +55,9 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   };
 
   return (
-    <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(status)}`}>
+    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(status)}`}>
       {getStatusText(status)}
-    </div>
+    </span>
   );
 };
 
@@ -187,9 +187,9 @@ const ApplicationCard: React.FC<{
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {application.postTitle || '제목 없음'}
         </h3>
-        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           지원일: {formatDateOnly(application.appliedAt)}
-        </div>
+        </p>
       </div>
       <StatusBadge status={application.status} />
     </div>

@@ -50,11 +50,11 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
   return (
     <div className="space-y-6">
       {/* 기본 정보 */}
-      <div className="border-b pb-4">
+      <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
         {/* 제목과 뱃지 - hideTitle이 false일 때만 표시 */}
         {!hideTitle && (
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">{jobPosting.title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{jobPosting.title}</h3>
             <span className={`px-3 py-1 text-sm font-medium rounded-full ${
               jobPosting.recruitmentType === 'fixed'
                 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
@@ -67,13 +67,13 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         
         {/* 상세 설명 - 제목 바로 아래로 이동 */}
         {jobPosting.description && (
-          <div className={hideTitle ? "pb-4 border-b" : "mb-4 pb-4 border-b"}>
-            <h4 className="font-semibold mb-2">📝 상세 설명</h4>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{jobPosting.description}</p>
+          <div className={hideTitle ? "pb-4 border-b border-gray-200 dark:border-gray-700" : "mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"}>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">📝 상세 설명</h4>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{jobPosting.description}</p>
           </div>
         )}
         
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm text-gray-900 dark:text-gray-100">
           <p className="flex items-center">
             <span className="font-medium w-20">기간:</span>
             <span>📅 {dateRangeDisplay}</span>
@@ -99,7 +99,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
           {jobPosting.useRoleSalary && jobPosting.roleSalaries ? (
             <div className="mt-2">
               <span className="font-medium">급여:</span>
-              <span className="ml-2 text-xs text-gray-600">(역할별 급여)</span>
+              <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(역할별 급여)</span>
             </div>
           ) : (
             jobPosting.salaryType && jobPosting.salaryAmount && (
@@ -114,9 +114,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
 
       {/* 역할별 급여 */}
       {jobPosting.useRoleSalary && jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0 && (
-        <div className="border-b pb-4">
-          <h4 className="font-semibold mb-3">💰 역할별 급여</h4>
-          <div className="space-y-2 text-sm">
+        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">💰 역할별 급여</h4>
+          <div className="space-y-2 text-sm text-gray-900 dark:text-gray-100">
             {Object.entries(jobPosting.roleSalaries).map(([role, salary]) => (
               <div key={role} className="flex items-center">
                 <span className="font-medium min-w-[80px]">
@@ -137,9 +137,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
 
       {/* 복리후생 */}
       {jobPosting.benefits && Object.keys(jobPosting.benefits).length > 0 && (
-        <div className="border-b pb-4">
-          <h4 className="font-semibold mb-3">🎁 복리후생</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🎁 복리후생</h4>
+          <div className="grid grid-cols-2 gap-2 text-sm text-gray-900 dark:text-gray-100">
             {Object.entries(jobPosting.benefits).map(([key, value]) => (
               <div key={key} className="flex">
                 <span className="font-medium min-w-[80px]">
@@ -158,8 +158,8 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
       )}
 
       {/* 시간대 및 역할 정보 */}
-      <div className="border-b pb-4">
-        <h4 className="font-semibold mb-3">⏰ 모집 시간대 및 역할</h4>
+      <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">⏰ 모집 시간대 및 역할</h4>
         
         {/* 일자별 인원 요구사항 표시 */}
         {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
@@ -176,18 +176,18 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
               
               return (
                 <div key={dateIndex} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                  <div className="text-sm font-medium text-blue-600 mb-2">
+                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
                     📅 {dateDisplay} 일정
                   </div>
                 {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                   <div key={`${dateIndex}-${tsIndex}`} className="mt-2 pl-4">
                     <div className="flex items-start">
-                      <div className="font-semibold text-gray-700 text-sm min-w-[80px]">
+                      <div className="font-semibold text-gray-700 dark:text-gray-200 text-sm min-w-[80px]">
                         {ts.isTimeToBeAnnounced ? (
-                          <span className="text-orange-600">
+                          <span className="text-orange-600 dark:text-orange-400">
                             미정
                             {ts.tentativeDescription && (
-                              <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
+                              <span className="text-gray-600 dark:text-gray-400 font-normal ml-1">({ts.tentativeDescription})</span>
                             )}
                           </span>
                         ) : (
@@ -205,8 +205,8 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
                           );
                           const isFull = confirmedCount >= r.count;
                           return (
-                            <div key={roleIndex} className={`text-sm ${isFull ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                              {t(`roles.${r.name}`, r.name)}: {r.count}명 
+                            <div key={roleIndex} className={`text-sm ${isFull ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
+                              {t(`roles.${r.name}`, r.name)}: {r.count}명
                               {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
                             </div>
                           );
@@ -221,7 +221,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
           </div>
         ) : (
           /* 날짜별 요구사항이 없는 경우 */
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             모집 시간대 정보가 없습니다.
           </div>
         )}
@@ -231,16 +231,16 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
       {/* 사전질문 */}
       {jobPosting.preQuestions && jobPosting.preQuestions.length > 0 && (
         <div>
-          <h4 className="font-semibold mb-3">📋 사전질문</h4>
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">📋 사전질문</h4>
           <div className="space-y-3">
             {jobPosting.preQuestions.map((question: any, index: number) => (
               <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {index + 1}. {typeof question === 'object' ? question.question : question}
-                  {typeof question === 'object' && question.required && <span className="text-red-500 ml-1">*</span>}
+                  {typeof question === 'object' && question.required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
                 </p>
                 {typeof question === 'object' && question.type === 'select' && question.options && (
-                  <ul className="mt-2 ml-4 text-sm text-gray-600">
+                  <ul className="mt-2 ml-4 text-sm text-gray-600 dark:text-gray-400">
                     {question.options.map((option: string, optIndex: number) => (
                       <li key={optIndex}>• {option}</li>
                     ))}

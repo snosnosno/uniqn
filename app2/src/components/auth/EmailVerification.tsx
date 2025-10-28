@@ -138,7 +138,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {t('emailVerification.autoCheck', '인증 완료 시 자동으로 이동합니다.')}
           </p>
         </div>

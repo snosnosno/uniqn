@@ -327,7 +327,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {t('consent.termsOfService')}
-                  <span className="ml-1 text-red-500">*</span>
+                  <span className="ml-1 text-red-500 dark:text-red-400">*</span>
                 </span>
                 <button
                   type="button"
@@ -362,12 +362,12 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {t('consent.privacyPolicy')}
-                  <span className="ml-1 text-red-500">*</span>
+                  <span className="ml-1 text-red-500 dark:text-red-400">*</span>
                 </span>
                 <button
                   type="button"
                   onClick={openPrivacyModal}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                   aria-label={t('consent.viewDetails')}
                 >
                   {t('consent.viewDetails')}

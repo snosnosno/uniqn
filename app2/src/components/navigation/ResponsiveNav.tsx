@@ -56,7 +56,7 @@ const ResponsiveNav: React.FC = () => {
               {(isMobile || isTablet) && (
                 <button
                   onClick={() => setIsMobileMenuOpen(true)}
-                  className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 mr-3"
+                  className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 mr-3"
                   aria-label="메뉴 열기"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +66,7 @@ const ResponsiveNav: React.FC = () => {
               )}
               
               <Link to="/" className="flex items-center space-x-2">
-                <span className="text-xl font-bold text-primary-600">UNIQN</span>
+                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">UNIQN</span>
               </Link>
             </div>
 
@@ -83,9 +83,9 @@ const ResponsiveNav: React.FC = () => {
                       to={item.path}
                       className={`
                         px-3 py-2 rounded-md text-base font-medium transition-colors
-                        ${isActive 
-                          ? 'bg-primary-100 text-primary-700' 
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ${isActive
+                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                         }
                       `}
                     >
@@ -102,9 +102,9 @@ const ResponsiveNav: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <Link
                     to="/app/profile"
-                    className="flex items-center space-x-2 text-base text-gray-700 hover:text-gray-900"
+                    className="flex items-center space-x-2 text-base text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-gray-100"
                   >
-                    <div className="w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
+                    <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-medium">
                       {getUserInitial(currentUser.displayName, currentUser.email)}
                     </div>
                     {isDesktop && (

@@ -180,7 +180,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
         <div className="flex justify-end">
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
           >
             {showPreview ? '✏️ 편집 모드' : '👁️ 미리보기'}
           </button>
@@ -212,7 +212,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
             {/* 제목 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                제목 <span className="text-red-500">*</span>
+                제목 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -230,7 +230,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
             {/* 내용 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                내용 <span className="text-red-500">*</span>
+                내용 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <textarea
                 value={content}
@@ -248,7 +248,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
             {/* 우선순위 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                우선순위 <span className="text-red-500">*</span>
+                우선순위 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {priorityOptions.map((option) => (
@@ -274,7 +274,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
               {/* 시작일 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  공개 시작일 <span className="text-red-500">*</span>
+                  공개 시작일 <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -291,7 +291,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
                     type="checkbox"
                     checked={hasEndDate}
                     onChange={(e) => setHasEndDate(e.target.checked)}
-                    className="mr-2"
+                    className="mr-2 rounded border-gray-300 dark:border-gray-600"
                   />
                   공개 종료일 설정
                 </label>

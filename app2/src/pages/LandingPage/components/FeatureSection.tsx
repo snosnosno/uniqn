@@ -159,7 +159,7 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
               <article
                 key={feature.id}
                 data-testid={`feature-card-${feature.id}`}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl feature-card transition-all duration-300 p-8 cursor-pointer group"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl feature-card transition-all duration-300 p-8 cursor-pointer group"
                 onClick={() => handleFeatureClick(feature.id)}
                 onKeyDown={(e) => handleKeyDown(e, feature.id)}
                 tabIndex={0}
@@ -172,15 +172,15 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
                   data-testid={`feature-icon-${feature.id}`}
                   className="mb-6"
                 >
-                  <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-300">
-                    <IconComponent className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors duration-300">
+                    <IconComponent className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
 
                 {/* 제목 */}
                 <h3
                   id={`feature-title-${feature.id}`}
-                  className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-300"
+                  className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
                 >
                   {feature.title}
                 </h3>
@@ -188,7 +188,7 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
                 {/* 설명 */}
                 <p
                   id={`feature-description-${feature.id}`}
-                  className="text-gray-600 mb-6 leading-relaxed"
+                  className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed"
                 >
                   {feature.description}
                 </p>
@@ -199,10 +199,10 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
                     {feature.benefits.map((benefit, index) => (
                       <li
                         key={index}
-                        className="flex items-start text-sm text-gray-600"
+                        className="flex items-start text-sm text-gray-600 dark:text-gray-300"
                       >
                         <svg
-                          className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0"
+                          className="w-4 h-4 text-green-500 dark:text-green-400 mr-2 mt-0.5 flex-shrink-0"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -222,7 +222,7 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
                 )}
 
                 {/* 호버 효과 화살표 */}
-                <div className="mt-6 flex items-center text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="mt-6 flex items-center text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <span className="text-sm font-medium mr-2">자세히 보기</span>
                   <svg
                     className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300"

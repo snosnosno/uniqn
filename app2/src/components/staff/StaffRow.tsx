@@ -240,13 +240,13 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
   }, [multiSelectMode, onSelect, staff.id]);
 
   return (
-    <tr 
+    <tr
       className={`transition-all cursor-pointer ${
-        multiSelectMode 
-          ? isSelected 
-            ? 'bg-blue-50 border-2 border-blue-500 hover:bg-blue-100'
-            : 'border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-          : 'hover:bg-gray-50'
+        multiSelectMode
+          ? isSelected
+            ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+            : 'border border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'
+          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
       }`}
       onClick={handleRowClick}
     >
@@ -305,7 +305,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
             {memoizedStaffData.displayName}
           </button>
           {showDate && staff.assignedDate && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               📅 {formattedDate}
             </div>
           )}
@@ -314,28 +314,28 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       
       {/* 역할 열 */}
       <td className="px-4 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {memoizedStaffData.roleDisplay}
         </div>
       </td>
       
       {/* 연락처 열 (전화번호 + 이메일 통합) */}
       <td className="px-4 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900 space-y-1">
+        <div className="text-sm text-gray-900 dark:text-gray-100 space-y-1">
           {staff.phone && (
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-              <a 
-                href={`tel:${staff.phone}`} 
+              <a
+                href={`tel:${staff.phone}`}
                 onClick={(e) => {
                   if (multiSelectMode) {
                     e.preventDefault();
                     e.stopPropagation();
                   }
                 }}
-                className="text-blue-600 hover:text-blue-800 transition-colors"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
               >
                 {staff.phone}
               </a>
@@ -343,26 +343,26 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           )}
           {staff.email && (
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
-              <a 
-                href={`mailto:${staff.email}`} 
+              <a
+                href={`mailto:${staff.email}`}
                 onClick={(e) => {
                   if (multiSelectMode) {
                     e.preventDefault();
                     e.stopPropagation();
                   }
                 }}
-                className="text-blue-600 hover:text-blue-800 transition-colors"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
               >
                 {staff.email.length > 20 ? `${staff.email.substring(0, 20)}...` : staff.email}
               </a>
             </div>
           )}
           {!memoizedStaffData.hasContact && (
-            <span className="text-gray-400 text-xs">연락처 없음</span>
+            <span className="text-gray-400 dark:text-gray-500 text-xs">연락처 없음</span>
           )}
         </div>
       </td>
@@ -407,7 +407,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
                 onReport(staff.id, staff.name || '알 수 없는 사용자');
               }
             }}
-            className="px-2 py-1 text-xs font-medium rounded transition-colors text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+            className="px-2 py-1 text-xs font-medium rounded transition-colors text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/30"
             title="스태프 신고하기"
           >
             신고
@@ -417,8 +417,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
             disabled={!canEdit}
             className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
               canEdit
-                ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                : 'text-gray-400 cursor-not-allowed'
+                ? 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30'
+                : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
             title={canEdit ? "스태프 삭제" : "수정 권한이 없습니다"}
           >

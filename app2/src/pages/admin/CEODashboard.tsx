@@ -70,7 +70,7 @@ const CEODashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 text-center text-red-600 bg-red-50 rounded-md">
+      <div className="p-6 text-center text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md">
         {t('common.error')}: {error}
       </div>
     );
@@ -78,7 +78,7 @@ const CEODashboard: React.FC = () => {
 
   if (!data) {
     return (
-      <div className="p-6 text-center">
+      <div className="p-6 text-center text-gray-900 dark:text-gray-100">
         {t('dashboard.noData')}
       </div>
     );
@@ -93,11 +93,11 @@ const CEODashboard: React.FC = () => {
         </div>
         <div className="text-right">
           <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-            <ClockIcon className="h-4 w-4" />
+            <ClockIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             <span>{t('dashboard.ceo.lastUpdated', '마지막 업데이트')}: {lastUpdated.toLocaleTimeString()}</span>
           </div>
           <div className="mt-1 flex items-center space-x-1">
-            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="h-2 w-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
             <span className="text-xs text-green-600 dark:text-green-400">{t('dashboard.ceo.realtime', '실시간')}</span>
           </div>
         </div>
@@ -105,10 +105,10 @@ const CEODashboard: React.FC = () => {
 
       {/* 주요 지표 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.activeEvents', '진행중 토너먼트')}
-          icon={<CalendarDaysIcon className="h-6 w-6 text-blue-500" />}
-          className="border-l-4 border-blue-500"
+          icon={<CalendarDaysIcon className="h-6 w-6 text-blue-500 dark:text-blue-400" />}
+          className="border-l-4 border-blue-500 dark:border-blue-400"
         >
           <div className="flex items-end justify-between">
             <div>
@@ -120,7 +120,7 @@ const CEODashboard: React.FC = () => {
               </p>
             </div>
             {data.eventsTrend !== 0 && (
-              <div className={`flex items-center ${data.eventsTrend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+              <div className={`flex items-center ${data.eventsTrend > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                 {data.eventsTrend > 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
                 <span className="text-sm font-medium">{Math.abs(data.eventsTrend)}%</span>
               </div>
@@ -128,10 +128,10 @@ const CEODashboard: React.FC = () => {
           </div>
         </DashboardCard>
 
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.attendance', '오늘 출석률')}
-          icon={<CheckCircleIcon className="h-6 w-6 text-green-500" />}
-          className="border-l-4 border-green-500"
+          icon={<CheckCircleIcon className="h-6 w-6 text-green-500 dark:text-green-400" />}
+          className="border-l-4 border-green-500 dark:border-green-400"
         >
           <div className="flex items-end justify-between">
             <div>
@@ -150,8 +150,8 @@ const CEODashboard: React.FC = () => {
 
         <DashboardCard
           title={t('dashboard.ceo.monthlyPayroll', '이번달 급여')}
-          icon={<CurrencyDollarIcon className="h-6 w-6 text-yellow-500" />}
-          className="border-l-4 border-yellow-500"
+          icon={<CurrencyDollarIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />}
+          className="border-l-4 border-yellow-500 dark:border-yellow-400"
         >
           <div className="flex items-end justify-between">
             <div>
@@ -170,10 +170,10 @@ const CEODashboard: React.FC = () => {
           </div>
         </DashboardCard>
 
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.staffCount', '전체 스태프')}
-          icon={<UserGroupIcon className="h-6 w-6 text-purple-500" />}
-          className="border-l-4 border-purple-500"
+          icon={<UserGroupIcon className="h-6 w-6 text-purple-500 dark:text-purple-400" />}
+          className="border-l-4 border-purple-500 dark:border-purple-400"
         >
           <div className="flex items-end justify-between">
             <div>
@@ -183,7 +183,7 @@ const CEODashboard: React.FC = () => {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-green-500">+{data.newStaffThisMonth} {t('dashboard.ceo.thisMonth', '이번달')}</p>
+              <p className="text-xs text-green-500 dark:text-green-400">+{data.newStaffThisMonth} {t('dashboard.ceo.thisMonth', '이번달')}</p>
             </div>
           </div>
         </DashboardCard>
@@ -191,9 +191,9 @@ const CEODashboard: React.FC = () => {
 
       {/* 중간 섹션 - 채용 및 승인 대기 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.activeJobPostings', '활성 구인공고')}
-          icon={<BriefcaseIcon className="h-6 w-6 text-indigo-500" />}
+          icon={<BriefcaseIcon className="h-6 w-6 text-indigo-500 dark:text-indigo-400" />}
           className="lg:col-span-2"
         >
           <div className="space-y-3">
@@ -219,22 +219,22 @@ const CEODashboard: React.FC = () => {
           </div>
         </DashboardCard>
 
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.pendingApprovals', '승인 대기')}
-          icon={<ExclamationCircleIcon className="h-6 w-6 text-orange-500" />}
-          className="border-l-4 border-orange-500"
+          icon={<ExclamationCircleIcon className="h-6 w-6 text-orange-500 dark:text-orange-400" />}
+          className="border-l-4 border-orange-500 dark:border-orange-400"
         >
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.newRegistrations', '신규 가입')}</span>
-              <span className="text-2xl font-bold text-orange-600">{data.pendingRegistrations}</span>
+              <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{data.pendingRegistrations}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.roleChanges', '권한 변경')}</span>
-              <span className="text-2xl font-bold text-orange-600">{data.pendingRoleChanges}</span>
+              <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{data.pendingRoleChanges}</span>
             </div>
-            <div className="pt-2 border-t">
-              <Link to="/app/admin/approval" className="text-blue-500 hover:underline text-sm">
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+              <Link to="/app/admin/approval" className="text-blue-500 dark:text-blue-400 hover:underline text-sm">
                 {t('dashboard.ceo.viewAll', '전체 보기')} →
               </Link>
             </div>
@@ -244,9 +244,9 @@ const CEODashboard: React.FC = () => {
 
       {/* 하단 섹션 - 최우수 딜러 & 테이블 현황 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.topDealers', '최우수 딜러')}
-          icon={<TrophyIcon className="h-6 w-6 text-yellow-500" />}
+          icon={<TrophyIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />}
         >
           <div className="space-y-3">
             {data.topDealers.map((dealer, index) => (
@@ -259,8 +259,8 @@ const CEODashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="font-bold text-yellow-500">{dealer.rating.toFixed(1)}</span>
-                  <StarIcon className="h-5 w-5 text-yellow-400" />
+                  <span className="font-bold text-yellow-500 dark:text-yellow-400">{dealer.rating.toFixed(1)}</span>
+                  <StarIcon className="h-5 w-5 text-yellow-400 dark:text-yellow-300" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">({dealer.ratingCount})</span>
                 </div>
               </div>
@@ -268,23 +268,23 @@ const CEODashboard: React.FC = () => {
           </div>
         </DashboardCard>
 
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.tableStatus', '테이블 운영 현황')}
-          icon={<ChartBarIcon className="h-6 w-6 text-teal-500" />}
+          icon={<ChartBarIcon className="h-6 w-6 text-teal-500 dark:text-teal-400" />}
         >
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.activeTables', '운영중 테이블')}</span>
-              <span className="text-2xl font-bold text-teal-600">{data.activeTables}/{data.totalTables}</span>
+              <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">{data.activeTables}/{data.totalTables}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.utilizationRate', '가동률')}</span>
-              <span className="text-2xl font-bold text-teal-600">{data.tableUtilization}%</span>
+              <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">{data.tableUtilization}%</span>
             </div>
             <div className="pt-2">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-teal-500 h-2 rounded-full transition-all duration-300"
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-teal-500 dark:bg-teal-400 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${data.tableUtilization}%` }}
                 />
               </div>
@@ -295,43 +295,43 @@ const CEODashboard: React.FC = () => {
 
       {/* 차트 섹션 */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.staffDistribution', '스태프 역할 분포')}
-          icon={<ChartBarIcon className="h-6 w-6 text-indigo-500" />}
+          icon={<ChartBarIcon className="h-6 w-6 text-indigo-500 dark:text-indigo-400" />}
         >
           <div className="h-64">
             <SimpleBarChart data={staffChartData} height={240} showValues={true} unit="명" />
           </div>
         </DashboardCard>
 
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.monthlyTrend', '월별 추이')}
-          icon={<ArrowTrendingUpIcon className="h-6 w-6 text-emerald-500" />}
+          icon={<ArrowTrendingUpIcon className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />}
         >
           <div className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.revenueGrowth', '수익 성장률')}</span>
-              <div className="flex items-center text-green-500">
+              <div className="flex items-center text-green-500 dark:text-green-400">
                 <ArrowUpIcon className="h-4 w-4 mr-1" />
                 <span className="font-bold">12.5%</span>
               </div>
             </div>
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.participantGrowth', '참가자 증가율')}</span>
-              <div className="flex items-center text-green-500">
+              <div className="flex items-center text-green-500 dark:text-green-400">
                 <ArrowUpIcon className="h-4 w-4 mr-1" />
                 <span className="font-bold">8.3%</span>
               </div>
             </div>
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.staffEfficiency', '스태프 효율성')}</span>
-              <div className="flex items-center text-blue-500">
+              <div className="flex items-center text-blue-500 dark:text-blue-400">
                 <span className="font-bold">94.2%</span>
               </div>
             </div>
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.customerSatisfaction', '고객 만족도')}</span>
-              <div className="flex items-center text-yellow-500">
+              <div className="flex items-center text-yellow-500 dark:text-yellow-400">
                 <StarIcon className="h-4 w-4 mr-1" />
                 <span className="font-bold">4.8/5.0</span>
               </div>
@@ -344,19 +344,19 @@ const CEODashboard: React.FC = () => {
       <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
         <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('dashboard.ceo.quickActions', '빠른 실행')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/app/admin/events" className="text-center p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
+          <Link to="/app/admin/events" className="text-center p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors">
             <CalendarDaysIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
             <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.manageEvents', '토너먼트 관리')}</span>
           </Link>
-          <Link to="/app/admin/payroll" className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors">
+          <Link to="/app/admin/payroll" className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg hover:bg-green-100 dark:hover:bg-green-800/40 transition-colors">
             <CurrencyDollarIcon className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
             <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.processPayroll', '급여 처리')}</span>
           </Link>
-          <Link to="/app/admin/job-postings" className="text-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
+          <Link to="/app/admin/job-postings" className="text-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-800/40 transition-colors">
             <BriefcaseIcon className="h-8 w-8 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
             <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.manageJobs', '구인공고 관리')}</span>
           </Link>
-          <Link to="/app/admin/users" className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors">
+          <Link to="/app/admin/users" className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-800/40 transition-colors">
             <UserGroupIcon className="h-8 w-8 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
             <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.manageUsers', '사용자 관리')}</span>
           </Link>

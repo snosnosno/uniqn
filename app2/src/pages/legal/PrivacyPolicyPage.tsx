@@ -98,7 +98,7 @@ const PrivacyPolicyPage: React.FC = () => {
             {currentLanguage === 'ko' ? (
               <>
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">1. 개인정보의 수집 및 이용 목적</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">1. 개인정보의 수집 및 이용 목적</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     UNIQN(이하 "회사")은 다음의 목적을 위하여 개인정보를 수집 및 이용합니다. 수집된 개인정보는 다음의 목적 이외의 용도로는 사용되지 않으며, 이용 목적이 변경될 시에는 사전 동의를 구할 것입니다.
                   </p>
@@ -137,7 +137,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">2. 수집하는 개인정보 항목</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">2. 수집하는 개인정보 항목</h2>
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">가. 필수 항목</h3>
@@ -173,7 +173,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">3. 개인정보의 보유 및 이용 기간</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">3. 개인정보의 보유 및 이용 기간</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     회사는 법령에 따른 개인정보 보유·이용기간 또는 정보주체로부터 개인정보를 수집 시에 동의받은 개인정보 보유·이용기간 내에서 개인정보를 처리·보유합니다.
                   </p>
@@ -213,7 +213,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">4. 개인정보의 제3자 제공</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">4. 개인정보의 제3자 제공</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     회사는 원칙적으로 이용자의 개인정보를 제1조(개인정보의 수집 및 이용 목적)에서 명시한 범위 내에서만 처리하며, 이용자의 사전 동의 없이는 본래의 범위를 초과하여 처리하거나 제3자에게 제공하지 않습니다. 다만, 다음의 경우는 예외로 합니다:
                   </p>
@@ -224,7 +224,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">5. 개인정보 처리의 위탁</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">5. 개인정보 처리의 위탁</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     회사는 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 외부 전문업체에 위탁하여 운영하고 있습니다.
                   </p>
@@ -255,7 +255,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">6. 개인정보의 파기 절차 및 방법</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">6. 개인정보의 파기 절차 및 방법</h2>
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">가. 파기 절차</h3>
@@ -274,7 +274,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">7. 정보주체의 권리·의무 및 행사 방법</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">7. 정보주체의 권리·의무 및 행사 방법</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     이용자는 개인정보주체로서 다음과 같은 권리를 행사할 수 있습니다:
                   </p>
@@ -290,7 +290,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">8. 개인정보 보호책임자</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">8. 개인정보 보호책임자</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의 불만 처리 및 피해 구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.
                   </p>
@@ -304,7 +304,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">9. 개인정보의 안전성 확보 조치</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">9. 개인정보의 안전성 확보 조치</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다:
                   </p>
@@ -316,7 +316,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">10. 개인정보 자동 수집 장치의 설치·운영 및 거부에 관한 사항</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">10. 개인정보 자동 수집 장치의 설치·운영 및 거부에 관한 사항</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     회사는 이용자에게 개별적인 맞춤 서비스를 제공하기 위해 이용정보를 저장하고 수시로 불러오는 '쿠키(cookie)'를 사용합니다.
                   </p>
@@ -339,7 +339,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">11. 개인정보처리방침의 변경</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">11. 개인정보처리방침의 변경</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     이 개인정보처리방침은 2025년 1월 1일부터 적용되며, 법령 및 방침에 따른 변경내용의 추가, 삭제 및 정정이 있는 경우에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다.
                   </p>
@@ -348,7 +348,7 @@ const PrivacyPolicyPage: React.FC = () => {
             ) : (
               <>
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">1. Purpose of Collection and Use of Personal Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">1. Purpose of Collection and Use of Personal Information</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     UNIQN (hereinafter referred to as "Company") collects and uses personal information for the following purposes. The collected personal information will not be used for purposes other than the following, and prior consent will be obtained if the purpose of use changes.
                   </p>
@@ -387,7 +387,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">2. Personal Information Items Collected</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">2. Personal Information Items Collected</h2>
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Required Items</h3>
@@ -423,39 +423,39 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">3. Retention and Use Period of Personal Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">3. Retention and Use Period of Personal Information</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company processes and retains personal information within the retention and use period prescribed by law or the retention and use period consented to by the data subject when collecting personal information.
                   </p>
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Member Information</h3>
-                      <p className="text-gray-700 ml-4">
+                      <p className="text-gray-700 dark:text-gray-300 ml-4">
                         Until membership withdrawal (however, if an investigation is in progress due to violation of relevant laws, until the completion of the investigation)
                       </p>
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Retention in Accordance with Relevant Laws</h3>
-                      <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700">
+                      <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700 dark:text-gray-300">
                         <li>
                           Records on contracts or withdrawal of offers: 5 years
                           <br />
-                          <span className="text-sm text-gray-600">(Act on Consumer Protection in Electronic Commerce, etc.)</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">(Act on Consumer Protection in Electronic Commerce, etc.)</span>
                         </li>
                         <li>
                           Records on payment and supply of goods: 5 years
                           <br />
-                          <span className="text-sm text-gray-600">(Act on Consumer Protection in Electronic Commerce, etc.)</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">(Act on Consumer Protection in Electronic Commerce, etc.)</span>
                         </li>
                         <li>
                           Records on consumer complaints or dispute resolution: 3 years
                           <br />
-                          <span className="text-sm text-gray-600">(Act on Consumer Protection in Electronic Commerce, etc.)</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">(Act on Consumer Protection in Electronic Commerce, etc.)</span>
                         </li>
                         <li>
                           Login records: 3 months
                           <br />
-                          <span className="text-sm text-gray-600">(Protection of Communications Secrets Act)</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">(Protection of Communications Secrets Act)</span>
                         </li>
                       </ul>
                     </div>
@@ -463,26 +463,26 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">4. Provision of Personal Information to Third Parties</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">4. Provision of Personal Information to Third Parties</h2>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     In principle, the Company processes users' personal information only within the scope specified in Article 1 (Purpose of Collection and Use of Personal Information) and does not process beyond the original scope or provide it to third parties without the user's prior consent. However, the following cases are exceptions:
                   </p>
-                  <ul className="list-disc list-inside ml-4 mt-4 space-y-2 text-gray-700">
+                  <ul className="list-disc list-inside ml-4 mt-4 space-y-2 text-gray-700 dark:text-gray-300">
                     <li>When the user has consented in advance</li>
                     <li>When there is a request from an investigative agency according to procedures and methods prescribed by law for investigative purposes</li>
                   </ul>
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">5. Outsourcing of Personal Information Processing</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">5. Outsourcing of Personal Information Processing</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company outsources personal information processing tasks to external specialized companies as follows to provide services.
                   </p>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Contractor
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -490,12 +490,12 @@ const PrivacyPolicyPage: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             Google Firebase
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">
                             Member authentication, database management, notification delivery
                           </td>
                         </tr>
@@ -505,11 +505,11 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">6. Procedure and Method for Destruction of Personal Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">6. Procedure and Method for Destruction of Personal Information</h2>
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">A. Destruction Procedure</h3>
-                      <p className="text-gray-700 ml-4">
+                      <p className="text-gray-700 dark:text-gray-300 ml-4">
                         Information entered by users for membership registration is moved to a separate DB (or separate file cabinet for paper) after the purpose is achieved and stored for a certain period according to internal policies and other relevant laws (refer to retention and use period) before being destroyed.
                       </p>
                     </div>
@@ -524,28 +524,28 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">7. Rights and Obligations of Data Subjects and Exercise Methods</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">7. Rights and Obligations of Data Subjects and Exercise Methods</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     Users may exercise the following rights as data subjects:
                   </p>
-                  <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700">
+                  <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700 dark:text-gray-300">
                     <li>Request to view personal information</li>
                     <li>Request to correct or delete personal information</li>
                     <li>Request to suspend personal information processing</li>
                     <li>Withdraw consent for collection, use, and provision of personal information</li>
                   </ul>
-                  <p className="text-gray-700 leading-relaxed mt-4">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
                     Rights can be exercised directly through the settings menu in the service, and if you contact the Personal Information Protection Officer in writing, by phone, or by email, we will take action without delay.
                   </p>
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">8. Personal Information Protection Officer</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">8. Personal Information Protection Officer</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company designates a Personal Information Protection Officer as follows to be in charge of overall personal information processing tasks and to handle complaints and remedy damages related to personal information processing.
                   </p>
-                  <div className="bg-gray-50 border rounded-lg p-6">
-                    <div className="space-y-2 text-gray-700">
+                  <div className="bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-lg p-6">
+                    <div className="space-y-2 text-gray-700 dark:text-gray-300">
                       <p><strong>Personal Information Protection Officer</strong></p>
                       <p>Email: privacy@tholdem.com</p>
                       <p>Phone: 02-1234-5678</p>
@@ -554,11 +554,11 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">9. Measures to Ensure Safety of Personal Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">9. Measures to Ensure Safety of Personal Information</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company takes the following measures to ensure the safety of personal information:
                   </p>
-                  <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700">
+                  <ul className="list-disc list-inside ml-4 space-y-2 text-gray-700 dark:text-gray-300">
                     <li>Administrative measures: Establishment and implementation of internal management plan, regular employee training</li>
                     <li>Technical measures: Access authority management for personal information processing systems, installation of access control systems, encryption</li>
                     <li>Physical measures: Access control to computer rooms, data storage rooms, etc.</li>
@@ -566,7 +566,7 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">10. Installation, Operation, and Refusal of Automatic Personal Information Collection Devices</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">10. Installation, Operation, and Refusal of Automatic Personal Information Collection Devices</h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                     The Company uses 'cookies' that store usage information and retrieve it from time to time to provide users with individually customized services.
                   </p>
@@ -581,7 +581,7 @@ const PrivacyPolicyPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">B. Method to Refuse Cookie Settings</h3>
-                      <p className="text-gray-700 ml-4">
+                      <p className="text-gray-700 dark:text-gray-300 ml-4">
                         Users can refuse to store cookies through option settings in Tools &gt; Internet Options &gt; Privacy menu at the top of the web browser. However, refusing to set cookies may cause difficulties in using the service.
                       </p>
                     </div>
@@ -589,8 +589,8 @@ const PrivacyPolicyPage: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">11. Changes to Privacy Policy</h2>
-                  <p className="text-gray-700 leading-relaxed">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">11. Changes to Privacy Policy</h2>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                     This Privacy Policy is effective from January 1, 2025, and if there are additions, deletions, or corrections to changes in accordance with laws and policies, they will be notified through the notice section at least 7 days prior to the implementation of changes.
                   </p>
                 </section>

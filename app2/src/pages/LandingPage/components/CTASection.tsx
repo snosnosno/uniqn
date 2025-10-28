@@ -29,9 +29,9 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
 
   const getButtonStyles = (variant: 'primary' | 'secondary') => {
     if (variant === 'primary') {
-      return 'bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700 focus:ring-blue-300 shadow-lg hover:shadow-xl';
+      return 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:bg-blue-700 dark:focus:bg-blue-600 focus:ring-blue-300 dark:focus:ring-blue-400 shadow-lg hover:shadow-xl';
     }
-    return 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50 focus:bg-blue-50 focus:ring-blue-300 bg-white';
+    return 'border-2 border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:ring-blue-300 dark:focus:ring-blue-400 bg-white dark:bg-gray-800';
   };
 
   return (
@@ -54,7 +54,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
 
         {/* 설명 */}
         {content.description && (
-          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl text-blue-100 dark:text-blue-200 mb-12 max-w-3xl mx-auto leading-relaxed">
             {content.description}
           </p>
         )}
@@ -128,10 +128,10 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
         </div>
 
         {/* 보안 및 신뢰성 인디케이터 */}
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-gray-100 text-sm font-medium">
+        <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-gray-100 dark:text-gray-200 text-sm font-medium">
           <div className="flex items-center">
             <svg
-              className="w-5 h-5 mr-2 text-green-400"
+              className="w-5 h-5 mr-2 text-green-400 dark:text-green-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -149,7 +149,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
 
           <div className="flex items-center">
             <svg
-              className="w-5 h-5 mr-2 text-green-400"
+              className="w-5 h-5 mr-2 text-green-400 dark:text-green-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -167,7 +167,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
 
           <div className="flex items-center">
             <svg
-              className="w-5 h-5 mr-2 text-green-400"
+              className="w-5 h-5 mr-2 text-green-400 dark:text-green-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -190,7 +190,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
             <div className="text-3xl md:text-4xl font-bold text-white mb-2">
               1,000+
             </div>
-            <div className="text-gray-100">
+            <div className="text-gray-100 dark:text-gray-200">
               활성 사용자
             </div>
           </div>
@@ -199,7 +199,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
             <div className="text-3xl md:text-4xl font-bold text-white mb-2">
               500+
             </div>
-            <div className="text-gray-100">
+            <div className="text-gray-100 dark:text-gray-200">
               토너먼트 운영
             </div>
           </div>
@@ -208,7 +208,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
             <div className="text-3xl md:text-4xl font-bold text-white mb-2">
               99.9%
             </div>
-            <div className="text-gray-100">
+            <div className="text-gray-100 dark:text-gray-200">
               서비스 가동률
             </div>
           </div>
@@ -218,7 +218,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
         <div className="mt-12 bg-white dark:bg-gray-800 bg-opacity-10 dark:bg-opacity-20 backdrop-blur-sm rounded-2xl p-6 border border-white dark:border-gray-600 border-opacity-20 dark:border-opacity-30">
           <div className="flex items-center justify-center mb-4">
             <svg
-              className="w-6 h-6 text-yellow-400 mr-2"
+              className="w-6 h-6 text-yellow-400 dark:text-yellow-300 mr-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -231,13 +231,13 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="text-yellow-400 font-semibold">
+            <span className="text-yellow-400 dark:text-yellow-300 font-semibold">
               한정 시간 특별 혜택
             </span>
           </div>
-          <p className="text-white text-center">
-            지금 가입하시면 <span className="font-bold text-yellow-400">첫 3개월 무료</span> +
-            <span className="font-bold text-yellow-400"> 프리미엄 기능 무료</span> 제공
+          <p className="text-white dark:text-gray-100 text-center">
+            지금 가입하시면 <span className="font-bold text-yellow-400 dark:text-yellow-300">첫 3개월 무료</span> +
+            <span className="font-bold text-yellow-400 dark:text-yellow-300"> 프리미엄 기능 무료</span> 제공
           </p>
         </div>
       </div>
@@ -245,7 +245,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
       {/* 하단 장식 웨이브 */}
       <div className="absolute bottom-0 left-0 w-full">
         <svg
-          className="w-full h-20 fill-current text-white"
+          className="w-full h-20 fill-current text-white dark:text-gray-900"
           viewBox="0 0 1200 120"
           preserveAspectRatio="none"
         >

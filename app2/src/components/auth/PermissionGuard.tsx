@@ -23,7 +23,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-96">
-        <div className="text-lg">권한 확인 중...</div>
+        <div className="text-lg text-gray-900 dark:text-gray-100">권한 확인 중...</div>
       </div>
     );
   }
@@ -46,7 +46,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
     return (
       <div className="container mx-auto p-4">
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6 text-center">
-          <div className="text-red-600 text-6xl mb-4">🚫</div>
+          <div className="text-red-600 dark:text-red-400 text-6xl mb-4">🚫</div>
           <h2 className="text-2xl font-bold text-red-800 dark:text-red-300 mb-2">접근 권한이 없습니다</h2>
           <p className="text-red-600 dark:text-red-400 mb-4">
             이 페이지에 접근할 권한이 없습니다. 관리자에게 문의하세요.
@@ -140,8 +140,8 @@ export const JobPostingAccessGuard: React.FC<JobPostingAccessGuardProps> = ({
     return (
       <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
         <div className="text-yellow-800 dark:text-yellow-300">
-          <p className="font-medium">접근 제한</p>
-          <p className="text-sm">
+          <p className="font-medium text-yellow-900 dark:text-yellow-200">접근 제한</p>
+          <p className="text-sm text-yellow-800 dark:text-yellow-300">
             {requireManagement
               ? '공고 관리 권한이 필요합니다.'
               : '공고 조회 권한이 필요합니다.'

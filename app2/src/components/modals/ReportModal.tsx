@@ -188,7 +188,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <FaExclamationTriangle className="w-6 h-6 text-red-500 mr-3" />
+            <FaExclamationTriangle className="w-6 h-6 text-red-500 dark:text-red-400 mr-3" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               {t('report.title', '신고하기')}
             </h2>
@@ -209,13 +209,13 @@ const ReportModal: React.FC<ReportModalProps> = ({
           </h3>
           <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
             <div>
-              <span className="font-medium">{t('report.targetName', '이름')}:</span> {targetUser.name}
+              <span className="font-medium text-gray-900 dark:text-gray-100">{t('report.targetName', '이름')}:</span> {targetUser.name}
             </div>
             <div>
-              <span className="font-medium">{t('report.eventTitle', '이벤트')}:</span> {event.title}
+              <span className="font-medium text-gray-900 dark:text-gray-100">{t('report.eventTitle', '이벤트')}:</span> {event.title}
             </div>
             <div>
-              <span className="font-medium">{t('report.eventDate', '날짜')}:</span> {event.date}
+              <span className="font-medium text-gray-900 dark:text-gray-100">{t('report.eventDate', '날짜')}:</span> {event.date}
             </div>
           </div>
         </div>
@@ -242,7 +242,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
                     value={typeOption.key}
                     checked={reportType === typeOption.key}
                     onChange={(e) => setReportType(e.target.value as ReportType)}
-                    className="mt-1 w-4 h-4 text-red-600 focus:ring-red-500"
+                    className="mt-1 w-4 h-4 text-red-600 dark:text-red-500 focus:ring-red-500 border-gray-300 dark:border-gray-600"
                   />
                   <div className="ml-3 flex-1">
                     <div className="font-medium text-gray-900 dark:text-gray-100">
@@ -271,7 +271,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('report.description', '상세 설명')}
-              <span className="text-red-500 ml-1">*</span>
+              <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
             <textarea
               ref={textareaRef}
