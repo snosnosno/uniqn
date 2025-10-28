@@ -112,10 +112,10 @@ const CEODashboard: React.FC = () => {
         >
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-3xl font-bold text-gray-800">
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 <AnimatedNumber value={data.activeEvents} />
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {t('dashboard.ceo.totalParticipants', '총 참가자')}: <AnimatedNumber value={data.totalParticipants} suffix="명" />
               </p>
             </div>
@@ -135,35 +135,35 @@ const CEODashboard: React.FC = () => {
         >
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-3xl font-bold text-gray-800">
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 <AnimatedNumber value={data.attendanceRate} suffix="%" />
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 <AnimatedNumber value={data.checkedInStaff} />/<AnimatedNumber value={data.scheduledStaff} />명 출근
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-400">{t('dashboard.ceo.absent', '결근')}: {data.absentStaff}명</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t('dashboard.ceo.absent', '결근')}: {data.absentStaff}명</p>
             </div>
           </div>
         </DashboardCard>
 
-        <DashboardCard 
+        <DashboardCard
           title={t('dashboard.ceo.monthlyPayroll', '이번달 급여')}
           icon={<CurrencyDollarIcon className="h-6 w-6 text-yellow-500" />}
           className="border-l-4 border-yellow-500"
         >
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-3xl font-bold text-gray-800">
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 <AnimatedNumber value={data.monthlyPayroll} prefix="₩" />
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {t('dashboard.ceo.paid', '지급완료')}: <AnimatedNumber value={data.paidAmount} prefix="₩" />
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {t('dashboard.ceo.pending', '대기')}: <AnimatedNumber value={data.pendingAmount} prefix="₩" />
               </p>
             </div>
@@ -177,8 +177,8 @@ const CEODashboard: React.FC = () => {
         >
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-3xl font-bold text-gray-800">{data.totalStaff}</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{data.totalStaff}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {t('dashboard.ceo.activeStaff', '활성')}: {data.activeStaff}명
               </p>
             </div>
@@ -226,11 +226,11 @@ const CEODashboard: React.FC = () => {
         >
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">{t('dashboard.ceo.newRegistrations', '신규 가입')}</span>
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.newRegistrations', '신규 가입')}</span>
               <span className="text-2xl font-bold text-orange-600">{data.pendingRegistrations}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">{t('dashboard.ceo.roleChanges', '권한 변경')}</span>
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.roleChanges', '권한 변경')}</span>
               <span className="text-2xl font-bold text-orange-600">{data.pendingRoleChanges}</span>
             </div>
             <div className="pt-2 border-t">
@@ -250,18 +250,18 @@ const CEODashboard: React.FC = () => {
         >
           <div className="space-y-3">
             {data.topDealers.map((dealer, index) => (
-              <div key={dealer.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div key={dealer.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <span className="text-lg font-bold text-gray-400">#{index + 1}</span>
+                  <span className="text-lg font-bold text-gray-400 dark:text-gray-500">#{index + 1}</span>
                   <div>
-                    <p className="font-semibold text-gray-700">{dealer.name}</p>
-                    <p className="text-sm text-gray-500">{dealer.role}</p>
+                    <p className="font-semibold text-gray-700 dark:text-gray-200">{dealer.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{dealer.role}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="font-bold text-yellow-500">{dealer.rating.toFixed(1)}</span>
                   <StarIcon className="h-5 w-5 text-yellow-400" />
-                  <span className="text-sm text-gray-500">({dealer.ratingCount})</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">({dealer.ratingCount})</span>
                 </div>
               </div>
             ))}
@@ -274,11 +274,11 @@ const CEODashboard: React.FC = () => {
         >
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">{t('dashboard.ceo.activeTables', '운영중 테이블')}</span>
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.activeTables', '운영중 테이블')}</span>
               <span className="text-2xl font-bold text-teal-600">{data.activeTables}/{data.totalTables}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">{t('dashboard.ceo.utilizationRate', '가동률')}</span>
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.utilizationRate', '가동률')}</span>
               <span className="text-2xl font-bold text-teal-600">{data.tableUtilization}%</span>
             </div>
             <div className="pt-2">
@@ -309,28 +309,28 @@ const CEODashboard: React.FC = () => {
           icon={<ArrowTrendingUpIcon className="h-6 w-6 text-emerald-500" />}
         >
           <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('dashboard.ceo.revenueGrowth', '수익 성장률')}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.revenueGrowth', '수익 성장률')}</span>
               <div className="flex items-center text-green-500">
                 <ArrowUpIcon className="h-4 w-4 mr-1" />
                 <span className="font-bold">12.5%</span>
               </div>
             </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('dashboard.ceo.participantGrowth', '참가자 증가율')}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.participantGrowth', '참가자 증가율')}</span>
               <div className="flex items-center text-green-500">
                 <ArrowUpIcon className="h-4 w-4 mr-1" />
                 <span className="font-bold">8.3%</span>
               </div>
             </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('dashboard.ceo.staffEfficiency', '스태프 효율성')}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.staffEfficiency', '스태프 효율성')}</span>
               <div className="flex items-center text-blue-500">
                 <span className="font-bold">94.2%</span>
               </div>
             </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-600">{t('dashboard.ceo.customerSatisfaction', '고객 만족도')}</span>
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300">{t('dashboard.ceo.customerSatisfaction', '고객 만족도')}</span>
               <div className="flex items-center text-yellow-500">
                 <StarIcon className="h-4 w-4 mr-1" />
                 <span className="font-bold">4.8/5.0</span>
@@ -341,24 +341,24 @@ const CEODashboard: React.FC = () => {
       </div>
 
       {/* 빠른 액션 */}
-      <div className="mt-8 bg-white p-6 rounded-xl shadow-md">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">{t('dashboard.ceo.quickActions', '빠른 실행')}</h2>
+      <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('dashboard.ceo.quickActions', '빠른 실행')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/app/admin/events" className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-            <CalendarDaysIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <span className="text-sm text-gray-700">{t('dashboard.ceo.manageEvents', '토너먼트 관리')}</span>
+          <Link to="/app/admin/events" className="text-center p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
+            <CalendarDaysIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+            <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.manageEvents', '토너먼트 관리')}</span>
           </Link>
-          <Link to="/app/admin/payroll" className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <CurrencyDollarIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <span className="text-sm text-gray-700">{t('dashboard.ceo.processPayroll', '급여 처리')}</span>
+          <Link to="/app/admin/payroll" className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors">
+            <CurrencyDollarIcon className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
+            <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.processPayroll', '급여 처리')}</span>
           </Link>
-          <Link to="/app/admin/job-postings" className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-            <BriefcaseIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <span className="text-sm text-gray-700">{t('dashboard.ceo.manageJobs', '구인공고 관리')}</span>
+          <Link to="/app/admin/job-postings" className="text-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors">
+            <BriefcaseIcon className="h-8 w-8 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
+            <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.manageJobs', '구인공고 관리')}</span>
           </Link>
-          <Link to="/app/admin/users" className="text-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
-            <UserGroupIcon className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-            <span className="text-sm text-gray-700">{t('dashboard.ceo.manageUsers', '사용자 관리')}</span>
+          <Link to="/app/admin/users" className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors">
+            <UserGroupIcon className="h-8 w-8 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
+            <span className="text-sm text-gray-700 dark:text-gray-200">{t('dashboard.ceo.manageUsers', '사용자 관리')}</span>
           </Link>
         </div>
       </div>

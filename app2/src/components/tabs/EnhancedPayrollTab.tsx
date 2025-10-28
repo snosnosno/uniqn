@@ -546,14 +546,14 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">👥</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">👥</div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
             정산할 스태프 데이터가 없습니다
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
             근무 기록이 있는 스태프가 없습니다. 스태프 관리 또는 내 스케줄에서 근무 데이터를 확인해주세요.
           </p>
-          <div className="text-sm text-gray-400 bg-gray-50 p-3 rounded-lg">
+          <div className="text-sm text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
             💡 팁: 정산은 workLogs와 staff 데이터를 기반으로 자동 계산됩니다.
             <br />
             jobPosting이 없어도 UnifiedDataContext의 실시간 데이터로 정산이 가능합니다.
@@ -588,7 +588,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     <div className="p-6 space-y-6">
       {/* 헤더 */}
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-900">정산 관리</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">정산 관리</h2>
         <button
           onClick={() => setShowExportConfirmModal(true)}
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
@@ -607,18 +607,18 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
               {summary?.totalStaff || 0}명
             </p>
           </div>
-          <div className="h-10 w-px bg-gray-200"></div>
+          <div className="h-10 w-px bg-gray-200 dark:bg-gray-700"></div>
           <div className="text-center">
-            <h3 className="text-xs font-medium text-gray-500 mb-1">총 지급액</h3>
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">총 지급액</h3>
             <p className="text-xl font-bold text-indigo-600">
               {(summary?.totalAmount || 0).toLocaleString('ko-KR')}원
             </p>
           </div>
           {payrollData.some(data => data.afterTaxAmount !== undefined && data.afterTaxAmount > 0) && (
             <>
-              <div className="h-10 w-px bg-gray-200"></div>
+              <div className="h-10 w-px bg-gray-200 dark:bg-gray-700"></div>
               <div className="text-center">
-                <h3 className="text-xs font-medium text-gray-500 mb-1">세후 급여 합계</h3>
+                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">세후 급여 합계</h3>
                 <p className="text-xl font-bold text-green-600">
                   {payrollData
                     .filter(data => data.afterTaxAmount !== undefined && data.afterTaxAmount > 0)
@@ -661,7 +661,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
           <div className="flex gap-2">
             <button
               onClick={toggleSelectAll}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 transition-colors"
             >
               {selectedStaffIds.length === staffWorkData.length ? '전체 해제' : '전체 선택'}
             </button>
@@ -669,37 +669,37 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   선택
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   이름
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   역할
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   근무일수
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   근무시간
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   급여유형
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   기본급
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   수당
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   총 지급액
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   세후 급여
                 </th>
               </tr>
@@ -718,9 +718,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                   const isSelected = selectedStaffIds.includes(data.staffId);
                   
                   return (
-                    <tr 
-                      key={uniqueKey} 
-                      className={`${isSelected ? 'bg-indigo-50' : ''} hover:bg-gray-50 cursor-pointer transition-colors`}
+                    <tr
+                      key={uniqueKey}
+                      className={`${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''} hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors`}
                       onClick={(e) => {
                         // 체크박스 클릭은 제외
                         const target = e.target as HTMLInputElement;
@@ -737,30 +737,30 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                           className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                         />
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {data.staffName}
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                           {data.role}
                         </span>
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {data.totalDays}일
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {data.totalHours.toFixed(1)}시간
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {getSalaryTypeLabel(data.salaryType)}
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {data.basePay.toLocaleString('ko-KR')}원
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {data.allowanceTotal.toLocaleString('ko-KR')}원
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {data.totalAmount.toLocaleString('ko-KR')}원
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-green-600">
@@ -799,14 +799,14 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
             {/* 내용 */}
             <div className="px-6 py-4">
-              <p className="text-sm text-gray-700 mb-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                 정산 데이터를 CSV 파일로 내보내시겠습니까?
               </p>
 
               {/* CSV 필드 정보 */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">포함될 정보:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">포함될 정보:</h4>
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                   <li>• 이름, 역할, 근무일수, 근무시간</li>
                   <li>• 급여유형, 기본급, 수당</li>
                   <li>• 세금, 총 지급액, 세후 급여</li>
@@ -814,11 +814,11 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
               </div>
 
               {/* 파일 정보 */}
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <p className="text-xs text-blue-800">
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
                   <span className="font-medium">파일명:</span> 정산_{startDate}_{endDate}_{new Date().toISOString().split('T')[0]}.csv
                 </p>
-                <p className="text-xs text-blue-800 mt-1">
+                <p className="text-xs text-blue-800 dark:text-blue-300 mt-1">
                   <span className="font-medium">스태프 수:</span> {payrollData?.length || 0}명
                 </p>
               </div>
