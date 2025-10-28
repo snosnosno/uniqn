@@ -238,15 +238,15 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
       <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 h-[95vh] sm:h-[85vh] flex flex-col">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+        <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100 mb-4">
           {t('jobBoard.applyModal.title', { postTitle: jobPosting.title })}
         </h3>
         
         
         <div className="flex-1 overflow-y-auto">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             시간대 및 역할 선택 (여러 개 선택 가능)
           </label>
           
@@ -300,12 +300,12 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                     <div className="p-4 bg-blue-50">
                       {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                         <div key={tsIndex} className="mb-4">
-                          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
                             ⏰ {ts.isTimeToBeAnnounced ? (
                               <span className="text-orange-600">
                                 미정
                                 {ts.tentativeDescription && (
-                                  <span className="text-gray-600 font-normal ml-2">
+                                  <span className="text-gray-600 dark:text-gray-400 font-normal ml-2">
                                     ({ts.tentativeDescription})
                                   </span>
                                 )}

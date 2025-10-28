@@ -237,7 +237,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               id="useRoleSalary"
               checked={formData.useRoleSalary || false}
               onChange={(e) => handleRoleSalaryToggle(e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
               disabled={isSubmitting}
             />
             <label htmlFor="useRoleSalary" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -406,7 +406,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 id="benefit-guaranteedHours"
                 checked={!!formData.benefits?.guaranteedHours}
                 onChange={(e) => handleBenefitToggle('guaranteedHours', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-guaranteedHours" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -432,7 +432,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 id="benefit-clothing"
                 checked={!!formData.benefits?.clothing}
                 onChange={(e) => handleBenefitToggle('clothing', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-clothing" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -458,7 +458,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 id="benefit-meal"
                 checked={!!formData.benefits?.meal}
                 onChange={(e) => handleBenefitToggle('meal', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-meal" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -484,7 +484,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 id="benefit-transportation"
                 checked={!!formData.benefits?.transportation}
                 onChange={(e) => handleBenefitToggle('transportation', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-transportation" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -513,7 +513,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 id="benefit-mealAllowance"
                 checked={!!formData.benefits?.mealAllowance}
                 onChange={(e) => handleBenefitToggle('mealAllowance', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-mealAllowance" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -542,7 +542,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 id="benefit-accommodation"
                 checked={!!formData.benefits?.accommodation}
                 onChange={(e) => handleBenefitToggle('accommodation', e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
               <label htmlFor="benefit-accommodation" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -584,7 +584,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               id="usesPreQuestions"
               checked={'usesPreQuestions' in formData ? formData.usesPreQuestions : false}
               onChange={(e) => handlePreQuestionsToggle(e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
               disabled={isSubmitting}
             />
             <label htmlFor="usesPreQuestions" className="text-sm text-gray-700 dark:text-gray-300">
@@ -613,7 +613,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           <textarea
             name="description"
             rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder:text-xs"
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder:text-xs"
             value={formData.description}
             onChange={handleFormChange}
             placeholder="추가 설명을 입력하세요&#10;예시 : 경력 1년이상,TDA숙지자 등등"

@@ -142,7 +142,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                 {/* 세율 입력 */}
                 {taxType === 'rate' && (
                   <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700 w-24">세율:</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">세율:</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -164,7 +164,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                 {/* 고정 세금 입력 */}
                 {taxType === 'amount' && (
                   <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700 w-24">고정 세금:</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">고정 세금:</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -182,7 +182,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
             )}
 
             {!enabled && (
-              <div className="text-center py-4 text-gray-500 text-sm">
+              <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
                 세금 적용이 비활성화되어 있습니다.
               </div>
             )}
@@ -192,7 +192,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600"
               >
                 {isSaving ? '저장 중...' : '세금 설정 저장'}
               </button>

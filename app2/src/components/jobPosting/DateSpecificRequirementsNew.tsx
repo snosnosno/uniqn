@@ -519,7 +519,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                         return (
                           <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                             <div className="flex-1">
-                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                 역할명
                               </label>
                               <div className="space-y-2">
@@ -560,7 +560,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                             </div>
                             
                             <div className="w-20">
-                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                 인원
                               </label>
                               <input
