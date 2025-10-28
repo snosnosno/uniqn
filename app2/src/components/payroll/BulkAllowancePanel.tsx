@@ -118,9 +118,9 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
           className="w-full flex items-center justify-between text-left"
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium text-gray-900">💰 추가 수당 설정</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">💰 추가 수당 설정</h3>
             {getTotalAllowances() > 0 && (
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 ({getTotalAllowances().toLocaleString()}원)
               </span>
             )}
@@ -145,14 +145,14 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
         <div className="p-6">
           {/* 적용 대상 선택 */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">적용 대상</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">적용 대상</label>
         <div className="flex gap-2">
           <button
             onClick={() => setApplyTo('all')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               applyTo === 'all'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
             }`}
           >
             전체
@@ -163,7 +163,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               applyTo === 'selected'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
             선택 ({selectedStaffCount}명)
@@ -173,7 +173,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               applyTo === 'byRole'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
             }`}
           >
             역할별
@@ -184,7 +184,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
       {/* 역할 선택 (역할별 적용 시) */}
       {applyTo === 'byRole' && (
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">역할 선택</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">역할 선택</label>
           <div className="flex flex-wrap gap-2">
             {availableRoles.map(role => (
               <button
@@ -193,7 +193,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                   selectedRoles.includes(role)
                     ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
                 }`}
               >
                 {role}
@@ -227,7 +227,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="0"
             />
-            <span className="text-sm text-gray-500">원</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
           </div>
         </div>
 
@@ -251,7 +251,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="0"
             />
-            <span className="text-sm text-gray-500">원</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
           </div>
         </div>
 
@@ -275,7 +275,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="0"
             />
-            <span className="text-sm text-gray-500">원</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
           </div>
         </div>
 
@@ -299,7 +299,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="0"
             />
-            <span className="text-sm text-gray-500">원</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
           </div>
         </div>
 
@@ -324,7 +324,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 className="w-32 px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
                 placeholder="0"
               />
-              <span className="text-sm text-gray-500">원</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
             </div>
           </div>
           {allowances.other.enabled && (
@@ -342,7 +342,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
       {/* 총 수당 및 적용 버튼 */}
       <div className="flex items-center justify-between pt-4 border-t">
         <div className="text-sm">
-          <span className="text-gray-500">총 수당:</span>
+          <span className="text-gray-500 dark:text-gray-400">총 수당:</span>
           <span className="ml-2 text-lg font-semibold text-indigo-600">
             {getTotalAllowances().toLocaleString()}원
           </span>

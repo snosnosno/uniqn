@@ -111,7 +111,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-gray-900">공고 작성</h2>
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">공고 작성</h2>
         <div className="flex space-x-2">
           <Button
             type="button"
@@ -136,7 +136,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         {/* 기본 정보 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               대회명(매장명) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -152,7 +152,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               모집 유형
             </label>
             <Select
@@ -169,7 +169,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 지역 <span className="text-red-500">*</span>
               </label>
               <Select
@@ -183,7 +183,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 시/군/구
               </label>
               <Input
@@ -199,7 +199,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               상세 주소
             </label>
             <Input
@@ -214,7 +214,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               문의 연락처
             </label>
             <Input
@@ -240,14 +240,14 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               disabled={isSubmitting}
             />
-            <label htmlFor="useRoleSalary" className="ml-2 text-sm font-medium text-gray-700">
+            <label htmlFor="useRoleSalary" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               역할별 급여 설정
             </label>
           </div>
 
           {formData.useRoleSalary ? (
             <div className="space-y-3 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-              <div className="text-sm text-gray-600 mb-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 각 역할별로 급여를 설정하세요. 기본값: 시급 20,000원
               </div>
               
@@ -311,7 +311,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   {/* 급여 금액 */}
                   <div className="col-span-3">
                     {salary.salaryType === 'negotiable' ? (
-                      <div className="text-gray-500 text-sm py-2">급여 협의</div>
+                      <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>
                     ) : (
                       <Input
                         type="text"
@@ -353,7 +353,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             // 기존 통합 급여 입력
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   급여 유형 <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -374,11 +374,11 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   급여 금액 <span className="text-red-500">*</span>
                 </label>
                 {formData.salaryType === 'negotiable' ? (
-                  <div className="text-gray-500 text-sm py-2">급여 협의</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>
                 ) : (
                   <Input
                     type="text"
@@ -397,7 +397,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
         {/* 복리후생 */}
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700">복리후생 (제공되는 정보만 입력)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">복리후생 (제공되는 정보만 입력)</label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 보장시간 */}
             <div className="flex items-center space-x-2">
@@ -409,7 +409,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <label htmlFor="benefit-guaranteedHours" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-guaranteedHours" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 보장시간
               </label>
               {formData.benefits?.guaranteedHours !== undefined && (
@@ -435,7 +435,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <label htmlFor="benefit-clothing" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-clothing" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 복장
               </label>
               {formData.benefits?.clothing !== undefined && (
@@ -461,7 +461,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <label htmlFor="benefit-meal" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-meal" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 식사
               </label>
               {formData.benefits?.meal !== undefined && (
@@ -487,7 +487,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <label htmlFor="benefit-transportation" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-transportation" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 교통비 (일당)
               </label>
               {formData.benefits?.transportation !== undefined && (
@@ -501,7 +501,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     className="flex-1"
                     disabled={isSubmitting}
                   />
-                  <span className="text-sm text-gray-500">원/일</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">원/일</span>
                 </>
               )}
             </div>
@@ -516,7 +516,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <label htmlFor="benefit-mealAllowance" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-mealAllowance" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 식비 (일당)
               </label>
               {formData.benefits?.mealAllowance !== undefined && (
@@ -530,7 +530,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     className="flex-1"
                     disabled={isSubmitting}
                   />
-                  <span className="text-sm text-gray-500">원/일</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">원/일</span>
                 </>
               )}
             </div>
@@ -545,7 +545,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <label htmlFor="benefit-accommodation" className="text-sm text-gray-700 whitespace-nowrap">
+              <label htmlFor="benefit-accommodation" className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 숙소 (일당)
               </label>
               {formData.benefits?.accommodation !== undefined && (
@@ -559,7 +559,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     className="flex-1"
                     disabled={isSubmitting}
                   />
-                  <span className="text-sm text-gray-500">원/일</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">원/일</span>
                 </>
               )}
             </div>
@@ -587,7 +587,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               disabled={isSubmitting}
             />
-            <label htmlFor="usesPreQuestions" className="text-sm text-gray-700">
+            <label htmlFor="usesPreQuestions" className="text-sm text-gray-700 dark:text-gray-300">
               사전질문 사용(추가 질문)
             </label>
           </div>
@@ -607,7 +607,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
         {/* 상세 설명 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             상세 설명
           </label>
           <textarea
