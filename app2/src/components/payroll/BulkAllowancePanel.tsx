@@ -151,7 +151,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
             onClick={() => setApplyTo('all')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               applyTo === 'all'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-indigo-600 dark:bg-indigo-700 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800'
                 : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
             }`}
           >
@@ -162,7 +162,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
             disabled={selectedStaffCount === 0}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               applyTo === 'selected'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-indigo-600 dark:bg-indigo-700 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800'
                 : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
@@ -172,7 +172,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
             onClick={() => setApplyTo('byRole')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               applyTo === 'byRole'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-indigo-600 dark:bg-indigo-700 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800'
                 : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
             }`}
           >
@@ -192,7 +192,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 onClick={() => handleRoleToggle(role)}
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                   selectedRoles.includes(role)
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-indigo-600 dark:bg-indigo-700 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800'
                     : 'bg-gray-100 text-gray-700 dark:text-gray-200 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
                 }`}
               >

@@ -375,7 +375,7 @@ const MySchedulePage: React.FC = () => {
                   onClick={() => setViewMode('calendar')}
                   className={`p-2 rounded-md transition-colors ${
                     viewMode === 'calendar'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   title="캘린더 뷰"
@@ -386,7 +386,7 @@ const MySchedulePage: React.FC = () => {
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-md transition-colors ${
                     viewMode === 'list'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   title="리스트 뷰"

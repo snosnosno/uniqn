@@ -474,7 +474,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
             ${
               hasRequiredConsents && !isSubmitting
-                ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                ? 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 focus:ring-blue-500 dark:focus:ring-blue-600'
                 : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
             }
           `}

@@ -829,7 +829,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              history.role === 'floor' ? 'bg-purple-100 text-purple-800' :
+                              history.role === 'floor' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
                               history.role === 'dealer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
                               history.role === 'manager' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
                               'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
