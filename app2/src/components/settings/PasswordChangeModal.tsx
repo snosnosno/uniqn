@@ -274,7 +274,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               {newPassword.length > 0 && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
                       {t('settings.security.passwordStrength')}
                     </span>
                     <span className="text-xs font-medium text-gray-900 dark:text-gray-100">{strengthText}</span>
@@ -361,7 +361,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.cancel')}
               </button>

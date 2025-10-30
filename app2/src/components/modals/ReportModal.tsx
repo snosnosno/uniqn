@@ -324,7 +324,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 bg-red-600 dark:bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-800 focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">

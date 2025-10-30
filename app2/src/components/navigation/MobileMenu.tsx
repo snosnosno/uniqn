@@ -270,8 +270,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                       onClick={() => handleMenuClick(child.path)}
                       className={`
                         w-full text-left px-12 py-2 text-base
-                        hover:bg-gray-100 transition-colors
-                        ${location.pathname === child.path ? 'text-primary-600 font-medium' : 'text-gray-600'}
+                        hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
+                        ${location.pathname === child.path ? 'text-primary-600 font-medium' : 'text-gray-600 dark:text-gray-300'}
                       `}
                     >
                       {child.label}
@@ -284,7 +284,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         </nav>
         
         {/* 하단 액션 */}
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           {currentUser ? (
             <button
               onClick={handleLogout}

@@ -11,6 +11,14 @@
       margin: 0 auto;
       padding: 20px;
       background: #f5f5f5;
+      color: #1f2937;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #111827;
+        color: #f9fafb;
+      }
     }
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -27,6 +35,12 @@
       margin-bottom: 20px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    @media (prefers-color-scheme: dark) {
+      .category {
+        background: #1f2937;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+    }
     .category-title {
       font-size: 20px;
       font-weight: bold;
@@ -41,14 +55,30 @@
       border-radius: 8px;
       border-left: 4px solid #3b82f6;
     }
+    @media (prefers-color-scheme: dark) {
+      .notification-test {
+        background: #374151;
+        border-left-color: #60a5fa;
+      }
+    }
     .notification-test h4 {
       margin: 0 0 5px 0;
       color: #1f2937;
+    }
+    @media (prefers-color-scheme: dark) {
+      .notification-test h4 {
+        color: #f9fafb;
+      }
     }
     .notification-test p {
       margin: 5px 0;
       color: #6b7280;
       font-size: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .notification-test p {
+        color: #d1d5db;
+      }
     }
     button {
       background: #3b82f6;
@@ -87,13 +117,31 @@
       background: #d1fae5;
       color: #065f46;
     }
+    @media (prefers-color-scheme: dark) {
+      .status.success {
+        background: rgba(16, 185, 129, 0.2);
+        color: #6ee7b7;
+      }
+    }
     .status.error {
       background: #fee2e2;
       color: #991b1b;
     }
+    @media (prefers-color-scheme: dark) {
+      .status.error {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+      }
+    }
     .status.info {
       background: #dbeafe;
       color: #1e40af;
+    }
+    @media (prefers-color-scheme: dark) {
+      .status.info {
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+      }
     }
     .badge {
       display: inline-block;

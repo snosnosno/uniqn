@@ -116,7 +116,7 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
           value={value.month || ''}
           onChange={(e) => handleDateChange('month', e.target.value)}
           disabled={disabled || (includeYear && !value.year)}
-          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
+          className="flex-1 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700 dark:text-gray-100"
         >
           {Array.from({ length: 12 }, (_, i) => {
             const month = (i + 1).toString().padStart(2, '0');
@@ -134,7 +134,7 @@ const DateDropdownSelector: React.FC<DateDropdownSelectorProps> = React.memo(({
           value={value.day || ''}
           onChange={(e) => handleDateChange('day', e.target.value)}
           disabled={disabled || !value.month}
-          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100"
+          className="flex-1 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-700 dark:bg-gray-700 dark:text-gray-100"
         >
           {Array.from({ length: maxDays }, (_, i) => {
             const day = (i + 1).toString().padStart(2, '0');

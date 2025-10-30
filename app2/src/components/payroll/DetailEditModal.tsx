@@ -369,7 +369,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   if (!isOpen || !staff) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border dark:border-gray-700 w-11/12 md:w-4/5 lg:w-3/5 shadow-lg rounded-md bg-white dark:bg-gray-800">
         {/* 헤더 */}
         <div className="flex justify-between items-center pb-4 border-b dark:border-gray-700">
@@ -587,20 +587,20 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   </div>
                   
                   {/* 총 근무시간 합계 */}
-                  <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">총 근무시간</span>
-                      <span className="text-lg font-bold text-blue-600">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">총 근무시간</span>
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                         {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
                       </span>
                     </div>
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                       총 {workHistory.length}일 근무
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <div className="text-4xl mb-2">📋</div>
                   <p className="text-sm">근무 내역이 없습니다.</p>
                 </div>
@@ -614,20 +614,20 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             <div className="space-y-6">
               {/* 기본급 계산 */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">💰 기본급 계산</h4>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">💰 기본급 계산</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">
                         {getSalaryTypeLabel(staff.salaryType)} × {staff.salaryType === 'hourly' ? `${staff.totalHours.toFixed(1)}시간` : `${staff.totalDays}일`}
                       </span>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
                         {staff.baseSalary.toLocaleString('ko-KR')} × {staff.salaryType === 'hourly' ? staff.totalHours.toFixed(1) : staff.totalDays}
                       </span>
                     </div>
-                    <div className="border-t pt-2 flex justify-between">
-                      <span className="text-sm font-medium text-gray-700">기본급 합계</span>
-                      <span className="text-base font-bold text-gray-900">
+                    <div className="border-t dark:border-gray-600 pt-2 flex justify-between">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">기본급 합계</span>
+                      <span className="text-base font-bold text-gray-900 dark:text-gray-100">
                         {staff.basePay.toLocaleString('ko-KR')}
                       </span>
                     </div>
@@ -637,11 +637,11 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
               {/* 수당 설정 */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">🎁 수당 정보</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">🎁 수당 정보</h4>
 
                 {/* 일당 계산 정보 표시 */}
                 {allowances.dailyRates && allowances.workDays ? (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-blue-800">일당 기반 계산</span>
                       <span className="text-sm text-blue-600">{allowances.workDays}일 근무</span>
@@ -685,12 +685,12 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-gray-500 text-sm">
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
                     수당 정보가 없습니다.
                   </div>
                 )}
 
-                <div className="mt-3 text-xs text-gray-500">
+                <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                   💡 수당은 정산 탭의 '추가 수당 설정'에서 일괄 관리할 수 있습니다.
                 </div>
               </div>
@@ -698,16 +698,16 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               {/* 세금 설정 */}
               {staff.tax !== undefined && staff.tax > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">💸 세금 설정</h4>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">💸 세금 설정</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">
+                        <span className="text-gray-600 dark:text-gray-300">
                           {staff.taxRate !== undefined && staff.taxRate > 0
                             ? `세율 (${staff.taxRate}%)`
                             : '세금'}
                         </span>
-                        <span className="text-red-600 font-medium">
+                        <span className="text-red-600 dark:text-red-400 font-medium">
                           -{staff.tax.toLocaleString('ko-KR')}
                         </span>
                       </div>
@@ -717,30 +717,30 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               )}
 
               {/* 총 계산 */}
-              <div className="bg-indigo-50 rounded-lg p-4">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">기본급</span>
-                    <span className="text-gray-900">
+                    <span className="text-gray-600 dark:text-gray-300">기본급</span>
+                    <span className="text-gray-900 dark:text-gray-100">
                       {formatCurrency(staff.basePay, 'KRW', 'ko')}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">수당 합계</span>
-                    <span className="text-gray-900">
+                    <span className="text-gray-600 dark:text-gray-300">수당 합계</span>
+                    <span className="text-gray-900 dark:text-gray-100">
                       {getTotalAllowances().toLocaleString('ko-KR')}
                     </span>
                   </div>
                   {staff.tax !== undefined && staff.tax > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">세금</span>
-                      <span className="text-red-600">
+                      <span className="text-gray-600 dark:text-gray-300">세금</span>
+                      <span className="text-red-600 dark:text-red-400">
                         -{staff.tax.toLocaleString('ko-KR')}
                       </span>
                     </div>
                   )}
-                  <div className="border-t border-indigo-200 pt-2 flex justify-between">
-                    <span className="text-base font-medium text-gray-800">총 지급액</span>
+                  <div className="border-t border-indigo-200 dark:border-indigo-700 pt-2 flex justify-between">
+                    <span className="text-base font-medium text-gray-800 dark:text-gray-200">총 지급액</span>
                     <span className="text-lg font-bold text-indigo-600">
                       {getTotalAmount().toLocaleString('ko-KR')}
                     </span>

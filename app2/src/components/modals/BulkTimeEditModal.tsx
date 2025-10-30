@@ -351,7 +351,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             <UsersIcon className="w-5 h-5 text-blue-600 mr-2" />
             <h3 className="font-semibold text-lg">선택된 스태프</h3>
           </div>
-          <p className="text-gray-700">
+          <p className="text-gray-700 dark:text-gray-200">
             총 <span className="font-bold text-blue-600">{selectedStaff.length}명</span>의 스태프가 선택되었습니다.
           </p>
           <div className="mt-2 max-h-32 overflow-y-auto">
@@ -369,14 +369,14 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         </div>
 
         {/* 수정 모드 선택 */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setEditMode('time')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 editMode === 'time'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300'
               }`}
             >
               <ClockIcon className="w-4 h-4 inline-block mr-2" />
@@ -387,7 +387,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 editMode === 'status'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300'
               }`}
             >
               <CalendarIcon className="w-4 h-4 inline-block mr-2" />
@@ -507,7 +507,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     className="mr-3"
                   />
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full mr-2"></div>
                     <span className="font-medium dark:text-gray-100">출근 전</span>
                   </div>
                 </label>
@@ -535,7 +535,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     className="mr-3"
                   />
                   <div className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></div>
                     <span className="font-medium dark:text-gray-100">퇴근</span>
                   </div>
                 </label>

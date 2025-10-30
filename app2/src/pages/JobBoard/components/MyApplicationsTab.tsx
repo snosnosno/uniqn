@@ -95,12 +95,12 @@ const MultipleAssignmentsDisplay: React.FC<{
   return (
     <div className="space-y-2">
       {sortedDates.map((date) => (
-        <div key={date} className="bg-gray-50 rounded-lg p-2">
+        <div key={date} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
           {status === 'confirmed' ? (
             // 확정 상태: 간소화된 표시
             <div className="space-y-1">
               {groupedByDate[date]?.map((item, idx) => (
-                <div key={idx} className="text-sm text-gray-700 font-medium">
+                <div key={idx} className="text-sm text-gray-700 dark:text-gray-200 font-medium">
                   📅 {date} ⏰ {item.time} 👤 {item.role ? String(t(`roles.${item.role}`) || item.role) : ''}
                 </div>
               ))}
@@ -113,10 +113,10 @@ const MultipleAssignmentsDisplay: React.FC<{
               </div>
               <div className="space-y-1 ml-4">
                 {groupedByDate[date]?.map((item, idx) => (
-                  <div key={idx} className="flex items-center space-x-2 text-gray-700">
+                  <div key={idx} className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
                     <span>⏰ {item.time}</span>
                     {item.role && (
-                      <span className="text-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">
                         - {String(t(`roles.${item.role}`) || item.role)}
                       </span>
                     )}
@@ -141,10 +141,10 @@ const SingleAssignmentDisplay: React.FC<{
   status: string;
   t: (key: string) => string;
 }> = ({ assignedTime, assignedRole, assignedDate, status, t }) => (
-  <div className="p-2 bg-gray-50 rounded-lg">
+  <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
     {status === 'confirmed' ? (
       // 확정 상태: 날짜 시간 역할 순서로 한 줄 간소화
-      <div className="text-sm text-gray-700 font-medium">
+      <div className="text-sm text-gray-700 dark:text-gray-200 font-medium">
         📅 {assignedDate ? formatDateOnly(assignedDate) : ''} ⏰ {formatDateTimeValue(assignedTime || '')} 👤 {assignedRole ? (String(t(`roles.${assignedRole}`) || assignedRole)) : ''}
       </div>
     ) : (
@@ -158,10 +158,10 @@ const SingleAssignmentDisplay: React.FC<{
             </div>
           )}
           // 시간과 역할 - 모바일에서 둘째 줄
-          <div className="flex items-center space-x-2 text-gray-700">
+          <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
             <span>⏰ {formatDateTimeValue(assignedTime || '')}</span>
             {assignedRole && (
-              <span className="text-gray-600">
+              <span className="text-gray-600 dark:text-gray-300">
                 - {String(t(`roles.${assignedRole}`) || assignedRole)}
               </span>
             )}

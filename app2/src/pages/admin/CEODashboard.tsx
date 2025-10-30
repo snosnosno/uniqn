@@ -46,7 +46,7 @@ const CEODashboard: React.FC = () => {
       { label: '딜러', value: data.activeStaff * 0.6, color: 'bg-blue-500' },
       { label: '플로어', value: data.activeStaff * 0.25, color: 'bg-green-500' },
       { label: '매니저', value: data.activeStaff * 0.1, color: 'bg-purple-500' },
-      { label: '기타', value: data.activeStaff * 0.05, color: 'bg-gray-500' }
+      { label: '기타', value: data.activeStaff * 0.05, color: 'bg-gray-500 dark:bg-gray-600' }
     ].map(item => ({ ...item, value: Math.round(item.value) }));
 
     return staffData;

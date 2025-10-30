@@ -54,7 +54,7 @@ const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled 
       <button
         onClick={handleClick}
         disabled={disabled}
-        className="btn btn-secondary"
+        className="btn btn-secondary dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
       >
         엑셀 업로드
       </button>

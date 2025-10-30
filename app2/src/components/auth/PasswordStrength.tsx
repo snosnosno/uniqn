@@ -6,6 +6,7 @@ import {
   getPasswordStrengthText,
   PasswordValidationResult
 } from '../../utils/passwordValidator';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface PasswordStrengthProps {
   password: string;
@@ -19,6 +20,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
   showRequirements = true
 }) => {
   const { t } = useTranslation();
+  const { isDark } = useTheme();
 
   const validation = validatePasswordRealtime(password) as PasswordValidationResult;
   const { strength, score, checks } = validation;
@@ -37,7 +39,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
           </span>
           <span
             className="text-sm font-medium"
-            style={{ color: getPasswordStrengthColor(strength || 'weak') }}
+            style={{ color: getPasswordStrengthColor(strength || 'weak', isDark) }}
           >
             {getPasswordStrengthText(strength || 'weak')} ({score || 0}%)
           </span>
@@ -49,7 +51,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             className="h-2 rounded-full transition-all duration-300 ease-in-out"
             style={{
               width: `${score || 0}%`,
-              backgroundColor: getPasswordStrengthColor(strength || 'weak')
+              backgroundColor: getPasswordStrengthColor(strength || 'weak', isDark)
             }}
           />
         </div>

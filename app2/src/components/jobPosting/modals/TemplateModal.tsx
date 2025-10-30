@@ -82,7 +82,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
             <li>사전질문 설정 및 사용 여부</li>
             <li>공고 상세 설명</li>
           </ul>
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
             * 시작/종료 날짜는 저장되지 않습니다 (템플릿 사용 시 오늘 날짜로 설정됨)
           </p>
         </div>

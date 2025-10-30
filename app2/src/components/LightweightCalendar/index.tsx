@@ -14,12 +14,12 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { 
-  ScheduleEvent, 
-  CalendarView, 
-  SCHEDULE_COLORS,
- 
+import {
+  ScheduleEvent,
+  CalendarView,
+  getScheduleColors,
 } from '../../types/schedule';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface LightweightCalendarProps {
   schedules: ScheduleEvent[];
@@ -36,6 +36,8 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
   onDateClick
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { isDark } = useTheme();
+  const SCHEDULE_COLORS = useMemo(() => getScheduleColors(isDark), [isDark]);
 
   // 현재 월의 날짜 배열 생성 (이전/다음 달 날짜 포함)
   const calendarDays = useMemo(() => {
@@ -163,7 +165,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
               <div className={`
                 text-sm font-semibold mb-1
                 ${dayOfWeek === 0 ? 'text-red-500' : dayOfWeek === 6 ? 'text-blue-500' : ''}
-                ${isSelectedDay ? 'text-white bg-blue-600 rounded-full w-6 h-6 flex items-center justify-center' : ''}
+                ${isSelectedDay ? 'text-white bg-blue-600 dark:bg-blue-700 rounded-full w-6 h-6 flex items-center justify-center' : ''}
               `}>
                 {format(day, 'd')}
               </div>
@@ -191,7 +193,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
                 })}
                 
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
                     +{dayEvents.length - 3} 더보기
                   </div>
                 )}
@@ -210,7 +212,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
     // const weekDays = eachDayOfInterval({ start: _weekStart, end: _weekEnd });
     
     return (
-      <div className="text-center py-20 text-gray-500">
+      <div className="text-center py-20 text-gray-500 dark:text-gray-400 dark:text-gray-500">
         주간 뷰는 준비 중입니다.
       </div>
     );
@@ -219,7 +221,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
   // 일 뷰 렌더링 (간단한 구현)
   const renderDayView = () => {
     return (
-      <div className="text-center py-20 text-gray-500">
+      <div className="text-center py-20 text-gray-500 dark:text-gray-400 dark:text-gray-500">
         일간 뷰는 준비 중입니다.
       </div>
     );

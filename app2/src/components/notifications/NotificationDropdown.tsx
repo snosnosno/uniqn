@@ -163,7 +163,7 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
                   aria-label={t('notifications.settings.title', '알림 설정')}
                   title={t('notifications.settings.title', '알림 설정')}
                 >
-                  <FaCog className="w-4 h-4 text-gray-600" />
+                  <FaCog className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                 </button>
               </div>
             </div>
@@ -171,11 +171,11 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
             {/* 알림 목록 */}
             <div className="overflow-y-auto flex-1">
               {loading ? (
-                <div className="p-8 text-center text-gray-500">
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {t('notifications.loading', '로딩 중...')}
                 </div>
               ) : recentNotifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {t('notifications.noNotifications', '알림이 없습니다')}
                 </div>
               ) : (
@@ -193,7 +193,7 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
             </div>
 
             {/* 푸터 - 항상 알림센터 버튼 표시 */}
-            <div className="p-3 border-t border-gray-200">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={handleViewAll}
                 className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"

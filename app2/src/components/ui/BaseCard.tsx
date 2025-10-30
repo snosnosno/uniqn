@@ -127,7 +127,7 @@ export const CardHeader: React.FC<{
   id?: string;
   'data-testid'?: string;
 }> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
-  <div id={id} className={`border-b border-gray-200 pb-3 mb-3 ${className}`} data-testid={dataTestId}>
+  <div id={id} className={`border-b border-gray-200 dark:border-gray-700 pb-3 mb-3 ${className}`} data-testid={dataTestId}>
     {children}
   </div>
 );
@@ -151,7 +151,7 @@ export const CardFooter: React.FC<{
   id?: string;
   'data-testid'?: string;
 }> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
-  <div id={id} className={`border-t border-gray-200 pt-3 mt-3 ${className}`} data-testid={dataTestId}>
+  <div id={id} className={`border-t border-gray-200 dark:border-gray-700 pt-3 mt-3 ${className}`} data-testid={dataTestId}>
     {children}
   </div>
 );

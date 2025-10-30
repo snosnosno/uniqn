@@ -262,11 +262,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   const getBasicInfoClasses = () => {
     switch (variant) {
       case 'admin-list':
-        return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-3';
+        return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-3';
       case 'user-card':
         return 'space-y-2 mb-3';
       case 'detail-info':
-        return 'grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600 mb-4';
+        return 'grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-300 mb-4';
       default:
         return 'space-y-2 mb-3';
     }
@@ -278,11 +278,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       case 'admin-list':
         return 'flex items-center min-w-0';
       case 'user-card':
-        return 'text-sm text-gray-500';
+        return 'text-sm text-gray-500 dark:text-gray-400';
       case 'detail-info':
         return 'flex items-center min-w-0';
       default:
-        return 'text-sm text-gray-500';
+        return 'text-sm text-gray-500 dark:text-gray-400';
     }
   };
 
@@ -293,9 +293,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     if (dateReqs.length > 0) {
       // 모든 날짜를 표시하도록 변경 (expandTimeSlots 조건 제거)
       const displayReqs = dateReqs;
-      
+
       return (
-        <div className="text-sm text-gray-600 mb-3">
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
           {displayReqs.map((req: DateSpecificRequirement, index: number) => {
             // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
             const firstTimeSlot = req.timeSlots?.[0];
@@ -330,15 +330,15 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                               <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
                                 {roleIndex === 0 ? (
                                   <>
-                                    <span className="font-medium text-orange-600">
+                                    <span className="font-medium text-orange-600 dark:text-orange-400">
                                       미정
                                       {ts.tentativeDescription && (
-                                        <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
+                                        <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">({ts.tentativeDescription})</span>
                                       )}
                                     </span>
                                     <span className="ml-3">
                                       {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                         ({confirmedCount}/{role.count})
                                       </span>
                                     </span>
@@ -346,7 +346,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                 ) : (
                                   <div className="pl-[50px]">
                                     {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                    <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                       ({confirmedCount}/{role.count})
                                     </span>
                                   </div>
@@ -375,7 +375,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                     <span className="font-medium text-gray-700 dark:text-gray-200">{ts.time}</span>
                                     <span className="ml-3">
                                       {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                         ({confirmedCount}/{role.count})
                                       </span>
                                     </span>
@@ -383,7 +383,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                 ) : (
                                   <div className="pl-[50px]">
                                     {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                    <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                       ({confirmedCount}/{role.count})
                                     </span>
                                   </div>
@@ -405,7 +405,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     } else {
       // 날짜별 요구사항이 없는 경우
       return (
-        <div className="text-sm text-gray-500 mb-2">
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
           시간대 정보가 없습니다.
         </div>
       );
@@ -483,18 +483,18 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                               <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
                                 {roleIndex === 0 ? (
                                   <>
-                                    <span className="font-medium text-orange-600">
+                                    <span className="font-medium text-orange-600 dark:text-orange-400">
                                       미정
                                       {ts.tentativeDescription && (
-                                        <span className="text-gray-600 font-normal ml-1">({ts.tentativeDescription})</span>
+                                        <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">({ts.tentativeDescription})</span>
                                       )}
                                     </span>
                                     <span className="ml-3">
                                       {t(`roles.${r.name}`, r.name)}: {r.count}명
                                       {expandedDates.length > 0 && (
-                                        <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                        <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
                                       )}
-                                      <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                         {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                       </span>
                                     </span>
@@ -503,9 +503,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   <div className="pl-[50px]">
                                     {t(`roles.${r.name}`, r.name)}: {r.count}명
                                     {expandedDates.length > 0 && (
-                                      <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                      <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
                                     )}
-                                    <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                       {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                     </span>
                                   </div>
@@ -553,9 +553,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                     <span className="ml-3">
                                       {t(`roles.${r.name}`, r.name)}: {r.count}명
                                       {expandedDates.length > 0 && (
-                                        <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                        <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
                                       )}
-                                      <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                         {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                       </span>
                                     </span>
@@ -564,9 +564,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                   <div className="pl-[50px]">
                                     {t(`roles.${r.name}`, r.name)}: {r.count}명
                                     {expandedDates.length > 0 && (
-                                      <span className="text-blue-600 ml-1">({expandedDates.length}일)</span>
+                                      <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
                                     )}
-                                    <span className={`ml-1 ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                       {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
                                     </span>
                                   </div>
@@ -588,11 +588,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     } else {
       return (
         <div className="mb-4">
-          <div className="font-medium text-gray-700 mb-2 flex items-center text-sm">
+          <div className="font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center text-sm">
             <span className="mr-2">⏰</span>
             <span>모집 시간대</span>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             시간대 정보가 없습니다.
           </div>
         </div>
@@ -683,12 +683,12 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                       <span className="font-medium text-gray-700 dark:text-gray-200">역할별 급여</span>
                       <div className="mt-1 space-y-0.5">
                         {Object.entries(post.roleSalaries).slice(0, 3).map(([role, salary]) => (
-                          <div key={role} className="text-xs text-gray-600">
+                          <div key={role} className="text-xs text-gray-600 dark:text-gray-300">
                             • {formatRoleSalaryDisplay(role, salary)}
                           </div>
                         ))}
                         {Object.keys(post.roleSalaries).length > 3 && (
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
                             외 {Object.keys(post.roleSalaries).length - 3}개 역할
                           </div>
                         )}
@@ -743,7 +743,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
             {/* 지원자 수 */}
             {showApplicationCount && post.applicants && (post.applicants || []).length > 0 && (
-              <div className="text-sm text-blue-600">
+              <div className="text-sm text-blue-600 dark:text-blue-400">
                 🙋‍♂️ {(post.applicants || []).length}명 지원
               </div>
             )}
@@ -781,7 +781,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
         {/* 관리자용 - 생성/수정 정보 */}
         {variant === 'admin-list' && (
-          <div className="mt-3 text-xs text-gray-400 flex justify-between">
+          <div className="mt-3 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
             <span>생성: {formatDateDisplay(post.createdAt)}</span>
             {post.updatedAt && (
               <span>수정: {formatDateDisplay(post.updatedAt)}</span>

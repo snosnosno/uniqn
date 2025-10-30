@@ -214,7 +214,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
       <div className="fixed bottom-4 right-4 z-50">
         <button
           onClick={onToggle}
-          className="bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700"
+          className="bg-blue-600 dark:bg-blue-500 text-white p-2 rounded-full shadow-lg dark:shadow-blue-900/50 hover:bg-blue-700 dark:hover:bg-blue-600"
           title="개발자 도구 열기"
         >
           🛠️
@@ -237,13 +237,13 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
           <div className="flex items-center space-x-2">
             <button
               onClick={handleForceRefresh}
-              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              className="px-3 py-1 bg-green-600 dark:bg-green-700 text-white rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
             >
               🔄 새로고침
             </button>
             <button
               onClick={onToggle}
-              className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+              className="px-3 py-1 bg-gray-600 dark:bg-gray-700 text-white rounded text-sm hover:bg-gray-700 dark:hover:bg-gray-600"
             >
               ✕
             </button>
@@ -427,7 +427,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                 ))}
               </div>
               
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-lg p-4">
                 <h4 className="font-medium text-yellow-800 mb-2">⚡ Week 4 최적화 효과</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
                   <li>• Web Workers: 메인 스레드 블로킹 0%</li>
@@ -460,7 +460,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                   </button>
                   <button
                     onClick={() => setLogEntries([])}
-                    className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                    className="px-3 py-1 bg-gray-600 dark:bg-gray-700 text-white rounded text-sm hover:bg-gray-700 dark:hover:bg-gray-600"
                   >
                     🗑️ 지우기
                   </button>

@@ -119,14 +119,14 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {/* 검색바 */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
         <input
           type="text"
           placeholder="스태프 이름, 역할, 연락처로 검색..."
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
           value={filters.searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
         />
@@ -135,7 +135,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             onClick={() => handleSearchChange('')}
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
           >
-            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -150,20 +150,20 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
               >
                 전체 초기화
               </button>
             )}
           </div>
-          
+
           {/* 필터 컨트롤들 */}
           <div className="grid grid-cols-1 gap-4">
             {/* 날짜 필터 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">날짜</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">날짜</label>
               <select
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedDate}
                 onChange={(e) => handleDateChange(e.target.value)}
               >
@@ -178,9 +178,9 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
 
             {/* 역할 필터 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">역할</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">역할</label>
               <select
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedRole}
                 onChange={(e) => handleRoleChange(e.target.value)}
               >
@@ -195,9 +195,9 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
 
             {/* 상태 필터 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">출석 상태</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">출석 상태</label>
               <select
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedStatus}
                 onChange={(e) => handleStatusChange(e.target.value)}
               >
@@ -210,8 +210,8 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           </div>
 
           {/* 표시 옵션 */}
-          <div className="border-t border-gray-200 pt-4">
-            <h4 className="font-medium text-gray-900 mb-3">표시 옵션</h4>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">표시 옵션</h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700 dark:text-gray-200">날짜별 그룹화</span>
@@ -256,7 +256,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2">
           {filters.searchTerm && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
               검색: "{filters.searchTerm}"
               <button
                 onClick={() => handleSearchChange('')}
@@ -267,7 +267,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             </span>
           )}
           {filters.selectedDate !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 dark:bg-green-900/30 text-green-800">
               날짜: {filters.selectedDate}
               <button
                 onClick={() => handleDateChange('all')}

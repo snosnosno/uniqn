@@ -54,9 +54,9 @@ const FAQItemComponent: React.FC<FAQItemComponentProps> = ({ faq, isOpen, onTogg
           {t(faq.questionKey)}
         </span>
         {isOpen ? (
-          <FaChevronUp className="w-5 h-5 text-gray-400" />
+          <FaChevronUp className="w-5 h-5 text-gray-400 dark:text-gray-500" />
         ) : (
-          <FaChevronDown className="w-5 h-5 text-gray-400" />
+          <FaChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
         )}
       </button>
 
@@ -377,7 +377,7 @@ const SupportPage: React.FC = () => {
               ))}
 
               {filteredFAQs.length === 0 && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {t('support.faq.noResults', '해당 카테고리에 FAQ가 없습니다.')}
                 </div>
               )}
@@ -502,7 +502,7 @@ const SupportPage: React.FC = () => {
               </div>
             ) : myInquiries.length === 0 ? (
               <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg">
-                <FaEnvelope className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <FaEnvelope className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   {t('support.myInquiries.empty', '문의 내역이 없습니다')}
                 </h3>

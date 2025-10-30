@@ -198,7 +198,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg text-gray-500">공고 정보를 불러올 수 없습니다.</div>
+          <div className="text-lg text-gray-500 dark:text-gray-400">공고 정보를 불러올 수 없습니다.</div>
         </div>
       </div>
     );
@@ -227,7 +227,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
         </h3>
         <button
           onClick={refreshApplicants}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600"
           disabled={isProcessing}
         >
           {t('common.refresh')}

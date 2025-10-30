@@ -169,7 +169,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
       displayStartTime: formatTimeDisplay(scheduledStartTime),
       displayEndTime: scheduledEndTime ? formatTimeDisplay(scheduledEndTime) : '미정',
       startTimeColor: getTimeSlotColor(scheduledStartTime),
-      endTimeColor: scheduledEndTime ? getTimeSlotColor(scheduledEndTime) : 'bg-gray-100 text-gray-500',
+      endTimeColor: scheduledEndTime ? getTimeSlotColor(scheduledEndTime) : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정'
     };
@@ -218,10 +218,10 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
         active={isSelected}
         {...(handleCardClick && { onClick: handleCardClick })}
         className={`relative transition-all duration-200 ${
-          onSelect 
-            ? isSelected 
-              ? 'border-primary-500 bg-primary-50 staff-card-selected' 
-              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          onSelect
+            ? isSelected
+              ? 'border-primary-500 bg-primary-50 staff-card-selected'
+              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
             : ''
         } touch-none select-none`}
         aria-label={`스태프 카드: ${memoizedStaffData.displayName}`}
@@ -328,7 +328,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(({
         
         <CardBody className="p-0" id={`staff-${staff.id}-details`}>
           {!showActions && onSelect ? (
-            <div className="mt-2 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500">
+            <div className="mt-2 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
               <span className="flex items-center space-x-1">
                 <span>←</span>
                 <span>액션</span>

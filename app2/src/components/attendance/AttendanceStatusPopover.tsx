@@ -391,10 +391,10 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         }}
         disabled={isUpdating || !canEdit}
         className={`
-          w-full inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all duration-200 border border-gray-200
+          w-full inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all duration-200 border border-gray-200 dark:border-gray-700
           ${currentOption.bgColor} ${currentOption.color}
           ${getSizeClasses()}
-          ${isUpdating || !canEdit ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-80 hover:border-gray-300 cursor-pointer'}
+          ${isUpdating || !canEdit ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-80 hover:border-gray-300 dark:hover:border-gray-600 cursor-pointer'}
           ${className}
         `}
         title={!canEdit ? '수정 권한이 없습니다' : ''}
@@ -420,7 +420,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
               const timeString = `${hours}:${minutes.toString().padStart(2, '0')}`;
               
               return (
-                <div className="text-xs opacity-75 font-semibold text-blue-600 mt-1">
+                <div className="text-xs opacity-75 font-semibold text-blue-600 dark:text-blue-400 mt-1">
                   근무: {timeString}
                 </div>
               );

@@ -252,7 +252,7 @@ export interface AttendanceRequest {
 }
 
 /**
- * 스케줄 이벤트 색상 매핑
+ * 스케줄 이벤트 색상 매핑 (라이트 모드)
  */
 export const SCHEDULE_COLORS: Record<ScheduleType, EventColorConfig> = {
   applied: {
@@ -275,6 +275,39 @@ export const SCHEDULE_COLORS: Record<ScheduleType, EventColorConfig> = {
     borderColor: '#EF4444',
     textColor: '#7F1D1D'
   }
+};
+
+/**
+ * 스케줄 이벤트 색상 매핑 (다크 모드)
+ */
+export const SCHEDULE_COLORS_DARK: Record<ScheduleType, EventColorConfig> = {
+  applied: {
+    backgroundColor: 'rgba(251, 191, 36, 0.2)', // 노란색 배경 (다크)
+    borderColor: '#FBBF24',
+    textColor: '#FCD34D'
+  },
+  confirmed: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)', // 초록색 배경 (다크)
+    borderColor: '#10B981',
+    textColor: '#6EE7B7'
+  },
+  completed: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)', // 파란색 배경 (다크)
+    borderColor: '#3B82F6',
+    textColor: '#93C5FD'
+  },
+  cancelled: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)', // 빨간색 배경 (다크)
+    borderColor: '#EF4444',
+    textColor: '#FCA5A5'
+  }
+};
+
+/**
+ * 테마에 따라 적절한 스케줄 색상을 반환
+ */
+export const getScheduleColors = (isDark: boolean): Record<ScheduleType, EventColorConfig> => {
+  return isDark ? SCHEDULE_COLORS_DARK : SCHEDULE_COLORS;
 };
 
 /**

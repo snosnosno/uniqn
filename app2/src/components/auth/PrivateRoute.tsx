@@ -10,7 +10,7 @@ const PrivateRoute: React.FC = () => {
   const location = useLocation();
 
   if (loading) {
-    return <div className="p-6 text-center">{t('common.messages.loading')}</div>;
+    return <div className="p-6 text-center dark:text-gray-200">{t('common.messages.loading')}</div>;
   }
 
   return currentUser ? <Outlet /> : <Navigate to="/login" state={{ from: location }} replace />;

@@ -155,7 +155,7 @@ const ValidationSummary: React.FC<{
         </div>
       )}
       {validationResult.suggestions.length > 0 && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
           <div className="font-medium mb-1">제안사항:</div>
           <ul className="list-disc list-inside space-y-1">
             {validationResult.suggestions.map((suggestion, index) => (
@@ -331,10 +331,10 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
         enableResizing: false,
         cell: ({ row }) => (
           <div className="flex items-center gap-2 px-2 py-1">
-            <UserIcon className="w-3 h-3 text-gray-600" />
+            <UserIcon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
             <div>
-              <div className="text-sm font-medium text-gray-800">{row.original.staffName}</div>
-              <div className="text-xs text-gray-500">출근: {row.original.startTime}</div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{row.original.staffName}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">출근: {row.original.startTime}</div>
             </div>
           </div>
         ),
@@ -436,7 +436,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-8 text-center">
-                  <div className="flex flex-col items-center justify-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <TableIcon className="w-8 h-8 mb-2" />
                     <p className="text-sm">등록된 딜러가 없습니다</p>
                   </div>

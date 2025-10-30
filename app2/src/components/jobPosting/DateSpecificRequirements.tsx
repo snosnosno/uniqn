@@ -118,7 +118,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-700">일자별 인원 요구사항</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 dark:text-gray-200">일자별 인원 요구사항</h4>
         <Button
           type="button"
           variant="secondary"
@@ -153,7 +153,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
               <button
                 type="button"
                 onClick={() => removeDateRequirement(requirementIndex)}
-                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium"
                 title="날짜 삭제"
               >
                 삭제
@@ -168,12 +168,12 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                 <div key={timeSlotIndex} className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-white dark:bg-gray-800">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center space-x-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">⏰ 시간대 {timeSlotIndex + 1}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 dark:text-gray-200">⏰ 시간대 {timeSlotIndex + 1}</span>
                       {requirement.timeSlots.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeTimeSlotFromDate(requirementIndex, timeSlotIndex)}
-                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                          className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium"
                           title="시간대 삭제"
                         >
                           삭제
@@ -191,16 +191,16 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                         onChange={(e) => 
                           onDateSpecificTimeToBeAnnouncedToggle(requirementIndex, timeSlotIndex, e.target.checked)
                         }
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-600"
                       />
-                      <span className="text-sm text-gray-700">시간 미정</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">시간 미정</span>
                     </label>
                   </div>
 
                   {/* 시간 입력 또는 미정 설명 */}
                   {timeSlot.isTimeToBeAnnounced ? (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                         미정 시간 설명
                       </label>
                       <input
@@ -210,12 +210,12 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                           onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
                         }
                         placeholder="예: 토너먼트 진행 상황에 따라 결정"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   ) : (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                         시간
                       </label>
                       <input
@@ -224,7 +224,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                         onChange={(e) =>
                           onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, e.target.value)
                         }
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   )}
@@ -232,7 +232,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                   {/* 역할 관리 */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <h5 className="text-sm font-medium text-gray-700">필요 역할</h5>
+                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-200 dark:text-gray-200">필요 역할</h5>
                       <Button
                         type="button"
                         variant="secondary"
@@ -287,13 +287,13 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
                                     onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value || 'other');
                                   }}
                                   placeholder="역할명을 입력하세요"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 />
                               )}
                             </div>
                           </div>
                         <div className="w-20">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             인원
                           </label>
                           <input
@@ -332,14 +332,14 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
 
                               onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
                             }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                         </div>
                         {timeSlot.roles.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)}
-                            className="text-red-500 hover:text-red-700 text-sm p-1"
+                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm p-1"
                             title="역할 삭제"
                           >
                             ✕
@@ -353,7 +353,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
               ))}
 
               {requirement.timeSlots.length === 0 && (
-                <div className="text-center py-6 text-gray-500">
+                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                   <p className="text-sm">시간대를 추가해주세요.</p>
                 </div>
               )}
@@ -363,7 +363,7 @@ const DateSpecificRequirements: React.FC<DateSpecificRequirementsProps> = ({
       ))}
 
       {requirements.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>날짜별 요구사항을 추가해주세요.</p>
           <Button
             type="button"

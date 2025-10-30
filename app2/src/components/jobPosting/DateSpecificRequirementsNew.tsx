@@ -368,7 +368,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                   <button
                     type="button"
                     onClick={() => removeDateRequirement(requirementIndex)}
-                    className="text-red-500 hover:text-red-700 text-sm font-medium"
+                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium"
                     title="날짜 삭제"
                   >
                     삭제
@@ -397,7 +397,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                       name={`duration-${requirementIndex}`}
                       checked={requirement.timeSlots[0]?.duration?.type !== 'multi'}
                       onChange={() => handleDurationTypeChange(requirementIndex, 'single')}
-                      className="text-blue-600 focus:ring-blue-500"
+                      className="text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-600"
                     />
                     <label htmlFor={`single-${requirementIndex}`} className="text-sm text-gray-700 dark:text-gray-200">
                       단일 날짜
@@ -410,7 +410,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                       name={`duration-${requirementIndex}`}
                       checked={requirement.timeSlots[0]?.duration?.type === 'multi'}
                       onChange={() => handleDurationTypeChange(requirementIndex, 'multi')}
-                      className="text-blue-600 focus:ring-blue-500"
+                      className="text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-600"
                     />
                     <label htmlFor={`multi-${requirementIndex}`} className="text-sm text-gray-700 dark:text-gray-200">
                       여러 날
@@ -441,7 +441,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           <button
                             type="button"
                             onClick={() => removeTimeSlotFromDate(requirementIndex, timeSlotIndex)}
-                            className="text-red-500 hover:text-red-700 text-sm font-medium"
+                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium"
                             title="시간대 삭제"
                           >
                             삭제
@@ -607,7 +607,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                               <button
                                 type="button"
                                 onClick={() => removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)}
-                                className="text-red-500 hover:text-red-700 text-sm p-1"
+                                className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm p-1"
                                 title="역할 삭제"
                               >
                                 ✕

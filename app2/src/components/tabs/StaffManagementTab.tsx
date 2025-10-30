@@ -313,7 +313,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg text-gray-500 dark:text-gray-400">공고 정보를 불러올 수 없습니다.</div>
+          <div className="text-lg text-gray-500 dark:text-gray-400 dark:text-gray-500">공고 정보를 불러올 수 없습니다.</div>
         </div>
       </div>
     );
@@ -367,7 +367,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   >
                     <span>{selection.multiSelectMode ? '선택 완료' : '선택 모드'}</span>
                     {selection.multiSelectMode && (
-                      <span className="bg-white bg-opacity-20 px-2 py-0.5 rounded text-sm">
+                      <span className="bg-white dark:bg-gray-800 bg-opacity-20 dark:bg-opacity-30 px-2 py-0.5 rounded text-sm">
                         {selection.selectedStaff.size}/{filteredStaffCount}
                       </span>
                     )}
@@ -419,7 +419,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         </div>
 
         {error.global && (
-          <div className="bg-red-50 p-4 rounded-lg mb-4">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
             <p className="text-red-600">{error.global}</p>
           </div>
         )}
@@ -429,7 +429,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           <div className="mb-4 space-y-3">
             <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   총 {uniqueStaffCount}명
                   {filteredStaffCount !== uniqueStaffCount &&
                     ` (${filteredStaffCount}명 필터됨)`}
@@ -440,8 +440,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       onClick={handleMultiSelectToggle}
                       className={`px-3 py-1 rounded text-sm ${
                         selection.multiSelectMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                       }`}
                     >
                       {selection.multiSelectMode ? '선택 취소' : '선택 모드'}
@@ -460,7 +460,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 placeholder="스태프 검색..."
                 value={filters.searchTerm}
                 onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -468,7 +468,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
         {/* 선택 모드 안내 */}
         {selection.multiSelectMode && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4">
             <div className="flex items-center">
               <svg
                 className="w-5 h-5 text-blue-600 mr-2"
@@ -493,9 +493,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
         {/* 스태프 목록 */}
         {uniqueStaffCount === 0 ? (
-          <div className="bg-gray-50 p-6 rounded-lg text-center">
-            <p className="text-gray-600 mb-4">이 공고에 할당된 스태프가 없습니다.</p>
-            <p className="text-sm text-gray-500">
+          <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">이 공고에 할당된 스태프가 없습니다.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               지원자 목록에서 지원자를 확정하면 자동으로 스태프로 등록됩니다.
             </p>
           </div>
@@ -693,17 +693,17 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         canEdit &&
         !isMobile &&
         !isTablet && (
-          <div className="fixed bottom-6 right-6 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-4 z-50 floating-selection-info">
+          <div className="fixed bottom-6 right-6 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-full shadow-lg dark:shadow-blue-900/50 flex items-center space-x-4 z-50 floating-selection-info">
             <span className="font-medium">{selection.selectedStaff.size}명 선택됨</span>
             <button
               onClick={() => modals.bulkTimeEditModal.open()}
-              className="bg-white text-blue-600 px-4 py-1 rounded-full text-sm font-medium hover:bg-blue-50 transition-colors"
+              className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 px-4 py-1 rounded-full text-sm font-medium hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
             >
               일괄 수정
             </button>
             <button
               onClick={() => handleBulkDelete(Array.from(selection.selectedStaff))}
-              className="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+              className="bg-red-600 dark:bg-red-700 text-white px-4 py-1 rounded-full text-sm font-medium hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
             >
               삭제
             </button>

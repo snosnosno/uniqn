@@ -339,20 +339,35 @@ console.log('Debug');                    // console 직접 사용
 
 ## 📚 **주요 문서**
 
-### 개발 가이드
-- [DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md) - 개발 가이드라인 및 패턴
-- [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - 테스트 가이드 (65% 커버리지)
-- [CAPACITOR_MIGRATION_GUIDE.md](docs/CAPACITOR_MIGRATION_GUIDE.md) - Capacitor 마이그레이션
+> 📖 **문서 인덱스**: [docs/README.md](docs/README.md) - 전체 문서 목차 및 빠른 시작 가이드
 
-### 시스템 현황
-- [NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/NOTIFICATION_IMPLEMENTATION_STATUS.md) - 알림 시스템 상태
-- [MULTI_TENANT_STATUS.md](docs/MULTI_TENANT_STATUS.md) - 멀티테넌트 아키텍처 현황
+### 📘 핵심 개발 가이드 (core/)
+- [DEVELOPMENT_GUIDE.md](docs/core/DEVELOPMENT_GUIDE.md) - 개발 가이드라인, 코딩 규칙, 프로젝트 구조
+- [TESTING_GUIDE.md](docs/core/TESTING_GUIDE.md) - 테스트 작성 가이드 (65% 커버리지)
+- [CAPACITOR_MIGRATION_GUIDE.md](docs/core/CAPACITOR_MIGRATION_GUIDE.md) - Capacitor 마이그레이션 가이드
 
-### 참고 자료
-- [ARCHITECTURE.md](docs/reference/ARCHITECTURE.md) - 아키텍처 문서
+### 🎯 기능별 가이드 (features/)
+- [FEATURE_FLAG_GUIDE.md](docs/features/FEATURE_FLAG_GUIDE.md) - Feature Flag 시스템 사용법
+- [MULTI_TENANT_STATUS.md](docs/features/MULTI_TENANT_STATUS.md) - 멀티테넌트 아키텍처 현황
+- [NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/features/NOTIFICATION_IMPLEMENTATION_STATUS.md) - 알림 시스템 구현 상태
+- [ACCOUNT_MANAGEMENT_SYSTEM.md](docs/features/ACCOUNT_MANAGEMENT_SYSTEM.md) - 계정 관리 시스템
+- [PERMISSION_SYSTEM.md](docs/features/PERMISSION_SYSTEM.md) - 권한 시스템 전체 정리
+
+### 📖 운영 가이드 (guides/, operations/)
+- [DEPLOYMENT.md](docs/guides/DEPLOYMENT.md) - 배포 가이드
+- [MONITORING.md](docs/operations/MONITORING.md) - 모니터링 가이드
+- [SECURITY.md](docs/operations/SECURITY.md) - 보안 가이드
+
+### 📚 참조 문서 (reference/)
+- [ARCHITECTURE.md](docs/reference/ARCHITECTURE.md) - 시스템 아키텍처
 - [DATA_SCHEMA.md](docs/reference/DATA_SCHEMA.md) - 데이터 스키마
-- [SUBSCRIPTION_MODEL.md](docs/reference/SUBSCRIPTION_MODEL.md) - 구독 모델 (향후 구현)
+- [AUTHENTICATION.md](docs/reference/AUTHENTICATION.md) - 인증 시스템
+- [API_REFERENCE.md](docs/reference/API_REFERENCE.md) - API 레퍼런스
 
+### 📦 완료된 작업 보고서 (archived/)
+- [REFACTORING_REPORT_2025-01-21.md](docs/archived/REFACTORING_REPORT_2025-01-21.md) - useTables Hook 리팩토링
+- [REFACTORING_REPORT_PHASE1_2025-01-23.md](docs/archived/REFACTORING_REPORT_PHASE1_2025-01-23.md) - applicantHelpers 모듈화
+- [tournament/COMPLETION_REPORT_2025-10-17.md](docs/archived/tournament/COMPLETION_REPORT_2025-10-17.md) - 토너먼트 시스템 완성
 ---
 
 *마지막 업데이트: 2025년 10월 18일*

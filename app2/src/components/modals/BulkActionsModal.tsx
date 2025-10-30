@@ -153,15 +153,15 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
       </div>
 
       {/* 탭 메뉴 */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             <span className="mr-2">{tab.icon}</span>
@@ -175,18 +175,18 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
         {activeTab === 'message' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 메시지 내용
               </label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="스태프들에게 보낼 메시지를 입력하세요..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 rows={4}
               />
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               💡 메시지는 각 스태프의 연락처(이메일/전화번호)로 전송됩니다.
             </div>
           </div>
@@ -195,13 +195,13 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
         {activeTab === 'status' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 변경할 상태
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">상태를 선택하세요</option>
                 <option value="not_started">출근 전</option>
@@ -209,7 +209,7 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                 <option value="checked_out">퇴근</option>
               </select>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               ⚠️ 선택된 모든 스태프의 출석 상태가 일괄 변경됩니다.
             </div>
           </div>
@@ -245,10 +245,10 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                   <div className="max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                     {selectedStaff.map(staff => (
                       <div key={staff.id} className="flex items-center justify-between py-1">
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
                           {staff.name || '이름 미정'}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {staff.assignedRole || staff.role || '역할 미정'}
                         </span>
                       </div>
@@ -281,7 +281,7 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

@@ -688,7 +688,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       return (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">공고 기본급여</span>
+                          <span className="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">공고 기본급여</span>
                         </div>
                       );
                     } else {
@@ -761,7 +761,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   <div className="text-xs text-gray-500 dark:text-gray-400">총 지급액</div>
                 </div>
                 {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 ? (
-                  <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-green-600">
                       {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}
                     </div>
@@ -1037,7 +1037,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           {schedule.type === 'applied' && onCancel && (
             <button
               onClick={() => setIsCancelConfirmOpen(true)}
-              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
             >
               지원 취소
             </button>
@@ -1064,7 +1064,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 onDelete(schedule.id);
                 onClose();
               }}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center gap-2"
+              className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center gap-2"
               title="일정 삭제"
             >
               <FaTrash className="w-4 h-4" />

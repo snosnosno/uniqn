@@ -552,7 +552,7 @@ const TablesPage: React.FC = () => {
                         {(state.tournamentId === 'ALL' || (state.tournamentId && isDefaultTournament(state.tournamentId))) && (
                             <button
                                 onClick={handleToggleSelectionMode}
-                                className={`btn text-sm ${isSelectionMode ? 'btn-secondary bg-gray-600' : 'btn-primary'}`}
+                                className={`btn text-sm ${isSelectionMode ? 'btn-secondary bg-gray-600 dark:bg-gray-700' : 'btn-primary'}`}
                             >
                                 {isSelectionMode ? '취소' : '테이블 배정'}
                             </button>

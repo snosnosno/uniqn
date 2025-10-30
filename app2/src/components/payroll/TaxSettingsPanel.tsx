@@ -70,7 +70,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">💸 세금 설정</h3>
             {enabled && (
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+              <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 rounded-full">
                 활성화됨
               </span>
             )}

@@ -295,7 +295,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             type="checkbox"
             checked={isAllAgreed}
             onChange={handleToggleAll}
-            className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded focus:ring-blue-500"
+            className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
             aria-label={t('consent.agreeAll')}
           />
           <span className="ml-3 text-base font-semibold text-gray-900 dark:text-gray-100">

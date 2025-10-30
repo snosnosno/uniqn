@@ -214,7 +214,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               type="checkbox"
               checked={allowances.meal.enabled}
               onChange={() => handleAllowanceToggle('meal')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
             />
             <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">식비</span>
           </label>
@@ -238,7 +238,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               type="checkbox"
               checked={allowances.transportation.enabled}
               onChange={() => handleAllowanceToggle('transportation')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
             />
             <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">교통비</span>
           </label>
@@ -262,7 +262,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               type="checkbox"
               checked={allowances.accommodation.enabled}
               onChange={() => handleAllowanceToggle('accommodation')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
             />
             <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">숙소비</span>
           </label>
@@ -286,7 +286,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
               type="checkbox"
               checked={allowances.bonus.enabled}
               onChange={() => handleAllowanceToggle('bonus')}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
             />
             <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">보너스</span>
           </label>
@@ -311,7 +311,7 @@ const BulkAllowancePanel: React.FC<BulkAllowancePanelProps> = ({
                 type="checkbox"
                 checked={allowances.other.enabled}
                 onChange={() => handleAllowanceToggle('other')}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
               />
               <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">기타</span>
             </label>

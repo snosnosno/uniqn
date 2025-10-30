@@ -149,7 +149,7 @@ const SettingsPage: React.FC = () => {
                   >
                     <Icon
                       className={`h-5 w-5 ${
-                        isActive ? 'text-blue-700' : 'text-gray-500'
+                        isActive ? 'text-blue-700' : 'text-gray-500 dark:text-gray-400'
                       }`}
                     />
                     <span>{tab.label}</span>
@@ -161,7 +161,7 @@ const SettingsPage: React.FC = () => {
 
           {/* 콘텐츠 영역 */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/50 p-6">
               {/* 동의 설정 */}
               {activeTab === 'consent' && (
                 <div>
@@ -188,36 +188,36 @@ const SettingsPage: React.FC = () => {
                   <h2 className="text-2xl font-semibold mb-6">
                     {t('settings.language.title')}
                   </h2>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">
                     {t('settings.language.description')}
                   </p>
                   <div className="space-y-3">
-                    <label className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label className="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
                       <input
                         type="radio"
                         name="language"
                         value="ko"
                         checked={i18n.language === 'ko'}
                         onChange={() => handleLanguageChange('ko')}
-                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 focus:ring-blue-500"
                       />
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">한국어</div>
-                        <div className="text-sm text-gray-500">Korean</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">한국어</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Korean</div>
                       </div>
                     </label>
-                    <label className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label className="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
                       <input
                         type="radio"
                         name="language"
                         value="en"
                         checked={i18n.language === 'en'}
                         onChange={() => handleLanguageChange('en')}
-                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 focus:ring-blue-500"
                       />
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">English</div>
-                        <div className="text-sm text-gray-500">영어</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">English</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">영어</div>
                       </div>
                     </label>
                   </div>

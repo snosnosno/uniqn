@@ -30,7 +30,7 @@ const Loading: React.FC<LoadingProps> = ({
     primary: 'border-primary-500 border-t-transparent',
     secondary: 'border-secondary-500 border-t-transparent',
     white: 'border-white border-t-transparent',
-    gray: 'border-gray-500 border-t-transparent',
+    gray: 'border-gray-500 dark:border-gray-400 border-t-transparent',
   };
 
   const spinner = (
@@ -46,7 +46,7 @@ const Loading: React.FC<LoadingProps> = ({
         aria-label={text || '로딩 중'}
       />
       {text && (
-        <p className={`text-${size === 'sm' ? 'sm' : 'base'} ${color === 'white' ? 'text-white' : 'text-gray-700'} font-medium`}>
+        <p className={`text-${size === 'sm' ? 'sm' : 'base'} ${color === 'white' ? 'text-white' : 'text-gray-700 dark:text-gray-200'} font-medium`}>
           {text}
         </p>
       )}
@@ -117,7 +117,7 @@ export const Skeleton: React.FC<{
   return (
     <div
       className={`
-        bg-gray-200
+        bg-gray-200 dark:bg-gray-700
         ${variantClasses[variant]}
         ${animationClasses[animation]}
         ${className}

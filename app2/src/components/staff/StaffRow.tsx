@@ -176,7 +176,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
       displayStartTime: formatTimeDisplay(scheduledStartTime),
       displayEndTime: scheduledEndTime ? formatTimeDisplay(scheduledEndTime) : '미정',
       startTimeColor: getTimeSlotColor(scheduledStartTime),
-      endTimeColor: scheduledEndTime ? getTimeSlotColor(scheduledEndTime) : 'bg-gray-100 text-gray-500',
+      endTimeColor: scheduledEndTime ? getTimeSlotColor(scheduledEndTime) : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
       hasEndTime: !!scheduledEndTime,
       isScheduledTimeTBD: scheduledStartTime === '미정' // 예정시간이 미정인지 여부
     };
@@ -277,7 +277,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           disabled={!canEdit}
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
             canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
-          } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && canEdit ? 'hover:bg-gray-200' : ''}`}
+          } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && canEdit ? 'hover:bg-gray-200 dark:hover:bg-gray-600' : ''}`}
           title={!canEdit ? "수정 권한이 없습니다" : "예정 퇴근시간 수정"}
         >
           {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
@@ -305,7 +305,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
             {memoizedStaffData.displayName}
           </button>
           {showDate && staff.assignedDate && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
               📅 {formattedDate}
             </div>
           )}
@@ -324,7 +324,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
         <div className="text-sm text-gray-900 dark:text-gray-100 space-y-1">
           {staff.phone && (
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
               <a
@@ -343,7 +343,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(({
           )}
           {staff.email && (
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>

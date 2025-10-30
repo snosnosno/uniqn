@@ -353,7 +353,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:cursor-not-allowed"
                                   />
                                   <span className={`ml-3 ${
-                                    isFull ? 'text-gray-400' : 'text-gray-700'
+                                    isFull ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'
                                   }`}>
                                     <span className="font-medium">
                                       👤 {t(`roles.${r.name}`, r.name)}: {r.count}명
@@ -362,7 +362,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                       ({expandedDates.length}일)
                                     </span>
                                     <span className={`ml-2 text-xs ${
-                                      isFull ? 'text-red-500 font-medium' : 'text-gray-500'
+                                      isFull ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
                                     }`}>
                                       {isFull ? '마감' : `(${confirmedCountPerDay}/${r.count})`}
                                     </span>
@@ -385,12 +385,12 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                   </h4>
                 {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                   <div key={tsIndex} className="mb-4 pl-4 border-l-2 border-blue-300">
-                    <div className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center">
                       ⏰ {ts.isTimeToBeAnnounced ? (
                         <span className="text-orange-600">
                           미정
                           {ts.tentativeDescription && (
-                            <span className="text-gray-600 font-normal ml-2">
+                            <span className="text-gray-600 dark:text-gray-300 font-normal ml-2">
                               ({ts.tentativeDescription})
                             </span>
                           )}
@@ -454,11 +454,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded disabled:cursor-not-allowed"
                             />
                             <span className={`ml-3 text-sm ${
-                              isFull ? 'text-gray-400' : 'text-gray-700'
+                              isFull ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'
                             }`}>
                               👤 {t(`roles.${r.name}`, r.name)} 
                               <span className={`ml-2 text-xs ${
-                                isFull ? 'text-red-500 font-medium' : 'text-gray-500'
+                                isFull ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
                               }`}>
                                 ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
                               </span>
@@ -474,7 +474,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               }
             })
           ) : (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-500">
               <p>지원 가능한 시간대가 없습니다.</p>
             </div>
           )}
@@ -498,10 +498,10 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             >
               {t('common.cancel')}
             </button>
-            <button 
-              onClick={onApply} 
-              disabled={selectedAssignments.length === 0 || isProcessing} 
-              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 min-h-[48px] text-sm sm:text-base"
+            <button
+              onClick={onApply}
+              disabled={selectedAssignments.length === 0 || isProcessing}
+              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[48px] text-sm sm:text-base"
             >
               {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개)`}
             </button>

@@ -24,7 +24,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   const { t } = useTranslation();
 
   if (loading) {
-    return <div className="p-6 text-center">{t('common.messages.loading')}</div>;
+    return <div className="p-6 text-center dark:text-gray-200">{t('common.messages.loading')}</div>;
   }
 
   // 역할 기반 접근 제어 (기존 방식 유지)

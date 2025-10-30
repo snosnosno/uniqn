@@ -131,7 +131,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               {multiSelectMode && (
                 <>
                   {selectedCount > 0 && (
-                    <div className="bg-yellow-400 rounded-full px-3 py-1.5">
+                    <div className="bg-yellow-400 dark:bg-yellow-600 rounded-full px-3 py-1.5">
                       <span className="text-yellow-900 text-sm font-semibold">
                         {selectedCount}개 선택
                       </span>
@@ -185,8 +185,8 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
           
           {staffList.length === 0 && (
             <div className="text-center py-8">
-              <div className="text-gray-400 text-4xl mb-2">👥</div>
-              <div className="text-gray-600 text-sm font-medium">이 날짜에 할당된 스태프가 없습니다</div>
+              <div className="text-gray-400 dark:text-gray-500 text-4xl mb-2">👥</div>
+              <div className="text-gray-600 dark:text-gray-300 text-sm font-medium">이 날짜에 할당된 스태프가 없습니다</div>
             </div>
           )}
         </div>

@@ -114,6 +114,10 @@
   animation: loading 1.5s infinite;
 }
 
+.dark .skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+}
+
 @keyframes loading {
   0% {
     background-position: 200% 0;
@@ -181,4 +185,8 @@
 .focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
+}
+
+.dark .focus-visible {
+  outline-color: #60a5fa;
 }

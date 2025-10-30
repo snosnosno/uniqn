@@ -224,7 +224,7 @@ const ShiftSchedulePage: React.FC = () => {
     const infoCount = validationResult.violations.filter(v => v.severity === 'info').length;
 
     return (
-      <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md dark:shadow-gray-900/50 mb-4">
         <h3 className="text-lg font-semibold mb-3 flex items-center">
           <FaCheckCircle className="w-5 h-5 mr-2 text-blue-600" />
           {t('shiftSchedule.validationResults')}
@@ -261,9 +261,9 @@ const ShiftSchedulePage: React.FC = () => {
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {validationResult.violations.map((violation, index) => (
               <div key={index} className={`text-sm p-2 rounded ${
-                violation.severity === 'error' ? 'bg-red-50 text-red-700' :
-                violation.severity === 'warning' ? 'bg-yellow-50 text-yellow-700' :
-                'bg-blue-50 text-blue-700'
+                violation.severity === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' :
+                violation.severity === 'warning' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400' :
+                'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
               }`}>
                 <span className="font-medium">{violation.type}:</span> {violation.message}
               </div>
@@ -280,7 +280,7 @@ const ShiftSchedulePage: React.FC = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">{t('shiftSchedule.loading')}</p>
+            <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">{t('shiftSchedule.loading')}</p>
           </div>
         </div>
       </div>
@@ -310,7 +310,7 @@ const ShiftSchedulePage: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-600 dark:text-gray-300 mb-2">
           {t('shiftSchedule.title')}
         </h1>
-        <p className="text-gray-500 dark:text-gray-400">{t('shiftSchedule.subtitle')}</p>
+        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('shiftSchedule.subtitle')}</p>
       </div>
 
       {/* 날짜 선택 및 컨트롤 바 */}
@@ -338,8 +338,8 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 시간 간격 선택 - 비활성화됨 */}
           {schedule ? <div className="flex items-center gap-4 opacity-50">
               <div className="flex items-center gap-2">
-                <FaClock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                <label className="font-semibold text-gray-500 dark:text-gray-400">
+                <FaClock className="w-5 h-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                <label className="font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {t('shiftSchedule.timeInterval')}:
                 </label>
               </div>
@@ -409,7 +409,7 @@ const ShiftSchedulePage: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
               <FaTable className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.scheduleGrid')}
-              {schedule ? <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+              {schedule ? <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   ({schedule.timeInterval}{t('shiftSchedule.minuteInterval')})
                 </span> : null}
             </h2>
@@ -479,7 +479,7 @@ const ShiftSchedulePage: React.FC = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-800 dark:text-gray-200">{dealer.staffName}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('shiftSchedule.startTime')}: {dealer.startTime}</p>
                     </div>
                     <button
                       disabled={true}
@@ -494,7 +494,7 @@ const ShiftSchedulePage: React.FC = () => {
             </div> : null}
 
           {/* 사용 가능한 딜러 */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md dark:shadow-gray-900/50">
             <h2 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
               <FaUsers className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.availableDealers')} ({dealersNotInSchedule.length})
@@ -508,8 +508,8 @@ const ShiftSchedulePage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{dealer.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">{dealer.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{Array.isArray(dealer.jobRole) ? dealer.jobRole.join(', ') : ''}</p>
                   </div>
                   {schedule ? <button
                       disabled={true}
@@ -529,7 +529,7 @@ const ShiftSchedulePage: React.FC = () => {
           </div>
 
           {/* 테이블 정보 */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md dark:shadow-gray-900/50">
             <h2 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
               <FaTable className="w-5 h-5 mr-2"/> 
               {t('shiftSchedule.availableTables')} ({tables?.length || 0})
@@ -540,7 +540,7 @@ const ShiftSchedulePage: React.FC = () => {
                   <span className="font-medium text-gray-700 dark:text-gray-300">
                     Table {table.tableNumber}
                   </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     {table.status || 'open'}
                   </span>
                 </div>
@@ -556,8 +556,8 @@ const ShiftSchedulePage: React.FC = () => {
       </div>
 
       {/* 에러 표시 */}
-      {scheduleError ? <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700">
+      {scheduleError ? <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+          <p className="text-red-700 dark:text-red-400">
             {t('common.error')}: {scheduleError.message}
           </p>
         </div> : null}
@@ -565,7 +565,7 @@ const ShiftSchedulePage: React.FC = () => {
     
     {/* 설정 모달 */}
     {isSettingsModalOpen ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">{t('shiftSchedule.settings')}</h3>
             <button 

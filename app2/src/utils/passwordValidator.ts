@@ -108,7 +108,16 @@ const getPasswordStrength = (score: number): 'weak' | 'medium' | 'strong' => {
 /**
  * 비밀번호 강도에 따른 색상 반환
  */
-export const getPasswordStrengthColor = (strength: 'weak' | 'medium' | 'strong'): string => {
+export const getPasswordStrengthColor = (strength: 'weak' | 'medium' | 'strong', isDark = false): string => {
+  if (isDark) {
+    const colorsDark = {
+      weak: '#fca5a5',    // 빨간색 (다크)
+      medium: '#fcd34d',  // 노란색 (다크)
+      strong: '#6ee7b7'   // 초록색 (다크)
+    };
+    return colorsDark[strength];
+  }
+
   const colors = {
     weak: '#dc3545',    // 빨간색
     medium: '#ffc107',  // 노란색

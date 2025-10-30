@@ -433,7 +433,7 @@ const TournamentsPage: React.FC = () => {
                   onClick={() => setFormData({ ...formData, color })}
                   disabled={isSubmitting}
                   className={`w-12 h-12 rounded-lg border-4 transition-all flex items-center justify-center ${
-                    formData.color === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:border-gray-500'
+                    formData.color === color ? 'border-gray-800 dark:border-gray-200 scale-110' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
                   }`}
                   style={{ backgroundColor: color }}
                   title={color}
@@ -530,7 +530,7 @@ const TournamentsPage: React.FC = () => {
                   onClick={() => setFormData({ ...formData, color })}
                   disabled={isSubmitting}
                   className={`w-12 h-12 rounded-lg border-4 transition-all flex items-center justify-center ${
-                    formData.color === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:border-gray-500'
+                    formData.color === color ? 'border-gray-800 dark:border-gray-200 scale-110' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
                   }`}
                   style={{ backgroundColor: color }}
                   title={color}

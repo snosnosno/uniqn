@@ -242,7 +242,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
                 <div className="max-h-32 overflow-y-auto space-y-1">
                   {uniqueStaff.map((staff, index) => (
                     <div key={staff.userId} className="flex items-center text-sm text-gray-700 dark:text-gray-300">
-                      <span className="w-6 text-gray-400">{index + 1}.</span>
+                      <span className="w-6 text-gray-400 dark:text-gray-500">{index + 1}.</span>
                       <span className="font-medium">{staff.name}</span>
                       <span className="ml-2 text-gray-500 dark:text-gray-400">({staff.role})</span>
                     </div>
