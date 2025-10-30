@@ -60,19 +60,33 @@ export const useJobPostingOperations = () => {
     }
 
     try {
+      // postingType 기본값 설정 (undefined 방지)
+      const postingType = formData.postingType || 'regular';
+
       // 칩 비용 계산
       const chipCost = calculateChipCost(
-        formData.postingType,
+        postingType,
         formData.fixedConfig?.durationDays
       );
 
       const dataToSave = {
         ...prepareFormDataForFirebase(formData),
+        postingType, // postingType 명시적 추가 (기본값 보장)
         createdBy: currentUser.uid,
         applicants: [],
         chipCost, // 칩 비용 추가
         isChipDeducted: chipCost > 0 // 칩 차감 여부
       };
+
+      // ✅ DEBUG: 실제 전송 데이터 로깅
+      logger.info('🚀 Firestore에 전송할 데이터:', {
+        component: 'useJobPostingOperations',
+        operation: 'handleCreateJobPosting',
+        data: {
+          keys: Object.keys(dataToSave),
+          dataToSave
+        }
+      });
 
       const docRef = await addDoc(collection(db, 'jobPostings'), dataToSave);
 

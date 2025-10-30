@@ -43,7 +43,7 @@ const POSTING_STYLES: Record<PostingType, {
     bg: 'bg-white dark:bg-gray-800'
   },
   urgent: {
-    border: 'border-2 border-red-500 dark:border-red-400 animate-pulse-border',
+    border: 'border-2 border-red-500 dark:border-red-400',
     icon: '🚨',
     bg: 'bg-white dark:bg-gray-800'
   }

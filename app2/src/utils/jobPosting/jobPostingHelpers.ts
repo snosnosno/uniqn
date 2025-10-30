@@ -167,8 +167,19 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
   const requiredRolesArray = Array.from(requiredRoles);
 
 
+  // undefined 필드를 제거하여 Firestore 에러 방지
+  const cleanFormData: any = {};
+
+  // 기본 필드 복사 (undefined가 아닌 것만)
+  Object.keys(formData).forEach(key => {
+    const value = (formData as any)[key];
+    if (value !== undefined) {
+      cleanFormData[key] = value;
+    }
+  });
+
   const result = {
-    ...formData,
+    ...cleanFormData,
     // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
     createdAt: convertToTimestamp(new Date()),
     updatedAt: convertToTimestamp(new Date()),
@@ -190,7 +201,38 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
     })()),
     // 역할별 급여 정보 추가
     ...(formData.useRoleSalary && { useRoleSalary: formData.useRoleSalary }),
-    ...(formData.roleSalaries && Object.keys(formData.roleSalaries).length > 0 && { roleSalaries: formData.roleSalaries })
+    ...(formData.roleSalaries && Object.keys(formData.roleSalaries).length > 0 && { roleSalaries: formData.roleSalaries }),
+    // 타입별 config 필드 추가 (undefined가 아닐 때만)
+    ...(formData.fixedConfig && {
+      fixedConfig: {
+        ...formData.fixedConfig,
+        // expiresAt과 createdAt을 Firestore Timestamp로 변환
+        expiresAt: formData.fixedConfig.expiresAt
+          ? convertToTimestamp(formData.fixedConfig.expiresAt)
+          : convertToTimestamp(new Date(Date.now() + formData.fixedConfig.durationDays * 24 * 60 * 60 * 1000)),
+        createdAt: formData.fixedConfig.createdAt
+          ? convertToTimestamp(formData.fixedConfig.createdAt)
+          : convertToTimestamp(new Date())
+      }
+    }),
+    ...(formData.tournamentConfig && {
+      tournamentConfig: {
+        ...formData.tournamentConfig,
+        // submittedAt을 Firestore Timestamp로 변환
+        submittedAt: formData.tournamentConfig.submittedAt
+          ? convertToTimestamp(formData.tournamentConfig.submittedAt)
+          : convertToTimestamp(new Date())
+      }
+    }),
+    ...(formData.urgentConfig && {
+      urgentConfig: {
+        ...formData.urgentConfig,
+        // createdAt을 Firestore Timestamp로 변환
+        createdAt: formData.urgentConfig.createdAt
+          ? convertToTimestamp(formData.urgentConfig.createdAt)
+          : convertToTimestamp(new Date())
+      }
+    })
   };
 
   logger.debug('🚀 Firebase 저장용 최종 데이터:', { component: 'jobPostingHelpers', data: result });

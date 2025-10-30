@@ -278,9 +278,14 @@ service cloud.firestore {
         request.resource.data.status in ['open', 'closed', 'in_progress', 'completed'] &&
         request.resource.data.postingType in ['regular', 'fixed', 'tournament', 'urgent'] &&
         (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
+        (!('contactPhone' in request.resource.data) || isSafeText(request.resource.data.contactPhone, 25)) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp) &&
+        // 추가 필드 검증 (v0.2.4 - 칩 시스템)
+        (!('applicants' in request.resource.data) || request.resource.data.applicants is list) &&
+        (!('chipCost' in request.resource.data) || (request.resource.data.chipCost is number && request.resource.data.chipCost >= 0 && request.resource.data.chipCost <= 100)) &&
+        (!('isChipDeducted' in request.resource.data) || request.resource.data.isChipDeducted is bool) &&
         // 타입별 config 검증
         (!('fixedConfig' in request.resource.data) || (request.resource.data.postingType == 'fixed' && validateFixedConfig(request.resource.data.fixedConfig))) &&
         (!('tournamentConfig' in request.resource.data) || (request.resource.data.postingType == 'tournament' && validateTournamentConfig(request.resource.data.tournamentConfig))) &&

@@ -229,7 +229,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                       postingType: 'tournament',
                       tournamentConfig: {
                         approvalStatus: 'pending' as const,
-                        submittedAt: null as any  // 서버에서 설정
+                        submittedAt: new Date()  // ✅ Firestore Rules 검증 통과 위해 현재 시간 설정
                       },
                       fixedConfig: undefined,  // 다른 config 제거
                       urgentConfig: undefined
@@ -267,7 +267,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                       urgentConfig: {
                         chipCost,
                         priority: 'high' as const,
-                        createdAt: null as any  // 서버에서 설정
+                        createdAt: new Date()  // ✅ Firestore Rules 검증 통과 위해 현재 시간 설정
                       },
                       fixedConfig: undefined,  // 다른 config 제거
                       tournamentConfig: undefined
@@ -342,13 +342,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     onChange={(e) => {
                       const durationDays = 7;
                       const chipCost = calculateChipCost('fixed', durationDays);
+                      const now = new Date();
+                      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
                       setFormData({
                         ...formData,
                         fixedConfig: {
                           durationDays,
                           chipCost,
-                          expiresAt: null as any, // 서버에서 설정
-                          createdAt: null as any  // 서버에서 설정
+                          expiresAt,  // ✅ 만료 시간 계산
+                          createdAt: now  // ✅ 현재 시간
                         }
                       });
                     }}
@@ -381,13 +383,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     onChange={(e) => {
                       const durationDays = 30;
                       const chipCost = calculateChipCost('fixed', durationDays);
+                      const now = new Date();
+                      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
                       setFormData({
                         ...formData,
                         fixedConfig: {
                           durationDays,
                           chipCost,
-                          expiresAt: null as any,
-                          createdAt: null as any
+                          expiresAt,  // ✅ 만료 시간 계산
+                          createdAt: now  // ✅ 현재 시간
                         }
                       });
                     }}
@@ -421,13 +425,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     onChange={(e) => {
                       const durationDays = 90;
                       const chipCost = calculateChipCost('fixed', durationDays);
+                      const now = new Date();
+                      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
                       setFormData({
                         ...formData,
                         fixedConfig: {
                           durationDays,
                           chipCost,
-                          expiresAt: null as any,
-                          createdAt: null as any
+                          expiresAt,  // ✅ 만료 시간 계산
+                          createdAt: now  // ✅ 현재 시간
                         }
                       });
                     }}

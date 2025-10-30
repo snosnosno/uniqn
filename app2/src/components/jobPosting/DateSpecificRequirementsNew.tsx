@@ -478,7 +478,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                             onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
                           placeholder="예시 : 추후공지"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
                         />
                       </div>
                     ) : (
@@ -492,7 +492,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           onChange={(e) =>
                             onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
@@ -553,7 +553,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                       onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value || 'other');
                                     }}
                                     placeholder="역할명을 입력하세요"
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               </div>
@@ -599,7 +599,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
                                   onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
                                 }}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>
                             
