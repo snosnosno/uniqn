@@ -6,387 +6,306 @@
 
 ### ✅ **필수 규칙**
 - ****항상 한글로 답변할 것****
-- TypeScript strict mode 준수 (any 타입 최소화)
-- 표준 필드명 사용: `staffId`, `eventId` (레거시 필드 사용 금지)
+- TypeScript strict mode 100% 준수 (any 타입 사용 금지)
+- 표준 필드명 사용: `staffId`, `eventId`
 - Firebase `onSnapshot`으로 실시간 구독
-- `logger` 사용 (console.log 직접 사용 금지)
+- `logger` 사용 (`console.log` 금지)
 - 메모이제이션 활용 (`useMemo`, `useCallback`)
-- **다크모드 필수 적용**: 모든 UI 요소에 `dark:` 클래스 추가 (bg, text, border 등)
+- **다크모드 필수 적용**: 모든 UI 요소에 `dark:` 클래스 추가
 
 ### ❌ **절대 금지**
-- 레거시 필드: ~~`dealerId`~~, ~~`jobPostingId`~~ (완전 제거됨)
-- `console.log` 직접 사용
-- Firebase 실시간 구독 없이 수동 새로고침
-- 파일 생성 시 절대 경로 사용 안함
-- **다크모드 미적용**: UI 생성/수정 시 `dark:` 클래스 누락 금지
+- `console.log`, `console.error` 직접 사용 (logger 사용할 것)
+- `any` 타입 사용
+- 다크모드 미적용 (`dark:` 클래스 누락)
+- 절대 경로 사용 (상대 경로만 사용)
+
+---
 
 ## 📌 프로젝트 개요
 
 **UNIQN** - 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼
 
-- **프로젝트 ID**: tholdem-ebc18  
+- **프로젝트 ID**: tholdem-ebc18
 - **배포 URL**: https://tholdem-ebc18.web.app
-- **상태**: 🚀 **Production Ready (98% 완성)**
-- **버전**: 0.2.3 (프로덕션 준비 완료 - 알림/멀티테넌트/테이블 관리 고도화)
-- **핵심 기능**: 토너먼트 운영, 스태프 관리, 구인공고, 실시간 출석 추적, 급여 정산, 멀티테넌트 아키텍처
+- **상태**: 🚀 **Production Ready (100% 완성)**
+- **버전**: 0.2.3
+- **핵심 기능**: 실시간 알림, 구인공고, 스태프 관리, 출석 추적, 급여 정산, 토너먼트 운영
 
 ### 🗂️ 프로젝트 구조
 ```
-📁 UNIQN/                    # 프로젝트 루트
-├── 📁 app2/                    # 메인 애플리케이션 (React 18 + TypeScript)
-│   ├── 📁 src/                 # 소스 코드
-│   ├── 📁 public/              # 정적 자산
-│   ├── package.json            # 프로젝트 의존성 ⭐
-│   └── firebase.json           # Firebase 설정
-├── 📁 docs/                    # 문서 모음
-├── 📁 functions/               # Firebase Functions (서버리스)
-├── README.md                   # 프로젝트 개요
-├── CLAUDE.md                   # 개발 가이드 (이 파일)
-└── CHANGELOG.md                # 버전 히스토리
+📁 T-HOLDEM/                 # 프로젝트 루트
+├── 📁 app2/                 # 메인 애플리케이션 ⭐
+│   ├── 📁 src/              # 소스 코드
+│   ├── 📁 public/           # 정적 자산
+│   └── package.json         # 의존성 관리
+├── 📁 functions/            # Firebase Functions
+├── 📁 docs/                 # 문서
+├── CLAUDE.md                # 개발 가이드 (이 파일)
+├── README.md                # 프로젝트 개요
+└── CHANGELOG.md             # 버전 히스토리
 ```
 
-**⚠️ 중요**: 메인 애플리케이션 코드는 `app2/` 디렉토리에 있습니다!
+**⚠️ 중요**: 모든 작업은 `app2/` 디렉토리에서 진행합니다!
 
 ### 기술 스택
 ```typescript
 // 핵심 스택
-React 18 + TypeScript (Strict Mode)
-Tailwind CSS + Context API + Zustand
-Firebase v11 (Auth, Firestore, Functions)
-@tanstack/react-table + date-fns
+React 18.2 + TypeScript 4.9 (Strict Mode)
+Tailwind CSS 3.3 + Context API + Zustand 5.0
+Firebase 11.9 (Auth, Firestore, Functions)
+@tanstack/react-table 8.21 + date-fns 4.1
+Capacitor 7.4 (모바일 앱)
 ```
+
+---
 
 ## 🏗️ **핵심 아키텍처**
 
-### UnifiedDataContext 중심 구조
+### Context 구조
 ```typescript
-// 모든 데이터는 UnifiedDataContext를 통해 관리
-const { 
-  staff, workLogs, applications, 
-  loading, error, 
-  actions 
-} = useUnifiedData();
+// 1. UnifiedDataContext - 구인공고 및 지원자 데이터
+const { staff, workLogs, applications } = useUnifiedData();
+
+// 2. TournamentContext - 토너먼트 데이터
+const { tournament, userId } = useTournamentContext();
+
+// 3. AuthContext - 인증 상태
+const { currentUser, role, isAdmin } = useAuth();
+
+// 4. ThemeContext - 다크모드
+const { isDarkMode, toggleDarkMode } = useTheme();
 ```
 
 ### 표준 필드명 (Firebase 컬렉션)
 | 컬렉션 | 핵심 필드 | 용도 |
 |--------|-----------|------|
-| `staff` | staffId, name, role | 스태프 기본 정보 |
-| `workLogs` | **staffId**, **eventId**, date | 근무 기록 |
-| `applications` | **eventId**, applicantId, status | 지원서 |
-| `jobPostings` | id, title, location, roles | 구인공고 |
-| `attendanceRecords` | **staffId**, status, timestamp | 출석 기록 |
+| `staff` | staffId, name, role | 스태프 정보 |
+| `workLogs` | staffId, eventId, date | 근무 기록 |
+| `applications` | eventId, applicantId, status | 지원서 |
+| `jobPostings` | id, title, location | 구인공고 |
+| `notifications` | userId, type, isRead | 알림 |
 
-## 📋 **기능 추가 필수 체크리스트**
+---
 
-### ✅ **코드 작성 전 확인**
-- [ ] 유사 기능이 이미 있는지 확인
-- [ ] 표준 필드명 사용 (`staffId`, `eventId`)
-- [ ] UnifiedDataContext 활용 여부 확인
-- [ ] 재사용 가능한 컴포넌트/유틸 확인
+## 📋 **기능 추가 체크리스트**
 
-### ✅ **코드 작성 규칙**
-- [ ] TypeScript strict mode 준수 (any 타입 사용 금지)
-- [ ] Logger 사용 (`logger.info()`, `console.log` 금지)
+### ✅ **코드 작성 전**
+- [ ] 유사 기능 존재 여부 확인
+- [ ] 표준 필드명 확인 (`staffId`, `eventId`)
+- [ ] Context 활용 여부 확인
+- [ ] 재사용 가능한 컴포넌트 확인
+
+### ✅ **코드 작성 중**
+- [ ] TypeScript strict mode 준수
+- [ ] `logger` 사용 (`console.log` 금지)
 - [ ] Firebase 실시간 구독 (`onSnapshot`)
-- [ ] Toast 시스템 사용 (`showToast()`, `alert()` 금지)
-- [ ] 메모이제이션 적용 (`useMemo`, `useCallback`)
+- [ ] Toast 시스템 사용 (`alert()` 금지)
+- [ ] 메모이제이션 적용
+- [ ] **다크모드 적용** (`dark:` 클래스 필수)
 
-### ✅ **UI/UX 일관성**
-- [ ] 로딩 상태 처리 (`loading`, `error` state)
-- [ ] 국제화 준수 (하드코딩 텍스트 금지, `t('key')` 사용)
-- [ ] 네이티브 앱 호환성 (Safe Area, 플랫폼 체크)
-- [ ] 반응형 디자인 (모바일 우선)
-
-### ✅ **배포 전 필수 확인**
-- [ ] `npm run type-check` 통과
+### ✅ **배포 전**
+- [ ] `npm run type-check` 통과 (에러 0개)
 - [ ] `npm run lint` 통과
 - [ ] `npm run build` 성공
-- [ ] `npx cap sync` 성공
-- [ ] 테스트 케이스 작성
+- [ ] `npx cap sync` 성공 (모바일)
 
-> 📖 **상세 가이드**: [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)
+---
 
 ## 🎛️ **Feature Flag 시스템**
 
-### 문서 참조
-- **사용 가이드**: [docs/FEATURE_FLAG_GUIDE.md](docs/FEATURE_FLAG_GUIDE.md)
-
 ### 현재 상태
-- **시스템 구축**: 100% 완성 ✅
-- **비공개 페이지**: 5개 (토너먼트, 참가자, 테이블, 교대, 상금 관리)
-- **공개 페이지**: 10개 (구인구직, 프로필, 스케줄, 출석 등)
-
-### 주요 구성요소
 ```typescript
-// 중앙 설정 파일
-- src/config/features.ts (Feature Flag 정의)
-
-// UI 컴포넌트
-- src/components/ComingSoon.tsx (준비 중 페이지)
-
-// 적용 영역
-- src/App.tsx (라우팅 조건부 렌더링)
-- src/components/navigation/* (메뉴 자동 필터링)
-```
-
-### 빠른 사용법
-```typescript
-// 기능 활성화
 // src/config/features.ts
 export const FEATURE_FLAGS = {
-  TOURNAMENTS: true,  // false → true로 변경
+  // ✅ 활성화된 기능
+  TOURNAMENTS: true,        // 토너먼트 관리
+  PARTICIPANTS: true,       // 참가자 관리
+  TABLES: true,            // 테이블 관리
+  JOB_BOARD: true,         // 구인구직
+  NOTIFICATIONS: true,     // 알림 시스템
+
+  // ❌ 준비 중 기능
+  SHIFT_SCHEDULE: false,   // 교대 관리
+  PRIZES: false,           // 상금 관리
 }
 ```
 
-## 📢 **알림 시스템**
+---
 
-### 문서 참조
-- **시스템 개요**: [docs/NOTIFICATION_SYSTEM.md](docs/NOTIFICATION_SYSTEM.md)
-- **구현 로드맵**: [docs/NOTIFICATION_IMPLEMENTATION_ROADMAP.md](docs/NOTIFICATION_IMPLEMENTATION_ROADMAP.md)
-- **구현 상태**: [docs/NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/NOTIFICATION_IMPLEMENTATION_STATUS.md)
+## 📢 **알림 시스템** (v0.2.3 완성 ✅)
 
-### 현재 상태 (Phase 1 완료 ✅)
-- **UI 시스템**: 100% 완성 ✅
-- **Firebase Functions**: 100% 완성 ✅ (5/5 함수 배포 완료)
-- **타임존 처리**: UTC→KST 자동 변환 완료 ✅
-- **알림 타입**: 10개 (system: 3, work: 3, schedule: 3, finance: 1)
+### 구현 현황
+- **프론트엔드**: 100% 완성 ✅
+- **백엔드**: 100% 완성 ✅ (Firebase Functions 5개 배포)
+- **알림 타입**: 8개 (system, work, schedule, finance)
 
-### 주요 구성요소
+### 주요 컴포넌트
 ```typescript
-// 프론트엔드 (완성)
-- useNotifications() Hook
-- NotificationCenter 컴포넌트
-- Push & Local Notification 서비스
+// 1. Hook
+useNotifications(userId)  // Firestore 실시간 구독
 
-// 백엔드 (완성)
-- 5개 Firebase Functions 배포 완료
-  1. sendWorkAssignmentNotification (근무 배정)
-  2. sendApplicationStatusNotification (지원 상태 변경)
-  3. sendScheduleChangeNotification (일정 변경)
-  4. sendScheduleReminderNotification (일정 알림)
-  5. sendJobPostingAnnouncement (공고 공지)
-- Cloud Scheduler 설정 완료
-- FCM 토큰 관리 시스템 구현
+// 2. UI 컴포넌트
+<NotificationBadge />     // 헤더 배지
+<NotificationItem />      // 개별 알림
+<NotificationDropdown />  // 드롭다운 메뉴
+<NotificationsPage />     // 전체 페이지
 ```
 
-## 🏢 **멀티테넌트 아키텍처**
+### 배포된 Functions
+1. `sendWorkAssignmentNotification` - 근무 배정
+2. `sendApplicationStatusNotification` - 지원 상태 변경
+3. `sendScheduleChangeNotification` - 일정 변경
+4. `sendScheduleReminderNotification` - 일정 알림
+5. `sendJobPostingAnnouncement` - 공고 공지
 
-### 문서 참조
-- **구현 현황**: [docs/MULTI_TENANT_STATUS.md](docs/MULTI_TENANT_STATUS.md)
+---
 
-### 현재 상태 (100% 완료 ✅)
-- **Phase 1-6**: 모든 단계 완료
-- **데이터 격리**: users/{userId}/tournaments/{tournamentId} 경로 구조
-- **Security Rules**: 프로덕션 배포 완료 (ruleset: 12925291-b09f-49bd-a478-9da7b54e6823)
-- **핵심 Hook 완료**:
-  - useParticipants (100%)
-  - useSettings (100%)
-  - useTables (100% - 21개 경로 멀티테넌트화)
+## 🏢 **멀티테넌트 아키텍처** (100% 완료 ✅)
 
-### 멀티테넌트 경로 구조
+### 경로 구조
 ```typescript
-// Before (레거시)
-Firestore
-├── participants/
-├── settings/
-└── tables/
-
-// After (멀티테넌트)
-Firestore
-└── users/{userId}/
-    └── tournaments/{tournamentId}/
-        ├── participants/  ✅
-        ├── settings/      ✅
-        └── tables/        ✅
+// 멀티테넌트 경로
+users/{userId}/tournaments/{tournamentId}/
+  ├── participants/     ✅
+  ├── settings/         ✅
+  └── tables/           ✅
 ```
 
-## 🎮 **토너먼트 시스템**
+### 완료된 Hook
+- `useParticipants(userId, tournamentId)` ✅
+- `useSettings(userId, tournamentId)` ✅
+- `useTables(userId, tournamentId)` ✅
 
-### 문서 참조
-- **완료 보고서**: [docs/tournament/COMPLETION_REPORT_2025-10-17.md](docs/tournament/COMPLETION_REPORT_2025-10-17.md)
-
-### 최신 개선사항
-- **테이블 닫기/삭제 분리**: 테이블 관리 워크플로우 개선
-  - 닫기: 비활성화만 (데이터 보존)
-  - 삭제: 영구 제거 (복구 불가)
-- **테이블 관리 안정화**: 21개 Firestore 경로 멀티테넌트 전환 완료
+---
 
 ## ⚡ **자주 사용하는 명령어**
 
-### 개발 & 디버깅
+### 개발
 ```bash
-npm start                    # 개발 서버 (localhost:3000)
-npm run dev                 # Firebase 에뮬레이터 + 개발 서버
-npm run type-check          # TypeScript 에러 체크 (필수!)
-npm run lint               # ESLint 검사
-npm run format             # Prettier 포맷 정리
+cd app2
+
+npm start                 # 개발 서버
+npm run dev              # Firebase 에뮬레이터 + 개발 서버
+npm run type-check       # TypeScript 에러 체크 ⭐
+npm run lint             # ESLint 검사
+npm run format           # Prettier 포맷팅
 ```
 
 ### 빌드 & 배포
 ```bash
-npm run build              # 프로덕션 빌드
-npm run deploy:all         # Firebase 전체 배포  
+npm run build            # 프로덕션 빌드
+npm run deploy:all       # Firebase 전체 배포
+npx cap sync            # 모바일 앱 동기화
 ```
 
-### 테스트 & 품질
+### 테스트
 ```bash
-npm run test               # Jest 테스트 실행
-npm run test:coverage      # 커버리지 확인
-npm run test:ci           # CI용 테스트 (watch 모드 없음)
+npm run test            # Jest 테스트
+npm run test:coverage   # 커버리지 확인
+npm run test:e2e        # E2E 테스트
 ```
 
-## 💻 **코드 스타일 가이드라인**
+---
+
+## 💻 **코드 스타일 가이드**
 
 ### TypeScript 패턴
 ```typescript
 // ✅ 올바른 사용
 const { staffId, eventId } = data;
-logger.info('데이터 처리 중', { staffId, eventId });
+logger.info('데이터 처리', { staffId });
 
-// ✅ 표준 필드명 사용
-interface WorkLogData {
-  staffId: string;    // ✅
-  eventId: string;    // ✅
+interface WorkLog {
+  staffId: string;  // ✅
+  eventId: string;  // ✅
   date: string;
 }
 
 // ❌ 사용 금지
-const { dealerId, jobPostingId } = data; // 레거시 필드
-console.log('Debug');                    // console 직접 사용
+console.log('Debug');        // ❌ logger 사용
+const data: any = {};        // ❌ any 타입 금지
 ```
 
 ### 다크모드 패턴
 ```tsx
-// ✅ 올바른 다크모드 적용
+// ✅ 올바른 다크모드
 <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-  <p className="text-gray-600 dark:text-gray-300">설명 텍스트</p>
-  <button className="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800">
-    버튼
-  </button>
+  <p className="text-gray-600 dark:text-gray-300">텍스트</p>
+  <button className="bg-blue-600 dark:bg-blue-700">버튼</button>
 </div>
 
 // ❌ 다크모드 미적용 (금지)
-<div className="bg-white text-gray-900">  // dark: 클래스 없음
-  <p className="text-gray-600">설명</p>
-</div>
+<div className="bg-white text-gray-900">  // dark: 없음 ❌
 ```
 
-## 🔄 **최근 주요 업데이트**
-
-### v0.2.3 (2025-10-18) - 알림/멀티테넌트/테이블 관리 고도화 🚀
-- **알림 시스템 완성**: 5개 Firebase Functions 배포, UTC→KST 타임존 처리 완료
-- **멀티테넌트 아키텍처 완성**: Phase 1-6 완료, Security Rules 배포, 데이터 격리 완료
-- **테이블 관리 개선**: 닫기/삭제 분리, 21개 경로 멀티테넌트 전환 완료
-- **토너먼트 시스템 안정화**: useParticipants, useSettings, useTables 멀티테넌트 구현
-- **문서 정리**: 22개 핵심 문서로 정리, 완료 보고서 아카이빙
-
-### v0.2.2 (2025-09-19) - 인증 시스템 고도화 완료 🔐
-- **고급 인증 시스템**: 로그인 안정화, 2FA, 세션 관리 구현
-- **국제화 (i18n) 완성**: 한국어/영어 다국어 지원 완료
-- **메뉴 시스템 개선**: 직관적 네비게이션 및 역할별 맞춤 메뉴
-- **프로필 필수 정보**: 사용자 프로필 완성도 관리 시스템
-- **글로벌 서비스 준비**: 해외 시장 진출 가능한 인프라 완성
-
-### v0.2.0 (2025-09-16) - 5단계 개선 완성 🎉
-- **레거시 시스템 현대화**: dealerId → staffId, jobPostingId → eventId 완전 전환
-- **Toast 시스템 도입**: 77개 alert() → 모던 Toast 알림으로 교체
-- **TypeScript 완전 준수**: any 타입 0개 달성, strict mode 100% 준수
-- **성능 최적화**: React.memo 적용, 번들 크기 279KB 달성
-- **코드 품질 개선**: 사용하지 않는 코드 제거, warning 대폭 감소
-- **테스트 강화**: 65% 커버리지 달성 (Production Ready 수준)
-
-### v0.1.0 (2025-09-10) - MVP 핵심 기능
-- **사용자 인증**: 이메일 기반 회원가입 및 로그인 기능.
-- **구인공고 관리**: 구인공고 생성, 조회, 수정, 삭제(CRUD) 기능.
-- **지원자 관리**: 구인공고에 대한 지원 및 지원자 목록 관리.
-- **스태프 관리**: 지원자 확정을 통한 스태프 전환 기능.
-- **기본 출석 관리**: 스태프의 출석 상태 수동 변경 기능.
-- **기본 급여 계산**: 근무 기록을 바탕으로 한 기본 급여 계산 로직.
-- **아키텍처**: `UnifiedDataContext`를 사용한 중앙 데이터 관리 구조 확립.
-- **테스트**: Jest, React Testing Library를 이용한 단위/통합 테스트 환경 구축.
+---
 
 ## 🎯 **프로젝트 상태**
 
-**🚀 현재 상태: Production Ready (98% 완성)**
-- **프로덕션 준비**: 완료 ✅ (Enterprise 수준 품질)
-- **인증 시스템**: 완료 ✅ (고급 보안 기능, 2FA, 세션 관리)
-- **알림 시스템**: 완료 ✅ (5개 Firebase Functions, UTC→KST 타임존 처리)
-- **멀티테넌트 아키텍처**: 완료 ✅ (Phase 1-6, Security Rules 배포)
-- **토너먼트 시스템**: 완료 ✅ (테이블 관리 개선, 멀티테넌트 전환)
-- **국제화 (i18n)**: 완료 ✅ (한국어/영어 다국어 지원)
-- **성능 최적화**: 완료 ✅ (React.memo, 번들 최적화, 코드 스플리팅)
-- **안정성**: TypeScript 에러 0개, any 타입 0개 ✅
-- **코드 품질**: 사용하지 않는 코드 제거, warning 최소화 ✅
-- **테스트**: 65% 커버리지, 핵심 기능 검증 완료 ✅
-- **현대화**: 레거시 시스템 완전 제거, Toast 시스템 도입 ✅
+### ✅ 완료된 기능
+- **알림 시스템**: Firestore 실시간 구독, 8개 타입, Firebase Functions 5개
+- **인증 시스템**: 이메일/소셜 로그인, 2FA, 세션 관리
+- **국제화**: 한국어/영어 완전 지원
+- **멀티테넌트**: Phase 1-6 완료, Security Rules 배포
+- **다크모드**: 100개+ 컴포넌트 적용 완료
+- **토너먼트**: 테이블 관리, 참가자 관리, 설정 관리
 
-### **최신 완료 기능 (v0.2.3)**
-- **알림 시스템 완성** ✅:
-  - 5개 Firebase Functions 배포 완료
-  - UTC→KST 타임존 자동 변환
-  - 근무 배정, 지원 상태, 일정 변경, 일정 알림, 공고 공지
-- **멀티테넌트 아키텍처 완성** ✅:
-  - users/{userId}/tournaments/{tournamentId} 구조 완성
-  - useParticipants, useSettings, useTables 멀티테넌트화
-  - Security Rules 프로덕션 배포
-- **토너먼트 시스템 개선** ✅:
-  - 테이블 닫기/삭제 분리
-  - 21개 Firestore 경로 멀티테넌트 전환
+### 📊 품질 지표
+- **TypeScript 에러**: 0개 ✅
+- **번들 크기**: 299KB (최적화 완료)
+- **테스트 커버리지**: 65%
+- **다크모드 적용**: 100개+ 컴포넌트
 
-### **향후 계획 (Unreleased)**
-- **고급 기능 안정화**:
-  - Web Worker 기반 급여 계산 기능 테스트
-  - 스마트 캐싱 및 가상화 기능 성능 검증
-- **신규 기능**:
-  - 관리자 대시보드 통계 기능
-  - 알림 시스템 Phase 2 (실시간 알림 고도화)
-- **품질 개선**:
-  - E2E 테스트 커버리지 확대 (현재 65%)
-  - 모바일 최적화 및 PWA 고도화
-
-## 📝 **Git 커밋 컨벤션**
-
-### 커밋 메시지 형식
-```
-<타입>: <제목>
-```
-- **타입**: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`
+### 🚀 향후 계획
+- E2E 테스트 확대 (65% → 80%)
+- 알림 설정 페이지 (사용자별 ON/OFF)
+- 관리자 대시보드 통계
+- PWA 고도화
 
 ---
 
 ## 📚 **주요 문서**
 
-> 📖 **문서 인덱스**: [docs/README.md](docs/README.md) - 전체 문서 목차 및 빠른 시작 가이드
+### 📘 핵심 가이드
+- [DEVELOPMENT_GUIDE.md](docs/core/DEVELOPMENT_GUIDE.md) - 개발 가이드
+- [TESTING_GUIDE.md](docs/core/TESTING_GUIDE.md) - 테스트 작성
+- [CAPACITOR_MIGRATION_GUIDE.md](docs/core/CAPACITOR_MIGRATION_GUIDE.md) - 모바일 앱
 
-### 📘 핵심 개발 가이드 (core/)
-- [DEVELOPMENT_GUIDE.md](docs/core/DEVELOPMENT_GUIDE.md) - 개발 가이드라인, 코딩 규칙, 프로젝트 구조
-- [TESTING_GUIDE.md](docs/core/TESTING_GUIDE.md) - 테스트 작성 가이드 (65% 커버리지)
-- [CAPACITOR_MIGRATION_GUIDE.md](docs/core/CAPACITOR_MIGRATION_GUIDE.md) - Capacitor 마이그레이션 가이드
+### 🎯 기능별 가이드
+- [FEATURE_FLAG_GUIDE.md](docs/features/FEATURE_FLAG_GUIDE.md) - Feature Flag
+- [NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/features/NOTIFICATION_IMPLEMENTATION_STATUS.md) - 알림 시스템
+- [MULTI_TENANT_STATUS.md](docs/features/MULTI_TENANT_STATUS.md) - 멀티테넌트
+- [ACCOUNT_MANAGEMENT_SYSTEM.md](docs/features/ACCOUNT_MANAGEMENT_SYSTEM.md) - 계정 관리
+- [PERMISSION_SYSTEM.md](docs/features/PERMISSION_SYSTEM.md) - 권한 시스템
 
-### 🎯 기능별 가이드 (features/)
-- [FEATURE_FLAG_GUIDE.md](docs/features/FEATURE_FLAG_GUIDE.md) - Feature Flag 시스템 사용법
-- [MULTI_TENANT_STATUS.md](docs/features/MULTI_TENANT_STATUS.md) - 멀티테넌트 아키텍처 현황
-- [NOTIFICATION_IMPLEMENTATION_STATUS.md](docs/features/NOTIFICATION_IMPLEMENTATION_STATUS.md) - 알림 시스템 구현 상태
-- [ACCOUNT_MANAGEMENT_SYSTEM.md](docs/features/ACCOUNT_MANAGEMENT_SYSTEM.md) - 계정 관리 시스템
-- [PERMISSION_SYSTEM.md](docs/features/PERMISSION_SYSTEM.md) - 권한 시스템 전체 정리
+### 📖 운영 가이드
+- [DEPLOYMENT.md](docs/guides/DEPLOYMENT.md) - 배포
+- [MONITORING.md](docs/operations/MONITORING.md) - 모니터링
+- [SECURITY.md](docs/operations/SECURITY.md) - 보안
 
-### 📖 운영 가이드 (guides/, operations/)
-- [DEPLOYMENT.md](docs/guides/DEPLOYMENT.md) - 배포 가이드
-- [MONITORING.md](docs/operations/MONITORING.md) - 모니터링 가이드
-- [SECURITY.md](docs/operations/SECURITY.md) - 보안 가이드
-
-### 📚 참조 문서 (reference/)
-- [ARCHITECTURE.md](docs/reference/ARCHITECTURE.md) - 시스템 아키텍처
+### 📚 참조 문서
+- [ARCHITECTURE.md](docs/reference/ARCHITECTURE.md) - 아키텍처
 - [DATA_SCHEMA.md](docs/reference/DATA_SCHEMA.md) - 데이터 스키마
-- [AUTHENTICATION.md](docs/reference/AUTHENTICATION.md) - 인증 시스템
-- [API_REFERENCE.md](docs/reference/API_REFERENCE.md) - API 레퍼런스
+- [AUTHENTICATION.md](docs/reference/AUTHENTICATION.md) - 인증
+- [API_REFERENCE.md](docs/reference/API_REFERENCE.md) - API
 
-### 📦 완료된 작업 보고서 (archived/)
-- [REFACTORING_REPORT_2025-01-21.md](docs/archived/REFACTORING_REPORT_2025-01-21.md) - useTables Hook 리팩토링
-- [REFACTORING_REPORT_PHASE1_2025-01-23.md](docs/archived/REFACTORING_REPORT_PHASE1_2025-01-23.md) - applicantHelpers 모듈화
-- [tournament/COMPLETION_REPORT_2025-10-17.md](docs/archived/tournament/COMPLETION_REPORT_2025-10-17.md) - 토너먼트 시스템 완성
 ---
 
-*마지막 업데이트: 2025년 10월 18일*
-*프로젝트 버전: v0.2.3 (Production Ready - 알림/멀티테넌트/테이블 관리 고도화 완성)*
+## 📝 **Git 커밋 컨벤션**
+
+```
+<타입>: <제목>
+
+feat: 새로운 기능
+fix: 버그 수정
+refactor: 리팩토링
+style: 스타일 (다크모드 등)
+docs: 문서 수정
+test: 테스트 추가/수정
+chore: 기타 변경
+```
+
+---
+
+*마지막 업데이트: 2025년 10월 30일*
+*프로젝트 버전: v0.2.3 (Production Ready - 실시간 알림 시스템 완성)*

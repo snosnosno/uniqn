@@ -252,6 +252,7 @@
     "edit": "Edit",
     "add": "Add",
     "search": "Search",
+    "role": "Role",
     "messages": {
       "loading": "Loading...",
       "saving": "Saving...",
