@@ -132,13 +132,17 @@
 - 테스트 커버리지: 65% 유지
 - 번들 크기: 299KB (최적화 유지)
 
-### 배포 완료
+### 배포 완료 (100%)
 - ✅ 코드 품질 검증 완료 (TypeScript 0 에러, 테스트 243개 통과)
 - ✅ Firestore Indexes 배포 완료 (3개 인덱스)
 - ✅ Firestore Rules 배포 완료 (타입 검증 함수)
-- ✅ Firebase Functions 배포 완료 (3개 함수: approveJobPosting, rejectJobPosting, expireFixedPostings)
+- ✅ Firebase Functions 배포 완료 (5개 함수 전체)
+  - approveJobPosting (Gen2 callable)
+  - rejectJobPosting (Gen2 callable)
+  - expireFixedPostings (Gen2 scheduled)
+  - onTournamentApprovalChange (Gen2 firestore trigger) ✅ 재배포 성공
+  - onFixedPostingExpired (Gen2 firestore trigger) ✅ 재배포 성공
 - ✅ Hosting 배포 완료 (https://tholdem-ebc18.web.app)
-- ⚠️ Trigger Functions 배포 대기 (Eventarc 권한 설정 후 재시도 필요: onTournamentApprovalChange, onFixedPostingExpired)
 
 ## [0.2.3] - 2025-10-02
 

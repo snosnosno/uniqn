@@ -3,7 +3,7 @@
 **배포일**: 2025년 10월 31일
 **프로젝트**: UNIQN (구 T-HOLDEM)
 **버전**: 0.2.4
-**배포 상태**: ✅ **성공** (핵심 기능 100% 배포 완료)
+**배포 상태**: ✅ **완료** (모든 기능 100% 배포 완료)
 
 ---
 
@@ -45,12 +45,12 @@ firebase deploy --only firestore:rules
 
 ---
 
-### 3. Firebase Functions (3/5개)
+### 3. Firebase Functions (5/5개)
 ```bash
 cd functions && firebase deploy --only functions
 ```
 
-**성공적으로 배포된 함수**:
+**배포 완료된 함수 (전체)**:
 1. ✅ `approveJobPosting` (v2 callable)
    - 대회 공고 승인 함수
    - Admin 전용
@@ -69,18 +69,21 @@ cd functions && firebase deploy --only functions
    - Region: us-central1
    - Memory: 256MB
 
-**배포 실패 (권한 이슈)**:
-- ⚠️ `onTournamentApprovalChange` - Eventarc 권한 설정 필요
-- ⚠️ `onFixedPostingExpired` - Eventarc 권한 설정 필요
+4. ✅ `onTournamentApprovalChange` (v2 firestore trigger)
+   - 대회 공고 승인/거부 시 알림 발송
+   - Trigger: jobPostings/{id} 업데이트
+   - Region: us-central1
+   - Memory: 256MB
+   - **재배포 성공** (Eventarc 권한 전파 후)
 
-**원인**: Gen2 Trigger Functions 첫 사용 시 Eventarc Service Agent 권한 전파 지연
+5. ✅ `onFixedPostingExpired` (v2 firestore trigger)
+   - 고정 공고 만료 시 알림 발송
+   - Trigger: jobPostings/{id} 업데이트
+   - Region: us-central1
+   - Memory: 256MB
+   - **재배포 성공** (Eventarc 권한 전파 후)
 
-**해결 방법**: 몇 분 후 재배포 시도
-```bash
-cd functions && firebase deploy --only functions:onTournamentApprovalChange,functions:onFixedPostingExpired
-```
-
-**상태**: ✅ 핵심 기능 배포 완료, ⚠️ 트리거 함수는 권한 설정 후 재시도 필요
+**상태**: ✅ 모든 함수 배포 완료 (5/5개)
 
 ---
 
@@ -127,14 +130,7 @@ firebase deploy --only hosting
 
 ## ⚠️ 알려진 이슈
 
-### 1. Trigger Functions 배포 실패
-**함수**: `onTournamentApprovalChange`, `onFixedPostingExpired`
-**원인**: Eventarc Service Agent 권한 전파 지연 (Gen2 Functions 첫 사용)
-**영향**: 승인/거부 시 자동 알림 발송 불가, 만료 시 자동 알림 불가
-**임시 해결**: 수동으로 알림 생성 가능
-**영구 해결**: 5-10분 후 재배포 시도
-
-### 2. ESLint 경고 (50개)
+### 1. ESLint 경고 (50개)
 **종류**: unused variables, missing dependencies in hooks
 **영향**: 없음 (프로덕션 빌드 정상 작동)
 **권장 조치**: 향후 점진적 정리
@@ -143,12 +139,14 @@ firebase deploy --only hosting
 
 ## 📋 배포 후 작업
 
-### 즉시 수행
-- [ ] **Trigger Functions 재배포** (5-10분 후)
+### 완료된 작업
+- [x] **Trigger Functions 재배포** ✅ 성공
   ```bash
   cd functions
   firebase deploy --only functions:onTournamentApprovalChange,functions:onFixedPostingExpired
   ```
+  - onTournamentApprovalChange: 배포 완료
+  - onFixedPostingExpired: 배포 완료
 
 ### 권장 작업
 - [ ] **프로덕션 모니터링** (24시간)
