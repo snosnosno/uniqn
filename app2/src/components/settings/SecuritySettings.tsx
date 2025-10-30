@@ -16,7 +16,6 @@ import { useTranslation } from 'react-i18next';
 import {
   KeyIcon,
   BellIcon,
-  ClockIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useSecuritySettings } from '../../hooks/useSecuritySettings';
