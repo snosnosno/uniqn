@@ -11,12 +11,14 @@
 - Firebase `onSnapshot`으로 실시간 구독
 - `logger` 사용 (console.log 직접 사용 금지)
 - 메모이제이션 활용 (`useMemo`, `useCallback`)
+- **다크모드 필수 적용**: 모든 UI 요소에 `dark:` 클래스 추가 (bg, text, border 등)
 
 ### ❌ **절대 금지**
 - 레거시 필드: ~~`dealerId`~~, ~~`jobPostingId`~~ (완전 제거됨)
 - `console.log` 직접 사용
 - Firebase 실시간 구독 없이 수동 새로고침
 - 파일 생성 시 절대 경로 사용 안함
+- **다크모드 미적용**: UI 생성/수정 시 `dark:` 클래스 누락 금지
 
 ## 📌 프로젝트 개요
 
@@ -252,6 +254,22 @@ interface WorkLogData {
 // ❌ 사용 금지
 const { dealerId, jobPostingId } = data; // 레거시 필드
 console.log('Debug');                    // console 직접 사용
+```
+
+### 다크모드 패턴
+```tsx
+// ✅ 올바른 다크모드 적용
+<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+  <p className="text-gray-600 dark:text-gray-300">설명 텍스트</p>
+  <button className="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800">
+    버튼
+  </button>
+</div>
+
+// ❌ 다크모드 미적용 (금지)
+<div className="bg-white text-gray-900">  // dark: 클래스 없음
+  <p className="text-gray-600">설명</p>
+</div>
 ```
 
 ## 🔄 **최근 주요 업데이트**

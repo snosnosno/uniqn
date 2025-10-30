@@ -71,7 +71,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         </div>
         
         {/* 기본 정보: 2x2 컴팩트 그리드 */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
           <div>
             <span className="font-medium">{t('common.gender')}:</span>
             <span className="ml-1">
@@ -102,7 +102,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(({ applicant, job
         </div>
         
         {/* 연락처 정보: 한 줄로 컴팩트하게 */}
-        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
           <div>
             <span className="font-medium">{t('common.email')}:</span>
             <span className="ml-1 text-xs break-all">{applicant.email || t('common.none')}</span>

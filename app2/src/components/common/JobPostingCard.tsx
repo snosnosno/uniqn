@@ -278,11 +278,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       case 'admin-list':
         return 'flex items-center min-w-0';
       case 'user-card':
-        return 'text-sm text-gray-500 dark:text-gray-400';
+        return 'text-sm text-gray-600 dark:text-gray-300';
       case 'detail-info':
         return 'flex items-center min-w-0';
       default:
-        return 'text-sm text-gray-500 dark:text-gray-400';
+        return 'text-sm text-gray-600 dark:text-gray-300';
     }
   };
 
@@ -765,14 +765,14 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           <div className="mt-2 flex justify-between items-center gap-1">
             {/* 문의 연락처 - 왼쪽 */}
             {post.contactPhone && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                 📞 {post.contactPhone}
               </span>
             )}
 
             {/* 구인자 정보 - 오른쪽 */}
             {creatorInfo && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                 {getCreatorDisplayText()}
               </span>
             )}
