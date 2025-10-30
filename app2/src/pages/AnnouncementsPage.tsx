@@ -21,6 +21,7 @@ import EditAnnouncementModal from '../components/announcements/EditAnnouncementM
 import AnnouncementDetailModal from '../components/announcements/AnnouncementDetailModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemAnnouncements } from '../hooks/useSystemAnnouncements';
+import { logger } from '../utils/logger';
 import type { SystemAnnouncement } from '../types';
 import {
   getPriorityLabel,
@@ -85,7 +86,10 @@ const AnnouncementsPage: React.FC = () => {
     try {
       await deleteAnnouncement(announcementId);
     } catch (err) {
-      console.error('삭제 실패:', err);
+      logger.error('공지사항 삭제 실패', err instanceof Error ? err : new Error(String(err)), {
+        component: 'AnnouncementsPage',
+        data: { announcementId }
+      });
     }
   }, [deleteAnnouncement]);
 
