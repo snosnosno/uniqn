@@ -104,6 +104,7 @@ module.exports = {
         'slide-out': 'slideOut 0.2s ease-in',
         'fade-in': 'fadeIn 0.2s ease-out',
         'fade-out': 'fadeOut 0.2s ease-in',
+        'pulse-border': 'pulseBorder 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', // 긴급 공고 깜빡임
       },
       keyframes: {
         slideIn: {
@@ -121,6 +122,16 @@ module.exports = {
         fadeOut: {
           '0%': { opacity: '1' },
           '100%': { opacity: '0' },
+        },
+        pulseBorder: {
+          '0%, 100%': {
+            borderColor: 'rgb(239 68 68)',  // red-500
+            opacity: '1'
+          },
+          '50%': {
+            borderColor: 'rgb(239 68 68)',  // red-500
+            opacity: '0.5'
+          }
         },
       },
     },

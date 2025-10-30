@@ -11,6 +11,7 @@ import { prepareFormDataForFirebase } from '../utils/jobPosting/jobPostingHelper
 import { validateJobPostingForm } from '../utils/jobPosting/formValidation';
 import { createSnapshotFromJobPosting } from '../utils/scheduleSnapshot';
 import { ScheduleEvent } from '../types/schedule';
+import { calculateChipCost } from '../utils/jobPosting/chipCalculator';
 
 export const useJobPostingOperations = () => {
   const { currentUser } = useAuth();
@@ -59,10 +60,18 @@ export const useJobPostingOperations = () => {
     }
 
     try {
+      // 칩 비용 계산
+      const chipCost = calculateChipCost(
+        formData.postingType,
+        formData.fixedConfig?.durationDays
+      );
+
       const dataToSave = {
         ...prepareFormDataForFirebase(formData),
         createdBy: currentUser.uid,
-        applicants: []
+        applicants: [],
+        chipCost, // 칩 비용 추가
+        isChipDeducted: chipCost > 0 // 칩 차감 여부
       };
 
       const docRef = await addDoc(collection(db, 'jobPostings'), dataToSave);
@@ -72,7 +81,9 @@ export const useJobPostingOperations = () => {
       // - 조건: status === 'open'
       // - 수신자: 모든 staff 사용자
       logger.info('공고 생성 완료 - Firebase Functions가 알림 전송 예정', {
-        data: { eventId: docRef.id }
+        component: 'useJobPostingOperations',
+        operation: 'handleCreateJobPosting',
+        data: { eventId: docRef.id, postingType: formData.postingType, chipCost }
       });
 
       return docRef.id;

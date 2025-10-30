@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import JobBoardErrorBoundary from '../../components/errors/JobBoardErrorBoundary';
 import JobPostingSkeleton from '../../components/JobPostingSkeleton';
 import PreQuestionModal from '../../components/modals/PreQuestionModal';
@@ -10,11 +10,19 @@ import MyApplicationsTab from './components/MyApplicationsTab';
 import ApplyModal from './components/ApplyModal';
 import JobDetailModal from './components/JobDetailModal';
 import { useJobBoard } from './hooks/useJobBoard';
+import { JobBoardTabs } from './components/JobBoardTabs';
+import { DateSlider } from '../../components/jobPosting/DateSlider';
+import { PostingType } from '../../types/jobPosting/jobPosting';
+import { filterPostingsByDate } from '../../utils/jobPosting/dateFilter';
 
 /**
  * 구인공고 게시판 메인 페이지 컴포넌트
  */
 const JobBoardPage = () => {
+  // 탭 및 필터 상태
+  const [activePostingType, setActivePostingType] = useState<PostingType | 'myApplications' | 'all'>('regular');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
   const {
     // 상태
     activeTab,
@@ -81,37 +89,29 @@ const JobBoardPage = () => {
       <div className="container">
         <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('jobBoard.title')}</h1>
 
-        {/* 탭 네비게이션 */}
-        <div className="flex space-x-4 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist">
-          <button
-            onClick={() => setActiveTab('jobs')}
-            className={`pb-2 px-4 font-medium transition-colors ${
-              activeTab === 'jobs'
-                ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            role="tab"
-            aria-selected={activeTab === 'jobs'}
-            aria-controls="jobs-panel"
-            id="jobs-tab"
-          >
-            구인 목록
-          </button>
-          <button
-            onClick={() => setActiveTab('myApplications')}
-            className={`pb-2 px-4 font-medium transition-colors ${
-              activeTab === 'myApplications'
-                ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            role="tab"
-            aria-selected={activeTab === 'myApplications'}
-            aria-controls="myApplications-panel"
-            id="myApplications-tab"
-          >
-            내 지원 현황
-          </button>
-        </div>
+        {/* 탭 네비게이션 (새로운 시스템) */}
+        <JobBoardTabs
+          activeTab={activePostingType}
+          onTabChange={(tab) => {
+            setActivePostingType(tab);
+            setSelectedDate(null); // 탭 변경 시 날짜 필터 초기화
+
+            // 기존 activeTab 상태도 업데이트 (하위 호환성)
+            if (tab === 'myApplications') {
+              setActiveTab('myApplications');
+            } else {
+              setActiveTab('jobs');
+            }
+          }}
+        />
+
+        {/* 날짜 슬라이더 (지원 탭에만 표시) */}
+        {activePostingType === 'regular' && (
+          <DateSlider
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
+        )}
         
         {/* Error Handling */}
         {error && (
@@ -146,7 +146,24 @@ const JobBoardPage = () => {
         {activeTab === 'jobs' && (
           <div role="tabpanel" id="jobs-panel" aria-labelledby="jobs-tab">
             <JobListTab
-            jobPostings={jobPostings}
+            jobPostings={(() => {
+              let filtered = jobPostings;
+
+              // postingType 필터링
+              if (activePostingType !== 'all' && activePostingType !== 'myApplications') {
+                filtered = filtered.filter(post => {
+                  // normalizePostingType은 이미 useJobPostings Hook에서 처리됨
+                  return post.postingType === activePostingType;
+                });
+              }
+
+              // 날짜 필터링 (지원 탭에만)
+              if (activePostingType === 'regular' && selectedDate) {
+                filtered = filterPostingsByDate(filtered, selectedDate);
+              }
+
+              return filtered;
+            })()}
             appliedJobs={appliedJobs}
             onApply={handleOpenApplyModal}
             onViewDetail={handleOpenDetailModal}

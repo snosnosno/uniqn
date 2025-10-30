@@ -1,6 +1,56 @@
-import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting, Benefits } from '../../types/jobPosting';
+import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting, Benefits, PostingType } from '../../types/jobPosting';
 import { convertToTimestamp, getTodayString } from './dateUtils';
 import { logger } from '../logger';
+
+/**
+ * 레거시 데이터를 새 postingType으로 정규화
+ *
+ * 변환 규칙:
+ * 1. postingType 필드가 있으면 그대로 사용
+ * 2. type='application' → 'regular'
+ * 3. recruitmentType='application' → 'regular'
+ * 4. type='fixed' → 'fixed'
+ * 5. recruitmentType='fixed' → 'fixed'
+ * 6. 필드 없음 → 'regular' (기본값)
+ *
+ * @param posting - JobPosting 객체 (부분적일 수 있음)
+ * @returns PostingType ('regular' | 'fixed' | 'tournament' | 'urgent')
+ */
+export const normalizePostingType = (
+  posting: Partial<JobPosting>
+): PostingType => {
+  // 1. 새 필드 우선
+  if (posting.postingType) {
+    return posting.postingType;
+  }
+
+  // 2. 레거시 필드 변환
+  const legacyType = posting.type || posting.recruitmentType;
+
+  if (legacyType === 'application') {
+    logger.warn('레거시 application 타입을 regular로 변환', {
+      component: 'jobPostingHelpers',
+      operation: 'normalizePostingType'
+    });
+    return 'regular';
+  }
+
+  if (legacyType === 'fixed') {
+    logger.warn('레거시 fixed 타입을 fixed로 유지', {
+      component: 'jobPostingHelpers',
+      operation: 'normalizePostingType'
+    });
+    return 'fixed';
+  }
+
+  // 3. 기본값 (에러 케이스)
+  const error = new Error('postingType 필드 없음, regular로 기본 설정');
+  logger.error('postingType 필드 없음, regular로 기본 설정', error, {
+    component: 'jobPostingHelpers',
+    operation: 'normalizePostingType'
+  });
+  return 'regular';
+};
 
 /**
  * 초기 시간대 객체 생성
@@ -21,6 +71,7 @@ export const createInitialFormData = () => {
   return {
     title: '',
     type: 'application' as const,
+    postingType: 'regular' as const, // 새 필드: 기본값 regular
     timeSlots: [createInitialTimeSlot()],
     dateSpecificRequirements: [createNewDateSpecificRequirement(today)],
     description: '',

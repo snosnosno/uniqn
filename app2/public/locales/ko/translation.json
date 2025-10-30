@@ -520,6 +520,36 @@
       }
     },
     "types": {},
+    "tabs": {
+      "regular": "지원",
+      "fixed": "고정",
+      "tournament": "대회",
+      "urgent": "긴급",
+      "myApplications": "내지원"
+    },
+    "fixed": {
+      "durationLabel": "노출 기간",
+      "7days": "7일",
+      "30days": "30일",
+      "90days": "90일",
+      "7daysWithChip": "7일 (3칩)",
+      "30daysWithChip": "30일 (5칩)",
+      "90daysWithChip": "90일 (10칩)",
+      "7daysDescription": "1주일 노출",
+      "30daysDescription": "1개월 노출",
+      "90daysDescription": "3개월 노출",
+      "selectedDuration": "선택한 기간",
+      "chipCostLabel": "차감 예정",
+      "expiresIn": "만료: D-{{days}}",
+      "expired": "만료됨",
+      "expiresOn": "만료일: {{date}}"
+    },
+    "urgent": {
+      "label": "긴급",
+      "chipCost": "5칩 (고정)",
+      "badge": "긴급 모집",
+      "description": "긴급 공고로 상단에 노출됩니다"
+    },
     "noResults": "검색 결과가 없습니다.",
     "loadMore": "더 보기",
     "applying": "지원 중...",

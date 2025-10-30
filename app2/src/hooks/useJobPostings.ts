@@ -11,6 +11,7 @@ import {
   // JobPostingUtils
 } from '../types/jobPosting';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
+import { normalizePostingType } from '../utils/jobPosting/jobPostingHelpers';
 
 // Import types from centralized type definitions
 // Re-export types for backward compatibility
@@ -37,6 +38,18 @@ export const useJobPostings = (filters: JobPostingFilters) => {
         })) as JobPosting[];
         
         // Client-side filtering for cases where Firebase query constraints are limited
+
+        // Normalize postingType for all jobs (레거시 데이터 호환성)
+        jobs = jobs.map(job => ({
+          ...job,
+          postingType: normalizePostingType(job)
+        }));
+
+        // postingType 필터 적용
+        if (filters.postingType && filters.postingType !== 'all') {
+          jobs = jobs.filter(job => normalizePostingType(job) === filters.postingType);
+        }
+
         if (filters.startDate && filters.role && filters.role !== 'all') {
           jobs = jobs.filter(job => {
             const requiredRoles = job.requiredRoles || [];
@@ -51,7 +64,7 @@ export const useJobPostings = (filters: JobPostingFilters) => {
         if (filters.startDate && filters.role && filters.role !== 'all' && filters.type && filters.type !== 'all') {
           jobs = jobs.filter(job => job.recruitmentType === filters.type);
         }
-        
+
         return jobs;
       }, 'fetchJobPostings');
     },
@@ -86,8 +99,20 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
           id: doc.id,
           ...doc.data()
         })) as JobPosting[];
-        
+
         // Client-side filtering for cases where Firebase query constraints are limited
+
+        // Normalize postingType for all jobs (레거시 데이터 호환성)
+        jobs = jobs.map(job => ({
+          ...job,
+          postingType: normalizePostingType(job)
+        }));
+
+        // postingType 필터 적용
+        if (filters.postingType && filters.postingType !== 'all') {
+          jobs = jobs.filter(job => normalizePostingType(job) === filters.postingType);
+        }
+
         if (filters.startDate && filters.role && filters.role !== 'all') {
           jobs = jobs.filter(job => {
             const requiredRoles = job.requiredRoles || [];
@@ -102,7 +127,7 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
         if (filters.startDate && filters.role && filters.role !== 'all' && filters.type && filters.type !== 'all') {
           jobs = jobs.filter(job => job.recruitmentType === filters.type);
         }
-        
+
         // Return jobs and cursor for next page
         return {
           jobs,

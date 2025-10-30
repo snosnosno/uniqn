@@ -526,6 +526,36 @@
       "search": {
         "placeholder": "Search in title or description..."
       }
+    },
+    "tabs": {
+      "regular": "Regular",
+      "fixed": "Fixed",
+      "tournament": "Tournament",
+      "urgent": "Urgent",
+      "myApplications": "My Applications"
+    },
+    "fixed": {
+      "durationLabel": "Duration",
+      "7days": "7 days",
+      "30days": "30 days",
+      "90days": "90 days",
+      "7daysWithChip": "7 days (3 chips)",
+      "30daysWithChip": "30 days (5 chips)",
+      "90daysWithChip": "90 days (10 chips)",
+      "7daysDescription": "1 week exposure",
+      "30daysDescription": "1 month exposure",
+      "90daysDescription": "3 months exposure",
+      "selectedDuration": "Selected duration",
+      "chipCostLabel": "Chip cost",
+      "expiresIn": "Expires: D-{{days}}",
+      "expired": "Expired",
+      "expiresOn": "Expires on: {{date}}"
+    },
+    "urgent": {
+      "label": "Urgent",
+      "chipCost": "5 chips (fixed)",
+      "badge": "Urgent Hiring",
+      "description": "Featured at the top as urgent posting"
     }
   },
   "jobPosting": {
