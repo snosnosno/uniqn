@@ -23,6 +23,15 @@ export { broadcastNewJobPosting } from './notifications/broadcastNewJobPosting';
 export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';
 export { sendLoginNotification, recordLoginFailure } from './account/loginNotification';
 
+// --- Job Posting Approval Functions (Phase 7) ---
+export { approveJobPosting } from './api/jobPostings/approveJobPosting';
+export { rejectJobPosting } from './api/jobPostings/rejectJobPosting';
+export { onTournamentApprovalChange } from './triggers/onTournamentApprovalChange';
+
+// --- Job Posting Scheduled Functions (Phase 5) ---
+export { expireFixedPostings } from './scheduled/expireFixedPostings';
+export { onFixedPostingExpired } from './triggers/onFixedPostingExpired';
+
 // --- Existing Functions (placeholders for brevity) ---
 export const onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });
 export const onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { /* ... */ });

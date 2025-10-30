@@ -223,7 +223,18 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   name="postingType"
                   value="tournament"
                   checked={formData.postingType === 'tournament'}
-                  onChange={handleFormChange}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      postingType: 'tournament',
+                      tournamentConfig: {
+                        approvalStatus: 'pending' as const,
+                        submittedAt: null as any  // 서버에서 설정
+                      },
+                      fixedConfig: undefined,  // 다른 config 제거
+                      urgentConfig: undefined
+                    });
+                  }}
                   disabled={isSubmitting}
                   className="sr-only"
                 />
@@ -272,6 +283,20 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                 </div>
               </label>
             </div>
+
+            {/* 알림 메시지 */}
+            {formData.postingType === 'tournament' && (
+              <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                <div className="flex items-start">
+                  <span className="text-purple-600 dark:text-purple-400 text-sm">
+                    ℹ️
+                  </span>
+                  <div className="ml-2 text-sm text-purple-800 dark:text-purple-300">
+                    <span>대회 공고는 관리자 승인 후 게시됩니다. 승인 결과는 알림으로 안내드립니다.</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 칩 비용 알림 */}
             {(formData.postingType === 'fixed' || formData.postingType === 'urgent') && (

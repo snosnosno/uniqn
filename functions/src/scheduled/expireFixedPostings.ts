@@ -50,11 +50,7 @@ export const expireFixedPostings = onSchedule(
 
       if (snapshot.empty) {
         logger.info('만료된 고정 공고가 없습니다');
-        return {
-          success: true,
-          expiredCount: 0,
-          message: 'No expired postings found'
-        };
+        return;
       }
 
       logger.info(`${snapshot.size}개 만료된 공고 발견`);
@@ -91,12 +87,6 @@ export const expireFixedPostings = onSchedule(
         expiredCount: processedCount,
         timestamp: new Date().toISOString()
       });
-
-      return {
-        success: true,
-        expiredCount: processedCount,
-        message: `${processedCount} postings expired successfully`
-      };
     } catch (error) {
       logger.error('고정 공고 만료 처리 실패', error, {
         errorMessage: error instanceof Error ? error.message : String(error)

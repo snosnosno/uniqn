@@ -61,6 +61,9 @@ const NotificationTestPage = React.lazy(() => import('./pages/NotificationTestPa
 const AnnouncementsPage = React.lazy(() => import('./pages/AnnouncementsPage'));
 const NotificationSettingsPage = React.lazy(() => import('./pages/NotificationSettingsPage'));
 
+// Job Posting Approval Page (Admin Only)
+const ApprovalManagementPage = React.lazy(() => import('./pages/ApprovalManagementPage'));
+
 // Settings & Legal Pages
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/legal/TermsOfServicePage'));
@@ -272,6 +275,7 @@ const App: React.FC = () => {
                           <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                           <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
                           <Route path="inquiries" element={<Suspense fallback={<LoadingSpinner />}><InquiryManagementPage /></Suspense>} />
+                          <Route path="job-posting-approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalManagementPage /></Suspense>} />
                       </Route>
                     </Route>
                   </Route>

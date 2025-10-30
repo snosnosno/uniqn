@@ -60,6 +60,33 @@
         {"fieldPath": "createdBy", "order": "ASCENDING"},
         {"fieldPath": "status", "order": "ASCENDING"}
       ]
+    },
+    {
+      "collectionId": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "postingType", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionId": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "postingType", "order": "ASCENDING"},
+        {"fieldPath": "createdBy", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionId": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "postingType", "order": "ASCENDING"},
+        {"fieldPath": "tournamentConfig.approvalStatus", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
     }
   ],
   "fieldOverrides": []

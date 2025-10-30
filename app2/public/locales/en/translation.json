@@ -556,6 +556,40 @@
       "chipCost": "5 chips (fixed)",
       "badge": "Urgent Hiring",
       "description": "Featured at the top as urgent posting"
+    },
+    "tournament": {
+      "label": "Tournament",
+      "badge": "Tournament Posting",
+      "approvalRequired": "Admin approval required",
+      "description": "Tournament postings will be published after admin approval. You will be notified of the approval result",
+      "status": {
+        "pending": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "approval": {
+        "pageTitle": "Tournament Posting Approval Management",
+        "pageDescription": "Review pending tournament postings and approve or reject them",
+        "emptyTitle": "No pending approvals",
+        "emptyDescription": "New tournament postings will appear here when submitted",
+        "approveButton": "Approve",
+        "rejectButton": "Reject",
+        "modalApproveTitle": "Approve Posting",
+        "modalRejectTitle": "Reject Posting",
+        "modalMessage": "Are you sure you want to {{action}} this posting?",
+        "modalReasonLabel": "Rejection Reason",
+        "modalReasonPlaceholder": "Enter rejection reason (minimum 10 characters)",
+        "modalReasonCount": "{{count}}/10 characters minimum",
+        "modalCancel": "Cancel",
+        "modalConfirmApprove": "Approve",
+        "modalConfirmReject": "Reject",
+        "processing": "Processing...",
+        "errorReasonRequired": "Please enter a rejection reason",
+        "errorReasonLength": "Rejection reason must be at least 10 characters",
+        "errorProcessing": "An error occurred during processing",
+        "successApprove": "Posting has been approved",
+        "successReject": "Posting has been rejected"
+      }
     }
   },
   "jobPosting": {
