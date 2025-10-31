@@ -70,22 +70,22 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       value: 'not_started',
       label: t('attendance.status.notStarted', '출근 전'),
       icon: <FaClock className="w-5 h-5" />,
-      color: 'text-attendance-notStarted-text',
-      bgColor: 'bg-attendance-notStarted-bg'
+      color: 'text-attendance-notStarted-text dark:text-attendance-notStarted-textDark',
+      bgColor: 'bg-attendance-notStarted-bg dark:bg-attendance-notStarted-bgDark'
     },
     {
       value: 'checked_in',
       label: t('attendance.status.checkedIn', '출근'),
       icon: <FaCheckCircle className="w-5 h-5" />,
-      color: 'text-attendance-checkedIn-text',
-      bgColor: 'bg-attendance-checkedIn-bg'
+      color: 'text-attendance-checkedIn-text dark:text-attendance-checkedIn-textDark',
+      bgColor: 'bg-attendance-checkedIn-bg dark:bg-attendance-checkedIn-bgDark'
     },
     {
       value: 'checked_out',
       label: t('attendance.status.checkedOut', '퇴근'),
       icon: <FaCheckCircle className="w-5 h-5" />,
-      color: 'text-attendance-checkedOut-text',
-      bgColor: 'bg-attendance-checkedOut-bg'
+      color: 'text-attendance-checkedOut-text dark:text-attendance-checkedOut-textDark',
+      bgColor: 'bg-attendance-checkedOut-bg dark:bg-attendance-checkedOut-bgDark'
     }
   ];
 

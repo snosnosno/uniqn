@@ -39,27 +39,27 @@ const AttendanceStatusCard: React.FC<AttendanceStatusCardProps> = React.memo(({
     switch (status) {
       case 'not_started':
         return {
-          icon: <ClockIcon className={`${iconSize} text-attendance-notStarted-text`} />,
+          icon: <ClockIcon className={`${iconSize} text-attendance-notStarted-text dark:text-attendance-notStarted-textDark`} />,
           text: t('attendance.status.notStarted', '출근 전'),
-          bgColor: 'bg-attendance-notStarted-bg',
-          textColor: 'text-attendance-notStarted-text',
-          borderColor: 'border-attendance-notStarted-border'
+          bgColor: 'bg-attendance-notStarted-bg dark:bg-attendance-notStarted-bgDark',
+          textColor: 'text-attendance-notStarted-text dark:text-attendance-notStarted-textDark',
+          borderColor: 'border-attendance-notStarted-border dark:border-attendance-notStarted-borderDark'
         };
       case 'checked_in':
         return {
-          icon: <CheckCircleIcon className={`${iconSize} text-attendance-checkedIn-text`} />,
+          icon: <CheckCircleIcon className={`${iconSize} text-attendance-checkedIn-text dark:text-attendance-checkedIn-textDark`} />,
           text: t('attendance.status.checkedIn', '출근'),
-          bgColor: 'bg-attendance-checkedIn-bg',
-          textColor: 'text-attendance-checkedIn-text',
-          borderColor: 'border-attendance-checkedIn-border'
+          bgColor: 'bg-attendance-checkedIn-bg dark:bg-attendance-checkedIn-bgDark',
+          textColor: 'text-attendance-checkedIn-text dark:text-attendance-checkedIn-textDark',
+          borderColor: 'border-attendance-checkedIn-border dark:border-attendance-checkedIn-borderDark'
         };
       case 'checked_out':
         return {
-          icon: <CheckCircleIcon className={`${iconSize} text-attendance-checkedOut-text`} />,
+          icon: <CheckCircleIcon className={`${iconSize} text-attendance-checkedOut-text dark:text-attendance-checkedOut-textDark`} />,
           text: t('attendance.status.checkedOut', '퇴근'),
-          bgColor: 'bg-attendance-checkedOut-bg',
-          textColor: 'text-attendance-checkedOut-text',
-          borderColor: 'border-attendance-checkedOut-border'
+          bgColor: 'bg-attendance-checkedOut-bg dark:bg-attendance-checkedOut-bgDark',
+          textColor: 'text-attendance-checkedOut-text dark:text-attendance-checkedOut-textDark',
+          borderColor: 'border-attendance-checkedOut-border dark:border-attendance-checkedOut-borderDark'
         };
       default:
         return {
