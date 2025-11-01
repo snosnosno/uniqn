@@ -266,10 +266,10 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-base font-medium text-yellow-800">
+                      <h3 className="text-base font-medium text-yellow-800 dark:text-yellow-300">
                         정말 삭제하시겠습니까?
                       </h3>
-                      <div className="mt-2 text-sm text-yellow-700">
+                      <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
                         <p className="font-medium mb-2">
                           {selectedStaff.length}명의 스태프가 영구적으로 삭제됩니다.
                         </p>
