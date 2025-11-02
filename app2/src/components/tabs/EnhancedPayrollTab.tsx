@@ -619,7 +619,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
               <div className="h-10 w-px bg-gray-200 dark:bg-gray-700"></div>
               <div className="text-center">
                 <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">세후 급여 합계</h3>
-                <p className="text-xl font-bold text-green-600">
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">
                   {payrollData
                     .filter(data => data.afterTaxAmount !== undefined && data.afterTaxAmount > 0)
                     .reduce((sum, data) => sum + (data.afterTaxAmount || 0), 0)
@@ -763,7 +763,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
                       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {data.totalAmount.toLocaleString('ko-KR')}원
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
                         {data.afterTaxAmount !== undefined && data.afterTaxAmount > 0
                           ? `${data.afterTaxAmount.toLocaleString('ko-KR')}원`
                           : '-'}
