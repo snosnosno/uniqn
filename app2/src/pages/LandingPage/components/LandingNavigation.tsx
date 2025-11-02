@@ -165,7 +165,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
             {currentUser ? (
               <button
                 onClick={handleDashboardClick}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 내 프로필
               </button>
@@ -183,7 +183,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 </button>
                 <button
                   onClick={handleSignupClick}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   무료 시작하기
                 </button>
@@ -273,7 +273,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 {currentUser ? (
                   <button
                     onClick={handleDashboardClick}
-                    className="block w-full px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-300"
+                    className="block w-full px-3 py-2 text-base font-medium text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg transition-colors duration-300"
                   >
                     내 프로필
                   </button>
@@ -287,7 +287,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                     </button>
                     <button
                       onClick={handleSignupClick}
-                      className="block w-full px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-300"
+                      className="block w-full px-3 py-2 text-base font-medium text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg transition-colors duration-300"
                     >
                       무료 시작하기
                     </button>
