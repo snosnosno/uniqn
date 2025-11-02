@@ -100,7 +100,7 @@ const StaffDateGroup: React.FC<StaffDateGroupProps> = ({
                     });
                   }
                 }}
-                className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="px-3 py-1 text-xs bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 {selectedInGroup === staffList.length ? '그룹 해제' : '그룹 선택'}
               </button>

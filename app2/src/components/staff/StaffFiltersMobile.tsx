@@ -76,12 +76,12 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             총 {totalStaffCount}명의 스태프
           </div>
           {hasActiveFilters && filteredStaffCount !== totalStaffCount && (
-            <div className="text-blue-600">
+            <div className="text-blue-600 dark:text-blue-400">
               필터링된 결과: {filteredStaffCount}명
             </div>
           )}
           {multiSelectMode && selectedCount > 0 && (
-            <div className="text-purple-600 font-medium">
+            <div className="text-purple-600 dark:text-purple-400 font-medium">
               {selectedCount}명 선택됨
             </div>
           )}
@@ -106,7 +106,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2 rounded-lg transition-colors ${
-              showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-700'
+              showFilters ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

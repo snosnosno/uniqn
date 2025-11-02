@@ -67,7 +67,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 날짜 선택 */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <FaCalendarAlt className="w-5 h-5 text-blue-600" />
+              <FaCalendarAlt className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <label className="font-semibold text-gray-700 dark:text-gray-300">
                 {t('shiftSchedule.selectDate', '날짜 선택')}:
               </label>
@@ -113,7 +113,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
         {/* 교대관리 메인 영역 (3/4) */}
         <div className="xl:col-span-3">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <h4 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+            <h4 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
               <FaTable className="w-5 h-5 mr-2"/>
               교대관리
             </h4>
@@ -141,7 +141,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
           {/* 할당된 스태프 */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <h4 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+            <h4 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
               <FaUsers className="w-5 h-5 mr-2"/>
               할당된 스태프 ({staff.length})
             </h4>
