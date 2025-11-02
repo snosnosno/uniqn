@@ -279,9 +279,9 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
               onViewChange('dayGridMonth');
             }}
             className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-              selectedView === 'dayGridMonth' 
-                ? 'bg-blue-600 text-white' 
-                : 'hover:bg-gray-100'
+              selectedView === 'dayGridMonth'
+                ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             월

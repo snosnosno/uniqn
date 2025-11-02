@@ -61,8 +61,8 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   `;
 
   const statusClasses = isOnline
-    ? 'bg-green-600 text-white'
-    : 'bg-red-600 text-white';
+    ? 'bg-green-600 dark:bg-green-700 text-white'
+    : 'bg-red-600 dark:bg-red-700 text-white';
 
   return (
     <div className={`${baseClasses} ${statusClasses} ${className}`}>
