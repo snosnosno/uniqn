@@ -212,7 +212,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
           {/* 교대 상태 */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/50">
-            <h4 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
+            <h4 className="text-xl font-semibold mb-4 text-green-600 dark:text-green-400 flex items-center">
               <FaTable className="w-5 h-5 mr-2"/>
               교대 상태
             </h4>

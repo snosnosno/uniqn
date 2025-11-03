@@ -516,13 +516,13 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         return {
           icon: <FaCheckCircle className="w-5 h-5 text-blue-500" />,
           text: '완료',
-          color: 'text-blue-600 bg-blue-100'
+          color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20'
         };
       case 'cancelled':
         return {
           icon: <FaTimesCircle className="w-5 h-5 text-red-500" />,
           text: '취소',
-          color: 'text-red-600 bg-red-100'
+          color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20'
         };
       default:
         return {
@@ -681,7 +681,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       return (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">역할별 급여</span>
+                          <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">역할별 급여</span>
                         </div>
                       );
                     } else if (salaryType) {
@@ -762,7 +762,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 </div>
                 {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 ? (
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-green-600">
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
                       {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
@@ -869,7 +869,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">총 근무시간</span>
-                    <span className="text-lg font-bold text-blue-600">
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                       {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
                     </span>
                   </div>
@@ -972,7 +972,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 {salaryInfo.tax !== undefined && salaryInfo.tax > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">세금</span>
-                    <span className="text-red-600">
+                    <span className="text-red-600 dark:text-red-400">
                       -{salaryInfo.tax.toLocaleString('ko-KR')}원
                     </span>
                   </div>
@@ -997,7 +997,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-base font-medium text-green-700">세후 급여</span>
-                    <span className="text-lg font-bold text-green-600">
+                    <span className="text-lg font-bold text-green-600 dark:text-green-400">
                       {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}원
                     </span>
                   </div>
@@ -1008,10 +1008,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             {/* 계산 안내 */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <FaInfoCircle className="w-4 h-4 text-blue-600" />
+                <FaInfoCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <p className="text-sm font-medium text-blue-700">급여 계산 안내</p>
               </div>
-              <p className="text-sm text-blue-600">
+              <p className="text-sm text-blue-600 dark:text-blue-400">
                 예정 근무 시간을 기준으로 자동 계산된 예상 급여입니다.
                 실제 지급 금액은 관리자 확인 후 결정됩니다.
               </p>
