@@ -390,7 +390,7 @@ const SupportPage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             {!currentUser ? (
               <div className="text-center py-8">
-                <FaExclamationTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                <FaExclamationTriangle className="w-12 h-12 text-yellow-500 dark:text-yellow-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   {t('support.inquiry.loginRequired', '로그인이 필요합니다')}
                 </h3>
@@ -484,7 +484,7 @@ const SupportPage: React.FC = () => {
               </div>
             ) : inquiriesError ? (
               <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg">
-                <FaExclamationTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <FaExclamationTriangle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   문의 내역 조회 실패
                 </h3>

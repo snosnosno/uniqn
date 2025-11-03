@@ -44,13 +44,13 @@ const MySchedulePage: React.FC = () => {
   const renderStatusIcon = (event: ScheduleEvent) => {
     switch (event.type) {
       case 'applied':
-        return <FaHourglassHalf className="w-4 h-4 text-yellow-500" />;
+        return <FaHourglassHalf className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />;
       case 'confirmed':
-        return <FaCheckCircle className="w-4 h-4 text-green-500" />;
+        return <FaCheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />;
       case 'completed':
-        return <FaCheckCircle className="w-4 h-4 text-blue-500" />;
+        return <FaCheckCircle className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
       case 'cancelled':
-        return <FaTimesCircle className="w-4 h-4 text-red-500" />;
+        return <FaTimesCircle className="w-4 h-4 text-red-500 dark:text-red-400" />;
       default:
         return null;
     }
@@ -347,7 +347,7 @@ const MySchedulePage: React.FC = () => {
           <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={refreshData}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-500"
           >
             다시 시도
           </button>

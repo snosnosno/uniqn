@@ -323,8 +323,8 @@ const ParticipantsPage: React.FC = () => {
   };
 
   if (participantsLoading || tablesLoading) return <div>{t('common.messages.loading')}</div>;
-  if (participantsError) return <div className="text-red-500">{t('participants.errorParticipants')} {participantsError.message}</div>;
-  if (tablesError) return <div className="text-red-500">{t('participants.errorTables')} {tablesError.message}</div>;
+  if (participantsError) return <div className="text-red-500 dark:text-red-400">{t('participants.errorParticipants')} {participantsError.message}</div>;
+  if (tablesError) return <div className="text-red-500 dark:text-red-400">{t('participants.errorTables')} {tablesError.message}</div>;
 
   const isAllSelected = filteredParticipants.length > 0 &&
     filteredParticipants.every(p => selectedIds.has(p.id));

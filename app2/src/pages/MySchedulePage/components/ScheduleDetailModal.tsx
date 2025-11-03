@@ -502,25 +502,25 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     switch (schedule.type) {
       case 'applied':
         return {
-          icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500" />,
+          icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />,
           text: '지원중',
           color: 'text-yellow-600 bg-yellow-100'
         };
       case 'confirmed':
         return {
-          icon: <FaCheckCircle className="w-5 h-5 text-green-500" />,
+          icon: <FaCheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />,
           text: '확정',
           color: 'text-green-600 bg-green-100'
         };
       case 'completed':
         return {
-          icon: <FaCheckCircle className="w-5 h-5 text-blue-500" />,
+          icon: <FaCheckCircle className="w-5 h-5 text-blue-500 dark:text-blue-400" />,
           text: '완료',
           color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20'
         };
       case 'cancelled':
         return {
-          icon: <FaTimesCircle className="w-5 h-5 text-red-500" />,
+          icon: <FaTimesCircle className="w-5 h-5 text-red-500 dark:text-red-400" />,
           text: '취소',
           color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20'
         };
@@ -1047,7 +1047,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           {getSnapshotOrFallback(schedule, jobPosting).createdBy() && (
             <button
               onClick={handleReport}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center gap-2"
+              className="px-4 py-2 bg-orange-500 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-600 dark:hover:bg-orange-500 transition-colors font-medium flex items-center gap-2"
               title="구인자 신고하기"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
