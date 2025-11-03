@@ -190,7 +190,7 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
           <div className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4 sm:hidden">
             <button
               onClick={onClose}
-              className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="w-full px-4 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors"
             >
               {t('common.close', '닫기')}
             </button>
