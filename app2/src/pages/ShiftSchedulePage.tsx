@@ -226,13 +226,13 @@ const ShiftSchedulePage: React.FC = () => {
     return (
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md dark:shadow-gray-900/50 mb-4">
         <h3 className="text-lg font-semibold mb-3 flex items-center">
-          <FaCheckCircle className="w-5 h-5 mr-2 text-blue-600" />
+          <FaCheckCircle className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
           {t('shiftSchedule.validationResults')}
         </h3>
         
         <div className="flex items-center gap-4 mb-3">
           {errorCount > 0 && (
-            <div className="flex items-center text-red-600">
+            <div className="flex items-center text-red-600 dark:text-red-400">
               <FaExclamationTriangle className="w-4 h-4 mr-1" />
               <span className="font-semibold">{errorCount}{t('shiftSchedule.errors')}</span>
             </div>
@@ -244,7 +244,7 @@ const ShiftSchedulePage: React.FC = () => {
             </div>
           )}
           {infoCount > 0 && (
-            <div className="flex items-center text-blue-600">
+            <div className="flex items-center text-blue-600 dark:text-blue-400">
               <FaInfoCircle className="w-4 h-4 mr-1" />
               <span className="font-semibold">{infoCount}{t('shiftSchedule.infos')}</span>
             </div>
@@ -319,7 +319,7 @@ const ShiftSchedulePage: React.FC = () => {
           {/* 날짜 선택 */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
-              <FaCalendarAlt className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              <FaCalendarAlt className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
               <label className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300">
                 {t('shiftSchedule.selectDate')}:
               </label>
@@ -406,8 +406,8 @@ const ShiftSchedulePage: React.FC = () => {
         {/* 스케줄 그리드 영역 (3/4) */}
         <div className="xl:col-span-3">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
-              <FaTable className="w-5 h-5 mr-2"/> 
+            <h2 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
+              <FaTable className="w-5 h-5 mr-2"/>
               {t('shiftSchedule.scheduleGrid')}
               {schedule ? <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   ({schedule.timeInterval}{t('shiftSchedule.minuteInterval')})
@@ -465,7 +465,7 @@ const ShiftSchedulePage: React.FC = () => {
         <div className="space-y-6">
           {/* 현재 스케줄의 딜러들 */}
           {schedule && dealers.length > 0 ? <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+              <h2 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
                 <FaUsers className="w-5 h-5 mr-2"/>
                 {t('shiftSchedule.assignedDealers')} ({dealers.length})
               </h2>
@@ -495,8 +495,8 @@ const ShiftSchedulePage: React.FC = () => {
 
           {/* 사용 가능한 딜러 */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md dark:shadow-gray-900/50">
-            <h2 className="text-xl font-semibold mb-4 text-green-600 flex items-center">
-              <FaUsers className="w-5 h-5 mr-2"/> 
+            <h2 className="text-xl font-semibold mb-4 text-green-600 dark:text-green-400 flex items-center">
+              <FaUsers className="w-5 h-5 mr-2"/>
               {t('shiftSchedule.availableDealers')} ({dealersNotInSchedule.length})
             </h2>
             <div className="space-y-3 max-h-64 overflow-y-auto">

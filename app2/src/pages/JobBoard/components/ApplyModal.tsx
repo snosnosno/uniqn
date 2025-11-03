@@ -501,7 +501,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             <button
               onClick={onApply}
               disabled={selectedAssignments.length === 0 || isProcessing}
-              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[48px] text-sm sm:text-base"
+              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 dark:bg-green-700 text-white rounded hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[48px] text-sm sm:text-base"
             >
               {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개)`}
             </button>

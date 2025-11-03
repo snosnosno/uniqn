@@ -344,7 +344,7 @@ const MySchedulePage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={refreshData}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
