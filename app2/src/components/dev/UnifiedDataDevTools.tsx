@@ -315,7 +315,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                     </div>
                     <button
                       onClick={handleClearCache}
-                      className="w-full mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                      className="w-full mt-2 px-3 py-1 bg-red-600 dark:bg-red-700 text-white rounded text-sm hover:bg-red-700 dark:hover:bg-red-600"
                     >
                       🗑️ 캐시 초기화
                     </button>
@@ -364,7 +364,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                 <h3 className="font-semibold">⚡ 스마트 캐시 상세</h3>
                 <button
                   onClick={collectCacheStats}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white rounded text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
                 >
                   새로고침
                 </button>
@@ -447,7 +447,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                   <button
                     onClick={() => setIsRecordingLogs(!isRecordingLogs)}
                     className={`px-3 py-1 rounded text-sm ${
-                      isRecordingLogs ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-green-600 text-white hover:bg-green-700'
+                      isRecordingLogs ? 'bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600' : 'bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600'
                     }`}
                   >
                     {isRecordingLogs ? '⏹️ 정지' : '▶️ 시작'}

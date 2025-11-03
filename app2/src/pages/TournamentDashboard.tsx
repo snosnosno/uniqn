@@ -79,7 +79,7 @@ const TournamentDashboard = () => {
                     <button
                         onClick={handleSetupTestData}
                         disabled={isSeeding}
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
                         {isSeeding ? t('tournamentDashboard.devTools.buttonSeeding') : t('tournamentDashboard.devTools.button')}
                     </button>

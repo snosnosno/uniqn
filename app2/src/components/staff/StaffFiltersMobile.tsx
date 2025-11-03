@@ -271,7 +271,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
               날짜: {filters.selectedDate}
               <button
                 onClick={() => handleDateChange('all')}
-                className="ml-2 text-green-600 hover:text-green-800"
+                className="ml-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
               >
                 ×
               </button>
