@@ -137,7 +137,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              대회명(매장명) <span className="text-red-500">*</span>
+              대회명(매장명) <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <Input
               type="text"
@@ -170,7 +170,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                지역 <span className="text-red-500">*</span>
+                지역 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <Select
                 name="location"
@@ -354,7 +354,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  급여 유형 <span className="text-red-500">*</span>
+                  급여 유형 <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 <Select
                   name="salaryType"
@@ -375,7 +375,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  급여 금액 <span className="text-red-500">*</span>
+                  급여 금액 <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 {formData.salaryType === 'negotiable' ? (
                   <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>

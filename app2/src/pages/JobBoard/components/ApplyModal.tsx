@@ -362,7 +362,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                       ({expandedDates.length}일)
                                     </span>
                                     <span className={`ml-2 text-xs ${
-                                      isFull ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
+                                      isFull ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
                                     }`}>
                                       {isFull ? '마감' : `(${confirmedCountPerDay}/${r.count})`}
                                     </span>
@@ -458,7 +458,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                             }`}>
                               👤 {t(`roles.${r.name}`, r.name)} 
                               <span className={`ml-2 text-xs ${
-                                isFull ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
+                                isFull ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
                               }`}>
                                 ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
                               </span>
@@ -485,7 +485,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             {hasPreQuestions && onBack && (
               <button 
                 onClick={onBack} 
-                className="py-3 px-6 sm:py-2 sm:px-4 bg-blue-500 text-white rounded hover:bg-blue-700 min-h-[48px] text-sm sm:text-base"
+                className="py-3 px-6 sm:py-2 sm:px-4 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-500 min-h-[48px] text-sm sm:text-base"
               >
                 뒤로 (수정)
               </button>
