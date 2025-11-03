@@ -1028,7 +1028,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 onCheckOut(schedule.id);
                 onClose();
               }}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors font-medium"
             >
               퇴근하기
             </button>

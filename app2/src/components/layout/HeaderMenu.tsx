@@ -27,7 +27,7 @@ const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => 
     const isMobile = useMediaQuery('(max-width: 768px)');
     
     const navLinkClasses = useCallback(({ isActive }: { isActive: boolean }) =>
-      `flex items-center rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'} ${isOpen ? 'justify-start' : 'justify-center'} ${
+      `flex items-center rounded-lg transition-colors ${isActive ? 'bg-blue-600 dark:bg-blue-700 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'} ${isOpen ? 'justify-start' : 'justify-center'} ${
         isMobile ? 'p-4 text-lg' : 'p-2'
       }`, [isOpen, isMobile]);
   

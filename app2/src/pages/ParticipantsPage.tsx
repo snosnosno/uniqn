@@ -377,7 +377,7 @@ const ParticipantsPage: React.FC = () => {
             </button>
             <button
               onClick={handleExportParticipants}
-              className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              className="btn btn-secondary bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm"
               disabled={isModalOpen || isBulkModalOpen || filteredParticipants.length === 0}
               tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
             >
@@ -613,7 +613,7 @@ const ParticipantsPage: React.FC = () => {
                       toast.error('테이블에 배정되지 않은 참가자입니다.');
                     }
                   }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
                 >
                   자리 이동
                 </button>

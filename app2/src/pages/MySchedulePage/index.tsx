@@ -323,7 +323,7 @@ const MySchedulePage: React.FC = () => {
                       e.stopPropagation();
                       handleCheckOut(schedule.id);
                     }}
-                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                    className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
                   >
                     퇴근하기
                   </button>
