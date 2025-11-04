@@ -91,22 +91,22 @@ const TournamentDashboard = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <StatCard 
-                    icon={FaUsers} 
-                    title={t('tournamentDashboard.stats.totalParticipants')} 
+                    icon={FaUsers}
+                    title={t('tournamentDashboard.stats.totalParticipants')}
                     value={participants.length}
-                    color="bg-blue-500"
+                    color="bg-blue-500 dark:bg-blue-600"
                 />
-                <StatCard 
-                    icon={FaClock} 
+                <StatCard
+                    icon={FaClock}
                     title={t('tournamentDashboard.stats.currentBlindLevel')}
                     value={blindLevel !== null ? `#${blindLevel + 1}` : 'N/A'}
-                    color="bg-green-500"
+                    color="bg-green-500 dark:bg-green-600"
                 />
-                <StatCard 
-                    icon={FaTrophy} 
+                <StatCard
+                    icon={FaTrophy}
                     title={t('tournamentDashboard.stats.estimatedPrizePool')}
                     value={`₩${totalPrize.toLocaleString()}`}
-                    color="bg-yellow-500"
+                    color="bg-yellow-500 dark:bg-yellow-600"
                 />
             </div>
 
