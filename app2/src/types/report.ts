@@ -163,23 +163,23 @@ export const REPORT_STATUS_STYLES: Record<ReportStatus, {
   labelKey: string;
 }> = {
   pending: {
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-100',
+    color: 'text-yellow-700 dark:text-yellow-300',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
     labelKey: 'report.status.pending'
   },
   reviewed: {
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
+    color: 'text-blue-700 dark:text-blue-300',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     labelKey: 'report.status.reviewed'
   },
   resolved: {
-    color: 'text-green-700',
-    bgColor: 'bg-green-100',
+    color: 'text-green-700 dark:text-green-300',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
     labelKey: 'report.status.resolved'
   },
   dismissed: {
-    color: 'text-gray-700',
-    bgColor: 'bg-gray-100',
+    color: 'text-gray-700 dark:text-gray-300',
+    bgColor: 'bg-gray-100 dark:bg-gray-700',
     labelKey: 'report.status.dismissed'
   }
 };

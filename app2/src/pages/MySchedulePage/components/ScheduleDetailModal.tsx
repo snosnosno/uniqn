@@ -504,13 +504,13 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         return {
           icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />,
           text: '지원중',
-          color: 'text-yellow-600 bg-yellow-100'
+          color: 'text-yellow-600 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30'
         };
       case 'confirmed':
         return {
           icon: <FaCheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />,
           text: '확정',
-          color: 'text-green-600 bg-green-100'
+          color: 'text-green-600 dark:text-green-300 bg-green-100 dark:bg-green-900/30'
         };
       case 'completed':
         return {
@@ -919,7 +919,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
               {/* 일당 계산 과정 표시 */}
               {salaryInfo.allowances?.dailyRates && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">일당 기반 계산</span>
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{salaryInfo.allowances.workDays || 1}일 근무</span>

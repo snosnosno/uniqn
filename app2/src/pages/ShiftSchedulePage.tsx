@@ -291,7 +291,7 @@ const ShiftSchedulePage: React.FC = () => {
     <>
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* 업데이트 예정 배너 */}
-      <div className="mb-6 bg-orange-100 border border-orange-200 rounded-lg p-4">
+      <div className="mb-6 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-4">
         <div className="flex items-center gap-3">
           <div className="text-orange-600">
             <FaCog className="w-5 h-5" />
@@ -471,7 +471,7 @@ const ShiftSchedulePage: React.FC = () => {
               </h2>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {dealers.map(dealer => (
-                  <div key={dealer.id} className="flex items-center bg-blue-50 p-3 rounded-lg shadow-sm">
+                  <div key={dealer.id} className="flex items-center bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg shadow-sm">
                     <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center mr-3">
                       <span className="text-sm font-semibold text-blue-700">
                         {dealer.staffName.charAt(0)}
