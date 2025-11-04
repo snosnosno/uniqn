@@ -515,7 +515,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              문의 연락처
+              문의 연락처 <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
@@ -524,6 +524,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               onChange={handleFormChange}
               placeholder="010-0000-0000"
               maxLength={25}
+              required
               disabled={isSubmitting}
             />
           </div>

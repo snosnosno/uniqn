@@ -162,18 +162,17 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              모집 유형
+              공고 타입
             </label>
-            <Select
-              name="type"
-              value={'type' in formData ? formData.type : 'application'}
-              onChange={(value) => handleFormChange({ target: { name: 'type', value } } as any)}
-              options={[
-                { value: 'application', label: '지원' },
-                { value: 'fixed', label: '고정' }
-              ]}
-              disabled={isUpdating}
-            />
+            <div className="mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-gray-100">
+              {formData.postingType === 'regular' && '📋 지원 공고'}
+              {formData.postingType === 'fixed' && '📌 고정 공고'}
+              {formData.postingType === 'tournament' && '🏆 대회 공고'}
+              {formData.postingType === 'urgent' && '🚨 긴급 공고'}
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              공고 타입은 작성 후 변경할 수 없습니다
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,7 +223,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              문의 연락처
+              문의 연락처 <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
@@ -233,6 +232,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               onChange={handleFormChange}
               placeholder="010-0000-0000"
               maxLength={25}
+              required
               disabled={isUpdating}
             />
           </div>
