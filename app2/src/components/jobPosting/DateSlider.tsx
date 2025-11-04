@@ -17,25 +17,13 @@ export const DateSlider: React.FC<DateSliderProps> = ({ selectedDate, onDateSele
     return generateDateRange(yesterday, 16);
   }, []);
 
-  // 오늘 날짜 자동 스크롤 (컴포넌트 마운트 시)
+  // 오늘 날짜 자동 스크롤 (컴포넌트 마운트 시 한 번만)
   useEffect(() => {
     if (todayRef.current && containerRef.current) {
-      // IntersectionObserver로 오늘 날짜가 보이지 않으면 스크롤
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (entry && !entry.isIntersecting) {
-            todayRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
-        },
-        { root: containerRef.current, threshold: 1.0 }
-      );
-
-      observer.observe(todayRef.current);
-      return () => observer.disconnect();
+      // 초기 마운트 시 한 번만 오늘 날짜로 스크롤
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
-    return undefined;
-  }, []);
+  }, []); // 빈 배열로 마운트 시 한 번만 실행
 
   // 날짜 포맷 함수
   const formatDate = (date: Date): string => {

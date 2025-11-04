@@ -122,11 +122,15 @@ export const createNewDateSpecificRequirement = (date: string): DateSpecificRequ
  */
 export const templateToFormData = (template: JobPostingTemplate) => {
   const templateData = template.templateData as any;
+  const today = getTodayString();
+
   return {
     ...templateData,
-    startDate: getTodayString(),
-    endDate: getTodayString(),
+    startDate: today,
+    endDate: today,
     status: 'open' as const, // 템플릿에서 불러온 공고는 항상 open 상태로 설정
+    // 날짜와 인원 요구사항은 템플릿에서 가져오지 않고 새로 생성
+    dateSpecificRequirements: [createNewDateSpecificRequirement(today)],
     // 새로운 필드들도 템플릿에서 가져오기
     district: templateData.district || '',
     contactPhone: templateData.contactPhone || '',
