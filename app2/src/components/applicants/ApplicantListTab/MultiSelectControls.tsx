@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '../../../utils/toast';
 import { Applicant, Assignment } from './types';
+import { JobPosting } from '../../../types/jobPosting/jobPosting';
+import type { Selection } from '../../../types/applicants/selection';
 import {
   getApplicantSelectionsByDate,
   getDateSelectionStats,
@@ -11,15 +13,71 @@ import {
   getStaffCounts
 } from '../../../utils/applicants';
 
+/**
+ * 시간대별 그룹
+ */
+interface TimeSlotGroup {
+  timeSlot: string;
+  roles: string[];
+}
+
+/**
+ * 날짜 범위 그룹 (다중일 선택)
+ */
+interface DateRangeGroup {
+  dates: string[];
+  dayCount: number;
+  displayDateRange: string;
+  timeSlotGroups: TimeSlotGroup[];
+}
+
+/**
+ * 개별 선택 날짜 그룹
+ */
+interface IndividualDateGroup {
+  date: string;
+  displayDate: string;
+  selections: Selection[];
+  totalCount: number;
+  selectedCount: number;
+}
+
+/**
+ * 통합 카드 아이템 (그룹 + 개별)
+ */
+type UnifiedCardItem =
+  | {
+      type: 'group';
+      dateGroup: DateRangeGroup;
+      timeGroup: TimeSlotGroup;
+      groupKey: string;
+      timeIndex: number;
+      sortDate: string;
+    }
+  | {
+      type: 'individual';
+      dateGroup: IndividualDateGroup;
+      sortDate: string;
+    };
+
+/**
+ * 개별 선택 시간대 그룹
+ */
+interface IndividualTimeGroup {
+  time: string;
+  roles: string[];
+  selections: Selection[];
+}
+
 interface MultiSelectControlsProps {
   applicant: Applicant;
-  jobPosting: any;
+  jobPosting: JobPosting;
   selectedAssignments: Assignment[];
   onAssignmentToggle: (value: string, isChecked: boolean) => void;
   onConfirm: () => void;
   canEdit: boolean;
   _onRefresh: () => void;
-  applications?: any[];  // 전체 지원서 데이터 (카운트 계산용)
+  applications?: Applicant[];
 }
 
 /**
@@ -42,64 +100,65 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   // 🔥 새로운 checkMethod 기반 그룹화 로직 - 날짜 범위 유지
   const groupedSelections = useMemo(() => {
     const allSelections = getApplicantSelections(applicant, jobPosting);
-    
+
     // 디버깅용 로그 추가
-    
+
     // checkMethod 기반으로 분류
-    const groupSelections: any[] = [];
-    const individualSelections: any[] = [];
-    
-    allSelections.forEach((selection: any) => {
+    const groupSelections: Selection[] = [];
+    const individualSelections: Selection[] = [];
+
+    allSelections.forEach((selection) => {
       // checkMethod 또는 isGrouped로 판단
-      const isGroup = selection.checkMethod === 'group' || 
+      const isGroup = selection.checkMethod === 'group' ||
                      (selection.isGrouped && selection.dates && selection.dates.length > 1);
-      
-      
+
+
       if (isGroup) {
         groupSelections.push(selection);
       } else {
         individualSelections.push(selection);
       }
     });
-    
+
     // 그룹 선택: 날짜 범위를 유지하면서 시간대별로 그룹화
-    const dateRangeGroups = new Map<string, any>();
-    
-    groupSelections.forEach((selection: any) => {
+    const dateRangeGroups = new Map<string, Omit<DateRangeGroup, 'timeSlotGroups'> & { timeSlotGroups: Map<string, TimeSlotGroup> }>();
+
+    groupSelections.forEach((selection) => {
       // dates 배열이 있으면 날짜 범위로 키 생성
-      const dates = selection.dates || [selection.date];
-      const sortedDates = [...dates].sort();
+      const dates = selection.dates || (selection.date ? [selection.date] : []);
+      const sortedDates = [...dates].filter(d => d).sort();
       const dateRangeKey = sortedDates.join('|');
-      
+
       if (!dateRangeGroups.has(dateRangeKey)) {
         dateRangeGroups.set(dateRangeKey, {
           dates: sortedDates,
           dayCount: sortedDates.length,
-          displayDateRange: sortedDates.length > 1 
-            ? `${formatDateDisplay(sortedDates[0])} ~ ${formatDateDisplay(sortedDates[sortedDates.length - 1])}`
+          displayDateRange: sortedDates.length > 1
+            ? `${formatDateDisplay(sortedDates[0] || '')} ~ ${formatDateDisplay(sortedDates[sortedDates.length - 1] || '')}`
             : formatDateDisplay(sortedDates[0] || ''),
           timeSlotGroups: new Map()
         });
       }
-      
+
       const dateGroup = dateRangeGroups.get(dateRangeKey)!;
-      
+
       // 같은 시간대끼리 그룹화
-      if (!dateGroup.timeSlotGroups.has(selection.time)) {
-        dateGroup.timeSlotGroups.set(selection.time, {
-          timeSlot: selection.time,
+      const timeSlot = selection.time || '';
+      if (!dateGroup.timeSlotGroups.has(timeSlot)) {
+        dateGroup.timeSlotGroups.set(timeSlot, {
+          timeSlot: timeSlot,
           roles: []
         });
       }
-      
-      const timeGroup = dateGroup.timeSlotGroups.get(selection.time)!;
+
+      const timeGroup = dateGroup.timeSlotGroups.get(timeSlot)!;
       if (selection.role && !timeGroup.roles.includes(selection.role)) {
         timeGroup.roles.push(selection.role);
       }
     });
     
     // Map을 배열로 변환하고 날짜순으로 정렬
-    const finalGroupSelections = Array.from(dateRangeGroups.values())
+    const finalGroupSelections: DateRangeGroup[] = Array.from(dateRangeGroups.values())
       .map(dateGroup => ({
         ...dateGroup,
         timeSlotGroups: Array.from(dateGroup.timeSlotGroups.values())
@@ -108,28 +167,28 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
         // 날짜 배열에서 첫 번째 날짜 기준으로 정렬
         const aFirstDate = a.dates && a.dates.length > 0 ? a.dates[0] : '';
         const bFirstDate = b.dates && b.dates.length > 0 ? b.dates[0] : '';
-        
+
         // 날짜 없는 경우는 마지막으로
         if (!aFirstDate && !bFirstDate) return 0;
         if (!aFirstDate) return 1;
         if (!bFirstDate) return -1;
-        
+
         // 날짜순 정렬
         return aFirstDate.localeCompare(bFirstDate);
       });
-    
+
     // 개별 선택: 날짜별로 그룹화하고 날짜순 정렬 보장
-    const individualGroups = groupSingleDaySelections(individualSelections)
+    const individualGroups: IndividualDateGroup[] = groupSingleDaySelections(individualSelections)
       .sort((a, b) => {
         // 날짜 없는 경우는 마지막으로
         if (a.date === 'no-date' && b.date === 'no-date') return 0;
         if (a.date === 'no-date') return 1;
         if (b.date === 'no-date') return -1;
-        
+
         // 날짜순 정렬
         return a.date.localeCompare(b.date);
       });
-    
+
     return {
       groupSelections: finalGroupSelections,
       individualGroups: individualGroups
@@ -138,44 +197,39 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 
   // 그룹과 개별 선택을 통합하여 날짜순으로 정렬
   const allSortedCards = useMemo(() => {
-    const cards: Array<{
-      type: 'group' | 'individual';
-      dateGroup: any;
-      timeGroup?: any;
-      groupKey?: string;
-      timeIndex?: number;
-      sortDate: string;
-    }> = [];
-    
+    const cards: UnifiedCardItem[] = [];
+
     // 그룹 선택 카드들 추가
-    groupedSelections.groupSelections.forEach((dateGroup: any, index: number) => {
-      dateGroup.timeSlotGroups.forEach((timeGroup: any, timeIndex: number) => {
+    groupedSelections.groupSelections.forEach((dateGroup: DateRangeGroup, index: number) => {
+      dateGroup.timeSlotGroups.forEach((timeGroup: TimeSlotGroup, timeIndex: number) => {
+        const sortDate = (dateGroup.dates && dateGroup.dates.length > 0) ? (dateGroup.dates[0] || '') : '';
         cards.push({
           type: 'group',
           dateGroup,
           timeGroup,
           groupKey: `group-selection-${index}`,
           timeIndex,
-          sortDate: (dateGroup.dates && dateGroup.dates.length > 0) ? dateGroup.dates[0] : '' // 시작 날짜 기준
+          sortDate // 시작 날짜 기준
         });
       });
     });
-    
+
     // 개별 선택 카드들 추가
-    groupedSelections.individualGroups.forEach((dateGroup: any) => {
+    groupedSelections.individualGroups.forEach((dateGroup: IndividualDateGroup) => {
+      const sortDate = dateGroup.date || '';
       cards.push({
         type: 'individual',
         dateGroup,
-        sortDate: dateGroup.date || '' // 해당 날짜 기준
+        sortDate // 해당 날짜 기준
       });
     });
-    
+
     // 날짜순 정렬
     return cards.sort((a, b) => {
       // 날짜 없는 경우는 마지막으로
       if (!a.sortDate || a.sortDate === 'no-date') return 1;
       if (!b.sortDate || b.sortDate === 'no-date') return -1;
-      
+
       // 날짜순 정렬 (시작 날짜 기준)
       return a.sortDate.localeCompare(b.sortDate);
     });
@@ -370,7 +424,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                                 {role ? (t(`roles.${role}`) || role) : ''}
                               </span>
                               {(() => {
-                                const counts = getStaffCounts(jobPosting, applications, role, timeGroup.timeSlot);
+                                const counts = getStaffCounts(jobPosting, applications, role, timeGroup.timeSlot || '');
                                 return (
                                   <span className="text-gray-500 dark:text-gray-400 ml-1">({counts.confirmed}/{counts.required})</span>
                                 );
@@ -388,11 +442,11 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
           } else {
             // 개별 선택 카드 렌더링
             const { dateGroup } = card;
-            
+
             // 🔥 같은 시간대의 여러 역할 그룹화
-            const timeGroupsMap = new Map<string, { time: string; roles: string[]; selections: any[] }>();
-            
-            dateGroup.selections.forEach((selection: any) => {
+            const timeGroupsMap = new Map<string, IndividualTimeGroup>();
+
+            dateGroup.selections.forEach((selection) => {
               const time = selection.time || '시간 미정';
               if (!timeGroupsMap.has(time)) {
                 timeGroupsMap.set(time, {
@@ -472,7 +526,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                                     {role ? (t(`roles.${role}`) || role) : ''}
                                   </span>
                                   {role && (() => {
-                                    const counts = getStaffCounts(jobPosting, applications, role, timeGroup.time, safeDateString);
+                                    const counts = getStaffCounts(jobPosting, applications, role, timeGroup.time || '', safeDateString);
                                     return (
                                       <span className="text-gray-500 dark:text-gray-400 ml-1">({counts.confirmed}/{counts.required})</span>
                                     );

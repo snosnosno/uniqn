@@ -3,7 +3,7 @@ import { useJobPostingForm } from '../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
 import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
-import { JobPosting, DateSpecificRequirement, JobPostingTemplate, PostingType } from '../../types/jobPosting';
+import { JobPosting, JobPostingFormData, DateSpecificRequirement, JobPostingTemplate, PostingType } from '../../types/jobPosting';
 import { toast } from '../../utils/toast';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -107,7 +107,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   };
 
   const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
-    setFormData((prev: Partial<JobPosting>) => ({ ...prev, dateSpecificRequirements: requirements }));
+    setFormData((prev: JobPostingFormData) => ({ ...prev, dateSpecificRequirements: requirements }));
   };
 
   return (

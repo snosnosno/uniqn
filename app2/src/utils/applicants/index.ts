@@ -16,9 +16,10 @@ export {
   formatDateDisplay,
   getApplicantSelections,
   getApplicantSelectionsByDate,
-  type Selection,
-  type DateGroupedSelections,
 } from './applicantTransform';
+
+// Selection 타입 (중앙 타입 파일에서 re-export)
+export type { Selection, DateGroupedSelections } from '../../types/applicants/selection';
 
 // Validation 모듈
 export {

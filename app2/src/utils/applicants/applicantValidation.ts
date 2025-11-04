@@ -10,7 +10,7 @@
  */
 
 import { Applicant } from '../../components/applicants/ApplicantListTab/types';
-import { Selection } from './applicantTransform';
+import type { Selection } from '../../types/applicants/selection';
 
 /**
  * 지원자가 다중 선택을 했는지 확인하는 함수

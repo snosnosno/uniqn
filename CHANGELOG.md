@@ -7,6 +7,18 @@
 
 ## [Unreleased]
 
+### 타입 안전성 개선 (Phase 1-1)
+- **useJobPostingForm Hook 타입 안전성 강화**:
+  - 28개 `any` 타입 완전 제거 → 명시적 타입 지정
+  - `useState<JobPostingFormData>()` 제네릭 타입 적용
+  - 모든 `setFormData` 콜백에 명시적 타입 지정: `(prev: JobPostingFormData) => ...`
+  - TypeScript strict mode 완전 준수 (0 errors in useJobPostingForm.ts)
+  - IDE 자동완성 및 타입 체크 개선
+- **타입 호환성 유지**:
+  - JobPostingForm.tsx 및 JobPostingCard.tsx 컴포넌트 수정 없이 호환성 유지
+  - Hook API 변경 없음 (backward compatible)
+  - 기존 E2E 테스트 스위트 통과
+
 ### 예정 (v0.3.0+)
 - **고급 기능 안정화 및 테스트**:
   - Web Worker 기반 급여 계산 기능 테스트 및 안정화
@@ -18,6 +30,8 @@
 - **품질 개선**:
   - E2E 테스트 커버리지 확대 (65% → 80%)
   - 모바일 최적화 및 PWA 고도화
+- **기술 부채 해결**:
+  - JobPostingFormData.type 필드 타입 정의 개선 (string → 'application' | 'fixed')
 
 ## [0.2.4] - 2025-10-31
 

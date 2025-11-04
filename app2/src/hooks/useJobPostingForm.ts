@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-// Removed unused type imports
 import {
   createInitialFormData,
   createNewPreQuestion,
@@ -7,19 +6,27 @@ import {
 } from '../utils/jobPosting/jobPostingHelpers';
 // import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
 
-import { JobPosting } from '../types/jobPosting';
+import { JobPosting, JobPostingFormData } from '../types/jobPosting';
+import {
+  DateSpecificRequirement,
+  PreQuestion,
+  Benefits,
+  TimeSlot,
+  RoleRequirement
+} from '../types/jobPosting/base';
+import { Timestamp } from 'firebase/firestore';
 import { toast } from '../utils/toast';
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
-  const [formData, setFormData] = useState<any>(() =>
-    initialData ? initialData : createInitialFormData()
+  const [formData, setFormData] = useState<JobPostingFormData>(() =>
+    initialData ? initialData as JobPostingFormData : createInitialFormData() as JobPostingFormData
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 기본 폼 핸들러
   const handleFormChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: JobPostingFormData) => ({ ...prev, [name]: value }));
   }, []);
 
   // 시간대 관련 핸들러들
@@ -27,31 +34,42 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   // 일자별 요구사항 관련 핸들러들
 
   const handleDateSpecificTimeSlotChange = useCallback((dateIndex: number, timeSlotIndex: number, value: string) => {
-    setFormData((prev: any) => {
-      const newRequirements = [...prev.dateSpecificRequirements];
-      newRequirements[dateIndex].timeSlots[timeSlotIndex].time = value;
+    setFormData((prev: JobPostingFormData) => {
+      const newRequirements = [...(prev.dateSpecificRequirements || [])];
+      const requirement = newRequirements[dateIndex];
+      const timeSlot = requirement?.timeSlots?.[timeSlotIndex];
+      if (timeSlot) {
+        timeSlot.time = value;
+      }
       return { ...prev, dateSpecificRequirements: newRequirements };
     });
   }, []);
 
   const handleDateSpecificTimeToBeAnnouncedToggle = useCallback((dateIndex: number, timeSlotIndex: number, isAnnounced: boolean) => {
-    setFormData((prev: any) => {
-      const newRequirements = [...prev.dateSpecificRequirements];
-      newRequirements[dateIndex].timeSlots[timeSlotIndex].isTimeToBeAnnounced = isAnnounced;
-      if (isAnnounced) {
-        newRequirements[dateIndex].timeSlots[timeSlotIndex].time = '미정';
-      } else {
-        newRequirements[dateIndex].timeSlots[timeSlotIndex].time = '';
-        newRequirements[dateIndex].timeSlots[timeSlotIndex].tentativeDescription = '';
+    setFormData((prev: JobPostingFormData) => {
+      const newRequirements = [...(prev.dateSpecificRequirements || [])];
+      const timeSlot = newRequirements[dateIndex]?.timeSlots?.[timeSlotIndex];
+      if (timeSlot) {
+        timeSlot.isTimeToBeAnnounced = isAnnounced;
+        if (isAnnounced) {
+          timeSlot.time = '미정';
+        } else {
+          timeSlot.time = '';
+          timeSlot.tentativeDescription = '';
+        }
       }
       return { ...prev, dateSpecificRequirements: newRequirements };
     });
   }, []);
 
   const handleDateSpecificTentativeDescriptionChange = useCallback((dateIndex: number, timeSlotIndex: number, description: string) => {
-    setFormData((prev: any) => {
-      const newRequirements = [...prev.dateSpecificRequirements];
-      newRequirements[dateIndex].timeSlots[timeSlotIndex].tentativeDescription = description;
+    setFormData((prev: JobPostingFormData) => {
+      const newRequirements = [...(prev.dateSpecificRequirements || [])];
+      const requirement = newRequirements[dateIndex];
+      const timeSlot = requirement?.timeSlots?.[timeSlotIndex];
+      if (timeSlot) {
+        timeSlot.tentativeDescription = description;
+      }
       return { ...prev, dateSpecificRequirements: newRequirements };
     });
   }, []);
@@ -63,12 +81,15 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     field: 'name' | 'count',
     value: string | number
   ) => {
-    setFormData((prev: any) => {
-      const newRequirements = [...prev.dateSpecificRequirements];
-      if (field === 'name') {
-        newRequirements[dateIndex].timeSlots[timeSlotIndex].roles[roleIndex].name = value as string;
-      } else {
-        newRequirements[dateIndex].timeSlots[timeSlotIndex].roles[roleIndex].count = Number(value);
+    setFormData((prev: JobPostingFormData) => {
+      const newRequirements = [...(prev.dateSpecificRequirements || [])];
+      const role = newRequirements[dateIndex]?.timeSlots?.[timeSlotIndex]?.roles?.[roleIndex];
+      if (role) {
+        if (field === 'name') {
+          role.name = value as string;
+        } else {
+          role.count = Number(value);
+        }
       }
       return { ...prev, dateSpecificRequirements: newRequirements };
     });
@@ -76,21 +97,43 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
 
   // 사전질문 관련 핸들러들
   const handlePreQuestionsToggle = useCallback((enabled: boolean) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      usesPreQuestions: enabled,
-      preQuestions: enabled ? (prev.preQuestions.length === 0 ? [createNewPreQuestion()] : prev.preQuestions) : []
-    }));
+    setFormData((prev: JobPostingFormData): JobPostingFormData => {
+      if (enabled) {
+        return {
+          ...prev,
+          usesPreQuestions: true,
+          preQuestions: (prev.preQuestions || []).length === 0 ? [createNewPreQuestion()] : prev.preQuestions
+        } as JobPostingFormData;
+      } else {
+        const { preQuestions, ...rest } = prev;
+        return {
+          ...rest,
+          usesPreQuestions: false
+        } as JobPostingFormData;
+      }
+    });
   }, []);
 
-  const handlePreQuestionChange = useCallback((questionIndex: number, field: string, value: any) => {
-    setFormData((prev: any) => {
-      const newQuestions = [...prev.preQuestions];
-      newQuestions[questionIndex] = { ...newQuestions[questionIndex], [field]: value };
+  const handlePreQuestionChange = useCallback((questionIndex: number, field: string, value: string | boolean | string[]) => {
+    setFormData((prev: JobPostingFormData) => {
+      const newQuestions = [...(prev.preQuestions || [])];
+      const currentQuestion = newQuestions[questionIndex];
 
-      // select 타입이 아니면 options 제거
-      if (field === 'type' && value !== 'select') {
-        newQuestions[questionIndex].options = [];
+      // 타입 안전하게 업데이트
+      if (currentQuestion) {
+        if (field === 'question' && typeof value === 'string') {
+          currentQuestion.question = value;
+        } else if (field === 'required' && typeof value === 'boolean') {
+          currentQuestion.required = value;
+        } else if (field === 'type' && typeof value === 'string' && (value === 'text' || value === 'textarea' || value === 'select')) {
+          currentQuestion.type = value as 'text' | 'textarea' | 'select';
+          // select 타입이 아니면 options 제거
+          if (value !== 'select') {
+            currentQuestion.options = [];
+          }
+        } else if (field === 'options' && Array.isArray(value)) {
+          currentQuestion.options = value;
+        }
       }
 
       return { ...prev, preQuestions: newQuestions };
@@ -98,44 +141,54 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handlePreQuestionOptionChange = useCallback((questionIndex: number, optionIndex: number, value: string) => {
-    setFormData((prev: any) => {
-      const newQuestions = [...prev.preQuestions];
-      newQuestions[questionIndex].options[optionIndex] = value;
+    setFormData((prev: JobPostingFormData) => {
+      const newQuestions = [...(prev.preQuestions || [])];
+      const question = newQuestions[questionIndex];
+      if (question) {
+        if (!question.options) {
+          question.options = [];
+        }
+        question.options[optionIndex] = value;
+      }
       return { ...prev, preQuestions: newQuestions };
     });
   }, []);
 
   const addPreQuestion = useCallback(() => {
-    setFormData((prev: any) => ({
+    setFormData((prev: JobPostingFormData) => ({
       ...prev,
-      preQuestions: [...prev.preQuestions, createNewPreQuestion()]
+      preQuestions: [...(prev.preQuestions || []), createNewPreQuestion()]
     }));
   }, []);
 
   const removePreQuestion = useCallback((index: number) => {
-    setFormData((prev: any) => ({
+    setFormData((prev: JobPostingFormData) => ({
       ...prev,
-      preQuestions: prev.preQuestions.filter((_: any, i: number) => i !== index)
+      preQuestions: (prev.preQuestions || []).filter((_, i: number) => i !== index)
     }));
   }, []);
 
   const addPreQuestionOption = useCallback((questionIndex: number) => {
-    setFormData((prev: any) => {
-      const newQuestions = [...prev.preQuestions];
-      if (!newQuestions[questionIndex].options) {
-        newQuestions[questionIndex].options = [];
+    setFormData((prev: JobPostingFormData) => {
+      const newQuestions = [...(prev.preQuestions || [])];
+      const question = newQuestions[questionIndex];
+      if (question) {
+        if (!question.options) {
+          question.options = [];
+        }
+        question.options.push('');
       }
-      newQuestions[questionIndex].options.push('');
       return { ...prev, preQuestions: newQuestions };
     });
   }, []);
 
   const removePreQuestionOption = useCallback((questionIndex: number, optionIndex: number) => {
-    setFormData((prev: any) => {
-      const newQuestions = [...prev.preQuestions];
-      newQuestions[questionIndex].options = newQuestions[questionIndex].options.filter(
-        (_: any, i: number) => i !== optionIndex
-      );
+    setFormData((prev: JobPostingFormData) => {
+      const newQuestions = [...(prev.preQuestions || [])];
+      const question = newQuestions[questionIndex];
+      if (question) {
+        question.options = (question.options || []).filter((_, i: number) => i !== optionIndex);
+      }
       return { ...prev, preQuestions: newQuestions };
     });
   }, []);
@@ -151,37 +204,37 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
 
   // 지역 관련 핸들러
   const handleDistrictChange = useCallback((district: string) => {
-    setFormData((prev: any) => ({ ...prev, district }));
+    setFormData((prev: JobPostingFormData) => ({ ...prev, district }));
   }, []);
 
   // 급여 관련 핸들러들
   const handleSalaryTypeChange = useCallback((salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other') => {
-    setFormData((prev: any) => ({ ...prev, salaryType }));
+    setFormData((prev: JobPostingFormData) => ({ ...prev, salaryType }));
   }, []);
 
   const handleSalaryAmountChange = useCallback((salaryAmount: string) => {
     // 숫자만 입력 가능하도록 필터링
     const numericValue = salaryAmount.replace(/[^0-9]/g, '');
-    setFormData((prev: any) => ({ ...prev, salaryAmount: numericValue }));
+    setFormData((prev: JobPostingFormData) => ({ ...prev, salaryAmount: numericValue }));
   }, []);
 
   // 복리후생 관련 핸들러들
-  const handleBenefitToggle = useCallback((benefitType: keyof NonNullable<typeof formData.benefits>, checked: boolean) => {
-    setFormData((prev: any) => ({
+  const handleBenefitToggle = useCallback((benefitType: keyof Benefits, checked: boolean) => {
+    setFormData((prev: JobPostingFormData) => ({
       ...prev,
       benefits: {
-        ...prev.benefits,
+        ...(prev.benefits || {}),
         // 식사의 경우 체크 시 자동으로 "제공" 입력
         [benefitType]: checked ? (benefitType === 'meal' ? '제공' : '') : undefined
       }
     }));
   }, []);
 
-  const handleBenefitChange = useCallback((benefitType: keyof NonNullable<typeof formData.benefits>, value: string) => {
-    setFormData((prev: any) => ({
+  const handleBenefitChange = useCallback((benefitType: keyof Benefits, value: string) => {
+    setFormData((prev: JobPostingFormData) => ({
       ...prev,
       benefits: {
-        ...prev.benefits,
+        ...(prev.benefits || {}),
         [benefitType]: value
       }
     }));
@@ -189,27 +242,27 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
 
   // 역할별 급여 관련 핸들러들
   const handleRoleSalaryToggle = useCallback((enabled: boolean) => {
-    setFormData((prev: any) => {
+    setFormData((prev: JobPostingFormData) => {
       if (enabled) {
         // 활성화 시 기본 역할 3개 추가 (딜러, 플로어, 서빙)
         const defaultRoles = {
-          'dealer': { 
-            salaryType: 'hourly' as const, 
-            salaryAmount: '20000' 
+          'dealer': {
+            salaryType: 'hourly' as const,
+            salaryAmount: '20000'
           },
-          'floor': { 
-            salaryType: 'hourly' as const, 
-            salaryAmount: '20000' 
+          'floor': {
+            salaryType: 'hourly' as const,
+            salaryAmount: '20000'
           },
-          'serving': { 
-            salaryType: 'hourly' as const, 
-            salaryAmount: '20000' 
+          'serving': {
+            salaryType: 'hourly' as const,
+            salaryAmount: '20000'
           }
         };
-        return { 
-          ...prev, 
-          useRoleSalary: true, 
-          roleSalaries: prev.roleSalaries || defaultRoles 
+        return {
+          ...prev,
+          useRoleSalary: true,
+          roleSalaries: prev.roleSalaries || defaultRoles
         };
       } else {
         return { ...prev, useRoleSalary: false };
@@ -218,7 +271,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handleAddRoleToSalary = useCallback(() => {
-    setFormData((prev: any) => {
+    setFormData((prev: JobPostingFormData) => {
       const existingRoles = Object.keys(prev.roleSalaries || {});
       const availableRoles = PREDEFINED_ROLES.filter(r => !existingRoles.includes(r));
 
@@ -231,7 +284,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
       return {
         ...prev,
         roleSalaries: {
-          ...prev.roleSalaries,
+          ...(prev.roleSalaries || {}),
           [newRole]: {
             salaryType: 'hourly' as const,
             salaryAmount: '20000'
@@ -242,7 +295,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handleRemoveRoleFromSalary = useCallback((role: string) => {
-    setFormData((prev: any) => {
+    setFormData((prev: JobPostingFormData) => {
       const { [role]: _removed, ...rest } = prev.roleSalaries || {};
       return {
         ...prev,
@@ -252,7 +305,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handleRoleChange = useCallback((oldRole: string, newRole: string) => {
-    setFormData((prev: any) => {
+    setFormData((prev: JobPostingFormData) => {
       const { [oldRole]: oldSalary, ...rest } = prev.roleSalaries || {};
       return {
         ...prev,
@@ -264,30 +317,32 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     });
   }, []);
 
-  const handleRoleSalaryTypeChange = useCallback((role: string, salaryType: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      roleSalaries: {
-        ...prev.roleSalaries,
-        [role]: {
-          ...prev.roleSalaries?.[role],
-          salaryType,
-          // 협의인 경우 금액 초기화
-          salaryAmount: salaryType === 'negotiable' ? '' : prev.roleSalaries?.[role]?.salaryAmount || '20000'
+  const handleRoleSalaryTypeChange = useCallback((role: string, salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other') => {
+    setFormData((prev: JobPostingFormData) => {
+      const existingRole = prev.roleSalaries?.[role];
+      return {
+        ...prev,
+        roleSalaries: {
+          ...(prev.roleSalaries || {}),
+          [role]: {
+            salaryType,
+            salaryAmount: salaryType === 'negotiable' ? '' : existingRole?.salaryAmount || '20000',
+            ...(existingRole?.customRoleName && { customRoleName: existingRole.customRoleName })
+          }
         }
-      }
-    }));
+      };
+    });
   }, []);
 
   const handleRoleSalaryAmountChange = useCallback((role: string, salaryAmount: string) => {
     // 숫자만 입력 가능하도록 필터링
     const numericValue = salaryAmount.replace(/[^0-9]/g, '');
-    setFormData((prev: any) => ({
+    setFormData((prev: JobPostingFormData) => ({
       ...prev,
       roleSalaries: {
-        ...prev.roleSalaries,
+        ...(prev.roleSalaries || {}),
         [role]: {
-          ...prev.roleSalaries?.[role],
+          ...(prev.roleSalaries?.[role] || { salaryType: 'hourly', salaryAmount: '20000' }),
           salaryAmount: numericValue
         }
       }
@@ -295,12 +350,12 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   }, []);
 
   const handleCustomRoleNameChange = useCallback((role: string, customName: string) => {
-    setFormData((prev: any) => ({
+    setFormData((prev: JobPostingFormData) => ({
       ...prev,
       roleSalaries: {
-        ...prev.roleSalaries,
+        ...(prev.roleSalaries || {}),
         [role]: {
-          ...prev.roleSalaries?.[role],
+          ...(prev.roleSalaries?.[role] || { salaryType: 'hourly', salaryAmount: '20000' }),
           customRoleName: customName
         }
       }
@@ -309,11 +364,11 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
 
   // 폼 초기화
   const resetForm = useCallback(() => {
-    setFormData(createInitialFormData());
+    setFormData(createInitialFormData() as JobPostingFormData);
   }, []);
 
   // 폼 데이터 설정
-  const setFormDataFromTemplate = useCallback((templateData: any) => {
+  const setFormDataFromTemplate = useCallback((templateData: JobPostingFormData) => {
     setFormData(templateData);
   }, []);
 
