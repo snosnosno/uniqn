@@ -526,6 +526,70 @@
       "search": {
         "placeholder": "Search in title or description..."
       }
+    },
+    "tabs": {
+      "regular": "Regular",
+      "fixed": "Fixed",
+      "tournament": "Tournament",
+      "urgent": "Urgent",
+      "myApplications": "My Applications"
+    },
+    "fixed": {
+      "durationLabel": "Duration",
+      "7days": "7 days",
+      "30days": "30 days",
+      "90days": "90 days",
+      "7daysWithChip": "7 days (3 chips)",
+      "30daysWithChip": "30 days (5 chips)",
+      "90daysWithChip": "90 days (10 chips)",
+      "7daysDescription": "1 week exposure",
+      "30daysDescription": "1 month exposure",
+      "90daysDescription": "3 months exposure",
+      "selectedDuration": "Selected duration",
+      "chipCostLabel": "Chip cost",
+      "expiresIn": "Expires: D-{{days}}",
+      "expired": "Expired",
+      "expiresOn": "Expires on: {{date}}"
+    },
+    "urgent": {
+      "label": "Urgent",
+      "chipCost": "5 chips (fixed)",
+      "badge": "Urgent Hiring",
+      "description": "Featured at the top as urgent posting"
+    },
+    "tournament": {
+      "label": "Tournament",
+      "badge": "Tournament Posting",
+      "approvalRequired": "Admin approval required",
+      "description": "Tournament postings will be published after admin approval. You will be notified of the approval result",
+      "status": {
+        "pending": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "approval": {
+        "pageTitle": "Tournament Posting Approval Management",
+        "pageDescription": "Review pending tournament postings and approve or reject them",
+        "emptyTitle": "No pending approvals",
+        "emptyDescription": "New tournament postings will appear here when submitted",
+        "approveButton": "Approve",
+        "rejectButton": "Reject",
+        "modalApproveTitle": "Approve Posting",
+        "modalRejectTitle": "Reject Posting",
+        "modalMessage": "Are you sure you want to {{action}} this posting?",
+        "modalReasonLabel": "Rejection Reason",
+        "modalReasonPlaceholder": "Enter rejection reason (minimum 10 characters)",
+        "modalReasonCount": "{{count}}/10 characters minimum",
+        "modalCancel": "Cancel",
+        "modalConfirmApprove": "Approve",
+        "modalConfirmReject": "Reject",
+        "processing": "Processing...",
+        "errorReasonRequired": "Please enter a rejection reason",
+        "errorReasonLength": "Rejection reason must be at least 10 characters",
+        "errorProcessing": "An error occurred during processing",
+        "successApprove": "Posting has been approved",
+        "successReject": "Posting has been rejected"
+      }
     }
   },
   "jobPosting": {

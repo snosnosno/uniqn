@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useJobPostingForm } from '../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
 import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
-import { JobPosting, DateSpecificRequirement, JobPostingTemplate } from '../../types/jobPosting';
+import { JobPosting, DateSpecificRequirement, JobPostingTemplate, PostingType } from '../../types/jobPosting';
 import { toast } from '../../utils/toast';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -13,6 +13,8 @@ import PreQuestionManager from './PreQuestionManager';
 import TemplateModal from './modals/TemplateModal';
 import LoadTemplateModal from './modals/LoadTemplateModal';
 import ConfirmModal from '../modals/ConfirmModal';
+import { calculateChipCost, formatChipCost } from '../../utils/jobPosting/chipCalculator';
+import { notifyChipDeduction } from '../../utils/jobPosting/chipNotification';
 
 interface JobPostingFormProps {
   onSubmit: (formData: Partial<JobPosting>) => Promise<void>;
@@ -151,21 +153,319 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              모집 유형
+          {/* 공고 타입 선택 */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              공고 타입 <span className="text-red-500">*</span>
             </label>
-            <Select
-              name="type"
-              value={'type' in formData ? formData.type : 'application'}
-              onChange={(value) => handleFormChange({ target: { name: 'type', value } } as any)}
-              options={[
-                { value: 'application', label: '지원' },
-                { value: 'fixed', label: '고정' }
-              ]}
-              disabled={isSubmitting}
-            />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* 지원 공고 (무료) */}
+              <label className={`
+                relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+                ${formData.postingType === 'regular'
+                  ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }
+                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+              `}>
+                <input
+                  type="radio"
+                  name="postingType"
+                  value="regular"
+                  checked={formData.postingType === 'regular'}
+                  onChange={handleFormChange}
+                  disabled={isSubmitting}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="text-2xl mb-1">📋</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">지원</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">무료</div>
+                </div>
+              </label>
+
+              {/* 고정 공고 (유료) */}
+              <label className={`
+                relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+                ${formData.postingType === 'fixed'
+                  ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }
+                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+              `}>
+                <input
+                  type="radio"
+                  name="postingType"
+                  value="fixed"
+                  checked={formData.postingType === 'fixed'}
+                  onChange={handleFormChange}
+                  disabled={isSubmitting}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="text-2xl mb-1">📌</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">고정</div>
+                  <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">유료</div>
+                </div>
+              </label>
+
+              {/* 대회 공고 (승인 필요) */}
+              <label className={`
+                relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+                ${formData.postingType === 'tournament'
+                  ? 'border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }
+                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+              `}>
+                <input
+                  type="radio"
+                  name="postingType"
+                  value="tournament"
+                  checked={formData.postingType === 'tournament'}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      postingType: 'tournament',
+                      tournamentConfig: {
+                        approvalStatus: 'pending' as const,
+                        submittedAt: new Date()  // ✅ Firestore Rules 검증 통과 위해 현재 시간 설정
+                      },
+                      fixedConfig: undefined,  // 다른 config 제거
+                      urgentConfig: undefined
+                    });
+                  }}
+                  disabled={isSubmitting}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🏆</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">대회</div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">승인 필요</div>
+                </div>
+              </label>
+
+              {/* 긴급 공고 (유료) */}
+              <label className={`
+                relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+                ${formData.postingType === 'urgent'
+                  ? 'border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }
+                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+              `}>
+                <input
+                  type="radio"
+                  name="postingType"
+                  value="urgent"
+                  checked={formData.postingType === 'urgent'}
+                  onChange={(e) => {
+                    const chipCost = calculateChipCost('urgent');
+                    setFormData({
+                      ...formData,
+                      postingType: 'urgent',
+                      urgentConfig: {
+                        chipCost,
+                        priority: 'high' as const,
+                        createdAt: new Date()  // ✅ Firestore Rules 검증 통과 위해 현재 시간 설정
+                      },
+                      fixedConfig: undefined,  // 다른 config 제거
+                      tournamentConfig: undefined
+                    });
+                  }}
+                  disabled={isSubmitting}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🚨</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">긴급</div>
+                  <div className="text-xs text-red-600 dark:text-red-400 mt-1">5칩</div>
+                </div>
+              </label>
+            </div>
+
+            {/* 알림 메시지 */}
+            {formData.postingType === 'tournament' && (
+              <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                <div className="flex items-start">
+                  <span className="text-purple-600 dark:text-purple-400 text-sm">
+                    ℹ️
+                  </span>
+                  <div className="ml-2 text-sm text-purple-800 dark:text-purple-300">
+                    <span>대회 공고는 관리자 승인 후 게시됩니다. 승인 결과는 알림으로 안내드립니다.</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 칩 비용 알림 */}
+            {(formData.postingType === 'fixed' || formData.postingType === 'urgent') && (
+              <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                <div className="flex items-start">
+                  <span className="text-yellow-600 dark:text-yellow-400 text-sm">
+                    💰
+                  </span>
+                  <div className="ml-2 text-sm text-yellow-800 dark:text-yellow-300">
+                    {formData.postingType === 'fixed' && (
+                      <span>고정 공고는 기간에 따라 3~10칩이 차감됩니다.</span>
+                    )}
+                    {formData.postingType === 'urgent' && (
+                      <span>긴급 공고 생성 시 5칩이 차감됩니다.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* 고정 공고 기간 선택 */}
+          {formData.postingType === 'fixed' && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                노출 기간 <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* 7일 (3칩) */}
+                <label className={`
+                  relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+                  ${formData.fixedConfig?.durationDays === 7
+                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  }
+                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+                `}>
+                  <input
+                    type="radio"
+                    name="fixedDuration"
+                    value="7"
+                    checked={formData.fixedConfig?.durationDays === 7}
+                    onChange={(e) => {
+                      const durationDays = 7;
+                      const chipCost = calculateChipCost('fixed', durationDays);
+                      const now = new Date();
+                      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                      setFormData({
+                        ...formData,
+                        fixedConfig: {
+                          durationDays,
+                          chipCost,
+                          expiresAt,  // ✅ 만료 시간 계산
+                          createdAt: now  // ✅ 현재 시간
+                        }
+                      });
+                    }}
+                    disabled={isSubmitting}
+                    className="sr-only"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">7일</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">1주일 노출</div>
+                  </div>
+                  <div className="ml-3 text-right">
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">3칩</div>
+                  </div>
+                </label>
+
+                {/* 30일 (5칩) */}
+                <label className={`
+                  relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+                  ${formData.fixedConfig?.durationDays === 30
+                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  }
+                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+                `}>
+                  <input
+                    type="radio"
+                    name="fixedDuration"
+                    value="30"
+                    checked={formData.fixedConfig?.durationDays === 30}
+                    onChange={(e) => {
+                      const durationDays = 30;
+                      const chipCost = calculateChipCost('fixed', durationDays);
+                      const now = new Date();
+                      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                      setFormData({
+                        ...formData,
+                        fixedConfig: {
+                          durationDays,
+                          chipCost,
+                          expiresAt,  // ✅ 만료 시간 계산
+                          createdAt: now  // ✅ 현재 시간
+                        }
+                      });
+                    }}
+                    disabled={isSubmitting}
+                    className="sr-only"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">30일</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">1개월 노출</div>
+                  </div>
+                  <div className="ml-3 text-right">
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">5칩</div>
+                    <div className="text-xs text-green-600 dark:text-green-400">인기</div>
+                  </div>
+                </label>
+
+                {/* 90일 (10칩) */}
+                <label className={`
+                  relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+                  ${formData.fixedConfig?.durationDays === 90
+                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  }
+                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+                `}>
+                  <input
+                    type="radio"
+                    name="fixedDuration"
+                    value="90"
+                    checked={formData.fixedConfig?.durationDays === 90}
+                    onChange={(e) => {
+                      const durationDays = 90;
+                      const chipCost = calculateChipCost('fixed', durationDays);
+                      const now = new Date();
+                      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                      setFormData({
+                        ...formData,
+                        fixedConfig: {
+                          durationDays,
+                          chipCost,
+                          expiresAt,  // ✅ 만료 시간 계산
+                          createdAt: now  // ✅ 현재 시간
+                        }
+                      });
+                    }}
+                    disabled={isSubmitting}
+                    className="sr-only"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">90일</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">3개월 노출</div>
+                  </div>
+                  <div className="ml-3 text-right">
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">10칩</div>
+                    <div className="text-xs text-purple-600 dark:text-purple-400">최장</div>
+                  </div>
+                </label>
+              </div>
+
+              {/* 선택된 기간 정보 */}
+              {formData.fixedConfig && (
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-blue-800 dark:text-blue-300">
+                      📅 선택한 기간: <strong>{formData.fixedConfig.durationDays}일</strong>
+                    </span>
+                    <span className="text-blue-800 dark:text-blue-300 font-medium">
+                      차감 예정: <strong>{formatChipCost(formData.fixedConfig.chipCost)}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -215,7 +515,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              문의 연락처
+              문의 연락처 <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
@@ -224,6 +524,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
               onChange={handleFormChange}
               placeholder="010-0000-0000"
               maxLength={25}
+              required
               disabled={isSubmitting}
             />
           </div>

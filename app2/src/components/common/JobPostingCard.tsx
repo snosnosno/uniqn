@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, PostingType } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay, normalizePostingType } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { extractNameFromDisplayName, extractNicknameFromDisplayName } from '../../utils/userUtils';
+import { formatChipCost } from '../../utils/jobPosting/chipCalculator';
 
 export interface JobPostingCardProps {
   post: JobPosting & { applicationCount?: number };
@@ -19,6 +20,34 @@ export interface JobPostingCardProps {
   showApplicationCount?: boolean;
   className?: string;
 }
+
+// 타입별 스타일 맵
+const POSTING_STYLES: Record<PostingType, {
+  border: string;
+  icon: string;
+  bg: string;
+}> = {
+  regular: {
+    border: 'border-gray-300 dark:border-gray-600',
+    icon: '📋',
+    bg: 'bg-white dark:bg-gray-800'
+  },
+  fixed: {
+    border: 'border-l-4 border-l-blue-500 dark:border-l-blue-400',
+    icon: '📌',
+    bg: 'bg-white dark:bg-gray-800'
+  },
+  tournament: {
+    border: 'border-l-4 border-l-purple-500 dark:border-l-purple-400',
+    icon: '🏆',
+    bg: 'bg-white dark:bg-gray-800'
+  },
+  urgent: {
+    border: 'border-2 border-red-500 dark:border-red-400',
+    icon: '🚨',
+    bg: 'bg-white dark:bg-gray-800'
+  }
+};
 
 /**
  * 공통 구인공고 카드 컴포넌트
@@ -231,7 +260,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
   // variant별 레이아웃 클래스
   const getContainerClasses = () => {
-    const baseClasses = 'bg-white dark:bg-gray-800 shadow rounded-lg';
+    // postingType 정규화
+    const postingType = normalizePostingType(post);
+    const style = POSTING_STYLES[postingType];
+
+    const baseClasses = `${style.bg} ${style.border} shadow rounded-lg`;
 
     switch (variant) {
       case 'admin-list':
@@ -607,12 +640,31 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           <div className={variant === 'user-card' ? 'flex-1 mb-4 lg:mb-0' : 'flex-1 min-w-0'}>
             {/* 제목과 상태/타입 배지 */}
             <div className="flex items-center space-x-2 mb-2">
+              {/* 타입 아이콘 */}
+              <span className="text-xl" aria-label={normalizePostingType(post)}>
+                {POSTING_STYLES[normalizePostingType(post)].icon}
+              </span>
+
               <h3 className={`font-medium text-gray-900 dark:text-gray-100 truncate ${
                 variant === 'user-card' ? 'text-base sm:text-lg font-semibold break-words max-w-full' : 'text-lg'
               }`}>
                 {post.title}
               </h3>
-              
+
+              {/* 칩 비용 배지 */}
+              {post.chipCost !== undefined && post.chipCost > 0 && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                  💰 {formatChipCost(post.chipCost)}
+                </span>
+              )}
+
+              {/* 긴급 공고 깜빡이는 배지 */}
+              {normalizePostingType(post) === 'urgent' && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 animate-pulse">
+                  🚨 긴급
+                </span>
+              )}
+
               {/* 상태 배지 (모집중/마감) */}
               {showStatus && post.status && (
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -625,8 +677,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   {getStatusDisplayName(post.status)}
                 </span>
               )}
-              
-              {/* 모집타입 배지 (고정/지원) */}
+
+              {/* 모집타입 배지 (레거시 - 하위 호환성) */}
               {post.recruitmentType && (
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                   post.recruitmentType === 'fixed'

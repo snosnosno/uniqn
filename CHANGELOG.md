@@ -19,6 +19,131 @@
   - E2E 테스트 커버리지 확대 (65% → 80%)
   - 모바일 최적화 및 PWA 고도화
 
+## [0.2.4] - 2025-10-31
+
+### 🎯 구인공고 타입 확장 시스템 완성 (Production Ready)
+
+#### 타입 시스템 확장
+- **4개 공고 타입 지원**: 지원(📋 regular), 고정(📌 fixed), 대회(🏆 tournament), 긴급(🚨 urgent)
+- **타입별 특화 기능**:
+  - 지원 공고: 기본 무료 공고
+  - 고정 공고: 상단 고정 (7일 3칩, 30일 5칩, 90일 10칩) + D-N 만료일 표시
+  - 대회 공고: 관리자 승인 필요 (pending → approved/rejected) + 무료
+  - 긴급 공고: 빨간 테두리 애니메이션 + 5칩 고정
+
+#### 칩 시스템 통합
+- **비용 계산 로직**: 타입 및 기간별 차등 과금
+- **칩 배지 표시**: 비용이 있는 공고에만 배지 표시
+- **isChipDeducted 필드**: 향후 결제 시스템 연동 준비
+
+#### 게시판 구조 개편
+- **5탭 구조**: 지원 공고, 고정 공고, 대회 공고, 긴급 공고, 내 지원 현황
+- **탭별 필터링**: postingType 기반 자동 필터링
+- **날짜 슬라이더**: 지원 공고 탭 전용 (어제~+14일 범위)
+
+#### 대회 공고 승인 시스템
+- **Firebase Functions 3개 배포**:
+  1. `approveJobPosting`: 대회 공고 승인 (Admin 전용)
+  2. `rejectJobPosting`: 대회 공고 거부 (Admin 전용, 거부 사유 필수)
+  3. `onTournamentApprovalChange`: 승인 상태 변경 트리거 (알림 발송)
+- **관리자 승인 페이지**: `/admin/job-posting-approvals`
+- **알림 통합**: 승인/거부 시 자동 알림 발송
+
+#### 테스트 & QA
+- **243개 테스트 통과**: 단위 테스트 160개 + 통합 테스트 83개
+- **컴포넌트 단위 테스트 107개**:
+  - ApprovalModal: 23개 (승인/거부 모달)
+  - FixedPostingBadge: 25개 (만료일 배지)
+  - DateSlider: 24개 (날짜 슬라이더)
+  - JobPostingCard: 35개 (공고 카드)
+- **통합 테스트 39개**:
+  - approvalWorkflow.test.ts: 승인 워크플로우 전체 시나리오
+- **레거시 호환성 테스트 20개**: 기존 데이터 변환 검증
+- **TypeScript 에러**: 0개 (100% 타입 안전)
+- **ESLint 경고**: 0개 (구인공고 관련)
+
+#### Firestore 최적화
+- **인덱스 3개 추가**:
+  1. postingType + status + createdAt
+  2. postingType + createdBy + createdAt
+  3. postingType + tournamentConfig.approvalStatus + createdAt
+- **Security Rules 업데이트**:
+  - validateFixedConfig() 함수 추가
+  - validateTournamentConfig() 함수 추가
+  - validateUrgentConfig() 함수 추가
+  - jobPostings create 규칙 업데이트
+
+#### 다크모드 완전 지원
+- **모든 신규 컴포넌트 다크모드 적용**:
+  - DateSlider: 배경, 버튼, 스크롤바
+  - FixedPostingBadge: 정상/임박/만료 상태별 색상
+  - TournamentStatusBadge: pending/approved/rejected 배지
+  - ApprovalModal: 모달, 배경, 입력 필드
+  - ApprovalManagementPage: 전체 페이지 + 테이블
+  - JobBoardTabs: 탭 버튼, 활성/비활성 상태
+
+#### 문서화
+- **구현 명세서 v3.0**: Implementation Complete 상태로 업데이트
+- **배포 체크리스트**: Firebase 배포 절차 및 롤백 계획
+- **README.md**: v0.2.4 기능 반영
+- **CHANGELOG.md**: 상세 변경 내역 기록
+
+### 추가
+- `src/types/jobPosting/boardTab.ts` - 게시판 탭 타입
+- `src/types/jobPosting/chipPricing.ts` - 칩 가격 타입
+- `src/config/boardTabs.ts` - 5탭 구조 설정
+- `src/config/chipPricing.ts` - 칩 가격 설정
+- `src/components/jobPosting/DateSlider.tsx` - 날짜 슬라이더 (115줄)
+- `src/components/jobPosting/FixedPostingBadge.tsx` - 만료일 배지 (86줄)
+- `src/components/jobPosting/TournamentStatusBadge.tsx` - 승인 상태 배지
+- `src/components/jobPosting/ApprovalModal.tsx` - 승인/거부 모달
+- `src/pages/JobBoard/components/JobBoardTabs.tsx` - 탭 컴포넌트
+- `src/pages/admin/ApprovalManagementPage.tsx` - 승인 관리 페이지
+- `src/utils/jobPosting/chipCalculator.ts` - 칩 비용 계산
+- `src/utils/jobPosting/chipNotification.ts` - 칩 부족 알림
+- `src/utils/jobPosting/dateFilter.ts` - 날짜 필터링
+- `functions/src/jobPosting/approveJobPosting.ts` - 승인 함수
+- `functions/src/jobPosting/rejectJobPosting.ts` - 거부 함수
+- `functions/src/triggers/onTournamentApprovalChange.ts` - 트리거 함수
+- `docs/JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md` - 구현 명세서 v3.0
+- `docs/DEPLOYMENT_CHECKLIST.md` - 배포 체크리스트
+
+### 변경
+- `src/types/jobPosting/jobPosting.ts` - postingType 확장 (4개 타입)
+- `src/pages/JobBoard/index.tsx` - 5탭 구조 적용
+- `src/components/common/JobPostingCard.tsx` - 타입별 아이콘 및 배지
+- `src/components/jobPosting/JobPostingForm.tsx` - 타입별 UI 분기
+- `src/hooks/useJobPostings.ts` - 타입 필터링 로직
+- `src/hooks/useJobPostingOperations.ts` - CRUD 작업 타입 안전성
+- `src/utils/jobPosting/jobPostingHelpers.ts` - 헬퍼 함수 확장
+- `firestore.rules` - 타입별 검증 함수 추가
+- `firestore.indexes.json` - 인덱스 3개 추가
+- `public/locales/ko/translation.json` - 공고 타입 번역 추가
+- `public/locales/en/translation.json` - 공고 타입 번역 추가
+- `tailwind.config.js` - 긴급 공고 애니메이션 추가
+- `README.md` - v0.2.4 기능 반영
+- `CLAUDE.md` - 프로젝트 상태 업데이트
+
+### 기술 지표
+- TypeScript 에러: 0개 (strict mode)
+- ESLint 경고: 0개 (구인공고 관련)
+- 프로덕션 빌드: 성공 ✅
+- 테스트: 243개 통과 (단위 160개 + 통합 83개)
+- 테스트 커버리지: 65% 유지
+- 번들 크기: 299KB (최적화 유지)
+
+### 배포 완료 (100%)
+- ✅ 코드 품질 검증 완료 (TypeScript 0 에러, 테스트 243개 통과)
+- ✅ Firestore Indexes 배포 완료 (3개 인덱스)
+- ✅ Firestore Rules 배포 완료 (타입 검증 함수)
+- ✅ Firebase Functions 배포 완료 (5개 함수 전체)
+  - approveJobPosting (Gen2 callable)
+  - rejectJobPosting (Gen2 callable)
+  - expireFixedPostings (Gen2 scheduled)
+  - onTournamentApprovalChange (Gen2 firestore trigger) ✅ 재배포 성공
+  - onFixedPostingExpired (Gen2 firestore trigger) ✅ 재배포 성공
+- ✅ Hosting 배포 완료 (https://tholdem-ebc18.web.app)
+
 ## [0.2.3] - 2025-10-02
 
 ### 📱 실시간 알림 센터 시스템 구현 완료

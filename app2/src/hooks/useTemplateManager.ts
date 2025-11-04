@@ -46,7 +46,7 @@ export const useTemplateManager = () => {
         templateData: {
           title: formData.title,
           type: formData.type,
-          dateSpecificRequirements: formData.dateSpecificRequirements,
+          // dateSpecificRequirements는 템플릿에 저장하지 않음 (날짜와 인원 요구사항 제외)
           description: formData.description,
           location: formData.location,
           ...(formData.district && { district: formData.district }),

@@ -92,9 +92,13 @@ export const validateJobPostingForm = (formData: any): string[] => {
   if (!formData.title?.trim()) {
     errors.push('제목을 입력해주세요.');
   }
-  
+
   if (!formData.location?.trim()) {
     errors.push('지역을 선택해주세요.');
+  }
+
+  if (!formData.contactPhone?.trim()) {
+    errors.push('문의 연락처를 입력해주세요.');
   }
   
   // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리

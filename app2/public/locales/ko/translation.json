@@ -520,6 +520,70 @@
       }
     },
     "types": {},
+    "tabs": {
+      "regular": "지원",
+      "fixed": "고정",
+      "tournament": "대회",
+      "urgent": "긴급",
+      "myApplications": "내지원"
+    },
+    "fixed": {
+      "durationLabel": "노출 기간",
+      "7days": "7일",
+      "30days": "30일",
+      "90days": "90일",
+      "7daysWithChip": "7일 (3칩)",
+      "30daysWithChip": "30일 (5칩)",
+      "90daysWithChip": "90일 (10칩)",
+      "7daysDescription": "1주일 노출",
+      "30daysDescription": "1개월 노출",
+      "90daysDescription": "3개월 노출",
+      "selectedDuration": "선택한 기간",
+      "chipCostLabel": "차감 예정",
+      "expiresIn": "만료: D-{{days}}",
+      "expired": "만료됨",
+      "expiresOn": "만료일: {{date}}"
+    },
+    "urgent": {
+      "label": "긴급",
+      "chipCost": "5칩 (고정)",
+      "badge": "긴급 모집",
+      "description": "긴급 공고로 상단에 노출됩니다"
+    },
+    "tournament": {
+      "label": "대회",
+      "badge": "대회 공고",
+      "approvalRequired": "관리자 승인 필요",
+      "description": "대회 공고는 관리자 승인 후 게시됩니다. 승인 결과는 알림으로 안내드립니다",
+      "status": {
+        "pending": "승인 대기",
+        "approved": "승인 완료",
+        "rejected": "승인 거부"
+      },
+      "approval": {
+        "pageTitle": "대회 공고 승인 관리",
+        "pageDescription": "승인 대기 중인 대회 공고를 확인하고 승인 또는 거부하세요",
+        "emptyTitle": "승인 대기 중인 공고가 없습니다",
+        "emptyDescription": "새로운 대회 공고가 등록되면 여기에 표시됩니다",
+        "approveButton": "승인",
+        "rejectButton": "거부",
+        "modalApproveTitle": "공고 승인",
+        "modalRejectTitle": "공고 거부",
+        "modalMessage": "다음 공고를 {{action}}하시겠습니까?",
+        "modalReasonLabel": "거부 사유",
+        "modalReasonPlaceholder": "거부 사유를 10자 이상 입력해주세요",
+        "modalReasonCount": "{{count}}/10자 이상",
+        "modalCancel": "취소",
+        "modalConfirmApprove": "승인",
+        "modalConfirmReject": "거부",
+        "processing": "처리 중...",
+        "errorReasonRequired": "거부 사유를 입력해주세요",
+        "errorReasonLength": "거부 사유는 최소 10자 이상이어야 합니다",
+        "errorProcessing": "처리 중 오류가 발생했습니다",
+        "successApprove": "공고가 승인되었습니다",
+        "successReject": "공고가 거부되었습니다"
+      }
+    },
     "noResults": "검색 결과가 없습니다.",
     "loadMore": "더 보기",
     "applying": "지원 중...",

@@ -75,15 +75,13 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
           💡 <strong>저장될 내용:</strong>
           <ul className="mt-2 space-y-1 ml-4 list-disc">
             <li>제목, 공고 타입, 지역 정보 (시/군/구, 상세주소, 문의 연락처 포함)</li>
-            <li>시간대 및 역할 설정</li>
-            <li>일자별 요구사항 설정</li>
-            <li>급여 정보 (급여 유형, 금액)</li>
+            <li>급여 정보 (급여 유형, 금액, 역할별 급여)</li>
             <li>복리후생 정보</li>
             <li>사전질문 설정 및 사용 여부</li>
             <li>공고 상세 설명</li>
           </ul>
           <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-            * 시작/종료 날짜는 저장되지 않습니다 (템플릿 사용 시 오늘 날짜로 설정됨)
+            * 날짜 및 인원 요구사항은 저장되지 않습니다 (템플릿 사용 시 새로 입력 필요)
           </p>
         </div>
 

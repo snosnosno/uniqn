@@ -1,4 +1,4 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
 **UNIQN 프로젝트 개발 가이드** - Claude Code (claude.ai/code) 전용
 

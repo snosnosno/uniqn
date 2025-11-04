@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -67,6 +67,18 @@ Object.defineProperty(exports, "forceDeleteAccount", { enumerable: true, get: fu
 var loginNotification_1 = require("./account/loginNotification");
 Object.defineProperty(exports, "sendLoginNotification", { enumerable: true, get: function () { return loginNotification_1.sendLoginNotification; } });
 Object.defineProperty(exports, "recordLoginFailure", { enumerable: true, get: function () { return loginNotification_1.recordLoginFailure; } });
+// --- Job Posting Approval Functions (Phase 7) ---
+var approveJobPosting_1 = require("./api/jobPostings/approveJobPosting");
+Object.defineProperty(exports, "approveJobPosting", { enumerable: true, get: function () { return approveJobPosting_1.approveJobPosting; } });
+var rejectJobPosting_1 = require("./api/jobPostings/rejectJobPosting");
+Object.defineProperty(exports, "rejectJobPosting", { enumerable: true, get: function () { return rejectJobPosting_1.rejectJobPosting; } });
+var onTournamentApprovalChange_1 = require("./triggers/onTournamentApprovalChange");
+Object.defineProperty(exports, "onTournamentApprovalChange", { enumerable: true, get: function () { return onTournamentApprovalChange_1.onTournamentApprovalChange; } });
+// --- Job Posting Scheduled Functions (Phase 5) ---
+var expireFixedPostings_1 = require("./scheduled/expireFixedPostings");
+Object.defineProperty(exports, "expireFixedPostings", { enumerable: true, get: function () { return expireFixedPostings_1.expireFixedPostings; } });
+var onFixedPostingExpired_1 = require("./triggers/onFixedPostingExpired");
+Object.defineProperty(exports, "onFixedPostingExpired", { enumerable: true, get: function () { return onFixedPostingExpired_1.onFixedPostingExpired; } });
 // --- Existing Functions (placeholders for brevity) ---
 exports.onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { });
 exports.onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { });

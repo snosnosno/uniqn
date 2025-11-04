@@ -76,10 +76,11 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       return;
     }
     
-    // 1년 이후 날짜 체크
-    const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-    if (selectedMidnight > oneYearLater) {
-      toast.error('1년 이후의 날짜는 선택할 수 없습니다.');
+    // 90일 이후 날짜 체크
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 90);
+    if (selectedMidnight > maxDate) {
+      toast.error('최대 90일 이내의 날짜만 선택할 수 있습니다.');
       return;
     }
     
@@ -134,10 +135,11 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       return;
     }
     
-    // 1년 이후 날짜 체크
-    const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-    if (selectedMidnight > oneYearLater) {
-      toast.error('1년 이후의 날짜는 선택할 수 없습니다.');
+    // 90일 이후 날짜 체크
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 90);
+    if (selectedMidnight > maxDate) {
+      toast.error('최대 90일 이내의 날짜만 선택할 수 있습니다.');
       return;
     }
     
@@ -239,10 +241,10 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         return;
       }
       
-      // 날짜 범위 검증 (최대 30일)
+      // 날짜 범위 검증 (최대 90일)
       const daysDiff = Math.ceil((endDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysDiff > 30) {
-        toast.warning('날짜 범위는 최대 30일까지만 선택할 수 있습니다.');
+      if (daysDiff > 90) {
+        toast.warning('날짜 범위는 최대 90일까지만 선택할 수 있습니다.');
         return;
       }
       
@@ -478,7 +480,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                             onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
                           placeholder="예시 : 추후공지"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
                         />
                       </div>
                     ) : (
@@ -492,7 +494,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           onChange={(e) =>
                             onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, e.target.value)
                           }
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
@@ -553,7 +555,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                       onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value || 'other');
                                     }}
                                     placeholder="역할명을 입력하세요"
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   />
                                 )}
                               </div>
@@ -599,7 +601,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
                                   onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
                                 }}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>
                             
