@@ -164,18 +164,18 @@ export const INQUIRY_STATUS_STYLES: Record<InquiryStatus, {
   labelKey: string;
 }> = {
   open: {
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
+    color: 'text-blue-700 dark:text-blue-300',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     labelKey: 'inquiry.status.open'
   },
   in_progress: {
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-100',
+    color: 'text-yellow-700 dark:text-yellow-300',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
     labelKey: 'inquiry.status.in_progress'
   },
   closed: {
-    color: 'text-green-700',
-    bgColor: 'bg-green-100',
+    color: 'text-green-700 dark:text-green-300',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
     labelKey: 'inquiry.status.closed'
   }
 };

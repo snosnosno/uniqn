@@ -45,7 +45,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-            템플릿 이름 <span className="text-red-500">*</span>
+            템플릿 이름 <span className="text-red-500 dark:text-red-400">*</span>
           </label>
           <Input
             type="text"

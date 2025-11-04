@@ -83,17 +83,17 @@ const PrizesPage: React.FC = () => {
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('prizes.title')}</h2>
 
       <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-        <div className="bg-gray-700 dark:bg-gray-600 p-3 rounded-lg">
-          <p className="text-sm text-gray-400 dark:text-gray-300">{t('prizes.totalPrizePool')}</p>
-          <p className="text-xl font-bold text-white">{formatCurrency(prizePool)}</p>
+        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('prizes.totalPrizePool')}</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(prizePool)}</p>
         </div>
-        <div className="bg-gray-700 dark:bg-gray-600 p-3 rounded-lg">
-          <p className="text-sm text-gray-400 dark:text-gray-300">{t('common.participants')}</p>
-          <p className="text-xl font-bold text-white">{totalPlayers}</p>
+        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.participants')}</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{totalPlayers}</p>
         </div>
-        <div className="bg-gray-700 dark:bg-gray-600 p-3 rounded-lg">
-          <p className="text-sm text-gray-400 dark:text-gray-300">{t('prizes.itm')}</p>
-          <p className="text-xl font-bold text-white">{itmCount}</p>
+        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('prizes.itm')}</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{itmCount}</p>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ const PrizesPage: React.FC = () => {
                  className="input-field !mt-0 flex-grow"
                />
             ) : (
-              <span className="text-lg font-mono bg-gray-800 dark:bg-gray-700 text-white dark:text-gray-100 px-3 py-1 rounded-md">{formatCurrency(payout)}</span>
+              <span className="text-lg font-mono bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-1 rounded-md">{formatCurrency(payout)}</span>
             )}
           </div>
         ))}

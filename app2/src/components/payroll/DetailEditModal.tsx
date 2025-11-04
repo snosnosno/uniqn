@@ -644,7 +644,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-blue-800">일당 기반 계산</span>
-                      <span className="text-sm text-blue-600">{allowances.workDays}일 근무</span>
+                      <span className="text-sm text-blue-600 dark:text-blue-400">{allowances.workDays}일 근무</span>
                     </div>
                     <div className="space-y-1 text-sm text-blue-700">
                       {allowances.dailyRates.meal && (
@@ -679,7 +679,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                       )}
                     </div>
                     {allowances.isManualEdit && (
-                      <div className="mt-2 text-xs text-orange-600">
+                      <div className="mt-2 text-xs text-orange-600 dark:text-orange-400">
                         ⚠️ 수동으로 수정됨
                       </div>
                     )}
@@ -748,7 +748,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   {staff.afterTaxAmount !== undefined && staff.afterTaxAmount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-base font-medium text-green-700">세후 급여</span>
-                      <span className="text-lg font-bold text-green-600">
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">
                         {staff.afterTaxAmount.toLocaleString('ko-KR')}
                       </span>
                     </div>

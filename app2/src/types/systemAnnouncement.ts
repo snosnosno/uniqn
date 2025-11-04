@@ -247,9 +247,9 @@ export const getPriorityColor = (priority: AnnouncementPriority): string => {
  */
 export const getPriorityBadgeStyle = (priority: AnnouncementPriority): string => {
   const styles: Record<AnnouncementPriority, string> = {
-    normal: 'bg-blue-100 text-blue-800 border border-blue-300',
-    important: 'bg-orange-100 text-orange-800 border border-orange-300',
-    urgent: 'bg-red-100 text-red-800 border border-red-300'
+    normal: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700',
+    important: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700',
+    urgent: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700'
   };
   return styles[priority];
 };

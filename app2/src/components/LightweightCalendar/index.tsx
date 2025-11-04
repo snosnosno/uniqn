@@ -164,7 +164,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
             >
               <div className={`
                 text-sm font-semibold mb-1
-                ${dayOfWeek === 0 ? 'text-red-500' : dayOfWeek === 6 ? 'text-blue-500' : ''}
+                ${dayOfWeek === 0 ? 'text-red-500 dark:text-red-400' : dayOfWeek === 6 ? 'text-blue-500 dark:text-blue-400' : ''}
                 ${isSelectedDay ? 'text-white bg-blue-600 dark:bg-blue-700 rounded-full w-6 h-6 flex items-center justify-center' : ''}
               `}>
                 {format(day, 'd')}
@@ -279,9 +279,9 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
               onViewChange('dayGridMonth');
             }}
             className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-              selectedView === 'dayGridMonth' 
-                ? 'bg-blue-600 text-white' 
-                : 'hover:bg-gray-100'
+              selectedView === 'dayGridMonth'
+                ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             월

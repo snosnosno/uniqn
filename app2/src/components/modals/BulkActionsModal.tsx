@@ -98,7 +98,7 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
         className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
           activeTab === 'delete'
             ? showDeleteConfirm
-              ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-400'
+              ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 disabled:bg-red-400 dark:disabled:bg-red-500'
               : 'bg-error hover:bg-error-dark disabled:bg-error-light'
             : 'bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400'
         }`}
@@ -266,10 +266,10 @@ const BulkActionsModal: React.FC<BulkActionsModalProps> = ({
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-base font-medium text-yellow-800">
+                      <h3 className="text-base font-medium text-yellow-800 dark:text-yellow-300">
                         정말 삭제하시겠습니까?
                       </h3>
-                      <div className="mt-2 text-sm text-yellow-700">
+                      <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
                         <p className="font-medium mb-2">
                           {selectedStaff.length}명의 스태프가 영구적으로 삭제됩니다.
                         </p>

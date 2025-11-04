@@ -323,8 +323,8 @@ const ParticipantsPage: React.FC = () => {
   };
 
   if (participantsLoading || tablesLoading) return <div>{t('common.messages.loading')}</div>;
-  if (participantsError) return <div className="text-red-500">{t('participants.errorParticipants')} {participantsError.message}</div>;
-  if (tablesError) return <div className="text-red-500">{t('participants.errorTables')} {tablesError.message}</div>;
+  if (participantsError) return <div className="text-red-500 dark:text-red-400">{t('participants.errorParticipants')} {participantsError.message}</div>;
+  if (tablesError) return <div className="text-red-500 dark:text-red-400">{t('participants.errorTables')} {tablesError.message}</div>;
 
   const isAllSelected = filteredParticipants.length > 0 &&
     filteredParticipants.every(p => selectedIds.has(p.id));
@@ -377,7 +377,7 @@ const ParticipantsPage: React.FC = () => {
             </button>
             <button
               onClick={handleExportParticipants}
-              className="btn btn-secondary bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              className="btn btn-secondary bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm"
               disabled={isModalOpen || isBulkModalOpen || filteredParticipants.length === 0}
               tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
             >
@@ -505,7 +505,7 @@ const ParticipantsPage: React.FC = () => {
         >
           {/* 토너먼트 정보 표시 */}
           {currentTournament && (
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-gray-700 dark:text-gray-200">
                 <span className="font-semibold">토너먼트:</span> {currentTournament.name}
               </p>
@@ -613,7 +613,7 @@ const ParticipantsPage: React.FC = () => {
                       toast.error('테이블에 배정되지 않은 참가자입니다.');
                     }
                   }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
                 >
                   자리 이동
                 </button>

@@ -108,7 +108,7 @@ const MultipleAssignmentsDisplay: React.FC<{
           ) : (
             // 대기 상태: 기존 표시 방식 유지
             <>
-              <div className="text-blue-600 font-medium mb-1">
+              <div className="text-blue-600 dark:text-blue-400 font-medium mb-1">
                 📅 {date}
               </div>
               <div className="space-y-1 ml-4">
@@ -153,7 +153,7 @@ const SingleAssignmentDisplay: React.FC<{
         <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
           // 날짜 - 모바일에서 첫 줄
           {assignedDate && (
-            <div className="text-blue-600 font-medium">
+            <div className="text-blue-600 dark:text-blue-400 font-medium">
               📅 {formatDateOnly(assignedDate)}
             </div>
           )}

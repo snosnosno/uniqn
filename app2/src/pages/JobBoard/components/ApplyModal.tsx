@@ -291,13 +291,13 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               // 다중 날짜인 경우 그룹화하여 표시
               if (expandedDates.length > 0) {
                 return (
-                  <div key={dateIndex} className="mb-6 bg-blue-50 rounded-lg border border-blue-200 overflow-hidden">
-                    <div className="p-3 bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-200">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                  <div key={dateIndex} className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden">
+                    <div className="p-3 bg-gradient-to-r from-blue-100 dark:from-blue-900/40 to-blue-50 dark:to-blue-900/20 border-b border-blue-200 dark:border-blue-800">
+                      <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
                         📅 {dateDisplay} ({expandedDates.length}일)
                       </h4>
                     </div>
-                    <div className="p-4 bg-blue-50">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20">
                       {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
                         <div key={tsIndex} className="mb-4">
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
@@ -362,7 +362,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                       ({expandedDates.length}일)
                                     </span>
                                     <span className={`ml-2 text-xs ${
-                                      isFull ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
+                                      isFull ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
                                     }`}>
                                       {isFull ? '마감' : `(${confirmedCountPerDay}/${r.count})`}
                                     </span>
@@ -379,8 +379,8 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               } else {
                 // 단일 날짜인 경우 기존 로직 유지
                 return (
-                <div key={dateIndex} className="mb-6 border border-blue-200 rounded-lg p-4 bg-blue-50">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-3">
+                <div key={dateIndex} className="mb-6 border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+                  <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-3">
                     📅 {dateDisplay}
                   </h4>
                 {dateReq.timeSlots.map((ts: TimeSlot, tsIndex: number) => (
@@ -458,7 +458,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                             }`}>
                               👤 {t(`roles.${r.name}`, r.name)} 
                               <span className={`ml-2 text-xs ${
-                                isFull ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
+                                isFull ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'
                               }`}>
                                 ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
                               </span>
@@ -485,7 +485,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             {hasPreQuestions && onBack && (
               <button 
                 onClick={onBack} 
-                className="py-3 px-6 sm:py-2 sm:px-4 bg-blue-500 text-white rounded hover:bg-blue-700 min-h-[48px] text-sm sm:text-base"
+                className="py-3 px-6 sm:py-2 sm:px-4 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-500 min-h-[48px] text-sm sm:text-base"
               >
                 뒤로 (수정)
               </button>
@@ -501,7 +501,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             <button
               onClick={onApply}
               disabled={selectedAssignments.length === 0 || isProcessing}
-              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[48px] text-sm sm:text-base"
+              className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 dark:bg-green-700 text-white rounded hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[48px] text-sm sm:text-base"
             >
               {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개)`}
             </button>

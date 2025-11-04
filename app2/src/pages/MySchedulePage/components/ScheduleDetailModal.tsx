@@ -502,27 +502,27 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     switch (schedule.type) {
       case 'applied':
         return {
-          icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500" />,
+          icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />,
           text: '지원중',
-          color: 'text-yellow-600 bg-yellow-100'
+          color: 'text-yellow-600 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30'
         };
       case 'confirmed':
         return {
-          icon: <FaCheckCircle className="w-5 h-5 text-green-500" />,
+          icon: <FaCheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />,
           text: '확정',
-          color: 'text-green-600 bg-green-100'
+          color: 'text-green-600 dark:text-green-300 bg-green-100 dark:bg-green-900/30'
         };
       case 'completed':
         return {
-          icon: <FaCheckCircle className="w-5 h-5 text-blue-500" />,
+          icon: <FaCheckCircle className="w-5 h-5 text-blue-500 dark:text-blue-400" />,
           text: '완료',
-          color: 'text-blue-600 bg-blue-100'
+          color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20'
         };
       case 'cancelled':
         return {
-          icon: <FaTimesCircle className="w-5 h-5 text-red-500" />,
+          icon: <FaTimesCircle className="w-5 h-5 text-red-500 dark:text-red-400" />,
           text: '취소',
-          color: 'text-red-600 bg-red-100'
+          color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20'
         };
       default:
         return {
@@ -681,7 +681,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                       return (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">역할별 급여</span>
+                          <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">역할별 급여</span>
                         </div>
                       );
                     } else if (salaryType) {
@@ -762,7 +762,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 </div>
                 {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 ? (
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-green-600">
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
                       {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
@@ -869,7 +869,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">총 근무시간</span>
-                    <span className="text-lg font-bold text-blue-600">
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                       {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
                     </span>
                   </div>
@@ -919,7 +919,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
               {/* 일당 계산 과정 표시 */}
               {salaryInfo.allowances?.dailyRates && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">일당 기반 계산</span>
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{salaryInfo.allowances.workDays || 1}일 근무</span>
@@ -972,7 +972,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 {salaryInfo.tax !== undefined && salaryInfo.tax > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">세금</span>
-                    <span className="text-red-600">
+                    <span className="text-red-600 dark:text-red-400">
                       -{salaryInfo.tax.toLocaleString('ko-KR')}원
                     </span>
                   </div>
@@ -997,7 +997,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-base font-medium text-green-700">세후 급여</span>
-                    <span className="text-lg font-bold text-green-600">
+                    <span className="text-lg font-bold text-green-600 dark:text-green-400">
                       {salaryInfo.afterTaxAmount.toLocaleString('ko-KR')}원
                     </span>
                   </div>
@@ -1008,10 +1008,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             {/* 계산 안내 */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <FaInfoCircle className="w-4 h-4 text-blue-600" />
+                <FaInfoCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <p className="text-sm font-medium text-blue-700">급여 계산 안내</p>
               </div>
-              <p className="text-sm text-blue-600">
+              <p className="text-sm text-blue-600 dark:text-blue-400">
                 예정 근무 시간을 기준으로 자동 계산된 예상 급여입니다.
                 실제 지급 금액은 관리자 확인 후 결정됩니다.
               </p>
@@ -1028,7 +1028,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                 onCheckOut(schedule.id);
                 onClose();
               }}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors font-medium"
             >
               퇴근하기
             </button>
@@ -1047,7 +1047,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           {getSnapshotOrFallback(schedule, jobPosting).createdBy() && (
             <button
               onClick={handleReport}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center gap-2"
+              className="px-4 py-2 bg-orange-500 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-600 dark:hover:bg-orange-500 transition-colors font-medium flex items-center gap-2"
               title="구인자 신고하기"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

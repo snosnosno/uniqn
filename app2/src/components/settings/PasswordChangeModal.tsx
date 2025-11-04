@@ -340,7 +340,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
 
               {/* 비밀번호 불일치 경고 */}
               {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-                <p className="mt-1 text-xs text-red-600">
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                   {t('settings.security.passwordMismatch')}
                 </p>
               )}
@@ -349,7 +349,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               {newPassword.length > 0 &&
                 currentPassword.length > 0 &&
                 newPassword === currentPassword && (
-                  <p className="mt-1 text-xs text-red-600">
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                     {t('settings.security.passwordSameAsCurrent')}
                   </p>
                 )}
@@ -368,7 +368,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
               <button
                 type="submit"
                 disabled={!isValid || isSubmitting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? t('common.processing') : t('common.save')}
               </button>

@@ -229,7 +229,7 @@ const TournamentsPage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
-        <div className="text-red-500">토너먼트 목록을 불러오는데 실패했습니다: {error.message}</div>
+        <div className="text-red-500 dark:text-red-400">토너먼트 목록을 불러오는데 실패했습니다: {error.message}</div>
       </div>
     );
   }

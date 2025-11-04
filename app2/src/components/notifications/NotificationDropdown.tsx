@@ -196,7 +196,7 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={handleViewAll}
-                className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="w-full py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 {t('notifications.notificationCenter', '알림센터')}
               </button>

@@ -314,9 +314,9 @@ export const getScheduleColors = (isDark: boolean): Record<ScheduleType, EventCo
  * 출석 상태별 색상 매핑
  */
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  not_started: 'bg-gray-100 text-gray-600',
-  checked_in: 'bg-green-100 text-green-600',
-  checked_out: 'bg-blue-100 text-blue-600'
+  not_started: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+  checked_in: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
+  checked_out: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300'
 };
 
 /**

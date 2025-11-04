@@ -102,19 +102,19 @@ export const CATEGORY_COLORS: Record<NotificationCategory, string> = {
  * 우선순위별 스타일 (Tailwind CSS)
  */
 export const PRIORITY_STYLES: Record<NotificationPriority, string> = {
-  urgent: 'bg-red-100 border-red-500 text-red-900',
-  high: 'bg-orange-100 border-orange-500 text-orange-900',
-  medium: 'bg-blue-100 border-blue-500 text-blue-900',
-  low: 'bg-gray-100 border-gray-300 text-gray-700',
+  urgent: 'bg-red-100 dark:bg-red-900/30 border-red-500 dark:border-red-700 text-red-900 dark:text-red-200',
+  high: 'bg-orange-100 dark:bg-orange-900/30 border-orange-500 dark:border-orange-700 text-orange-900 dark:text-orange-200',
+  medium: 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-700 text-blue-900 dark:text-blue-200',
+  low: 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200',
 };
 
 /**
  * 우선순위별 배지 스타일
  */
 export const PRIORITY_BADGE_STYLES: Record<NotificationPriority, string> = {
-  urgent: 'bg-red-500 text-white',
-  high: 'bg-orange-500 text-white',
-  medium: 'bg-blue-500 text-white',
+  urgent: 'bg-red-500 dark:bg-red-600 text-white',
+  high: 'bg-orange-500 dark:bg-orange-600 text-white',
+  medium: 'bg-blue-500 dark:bg-blue-600 text-white',
   low: 'bg-gray-400 text-white',
 };
 

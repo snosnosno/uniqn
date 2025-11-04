@@ -247,14 +247,14 @@ export const useStaffManagement = (
   
   // 메모이제이션된 시간대별 색상 반환
   const getTimeSlotColor = useCallback((time: string | undefined): string => {
-    if (!time) return 'bg-gray-100 text-gray-500';
-    if (time === '미정') return 'bg-orange-100 text-orange-800';
-    
+    if (!time) return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300';
+    if (time === '미정') return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200';
+
     const hour = parseInt(time.split(':')[0] || '0');
-    if (hour >= 6 && hour < 12) return 'bg-yellow-100 text-yellow-800'; // 오전
-    if (hour >= 12 && hour < 18) return 'bg-blue-100 text-blue-800'; // 오후
-    if (hour >= 18 && hour < 24) return 'bg-purple-100 text-purple-800'; // 저녁
-    return 'bg-gray-100 text-gray-700'; // 심야/새벽
+    if (hour >= 6 && hour < 12) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'; // 오전
+    if (hour >= 12 && hour < 18) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'; // 오후
+    if (hour >= 18 && hour < 24) return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'; // 저녁
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'; // 심야/새벽
   }, []);
 
   // 🚫 메모이제이션된 스태프 삭제 비활성화 - WorkLog 통합

@@ -77,7 +77,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-4">
       {/* 날짜 헤더 */}
       <div 
-        className="bg-blue-600 px-4 py-3 cursor-pointer hover:bg-blue-700 active:bg-blue-800 transition-colors duration-150"
+        className="bg-blue-600 dark:bg-blue-700 px-4 py-3 cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-900 transition-colors duration-150"
         onClick={handleHeaderClick}
       >
         <div className="flex items-center justify-between">
@@ -88,7 +88,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                   <span className="text-lg">📅</span>
                   <div>
                     <div className="text-lg font-semibold">날짜 미정</div>
-                    <div className="text-xs text-blue-200">일정 조정 필요</div>
+                    <div className="text-xs text-blue-200 dark:text-blue-300">일정 조정 필요</div>
                   </div>
                 </div>
               ) : (
@@ -132,7 +132,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                 <>
                   {selectedCount > 0 && (
                     <div className="bg-yellow-400 dark:bg-yellow-600 rounded-full px-3 py-1.5">
-                      <span className="text-yellow-900 text-sm font-semibold">
+                      <span className="text-yellow-900 dark:text-yellow-100 text-sm font-semibold">
                         {selectedCount}개 선택
                       </span>
                     </div>

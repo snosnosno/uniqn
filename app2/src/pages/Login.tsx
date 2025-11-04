@@ -357,7 +357,7 @@ const Login: React.FC = () => {
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
               isBlocked
                 ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                : 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600'
             } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
           >
             {isBlocked ? t('login.blockedButton', '차단됨') : t('common.login')}

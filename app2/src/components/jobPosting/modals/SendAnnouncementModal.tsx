@@ -190,7 +190,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           <div className="mb-4">
             <label htmlFor="announcement-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('jobPosting.announcement.titleLabel')}
-              <span className="text-red-500 ml-1">*</span>
+              <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
             <input
               id="announcement-title"
@@ -212,7 +212,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           <div className="mb-4">
             <label htmlFor="announcement-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('jobPosting.announcement.messageLabel')}
-              <span className="text-red-500 ml-1">*</span>
+              <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
             <textarea
               id="announcement-message"

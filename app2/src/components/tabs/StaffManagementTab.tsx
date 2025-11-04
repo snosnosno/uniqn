@@ -420,7 +420,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
         {error.global && (
           <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
-            <p className="text-red-600">{error.global}</p>
+            <p className="text-red-600 dark:text-red-400">{error.global}</p>
           </div>
         )}
 
@@ -449,7 +449,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                   )}
                   <button
                     onClick={() => modals.qrModal.open()}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                    className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white rounded text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
                   >
                     QR 스캔
                   </button>
@@ -471,7 +471,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4">
             <div className="flex items-center">
               <svg
-                className="w-5 h-5 text-blue-600 mr-2"
+                className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

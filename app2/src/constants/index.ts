@@ -62,9 +62,9 @@ export const COLORS = {
     }
   },
   TIME_SLOT: {
-    DEFAULT: 'bg-gray-100 text-gray-500',
-    PENDING: 'bg-orange-100 text-orange-800',
-    ASSIGNED: 'bg-blue-100 text-blue-800'
+    DEFAULT: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300',
+    PENDING: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
+    ASSIGNED: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
   }
 } as const;
 
