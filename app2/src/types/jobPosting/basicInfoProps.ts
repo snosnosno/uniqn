@@ -1,0 +1,83 @@
+/**
+ * BasicInfoSection Props 타입
+ *
+ * @see app2/src/components/jobPosting/JobPostingForm/sections/BasicInfoSection.tsx
+ */
+
+import { SectionProps, ValidationState } from './sectionProps';
+import { PostingType } from './jobPosting';
+
+/**
+ * BasicInfo 섹션 데이터
+ */
+export interface BasicInfoData {
+  /** 공고 제목 */
+  title: string;
+
+  /** 근무 장소 */
+  location: string;
+
+  /** 시/군/구 (선택) */
+  district?: string;
+
+  /** 상세 주소 (선택) */
+  detailedAddress?: string;
+
+  /** 공고 설명 */
+  description: string;
+
+  /** 공고 타입 */
+  postingType: PostingType;
+
+  /** 문의 연락처 (선택) */
+  contactPhone?: string;
+}
+
+/**
+ * BasicInfo 섹션 이벤트 핸들러
+ */
+export interface BasicInfoHandlers {
+  /**
+   * 폼 입력 변경 핸들러
+   * - title, description, contactPhone 등
+   */
+  onFormChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+
+  /**
+   * 장소 변경 핸들러
+   * - location과 district를 함께 변경
+   */
+  onLocationChange: (location: string, district?: string) => void;
+
+  /**
+   * 공고 타입 변경 핸들러
+   */
+  onPostingTypeChange?: (postingType: PostingType) => void;
+}
+
+/**
+ * BasicInfo 섹션 검증 에러
+ */
+export interface BasicInfoErrors {
+  title?: string;
+  location?: string;
+  district?: string;
+  detailedAddress?: string;
+  description?: string;
+  postingType?: string;
+  contactPhone?: string;
+}
+
+/**
+ * BasicInfo 섹션 검증 상태
+ */
+export type BasicInfoValidation = ValidationState<BasicInfoErrors>;
+
+/**
+ * BasicInfoSection Props
+ */
+export interface BasicInfoSectionProps extends SectionProps<
+  BasicInfoData,
+  BasicInfoHandlers,
+  BasicInfoValidation
+> {}
