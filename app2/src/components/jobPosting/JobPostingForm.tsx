@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { useJobPostingForm } from '../../hooks/useJobPostingForm';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { useTemplateManager } from '../../hooks/useTemplateManager';
 import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
-import { JobPosting, DateSpecificRequirement, JobPostingTemplate, PostingType } from '../../types/jobPosting';
+import { JobPosting, JobPostingFormData, DateSpecificRequirement, JobPostingTemplate, PostingType } from '../../types/jobPosting';
 import { toast } from '../../utils/toast';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -107,7 +108,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   };
 
   const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
-    setFormData((prev: Partial<JobPosting>) => ({ ...prev, dateSpecificRequirements: requirements }));
+    setFormData((prev: JobPostingFormData) => ({ ...prev, dateSpecificRequirements: requirements }));
   };
 
   return (
@@ -224,15 +225,14 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value="tournament"
                   checked={formData.postingType === 'tournament'}
                   onChange={(e) => {
+                    const { fixedConfig, urgentConfig, ...rest } = formData;  // 기존 config 제거
                     setFormData({
-                      ...formData,
+                      ...rest,
                       postingType: 'tournament',
                       tournamentConfig: {
                         approvalStatus: 'pending' as const,
-                        submittedAt: new Date()  // ✅ Firestore Rules 검증 통과 위해 현재 시간 설정
-                      },
-                      fixedConfig: undefined,  // 다른 config 제거
-                      urgentConfig: undefined
+                        submittedAt: Timestamp.fromDate(new Date())  // ✅ Date → Timestamp 변환
+                      }
                     });
                   }}
                   disabled={isSubmitting}
@@ -260,17 +260,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   value="urgent"
                   checked={formData.postingType === 'urgent'}
                   onChange={(e) => {
-                    const chipCost = calculateChipCost('urgent');
+                    const { fixedConfig, tournamentConfig, ...rest } = formData;  // 기존 config 제거
                     setFormData({
-                      ...formData,
+                      ...rest,
                       postingType: 'urgent',
                       urgentConfig: {
-                        chipCost,
+                        chipCost: 5,  // ✅ UrgentConfig.chipCost는 리터럴 5만 허용
                         priority: 'high' as const,
-                        createdAt: new Date()  // ✅ Firestore Rules 검증 통과 위해 현재 시간 설정
-                      },
-                      fixedConfig: undefined,  // 다른 config 제거
-                      tournamentConfig: undefined
+                        createdAt: Timestamp.fromDate(new Date())  // ✅ Date → Timestamp 변환
+                      }
                     });
                   }}
                   disabled={isSubmitting}
@@ -341,16 +339,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     checked={formData.fixedConfig?.durationDays === 7}
                     onChange={(e) => {
                       const durationDays = 7;
-                      const chipCost = calculateChipCost('fixed', durationDays);
                       const now = new Date();
                       const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
                       setFormData({
                         ...formData,
                         fixedConfig: {
                           durationDays,
-                          chipCost,
-                          expiresAt,  // ✅ 만료 시간 계산
-                          createdAt: now  // ✅ 현재 시간
+                          chipCost: 3,  // ✅ 7일 = 3칩 (리터럴 타입)
+                          expiresAt: Timestamp.fromDate(expiresAt),  // ✅ Date → Timestamp 변환
+                          createdAt: Timestamp.fromDate(now)  // ✅ Date → Timestamp 변환
                         }
                       });
                     }}
@@ -382,16 +379,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     checked={formData.fixedConfig?.durationDays === 30}
                     onChange={(e) => {
                       const durationDays = 30;
-                      const chipCost = calculateChipCost('fixed', durationDays);
                       const now = new Date();
                       const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
                       setFormData({
                         ...formData,
                         fixedConfig: {
                           durationDays,
-                          chipCost,
-                          expiresAt,  // ✅ 만료 시간 계산
-                          createdAt: now  // ✅ 현재 시간
+                          chipCost: 5,  // ✅ 30일 = 5칩 (리터럴 타입)
+                          expiresAt: Timestamp.fromDate(expiresAt),  // ✅ Date → Timestamp 변환
+                          createdAt: Timestamp.fromDate(now)  // ✅ Date → Timestamp 변환
                         }
                       });
                     }}
@@ -424,16 +420,15 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     checked={formData.fixedConfig?.durationDays === 90}
                     onChange={(e) => {
                       const durationDays = 90;
-                      const chipCost = calculateChipCost('fixed', durationDays);
                       const now = new Date();
                       const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
                       setFormData({
                         ...formData,
                         fixedConfig: {
                           durationDays,
-                          chipCost,
-                          expiresAt,  // ✅ 만료 시간 계산
-                          createdAt: now  // ✅ 현재 시간
+                          chipCost: 10,  // ✅ 90일 = 10칩 (리터럴 타입)
+                          expiresAt: Timestamp.fromDate(expiresAt),  // ✅ Date → Timestamp 변환
+                          createdAt: Timestamp.fromDate(now)  // ✅ Date → Timestamp 변환
                         }
                       });
                     }}
@@ -597,7 +592,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                   <div className={role === 'other' ? "col-span-2" : "col-span-3"}>
                     <Select
                       value={salary.salaryType}
-                      onChange={(value) => handleRoleSalaryTypeChange(role, value)}
+                      onChange={(value) => handleRoleSalaryTypeChange(role, value as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other')}
                       options={[
                         { value: 'hourly', label: '시급' },
                         { value: 'daily', label: '일급' },
@@ -687,8 +682,8 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
                     value={formData.salaryAmount || ''}
                     onChange={(e) => handleSalaryAmountChange(e.target.value)}
                     placeholder="급여 금액을 입력하세요"
-                    required={!formData.useRoleSalary && formData.salaryType !== 'negotiable'}
-                    disabled={isSubmitting || formData.salaryType === 'negotiable'}
+                    required={!formData.useRoleSalary && (formData.salaryType as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other' | undefined) !== 'negotiable'}
+                    disabled={isSubmitting || (formData.salaryType as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other' | undefined) === 'negotiable'}
                   />
                 )}
               </div>

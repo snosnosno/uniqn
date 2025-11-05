@@ -65,14 +65,13 @@ export const createInitialTimeSlot = (): TimeSlot => ({
 /**
  * 초기 폼 데이터 생성
  */
-export const createInitialFormData = () => {
+export const createInitialFormData = (): JobPostingFormData => {
   const today = getTodayString();
 
   return {
     title: '',
     type: 'application' as const,
     postingType: 'regular' as const, // 새 필드: 기본값 regular
-    timeSlots: [createInitialTimeSlot()],
     dateSpecificRequirements: [createNewDateSpecificRequirement(today)],
     description: '',
     status: 'open' as const,
@@ -80,10 +79,7 @@ export const createInitialFormData = () => {
     detailedAddress: '',
     district: '',
     contactPhone: '',
-    preQuestions: [] as any[],
-    usesPreQuestions: false,
-    startDate: today,
-    endDate: today,
+    preQuestions: [],
     salaryType: 'hourly',
     salaryAmount: '',
     benefits: { isPerDay: true } as Benefits

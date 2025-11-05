@@ -49,7 +49,7 @@ export interface UrgentConfig {
  */
 export interface JobPostingFormData {
   title: string;
-  type: string;
+  type?: 'application' | 'fixed';
   description: string;
   location: string;
   detailedAddress?: string;

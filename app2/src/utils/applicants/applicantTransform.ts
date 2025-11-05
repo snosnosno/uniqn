@@ -13,34 +13,7 @@ import { logger } from '../logger';
 import { Applicant } from '../../components/applicants/ApplicantListTab/types';
 import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
 import { JobPosting, DateSpecificRequirement, TimeSlot } from '../../types/jobPosting';
-
-/**
- * 선택 항목 인터페이스
- */
-export interface Selection {
-  role: string;
-  time: string;
-  date?: string;  // 단일 날짜 (하위 호환성)
-  dates?: string[];  // 새로운 다중 날짜 필드
-  checkMethod?: 'group' | 'individual';
-  groupId?: string;
-  isGrouped?: boolean;
-  duration?: {
-    type?: string;
-    endDate?: any;
-  } | undefined;
-}
-
-/**
- * 날짜별 그룹화된 선택 사항 인터페이스
- */
-export interface DateGroupedSelections {
-  date: string;
-  displayDate: string;
-  selections: Selection[];
-  selectedCount: number;
-  totalCount: number;
-}
+import type { Selection, DateGroupedSelections } from '../../types/applicants/selection';
 
 /**
  * 구인공고에서 특정 시간대의 역할 정보를 가져오는 함수

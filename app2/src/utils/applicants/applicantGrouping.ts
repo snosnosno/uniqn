@@ -9,7 +9,8 @@
  * @module utils/applicants/applicantGrouping
  */
 
-import { Selection, DateGroupedSelections, convertDateToString, formatDateDisplay } from './applicantTransform';
+import type { Selection, DateGroupedSelections } from '../../types/applicants/selection';
+import { convertDateToString, formatDateDisplay } from './applicantTransform';
 import { isConsecutiveDates, findConsecutiveDateGroups, generateDateRange } from './applicantFormat';
 
 /**

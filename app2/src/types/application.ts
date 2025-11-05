@@ -19,6 +19,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
+import type { DateValue } from './applicants/selection';
 
 /**
  * 지원 선택사항 - 단일 또는 다중 역할/시간/날짜 조합
@@ -43,7 +44,7 @@ export interface Assignment {
   duration?: {
     type: 'single' | 'consecutive' | 'multi';
     startDate: string;      // "2025-01-09" 형식
-    endDate?: string;       // 연속/다중 날짜인 경우
+    endDate?: DateValue;    // ✅ string → DateValue (Timestamp 지원)
   };
 }
 
