@@ -280,6 +280,7 @@ service cloud.firestore {
         (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
         (!('contactPhone' in request.resource.data) || isSafeText(request.resource.data.contactPhone, 25)) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
+        (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp) &&
         // 추가 필드 검증 (v0.2.4 - 칩 시스템)
@@ -308,6 +309,7 @@ service cloud.firestore {
          (!('urgentConfig' in request.resource.data) || validateUrgentConfig(request.resource.data.urgentConfig))) &&
         (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
+        (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
 

@@ -59,6 +59,7 @@ export interface JobPostingFormData {
   status: 'open' | 'closed';
   dateSpecificRequirements: DateSpecificRequirement[];
   preQuestions?: PreQuestion[];
+  usesPreQuestions?: boolean;  // 사전질문 사용 여부
   requiredRoles?: string[];
   salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'; // 급여 유형 (협의 추가)
   salaryAmount?: string;    // 급여 금액
