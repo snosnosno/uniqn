@@ -395,8 +395,8 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                     value={formData.salaryAmount || ''}
                     onChange={(e) => handleSalaryAmountChange(e.target.value)}
                     placeholder="급여 금액을 입력하세요"
-                    required={!formData.useRoleSalary && formData.salaryType !== 'negotiable'}
-                    disabled={isUpdating || formData.salaryType === 'negotiable'}
+                    required={!formData.useRoleSalary && (formData.salaryType as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other' | undefined) !== 'negotiable'}
+                    disabled={isUpdating || (formData.salaryType as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other' | undefined) === 'negotiable'}
                   />
                 )}
               </div>
