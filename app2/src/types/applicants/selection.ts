@@ -17,8 +17,9 @@ import { Timestamp } from 'firebase/firestore';
  * @description
  * Firebase Firestore에서 날짜는 Timestamp 객체로 저장되지만,
  * 프론트엔드에서는 string 또는 Date 객체로도 사용됩니다.
+ * undefined도 허용하여 exactOptionalPropertyTypes와 호환됩니다.
  */
-export type DateValue = string | Date | Timestamp | null;
+export type DateValue = string | Date | Timestamp | null | undefined;
 
 /**
  * 선택 기간 정보

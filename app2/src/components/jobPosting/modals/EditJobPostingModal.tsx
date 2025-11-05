@@ -305,7 +305,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   <div className={role === 'other' ? "col-span-2" : "col-span-3"}>
                     <Select
                       value={salary.salaryType}
-                      onChange={(value) => handleRoleSalaryTypeChange(role, value)}
+                      onChange={(value) => handleRoleSalaryTypeChange(role, value as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other')}
                       options={[
                         { value: 'hourly', label: '시급' },
                         { value: 'daily', label: '일급' },

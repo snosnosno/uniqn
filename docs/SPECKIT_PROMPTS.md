@@ -8,9 +8,9 @@
 
 ## 📚 목차
 
-- [Phase 1: Quick Wins (1개월)](#phase-1-quick-wins-1개월)
-  - [Phase 1-1: useJobPostingForm.ts any 타입 제거](#phase-1-1-usejobpostingformts-any-타입-제거)
-  - [Phase 1-2: MultiSelectControls.tsx any 타입 제거](#phase-1-2-multiselectcontrolstsx-any-타입-제거)
+- [Phase 1: Quick Wins (1개월)](#phase-1-quick-wins-1개월) 
+  - [Phase 1-1: useJobPostingForm.ts any 타입 제거] 완료(#phase-1-1-usejobpostingformts-any-타입-제거)
+  - [Phase 1-2: MultiSelectControls.tsx any 타입 제거] 완료 (#phase-1-2-multiselectcontrolstsx-any-타입-제거)
   - [Phase 1-3: ScheduleDetailModal.tsx 대형 파일 분리](#phase-1-3-scheduledetailmodaltsx-대형-파일-분리)
   - [Phase 1-4: JobPostingForm.tsx 대형 파일 분리](#phase-1-4-jobpostingformtsx-대형-파일-분리)
 - [Phase 2: 테스트 강화 (2개월)](#phase-2-테스트-강화-2개월)
