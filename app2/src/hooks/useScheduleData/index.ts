@@ -217,28 +217,43 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
     // 🔥 이번달 수입 계산 (완료된 일정만) - 스냅샷 우선, 세후 급여 사용
     const thisMonthEarnings = thisMonthCompletedEvents.reduce((sum, event) => {
-      // WorkLog 찾기 (Map.get 사용)
-      const workLog = workLogs.get(event.id);
+      // WorkLog 찾기 (Map.get 사용) - workLogId로 조회
+      const workLog = event.workLogId ? workLogs.get(event.workLogId) : null;
       if (!workLog) return sum + (event.payrollAmount || 0);
 
       // JobPosting 찾기 (스냅샷 우선)
-      const jobPosting = event.snapshotData ? {
-        id: event.eventId,
-        title: event.snapshotData.title || '근무',
-        location: event.snapshotData.location,
-        salaryType: event.snapshotData.salary.type,
-        salaryAmount: String(event.snapshotData.salary.amount),
-        useRoleSalary: event.snapshotData.salary.useRoleSalary,
-        roleSalaries: event.snapshotData.salary.roleSalaries,
-        benefits: {
-          mealAllowance: event.snapshotData.allowances?.meal || 0,
-          transportation: event.snapshotData.allowances?.transportation || 0,
-          accommodation: event.snapshotData.allowances?.accommodation || 0
-        },
-        taxSettings: event.snapshotData.taxSettings
-      } as any : jobPostings.get(event.eventId);
+      const hasSnapshot = !!event.snapshotData;
+      const realJobPosting = jobPostings.get(event.eventId);
 
-      if (!jobPosting) return sum + (event.payrollAmount || 0);
+      // 스냅샷이 있으면 스냅샷 사용, 없으면 realJobPosting 사용
+      let jobPosting: any = null;
+
+      if (event.snapshotData) {
+        // 스냅샷 데이터를 JobPosting 형식으로 변환
+        jobPosting = {
+          id: event.eventId,
+          title: event.snapshotData.title || '근무',
+          location: event.snapshotData.location,
+          salaryType: event.snapshotData.salary.type,
+          salaryAmount: String(event.snapshotData.salary.amount),
+          useRoleSalary: event.snapshotData.salary.useRoleSalary,
+          roleSalaries: event.snapshotData.salary.roleSalaries,
+          benefits: {
+            mealAllowance: event.snapshotData.allowances?.meal || 0,
+            transportation: event.snapshotData.allowances?.transportation || 0,
+            accommodation: event.snapshotData.allowances?.accommodation || 0
+          },
+          taxSettings: event.snapshotData.taxSettings
+        };
+      } else if (realJobPosting?.salaryType || realJobPosting?.salaryAmount) {
+        // 새 형식의 JobPosting (salaryType, salaryAmount 있음)
+        jobPosting = realJobPosting;
+      }
+
+      // JobPosting이 없거나 급여 정보가 없으면 저장된 payrollAmount 사용
+      if (!jobPosting || (!jobPosting.salaryType && !jobPosting.salaryAmount)) {
+        return sum + (event.payrollAmount || 0);
+      }
 
       // 급여 계산
       const payroll = calculatePayroll([workLog as any], workLog.role || '', jobPosting);
@@ -260,28 +275,40 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
     // 🔥 총 수입 계산 (완료된 일정만) - 스냅샷 우선, 세후 급여 사용
     const totalEarnings = completedEvents.reduce((sum, event) => {
-      // WorkLog 찾기 (Map.get 사용)
-      const workLog = workLogs.get(event.id);
+      // WorkLog 찾기 (Map.get 사용) - workLogId로 조회
+      const workLog = event.workLogId ? workLogs.get(event.workLogId) : null;
       if (!workLog) return sum + (event.payrollAmount || 0);
 
-      // JobPosting 찾기 (스냅샷 우선, Map.get 사용)
-      const jobPosting = event.snapshotData ? {
-        id: event.eventId,
-        title: event.snapshotData.title || '근무',
-        location: event.snapshotData.location,
-        salaryType: event.snapshotData.salary.type,
-        salaryAmount: String(event.snapshotData.salary.amount),
-        useRoleSalary: event.snapshotData.salary.useRoleSalary,
-        roleSalaries: event.snapshotData.salary.roleSalaries,
-        benefits: {
-          mealAllowance: event.snapshotData.allowances?.meal || 0,
-          transportation: event.snapshotData.allowances?.transportation || 0,
-          accommodation: event.snapshotData.allowances?.accommodation || 0
-        },
-        taxSettings: event.snapshotData.taxSettings
-      } as any : jobPostings.get(event.eventId);
+      // JobPosting 찾기 (스냅샷 우선)
+      const realJobPosting = jobPostings.get(event.eventId);
+      let jobPosting: any = null;
 
-      if (!jobPosting) return sum + (event.payrollAmount || 0);
+      if (event.snapshotData) {
+        // 스냅샷 데이터를 JobPosting 형식으로 변환
+        jobPosting = {
+          id: event.eventId,
+          title: event.snapshotData.title || '근무',
+          location: event.snapshotData.location,
+          salaryType: event.snapshotData.salary.type,
+          salaryAmount: String(event.snapshotData.salary.amount),
+          useRoleSalary: event.snapshotData.salary.useRoleSalary,
+          roleSalaries: event.snapshotData.salary.roleSalaries,
+          benefits: {
+            mealAllowance: event.snapshotData.allowances?.meal || 0,
+            transportation: event.snapshotData.allowances?.transportation || 0,
+            accommodation: event.snapshotData.allowances?.accommodation || 0
+          },
+          taxSettings: event.snapshotData.taxSettings
+        };
+      } else if (realJobPosting?.salaryType || realJobPosting?.salaryAmount) {
+        // 새 형식의 JobPosting (salaryType, salaryAmount 있음)
+        jobPosting = realJobPosting;
+      }
+
+      // JobPosting이 없거나 급여 정보가 없으면 저장된 payrollAmount 사용
+      if (!jobPosting || (!jobPosting.salaryType && !jobPosting.salaryAmount)) {
+        return sum + (event.payrollAmount || 0);
+      }
 
       // 급여 계산
       const payroll = calculatePayroll([workLog as any], workLog.role || '', jobPosting);

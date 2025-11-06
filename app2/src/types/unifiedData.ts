@@ -137,27 +137,79 @@ export interface AttendanceRecord {
 export interface JobPosting {
   id: string;
   title: string;
+  type?: 'application' | 'fixed';
+  description?: string;
   location: string;
   district?: string;
   detailedAddress?: string;
-  startDate?: Timestamp;
-  endDate?: Timestamp;
+  contactPhone?: string;
   dateSpecificRequirements?: Array<{
     date: string;
     roles: string[];
     timeSlots: string[];
   }>;
+  requiredRoles?: string[];
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+  createdBy: string;
+  status: 'open' | 'closed' | 'draft' | 'published' | 'cancelled';
+  applicants?: string[];
+  confirmedStaff?: Array<{
+    staffId: string;
+    role: string;
+    date: string;
+    timeSlot: string;
+  }>;
+  recruitmentType?: 'application' | 'fixed';
+  preQuestions?: Array<{
+    id: string;
+    question: string;
+    type: 'text' | 'select' | 'multiselect';
+    required: boolean;
+    options?: string[];
+  }>;
+  statusChangeReason?: string;
+  statusChangedAt?: Timestamp;
+  statusChangedBy?: string;
+
+  // 급여 정보 필드
+  salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
+  salaryAmount?: string;
+
+  // 복리후생 정보
+  benefits?: {
+    mealAllowance?: number;
+    transportation?: number;
+    accommodation?: number;
+  };
+
+  // 역할별 급여
+  useRoleSalary?: boolean;
+  roleSalaries?: {
+    [role: string]: {
+      salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
+      salaryAmount: string;
+      customRoleName?: string;
+    }
+  };
+
+  // 세금 설정
+  taxSettings?: {
+    enabled: boolean;
+    taxRate?: number;
+    taxAmount?: number;
+  };
+
+  // Legacy 필드 (하위 호환성)
+  startDate?: Timestamp;
+  endDate?: Timestamp;
   timeSlots?: string[];
-  roles: string[];
+  roles?: string[];
   requirements?: string;
   salary?: {
     amount: number;
     type: 'hourly' | 'daily' | 'fixed';
   };
-  status: 'draft' | 'published' | 'closed' | 'cancelled';
-  createdBy: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
 }
 
 /**

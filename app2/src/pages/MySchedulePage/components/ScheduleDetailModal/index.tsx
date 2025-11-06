@@ -286,26 +286,6 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       afterTaxAmount = totalAmount - tax;
     }
 
-    logger.info('🔍 [DEBUG] 급여 정보 계산 상세', {
-      component: 'ScheduleDetailModal',
-      data: {
-        hasWorkLog: !!targetWorkLog,
-        role: effectiveRole,
-        salaryType,
-        salaryAmount,
-        totalHours,
-        totalPay,
-        totalAmount,
-        hasJobPosting: !!jobPosting,
-        hasEffectiveJobPosting: !!effectiveJobPosting,
-        hasSnapshot: !!schedule.snapshotData,
-        allowances,
-        tax,
-        taxRate,
-        afterTaxAmount
-      }
-    });
-
     return {
       salaryType: salaryType as 'hourly' | 'daily' | 'monthly' | 'other',
       baseSalary: salaryAmount,
@@ -317,7 +297,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       ...(taxRate !== undefined && { taxRate }),
       ...(tax > 0 && { afterTaxAmount })
     };
-  }, [schedule, jobPosting, getTargetWorkLog]);
+  }, [schedule, jobPosting, realTimeWorkLogs]);
 
   // 급여 정보 상태 관리
   const [salaryInfo, setSalaryInfo] = useState<SalaryInfo>({
