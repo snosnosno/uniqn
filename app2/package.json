@@ -93,7 +93,18 @@
       "**/*.test.{js,jsx,ts,tsx}",
       "**/__tests__/**/*.spec.{js,jsx,ts,tsx}",
       "**/*.spec.{js,jsx,ts,tsx}"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "src/components/notifications/NotificationDropdown.tsx"
+    ],
+    "coverageThreshold": {
+      "src/components/notifications/NotificationDropdown.tsx": {
+        "branches": 85,
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
+      }
+    }
   },
   "eslintConfig": {
     "extends": [
@@ -121,11 +132,13 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/crypto-js": "^4.2.2",
     "@types/jest": "^29.5.3",
+    "@types/jest-axe": "^3.5.9",
     "@types/node": "^24.3.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.2.7",
     "@types/testing-library__react": "^10.0.1",
     "fake-indexeddb": "^6.2.2",
+    "jest-axe": "^10.0.0",
     "prettier": "^3.6.2",
     "source-map-explorer": "^2.5.3",
     "typescript": "^4.9.5",
