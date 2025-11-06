@@ -87,7 +87,13 @@
     "moduleNameMapper": {
       "^react$": "<rootDir>/node_modules/react",
       "^@/(.*)$": "<rootDir>/src/$1"
-    }
+    },
+    "testMatch": [
+      "**/__tests__/**/*.test.{js,jsx,ts,tsx}",
+      "**/*.test.{js,jsx,ts,tsx}",
+      "**/__tests__/**/*.spec.{js,jsx,ts,tsx}",
+      "**/*.spec.{js,jsx,ts,tsx}"
+    ]
   },
   "eslintConfig": {
     "extends": [

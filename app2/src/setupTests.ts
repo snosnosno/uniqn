@@ -34,3 +34,16 @@ Object.defineProperty(window.performance, 'memory', {
 // TextEncoder/TextDecoder 전역 설정
 global.TextEncoder = TextEncoder as any;
 global.TextDecoder = TextDecoder as any;
+
+// ReadableStream polyfill for Firebase Functions
+if (typeof global.ReadableStream === 'undefined') {
+  global.ReadableStream = class ReadableStream {
+    constructor() {}
+  } as any;
+}
+
+// ========================================
+// Global Test Setup
+// ========================================
+// Firebase and Logger mocks are imported per-test-file
+// to avoid conflicts with existing tests
