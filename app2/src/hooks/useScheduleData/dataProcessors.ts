@@ -84,6 +84,15 @@ export const processApplicationData = async (
       'completed': 'completed'
     };
     
+    // 🔥 이벤트 이름과 위치 결정 (스냅샷 우선)
+    let eventName = data.postTitle || '제목 없음';
+    let location = jobPostingData?.location || '';
+
+    if ((data as any).snapshotData) {
+      eventName = (data as any).snapshotData.title || eventName;
+      location = (data as any).snapshotData.location || location;
+    }
+
     // 기본 스케줄 이벤트 생성
     const baseEvent: ScheduleEvent & { assignedTime?: string } = {
       id: docId,
@@ -92,8 +101,8 @@ export const processApplicationData = async (
       startTime: startTimestamp,
       endTime: endTimestamp,
       eventId: (data as any).eventId || data.postId || '',  // eventId 우선 사용, 없으면 postId 사용 (하위 호환성)
-      eventName: data.postTitle || '제목 없음',
-      location: jobPostingData?.location || '',
+      eventName: eventName,
+      location: location,
       ...(jobPostingData?.detailedAddress && { detailedAddress: jobPostingData.detailedAddress }),
       role: getRoleForApplicationStatus(data, baseDate),
       status: 'not_started' as AttendanceStatus, // 지원 상태에서는 출석 상태가 not_started
@@ -265,20 +274,29 @@ export const processWorkLogData = async (
   let jobPostingData: JobPostingData | null = null;
   let eventName = '근무'; // 기본값
   let location = '';
-  
+
+  // 🔥 스냅샷 데이터 우선 사용 (삭제된 공고 대비)
+  if ((data as any).snapshotData) {
+    eventName = (data as any).snapshotData.title || '근무';
+    location = (data as any).snapshotData.location || '';
+  }
+
   if (data.eventId) {
     try {
       const jobPostingDoc = await getDoc(doc(db, 'jobPostings', data.eventId));
       if (jobPostingDoc.exists()) {
-        jobPostingData = { 
-          id: jobPostingDoc.id, 
-          ...jobPostingDoc.data() 
+        jobPostingData = {
+          id: jobPostingDoc.id,
+          ...jobPostingDoc.data()
         } as JobPostingData;
-        eventName = jobPostingData.title || '근무';
-        location = jobPostingData.location || '';
+        // 스냅샷이 없으면 실제 공고 데이터 사용
+        if (!(data as any).snapshotData) {
+          eventName = jobPostingData.title || '근무';
+          location = jobPostingData.location || '';
+        }
       }
     } catch (error) {
-      logger.error('공고 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), { 
+      logger.error('공고 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
         component: 'processWorkLogData',
         data: { eventId: data.eventId }
       });

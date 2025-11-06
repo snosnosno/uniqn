@@ -182,18 +182,18 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       date: data.date || '',
       type: data.type || 'manual',
       
-      // 시간 정보 - timeSlot 파싱 추가
+      // 시간 정보 - timeSlot 파싱 추가 (심야 근무 자동 조정)
       // 먼저 scheduledStartTime/scheduledEndTime 확인, 없으면 timeSlot에서 파싱
       scheduledStartTime: (() => {
         // 이미 Timestamp 형태면 그대로 사용
         if (data.scheduledStartTime) {
           return data.scheduledStartTime;
         }
-        // timeSlot에서 파싱
-        const parsed = parseTimeSlot(data.timeSlot);
-        if (parsed && data.date) {
-          const timestamp = parseTimeToTimestamp(parsed.start, data.date);
-          return timestamp;
+        // timeSlot에서 파싱 (심야 근무 자동 조정)
+        if (data.timeSlot && data.date) {
+          const { convertAssignedTimeToScheduled } = require('./workLogUtils');
+          const { scheduledStartTime } = convertAssignedTimeToScheduled(data.timeSlot, data.date);
+          return scheduledStartTime;
         }
         return null;
       })(),
@@ -202,11 +202,11 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
         if (data.scheduledEndTime) {
           return data.scheduledEndTime;
         }
-        // timeSlot에서 파싱
-        const parsed = parseTimeSlot(data.timeSlot);
-        if (parsed && data.date) {
-          const timestamp = parseTimeToTimestamp(parsed.end, data.date);
-          return timestamp;
+        // timeSlot에서 파싱 (심야 근무 자동 조정)
+        if (data.timeSlot && data.date) {
+          const { convertAssignedTimeToScheduled } = require('./workLogUtils');
+          const { scheduledEndTime } = convertAssignedTimeToScheduled(data.timeSlot, data.date);
+          return scheduledEndTime;
         }
         return null;
       })(),

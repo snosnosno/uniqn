@@ -6,10 +6,11 @@
  * Purpose: 일정 기본 정보 탭 - 일정 정보, 장소, 시간, 상태, 급여 정보 표시
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BasicInfoTabProps } from '../types';
 import { getSnapshotOrFallback } from '../../../../../utils/scheduleSnapshot';
-import { parseTimeToString } from '../../../../../utils/workLogMapper';
+import { parseTimeToString, calculateWorkHours } from '../../../../../utils/workLogMapper';
+import { useUnifiedDataContext } from '../../../../../contexts/UnifiedDataContext';
 
 /**
  * BasicInfoTab - 일정 기본 정보 표시 컴포넌트
@@ -24,6 +25,8 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   jobPosting,
   isReadOnly: _isReadOnly
 }) => {
+  const { state } = useUnifiedDataContext();
+  const { workLogs } = state;
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -112,30 +115,19 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     baseSalary = snapshotSalary.amount;
   }
 
-  // 근무 시간 계산 (간단 버전)
-  let totalHours = 0;
-  const startTime = schedule.startTime;
-  const endTime = schedule.endTime;
-  if (startTime && endTime) {
-    const parseTime = (time: string | { toDate: () => Date } | null | undefined): number => {
-      // Timestamp 타입 처리
-      if (time && typeof time === 'object' && 'toDate' in time) {
-        const date = time.toDate();
-        return date.getHours() + date.getMinutes() / 60;
-      }
-      // 문자열 타입 처리
-      if (typeof time === 'string') {
-        const parts = time.split(':');
-        const hours = parseInt(parts[0] || '0', 10);
-        const minutes = parseInt(parts[1] || '0', 10);
-        return hours + minutes / 60;
-      }
-      return 0;
-    };
-    const start = parseTime(startTime);
-    const end = parseTime(endTime);
-    totalHours = end > start ? end - start : 0;
-  }
+  // 🔥 근무 시간 계산 - WorkInfoTab과 동일한 로직 사용 (심야 근무 자동 처리)
+  const totalHours = useMemo(() => {
+    // WorkLog 찾기
+    const workLog = schedule.workLogId ? workLogs.get(schedule.workLogId) : null;
+
+    if (workLog) {
+      // WorkLog가 있으면 calculateWorkHours 사용 (심야 근무 자동 처리)
+      return calculateWorkHours(workLog as any);
+    }
+
+    // WorkLog가 없으면 0 반환
+    return 0;
+  }, [schedule.workLogId, workLogs]);
 
   const basePay = totalHours * baseSalary;
 
