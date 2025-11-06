@@ -219,11 +219,14 @@ export const convertAssignedTimeToScheduled = (
       }
 
       const startHour = parseInt(startTimeParts[0] || '0');
+      const startMinute = parseInt(startTimeParts[1] || '0');
       const endHour = parseInt(endTimeParts[0] || '0');
+      const endMinute = parseInt(endTimeParts[1] || '0');
 
       // 종료 시간이 시작 시간보다 이른 경우만 다음날로 조정
-      if (!isNaN(startHour) && !isNaN(endHour) &&
-          (endHour < startHour || (endHour === startHour && endTime < startTime))) {
+      // 시간과 분을 모두 고려하여 비교
+      if (!isNaN(startHour) && !isNaN(startMinute) && !isNaN(endHour) && !isNaN(endMinute) &&
+          (endHour < startHour || (endHour === startHour && endMinute <= startMinute))) {
         const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(validBaseDate) || new Date());
         if (adjustedEndTime) {
           scheduledEndTime = adjustedEndTime;
@@ -364,25 +367,27 @@ export const adjustEndTimeForNextDay = (
   baseDate: Date
 ): Timestamp | null => {
   if (!endTime || !startTime) return null;
-  
+
   const endParts = endTime.split(':');
   const startParts = startTime.split(':');
-  
+
   if (endParts.length !== 2 || startParts.length !== 2) return null;
-  
+
   const endHour = Number(endParts[0]);
   const endMinute = Number(endParts[1]);
   const startHour = Number(startParts[0]);
-  
-  if (isNaN(endHour) || isNaN(endMinute) || isNaN(startHour)) return null;
-  
+  const startMinute = Number(startParts[1]);
+
+  if (isNaN(endHour) || isNaN(endMinute) || isNaN(startHour) || isNaN(startMinute)) return null;
+
   const date = new Date(baseDate);
   date.setHours(endHour, endMinute, 0, 0);
-  
+
   // 종료 시간이 시작 시간보다 이른 경우 다음날로 설정
-  if (endHour < startHour) {
+  // 시간만 비교하는 것이 아니라 분까지 고려
+  if (endHour < startHour || (endHour === startHour && endMinute <= startMinute)) {
     date.setDate(date.getDate() + 1);
   }
-  
+
   return Timestamp.fromDate(date);
 };

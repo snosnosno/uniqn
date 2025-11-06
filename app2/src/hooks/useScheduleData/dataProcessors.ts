@@ -274,11 +274,13 @@ export const processWorkLogData = async (
   let jobPostingData: JobPostingData | null = null;
   let eventName = '근무'; // 기본값
   let location = '';
+  let snapshotData: any = null;
 
   // 🔥 스냅샷 데이터 우선 사용 (삭제된 공고 대비)
   if ((data as any).snapshotData) {
-    eventName = (data as any).snapshotData.title || '근무';
-    location = (data as any).snapshotData.location || '';
+    snapshotData = (data as any).snapshotData;
+    eventName = snapshotData.title || '근무';
+    location = snapshotData.location || '';
   }
 
   if (data.eventId) {
@@ -289,10 +291,32 @@ export const processWorkLogData = async (
           id: jobPostingDoc.id,
           ...jobPostingDoc.data()
         } as JobPostingData;
-        // 스냅샷이 없으면 실제 공고 데이터 사용
-        if (!(data as any).snapshotData) {
+
+        // 스냅샷이 없으면 JobPosting에서 생성
+        if (!snapshotData) {
           eventName = jobPostingData.title || '근무';
           location = jobPostingData.location || '';
+
+          // 🔥 JobPosting에서 스냅샷 데이터 생성 (급여 정보 포함)
+          snapshotData = {
+            title: jobPostingData.title,
+            location: jobPostingData.location,
+            detailedAddress: jobPostingData.detailedAddress,
+            district: jobPostingData.district,
+            salary: {
+              type: jobPostingData.salaryType || 'hourly',
+              amount: jobPostingData.salaryAmount ? parseFloat(jobPostingData.salaryAmount) : 0,
+              useRoleSalary: jobPostingData.useRoleSalary || false,
+              roleSalaries: jobPostingData.roleSalaries || {}
+            },
+            allowances: {
+              meal: jobPostingData.benefits?.mealAllowance ? parseInt(jobPostingData.benefits.mealAllowance) : 0,
+              transportation: jobPostingData.benefits?.transportation ? parseInt(jobPostingData.benefits.transportation) : 0,
+              accommodation: jobPostingData.benefits?.accommodation ? parseInt(jobPostingData.benefits.accommodation) : 0
+            },
+            taxSettings: jobPostingData.taxSettings,
+            createdBy: jobPostingData.createdBy
+          };
         }
       }
     } catch (error) {
@@ -399,8 +423,8 @@ export const processWorkLogData = async (
     ...(totalWorkMinutes > 0 && {
       payrollAmount: payrollAmount
     }),
-    // 🔥 스냅샷 데이터 포함 (공고 삭제 대비)
-    ...((data as any).snapshotData && { snapshotData: (data as any).snapshotData })
+    // 🔥 스냅샷 데이터 포함 (공고 삭제 대비) - JobPosting에서 생성된 스냅샷 포함
+    ...(snapshotData && { snapshotData })
   };
 };
 

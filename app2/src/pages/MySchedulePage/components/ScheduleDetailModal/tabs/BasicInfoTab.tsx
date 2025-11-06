@@ -131,20 +131,45 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
 
   const basePay = totalHours * baseSalary;
 
-  // 세금 계산
+  // 🔥 수당 계산 (CalculationTab과 동일)
+  const calculateAllowancesForSchedule = () => {
+    // 스냅샷 우선
+    if (schedule.snapshotData?.allowances) {
+      const snapshotAllowances = schedule.snapshotData.allowances;
+      return {
+        meal: snapshotAllowances.meal || 0,
+        transportation: snapshotAllowances.transportation || 0,
+        accommodation: snapshotAllowances.accommodation || 0
+      };
+    }
+
+    // JobPosting의 benefits 사용
+    const benefits = jobPosting?.benefits;
+    const meal = benefits?.mealAllowance ? parseInt(String(benefits.mealAllowance)) || 0 : 0;
+    const transportation = benefits?.transportation ? parseInt(String(benefits.transportation)) || 0 : 0;
+    const accommodation = benefits?.accommodation ? parseInt(String(benefits.accommodation)) || 0 : 0;
+
+    return { meal, transportation, accommodation };
+  };
+
+  const allowances = calculateAllowancesForSchedule();
+  const totalAllowances = allowances.meal + allowances.transportation + allowances.accommodation;
+  const totalPay = basePay + totalAllowances;
+
+  // 세금 계산 (총 지급액 기준)
   const taxSettings = schedule.snapshotData?.taxSettings || jobPosting?.taxSettings;
   let tax = 0;
   let taxRate: number | undefined;
-  let afterTaxAmount = basePay;
+  let afterTaxAmount = totalPay;
 
   if (taxSettings?.enabled) {
     if (taxSettings.taxRate !== undefined && taxSettings.taxRate > 0) {
       taxRate = taxSettings.taxRate;
-      tax = Math.round(basePay * (taxRate / 100));
+      tax = Math.round(totalPay * (taxRate / 100));
     } else if (taxSettings.taxAmount !== undefined && taxSettings.taxAmount > 0) {
       tax = taxSettings.taxAmount;
     }
-    afterTaxAmount = basePay - tax;
+    afterTaxAmount = totalPay - tax;
   }
 
   return (
@@ -260,6 +285,14 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                 {basePay.toLocaleString('ko-KR')}원
               </span>
             </div>
+            {totalAllowances > 0 && (
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">수당:</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {totalAllowances.toLocaleString('ko-KR')}원
+                </span>
+              </div>
+            )}
             {tax > 0 && (
               <div className="flex justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">세금:</span>
@@ -296,11 +329,11 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           </div>
           <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-center">
             <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-              {basePay.toLocaleString('ko-KR')}
+              {totalPay.toLocaleString('ko-KR')}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">총 지급액</div>
           </div>
-          {afterTaxAmount > 0 && tax > 0 ? (
+          {taxSettings?.enabled && tax > 0 ? (
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
               <div className="text-lg font-bold text-green-600 dark:text-green-400">
                 {afterTaxAmount.toLocaleString('ko-KR')}
@@ -308,9 +341,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
               <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
             </div>
           ) : (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {(schedule.payrollAmount || basePay).toLocaleString('ko-KR')}
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                {totalPay.toLocaleString('ko-KR')}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">세후 급여</div>
             </div>

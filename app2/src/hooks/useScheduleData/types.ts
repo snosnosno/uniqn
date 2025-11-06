@@ -69,4 +69,15 @@ export interface JobPostingData {
   timeSlots?: any[];
   createdAt?: any;
   updatedAt?: any;
+  // 급여 정보
+  salaryType?: string;
+  salaryAmount?: string;
+  useRoleSalary?: boolean;
+  roleSalaries?: any;
+  // 복리후생
+  benefits?: any;
+  // 세금 설정
+  taxSettings?: any;
+  // 생성자
+  createdBy?: string;
 }
