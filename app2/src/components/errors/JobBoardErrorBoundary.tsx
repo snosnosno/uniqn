@@ -38,9 +38,9 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
   return (
     <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md border border-red-200 dark:border-red-700 text-center">
       <div className="mb-4">
-        <svg 
-          className="w-16 h-16 text-red-500 mx-auto mb-4" 
-          fill="none" 
+        <svg
+          className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4"
+          fill="none"
           stroke="currentColor" 
           viewBox="0 0 24 24"
         >

@@ -157,7 +157,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           {/* 공고 타입 선택 */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              공고 타입 <span className="text-red-500">*</span>
+              공고 타입 <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {/* 지원 공고 (무료) */}
@@ -320,7 +320,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           {formData.postingType === 'fixed' && (
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                노출 기간 <span className="text-red-500">*</span>
+                노출 기간 <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* 7일 (3칩) */}
@@ -510,7 +510,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              문의 연락처 <span className="text-red-500">*</span>
+              문의 연락처 <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <Input
               type="text"

@@ -427,9 +427,9 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                 ))}
               </div>
               
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">⚡ Week 4 최적화 효과</h4>
-                <ul className="text-sm text-yellow-700 space-y-1">
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">⚡ Week 4 최적화 효과</h4>
+                <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
                   <li>• Web Workers: 메인 스레드 블로킹 0%</li>
                   <li>• React Window: 가상화로 렌더링 성능 10배 향상</li>
                   <li>• React.lazy: 초기 번들 크기 50% 감소</li>
@@ -467,17 +467,17 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
                 </div>
               </div>
               
-              <div className="bg-black text-green-400 rounded-lg p-4 h-80 overflow-auto font-mono text-xs">
+              <div className="bg-black dark:bg-gray-900 text-green-400 dark:text-green-300 rounded-lg p-4 h-80 overflow-auto font-mono text-xs">
                 {logEntries.map((log) => (
                   <div key={log.id} className="mb-2">
                     <span className="text-gray-500 dark:text-gray-400">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
                     <span className={`ml-2 ${
-                      log.level === 'error' ? 'text-red-400' :
-                      log.level === 'warning' ? 'text-yellow-400' : 'text-green-400'
+                      log.level === 'error' ? 'text-red-400 dark:text-red-300' :
+                      log.level === 'warning' ? 'text-yellow-400 dark:text-yellow-300' : 'text-green-400 dark:text-green-300'
                     }`}>
                       [{log.level.toUpperCase()}]
                     </span>
-                    <span className="ml-2 text-blue-400">{log.component}:</span>
+                    <span className="ml-2 text-blue-400 dark:text-blue-300">{log.component}:</span>
                     <span className="ml-2">{log.message}</span>
                   </div>
                 ))}

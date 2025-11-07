@@ -225,7 +225,7 @@ const TableCell: React.FC<{
       <span className="text-sm font-medium">
         {value || '대기'}
       </span>
-      {hasViolations && <ExclamationIcon className="w-3 h-3 text-red-500 ml-1" />}
+      {hasViolations && <ExclamationIcon className="w-3 h-3 text-red-500 dark:text-red-400 ml-1" />}
       {showTooltip && hasViolations && validationResult?.violations && (
         <ValidationTooltip 
           violations={validationResult.violations}

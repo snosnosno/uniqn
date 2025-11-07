@@ -62,10 +62,10 @@ const IncompleteProfileModal: React.FC<IncompleteProfileModalProps> = ({
 
             {/* 필수 필드 목록 */}
             <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-4">
-              <p className="text-sm font-semibold text-yellow-800 mb-2">
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
                 아래 정보를 입력해주세요:
               </p>
-              <ul className="text-left text-sm text-yellow-700 space-y-1">
+              <ul className="text-left text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
                 {missingFieldLabels.map((label, index) => (
                   <li key={index} className="flex items-center">
                     <svg
