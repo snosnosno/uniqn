@@ -260,7 +260,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
           {/* 오늘 버튼 제거됨
           <button
             onClick={handleToday}
-            className="px-3 py-1 text-sm font-medium hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-3 py-1 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             오늘
           </button>

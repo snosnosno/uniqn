@@ -472,8 +472,8 @@ const ShiftSchedulePage: React.FC = () => {
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {dealers.map(dealer => (
                   <div key={dealer.id} className="flex items-center bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg shadow-sm">
-                    <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-sm font-semibold text-blue-700">
+                    <div className="w-8 h-8 bg-blue-300 dark:bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-sm font-semibold text-blue-700 dark:text-blue-100">
                         {dealer.staffName.charAt(0)}
                       </span>
                     </div>
@@ -564,7 +564,7 @@ const ShiftSchedulePage: React.FC = () => {
     </div>
     
     {/* 설정 모달 */}
-    {isSettingsModalOpen ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    {isSettingsModalOpen ? <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">{t('shiftSchedule.settings')}</h3>

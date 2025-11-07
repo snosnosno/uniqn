@@ -424,7 +424,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
                       <div
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
-                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-blue-500"
+                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-blue-500 dark:hover:bg-blue-400"
                       />
                     )}
                   </th>

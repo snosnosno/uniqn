@@ -320,7 +320,7 @@ const LandingPage: React.FC = () => {
       {/* 스킵 링크 (접근성) */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-20 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50 focus-visible"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-20 focus:left-4 bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg z-50 focus-visible"
         onKeyDown={handleSkipToMain}
       >
         메인 콘텐츠로 건너뛰기

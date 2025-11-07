@@ -148,8 +148,8 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {staff.length > 0 ? staff.map((staffMember: any) => (
                 <div key={staffMember.id} className="flex items-center bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg shadow-sm dark:shadow-blue-900/50">
-                  <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-semibold text-blue-700">
+                  <div className="w-8 h-8 bg-blue-300 dark:bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-100">
                       {staffMember.name?.charAt(0) || 'S'}
                     </span>
                   </div>
