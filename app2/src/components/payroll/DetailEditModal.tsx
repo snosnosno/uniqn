@@ -741,7 +741,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   )}
                   <div className="border-t border-indigo-200 dark:border-indigo-700 pt-2 flex justify-between">
                     <span className="text-base font-medium text-gray-800 dark:text-gray-200">총 지급액</span>
-                    <span className="text-lg font-bold text-indigo-600">
+                    <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                       {getTotalAmount().toLocaleString('ko-KR')}
                     </span>
                   </div>
