@@ -59,8 +59,8 @@
     "sendingButton": "Sending...",
     "successMessage": "A password reset link has been sent to your email. Please check your inbox.",
     "errorMessage": "An error occurred. Please check the email address and try again.",
-    "backToLogin": "Back to Login"
-    ,"genderLabel": "Gender",
+    "backToLogin": "Back to Login",
+    "genderLabel": "Gender",
     "genderMale": "Male",
     "genderFemale": "Female"
   },
@@ -291,7 +291,8 @@
     "login": "Login",
     "staff": "Staff",
     "table": "Table",
-    "totalHours": "Total Hours"
+    "totalHours": "Total Hours",
+    "loading": "Loading..."
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -395,9 +396,98 @@
     "saveButton": "Save Prize Structure"
   },
   "announcements": {
-    "title": "Send Announcement",
-    "placeholder": "Enter announcement to send to players...",
-    "buttonPost": "Post Announcement"
+    "title": "Announcements",
+    "pageTitle": "🔔 Announcements",
+    "description": "System announcements and update information",
+    "createButton": "Create Announcement",
+    "noAnnouncements": "No Announcements",
+    "noAnnouncementsDescription": "You will be notified when new announcements are posted.",
+    "goToNotifications": "Go to Notification Center",
+    "viewDetails": "View Details →",
+    "stats": {
+      "total": "Total {{count}}",
+      "active": "Active {{count}}"
+    },
+    "priority": {
+      "normal": "Normal",
+      "important": "Important",
+      "urgent": "Urgent"
+    },
+    "createModal": {
+      "title": "📢 Create System Announcement",
+      "editMode": "✏️ Edit Mode",
+      "previewMode": "👁️ Preview",
+      "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Enter announcement title",
+        "titleHelp": "{{count}}/100 characters",
+        "content": "Content",
+        "contentPlaceholder": "Enter announcement content",
+        "contentHelp": "{{count}}/2000 characters",
+        "priority": "Priority",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "enableEndDate": "Set End Date",
+        "endDateDisabled": "End date setting disabled"
+      },
+      "preview": {
+        "noTitle": "(No title)",
+        "noContent": "(No content)",
+        "startDate": "• Start: {{date}}",
+        "endDate": "• End: {{date}}",
+        "indefinite": "• Duration: Indefinite"
+      },
+      "validation": {
+        "error": "⚠️ Input Error",
+        "titleRequired": "Title is required.",
+        "titleTooLong": "Title must be 100 characters or less.",
+        "contentRequired": "Content is required.",
+        "contentTooLong": "Content must be 2000 characters or less.",
+        "startDateRequired": "Start date is required.",
+        "startDateInvalid": "Start date is invalid.",
+        "endDateInvalid": "End date is invalid.",
+        "endDateBeforeStart": "End date must be after start date.",
+        "priorityRequired": "Priority is required.",
+        "priorityInvalid": "Please select a valid priority."
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "submit": "Create",
+        "submitting": "Creating..."
+      }
+    },
+    "detailModal": {
+      "title": "Announcement Details",
+      "metadata": {
+        "author": "👤 Author: {{name}}",
+        "createdAt": "📅 Created: {{date}}",
+        "updatedAt": "📝 Updated: {{date}}",
+        "startDate": "📅 Start: {{date}}",
+        "endDate": "📅 End: {{date}}",
+        "indefinite": "📅 Duration: Indefinite",
+        "views": "👁️ Views: {{count}}"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "close": "Close"
+      },
+      "deleteConfirm": "Are you sure you want to delete this announcement?",
+      "messages": {
+        "deleteSuccess": "Announcement deleted successfully.",
+        "deleteError": "Failed to delete announcement."
+      }
+    },
+    "messages": {
+      "createSuccess": "Announcement created and notifications sent to all users.",
+      "createError": "Failed to create announcement.",
+      "loadError": "Failed to load announcements.",
+      "retry": "Retry"
+    },
+    "info": {
+      "title": "Notification Settings",
+      "description": "Check your notification settings to not miss important announcements."
+    }
   },
   "participantDetailModal": {
     "title": "Participant Details",
@@ -1387,99 +1477,5 @@
     "printButton": "Print",
     "article": "Article {{number}}",
     "section": "Section {{number}}"
-  },
-  "announcements": {
-    "title": "Announcements",
-    "pageTitle": "🔔 Announcements",
-    "description": "System announcements and update information",
-    "createButton": "Create Announcement",
-    "noAnnouncements": "No Announcements",
-    "noAnnouncementsDescription": "You will be notified when new announcements are posted.",
-    "goToNotifications": "Go to Notification Center",
-    "viewDetails": "View Details →",
-    "stats": {
-      "total": "Total {{count}}",
-      "active": "Active {{count}}"
-    },
-    "priority": {
-      "normal": "Normal",
-      "important": "Important",
-      "urgent": "Urgent"
-    },
-    "createModal": {
-      "title": "📢 Create System Announcement",
-      "editMode": "✏️ Edit Mode",
-      "previewMode": "👁️ Preview",
-      "fields": {
-        "title": "Title",
-        "titlePlaceholder": "Enter announcement title",
-        "titleHelp": "{{count}}/100 characters",
-        "content": "Content",
-        "contentPlaceholder": "Enter announcement content",
-        "contentHelp": "{{count}}/2000 characters",
-        "priority": "Priority",
-        "startDate": "Start Date",
-        "endDate": "End Date",
-        "enableEndDate": "Set End Date",
-        "endDateDisabled": "End date setting disabled"
-      },
-      "preview": {
-        "noTitle": "(No title)",
-        "noContent": "(No content)",
-        "startDate": "• Start: {{date}}",
-        "endDate": "• End: {{date}}",
-        "indefinite": "• Duration: Indefinite"
-      },
-      "validation": {
-        "error": "⚠️ Input Error",
-        "titleRequired": "Title is required.",
-        "titleTooLong": "Title must be 100 characters or less.",
-        "contentRequired": "Content is required.",
-        "contentTooLong": "Content must be 2000 characters or less.",
-        "startDateRequired": "Start date is required.",
-        "startDateInvalid": "Start date is invalid.",
-        "endDateInvalid": "End date is invalid.",
-        "endDateBeforeStart": "End date must be after start date.",
-        "priorityRequired": "Priority is required.",
-        "priorityInvalid": "Please select a valid priority."
-      },
-      "actions": {
-        "cancel": "Cancel",
-        "submit": "Create",
-        "submitting": "Creating..."
-      }
-    },
-    "detailModal": {
-      "title": "Announcement Details",
-      "metadata": {
-        "author": "👤 Author: {{name}}",
-        "createdAt": "📅 Created: {{date}}",
-        "updatedAt": "📝 Updated: {{date}}",
-        "startDate": "📅 Start: {{date}}",
-        "endDate": "📅 End: {{date}}",
-        "indefinite": "📅 Duration: Indefinite",
-        "views": "👁️ Views: {{count}}"
-      },
-      "actions": {
-        "edit": "Edit",
-        "delete": "Delete",
-        "close": "Close"
-      },
-      "deleteConfirm": "Are you sure you want to delete this announcement?",
-      "messages": {
-        "deleteSuccess": "Announcement deleted successfully.",
-        "deleteError": "Failed to delete announcement."
-      }
-    },
-    "messages": {
-      "createSuccess": "Announcement created and notifications sent to all users.",
-      "createError": "Failed to create announcement.",
-      "loadError": "Failed to load announcements.",
-      "retry": "Retry"
-    },
-    "info": {
-      "title": "Notification Settings",
-      "description": "Check your notification settings to not miss important announcements."
-    }
   }
 }
