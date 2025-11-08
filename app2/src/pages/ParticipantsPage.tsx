@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
-import { writeBatch, doc, runTransaction } from 'firebase/firestore';
+import { writeBatch, doc, runTransaction, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
@@ -12,6 +12,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import MoveSeatModal from '../components/modals/MoveSeatModal';
 import TournamentSelector from '../components/TournamentSelector';
 import DateNavigator from '../components/DateNavigator';
+import ErrorBoundary from '../components/errors/ErrorBoundary';
 import { useDateFilter } from '../contexts/DateFilterContext';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
@@ -54,6 +55,7 @@ const ParticipantsPage: React.FC = () => {
   const [isDeletingSingle, setIsDeletingSingle] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+  const [isDeleteAllConfirmOpen, setIsDeleteAllConfirmOpen] = useState(false);
 
   // 자리이동 모달 state
   const [isMoveSeatModalOpen, setMoveSeatModalOpen] = useState(false);
@@ -190,22 +192,46 @@ const ParticipantsPage: React.FC = () => {
 
   // 대량 추가 함수
   const handleBulkAdd = async (parsedParticipants: ParsedParticipant[]) => {
+    if (!state.userId || !state.tournamentId) {
+      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      return;
+    }
+
     const batch = writeBatch(db);
-    
+    const participantsPath = `users/${state.userId}/tournaments/${state.tournamentId}/participants`;
+
     parsedParticipants.forEach(participant => {
-      const docRef = doc(db, 'participants', Date.now().toString() + Math.random().toString(36).substr(2, 9));
+      const docRef = doc(collection(db, participantsPath));
       batch.set(docRef, {
         name: participant.name,
         phone: participant.phone || '',
         chips: participant.chips,
-        status: 'active',
+        status: 'active' as const,
         playerIdentifier: '',
         participationMethod: '',
+        userId: '',
+        etc: '',
+        note: '',
         createdAt: new Date()
       });
     });
 
-    await batch.commit();
+    try {
+      await batch.commit();
+      toast.success(`${parsedParticipants.length}명의 참가자가 추가되었습니다.`);
+      logger.info('대량 추가 완료', {
+        component: 'ParticipantsPage',
+        data: { count: parsedParticipants.length }
+      });
+    } catch (error) {
+      logger.error('대량 추가 실패', error instanceof Error ? error : new Error(String(error)), {
+        component: 'ParticipantsPage',
+        operation: 'handleBulkAdd',
+        data: { count: parsedParticipants.length }
+      });
+      toast.error('대량 추가 중 오류가 발생했습니다.');
+      throw error;
+    }
   };
 
 
@@ -220,35 +246,50 @@ const ParticipantsPage: React.FC = () => {
   };
 
   const handleBulkDeleteConfirm = async () => {
+    if (!state.userId || !state.tournamentId) {
+      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      await runTransaction(db, async (transaction) => {
+      const tablesPath = `users/${state.userId}/tournaments/${state.tournamentId}/tables`;
+      const participantsPath = `users/${state.userId}/tournaments/${state.tournamentId}/participants`;
+
+      // writeBatch 사용 (500개씩 분할 처리)
+      const selectedIdsArray = Array.from(selectedIds);
+      const batchSize = 500;
+
+      for (let i = 0; i < selectedIdsArray.length; i += batchSize) {
+        const batch = writeBatch(db);
+        const batchIds = selectedIdsArray.slice(i, i + batchSize);
+
         // 테이블에서 참가자 제거
         for (const table of tables) {
           if (table.seats) {
-            const hasSelectedParticipant = table.seats.some(seatId => 
-              seatId && selectedIds.has(seatId)
+            const hasSelectedParticipant = table.seats.some(seatId =>
+              seatId && batchIds.includes(seatId)
             );
-            
+
             if (hasSelectedParticipant) {
-              const newSeats = table.seats.map(seatId => 
-                seatId && selectedIds.has(seatId) ? null : seatId
+              const newSeats = table.seats.map(seatId =>
+                seatId && batchIds.includes(seatId) ? null : seatId
               );
-              const tableRef = doc(db, 'tables', table.id);
-              transaction.update(tableRef, { seats: newSeats });
+              const tableRef = doc(db, tablesPath, table.id);
+              batch.update(tableRef, { seats: newSeats });
             }
           }
         }
 
         // 참가자 삭제
-        const selectedIdsArray = Array.from(selectedIds);
-        for (const id of selectedIdsArray) {
-          const participantRef = doc(db, 'participants', id);
-          transaction.delete(participantRef);
+        for (const id of batchIds) {
+          const participantRef = doc(db, participantsPath, id);
+          batch.delete(participantRef);
         }
-      });
-      
-      setSelectedIds(new Set());
+
+        await batch.commit();
+      }
+
       toast.success(`${selectedIds.size}명의 참가자가 삭제되었습니다.`);
       setSelectedIds(new Set());
       setIsBulkDeleteConfirmOpen(false);
@@ -265,35 +306,54 @@ const ParticipantsPage: React.FC = () => {
   };
 
   // 전체 삭제 함수
-  const handleDeleteAll = async () => {
-    // eslint-disable-next-line no-alert
-    const confirmText = prompt(
-      `모든 참가자(${participants.length}명)를 삭제합니다.\n` +
-      '정말로 삭제하려면 "전체삭제"를 입력하세요:'
-    );
+  const handleDeleteAll = () => {
+    if (!state.userId || !state.tournamentId) {
+      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      return;
+    }
 
-    if (confirmText !== '전체삭제') {
+    setIsDeleteAllConfirmOpen(true);
+  };
+
+  const handleDeleteAllConfirm = async () => {
+    if (!state.userId || !state.tournamentId) {
+      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
       return;
     }
 
     setIsDeleting(true);
     try {
-      await runTransaction(db, async (transaction) => {
-        // 모든 테이블의 seats 초기화
-        for (const table of tables) {
-          const tableRef = doc(db, 'tables', table.id);
-          const emptySeats = Array(table.seats?.length || 9).fill(null);
-          transaction.update(tableRef, { seats: emptySeats });
+      const tablesPath = `users/${state.userId}/tournaments/${state.tournamentId}/tables`;
+      const participantsPath = `users/${state.userId}/tournaments/${state.tournamentId}/participants`;
+
+      // writeBatch 사용 (500개씩 분할 처리)
+      const batchSize = 500;
+      const totalCount = participants.length;
+
+      for (let i = 0; i < participants.length; i += batchSize) {
+        const batch = writeBatch(db);
+        const batchParticipants = participants.slice(i, i + batchSize);
+
+        // 첫 번째 배치에서만 모든 테이블의 seats 초기화
+        if (i === 0) {
+          for (const table of tables) {
+            const tableRef = doc(db, tablesPath, table.id);
+            const emptySeats = Array(table.seats?.length || 9).fill(null);
+            batch.update(tableRef, { seats: emptySeats });
+          }
         }
 
-        // 모든 참가자 삭제
-        for (const participant of participants) {
-          const participantRef = doc(db, 'participants', participant.id);
-          transaction.delete(participantRef);
+        // 참가자 삭제
+        for (const participant of batchParticipants) {
+          const participantRef = doc(db, participantsPath, participant.id);
+          batch.delete(participantRef);
         }
-      });
-      
-      toast.success(`${participants.length}명의 참가자가 모두 삭제되었습니다.`);
+
+        await batch.commit();
+      }
+
+      toast.success(`${totalCount}명의 참가자가 모두 삭제되었습니다.`);
+      setIsDeleteAllConfirmOpen(false);
     } catch (error) {
       logger.error('전체 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'ParticipantsPage',
@@ -333,6 +393,7 @@ const ParticipantsPage: React.FC = () => {
   const dateFilterForSelector = state.tournamentId === 'ALL' ? null : selectedDate;
 
   return (
+    <ErrorBoundary>
     <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       {/* 날짜 선택기 (전체 보기 모드가 아닐 때만 표시) */}
       {state.tournamentId !== 'ALL' && state.tournamentId && (
@@ -663,6 +724,28 @@ const ParticipantsPage: React.FC = () => {
         isLoading={isDeleting}
       />
 
+      {/* Delete All Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isDeleteAllConfirmOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setIsDeleteAllConfirmOpen(false);
+          }
+        }}
+        onConfirm={handleDeleteAllConfirm}
+        title="전체 삭제 확인"
+        message={`모든 참가자(${participants.length}명)를 삭제합니다.\n이 작업은 되돌릴 수 없습니다.`}
+        confirmText="전체 삭제"
+        cancelText="취소"
+        isDangerous={true}
+        isLoading={isDeleting}
+        requireTextInput={{
+          placeholder: '"전체삭제"를 입력하세요',
+          confirmValue: '전체삭제',
+          caseSensitive: true
+        }}
+      />
+
       {/* 자리이동 모달 */}
       {isMoveSeatModalOpen && selectedPlayerForMove && (
         <MoveSeatModal
@@ -682,6 +765,7 @@ const ParticipantsPage: React.FC = () => {
         </>
       )}
     </div>
+    </ErrorBoundary>
   );
 };
 

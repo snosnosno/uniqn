@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { FaExclamationTriangle } from '../Icons/ReactIconsReplacement';
 
@@ -12,11 +12,18 @@ interface ConfirmModalProps {
   cancelText?: string;
   isDangerous?: boolean;
   isLoading?: boolean;
+  /** 텍스트 입력을 요구하는 경우 */
+  requireTextInput?: {
+    placeholder: string;
+    confirmValue: string;
+    caseSensitive?: boolean;
+  };
 }
 
 /**
  * 재사용 가능한 확인 모달 컴포넌트
  * window.confirm()을 대체하는 사용자 친화적인 확인 다이얼로그
+ * 텍스트 입력 검증 기능 포함 (전체삭제 등 위험한 작업에 사용)
  */
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
@@ -27,11 +34,32 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmText = '확인',
   cancelText = '취소',
   isDangerous = false,
-  isLoading = false
+  isLoading = false,
+  requireTextInput
 }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  // 모달이 열릴 때마다 입력값 초기화
+  useEffect(() => {
+    if (isOpen) {
+      setInputValue('');
+    }
+  }, [isOpen]);
+
+  // 입력값 검증 (계산된 값으로 변경)
+  const isInputValid = !requireTextInput || (() => {
+    const { confirmValue, caseSensitive = true } = requireTextInput;
+    if (caseSensitive) {
+      return inputValue === confirmValue;
+    } else {
+      return inputValue.toLowerCase() === confirmValue.toLowerCase();
+    }
+  })();
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    if (!isInputValid) return;
     onConfirm();
     if (!isLoading) {
       onClose();
@@ -68,9 +96,38 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
         {/* 내용 */}
         <div className="p-6">
-          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line mb-4">
             {message}
           </p>
+
+          {/* 텍스트 입력 필드 */}
+          {requireTextInput && (
+            <div className="mt-4">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={requireTextInput.placeholder}
+                disabled={isLoading}
+                autoFocus
+                className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors ${
+                  inputValue && !isInputValid
+                    ? 'border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400'
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400'
+                } focus:outline-none focus:ring-2 disabled:opacity-50`}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && isInputValid) {
+                    handleConfirm();
+                  }
+                }}
+              />
+              {inputValue && !isInputValid && (
+                <p className="text-sm text-red-500 dark:text-red-400 mt-2">
+                  입력값이 일치하지 않습니다. "{requireTextInput.confirmValue}"를 정확히 입력해주세요.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 버튼 */}
@@ -84,8 +141,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={isLoading}
-            className={`px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
+            disabled={isLoading || !isInputValid}
+            className={`px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               isDangerous
                 ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600'
                 : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600'

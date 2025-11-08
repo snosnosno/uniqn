@@ -583,12 +583,13 @@ const TablesPage: React.FC = () => {
                         </button>
                         <button
                             onClick={() => {
+                                const activePlayers = participants.filter(p => p.status === 'active');
                                 setConfirmModal({
                                     isOpen: true,
                                     title: '칩 균형 재배치',
-                                    message: `참가자들을 칩 스택 기준으로 균형있게 재배치하시겠습니까?\n\n각 테이블의 평균 칩이 비슷하도록 자동으로 조정됩니다.\n현재 좌석 배치가 변경됩니다.`,
+                                    message: `활성 참가자 ${activePlayers.length}명을 칩 스택 기준으로 균형있게 재배치하시겠습니까?\n\n각 테이블의 평균 칩이 비슷하도록 자동으로 조정됩니다.\n현재 좌석 배치가 변경됩니다.`,
                                     onConfirm: async () => {
-                                        const results = await autoBalanceByChips(participants);
+                                        const results = await autoBalanceByChips(activePlayers);
                                         if (results.length > 0) {
                                             setAssignmentResultModal({
                                                 isOpen: true,
