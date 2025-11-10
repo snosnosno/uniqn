@@ -377,53 +377,33 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
 
       {/* 메인 폼 */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Section 1: 기본 정보 */}
-        <div>
-          <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
-            기본 정보
-          </h3>
-          <BasicInfoSection
-            data={basicInfoData}
-            handlers={basicInfoHandlers}
-            validation={basicInfoValidation}
-          />
-        </div>
+        {/* 기본 정보 */}
+        <BasicInfoSection
+          data={basicInfoData}
+          handlers={basicInfoHandlers}
+          validation={basicInfoValidation}
+        />
 
-        {/* Section 2: 급여 정보 */}
-        <div>
-          <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
-            급여 정보
-          </h3>
-          <SalarySection
-            data={salaryData}
-            handlers={salaryHandlers}
-            validation={salaryValidation}
-          />
-        </div>
+        {/* 급여 정보 */}
+        <SalarySection
+          data={salaryData}
+          handlers={salaryHandlers}
+          validation={salaryValidation}
+        />
 
-        {/* Section 3: 날짜별 요구사항 */}
-        <div>
-          <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
-            날짜별 인원 요구사항
-          </h3>
-          <DateRequirementsSection
-            data={dateRequirementsData}
-            handlers={dateRequirementsHandlers}
-            validation={dateRequirementsValidation}
-          />
-        </div>
+        {/* 날짜별 인원 요구사항 */}
+        <DateRequirementsSection
+          data={dateRequirementsData}
+          handlers={dateRequirementsHandlers}
+          validation={dateRequirementsValidation}
+        />
 
-        {/* Section 4: 사전질문 */}
-        <div>
-          <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
-            사전질문
-          </h3>
-          <PreQuestionsSection
-            data={preQuestionsData}
-            handlers={preQuestionsHandlers}
-            validation={preQuestionsValidation}
-          />
-        </div>
+        {/* 사전질문 */}
+        <PreQuestionsSection
+          data={preQuestionsData}
+          handlers={preQuestionsHandlers}
+          validation={preQuestionsValidation}
+        />
 
         {/* 상세 설명 */}
         <div>

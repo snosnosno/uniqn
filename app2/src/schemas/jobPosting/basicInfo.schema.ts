@@ -29,7 +29,7 @@ export const basicInfoSchema = z.object({
   /**
    * 공고 제목
    * - 최소: 2자
-   * - 최대: 100자
+   * - 최대: 25자
    * - XSS 방지
    */
   title: z
@@ -38,7 +38,7 @@ export const basicInfoSchema = z.object({
       invalid_type_error: '공고 제목은 문자열이어야 합니다'
     })
     .min(2, { message: '공고 제목은 최소 2자 이상이어야 합니다' })
-    .max(100, { message: '공고 제목은 100자를 초과할 수 없습니다' })
+    .max(25, { message: '공고 제목은 25자를 초과할 수 없습니다' })
     .trim()
     .refine(xssValidation, {
       message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)'

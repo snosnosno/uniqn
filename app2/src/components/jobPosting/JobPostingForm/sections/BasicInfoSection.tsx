@@ -61,15 +61,15 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
       {/* 제목 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          공고 제목 <span className="text-red-500 dark:text-red-400">*</span>
+          대회명(매장명) <span className="text-red-500 dark:text-red-400">*</span>
         </label>
         <Input
           type="text"
           name="title"
           value={data.title}
           onChange={handlers.onFormChange}
-          placeholder="예: 강남 토너먼트 딜러 모집"
-          maxLength={100}
+          placeholder="대회명(매장명)"
+          maxLength={25}
           required
         />
         {validation?.errors.title && validation?.touched.title && (
@@ -85,11 +85,11 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
           공고 타입 <span className="text-red-500 dark:text-red-400">*</span>
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* 정기 공고 */}
+          {/* 지원 공고 (무료) */}
           <label className={`
             relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
             ${data.postingType === 'regular'
-              ? 'border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20'
+              ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }
           `}>
@@ -102,8 +102,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
               className="sr-only"
             />
             <div className="text-center">
-              <div className="text-2xl mb-1">🔁</div>
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">정기</div>
+              <div className="text-2xl mb-1">📋</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">지원</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">무료</div>
             </div>
           </label>
 
@@ -111,7 +112,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
           <label className={`
             relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
             ${data.postingType === 'fixed'
-              ? 'border-yellow-500 dark:border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
+              ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }
           `}>
