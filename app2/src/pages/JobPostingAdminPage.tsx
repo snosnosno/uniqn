@@ -4,7 +4,9 @@ import { useJobPostingOperations } from '../hooks/useJobPostingOperations';
 import { usePermissions } from '../hooks/usePermissions';
 import { toast } from '../utils/toast';
 import Button from '../components/ui/Button';
-import JobPostingForm from '../components/jobPosting/JobPostingForm';
+import { FEATURE_FLAGS } from '../config/features';
+import JobPostingFormNew from '../components/jobPosting/JobPostingForm'; // 신버전 (JobPostingForm/index.tsx)
+import JobPostingFormOld from '../components/jobPosting/JobPostingFormOld'; // 구버전 (JobPostingFormOld.tsx)
 import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -14,6 +16,11 @@ const JobPostingAdminPage = () => {
   const { canCreateJobPostings } = usePermissions();
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
   const [_isDeleting, _setIsDeleting] = useState<string | null>(null);
+
+  // Feature Flag: 신버전/구버전 선택
+  const JobPostingForm = FEATURE_FLAGS.USE_REFACTORED_JOB_FORM
+    ? JobPostingFormNew
+    : JobPostingFormOld;
 
   const {
     jobPostings,

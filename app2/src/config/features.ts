@@ -141,10 +141,11 @@ export const FEATURE_FLAGS = {
   // ========================================
 
   /**
-   * 리팩토링된 구인공고 폼
-   * - 설명: JobPostingForm 컴포넌트 분리 (988줄 → 6개 파일)
+   * 리팩토링된 구인공고 폼 ✅ (2025-11-10 활성화)
+   * - 설명: JobPostingForm 컴포넌트 분리 (988줄 → 5개 파일)
+   * - 개선: Zod 검증, XSS 방지, React.memo 최적화, Props Grouping
    * - 목적: 테스트 가능성, 재사용성, 유지보수성 향상
-   * - 배포 전략: 2주간 병렬 운영 후 전환
+   * - 상태: 정식 배포 (Phase 1-4 완료)
    */
   USE_REFACTORED_JOB_FORM: false,
 
