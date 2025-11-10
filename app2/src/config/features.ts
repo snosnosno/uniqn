@@ -147,7 +147,24 @@ export const FEATURE_FLAGS = {
    * - 배포 전략: 2주간 병렬 운영 후 전환
    */
   USE_REFACTORED_JOB_FORM: false,
+
+  // ========================================
+  // 시스템 관리 기능
+  // ========================================
+
+  /**
+   * 점검 모드
+   * - 설명: 시스템 점검 시 일반 사용자 접근 제한
+   * - true: 점검 모드 활성화 (admin만 접근 가능)
+   * - false: 정상 운영 (모든 사용자 접근 가능)
+   */
+  MAINTENANCE_MODE: true,
 } as const;
+
+/**
+ * 점검 모드 중 접근 허용 역할 목록
+ */
+export const MAINTENANCE_ALLOWED_ROLES = ['admin'] as const;
 
 /**
  * Feature Flag 활성화 여부 확인 헬퍼 함수

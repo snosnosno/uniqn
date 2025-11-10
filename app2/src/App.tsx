@@ -4,7 +4,7 @@ import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Feature Flags
-import { FEATURE_FLAGS } from './config/features';
+import { FEATURE_FLAGS, MAINTENANCE_ALLOWED_ROLES } from './config/features';
 
 // Auth pages - load immediately for better UX
 import ForgotPassword from './pages/ForgotPassword';
@@ -15,6 +15,9 @@ import RequireEmailVerification from './components/auth/RequireEmailVerification
 
 // Coming Soon page
 import ComingSoon from './components/ComingSoon';
+
+// Maintenance page
+import MaintenancePage from './pages/MaintenancePage';
 
 import FirebaseErrorBoundary from './components/errors/FirebaseErrorBoundary';
 import ErrorBoundary from './components/errors/ErrorBoundary';
@@ -114,6 +117,28 @@ const AppRedirect: React.FC = () => {
   return isAdmin ? <Navigate to="/app/admin/ceo-dashboard" replace /> : <Navigate to="/app/profile" replace />;
 };
 
+// Maintenance mode checker component
+const MaintenanceModeCheck: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser, role, loading } = useAuth();
+
+  // 로딩 중이면 로딩 스피너 표시
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // 점검 모드가 활성화되어 있고, 사용자가 로그인했으며, 허용된 역할이 아닌 경우
+  if (
+    FEATURE_FLAGS.MAINTENANCE_MODE &&
+    currentUser &&
+    !MAINTENANCE_ALLOWED_ROLES.includes(role as typeof MAINTENANCE_ALLOWED_ROLES[number])
+  ) {
+    return <MaintenancePage />;
+  }
+
+  // 정상적으로 앱 렌더링
+  return <>{children}</>;
+};
+
 // Create a client with optimized cache settings
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -172,15 +197,16 @@ const App: React.FC = () => {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AuthProvider>
-              <CapacitorInitializer>
-                <UnifiedDataProvider>
-                  <TournamentProvider>
-                    <TournamentDataProvider>
-                      <DateFilterProvider>
-                        {/* 네트워크 상태 표시 */}
-                        <NetworkStatusIndicator position="top" />
+              <MaintenanceModeCheck>
+                <CapacitorInitializer>
+                  <UnifiedDataProvider>
+                    <TournamentProvider>
+                      <TournamentDataProvider>
+                        <DateFilterProvider>
+                          {/* 네트워크 상태 표시 */}
+                          <NetworkStatusIndicator position="top" />
 
-              <Routes>
+                <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
                 <Route path="/login" element={<Login />} />
@@ -280,11 +306,12 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
-                      </DateFilterProvider>
-                    </TournamentDataProvider>
-                  </TournamentProvider>
-                </UnifiedDataProvider>
-              </CapacitorInitializer>
+                        </DateFilterProvider>
+                      </TournamentDataProvider>
+                    </TournamentProvider>
+                  </UnifiedDataProvider>
+                </CapacitorInitializer>
+              </MaintenanceModeCheck>
             </AuthProvider>
             <ToastContainer />
           </ThemeProvider>
