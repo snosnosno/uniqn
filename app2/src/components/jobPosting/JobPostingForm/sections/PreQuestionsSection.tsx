@@ -115,15 +115,6 @@ const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(({
           )}
         </div>
       )}
-
-      {/* 사전질문 미사용 안내 */}
-      {!data.usesPreQuestions && (
-        <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            ℹ️ 사전질문을 사용하면 지원자에게 추가 정보를 요청할 수 있습니다.
-          </p>
-        </div>
-      )}
     </div>
   );
 });
