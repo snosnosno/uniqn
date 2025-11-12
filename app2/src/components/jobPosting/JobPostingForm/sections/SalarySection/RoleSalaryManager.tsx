@@ -37,66 +37,78 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
 
       {/* 역할별 급여 목록 */}
       {Object.entries(roleSalaries).map(([role, salary]) => (
-        <div key={role} className="grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-800 p-3 rounded-lg">
-          {/* 역할 선택 */}
-          <div className="col-span-4">
-            <Select
-              value={role}
-              onChange={(value) => {
-                // 역할 변경 로직 (간단히 처리)
-              }}
-              options={PREDEFINED_ROLES.map(r => ({
-                value: r,
-                label: getRoleDisplayName(r)
-              }))}
-            />
-          </div>
-
-          {/* 급여 타입 */}
-          <div className="col-span-3">
-            <Select
-              value={salary.salaryType}
-              onChange={(value) => {
-                const amount = parseInt(salary.salaryAmount, 10) || 0;
-                onRoleSalaryChange(role, value, amount);
-              }}
-              options={[
-                { value: 'hourly', label: '시급' },
-                { value: 'daily', label: '일급' },
-                { value: 'monthly', label: '월급' },
-                { value: 'negotiable', label: '협의' }
-              ]}
-            />
-          </div>
-
-          {/* 급여 금액 */}
-          <div className="col-span-3">
-            {salary.salaryType === 'negotiable' ? (
-              <div className="text-gray-500 dark:text-gray-400 text-sm py-2">
-                급여 협의
-              </div>
-            ) : (
-              <Input
-                type="text"
-                value={salary.salaryAmount}
-                onChange={(e) => {
-                  const numValue = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
-                  onRoleSalaryChange(role, salary.salaryType, numValue);
+        <div key={role} className="bg-white dark:bg-gray-800 p-3 rounded-lg space-y-3">
+          {/* 첫 번째 줄: 역할 + 삭제 버튼 */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                역할
+              </label>
+              <Select
+                value={role}
+                onChange={(value) => {
+                  // 역할 변경 로직 (간단히 처리)
                 }}
-                placeholder="20000"
+                options={PREDEFINED_ROLES.map(r => ({
+                  value: r,
+                  label: getRoleDisplayName(r)
+                }))}
               />
-            )}
+            </div>
+            <div className="pt-5">
+              <Button
+                onClick={() => onRemoveRole(role)}
+                variant="danger"
+                size="sm"
+              >
+                삭제
+              </Button>
+            </div>
           </div>
 
-          {/* 삭제 버튼 */}
-          <div className="col-span-2 flex justify-end">
-            <Button
-              onClick={() => onRemoveRole(role)}
-              variant="secondary"
-              size="sm"
-            >
-              삭제
-            </Button>
+          {/* 두 번째 줄: 급여 타입 + 금액 */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* 급여 타입 */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                급여 타입
+              </label>
+              <Select
+                value={salary.salaryType}
+                onChange={(value) => {
+                  const amount = parseInt(salary.salaryAmount, 10) || 0;
+                  onRoleSalaryChange(role, value, amount);
+                }}
+                options={[
+                  { value: 'hourly', label: '시급' },
+                  { value: 'daily', label: '일급' },
+                  { value: 'monthly', label: '월급' },
+                  { value: 'negotiable', label: '협의' }
+                ]}
+              />
+            </div>
+
+            {/* 급여 금액 */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                금액
+              </label>
+              {salary.salaryType === 'negotiable' ? (
+                <div className="text-gray-500 dark:text-gray-400 text-sm py-2">
+                  급여 협의
+                </div>
+              ) : (
+                <Input
+                  type="text"
+                  value={salary.salaryAmount}
+                  onChange={(e) => {
+                    const numValue = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
+                    onRoleSalaryChange(role, salary.salaryType, numValue);
+                  }}
+                  placeholder="20000"
+                />
+              )}
+            </div>
           </div>
         </div>
       ))}
