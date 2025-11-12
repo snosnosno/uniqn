@@ -66,7 +66,7 @@ export const preQuestionSchema = z.object({
   type: QuestionTypeSchema,
 
   /**
-   * 선택형 질문의 옵션들 (select 타입일 때 필수)
+   * 선택형 질문의 옵션들 (select 타입일 때만 필수)
    * - 최소: 2개 이상 (선택지는 최소 2개)
    * - 최대: 10개
    * - XSS 방지
@@ -85,15 +85,15 @@ export const preQuestionSchema = z.object({
         invalid_type_error: '옵션은 문자열 배열이어야 합니다'
       }
     )
-    .min(2, { message: '선택형 질문은 최소 2개 이상의 옵션이 필요합니다' })
     .max(10, { message: '옵션은 최대 10개까지 가능합니다' })
     .optional()
 }).refine(
   (data) => {
-    // select 타입일 때 options 필수
+    // select 타입일 때만 options 검증 (최소 2개)
     if (data.type === 'select') {
       return data.options && data.options.length >= 2;
     }
+    // text, textarea 타입은 options 불필요 - 항상 통과
     return true;
   },
   {

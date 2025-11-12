@@ -44,15 +44,22 @@ export const roleRequirementSchema = z.object({
  */
 export const timeSlotSchema = z.object({
   /**
-   * 시작 시간 (HH:mm 형식)
+   * 시작 시간 (HH:mm 형식 또는 "미정")
    */
   time: z
     .string({
       required_error: '시작 시간을 입력해주세요',
       invalid_type_error: '시작 시간은 문자열이어야 합니다'
     })
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: '시간은 HH:mm 형식이어야 합니다 (예: 09:00)' })
-    .trim(),
+    .trim()
+    .refine(
+      (value) => {
+        // "미정"이거나 HH:mm 형식이면 통과
+        if (value === '미정') return true;
+        return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+      },
+      { message: '시간은 HH:mm 형식이어야 합니다 (예: 09:00)' }
+    ),
 
   /**
    * 역할별 필요 인원 배열
