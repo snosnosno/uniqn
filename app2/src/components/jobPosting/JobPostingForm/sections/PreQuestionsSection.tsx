@@ -42,6 +42,7 @@
 
 import React from 'react';
 import { PreQuestionsSectionProps } from '../../../../types/jobPosting/preQuestionsProps';
+import Toggle from '../../../ui/Toggle';
 import PreQuestionManager from '../../PreQuestionManager';
 
 /**
@@ -70,19 +71,15 @@ const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(({
     <div className="space-y-4">
       {/* 사전질문 사용 여부 토글 */}
       <div className="flex items-center justify-between">
-        <label className="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={data.usesPreQuestions}
-            onChange={(e) => handlers.onToggle(e.target.checked)}
-            className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-          />
-          <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            사전질문 사용하기
-          </span>
-        </label>
+        <Toggle
+          id="usesPreQuestions"
+          checked={data.usesPreQuestions}
+          onChange={handlers.onToggle}
+          label="사전질문 사용하기"
+          description="지원자에게 추가 정보를 요청할 수 있습니다"
+        />
         {data.usesPreQuestions && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
             {data.preQuestions.length}개 질문
           </span>
         )}

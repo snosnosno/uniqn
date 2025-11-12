@@ -70,19 +70,16 @@ const DateRequirementsSection: React.FC<DateRequirementsSectionProps> = React.me
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           날짜별 요구사항 <span className="text-red-500 dark:text-red-400">*</span>
         </label>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {memoizedRequirements.length}개 날짜 추가됨
-        </span>
       </div>
 
       {/* 기존 DateSpecificRequirementsNew 컴포넌트 활용 */}
       <DateSpecificRequirementsNew
         requirements={memoizedRequirements}
-        onRequirementsChange={() => {/* noop - handled by individual handlers */}}
+        onRequirementsChange={handlers.onRequirementsChange}
         onDateSpecificTimeSlotChange={handlers.onTimeSlotChange}
         onDateSpecificTimeToBeAnnouncedToggle={handlers.onTimeToBeAnnouncedToggle}
         onDateSpecificTentativeDescriptionChange={handlers.onTentativeDescriptionChange}

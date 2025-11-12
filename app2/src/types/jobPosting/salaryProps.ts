@@ -84,11 +84,11 @@ export interface SalaryHandlers {
   onBenefitToggle: (benefitType: keyof Benefits, enabled: boolean) => void;
 
   /**
-   * 복리후생 금액 변경 핸들러
+   * 복리후생 값 변경 핸들러
    * @param benefitType - 복리후생 타입
-   * @param amount - 금액
+   * @param value - 입력값 (문자열)
    */
-  onBenefitChange: (benefitType: keyof Benefits, amount: number) => void;
+  onBenefitChange: (benefitType: keyof Benefits, value: string) => void;
 
   /**
    * 역할별 급여 사용 토글 핸들러

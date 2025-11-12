@@ -20,6 +20,12 @@ export interface DateRequirementsData {
  */
 export interface DateRequirementsHandlers {
   /**
+   * 날짜 요구사항 배열 변경 핸들러 (날짜 추가/삭제 시 사용)
+   * @param requirements - 새로운 날짜 요구사항 배열
+   */
+  onRequirementsChange: (requirements: DateSpecificRequirement[]) => void;
+
+  /**
    * 시간대 변경 핸들러
    * @param dateIndex - 날짜 인덱스
    * @param timeSlotIndex - 시간대 인덱스

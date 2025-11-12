@@ -147,7 +147,7 @@ export const FEATURE_FLAGS = {
    * - 목적: 테스트 가능성, 재사용성, 유지보수성 향상
    * - 상태: 정식 배포 (Phase 1-4 완료)
    */
-  USE_REFACTORED_JOB_FORM: false,
+  USE_REFACTORED_JOB_FORM: true,
 
   // ========================================
   // 시스템 관리 기능

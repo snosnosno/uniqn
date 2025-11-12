@@ -95,6 +95,13 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     });
   }, []);
 
+  const handleDateSpecificRequirementsChange = useCallback((requirements: DateSpecificRequirement[]) => {
+    setFormData((prev: JobPostingFormData) => ({
+      ...prev,
+      dateSpecificRequirements: requirements
+    }));
+  }, []);
+
   // 사전질문 관련 핸들러들
   const handlePreQuestionsToggle = useCallback((enabled: boolean) => {
     setFormData((prev: JobPostingFormData): JobPostingFormData => {
@@ -388,6 +395,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     handleDateSpecificTimeToBeAnnouncedToggle,
     handleDateSpecificTentativeDescriptionChange,
     handleDateSpecificRoleChange,
+    handleDateSpecificRequirementsChange,
     
     // 사전질문 핸들러
     handlePreQuestionsToggle,

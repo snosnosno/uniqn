@@ -236,28 +236,6 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
         </div>
       )}
 
-      {/* 공고 설명 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          공고 설명 <span className="text-red-500 dark:text-red-400">*</span>
-        </label>
-        <textarea
-          name="description"
-          value={data.description}
-          onChange={handlers.onFormChange}
-          placeholder="근무 조건, 업무 내용 등을 상세히 작성해주세요"
-          rows={5}
-          maxLength={2000}
-          required
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
-        />
-        {validation?.errors.description && validation?.touched.description && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {validation.errors.description}
-          </p>
-        )}
-      </div>
-
       {/* 문의 연락처 */}
       {data.contactPhone !== undefined && (
         <div>

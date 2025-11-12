@@ -56,6 +56,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
     handleDateSpecificTimeToBeAnnouncedToggle,
     handleDateSpecificTentativeDescriptionChange,
     handleDateSpecificRoleChange,
+    handleDateSpecificRequirementsChange,
     handlePreQuestionsToggle,
     handlePreQuestionChange,
     handlePreQuestionOptionChange,
@@ -249,11 +250,13 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
   }), [validationErrors, touchedFields]);
 
   const dateRequirementsHandlers = React.useMemo(() => ({
+    onRequirementsChange: handleDateSpecificRequirementsChange,
     onTimeSlotChange: handleDateSpecificTimeSlotChange,
     onTimeToBeAnnouncedToggle: handleDateSpecificTimeToBeAnnouncedToggle,
     onTentativeDescriptionChange: handleDateSpecificTentativeDescriptionChange,
     onRoleChange: handleDateSpecificRoleChange
   }), [
+    handleDateSpecificRequirementsChange,
     handleDateSpecificTimeSlotChange,
     handleDateSpecificTimeToBeAnnouncedToggle,
     handleDateSpecificTentativeDescriptionChange,
@@ -323,8 +326,8 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
     onSalaryTypeChange: handleSalaryTypeChange,
     onSalaryAmountChange: (amount: number) => handleSalaryAmountChange(amount.toString()),
     onBenefitToggle: handleBenefitToggle,
-    onBenefitChange: (benefitType: keyof Benefits, amount: number) =>
-      handleBenefitChange(benefitType, amount.toString()),
+    onBenefitChange: (benefitType: keyof Benefits, value: string) =>
+      handleBenefitChange(benefitType, value),
     onRoleSalaryToggle: handleRoleSalaryToggle,
     onAddRole: handleAddRoleToSalary,
     onRemoveRole: (roleIndex: string | number) => {

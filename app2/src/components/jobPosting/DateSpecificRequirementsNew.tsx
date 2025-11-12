@@ -305,10 +305,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">
-          일자별 인원 요구사항
-        </h4>
+      <div className="flex justify-end items-center">
         <div className="flex items-center space-x-2">
           {showDatePicker ? (
             <>

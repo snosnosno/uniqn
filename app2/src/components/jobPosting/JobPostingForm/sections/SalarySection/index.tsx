@@ -52,6 +52,7 @@ import React from 'react';
 import { SalarySectionProps } from '../../../../../types/jobPosting/salaryProps';
 import Input from '../../../../ui/Input';
 import { Select } from '../../../../common/Select';
+import Toggle from '../../../../ui/Toggle';
 import RoleSalaryManager from './RoleSalaryManager';
 import { calculateChipCost, formatChipCost } from '../../../../../utils/jobPosting/chipCalculator';
 
@@ -80,18 +81,13 @@ const SalarySection: React.FC<SalarySectionProps> = React.memo(({
   return (
     <div className="space-y-4">
       {/* 역할별 급여 사용 토글 */}
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="useRoleSalary"
-          checked={data.useRoleSalary || false}
-          onChange={(e) => handlers.onRoleSalaryToggle(e.target.checked)}
-          className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-        />
-        <label htmlFor="useRoleSalary" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          역할별 급여 설정
-        </label>
-      </div>
+      <Toggle
+        id="useRoleSalary"
+        checked={data.useRoleSalary || false}
+        onChange={handlers.onRoleSalaryToggle}
+        label="역할별 급여 설정"
+        description="역할(딜러, 플로어 등)에 따라 다른 급여를 설정합니다"
+      />
 
       {/* 역할별 급여 사용 시 RoleSalaryManager 표시 */}
       {data.useRoleSalary ? (
@@ -157,43 +153,145 @@ const SalarySection: React.FC<SalarySectionProps> = React.memo(({
 
           {/* 복리후생 정보 */}
           {data.benefits && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                복리후생 (선택)
-              </h4>
-              <div className="space-y-2">
-                {/* 식사 제공 */}
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={!!data.benefits.meal}
-                    onChange={(e) => handlers.onBenefitToggle('meal', e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                복리후생 (제공되는 정보만 입력)
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* 보장시간 */}
+                <div className="flex items-center space-x-2">
+                  <Toggle
+                    id="benefit-guaranteedHours"
+                    checked={data.benefits.guaranteedHours !== undefined}
+                    onChange={(checked) => handlers.onBenefitToggle('guaranteedHours', checked)}
+                    label="보장시간"
+                    size="sm"
                   />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">식사 제공</span>
-                </label>
+                  {data.benefits.guaranteedHours !== undefined && (
+                    <Input
+                      type="text"
+                      value={data.benefits.guaranteedHours}
+                      onChange={(e) => handlers.onBenefitChange('guaranteedHours', e.target.value)}
+                      placeholder="예시: 6시간"
+                      maxLength={25}
+                      className="flex-1"
+                    />
+                  )}
+                </div>
 
-                {/* 교통비 지원 */}
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={!!data.benefits.transportation}
-                    onChange={(e) => handlers.onBenefitToggle('transportation', e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
+                {/* 복장 */}
+                <div className="flex items-center space-x-2">
+                  <Toggle
+                    id="benefit-clothing"
+                    checked={data.benefits.clothing !== undefined}
+                    onChange={(checked) => handlers.onBenefitToggle('clothing', checked)}
+                    label="복장"
+                    size="sm"
                   />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">교통비 지원</span>
-                </label>
+                  {data.benefits.clothing !== undefined && (
+                    <Input
+                      type="text"
+                      value={data.benefits.clothing}
+                      onChange={(e) => handlers.onBenefitChange('clothing', e.target.value)}
+                      placeholder="예시: 검은셔츠,슬랙스,운동화"
+                      maxLength={25}
+                      className="flex-1"
+                    />
+                  )}
+                </div>
 
-                {/* 숙소 제공 */}
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={!!data.benefits.accommodation}
-                    onChange={(e) => handlers.onBenefitToggle('accommodation', e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
+                {/* 식사 */}
+                <div className="flex items-center space-x-2">
+                  <Toggle
+                    id="benefit-meal"
+                    checked={data.benefits.meal !== undefined}
+                    onChange={(checked) => handlers.onBenefitToggle('meal', checked)}
+                    label="식사"
+                    size="sm"
                   />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">숙소 제공</span>
-                </label>
+                  {data.benefits.meal !== undefined && (
+                    <Input
+                      type="text"
+                      value={data.benefits.meal}
+                      onChange={(e) => handlers.onBenefitChange('meal', e.target.value)}
+                      placeholder="식사 정보 입력"
+                      maxLength={25}
+                      className="flex-1"
+                    />
+                  )}
+                </div>
+
+                {/* 교통비 (일당) */}
+                <div className="flex items-center space-x-2">
+                  <Toggle
+                    id="benefit-transportation"
+                    checked={data.benefits.transportation !== undefined}
+                    onChange={(checked) => handlers.onBenefitToggle('transportation', checked)}
+                    label="교통비 (일당)"
+                    size="sm"
+                  />
+                  {data.benefits.transportation !== undefined && (
+                    <>
+                      <Input
+                        type="text"
+                        value={data.benefits.transportation}
+                        onChange={(e) => handlers.onBenefitChange('transportation', e.target.value)}
+                        placeholder="일당 5,000원"
+                        maxLength={25}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">원/일</span>
+                    </>
+                  )}
+                </div>
+
+                {/* 식비 (일당) */}
+                <div className="flex items-center space-x-2">
+                  <Toggle
+                    id="benefit-mealAllowance"
+                    checked={data.benefits.mealAllowance !== undefined}
+                    onChange={(checked) => handlers.onBenefitToggle('mealAllowance', checked)}
+                    label="식비 (일당)"
+                    size="sm"
+                  />
+                  {data.benefits.mealAllowance !== undefined && (
+                    <>
+                      <Input
+                        type="text"
+                        value={data.benefits.mealAllowance}
+                        onChange={(e) => handlers.onBenefitChange('mealAllowance', e.target.value)}
+                        placeholder="일당 10,000원"
+                        maxLength={25}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">원/일</span>
+                    </>
+                  )}
+                </div>
+
+                {/* 숙소 (일당) */}
+                <div className="flex items-center space-x-2">
+                  <Toggle
+                    id="benefit-accommodation"
+                    checked={data.benefits.accommodation !== undefined}
+                    onChange={(checked) => handlers.onBenefitToggle('accommodation', checked)}
+                    label="숙소 (일당)"
+                    size="sm"
+                  />
+                  {data.benefits.accommodation !== undefined && (
+                    <>
+                      <Input
+                        type="text"
+                        value={data.benefits.accommodation}
+                        onChange={(e) => handlers.onBenefitChange('accommodation', e.target.value)}
+                        placeholder="일당 15,000원"
+                        maxLength={25}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">원/일</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
