@@ -32,7 +32,7 @@ export const preQuestionSchema = z.object({
 
   /**
    * 질문 내용
-   * - 최소: 5자
+   * - 최소: 2자
    * - 최대: 500자
    * - XSS 방지
    */
@@ -41,7 +41,7 @@ export const preQuestionSchema = z.object({
       required_error: '질문 내용을 입력해주세요',
       invalid_type_error: '질문 내용은 문자열이어야 합니다'
     })
-    .min(5, { message: '질문 내용은 최소 5자 이상이어야 합니다' })
+    .min(2, { message: '질문 내용은 최소 2자 이상이어야 합니다' })
     .max(500, { message: '질문 내용은 500자를 초과할 수 없습니다' })
     .trim()
     .refine(xssValidation, {
@@ -131,14 +131,17 @@ export const preQuestionsSchemaBase = z.object({
 
 /**
  * PreQuestions 섹션 검증 스키마 (refined)
+ *
+ * usesPreQuestions=true일 때만 검증 수행 (선택한 질문 타입만 검증)
  */
 export const preQuestionsSchema = preQuestionsSchemaBase.refine(
   (data) => {
-    // usesPreQuestions=true일 때 최소 1개 이상
-    if (data.usesPreQuestions) {
-      return data.preQuestions && data.preQuestions.length >= 1;
+    // usesPreQuestions=false이면 검증 스킵
+    if (!data.usesPreQuestions) {
+      return true;
     }
-    return true;
+    // usesPreQuestions=true일 때 최소 1개 이상의 질문 필요
+    return data.preQuestions && data.preQuestions.length >= 1;
   },
   {
     message: '사전질문을 사용하려면 최소 1개 이상의 질문을 추가해주세요',

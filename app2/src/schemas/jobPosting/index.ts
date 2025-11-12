@@ -27,7 +27,7 @@ export const jobPostingFormSchema = basicInfoSchema
   .merge(salarySchemaBase)
   .refine(
     (data) => {
-      // Cross-field 검증: 긴급 공고는 최소 1일 이상 남아야 함
+      // Cross-field 검증: 긴급 공고는 오늘부터 최대 7일 후까지만 가능
       if (data.postingType === 'urgent' && data.dateSpecificRequirements.length > 0) {
         const firstRequirement = data.dateSpecificRequirements[0];
         if (!firstRequirement || !firstRequirement.date) return true; // 안전한 체크
@@ -44,25 +44,14 @@ export const jobPostingFormSchema = basicInfoSchema
         today.setHours(0, 0, 0, 0);
 
         const diffDays = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return diffDays >= 1;
+
+        // 오늘부터 7일 후까지만 허용 (0 <= diffDays <= 7)
+        return diffDays >= 0 && diffDays <= 7;
       }
       return true;
     },
     {
-      message: '긴급 공고는 최소 1일 이상 남은 날짜만 가능합니다',
-      path: ['dateSpecificRequirements']
-    }
-  )
-  .refine(
-    (data) => {
-      // Cross-field 검증: 정기 공고는 최소 2개 이상의 날짜 필요
-      if (data.postingType === 'regular') {
-        return data.dateSpecificRequirements.length >= 2;
-      }
-      return true;
-    },
-    {
-      message: '정기 공고는 최소 2개 이상의 날짜가 필요합니다',
+      message: '긴급 공고는 오늘부터 최대 7일 이내의 날짜만 가능합니다',
       path: ['dateSpecificRequirements']
     }
   );

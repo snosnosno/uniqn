@@ -20,9 +20,9 @@ export const PostingTypeSchema = z.enum(['regular', 'fixed', 'tournament', 'urge
  * BasicInfo 섹션 검증 스키마
  *
  * 검증 규칙:
- * - title: 2자 이상, 100자 이하
+ * - title: 2자 이상, 25자 이하
  * - location: 필수 입력
- * - description: 10자 이상 (상세한 설명 요구)
+ * - description: 선택 입력, 최대 500자
  * - postingType: 유효한 공고 타입
  */
 export const basicInfoSchema = z.object({
@@ -74,22 +74,21 @@ export const basicInfoSchema = z.object({
     .optional(),
 
   /**
-   * 공고 설명
-   * - 최소: 10자 (상세한 설명 요구)
-   * - 최대: 2000자
+   * 공고 설명 (상세 설명)
+   * - 선택 입력
+   * - 최대: 500자
    * - XSS 방지
    */
   description: z
     .string({
-      required_error: '공고 설명을 입력해주세요',
       invalid_type_error: '공고 설명은 문자열이어야 합니다'
     })
-    .min(10, { message: '공고 설명은 최소 10자 이상이어야 합니다' })
-    .max(2000, { message: '공고 설명은 2000자를 초과할 수 없습니다' })
     .trim()
+    .max(500, { message: '공고 설명은 500자를 초과할 수 없습니다' })
     .refine(xssValidation, {
       message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)'
-    }),
+    })
+    .optional(),
 
   /**
    * 공고 타입
