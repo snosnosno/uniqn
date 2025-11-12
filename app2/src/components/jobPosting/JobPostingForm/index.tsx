@@ -169,7 +169,8 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
     detailedAddress: formData.detailedAddress || '',
     description: formData.description,
     postingType: formData.postingType,
-    contactPhone: formData.contactPhone || ''
+    contactPhone: formData.contactPhone || '',
+    fixedConfig: formData.fixedConfig
   }), [
     formData.title,
     formData.location,
@@ -177,7 +178,8 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
     formData.detailedAddress,
     formData.description,
     formData.postingType,
-    formData.contactPhone
+    formData.contactPhone,
+    formData.fixedConfig
   ]);
 
   const basicInfoValidation = React.useMemo(() => ({
@@ -230,6 +232,21 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
       } else {
         setFormData((prev) => ({ ...prev, postingType }));
       }
+    },
+    onFixedDurationChange: (durationDays: 7 | 30 | 90) => {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      const chipCost = durationDays === 7 ? 3 : durationDays === 30 ? 5 : 10;
+
+      setFormData((prev) => ({
+        ...prev,
+        fixedConfig: {
+          durationDays,
+          chipCost: chipCost as 3 | 5 | 10,
+          expiresAt: Timestamp.fromDate(expiresAt),
+          createdAt: Timestamp.fromDate(now)
+        }
+      }));
     }
   }), [handleFormChange, handleDistrictChange, setFormData, formData]);
 

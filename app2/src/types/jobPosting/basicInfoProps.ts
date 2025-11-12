@@ -5,7 +5,7 @@
  */
 
 import { SectionProps, ValidationState } from './sectionProps';
-import { PostingType } from './jobPosting';
+import { PostingType, FixedConfig } from './jobPosting';
 
 /**
  * BasicInfo 섹션 데이터
@@ -31,6 +31,9 @@ export interface BasicInfoData {
 
   /** 문의 연락처 (선택) */
   contactPhone?: string;
+
+  /** 고정공고 설정 (postingType이 'fixed'일 때) */
+  fixedConfig?: FixedConfig;
 }
 
 /**
@@ -53,6 +56,12 @@ export interface BasicInfoHandlers {
    * 공고 타입 변경 핸들러
    */
   onPostingTypeChange?: (postingType: PostingType) => void;
+
+  /**
+   * 고정공고 기간 변경 핸들러
+   * - 7일/30일/90일 선택 시 호출
+   */
+  onFixedDurationChange?: (durationDays: 7 | 30 | 90) => void;
 }
 
 /**

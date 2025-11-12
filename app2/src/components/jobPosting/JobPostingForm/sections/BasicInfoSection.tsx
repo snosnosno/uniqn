@@ -182,7 +182,123 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
             {validation.errors.postingType}
           </p>
         )}
+
+        {/* 대회 공고 알림 */}
+        {data.postingType === 'tournament' && (
+          <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-purple-600 dark:text-purple-400 text-sm">ℹ️</span>
+              <div className="ml-2 text-sm text-purple-800 dark:text-purple-300">
+                <span>대회 공고는 관리자 승인 후 게시됩니다. 승인 결과는 알림으로 안내드립니다.</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 칩 비용 알림 */}
+        {(data.postingType === 'fixed' || data.postingType === 'urgent') && (
+          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-yellow-600 dark:text-yellow-400 text-sm">💰</span>
+              <div className="ml-2 text-sm text-yellow-800 dark:text-yellow-300">
+                {data.postingType === 'fixed' && (
+                  <span>고정 공고는 기간에 따라 3~10칩이 차감됩니다.</span>
+                )}
+                {data.postingType === 'urgent' && (
+                  <span>긴급 공고 생성 시 5칩이 차감됩니다.</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* 고정 공고 기간 선택 */}
+      {data.postingType === 'fixed' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            노출 기간 <span className="text-red-500 dark:text-red-400">*</span>
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* 7일 (3칩) */}
+            <label className={`
+              relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+              ${data.fixedConfig?.durationDays === 7
+                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              }
+            `}>
+              <input
+                type="radio"
+                name="fixedDuration"
+                value="7"
+                checked={data.fixedConfig?.durationDays === 7}
+                onChange={() => handlers.onFixedDurationChange?.(7)}
+                className="sr-only"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">7일</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">1주일 노출</div>
+              </div>
+              <div className="ml-3 text-right">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">3칩</div>
+              </div>
+            </label>
+
+            {/* 30일 (5칩) */}
+            <label className={`
+              relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+              ${data.fixedConfig?.durationDays === 30
+                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              }
+            `}>
+              <input
+                type="radio"
+                name="fixedDuration"
+                value="30"
+                checked={data.fixedConfig?.durationDays === 30}
+                onChange={() => handlers.onFixedDurationChange?.(30)}
+                className="sr-only"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">30일</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">1개월 노출</div>
+              </div>
+              <div className="ml-3 text-right">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">5칩</div>
+                <div className="text-xs text-green-600 dark:text-green-400">인기</div>
+              </div>
+            </label>
+
+            {/* 90일 (10칩) */}
+            <label className={`
+              relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+              ${data.fixedConfig?.durationDays === 90
+                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              }
+            `}>
+              <input
+                type="radio"
+                name="fixedDuration"
+                value="90"
+                checked={data.fixedConfig?.durationDays === 90}
+                onChange={() => handlers.onFixedDurationChange?.(90)}
+                className="sr-only"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">90일</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">3개월 노출</div>
+              </div>
+              <div className="ml-3 text-right">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">10칩</div>
+                <div className="text-xs text-purple-600 dark:text-purple-400">최고</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* 지역 및 상세 주소 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
