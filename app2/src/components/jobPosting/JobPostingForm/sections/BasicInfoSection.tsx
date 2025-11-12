@@ -84,10 +84,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           공고 타입 <span className="text-red-500 dark:text-red-400">*</span>
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {/* 지원 공고 (무료) */}
           <label className={`
-            relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+            relative flex items-center p-2 border-2 rounded-lg cursor-pointer transition-all
             ${data.postingType === 'regular'
               ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -101,16 +101,16 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
               onChange={handlers.onFormChange}
               className="sr-only"
             />
-            <div className="text-center">
-              <div className="text-2xl mb-1">📋</div>
+            <div className="text-xl mr-2">📋</div>
+            <div className="flex flex-col">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">지원</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">무료</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">무료</div>
             </div>
           </label>
 
           {/* 고정 공고 */}
           <label className={`
-            relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+            relative flex items-center p-2 border-2 rounded-lg cursor-pointer transition-all
             ${data.postingType === 'fixed'
               ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -124,16 +124,16 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
               onChange={handlers.onFormChange}
               className="sr-only"
             />
-            <div className="text-center">
-              <div className="text-2xl mb-1">📌</div>
+            <div className="text-xl mr-2">📌</div>
+            <div className="flex flex-col">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">고정</div>
-              <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">유료</div>
+              <div className="text-xs text-yellow-600 dark:text-yellow-400">유료</div>
             </div>
           </label>
 
           {/* 대회 공고 */}
           <label className={`
-            relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+            relative flex items-center p-2 border-2 rounded-lg cursor-pointer transition-all
             ${data.postingType === 'tournament'
               ? 'border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -147,16 +147,16 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
               onChange={handlers.onFormChange}
               className="sr-only"
             />
-            <div className="text-center">
-              <div className="text-2xl mb-1">🏆</div>
+            <div className="text-xl mr-2">🏆</div>
+            <div className="flex flex-col">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">대회</div>
-              <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">승인 필요</div>
+              <div className="text-xs text-purple-600 dark:text-purple-400">승인 필요</div>
             </div>
           </label>
 
           {/* 긴급 공고 */}
           <label className={`
-            relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all
+            relative flex items-center p-2 border-2 rounded-lg cursor-pointer transition-all
             ${data.postingType === 'urgent'
               ? 'border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -170,10 +170,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
               onChange={handlers.onFormChange}
               className="sr-only"
             />
-            <div className="text-center">
-              <div className="text-2xl mb-1">🚨</div>
+            <div className="text-xl mr-2">🚨</div>
+            <div className="flex flex-col">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">긴급</div>
-              <div className="text-xs text-red-600 dark:text-red-400 mt-1">5칩</div>
+              <div className="text-xs text-red-600 dark:text-red-400">5칩</div>
             </div>
           </label>
         </div>
