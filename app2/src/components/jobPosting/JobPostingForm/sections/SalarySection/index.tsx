@@ -150,9 +150,11 @@ const SalarySection: React.FC<SalarySectionProps> = React.memo(({
               )}
             </div>
           </div>
+        </div>
+      )}
 
-          {/* 복리후생 정보 */}
-          {data.benefits && (
+      {/* 복리후생 정보 - 역할별 급여 설정과 독립적으로 표시 */}
+      {data.benefits && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 복리후생 (제공되는 정보만 입력)
@@ -295,8 +297,6 @@ const SalarySection: React.FC<SalarySectionProps> = React.memo(({
               </div>
             </div>
           )}
-        </div>
-      )}
     </div>
   );
 });
