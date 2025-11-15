@@ -10,7 +10,7 @@ import React, { useMemo } from 'react';
 import { BasicInfoTabProps } from '../types';
 import { getSnapshotOrFallback } from '../../../../../utils/scheduleSnapshot';
 import { parseTimeToString, calculateWorkHours } from '../../../../../utils/workLogMapper';
-import { useUnifiedDataContext } from '../../../../../contexts/UnifiedDataContext';
+import { useUnifiedData } from '../../../../../hooks/useUnifiedData';
 
 /**
  * BasicInfoTab - 일정 기본 정보 표시 컴포넌트
@@ -25,8 +25,11 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   jobPosting,
   isReadOnly: _isReadOnly
 }) => {
-  const { state } = useUnifiedDataContext();
-  const { workLogs } = state;
+  const { workLogs: workLogsArray } = useUnifiedData();
+
+  // workLogs 배열을 Map으로 변환 (O(1) 조회)
+  const workLogs = useMemo(() => new Map(workLogsArray.map(wl => [wl.id, wl])), [workLogsArray]);
+
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

@@ -41,7 +41,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
   // 통합 데이터 훅 사용
   const { state, loading } = useUnifiedData();
-  const dataLoading = loading.initial;
+  const dataLoading = loading;
   
   // Web Worker 기반 정산 계산
   const {

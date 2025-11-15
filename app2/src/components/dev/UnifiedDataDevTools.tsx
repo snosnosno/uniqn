@@ -62,16 +62,22 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
     });
     
     // 에러 상태
-    const errorCount = Object.values(error).filter(Boolean).length;
+    const errorCount = error ? 1 : 0;
     metrics.push({
       name: '에러 발생',
       value: errorCount,
       unit: '개',
       status: errorCount > 0 ? 'error' : 'good'
     });
-    
+
     // 데이터 크기
-    const totalDataSize = Object.values(state).reduce((total, collection) => {
+    const totalDataSize = [
+      state.staff,
+      state.workLogs,
+      state.applications,
+      state.attendanceRecords,
+      state.jobPostings
+    ].reduce((total, collection) => {
       return total + collection.size;
     }, 0);
     metrics.push({
@@ -124,7 +130,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
         timestamp: new Date().toISOString(),
         level: 'info',
         component: 'UnifiedDataContext',
-        message: `데이터 상태 업데이트 - 총 ${Object.values(state).reduce((total, collection) => total + collection.size, 0)}개 항목`,
+        message: `데이터 상태 업데이트 - 총 ${[state.staff, state.workLogs, state.applications, state.attendanceRecords, state.jobPostings].reduce((total, collection) => total + collection.size, 0)}개 항목`,
         data: {
           collections: Object.keys(state),
           loadingStates: loading,
@@ -156,12 +162,18 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
 
   // 데이터 컬렉션별 상세 정보
   const collectionDetails = useMemo(() => {
-    return Object.entries(state).map(([key, collection]) => ({
-      name: key,
+    return [
+      { name: 'staff', collection: state.staff },
+      { name: 'workLogs', collection: state.workLogs },
+      { name: 'applications', collection: state.applications },
+      { name: 'attendanceRecords', collection: state.attendanceRecords },
+      { name: 'jobPostings', collection: state.jobPostings }
+    ].map(({ name, collection }) => ({
+      name,
       size: collection.size,
-      isLoading: loading[key as keyof typeof loading] || false,
-      hasError: error[key as keyof typeof error] !== null,
-      errorMessage: error[key as keyof typeof error] || null
+      isLoading: loading || false,
+      hasError: error !== null,
+      errorMessage: error || null
     }));
   }, [state, loading, error]);
 

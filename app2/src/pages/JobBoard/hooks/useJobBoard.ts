@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { serverTimestamp, addDoc, collection, doc, deleteDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import useUnifiedData from '../../../hooks/useUnifiedData';
 // { useJobPostingData } - 향후 사용 예정
-import { useUnifiedDataContext } from '../../../contexts/UnifiedDataContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../hooks/useToast';
@@ -69,15 +68,12 @@ export const useJobBoard = () => {
   // 프로필 미완성 상태
   const [missingProfileFields, setMissingProfileFields] = useState<string[]>([]);
   
-  // UnifiedDataContext 먼저 선언
-  const unifiedContext = useUnifiedData();
-  const { dispatch } = useUnifiedDataContext();
-  
+  // useUnifiedData 먼저 선언 (Zustand Store 기반)
+  const { applications, jobPostings: jobPostingsFromStore, loading: unifiedDataLoading } = useUnifiedData();
+
   // 내 지원 현황 로딩 상태 - 로딩 상태 개선
-  const loadingMyApplications = unifiedContext.state.loading.initial || 
-                               (unifiedContext.state.loading.applications && 
-                                Array.from(unifiedContext.state.applications.values()).length === 0);
-  
+  const loadingMyApplications = unifiedDataLoading || applications.length === 0;
+
   // Infinite Query based data fetching
   const {
     data: infiniteData,
@@ -111,13 +107,12 @@ export const useJobBoard = () => {
     if (!currentUser || !jobPostings) return;
     
     if (jobPostings.length === 0) return;
-    
+
     const postIds = jobPostings.map(p => p.id);
-    const userApplications = Array.from(unifiedContext.state.applications.values())
-      .filter(app => app.applicantId === currentUser.uid);
-    
+    const userApplications = applications.filter(app => app.applicantId === currentUser.uid);
+
     const appliedMap = new Map<string, string>();
-    
+
     userApplications.forEach(app => {
       // eventId 우선, fallback으로 postId 사용
       const jobId = app.eventId || app.postId;
@@ -125,54 +120,40 @@ export const useJobBoard = () => {
         appliedMap.set(jobId, app.status);
       }
     });
-    
+
     setAppliedJobs(appliedMap);
-  }, [jobPostings, currentUser, unifiedContext.state.applications]);
+  }, [jobPostings, currentUser, applications]);
   
   // UnifiedDataContext에서 지원 현황 가져오기 (향후 사용 예정)
   // const { jobPostings: allJobPostings } = useJobPostingData();
   
   // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
   const myApplications = useMemo(() => {
-    if (!currentUser || !unifiedContext.state) {
+    if (!currentUser) {
       // myApplications 계산 스킵
       return [];
     }
     
-    // 디버깅: 전체 applications 데이터 확인
-    const allApplications = Array.from(unifiedContext.state.applications.values());
-    // 전체 Applications 데이터 처리
-
-    // 로딩 상태 처리 개선 - 초기 로딩과 applications 특정 로딩 모두 고려
-    const isReallyLoading = unifiedContext.state.loading.initial || 
-                           (unifiedContext.state.loading.applications && allApplications.length === 0);
-                           
-    if (isReallyLoading) {
-      // Applications 로딩 중
+    // 로딩 중이면 빈 배열 반환
+    if (unifiedDataLoading) {
       return [];
     }
 
-    // 데이터가 비어있어도 빈 배열 반환 (무한로딩 방지) - 로딩 완료 후
-    if (allApplications.length === 0) {
-      // Applications 데이터가 비어있음 (로딩 완료, 정상 상태)
-      return []; // 빈 배열 명시적 반환
+    // 데이터가 비어있어도 빈 배열 반환
+    if (applications.length === 0) {
+      return [];
     }
-    
-    // 현재 사용자의 지원서만 필터링 (applicantId 필드 확인)
-    const userApplications = allApplications.filter(app => {
-      const matchesId = app.applicantId === currentUser.uid;
-      if (!matchesId && allApplications.length > 0) {
-        // 디버깅: 첫 번째 앱에서 필드 구조 확인
-      }
-      return matchesId;
-    });
-    
-    
-    // 각 지원서에 JobPosting 정보 추가하고 MyApplicationsTab 호환 형식으로 변환
+
+    // 현재 사용자의 지원서만 필터링
+    const userApplications = applications.filter(app => app.applicantId === currentUser.uid);
+
+    // JobPosting Map 생성 (O(1) 조회)
+    const jobPostingMap = new Map(jobPostingsFromStore.map(jp => [jp.id, jp]));
+
+    // 각 지원서에 JobPosting 정보 추가
     const applicationsWithJobData = userApplications.map(application => {
-      // eventId 우선 사용, postId는 fallback (필드명 통일)
       const jobId = application.eventId || application.postId;
-      const jobPosting = unifiedContext.state.jobPostings.get(jobId);
+      const jobPosting = jobPostingMap.get(jobId);
       
       // jobPosting 조회 실패 시 - 로깅 제거됨
       
@@ -209,7 +190,7 @@ export const useJobBoard = () => {
     });
     
     return applicationsWithJobData as any[];
-  }, [currentUser, unifiedContext.state]);
+  }, [currentUser, unifiedDataLoading, applications, jobPostingsFromStore]);
   
   // 레거시 fetchMyApplications 함수 (호환성 유지)
   const fetchMyApplications = useCallback(() => {
@@ -416,15 +397,12 @@ export const useJobBoard = () => {
         createdAt: new Date() as any, // Timestamp 대신 Date 사용
         updatedAt: new Date() as any,
       };
-      
-      // UnifiedDataContext에 즉시 업데이트 트리거
-      dispatch({
-        type: 'UPDATE_APPLICATION',
-        application: newApplication
-      });
-      
+
+      // Firebase 실시간 구독이 자동으로 업데이트 처리 (Zustand Store)
+      // dispatch 불필요 - onSnapshot이 자동으로 감지
+
       // 지원서 즉시 업데이트 완료
-      
+
       showSuccess(`지원이 완료되었습니다! (선택한 항목: ${selectedAssignments.length}개)`);
       setAppliedJobs(prev => new Map(prev).set(selectedPost.id, 'applied'));
       setIsApplyModalOpen(false);

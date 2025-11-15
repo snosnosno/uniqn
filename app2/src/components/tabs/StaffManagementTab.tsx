@@ -106,11 +106,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         workLogsSize: state.workLogs.size,
         workLogsKeys: Array.from(state.workLogs.keys()),
         jobPostingId: jobPosting?.id,
-        loading: loading.workLogs,
-        error: error.workLogs,
+        loading: loading,
+        error: error,
       },
     });
-  }, [state.workLogs, jobPosting?.id, loading.workLogs, error.workLogs]);
+  }, [state.workLogs, jobPosting?.id, loading, error]);
 
   const selection = useStaffSelection();
 
@@ -319,7 +319,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     );
   }
 
-  if (loading?.initial) {
+  if (loading) {
     return (
       <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
@@ -418,9 +418,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           )}
         </div>
 
-        {error.global && (
+        {error && (
           <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
-            <p className="text-red-600 dark:text-red-400">{error.global}</p>
+            <p className="text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -661,7 +661,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         confirmText="삭제"
         cancelText="취소"
         isDangerous={true}
-        isLoading={loading?.initial || false}
+        isLoading={loading || false}
       />
 
       {/* 모바일 선택 바 */}

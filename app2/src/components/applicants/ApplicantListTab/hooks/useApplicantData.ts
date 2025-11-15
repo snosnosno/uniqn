@@ -20,13 +20,11 @@ export const useApplicantData = (eventId?: string) => {
     if (!eventId) {
       return [];
     }
-    
-    
-    const filteredApplications = applications.filter(app => 
+
+    const filteredApplications = applications.filter(app =>
       app.eventId === eventId || app.postId === eventId
     );
-    
-    
+
     return filteredApplications.map((app: Application) => {
       // Application 타입을 Applicant 타입으로 매핑
       // assignments에서 첫 번째 assignment의 정보를 사용 (하위 호환성)

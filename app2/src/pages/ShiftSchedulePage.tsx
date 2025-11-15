@@ -36,7 +36,7 @@ const ShiftSchedulePage: React.FC = () => {
   // 🚀 WorkLog에서 스태프 데이터 가져오기 (persons 컬렉션 통합)
   const { state, loading: loadingState } = useUnifiedData();
   const workLogs = Array.from(state.workLogs.values());
-  const workLogsLoading = loadingState.workLogs;
+  const workLogsLoading = loadingState;
   const { tables, loading: tablesLoading } = useTables(tournamentState.userId, tournamentState.tournamentId);
   
   // 교대 스케줄 데이터

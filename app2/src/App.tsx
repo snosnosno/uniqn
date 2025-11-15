@@ -30,8 +30,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import NetworkStatusIndicator from './components/NetworkStatusIndicator';
 // Zustand 마이그레이션: Context 대신 Adapter 사용
 import { TournamentProvider } from './contexts/TournamentContextAdapter';
-// UnifiedDataContext - 통합 데이터 관리
-import { UnifiedDataProvider } from './contexts/UnifiedDataContext';
+// UnifiedDataInitializer - Zustand Store 초기화
+import { UnifiedDataInitializer } from './components/UnifiedDataInitializer';
 // TournamentDataContext - 토너먼트 데이터 전역 관리
 import { TournamentDataProvider } from './contexts/TournamentDataContext';
 // DateFilterContext - 날짜 선택 상태 관리
@@ -199,7 +199,7 @@ const App: React.FC = () => {
             <AuthProvider>
               <MaintenanceModeCheck>
                 <CapacitorInitializer>
-                  <UnifiedDataProvider>
+                  <UnifiedDataInitializer>
                     <TournamentProvider>
                       <TournamentDataProvider>
                         <DateFilterProvider>
@@ -309,7 +309,7 @@ const App: React.FC = () => {
                         </DateFilterProvider>
                       </TournamentDataProvider>
                     </TournamentProvider>
-                  </UnifiedDataProvider>
+                  </UnifiedDataInitializer>
                 </CapacitorInitializer>
               </MaintenanceModeCheck>
             </AuthProvider>
