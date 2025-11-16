@@ -292,8 +292,15 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] WorkLogs 구독 에러', error);
-              set({ error: error.message });
+              logger.error('[UnifiedDataStore] WorkLogs 구독 에러', {
+                error,
+                collection: 'workLogs',
+                timestamp: new Date().toISOString()
+              });
+              set({
+                error: error.message,
+                isLoading: false
+              });
             }
           );
 
@@ -317,8 +324,15 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] Applications 구독 에러', error);
-              set({ error: error.message });
+              logger.error('[UnifiedDataStore] Applications 구독 에러', {
+                error,
+                collection: 'applications',
+                timestamp: new Date().toISOString()
+              });
+              set({
+                error: error.message,
+                isLoading: false
+              });
             }
           );
 
@@ -342,8 +356,15 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', error);
-              set({ error: error.message });
+              logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', {
+                error,
+                collection: 'attendanceRecords',
+                timestamp: new Date().toISOString()
+              });
+              set({
+                error: error.message,
+                isLoading: false
+              });
             }
           );
 
@@ -367,8 +388,15 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] JobPostings 구독 에러', error);
-              set({ error: error.message });
+              logger.error('[UnifiedDataStore] JobPostings 구독 에러', {
+                error,
+                collection: 'jobPostings',
+                timestamp: new Date().toISOString()
+              });
+              set({
+                error: error.message,
+                isLoading: false
+              });
             }
           );
 
