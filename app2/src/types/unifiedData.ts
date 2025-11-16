@@ -11,6 +11,58 @@ import { Timestamp } from 'firebase/firestore';
 import { ScheduleEvent } from './schedule';
 import { Application } from './application';
 
+// 🔐 사용자 권한 Enum (Case-insensitive validation)
+export enum UserRole {
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  STAFF = 'staff',
+  USER = 'user'
+}
+
+/**
+ * 사용자 역할 정규화 함수 (대소문자 무관)
+ * @param role - 입력된 역할 문자열
+ * @returns UserRole enum 값 또는 null (유효하지 않은 경우)
+ */
+export function normalizeUserRole(role: string | undefined | null): UserRole | null {
+  if (!role) return null;
+
+  const normalizedRole = role.toLowerCase().trim();
+
+  // Enum 값과 매칭
+  switch (normalizedRole) {
+    case 'admin':
+      return UserRole.ADMIN;
+    case 'manager':
+      return UserRole.MANAGER;
+    case 'staff':
+      return UserRole.STAFF;
+    case 'user':
+      return UserRole.USER;
+    default:
+      return null;
+  }
+}
+
+/**
+ * 관리자 권한 확인 (admin + manager)
+ * @param role - 사용자 역할
+ * @returns 관리자 권한 여부
+ */
+export function hasAdminPrivilege(role: string | UserRole | undefined | null): boolean {
+  const normalized = typeof role === 'string' ? normalizeUserRole(role) : role;
+  return normalized === UserRole.ADMIN || normalized === UserRole.MANAGER;
+}
+
+/**
+ * UserRole enum 검증
+ * @param role - 검증할 역할 문자열
+ * @returns 유효한 UserRole 여부
+ */
+export function isValidUserRole(role: string | undefined | null): role is UserRole {
+  return normalizeUserRole(role) !== null;
+}
+
 // 기존 개별 타입들
 export interface Staff {
   id: string;
@@ -309,8 +361,8 @@ export interface UnifiedFilters {
 
 // Smart Hybrid Context를 위한 구독 옵션
 export interface UnifiedDataOptions {
-  // 사용자 역할
-  role?: 'admin' | 'manager' | 'staff' | 'user';
+  // 사용자 역할 (Enum 사용)
+  role?: UserRole;
 
   // 컬렉션별 구독 설정
   subscriptions?: {

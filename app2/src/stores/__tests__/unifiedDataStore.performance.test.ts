@@ -14,6 +14,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useUnifiedDataStore } from '../unifiedDataStore';
 import type { Staff, WorkLog } from '../../types/unifiedData';
+import { Timestamp } from 'firebase/firestore';
 
 // Firebase 모킹
 jest.mock('../../firebase', () => ({
@@ -50,8 +51,8 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           phone: `010-0000-${String(i).padStart(4, '0')}`,
           role: i % 2 === 0 ? 'dealer' : 'floor',
           userId: `user${i}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
         });
       }
 
@@ -81,14 +82,21 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           staffId: `staff${i % 100}`,
           staffName: `스태프 ${i % 100}`,
           eventId: `event${i % 10}`,
-          eventName: `토너먼트 ${i % 10}`,
           date: '2025-11-15',
-          role: i % 2 === 0 ? 'dealer' : 'floor',
-          assignedTime: '18:00-22:00',
+          staffInfo: {
+            userId: `user${i % 100}`,
+            name: `스태프 ${i % 100}`,
+            jobRole: [i % 2 === 0 ? 'dealer' : 'floor'],
+          },
+          assignmentInfo: {
+            role: i % 2 === 0 ? 'dealer' : 'floor',
+            assignedTime: '18:00-22:00',
+            postingId: `posting${i % 10}`,
+          },
           status: 'not_started',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        } as WorkLog);
       }
 
       const startTime = performance.now();
@@ -121,8 +129,8 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           phone: `010-0000-${String(i).padStart(4, '0')}`,
           role: 'dealer',
           userId: `user${i}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
         });
       }
 
@@ -157,14 +165,21 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           staffId: `staff${i % 10}`, // 10명의 staff로 분산
           staffName: `스태프 ${i % 10}`,
           eventId: `event${i}`,
-          eventName: `토너먼트 ${i}`,
           date: '2025-11-15',
-          role: 'dealer',
-          assignedTime: '18:00-22:00',
+          staffInfo: {
+            userId: `user${i % 10}`,
+            name: `스태프 ${i % 10}`,
+            jobRole: ['dealer'],
+          },
+          assignmentInfo: {
+            role: 'dealer',
+            assignedTime: '18:00-22:00',
+            postingId: `posting${i}`,
+          },
           status: 'not_started',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        } as WorkLog);
       }
 
       act(() => {
@@ -197,8 +212,8 @@ describe('UnifiedDataStore - 성능 테스트', () => {
         phone: '010-1234-5678',
         role: 'dealer',
         userId: 'user1',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       };
 
       // 동일한 ID로 여러 번 설정
@@ -227,8 +242,8 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           phone: `010-0000-${String(i).padStart(4, '0')}`,
           role: 'dealer',
           userId: `user${i}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
         });
       }
 
@@ -265,8 +280,8 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           phone: `010-0000-${String(i).padStart(4, '0')}`,
           role: 'dealer',
           userId: `user${i}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
         });
       }
 
@@ -278,14 +293,21 @@ describe('UnifiedDataStore - 성능 테스트', () => {
           staffId: `staff${i}`,
           staffName: `스태프 ${i}`,
           eventId: `event${i}`,
-          eventName: `토너먼트 ${i}`,
           date: '2025-11-15',
-          role: 'dealer',
-          assignedTime: '18:00-22:00',
+          staffInfo: {
+            userId: `user${i}`,
+            name: `스태프 ${i}`,
+            jobRole: ['dealer'],
+          },
+          assignmentInfo: {
+            role: 'dealer',
+            assignedTime: '18:00-22:00',
+            postingId: `posting${i}`,
+          },
           status: 'not_started',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        } as WorkLog);
       }
 
       // 동시에 업데이트

@@ -19,6 +19,9 @@ import {
   Application,
   UnifiedFilters,
   UnifiedDataOptions,
+  UserRole,
+  normalizeUserRole,
+  hasAdminPrivilege,
 } from '../types/unifiedData';
 import { ScheduleEvent, ScheduleStats } from '../types/schedule';
 import { Timestamp } from 'firebase/firestore';
@@ -63,14 +66,25 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
     }))
   );
 
-  // 보안 필터링: role 기반 데이터 접근 제어
+  // 보안 필터링: role 기반 데이터 접근 제어 (Enum 검증 적용)
   const securityFilter = useCallback(
     <T extends { userId?: string; staffId?: string; applicantId?: string }>(
       items: T[],
       collection: string
     ): T[] => {
       if (!currentUser) return [];
-      if (role === 'admin' || role === 'manager') return items;
+
+      // 🔐 Role 정규화 및 검증
+      const normalizedRole = normalizeUserRole(role);
+      if (!normalizedRole) {
+        logger.warn(`⚠️ 유효하지 않은 역할 감지: ${role} (사용자: ${currentUser.uid})`);
+        return []; // 유효하지 않은 role은 데이터 접근 차단
+      }
+
+      // 🔐 관리자 권한 체크 (admin + manager)
+      if (hasAdminPrivilege(normalizedRole)) {
+        return items; // 관리자는 모든 데이터 접근 가능
+      }
 
       // staff/user role: 자신의 데이터만 접근
       switch (collection) {
@@ -85,7 +99,7 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
         case 'jobPostings':
           return items; // 공고는 모두가 볼 수 있음
         default:
-          logger.warn(`⚠️ 알 수 없는 컬렉션 접근 시도 차단: ${collection} (사용자: ${currentUser.uid}, 역할: ${role})`);
+          logger.warn(`⚠️ 알 수 없는 컬렉션 접근 시도 차단: ${collection} (사용자: ${currentUser.uid}, 역할: ${normalizedRole})`);
           return [];
       }
     },
@@ -828,15 +842,16 @@ export const useSmartUnifiedData = (
     }
   };
 
-  // 옵션 병합
+  // 옵션 병합 (Enum 검증 적용)
+  const normalizedRole = normalizeUserRole(role) || UserRole.USER;
   const finalOptions: UnifiedDataOptions = {
-    role: (role || 'user') as 'admin' | 'manager' | 'staff' | 'user',
+    role: normalizedRole,
     userId: currentUser?.uid || '',
     subscriptions: customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'user'] || {},
-    cacheStrategy: customOptions?.cacheStrategy || (role === 'admin' ? 'minimal' : 'aggressive'),
+    cacheStrategy: customOptions?.cacheStrategy || (hasAdminPrivilege(normalizedRole) ? 'minimal' : 'aggressive'),
     performance: {
-      maxDocuments: role === 'staff' ? 100 : 1000,
-      realtimeUpdates: role === 'admin' || role === 'manager',
+      maxDocuments: normalizedRole === UserRole.STAFF ? 100 : 1000,
+      realtimeUpdates: hasAdminPrivilege(normalizedRole),
       batchSize: 20,
       ...customOptions?.performance
     },

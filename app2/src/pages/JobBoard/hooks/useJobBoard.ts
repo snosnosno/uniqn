@@ -71,8 +71,8 @@ export const useJobBoard = () => {
   // useUnifiedData 먼저 선언 (Zustand Store 기반)
   const { applications, jobPostings: jobPostingsFromStore, loading: unifiedDataLoading } = useUnifiedData();
 
-  // 내 지원 현황 로딩 상태 - 로딩 상태 개선
-  const loadingMyApplications = unifiedDataLoading || applications.length === 0;
+  // 내 지원 현황 로딩 상태 - Zustand Store의 로딩 상태만 사용
+  const loadingMyApplications = unifiedDataLoading;
 
   // Infinite Query based data fetching
   const {

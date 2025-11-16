@@ -21,6 +21,7 @@ jest.mock('../../firebase', () => ({
 import { renderHook, act } from '@testing-library/react';
 import { useUnifiedDataStore } from '../unifiedDataStore';
 import type { Staff, WorkLog, Application } from '../../types/unifiedData';
+import { Timestamp } from 'firebase/firestore';
 
 describe('UnifiedDataStore - 단위 테스트', () => {
   beforeEach(() => {
@@ -76,8 +77,8 @@ describe('UnifiedDataStore - 단위 테스트', () => {
             phone: '010-1234-5678',
             role: 'dealer',
             userId: 'user1',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           },
         ],
       ]);
@@ -104,8 +105,8 @@ describe('UnifiedDataStore - 단위 테스트', () => {
             phone: '010-1234-5678',
             role: 'dealer',
             userId: 'user1',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           },
         ],
       ]);
@@ -140,8 +141,8 @@ describe('UnifiedDataStore - 단위 테스트', () => {
             phone: '010-1234-5678',
             role: 'dealer',
             userId: 'user1',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           },
         ],
       ]);
@@ -175,8 +176,8 @@ describe('UnifiedDataStore - 단위 테스트', () => {
             phone: '010-1234-5678',
             role: 'dealer',
             userId: 'user1',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           },
         ],
       ]);
