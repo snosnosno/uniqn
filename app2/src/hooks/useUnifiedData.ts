@@ -85,15 +85,7 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
         case 'jobPostings':
           return items; // 공고는 모두가 볼 수 있음
         default:
-          logger.warn('⚠️ 알 수 없는 컬렉션 접근 시도 차단', {
-            component: 'securityFilter',
-            collection,
-            userRole: role,
-            userId: currentUser.uid,
-            itemCount: items.length,
-            severity: 'HIGH',
-            gdprCompliance: true
-          });
+          logger.warn(`⚠️ 알 수 없는 컬렉션 접근 시도 차단: ${collection} (사용자: ${currentUser.uid}, 역할: ${role})`);
           return [];
       }
     },

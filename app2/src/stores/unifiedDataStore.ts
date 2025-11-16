@@ -204,6 +204,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       /**
        * 스케줄 이벤트 목록 조회 (호환성)
        * workLogs를 기반으로 ScheduleEvent 형태로 변환
+       * @deprecated 호환성 유지를 위해 any[] 반환 - 향후 ScheduleEvent[]로 리팩토링 필요
        */
       getScheduleEvents: (): any[] => {
         const workLogs = Array.from(get().workLogs.values());
@@ -292,11 +293,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] WorkLogs 구독 에러', {
-                error,
-                collection: 'workLogs',
-                timestamp: new Date().toISOString()
-              });
+              logger.error('[UnifiedDataStore] WorkLogs 구독 에러', error);
               set({
                 error: error.message,
                 isLoading: false
@@ -324,11 +321,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] Applications 구독 에러', {
-                error,
-                collection: 'applications',
-                timestamp: new Date().toISOString()
-              });
+              logger.error('[UnifiedDataStore] Applications 구독 에러', error);
               set({
                 error: error.message,
                 isLoading: false
@@ -356,11 +349,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', {
-                error,
-                collection: 'attendanceRecords',
-                timestamp: new Date().toISOString()
-              });
+              logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', error);
               set({
                 error: error.message,
                 isLoading: false
@@ -388,11 +377,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             },
             (error) => {
-              logger.error('[UnifiedDataStore] JobPostings 구독 에러', {
-                error,
-                collection: 'jobPostings',
-                timestamp: new Date().toISOString()
-              });
+              logger.error('[UnifiedDataStore] JobPostings 구독 에러', error);
               set({
                 error: error.message,
                 isLoading: false
