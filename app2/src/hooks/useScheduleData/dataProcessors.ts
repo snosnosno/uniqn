@@ -70,7 +70,25 @@ export const processApplicationData = async (
     }
     
     // assignedTime 파싱 - assignments에서 가져오기 (Application 타입인 경우만)
-    const assignedTime = (data as any).assignments?.[0]?.timeSlot || '';
+    let assignedTime = (data as any).assignments?.[0]?.timeSlot || '';
+
+    // 🔥 assignedTime이 없을 때 공고의 기본 시간 사용
+    if (!assignedTime && jobPostingData) {
+      // 1. timeSlots 배열에서 첫 번째 시간대 사용
+      if (jobPostingData.timeSlots && jobPostingData.timeSlots.length > 0) {
+        assignedTime = jobPostingData.timeSlots[0] || '';
+      }
+      // 2. dateSpecificRequirements에서 해당 날짜의 시간대 찾기
+      else if (jobPostingData.dateSpecificRequirements && baseDate) {
+        const dateReq = jobPostingData.dateSpecificRequirements.find(
+          req => req.date === baseDate
+        );
+        if (dateReq && dateReq.timeSlots && dateReq.timeSlots.length > 0) {
+          assignedTime = dateReq.timeSlots[0] || '';
+        }
+      }
+    }
+
     const { startTime, endTime } = parseAssignedTime(assignedTime);
     const startTimestamp = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
     const endTimestamp = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
