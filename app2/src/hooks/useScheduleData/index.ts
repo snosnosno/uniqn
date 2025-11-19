@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useUnifiedDataContext } from '../../contexts/UnifiedDataContext';
+import { useUnifiedData } from '../useUnifiedData';
 import { logger } from '../../utils/logger';
 import { handleError } from '../../utils/errorHandler';
 import { ScheduleEvent, ScheduleStats } from '../../types/schedule';
@@ -14,12 +14,11 @@ import { calculatePayroll, calculateAllowances } from '../../utils/payrollCalcul
 
 /**
  * 스케줄 데이터를 관리하는 커스텀 훅
- * UnifiedDataContext를 활용하여 중복 구독 제거
+ * Zustand Store 기반 useUnifiedData를 활용하여 중복 구독 제거
  */
 const useScheduleData = (): UseScheduleDataReturn => {
   const { currentUser } = useAuth();
-  const context = useUnifiedDataContext();
-  const { staff: _staff, workLogs, applications, jobPostings, loading: _contextLoading, error: _contextError } = context.state;
+  const { staff: _staff, workLogs, applications, jobPostings, loading: _contextLoading, error: _contextError } = useUnifiedData();
   const [filters, setFilters] = useState(createDefaultFilters());
   const [_lastRefresh, _setLastRefresh] = useState(Date.now());
 
@@ -37,8 +36,8 @@ const useScheduleData = (): UseScheduleDataReturn => {
         return;
       }
 
-      // 🔥 초기 로딩 상태 체크: UnifiedDataContext가 로딩 중이면 대기
-      if (_contextLoading.initial) {
+      // 🔥 초기 로딩 상태 체크: Zustand Store가 로딩 중이면 대기
+      if (_contextLoading) {
         setLoading(true);
         return;
       }
@@ -139,8 +138,8 @@ const useScheduleData = (): UseScheduleDataReturn => {
       }
     };
 
-    // 🔥 개선된 로딩 로직: UnifiedDataContext 초기 로딩 완료 후 처리
-    if (currentUser && !_contextLoading.initial) {
+    // 🔥 개선된 로딩 로직: Zustand Store 로딩 완료 후 처리
+    if (currentUser && !_contextLoading) {
       loadSchedules();
     } else if (!currentUser) {
       // 로그인하지 않은 경우
@@ -150,12 +149,16 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
     // 기본 반환 (cleanup 불필요)
     return undefined;
-  }, [currentUser, applications, workLogs, _contextLoading.initial]);
+  }, [currentUser, applications, workLogs, _contextLoading]);
 
   // 필터링된 스케줄
   const filteredSchedules = useMemo(() => {
     return filterSchedules(schedules, filters);
   }, [schedules, filters]);
+
+  // Map 생성 (O(1) 조회를 위해)
+  const workLogsMap = useMemo(() => new Map(workLogs.map(wl => [wl.id, wl])), [workLogs]);
+  const jobPostingsMap = useMemo(() => new Map(jobPostings.map(jp => [jp.id, jp])), [jobPostings]);
 
   // 통계 계산 - 완료된 일정만 시간과 수입 계산에 포함
   const stats = useMemo((): ScheduleStats => {
@@ -247,10 +250,10 @@ const useScheduleData = (): UseScheduleDataReturn => {
       }
 
       // WorkLog 찾기 (workLogId로 직접 찾기)
-      const targetWorkLog = event.workLogId ? workLogs.get(event.workLogId) : null;
+      const targetWorkLog = event.workLogId ? workLogsMap.get(event.workLogId) : null;
 
       // JobPosting 찾기
-      const jobPosting = jobPostings.get(event.eventId);
+      const jobPosting = jobPostingsMap.get(event.eventId);
 
       logger.info('🔍 급여 데이터 확인', {
         component: 'useScheduleData',
@@ -362,10 +365,10 @@ const useScheduleData = (): UseScheduleDataReturn => {
     // 🔥 총 수입 계산 (완료된 일정만) - 모달과 100% 동일한 로직 사용
     const totalEarnings = completedEvents.reduce((sum, event) => {
       // WorkLog 찾기
-      const targetWorkLog = event.workLogId ? workLogs.get(event.workLogId) : null;
+      const targetWorkLog = event.workLogId ? workLogsMap.get(event.workLogId) : null;
 
       // JobPosting 찾기
-      const jobPosting = jobPostings.get(event.eventId);
+      const jobPosting = jobPostingsMap.get(event.eventId);
 
       logger.info('🔍 급여 데이터 확인', {
         component: 'useScheduleData',
@@ -463,7 +466,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       thisMonthEarnings,
       hoursWorked: Math.round(totalHoursWorked)
     };
-  }, [filteredSchedules, workLogs, jobPostings]);
+  }, [filteredSchedules, workLogsMap, jobPostingsMap]);
 
   // 새로고침 함수 (UnifiedDataContext는 자동 실시간 동기화)
   const refreshData = useCallback(() => {

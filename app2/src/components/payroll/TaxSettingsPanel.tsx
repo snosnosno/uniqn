@@ -151,7 +151,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                         min="0"
                         max="100"
                         step="0.1"
-                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                       />
                       <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
@@ -172,7 +172,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                         onChange={(e) => setTaxAmount(parseInt(e.target.value) || 0)}
                         min="0"
                         step="1000"
-                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                       />
                       <span className="text-sm text-gray-500 dark:text-gray-400">원</span>
                     </div>
@@ -188,7 +188,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
             )}
 
             {/* 저장 버튼 */}
-            <div className="flex justify-end pt-4 border-t">
+            <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={handleSave}
                 disabled={isSaving}

@@ -23,6 +23,9 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
 } as any;
 
+// scrollIntoView 모킹
+Element.prototype.scrollIntoView = jest.fn();
+
 describe('DateSlider', () => {
   const mockOnDateSelect = jest.fn();
 
