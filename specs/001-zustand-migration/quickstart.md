@@ -182,6 +182,84 @@ function App() {
 }
 ```
 
+#### Batch Actions (대량 작업 최적화)
+
+**Phase 3에서 추가된 기능**: 여러 개의 데이터를 한 번에 업데이트하거나 삭제할 때 사용합니다.
+
+```typescript
+import { useUnifiedDataStore } from '../stores/unifiedDataStore';
+
+function BulkStaffUpdate() {
+  const updateStaffBatch = useUnifiedDataStore((state) => state.updateStaffBatch);
+  const deleteStaffBatch = useUnifiedDataStore((state) => state.deleteStaffBatch);
+
+  const handleBulkApprove = async (applicants: Application[]) => {
+    // 여러 지원자를 한 번에 Staff로 전환
+    const newStaffList: Staff[] = applicants.map((app) => ({
+      id: app.applicantId,
+      staffId: app.applicantId,
+      name: app.name,
+      email: app.email,
+      phone: app.phone,
+      role: app.role,
+      userId: app.userId,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    }));
+
+    // ✅ Batch 업데이트 (1번의 리렌더링)
+    updateStaffBatch(newStaffList);
+
+    // ❌ 개별 업데이트 (10번의 리렌더링)
+    // newStaffList.forEach(staff => updateStaff(staff));
+  };
+
+  const handleBulkDelete = async (staffIds: string[]) => {
+    // 여러 Staff를 한 번에 삭제
+    deleteStaffBatch(staffIds);
+  };
+
+  return (
+    <div>
+      <button onClick={() => handleBulkApprove(applicants)}>
+        전체 승인
+      </button>
+      <button onClick={() => handleBulkDelete(['staff1', 'staff2', 'staff3'])}>
+        선택 삭제
+      </button>
+    </div>
+  );
+}
+```
+
+**성능 비교**:
+- **개별 업데이트 10회**: 10번의 `set()` 호출 → 10번의 리렌더링
+- **Batch 업데이트 1회**: 1번의 `set()` 호출 → 1번의 리렌더링
+- **성능 향상**: 약 90% 리렌더링 감소
+
+**사용 가능한 Batch Actions**:
+```typescript
+// Staff
+updateStaffBatch(items: Staff[]): void
+deleteStaffBatch(ids: string[]): void
+
+// WorkLog
+updateWorkLogsBatch(items: WorkLog[]): void
+deleteWorkLogsBatch(ids: string[]): void
+
+// Application
+updateApplicationsBatch(items: Application[]): void
+deleteApplicationsBatch(ids: string[]): void
+
+// AttendanceRecord
+updateAttendanceRecordsBatch(items: AttendanceRecord[]): void
+deleteAttendanceRecordsBatch(ids: string[]): void
+
+// JobPosting
+updateJobPostingsBatch(items: JobPosting[]): void
+deleteJobPostingsBatch(ids: string[]): void
+```
+
 ---
 
 ## 마이그레이션 가이드
