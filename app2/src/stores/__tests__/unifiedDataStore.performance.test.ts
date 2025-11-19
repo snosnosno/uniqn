@@ -325,4 +325,121 @@ describe('UnifiedDataStore - 성능 테스트', () => {
       expect(result.current.error).toBe(null);
     });
   });
+
+  // ========== Issue 7: Batch Actions Performance Tests ==========
+  describe('[Issue 7] Batch Actions 성능 테스트', () => {
+    it('개별 update 10회 vs updateBatch 1회 - 성능 비교', () => {
+      const { result } = renderHook(() => useUnifiedDataStore());
+
+      // 10개 staff 데이터 생성
+      const staffList: Staff[] = [];
+      for (let i = 0; i < 10; i++) {
+        staffList.push({
+          id: `staff${i}`,
+          staffId: `staff${i}`,
+          name: `스태프 ${i}`,
+          email: `staff${i}@example.com`,
+          phone: `010-0000-${String(i).padStart(4, '0')}`,
+          role: 'dealer',
+          userId: `user${i}`,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      }
+
+      // 초기 데이터 설정
+      const initialMap = new Map<string, Staff>();
+      staffList.forEach(staff => initialMap.set(staff.id, staff));
+      act(() => {
+        result.current.setStaff(initialMap);
+      });
+
+      // 개별 update 10회 성능 측정
+      const startIndividual = performance.now();
+      act(() => {
+        staffList.forEach(staff => {
+          result.current.updateStaff({ ...staff, name: `${staff.name} (개별)` });
+        });
+      });
+      const individualTime = performance.now() - startIndividual;
+
+      // 데이터 초기화
+      act(() => {
+        result.current.setStaff(initialMap);
+      });
+
+      // Batch update 1회 성능 측정
+      const startBatch = performance.now();
+      act(() => {
+        result.current.updateStaffBatch(
+          staffList.map(staff => ({ ...staff, name: `${staff.name} (배치)` }))
+        );
+      });
+      const batchTime = performance.now() - startBatch;
+
+      // 성능 비교
+      console.log(`개별 update 10회: ${individualTime.toFixed(3)}ms`);
+      console.log(`Batch update 1회: ${batchTime.toFixed(3)}ms`);
+      console.log(`성능 향상: ${((1 - batchTime / individualTime) * 100).toFixed(1)}%`);
+
+      // Batch가 개별보다 빠르거나 비슷해야 함
+      expect(batchTime).toBeLessThanOrEqual(individualTime * 1.5);
+    });
+
+    it('개별 delete 10회 vs deleteBatch 1회 - 성능 비교', () => {
+      const { result } = renderHook(() => useUnifiedDataStore());
+
+      // 10개 staff 데이터 생성
+      const staffMap = new Map<string, Staff>();
+      for (let i = 0; i < 10; i++) {
+        staffMap.set(`staff${i}`, {
+          id: `staff${i}`,
+          staffId: `staff${i}`,
+          name: `스태프 ${i}`,
+          email: `staff${i}@example.com`,
+          phone: `010-0000-${String(i).padStart(4, '0')}`,
+          role: 'dealer',
+          userId: `user${i}`,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      }
+
+      // 개별 delete 10회 성능 측정
+      act(() => {
+        result.current.setStaff(new Map(staffMap));
+      });
+
+      const startIndividual = performance.now();
+      act(() => {
+        for (let i = 0; i < 10; i++) {
+          result.current.deleteStaff(`staff${i}`);
+        }
+      });
+      const individualTime = performance.now() - startIndividual;
+
+      expect(result.current.staff.size).toBe(0);
+
+      // Batch delete 1회 성능 측정
+      act(() => {
+        result.current.setStaff(new Map(staffMap));
+      });
+
+      const startBatch = performance.now();
+      act(() => {
+        result.current.deleteStaffBatch(Array.from(staffMap.keys()));
+      });
+      const batchTime = performance.now() - startBatch;
+
+      expect(result.current.staff.size).toBe(0);
+
+      // 성능 비교
+      console.log(`개별 delete 10회: ${individualTime.toFixed(3)}ms`);
+      console.log(`Batch delete 1회: ${batchTime.toFixed(3)}ms`);
+      console.log(`성능 향상: ${((1 - batchTime / individualTime) * 100).toFixed(1)}%`);
+
+      // Batch가 개별보다 빠르거나 비슷해야 함
+      expect(batchTime).toBeLessThanOrEqual(individualTime * 1.5);
+    });
+  });
 });
