@@ -30,6 +30,7 @@ const createWorkLogsForConfirmedStaff = async (
   assignedDate: string,
   postingId: string,
   managerId: string,
+  jobPosting: JobPosting,
   email: string = '',
   phone: string = ''
 ) => {
@@ -56,12 +57,42 @@ const createWorkLogsForConfirmedStaff = async (
 
     // WorkLog ID 생성 패턴: ${postingId}_${staffId}_${date}
     const workLogId = `${postingId}_${staffId}_${assignedDate}`;
-    
+
     logger.info('생성할 WorkLog ID:', {
       component: 'createWorkLogsForConfirmedStaff',
       workLogId
     });
-    
+
+    // 🔥 시간 정보 처리 - assignment.timeSlot 우선, 없으면 공고 기본 시간 사용
+    let timeSlot = assignment.timeSlot || '';
+
+    if (!timeSlot && jobPosting) {
+      const jobPostingAny = jobPosting as any;
+
+      // 1. timeSlots 배열에서 첫 번째 시간대 사용
+      if (jobPostingAny.timeSlots && jobPostingAny.timeSlots.length > 0) {
+        const firstTimeSlot = jobPostingAny.timeSlots[0];
+        // TimeSlot이 객체면 .time 속성 사용, 문자열이면 그대로 사용
+        timeSlot = typeof firstTimeSlot === 'string' ? firstTimeSlot : (firstTimeSlot?.time || '');
+      }
+      // 2. dateSpecificRequirements에서 해당 날짜의 시간대 찾기
+      else if (jobPosting.dateSpecificRequirements && assignedDate) {
+        const dateReq = jobPosting.dateSpecificRequirements.find(
+          req => timestampToLocalDateString(req.date) === assignedDate
+        );
+        if (dateReq && dateReq.timeSlots && dateReq.timeSlots.length > 0) {
+          const firstTimeSlot = dateReq.timeSlots[0];
+          timeSlot = typeof firstTimeSlot === 'string' ? firstTimeSlot : (firstTimeSlot?.time || '');
+        }
+      }
+    }
+
+    // 🔥 timeSlot을 Timestamp로 변환 (scheduledStartTime, scheduledEndTime 생성)
+    const { parseAssignedTime, convertTimeToTimestamp } = await import('../../../../utils/workLogUtils');
+    const { startTime, endTime } = parseAssignedTime(timeSlot);
+    const scheduledStartTime = startTime ? convertTimeToTimestamp(startTime, assignedDate) : undefined;
+    const scheduledEndTime = endTime ? convertTimeToTimestamp(endTime, assignedDate) : undefined;
+
     // WorkLog 문서 생성 (persons 데이터를 모두 embedded)
     const workLogData = {
       id: workLogId,
@@ -86,7 +117,7 @@ const createWorkLogsForConfirmedStaff = async (
       assignmentInfo: {
         role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
         assignedRole: assignment.role?.toLowerCase() || '',
-        assignedTime: assignment.timeSlot,
+        assignedTime: timeSlot,  // 🔥 공고 시간 fallback 적용된 timeSlot 사용
         assignedDate: assignedDate,
         postingId: postingId,
         managerId: managerId,
@@ -95,7 +126,12 @@ const createWorkLogsForConfirmedStaff = async (
 
       // 기존 근무 관련 필드 (호환성 유지)
       role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
-      assignedTime: assignment.timeSlot,
+      assignedTime: timeSlot,
+
+      // 🔥 예정 시간 추가 (Timestamp 형태)
+      ...(scheduledStartTime && { scheduledStartTime }),
+      ...(scheduledEndTime && { scheduledEndTime }),
+
       status: 'not_started' as const,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
@@ -396,6 +432,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
                 finalAssignedDate,
                 jobPosting.id,
                 currentUser?.uid || 'system',
+                jobPosting,  // 🔥 jobPosting 전체 객체 전달
                 applicant.email || '',
                 applicant.phone || ''
               );
