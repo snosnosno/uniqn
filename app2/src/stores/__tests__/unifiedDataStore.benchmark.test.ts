@@ -269,10 +269,23 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       const workLogs: WorkLog[] = Array.from({ length: 1000 }, (_, i) => ({
         id: `worklog-${i}`,
         staffId: `staff-${Math.floor(i / 10)}`,
+        staffName: `Test Staff ${Math.floor(i / 10)}`,
         eventId: `event-${i}`,
         date: '2025-11-19',
         startTime: '09:00',
         endTime: '18:00',
+        staffInfo: {
+          userId: `user-${Math.floor(i / 10)}`,
+          name: `Test Staff ${Math.floor(i / 10)}`,
+          email: `staff${Math.floor(i / 10)}@test.com`,
+          phone: '010-0000-0000',
+        },
+        assignmentInfo: {
+          role: 'dealer',
+          postingId: `posting-${i}`,
+          time: '09:00~18:00',
+          date: '2025-11-19',
+        },
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       }));
@@ -341,10 +354,23 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       const workLogs: WorkLog[] = Array.from({ length: 10000 }, (_, i) => ({
         id: `worklog-${i}`,
         staffId: `staff-${Math.floor(i / 10)}`,
+        staffName: `Test Staff ${Math.floor(i / 10)}`,
         eventId: `event-${Math.floor(i / 100)}`,
         date: '2025-11-19',
         startTime: '09:00',
         endTime: '18:00',
+        staffInfo: {
+          userId: `user-${Math.floor(i / 10)}`,
+          name: `Test Staff ${Math.floor(i / 10)}`,
+          email: `staff${Math.floor(i / 10)}@test.com`,
+          phone: '010-0000-0000',
+        },
+        assignmentInfo: {
+          role: 'dealer',
+          postingId: `posting-${i}`,
+          time: '09:00~18:00',
+          date: '2025-11-19',
+        },
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       }));
