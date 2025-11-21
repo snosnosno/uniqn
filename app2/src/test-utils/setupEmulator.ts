@@ -11,6 +11,7 @@ import {
   getDocs,
   query
 } from 'firebase/firestore';
+import { toISODateString } from '../utils/dateUtils';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -326,7 +327,7 @@ export const createTestAttendanceRecords = async (): Promise<void> => {
     for (let day = 0; day < 7; day++) {
       const date = new Date();
       date.setDate(date.getDate() - day);
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = toISODateString(date) || '';
 
       for (const staff of staffUsers.slice(0, 5)) { // 5명의 스태프만
         const attendanceRef = doc(collection(db, 'attendanceRecords'));

@@ -1,5 +1,6 @@
 import { JobPosting } from '../../types/jobPosting';
 import { logger } from '../logger';
+import { toISODateString } from '../dateUtils';
 
 /**
  * 구인공고를 오늘 날짜 기준 우선순위로 정렬
@@ -17,12 +18,12 @@ export const sortJobPostingsByPriority = (jobPostings: JobPosting[]): JobPosting
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
-  logger.debug('📊 정렬 시작 - 오늘 날짜:', { 
-    component: 'sortingUtils', 
-    data: { 
-      today: today.toISOString().split('T')[0],
-      totalPosts: jobPostings.length 
-    } 
+  logger.debug('📊 정렬 시작 - 오늘 날짜:', {
+    component: 'sortingUtils',
+    data: {
+      today: toISODateString(today),
+      totalPosts: jobPostings.length
+    }
   });
   
   // 원본 배열을 복사하여 정렬 (원본 수정 방지)
@@ -152,7 +153,7 @@ export const sortJobPostingsByPriority = (jobPostings: JobPosting[]): JobPosting
       return {
         id: post.id,
         title: post.title,
-        startDate: start.toISOString().split('T')[0],
+        startDate: toISODateString(start),
         priority: getPriorityLabel(start, end)
       };
     });

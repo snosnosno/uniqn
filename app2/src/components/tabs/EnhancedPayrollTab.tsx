@@ -4,6 +4,7 @@ import { JobPosting } from '../../types/jobPosting';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
+import { toISODateString } from '../../utils/dateUtils';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
 import TaxSettingsPanel from '../payroll/TaxSettingsPanel';
 import DetailEditModal from '../payroll/DetailEditModal';
@@ -11,7 +12,6 @@ import RoleSalarySettings from '../payroll/RoleSalarySettings';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, RoleSalaryConfig } from '../../types/payroll';
 import { usePayrollWorker } from '../../hooks/usePayrollWorker';
 import { normalizeRole } from '../../utils/workLogHelpers';
-import { toISODateString } from '../../utils/dateUtils';
 
 interface EnhancedPayrollTabProps {
   jobPosting?: JobPosting | null;
@@ -94,8 +94,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     const end = new Date(currentYear, currentMonth + 1, 0);
     
     return {
-      startDate: start.toISOString().split('T')[0] || '',
-      endDate: end.toISOString().split('T')[0] || ''
+      startDate: toISODateString(start) || '',
+      endDate: toISODateString(end) || ''
     };
   }, []);
 

@@ -1,6 +1,7 @@
 // Firebase imports - 향후 사용 예정
 // import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { logger } from '../utils/logger';
+import { toISODateString } from '../utils/dateUtils';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog, FaTrash, FaExclamationTriangle, FaCheckCircle, FaInfoCircle } from '../components/Icons/ReactIconsReplacement';
@@ -25,7 +26,7 @@ const ShiftSchedulePage: React.FC = () => {
   // 현재 선택된 날짜 상태
   const [selectedDate] = useState<string>(() => {
     const today = new Date();
-    const datePart = today.toISOString().split('T')[0];
+    const datePart = toISODateString(today);
     return datePart || ''; // YYYY-MM-DD 형식
   });
   // setSelectedDate - 향후 사용 예정
