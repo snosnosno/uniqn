@@ -3,6 +3,11 @@ import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { createWorkLogId, createWorkLog, SimpleWorkLogInput } from '../utils/workLogSimplified';
 import { toISODateString } from '../utils/dateUtils';
+import {
+  handleFirebaseError,
+  isPermissionDenied,
+  FirebaseError,
+} from '../utils/firebaseErrors';
 
 interface StaffInfo {
   id: string;
@@ -103,10 +108,28 @@ export class BulkOperationService {
         errors
       };
     } catch (error) {
-      logger.error('일괄 시간 수정 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'BulkOperationService'
-      });
-      throw error;
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        const permissionError = new Error('일괄 시간 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        logger.error('일괄 시간 수정 권한 거부', permissionError, {
+          component: 'BulkOperationService',
+          data: { staffCount: staffList.length, eventId }
+        });
+        throw permissionError;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'bulkUpdateTime',
+          staffCount: staffList.length,
+          eventId,
+          component: 'BulkOperationService',
+        },
+        'ko'
+      );
+
+      throw new Error(`일괄 시간 수정 실패: ${message}`);
     }
   }
 
@@ -174,10 +197,29 @@ export class BulkOperationService {
         errors
       };
     } catch (error) {
-      logger.error('일괄 상태 수정 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'BulkOperationService'
-      });
-      throw error;
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        const permissionError = new Error('일괄 상태 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        logger.error('일괄 상태 수정 권한 거부', permissionError, {
+          component: 'BulkOperationService',
+          data: { staffCount: staffList.length, eventId, status }
+        });
+        throw permissionError;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'bulkUpdateStatus',
+          staffCount: staffList.length,
+          eventId,
+          status,
+          component: 'BulkOperationService',
+        },
+        'ko'
+      );
+
+      throw new Error(`일괄 상태 수정 실패: ${message}`);
     }
   }
 
