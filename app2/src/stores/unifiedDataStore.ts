@@ -462,38 +462,38 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
 
       // Staff CRUD
       setStaff: (items: Map<string, Staff>): void => set({ staff: items }),
-      updateStaff: (item: Staff): void => set((state: any) => { state.staff.set(item.id, item); }),
-      deleteStaff: (id: string): void => set((state: any) => { state.staff.delete(id); }),
-      updateStaffBatch: (items: Staff[]): void => set((state: any) => { items.forEach(item => state.staff.set(item.id, item)); }),
-      deleteStaffBatch: (ids: string[]): void => set((state: any) => { ids.forEach(id => state.staff.delete(id)); }),
+      updateStaff: (item: Staff): void => set((state) => { state.staff.set(item.id, item); }),
+      deleteStaff: (id: string): void => set((state) => { state.staff.delete(id); }),
+      updateStaffBatch: (items: Staff[]): void => set((state) => { items.forEach(item => state.staff.set(item.id, item)); }),
+      deleteStaffBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.staff.delete(id)); }),
 
       // WorkLog CRUD
       setWorkLogs: (items: Map<string, WorkLog>): void => set({ workLogs: items }),
-      updateWorkLog: (item: WorkLog): void => set((state: any) => { state.workLogs.set(item.id, item); }),
-      deleteWorkLog: (id: string): void => set((state: any) => { state.workLogs.delete(id); }),
-      updateWorkLogsBatch: (items: WorkLog[]): void => set((state: any) => { items.forEach(item => state.workLogs.set(item.id, item)); }),
-      deleteWorkLogsBatch: (ids: string[]): void => set((state: any) => { ids.forEach(id => state.workLogs.delete(id)); }),
+      updateWorkLog: (item: WorkLog): void => set((state) => { state.workLogs.set(item.id, item); }),
+      deleteWorkLog: (id: string): void => set((state) => { state.workLogs.delete(id); }),
+      updateWorkLogsBatch: (items: WorkLog[]): void => set((state) => { items.forEach(item => state.workLogs.set(item.id, item)); }),
+      deleteWorkLogsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.workLogs.delete(id)); }),
 
       // Application CRUD
       setApplications: (items: Map<string, Application>): void => set({ applications: items }),
-      updateApplication: (item: Application): void => set((state: any) => { state.applications.set(item.id, item); }),
-      deleteApplication: (id: string): void => set((state: any) => { state.applications.delete(id); }),
-      updateApplicationsBatch: (items: Application[]): void => set((state: any) => { items.forEach(item => state.applications.set(item.id, item)); }),
-      deleteApplicationsBatch: (ids: string[]): void => set((state: any) => { ids.forEach(id => state.applications.delete(id)); }),
+      updateApplication: (item: Application): void => set((state) => { state.applications.set(item.id, item); }),
+      deleteApplication: (id: string): void => set((state) => { state.applications.delete(id); }),
+      updateApplicationsBatch: (items: Application[]): void => set((state) => { items.forEach(item => state.applications.set(item.id, item)); }),
+      deleteApplicationsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.applications.delete(id)); }),
 
       // AttendanceRecord CRUD
       setAttendanceRecords: (items: Map<string, AttendanceRecord>): void => set({ attendanceRecords: items }),
-      updateAttendanceRecord: (item: AttendanceRecord): void => set((state: any) => { state.attendanceRecords.set(item.id, item); }),
-      deleteAttendanceRecord: (id: string): void => set((state: any) => { state.attendanceRecords.delete(id); }),
-      updateAttendanceRecordsBatch: (items: AttendanceRecord[]): void => set((state: any) => { items.forEach(item => state.attendanceRecords.set(item.id, item)); }),
-      deleteAttendanceRecordsBatch: (ids: string[]): void => set((state: any) => { ids.forEach(id => state.attendanceRecords.delete(id)); }),
+      updateAttendanceRecord: (item: AttendanceRecord): void => set((state) => { state.attendanceRecords.set(item.id, item); }),
+      deleteAttendanceRecord: (id: string): void => set((state) => { state.attendanceRecords.delete(id); }),
+      updateAttendanceRecordsBatch: (items: AttendanceRecord[]): void => set((state) => { items.forEach(item => state.attendanceRecords.set(item.id, item)); }),
+      deleteAttendanceRecordsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.attendanceRecords.delete(id)); }),
 
       // JobPosting CRUD
       setJobPostings: (items: Map<string, JobPosting>): void => set({ jobPostings: items }),
-      updateJobPosting: (item: JobPosting): void => set((state: any) => { state.jobPostings.set(item.id, item); }),
-      deleteJobPosting: (id: string): void => set((state: any) => { state.jobPostings.delete(id); }),
-      updateJobPostingsBatch: (items: JobPosting[]): void => set((state: any) => { items.forEach(item => state.jobPostings.set(item.id, item)); }),
-      deleteJobPostingsBatch: (ids: string[]): void => set((state: any) => { ids.forEach(id => state.jobPostings.delete(id)); }),
+      updateJobPosting: (item: JobPosting): void => set((state) => { state.jobPostings.set(item.id, item); }),
+      deleteJobPosting: (id: string): void => set((state) => { state.jobPostings.delete(id); }),
+      updateJobPostingsBatch: (items: JobPosting[]): void => set((state) => { items.forEach(item => state.jobPostings.set(item.id, item)); }),
+      deleteJobPostingsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.jobPostings.delete(id)); }),
 
       // ========== 로딩/에러 상태 관리 ==========
 
