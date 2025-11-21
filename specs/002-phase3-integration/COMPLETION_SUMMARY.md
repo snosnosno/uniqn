@@ -235,10 +235,10 @@ const useDateFilterStore = create(
 ### 테스트
 - ✅ DateFilterStore (단위): 17 tests passed
 - ✅ DateFilterMigration (통합): 16 tests passed
-- ✅ DateUtils (단위): 8 tests passed
+- ✅ DateUtils (단위): 23 tests passed
 - ✅ FirebaseErrors (단위): 12 tests passed
 - ✅ FormUtils (단위): 9 tests passed
-- ✅ **전체**: 62/62 tests passed (100%)
+- ✅ **전체**: 77/77 tests passed (100%)
 
 ### 기능 검증
 - ✅ localStorage persistence (브라우저 새로고침 시 날짜 유지)
