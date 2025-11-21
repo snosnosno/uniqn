@@ -15,6 +15,21 @@ import { logger } from './logger';
  * - isValidDate: Type Guard
  */
 
+// ===== Type Definitions (TypeScript Strict Mode) =====
+
+/**
+ * Firebase Timestamp-like 객체 타입
+ */
+type TimestampLike = {
+  seconds: number;
+  nanoseconds?: number;
+};
+
+/**
+ * 날짜 입력 타입 (모든 허용 가능한 날짜 형식)
+ */
+export type DateInput = Date | string | number | Timestamp | TimestampLike | null | undefined;
+
 // ===== Internal Helper (재귀 방지용 핵심 함수) =====
 
 /**
@@ -31,22 +46,48 @@ function formatDateToISO(date: Date): string {
 }
 
 /**
+ * Firebase Timestamp 타입 가드
+ * @internal
+ */
+function hasToDateMethod(input: unknown): input is { toDate: () => Date } {
+  return (
+    input !== null &&
+    typeof input === 'object' &&
+    'toDate' in input &&
+    typeof (input as { toDate: unknown }).toDate === 'function'
+  );
+}
+
+/**
+ * TimestampLike 타입 가드
+ * @internal
+ */
+function hasSecondsProperty(input: unknown): input is TimestampLike {
+  return (
+    input !== null &&
+    typeof input === 'object' &&
+    'seconds' in input &&
+    typeof (input as { seconds: unknown }).seconds === 'number'
+  );
+}
+
+/**
  * 모든 날짜 타입을 yyyy-MM-dd 문자열로 변환
  * @param input - Timestamp, Date, string, number 등 모든 날짜 형식
  * @returns yyyy-MM-dd 형식의 날짜 문자열
  */
-export function toDateString(input: any): string {
+export function toDateString(input: DateInput): string {
   if (!input) return formatDateToISO(new Date());
 
   try {
     let date: Date;
 
     // Timestamp 처리 (Firebase)
-    if (input?.toDate && typeof input.toDate === 'function') {
+    if (hasToDateMethod(input)) {
       date = input.toDate();
     }
     // seconds 속성이 있는 객체 (Timestamp-like)
-    else if (input?.seconds) {
+    else if (hasSecondsProperty(input)) {
       date = new Date(input.seconds * 1000);
     }
     // Date 객체
@@ -57,9 +98,13 @@ export function toDateString(input: any): string {
     else if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
       return input;
     }
-    // 기타 문자열 또는 숫자
-    else {
+    // 문자열 또는 숫자
+    else if (typeof input === 'string' || typeof input === 'number') {
       date = new Date(input);
+    }
+    // 알 수 없는 타입
+    else {
+      return formatDateToISO(new Date());
     }
 
     // 유효한 날짜인지 확인
@@ -139,7 +184,7 @@ export function getKoreanDate(): string {
  * @param input - 시간 정보를 포함한 모든 형식
  * @returns HH:mm 형식의 시간 문자열
  */
-export function toTimeString(input: any): string {
+export function toTimeString(input: DateInput): string {
   if (!input) return '';
   
   // 이미 HH:mm 형식인 경우
@@ -149,14 +194,26 @@ export function toTimeString(input: any): string {
   
   try {
     let date: Date;
-    
+
     // Firebase Timestamp 객체 처리
-    if (input && typeof input === 'object' && 'toDate' in input && typeof input.toDate === 'function') {
+    if (hasToDateMethod(input)) {
       date = input.toDate();
-    } else {
+    }
+    // TimestampLike 객체 처리
+    else if (hasSecondsProperty(input)) {
+      date = new Date(input.seconds * 1000);
+    }
+    // Date, string, number 처리
+    else if (input instanceof Date) {
+      date = input;
+    }
+    else if (typeof input === 'string' || typeof input === 'number') {
       date = new Date(input);
     }
-    
+    else {
+      return '';
+    }
+
     if (!isNaN(date.getTime())) {
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -165,7 +222,7 @@ export function toTimeString(input: any): string {
   } catch {
     // 에러 무시
   }
-  
+
   return '';
 }
 
@@ -193,7 +250,7 @@ export function formatDateDisplay(dateString: string): string {
  * @param input - 모든 날짜 형식
  * @returns Firebase Timestamp 객체
  */
-export function toTimestamp(input: any): Timestamp {
+export function toTimestamp(input: DateInput): Timestamp {
   const dateStr = toDateString(input);
   const date = new Date(dateStr);
   return Timestamp.fromDate(date);
@@ -244,7 +301,7 @@ export const timestampToLocalDateString = toDateString;
  * @deprecated Use toTimeString for simple cases
  */
 export function formatTime(
-  timestamp: any,
+  timestamp: DateInput,
   options: {
     defaultValue?: string;
     format?: 'HH:MM' | 'korean' | 'full';
@@ -284,7 +341,7 @@ export const formatTimeForInput = toTimeString;
 /**
  * @deprecated Use formatTime with korean option
  */
-export function formatTimeKorean(timestamp: any): string {
+export function formatTimeKorean(timestamp: DateInput): string {
   return formatTime(timestamp, { defaultValue: '미정', format: 'korean' });
 }
 
