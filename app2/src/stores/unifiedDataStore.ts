@@ -67,7 +67,12 @@ interface UnifiedDataSelectors {
   getAttendanceByStaffId: (staffId: string) => AttendanceRecord[];
   getAttendanceByEventId: (eventId: string) => AttendanceRecord[];
   getActiveJobPostings: () => JobPosting[];
-  getScheduleEvents: () => any[]; // ScheduleEvent 타입 (호환성)
+  /**
+   * 스케줄 이벤트 목록 조회 (레거시 호환성)
+   * @returns WorkLog 기반 커스텀 객체 배열 (ScheduleEvent 타입과 다름)
+   * @note 향후 ScheduleEvent 타입으로 리팩토링 필요
+   */
+  getScheduleEvents: () => Array<Record<string, unknown>>;
 }
 
 /**
@@ -218,11 +223,11 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       },
 
       /**
-       * 스케줄 이벤트 목록 조회 (호환성)
-       * workLogs를 기반으로 ScheduleEvent 형태로 변환
-       * @deprecated 호환성 유지를 위해 any[] 반환 - 향후 ScheduleEvent[]로 리팩토링 필요
+       * 스케줄 이벤트 목록 조회 (레거시 호환성)
+       * workLogs를 기반으로 커스텀 객체 형태로 변환
+       * @note 향후 ScheduleEvent 타입으로 리팩토링 필요
        */
-      getScheduleEvents: (): any[] => {
+      getScheduleEvents: (): Array<Record<string, unknown>> => {
         const workLogs = Array.from(get().workLogs.values());
         const staff = get().staff;
         const jobPostings = get().jobPostings;
