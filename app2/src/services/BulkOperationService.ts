@@ -2,6 +2,7 @@ import { writeBatch, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { createWorkLogId, createWorkLog, SimpleWorkLogInput } from '../utils/workLogSimplified';
+import { toISODateString } from '../utils/dateUtils';
 
 interface StaffInfo {
   id: string;
@@ -36,7 +37,7 @@ export class BulkOperationService {
     try {
       for (const staff of staffList) {
         try {
-          const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
+          const dateString = staff.assignedDate || toISODateString(new Date()) || '';
           const workLogId = staff.workLogId || createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 
@@ -125,7 +126,7 @@ export class BulkOperationService {
     try {
       for (const staff of staffList) {
         try {
-          const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
+          const dateString = staff.assignedDate || toISODateString(new Date()) || '';
           const workLogId = createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 

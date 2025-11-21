@@ -13,6 +13,11 @@ import { JobPosting, PreQuestionAnswer } from '../../../types/jobPosting';
 import { Assignment } from '../../../types/application';
 import { sortJobPostingsByPriority } from '../../../utils/jobPosting/sortingUtils';
 import { validateRequiredProfileFields } from '../../../utils/profile/profileValidation';
+import {
+  handleFirebaseError,
+  isPermissionDenied,
+  FirebaseError,
+} from '../../../utils/firebaseErrors';
 
 export interface JobFilters {
   location: string;
@@ -249,8 +254,23 @@ export const useJobBoard = () => {
         return;
       }
     } catch (error) {
-      logger.error('Error checking profile fields', error instanceof Error ? error : new Error(String(error)), { component: 'useJobBoard' });
-      showError('프로필 정보를 확인하는 중 오류가 발생했습니다.');
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        showError('프로필 조회 권한이 없습니다. 로그인 상태를 확인해주세요.');
+        return;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'checkProfileFields',
+          userId: currentUser?.uid,
+          component: 'useJobBoard',
+        },
+        'ko'
+      );
+
+      showError(`프로필 정보 확인 실패: ${message}`);
       return;
     }
 
@@ -409,8 +429,25 @@ export const useJobBoard = () => {
       setSelectedPost(null);
       
     } catch (error) {
-      logger.error('Error submitting application: ', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
-      showError(t('jobBoard.alerts.applicationFailed'));
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        showError('지원서 제출 권한이 없습니다. 로그인 상태를 확인해주세요.');
+        return;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'submitApplication',
+          postId: selectedPost?.id,
+          assignmentCount: selectedAssignments.length,
+          userId: currentUser?.uid,
+          component: 'useJobBoard',
+        },
+        'ko'
+      );
+
+      showError(`지원서 제출 실패: ${message}`);
     } finally {
       setIsProcessing(null);
     }
@@ -464,8 +501,24 @@ export const useJobBoard = () => {
 
       setCancelConfirmPostId(null);
     } catch (error) {
-      logger.error('Error cancelling application: ', error instanceof Error ? error : new Error(String(error)), { component: 'JobBoardPage' });
-      showError(t('jobBoard.alerts.cancelFailed'));
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        showError('지원서 취소 권한이 없습니다. 본인이 제출한 지원서만 취소할 수 있습니다.');
+        return;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'cancelApplication',
+          postId: cancelConfirmPostId,
+          userId: currentUser?.uid,
+          component: 'useJobBoard',
+        },
+        'ko'
+      );
+
+      showError(`지원서 취소 실패: ${message}`);
     } finally {
       setIsProcessing(null);
     }

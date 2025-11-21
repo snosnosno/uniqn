@@ -8,6 +8,7 @@ import { db } from '../../firebase';
 import { useToast } from '../../hooks/useToast';
 import { parseToDate } from '../../utils/jobPosting/dateUtils';
 import Modal, { ModalFooter } from '../ui/Modal';
+import { toISODateString } from '../../utils/dateUtils';
 
 interface SelectedStaff {
   id: string;
@@ -185,7 +186,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
 
       for (const staff of selectedStaff) {
         try {
-          const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
+          const dateString = staff.assignedDate || toISODateString(new Date()) || '';
           const workLogId = staff.workLogId || `${eventId}_${staff.id}_${dateString}`;
           const workLogRef = doc(db, 'workLogs', workLogId);
 

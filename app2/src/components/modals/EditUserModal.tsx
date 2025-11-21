@@ -3,6 +3,7 @@ import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { callFunctionLazy } from '../../utils/firebase-dynamic';
 import { toast } from '../../utils/toast';
+import { createFormHandler } from '../../utils/formUtils';
 
 import Modal, { ModalFooter } from '../ui/Modal';
 
@@ -24,6 +25,18 @@ interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: Staff | null;
+}
+
+interface UserFormData {
+  name: string;
+  role: string;
+  experience: string;
+  history: string;
+  notes: string;
+  nationality: string;
+  age: string;
+  bankName: string;
+  bankAccount: string;
 }
 
 const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) => {
@@ -52,7 +65,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       { code: 'ES', name: 'Spain', flag: '🇪🇸' }
     ];
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UserFormData>({
     name: '',
     role: '',
     experience: '',
@@ -65,6 +78,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 🎯 FormUtils 사용 (Phase 3-2 Integration)
+  const { handleChange, handleSelectChange } = createFormHandler(setFormData);
 
   const experienceLevels = [
     "1년 미만",
@@ -93,10 +109,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
   }, [user]);
 
   if (!user) return null;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +187,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
               name="role"
               id="role"
               value={formData.role}
-              onChange={handleChange}
+              onChange={handleSelectChange}
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
             >
               <option value="dealer">{t('roles.dealer')}</option>
@@ -190,7 +202,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
               name="nationality"
               id="nationality"
               value={formData.nationality}
-              onChange={handleChange}
+              onChange={handleSelectChange}
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
             >
               <option value="">{t('profilePage.selectNationality', '국적을 선택하세요')}</option>
@@ -242,7 +254,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
                 name="experience"
                 id="experience"
                 value={formData.experience}
-                onChange={handleChange}
+                onChange={handleSelectChange}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
             >
                 <option value="">{t('profilePage.selectExperience', '경력을 선택하세요')}</option>

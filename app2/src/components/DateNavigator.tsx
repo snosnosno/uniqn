@@ -15,8 +15,8 @@
  */
 
 import React from 'react';
-import { useDateFilter } from '../contexts/DateFilterContext';
-import { formatDateDisplay } from '../utils/dateUtils';
+import { useDateFilter } from '../hooks/useDateFilter';
+import { formatDateDisplay, toISODateString } from '../utils/dateUtils';
 
 interface DateNavigatorProps {
   className?: string;
@@ -38,7 +38,7 @@ const DateNavigator: React.FC<DateNavigatorProps> = ({ className = '' }) => {
   const hasNext = currentIndex < availableDates.length - 1 && currentIndex !== -1;
 
   // 오늘 날짜
-  const today = new Date().toISOString().split('T')[0] || '';
+  const today = toISODateString(new Date()) || '';
   const isToday = selectedDate === today;
 
   return (

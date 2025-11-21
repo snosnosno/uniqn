@@ -10,6 +10,7 @@ import { UnifiedWorkLog } from '../types/unified/workLog';
 import { EnhancedPayrollCalculation, PayrollSummary } from '../types/payroll';
 import { ConfirmedStaff } from '../types/jobPosting/base';
 import { JobPosting } from '../types/jobPosting';
+import { toISODateString } from '../utils/dateUtils';
 
 // Web Worker 메시지 타입 정의
 export interface PayrollCalculationMessage {
@@ -330,8 +331,8 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
         continue; // 유효하지 않은 timeSlot은 건너뛰기
       }
 
-      const virtualDate = staff.date || new Date().toISOString().split('T')[0];
-      const { scheduledStartTime, scheduledEndTime } = 
+      const virtualDate = staff.date || toISODateString(new Date()) || '';
+      const { scheduledStartTime, scheduledEndTime } =
         convertAssignedTimeToScheduled(timeSlot, virtualDate!);
 
       if (scheduledStartTime && scheduledEndTime) {

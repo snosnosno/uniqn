@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Table } from '../../hooks/useTables';
 import { Participant } from '../../hooks/useParticipants';
 import { Tournament } from '../../hooks/useTournaments';
-import { useDateFilter } from '../../contexts/DateFilterContext';
+import { useDateFilter } from '../../hooks/useDateFilter';
 
 import Modal from '../ui/Modal';
 import { Seat } from '../tables/Seat';

@@ -10,7 +10,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import { FaPlus, FaCog, FaTrash, FaCheck, FaChevronDown } from '../components/Icons/ReactIconsReplacement';
 import { TOURNAMENT_COLORS, COLOR_EMOJIS } from '../utils/tournamentColors';
 import { useGroupByDate } from '../hooks/useGroupByDate';
-import { formatDateDisplay } from '../utils/dateUtils';
+import { formatDateDisplay, toISODateString } from '../utils/dateUtils';
 
 const TournamentsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -206,8 +206,8 @@ const TournamentsPage: React.FC = () => {
 
   // 상대적 날짜 라벨 생성 (오늘, 내일 등)
   const getDateLabel = (dateKey: string): string => {
-    const today = new Date().toISOString().split('T')[0] || '';
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0] || '';
+    const today = toISODateString(new Date()) || '';
+    const tomorrow = toISODateString(new Date(Date.now() + 86400000)) || '';
 
     if (dateKey === today) {
       return '오늘';

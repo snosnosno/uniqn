@@ -34,8 +34,7 @@ import { TournamentProvider } from './contexts/TournamentContextAdapter';
 import { UnifiedDataInitializer } from './components/UnifiedDataInitializer';
 // TournamentDataContext - 토너먼트 데이터 전역 관리
 import { TournamentDataProvider } from './contexts/TournamentDataContext';
-// DateFilterContext - 날짜 선택 상태 관리
-import { DateFilterProvider } from './contexts/DateFilterContext';
+// DateFilterStore - 날짜 선택 상태 관리 (Zustand, Provider 불필요)
 // ThemeContext - 다크모드 지원
 import { ThemeProvider } from './contexts/ThemeContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
@@ -202,9 +201,9 @@ const App: React.FC = () => {
                   <UnifiedDataInitializer>
                     <TournamentProvider>
                       <TournamentDataProvider>
-                        <DateFilterProvider>
-                          {/* 네트워크 상태 표시 */}
-                          <NetworkStatusIndicator position="top" />
+                        {/* DateFilterProvider 제거 - Zustand Store 사용 */}
+                        {/* 네트워크 상태 표시 */}
+                        <NetworkStatusIndicator position="top" />
 
                 <Routes>
                 {/* Public Routes */}
@@ -306,7 +305,6 @@ const App: React.FC = () => {
                     </Route>
                   </Route>
                 </Routes>
-                        </DateFilterProvider>
                       </TournamentDataProvider>
                     </TournamentProvider>
                   </UnifiedDataInitializer>

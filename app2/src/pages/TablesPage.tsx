@@ -17,7 +17,7 @@ import TournamentSelector from '../components/TournamentSelector';
 import DateNavigator from '../components/DateNavigator';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import AssignmentResultModal, { AssignmentResult } from '../components/modals/AssignmentResultModal';
-import { useDateFilter } from '../contexts/DateFilterContext';
+import { useDateFilter } from '../hooks/useDateFilter';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useTournament } from '../contexts/TournamentContext';
 import { useParticipants, Participant } from '../hooks/useParticipants';

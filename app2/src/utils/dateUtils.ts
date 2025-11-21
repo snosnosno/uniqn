@@ -1,11 +1,18 @@
 import { Timestamp } from 'firebase/firestore';
+import { logger } from './logger';
 
 /**
  * 간소화된 날짜 유틸리티
  * 모든 날짜를 표준 형식으로 통합 처리
- * 
+ *
  * 기존 432줄 → 95줄로 대폭 간소화
  * 하위 호환성 100% 유지
+ *
+ * Phase 3 추가 함수:
+ * - toISODateString: TypeScript strict mode 준수 (null 반환)
+ * - formatDate: 'date' | 'datetime' 포맷 지원
+ * - parseDate: 문자열 → Date 변환
+ * - isValidDate: Type Guard
  */
 
 /**
@@ -267,4 +274,148 @@ export const formatTimeForInput = toTimeString;
  */
 export function formatTimeKorean(timestamp: any): string {
   return formatTime(timestamp, { defaultValue: '미정', format: 'korean' });
+}
+
+// ===== Phase 3: TypeScript Strict Mode 준수 함수 =====
+
+/**
+ * ISO 날짜 문자열로 변환 (YYYY-MM-DD)
+ *
+ * 기존 toISOString().split('T')[0] 패턴 대체
+ * TypeScript strict mode 준수: null 반환, any 타입 금지
+ *
+ * @param date - 변환할 날짜 (Date, string, null, undefined)
+ * @returns YYYY-MM-DD 형식 문자열 또는 null (에러 시)
+ *
+ * @example
+ * toISODateString(new Date()); // "2025-11-20"
+ * toISODateString("2025-11-20T15:30:00Z"); // "2025-11-20"
+ * toISODateString(null); // null
+ * toISODateString("invalid"); // null (logger 경고)
+ */
+export function toISODateString(
+  date: Date | string | null | undefined
+): string | null {
+  if (!date) return null;
+
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+    if (!isValidDate(dateObj)) {
+      logger.warn('toISODateString: Invalid date', { date });
+      return null;
+    }
+
+    return dateObj.toISOString().split('T')[0] || null;
+  } catch (error) {
+    logger.warn('toISODateString: Conversion error', {
+      component: 'dateUtils',
+      data: { date },
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return null;
+  }
+}
+
+/**
+ * 날짜를 지정된 포맷으로 변환
+ *
+ * @param date - 변환할 날짜 (Date, string, null, undefined)
+ * @param format - 'date' (YYYY-MM-DD) 또는 'datetime' (YYYY-MM-DD HH:mm)
+ * @returns 포맷된 날짜 문자열 또는 null (에러 시)
+ *
+ * @example
+ * formatDate(new Date(), 'date'); // "2025-11-20"
+ * formatDate(new Date(), 'datetime'); // "2025-11-20 14:30"
+ * formatDate(null, 'date'); // null
+ */
+export function formatDate(
+  date: Date | string | null | undefined,
+  format: 'date' | 'datetime'
+): string | null {
+  if (!date) return null;
+
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+    if (!isValidDate(dateObj)) {
+      logger.warn('formatDate: Invalid date', {
+        component: 'dateUtils',
+        data: { date, format }
+      });
+      return null;
+    }
+
+    if (format === 'date') {
+      return dateObj.toISOString().split('T')[0] || null;
+    }
+
+    // datetime format: YYYY-MM-DD HH:mm
+    const datePart = dateObj.toISOString().split('T')[0];
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+    return `${datePart} ${hours}:${minutes}`;
+  } catch (error) {
+    logger.warn('formatDate: Conversion error', {
+      component: 'dateUtils',
+      data: { date, format },
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return null;
+  }
+}
+
+/**
+ * 날짜 문자열을 Date 객체로 변환
+ *
+ * @param dateString - 변환할 날짜 문자열
+ * @returns Date 객체 또는 null (에러 시)
+ *
+ * @example
+ * parseDate("2025-11-20"); // Date(2025-11-20T00:00:00Z)
+ * parseDate("invalid"); // null (logger 경고)
+ * parseDate(null); // null
+ */
+export function parseDate(
+  dateString: string | null | undefined
+): Date | null {
+  if (!dateString) return null;
+
+  try {
+    const date = new Date(dateString);
+
+    if (!isValidDate(date)) {
+      logger.warn('parseDate: Invalid date string', {
+        component: 'dateUtils',
+        data: { dateString }
+      });
+      return null;
+    }
+
+    return date;
+  } catch (error) {
+    logger.warn('parseDate: Parse error', {
+      component: 'dateUtils',
+      data: { dateString },
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return null;
+  }
+}
+
+/**
+ * 날짜 유효성 검증 (Type Guard)
+ *
+ * @param date - 검증할 값
+ * @returns Date 객체이고 유효하면 true
+ *
+ * @example
+ * isValidDate(new Date()); // true
+ * isValidDate(new Date('invalid')); // false
+ * isValidDate(null); // false
+ * isValidDate("2025-11-20"); // false (문자열은 Date 타입 아님)
+ */
+export function isValidDate(date: unknown): date is Date {
+  return date instanceof Date && !isNaN(date.getTime());
 }
