@@ -117,14 +117,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T028 [P] [US2] Create test file app2/src/utils/__tests__/dateUtils.test.ts
-- [ ] T029 [P] [US2] Write unit test: toISODateString converts Date to YYYY-MM-DD
-- [ ] T030 [P] [US2] Write unit test: toISODateString handles string input
-- [ ] T031 [P] [US2] Write unit test: toISODateString returns null for invalid input
-- [ ] T032 [P] [US2] Write unit test: formatDate with 'date' format returns YYYY-MM-DD
-- [ ] T033 [P] [US2] Write unit test: formatDate with 'datetime' format returns YYYY-MM-DD HH:mm
-- [ ] T034 [P] [US2] Write unit test: parseDate converts string to Date object
-- [ ] T035 [P] [US2] Write unit test: isValidDate Type Guard works correctly
+- [x] T028 [P] [US2] Create test file app2/src/utils/__tests__/dateUtils.test.ts ✅
+- [x] T029 [P] [US2] Write unit test: toISODateString converts Date to YYYY-MM-DD ✅
+- [x] T030 [P] [US2] Write unit test: toISODateString handles string input ✅
+- [x] T031 [P] [US2] Write unit test: toISODateString returns null for invalid input ✅
+- [x] T032 [P] [US2] Write unit test: formatDate with 'date' format returns YYYY-MM-DD ✅
+- [x] T033 [P] [US2] Write unit test: formatDate with 'datetime' format returns YYYY-MM-DD HH:mm ✅
+- [x] T034 [P] [US2] Write unit test: parseDate converts string to Date object ✅
+- [x] T035 [P] [US2] Write unit test: isValidDate Type Guard works correctly ✅
+- [x] 23 dateUtils tests all pass (including 8 core tests + 15 additional tests) ✅
 
 ### Implementation for User Story 2
 
