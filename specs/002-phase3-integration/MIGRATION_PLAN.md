@@ -18,8 +18,8 @@
 | ⏭️ **Medium** | `hooks/useStaffWorkData.ts` | catch 블록 없음 (skip) | - |
 | ✅ **Medium** | `services/BulkOperationService.ts` | 일괄 처리 서비스 | 30min |
 | ✅ **Medium** | `components/modals/BulkTimeEditModal.tsx` | 시간 수정 모달 | 30min |
-| **Medium** | `components/modals/TableDetailModal.tsx` | 테이블 상세 모달 | 30min |
-| **Low** | `utils/workLogUtils.ts` | 유틸리티 함수 | 20min |
+| ✅ **Medium** | `components/modals/TableDetailModal.tsx` | 테이블 상세 모달 | 30min |
+| ⏭️ **Low** | `utils/workLogUtils.ts` | 내부 에러만 (skip) | - |
 | **Low** | `workers/payrollCalculator.worker.ts` | 워커 스레드 | 20min |
 | **Low** | `hooks/useScheduleData/dataProcessors.ts` | 데이터 처리기 | 20min |
 
