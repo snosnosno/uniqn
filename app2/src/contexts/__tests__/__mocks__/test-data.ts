@@ -6,6 +6,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { Staff, WorkLog, AttendanceRecord, Application } from '../../../types/unifiedData';
 import { ScheduleEvent } from '../../../types/schedule';
+import { toISODateString } from '../../../utils/dateUtils';
 
 // ===========================
 // Mock Staff Data
@@ -216,7 +217,7 @@ export const mockScheduleEvents: ScheduleEvent[] = [
   {
     id: 'event3',
     title: '스태프 미팅',
-    date: new Date().toISOString().split('T')[0], // 오늘 날짜
+    date: toISODateString(new Date()) || '', // 오늘 날짜
     startTime: '14:00',
     endTime: '15:00',
     location: '회의실',

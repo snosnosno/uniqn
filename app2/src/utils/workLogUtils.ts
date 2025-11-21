@@ -1,6 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { parseToDate, getTodayString } from './jobPosting/dateUtils';
 import { createWorkLogId } from './workLogSimplified';
+import { toISODateString } from './dateUtils';
 
 /**
  * WorkLog 생성 및 관리를 위한 유틸리티 함수들
@@ -197,10 +198,10 @@ export const convertAssignedTimeToScheduled = (
   if (!assignedTime || assignedTime === '미정') {
     return { scheduledStartTime: null, scheduledEndTime: null };
   }
-  
+
   // baseDate가 없으면 오늘 날짜 사용
-  const validBaseDate = baseDate || new Date().toISOString().split('T')[0];
-  
+  const validBaseDate = baseDate || toISODateString(new Date()) || '';
+
   const { startTime, endTime } = parseAssignedTime(assignedTime);
 
   const scheduledStartTime = startTime && validBaseDate ? convertTimeToTimestamp(startTime, validBaseDate) : null;

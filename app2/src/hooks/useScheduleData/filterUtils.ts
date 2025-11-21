@@ -1,4 +1,5 @@
 import { ScheduleEvent, ScheduleFilters } from '../../types/schedule';
+import { toISODateString } from '../../utils/dateUtils';
 
 /**
  * 스케줄 이벤트를 필터링
@@ -47,8 +48,8 @@ export const createDefaultFilters = (): ScheduleFilters => {
   
   return {
     dateRange: {
-      start: startOfMonth.toISOString().split('T')[0] || '',
-      end: endOfMonth.toISOString().split('T')[0] || ''
+      start: toISODateString(startOfMonth) || '',
+      end: toISODateString(endOfMonth) || ''
     },
     searchTerm: ''
   };

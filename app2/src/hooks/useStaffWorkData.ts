@@ -6,6 +6,7 @@ import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, Role
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { calculateWorkHours } from '../utils/workLogMapper';
 import { matchStaffIdentifier } from '../utils/staffIdMapper';
+import { toISODateString } from '../utils/dateUtils';
 
 interface StaffWorkDataItem extends EnhancedPayrollCalculation {
   // 추가 필드
@@ -447,7 +448,7 @@ export const useStaffWorkData = ({
     const url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `정산내역_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `정산내역_${toISODateString(new Date()) || ''}.csv`);
     link.style.visibility = 'hidden';
     
     document.body.appendChild(link);

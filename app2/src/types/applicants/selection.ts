@@ -103,7 +103,7 @@ export interface DateGroupedSelections {
  * const data = getDataFromAPI();
  * if (isSelection(data)) {
  *   // data는 Selection 타입으로 안전하게 사용 가능
- *   console.log(data.role, data.time);
+ *   logger.info('Selection data', { role: data.role, time: data.time });
  * }
  * ```
  */

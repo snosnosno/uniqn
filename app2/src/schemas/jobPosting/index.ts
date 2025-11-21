@@ -11,6 +11,7 @@ import { basicInfoSchema } from './basicInfo.schema';
 import { dateRequirementsSchema } from './dateRequirements.schema';
 import { preQuestionsSchema, preQuestionsSchemaBase } from './preQuestions.schema';
 import { salarySchema, salarySchemaBase } from './salary.schema';
+import { toISODateString } from '../../utils/dateUtils';
 
 /**
  * 통합 JobPostingForm 검증 스키마
@@ -35,7 +36,7 @@ export const jobPostingFormSchema = basicInfoSchema
         const firstDate = firstRequirement.date;
         const dateStr = typeof firstDate === 'string'
           ? firstDate
-          : new Date(firstDate.seconds * 1000).toISOString().split('T')[0] || '';
+          : toISODateString(new Date(firstDate.seconds * 1000)) || '';
 
         if (!dateStr) return true; // 날짜 문자열이 없으면 통과
 

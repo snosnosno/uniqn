@@ -9,6 +9,8 @@
  * @module utils/applicants/applicantValidation
  */
 
+import { toISODateString } from '../dateUtils';
+
 import { Applicant } from '../../components/applicants/ApplicantListTab/types';
 import type { Selection } from '../../types/applicants/selection';
 
@@ -89,9 +91,9 @@ export const getStaffCounts = (
           if (typeof dateReq.date === 'string') {
             dateReqDate = dateReq.date;
           } else if (dateReq.date.toDate) {
-            dateReqDate = dateReq.date.toDate().toISOString().split('T')[0] || '';
+            dateReqDate = toISODateString(dateReq.date.toDate()) || '';
           } else if (typeof dateReq.date.seconds === 'number') {
-            dateReqDate = new Date(dateReq.date.seconds * 1000).toISOString().split('T')[0] || '';
+            dateReqDate = toISODateString(new Date(dateReq.date.seconds * 1000)) || '';
           }
         }
         return dateReqDate === date;

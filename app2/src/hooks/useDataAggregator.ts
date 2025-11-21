@@ -17,6 +17,7 @@ import {
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
 import { logger } from '../utils/logger';
+import { toISODateString } from '../utils/dateUtils';
 
 interface DataAggregatorState {
   aggregatedData: AggregatedData[];
@@ -268,7 +269,7 @@ export const useDataAggregator = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     
-    const defaultFilename = `데이터_집계_${new Date().toISOString().split('T')[0]}.csv`;
+    const defaultFilename = `데이터_집계_${toISODateString(new Date()) || ''}.csv`;
     
     link.setAttribute('href', url);
     link.setAttribute('download', filename || defaultFilename);

@@ -12,6 +12,7 @@ import useUnifiedData from '../../hooks/useUnifiedData';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import smartCache from '../../utils/smartCache';
+import { toISODateString } from '../../utils/dateUtils';
 
 interface DevToolsProps {
   isOpen: boolean;
@@ -215,7 +216,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `unified-data-logs-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `unified-data-logs-${toISODateString(new Date()) || ''}.json`;
     a.click();
     
     URL.revokeObjectURL(url);

@@ -4,11 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { Table } from '../../hooks/useTables';
 import { Participant } from '../../hooks/useParticipants';
 import { Tournament } from '../../hooks/useTournaments';
-import { useDateFilter } from '../../contexts/DateFilterContext';
+import { useDateFilter } from '../../hooks/useDateFilter';
 
 import Modal from '../ui/Modal';
 import { Seat } from '../tables/Seat';
 import { toast } from '../../utils/toast';
+import {
+  handleFirebaseError,
+  isPermissionDenied,
+  FirebaseError,
+} from '../../utils/firebaseErrors';
 
 interface TableDetailModalProps {
   table: Table | null;
@@ -120,7 +125,24 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
       await assignTableToTournament([table.id], newTournamentId);
       toast.success('테이블이 토너먼트에 배정되었습니다.');
     } catch (error) {
-      toast.error('테이블 배정 중 오류가 발생했습니다.');
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        toast.error('테이블 배정 권한이 없습니다. 토너먼트 생성자만 배정할 수 있습니다.');
+        return;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'assignTableToTournament',
+          tableId: table.id,
+          tournamentId: newTournamentId,
+          component: 'TableDetailModal',
+        },
+        'ko'
+      );
+
+      toast.error(`테이블 배정 실패: ${message}`);
     }
   };
 

@@ -1,6 +1,7 @@
 import { RoleRequirement, TimeSlot, DateSpecificRequirement, JobPostingTemplate, JobPostingFormData, JobPosting, Benefits, PostingType } from '../../types/jobPosting';
 import { convertToTimestamp, getTodayString } from './dateUtils';
 import { logger } from '../logger';
+import { toISODateString } from '../dateUtils';
 
 /**
  * 레거시 데이터를 새 postingType으로 정규화
@@ -248,10 +249,10 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     if (typeof dateValue === 'string') return dateValue;
     if (dateValue.toDate && typeof dateValue.toDate === 'function') {
       const date = dateValue.toDate();
-      return date.toISOString().split('T')[0] || '';
+      return toISODateString(date) || '';
     }
     if (dateValue instanceof Date) {
-      return dateValue.toISOString().split('T')[0] || '';
+      return toISODateString(dateValue) || '';
     }
     return '';
   };

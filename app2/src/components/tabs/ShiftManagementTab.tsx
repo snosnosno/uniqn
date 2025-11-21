@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog } from '../Icons/ReactIconsReplacement';
-
+import { toISODateString } from '../../utils/dateUtils';
 import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 
 interface ShiftManagementTabProps {
@@ -18,7 +18,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
   // 현재 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0] || ''; // YYYY-MM-DD 형식
+    return toISODateString(today) || ''; // YYYY-MM-DD 형식
   });
 
   // Early return if no job posting data
@@ -182,7 +182,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                     if (!dateValue) return false;
                     const date = new Date(dateValue);
                     if (isNaN(date.getTime())) return false;
-                    return date.toISOString().split('T')[0] === selectedDate;
+                    return toISODateString(date) === selectedDate;
                   } catch {
                     return false;
                   }

@@ -8,6 +8,12 @@ import { db } from '../../firebase';
 import { useToast } from '../../hooks/useToast';
 import { parseToDate } from '../../utils/jobPosting/dateUtils';
 import Modal, { ModalFooter } from '../ui/Modal';
+import { toISODateString } from '../../utils/dateUtils';
+import {
+  handleFirebaseError,
+  isPermissionDenied,
+  FirebaseError,
+} from '../../utils/firebaseErrors';
 
 interface SelectedStaff {
   id: string;
@@ -185,7 +191,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
 
       for (const staff of selectedStaff) {
         try {
-          const dateString = staff.assignedDate || new Date().toISOString().split('T')[0];
+          const dateString = staff.assignedDate || toISODateString(new Date()) || '';
           const workLogId = staff.workLogId || `${eventId}_${staff.id}_${dateString}`;
           const workLogRef = doc(db, 'workLogs', workLogId);
 
@@ -285,8 +291,29 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
 
       onClose();
     } catch (error) {
-      logger.error('일괄 업데이트 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
-      showError('일괄 수정 중 오류가 발생했습니다.');
+      // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+      if (isPermissionDenied(error)) {
+        showError('일괄 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        logger.error('일괄 수정 권한 거부', error instanceof Error ? error : new Error(String(error)), {
+          component: 'BulkTimeEditModal',
+          data: { staffCount: selectedStaff.length, eventId, editMode }
+        });
+        return;
+      }
+
+      const message = handleFirebaseError(
+        error as FirebaseError,
+        {
+          operation: 'bulkUpdate',
+          staffCount: selectedStaff.length,
+          eventId,
+          editMode,
+          component: 'BulkTimeEditModal',
+        },
+        'ko'
+      );
+
+      showError(`일괄 수정 실패: ${message}`);
     } finally {
       setIsUpdating(false);
     }

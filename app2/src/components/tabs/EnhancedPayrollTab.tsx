@@ -4,6 +4,7 @@ import { JobPosting } from '../../types/jobPosting';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
+import { toISODateString } from '../../utils/dateUtils';
 import BulkAllowancePanel from '../payroll/BulkAllowancePanel';
 import TaxSettingsPanel from '../payroll/TaxSettingsPanel';
 import DetailEditModal from '../payroll/DetailEditModal';
@@ -93,8 +94,8 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     const end = new Date(currentYear, currentMonth + 1, 0);
     
     return {
-      startDate: start.toISOString().split('T')[0] || '',
-      endDate: end.toISOString().split('T')[0] || ''
+      startDate: toISODateString(start) || '',
+      endDate: toISODateString(end) || ''
     };
   }, []);
 
@@ -306,7 +307,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
 
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      const fileName = `정산_${startDate}_${endDate}_${new Date().toISOString().split('T')[0]}.csv`;
+      const fileName = `정산_${startDate}_${endDate}_${toISODateString(new Date()) || ''}.csv`;
 
       link.setAttribute('href', url);
       link.setAttribute('download', fileName);
@@ -816,7 +817,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
               {/* 파일 정보 */}
               <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
                 <p className="text-xs text-blue-800 dark:text-blue-300">
-                  <span className="font-medium">파일명:</span> 정산_{startDate}_{endDate}_{new Date().toISOString().split('T')[0]}.csv
+                  <span className="font-medium">파일명:</span> 정산_{startDate}_{endDate}_{toISODateString(new Date()) || ''}.csv
                 </p>
                 <p className="text-xs text-blue-800 dark:text-blue-300 mt-1">
                   <span className="font-medium">스태프 수:</span> {payrollData?.length || 0}명

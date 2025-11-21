@@ -5,6 +5,10 @@
 
 import { logger } from './logger';
 import { toast } from './toast';
+import {
+  handleFirebaseError as handleFirebaseErrorUtil,
+  FirebaseError
+} from './firebaseErrors';
 
 export interface ErrorHandlerOptions {
   component: string;
@@ -97,40 +101,31 @@ export class ErrorBoundaryHelper {
 
 /**
  * Firebase 에러 처리 헬퍼
+ *
+ * @deprecated 새로운 firebaseErrors 모듈의 handleFirebaseError를 사용하세요
+ * @see {@link handleFirebaseErrorUtil}
  */
 export const handleFirebaseError = (error: any, options: ErrorHandlerOptions): string => {
-  let userFriendlyMessage = options.fallbackMessage || '작업 중 오류가 발생했습니다.';
-  
-  // Firebase 에러 코드에 따른 메시지 매핑
-  if (error?.code) {
-    switch (error.code) {
-      case 'permission-denied':
-        userFriendlyMessage = '권한이 없습니다.';
-        break;
-      case 'not-found':
-        userFriendlyMessage = '요청한 데이터를 찾을 수 없습니다.';
-        break;
-      case 'already-exists':
-        userFriendlyMessage = '이미 존재하는 데이터입니다.';
-        break;
-      case 'unauthenticated':
-        userFriendlyMessage = '로그인이 필요합니다.';
-        break;
-      case 'unavailable':
-        userFriendlyMessage = '서비스를 일시적으로 사용할 수 없습니다.';
-        break;
-      case 'deadline-exceeded':
-        userFriendlyMessage = '요청 시간이 초과되었습니다.';
-        break;
-      default:
-        userFriendlyMessage = error.message || userFriendlyMessage;
-    }
+  // 새로운 firebaseErrors 유틸리티 사용
+  const context = {
+    component: options.component,
+    action: options.action,
+    userId: options.userId,
+    ...options.data
+  };
+
+  const userFriendlyMessage = handleFirebaseErrorUtil(
+    error as FirebaseError,
+    context,
+    'ko' // 기본 한국어
+  );
+
+  // 알림 표시 (옵션)
+  if (options.showAlert && typeof window !== 'undefined') {
+    toast.error(userFriendlyMessage);
   }
-  
-  return handleError(error, {
-    ...options,
-    fallbackMessage: userFriendlyMessage
-  });
+
+  return userFriendlyMessage;
 };
 
 /**

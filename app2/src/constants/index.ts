@@ -3,6 +3,8 @@
  * 프로젝트 전체에서 사용되는 상수들을 중복 없이 관리
  */
 
+import { toISODateString } from '../utils/dateUtils';
+
 // 출석 상태 관련 상수
 export const ATTENDANCE_STATUS = {
   NOT_STARTED: 'not_started',
@@ -24,7 +26,7 @@ export const DEFAULT_VALUES = {
   TIME_PENDING: '미정',
   TIME_NOT_SET: '시간 미정',
   EMPTY_STRING: '',
-  TODAY: new Date().toISOString().split('T')[0]
+  TODAY: toISODateString(new Date()) || ''
 } as const;
 
 // Firebase 컬렉션 이름

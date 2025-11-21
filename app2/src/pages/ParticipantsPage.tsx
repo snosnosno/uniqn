@@ -13,7 +13,7 @@ import MoveSeatModal from '../components/modals/MoveSeatModal';
 import TournamentSelector from '../components/TournamentSelector';
 import DateNavigator from '../components/DateNavigator';
 import ErrorBoundary from '../components/errors/ErrorBoundary';
-import { useDateFilter } from '../contexts/DateFilterContext';
+import { useDateFilter } from '../hooks/useDateFilter';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useTables, Table } from '../hooks/useTables';
 import { ParsedParticipant, downloadCSV, generateParticipantsCSV } from '../utils/csvParser';

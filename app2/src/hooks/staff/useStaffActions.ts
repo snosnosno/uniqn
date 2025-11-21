@@ -18,6 +18,7 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { toISODateString } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 import { useToast } from '../useToast';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
@@ -30,6 +31,11 @@ import {
   validateBulkDelete,
 } from '../../utils/staff/staffValidation';
 import { removeStaffIdDateSuffix } from '../../utils/staff/staffDataTransformer';
+import {
+  handleFirebaseError,
+  isPermissionDenied,
+  FirebaseError,
+} from '../../utils/firebaseErrors';
 
 export interface UseStaffActionsParams {
   jobPosting: JobPosting | null | undefined;
@@ -132,16 +138,24 @@ export function useStaffActions({
           return null;
         }
       } catch (error) {
-        logger.error(
-          'WorkLog 가져오기 실패',
-          error instanceof Error ? error : new Error(String(error)),
+        // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+        if (isPermissionDenied(error)) {
+          showError('근무 기록 조회 권한이 없습니다. 관리자에게 문의하세요.');
+          return null;
+        }
+
+        const message = handleFirebaseError(
+          error as FirebaseError,
           {
+            operation: 'getWorkLog',
+            staffId,
+            workDate,
             component: 'useStaffActions',
-            data: { staffId, workDate },
-          }
+          },
+          'ko'
         );
 
-        showError(`${staff.name}님의 근무 기록 조회 중 오류가 발생했습니다.`);
+        showError(`${staff.name}님의 근무 기록 조회 실패: ${message}`);
         return null;
       }
     },
@@ -269,11 +283,26 @@ export function useStaffActions({
         showSuccess(`${staffName} 스태프가 ${date} 날짜에서 삭제되었습니다.${roleInfo}`);
         refresh();
       } catch (error) {
-        logger.error(
-          '스태프 삭제 실패',
-          error instanceof Error ? error : new Error(String(error))
+        // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+        if (isPermissionDenied(error)) {
+          showError('스태프 삭제 권한이 없습니다. 공고 작성자만 삭제할 수 있습니다.');
+          return;
+        }
+
+        const message = handleFirebaseError(
+          error as FirebaseError,
+          {
+            operation: 'deleteStaff',
+            staffId,
+            staffName,
+            date,
+            jobPostingId: jobPosting?.id || 'unknown',
+            component: 'useStaffActions',
+          },
+          'ko'
         );
-        showError('스태프 삭제 중 오류가 발생했습니다.');
+
+        showError(`스태프 삭제 실패: ${message}`);
       }
     },
     [jobPosting, refresh, showSuccess, showError]
@@ -295,7 +324,7 @@ export function useStaffActions({
           const staff = staffData.find(s => s.id === staffId);
           const staffName = staff?.name || '이름 미정';
           const date =
-            staff?.assignedDate || new Date().toISOString().split('T')[0] || '';
+            staff?.assignedDate || toISODateString(new Date()) || '';
           return { staffId, staffName, date };
         });
 
@@ -414,11 +443,24 @@ export function useStaffActions({
 
         refresh();
       } catch (error) {
-        logger.error(
-          '스태프 일괄 삭제 실패',
-          error instanceof Error ? error : new Error(String(error))
+        // 🎯 Firebase Error Handling (Phase 3-2 Integration)
+        if (isPermissionDenied(error)) {
+          showError('일괄 삭제 권한이 없습니다. 공고 작성자만 삭제할 수 있습니다.');
+          return;
+        }
+
+        const message = handleFirebaseError(
+          error as FirebaseError,
+          {
+            operation: 'bulkDeleteStaff',
+            staffCount: staffIds.length,
+            jobPostingId: jobPosting?.id || 'unknown',
+            component: 'useStaffActions',
+          },
+          'ko'
         );
-        showError('스태프 일괄 삭제 중 오류가 발생했습니다.');
+
+        showError(`스태프 일괄 삭제 실패: ${message}`);
       }
     },
     [jobPosting, staffData, refresh, showSuccess, showError]
