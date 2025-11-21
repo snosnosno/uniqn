@@ -15,13 +15,28 @@ import { logger } from './logger';
  * - isValidDate: Type Guard
  */
 
+// ===== Internal Helper (재귀 방지용 핵심 함수) =====
+
+/**
+ * Date 객체를 YYYY-MM-DD 형식으로 변환 (내부 헬퍼)
+ * @internal
+ * @param date - Date 객체
+ * @returns YYYY-MM-DD 형식 문자열
+ */
+function formatDateToISO(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * 모든 날짜 타입을 yyyy-MM-dd 문자열로 변환
  * @param input - Timestamp, Date, string, number 등 모든 날짜 형식
  * @returns yyyy-MM-dd 형식의 날짜 문자열
  */
 export function toDateString(input: any): string {
-  if (!input) return new Date().toISOString().split('T')[0] || '';
+  if (!input) return formatDateToISO(new Date());
 
   try {
     let date: Date;
@@ -49,17 +64,14 @@ export function toDateString(input: any): string {
 
     // 유효한 날짜인지 확인
     if (isNaN(date.getTime())) {
-      return new Date().toISOString().split('T')[0] || '';
+      return formatDateToISO(new Date());
     }
 
     // yyyy-MM-dd 형식으로 반환
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return formatDateToISO(date);
 
   } catch {
-    return new Date().toISOString().split('T')[0] || '';
+    return formatDateToISO(new Date());
   }
 }
 
@@ -118,7 +130,7 @@ export function getKoreanDate(): string {
 
     return `${year}-${month}-${day}`;
   } catch {
-    return new Date().toISOString().split('T')[0] || '';
+    return formatDateToISO(new Date());
   }
 }
 
@@ -306,7 +318,7 @@ export function toISODateString(
       return null;
     }
 
-    return dateObj.toISOString().split('T')[0] || null;
+    return formatDateToISO(dateObj);
   } catch (error) {
     logger.warn('toISODateString: Conversion error', {
       component: 'dateUtils',
@@ -347,11 +359,11 @@ export function formatDate(
     }
 
     if (format === 'date') {
-      return dateObj.toISOString().split('T')[0] || null;
+      return formatDateToISO(dateObj);
     }
 
     // datetime format: YYYY-MM-DD HH:mm
-    const datePart = dateObj.toISOString().split('T')[0];
+    const datePart = formatDateToISO(dateObj);
     const hours = String(dateObj.getHours()).padStart(2, '0');
     const minutes = String(dateObj.getMinutes()).padStart(2, '0');
 

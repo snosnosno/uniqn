@@ -36,8 +36,8 @@ describe('DateUtils: Phase 3 Functions', () => {
 
   describe('toISODateString()', () => {
     it('T029: Date 객체를 YYYY-MM-DD 형식으로 변환해야 함', () => {
-      // Given: 특정 날짜의 Date 객체
-      const date = new Date('2025-11-20T15:30:00Z');
+      // Given: 로컬 시간대 Date 객체 (UTC 타임존 문제 방지)
+      const date = new Date('2025-11-20T12:00:00');
 
       // When: toISODateString 호출
       const result = toISODateString(date);
@@ -101,12 +101,16 @@ describe('DateUtils: Phase 3 Functions', () => {
 
       // Then: YYYY-MM-DD 형식 문자열 반환
       expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(result).toBe(today.toISOString().split('T')[0]);
+
+      // And: 로컬 시간대 기준 날짜와 일치
+      const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      expect(result).toBe(expected);
     });
   });
 
   describe('formatDate()', () => {
-    const testDate = new Date('2025-11-20T15:30:45Z');
+    // 로컬 시간대 Date 객체 (UTC 타임존 문제 방지)
+    const testDate = new Date('2025-11-20T12:30:45');
 
     it('T032: date 포맷으로 YYYY-MM-DD를 반환해야 함', () => {
       // When: formatDate를 'date' 포맷으로 호출
@@ -314,8 +318,8 @@ describe('DateUtils: Phase 3 Functions', () => {
 
   describe('함수 간 통합 테스트', () => {
     it('parseDate → isValidDate → formatDate 체인이 작동해야 함', () => {
-      // Given: 날짜 문자열
-      const dateString = '2025-11-20T15:30:00Z';
+      // Given: 로컬 시간대 날짜 문자열 (UTC 타임존 문제 방지)
+      const dateString = '2025-11-20T12:00:00';
 
       // When: 체인 호출
       const parsedDate = parseDate(dateString);
@@ -337,8 +341,8 @@ describe('DateUtils: Phase 3 Functions', () => {
     });
 
     it('toISODateString과 parseDate가 역변환을 수행해야 함', () => {
-      // Given: Date 객체
-      const originalDate = new Date('2025-11-21T00:00:00Z');
+      // Given: 로컬 시간대 Date 객체 (UTC 타임존 문제 방지)
+      const originalDate = new Date('2025-11-21T12:00:00');
 
       // When: toISODateString → parseDate
       const dateString = toISODateString(originalDate);
