@@ -1,8 +1,9 @@
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { logger } from '../utils/logger';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 import { db } from '../firebase';
+import { useFirestoreDocument } from './firestore';
 
 import { logAction } from './useLogger';
 
@@ -13,48 +14,37 @@ export interface TournamentSettings {
   maxSeatsPerTable?: number;
 }
 
+// 기본 설정
+const DEFAULT_SETTINGS: TournamentSettings = {
+  minWorkMinutesForClockOut: 60,
+  qrClockInEnabled: true,
+  maxSeatsPerTable: 9,
+};
+
 export const useSettings = (userId: string | null, tournamentId: string | null) => {
-  const [settings, setSettings] = useState<TournamentSettings>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (!userId || !tournamentId) {
-      setSettings({
-        minWorkMinutesForClockOut: 60,
-        qrClockInEnabled: true,
-        maxSeatsPerTable: 9,
-      });
-      setLoading(false);
-      return;
-    }
-
-    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'tournament');
-
-    const unsubscribe = onSnapshot(
-      settingsDocRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setSettings(docSnap.data() as TournamentSettings);
-        } else {
-          // Default settings if the document doesn't exist
-          setSettings({
-            minWorkMinutesForClockOut: 60,
-            qrClockInEnabled: true,
-            maxSeatsPerTable: 9,
-          });
-        }
-        setLoading(false);
-      },
-      (err) => {
-        logger.error('Error fetching settings:', err instanceof Error ? err : new Error(String(err)), { component: 'useSettings' });
-        setError(err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
+  // 문서 경로 생성
+  const settingsPath = useMemo(() => {
+    if (!userId || !tournamentId) return null;
+    return `users/${userId}/tournaments/${tournamentId}/settings/tournament`;
   }, [userId, tournamentId]);
+
+  // useFirestoreDocument로 구독
+  const {
+    data: settingsData,
+    loading,
+    error,
+  } = useFirestoreDocument<TournamentSettings>(settingsPath || '', {
+    enabled: settingsPath !== null,
+    errorOnNotFound: false,
+    onError: (err) => {
+      logger.error('Error fetching settings:', err, { component: 'useSettings' });
+    },
+  });
+
+  // 문서가 없으면 기본 설정 반환
+  const settings = useMemo(() => {
+    return settingsData || DEFAULT_SETTINGS;
+  }, [settingsData]);
   
   const updateSettings = async (newSettings: Partial<TournamentSettings>) => {
     if (!userId || !tournamentId) {
@@ -66,7 +56,7 @@ export const useSettings = (userId: string | null, tournamentId: string | null) 
       logAction('settings_updated', { ...newSettings });
     } catch (e) {
       logger.error('Error updating settings:', e instanceof Error ? e : new Error(String(e)), { component: 'useSettings' });
-      setError(e as Error);
+      throw e;
     }
   };
 
