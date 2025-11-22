@@ -8,12 +8,12 @@
  * @since 2025-01-23
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { useState, useCallback, useMemo } from 'react';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useFirestoreDocument } from './firestore';
 import {
   createConsent,
   updateConsent,
@@ -66,54 +66,43 @@ export interface UseConsentReturn {
  */
 export const useConsent = (): UseConsentReturn => {
   const { currentUser } = useAuth();
-  const [consent, setConsent] = useState<ConsentRecord | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  /**
-   * Firestore 실시간 구독
-   */
-  useEffect(() => {
-    if (!currentUser) {
-      setConsent(null);
-      setLoading(false);
-      return;
-    }
-
-    const consentRef = doc(db, 'users', currentUser.uid, 'consents', 'current');
-
-    const unsubscribe = onSnapshot(
-      consentRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as ConsentRecord;
-          setConsent(data);
-          logger.debug('동의 내역 실시간 업데이트', {
-            component: 'useConsent',
-            data: { userId: currentUser.uid },
-          });
-        } else {
-          setConsent(null);
-          logger.debug('동의 내역 없음', {
-            component: 'useConsent',
-            data: { userId: currentUser.uid },
-          });
-        }
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        logger.error('동의 내역 구독 실패', err, {
-          component: 'useConsent',
-          data: { userId: currentUser.uid },
-        });
-        setError(err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
+  // 문서 경로 생성
+  const consentPath = useMemo(() => {
+    if (!currentUser) return null;
+    return `users/${currentUser.uid}/consents/current`;
   }, [currentUser?.uid]);
+
+  // useFirestoreDocument로 구독
+  const {
+    data: consent,
+    loading,
+    error: hookError,
+  } = useFirestoreDocument<ConsentRecord>(consentPath || '', {
+    enabled: consentPath !== null,
+    errorOnNotFound: false,
+    onSuccess: () => {
+      if (consent) {
+        logger.debug('동의 내역 실시간 업데이트', {
+          component: 'useConsent',
+          data: { userId: currentUser?.uid },
+        });
+      } else {
+        logger.debug('동의 내역 없음', {
+          component: 'useConsent',
+          data: { userId: currentUser?.uid },
+        });
+      }
+    },
+    onError: (err) => {
+      logger.error('동의 내역 구독 실패', err, {
+        component: 'useConsent',
+        data: { userId: currentUser?.uid },
+      });
+      setError(err);
+    },
+  });
 
   /**
    * 동의 생성
@@ -125,7 +114,6 @@ export const useConsent = (): UseConsentReturn => {
       }
 
       try {
-        setLoading(true);
         setError(null);
         await createConsent(currentUser.uid, input);
         toast.success('동의 내역이 저장되었습니다.');
@@ -138,8 +126,6 @@ export const useConsent = (): UseConsentReturn => {
         });
         toast.error(error.message || '동의 내역 저장에 실패했습니다.');
         throw error;
-      } finally {
-        setLoading(false);
       }
     },
     [currentUser]
@@ -243,28 +229,12 @@ export const useConsent = (): UseConsentReturn => {
 
   /**
    * 동의 내역 새로고침
+   * useFirestoreDocument는 실시간 구독이므로 별도 새로고침 불필요
+   * 호환성을 위해 빈 함수 제공
    */
   const refreshConsent = useCallback(async (): Promise<void> => {
-    if (!currentUser) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getConsent(currentUser.uid);
-      setConsent(data);
-    } catch (err) {
-      const error = err as Error;
-      setError(error);
-      logger.error('동의 내역 새로고침 실패', error, {
-        component: 'useConsent',
-        data: { userId: currentUser.uid },
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser]);
+    // useFirestoreDocument는 실시간 구독이므로 별도 새로고침 불필요
+  }, []);
 
   /**
    * 계산된 값들 (메모이제이션)
@@ -281,7 +251,7 @@ export const useConsent = (): UseConsentReturn => {
   return {
     consent,
     loading,
-    error,
+    error: error || hookError,
     ...computedValues,
     createConsent: handleCreateConsent,
     updateMarketing,
