@@ -8,25 +8,27 @@
  * @since 2025-10-02
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   collection,
   query,
   where,
   orderBy,
   limit,
-  onSnapshot,
   doc,
   updateDoc,
   deleteDoc,
   writeBatch,
-  Timestamp
+  Timestamp,
+  type Query,
+  type DocumentData
 } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './useToast';
+import { useFirestoreQuery } from './firestore';
 import type {
   Notification,
   NotificationFilter,
@@ -78,10 +80,6 @@ export interface UseNotificationsReturn {
 export const useNotifications = (): UseNotificationsReturn => {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
-
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const [filter, setFilter] = useState<NotificationFilter>({});
 
   /**
@@ -95,71 +93,57 @@ export const useNotifications = (): UseNotificationsReturn => {
   };
 
   /**
-   * Firestore 실시간 구독
+   * Firestore 쿼리 생성 (currentUser에 따라 동적 생성)
    */
-  useEffect(() => {
-    if (!currentUser) {
-      setNotifications([]);
-      setLoading(false);
-      return undefined;
-    }
+  const notificationsQuery = useMemo((): Query<DocumentData> | null => {
+    if (!currentUser) return null;
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Firestore 쿼리 구성
-      const q = query(
-        collection(db, 'notifications'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-
-      // 실시간 구독
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const notifs: Notification[] = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              createdAt: data.createdAt ? convertTimestamp(data.createdAt) : new Date(),
-              sentAt: data.sentAt ? convertTimestamp(data.sentAt) : undefined,
-              readAt: data.readAt ? convertTimestamp(data.readAt) : undefined,
-            } as Notification;
-          });
-
-          setNotifications(notifs);
-          setLoading(false);
-
-          logger.info('알림 목록 업데이트', {
-            data: {
-              count: notifs.length,
-              unreadCount: notifs.filter(n => !n.isRead).length,
-            }
-          });
-        },
-        (err) => {
-          logger.error('알림 구독 실패', err);
-          setError(err);
-          setLoading(false);
-        }
-      );
-
-      // 클린업
-      return () => {
-        unsubscribe();
-      };
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      logger.error('알림 구독 초기화 실패', error);
-      setError(error);
-      setLoading(false);
-      return undefined;
-    }
+    return query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
   }, [currentUser]);
+
+  /**
+   * Firestore 실시간 구독 (useFirestoreQuery 사용)
+   * id는 useFirestoreQuery가 자동으로 추가
+   */
+  type NotificationData = Omit<Notification, 'id' | 'createdAt' | 'sentAt' | 'readAt'> & {
+    createdAt: Date | Timestamp;
+    sentAt?: Date | Timestamp;
+    readAt?: Date | Timestamp;
+  };
+
+  const {
+    data: rawNotifications,
+    loading,
+    error,
+  } = useFirestoreQuery<NotificationData>(notificationsQuery, {
+    onSuccess: () => {
+      logger.info('알림 목록 업데이트');
+    },
+    onError: (err) => {
+      logger.error('알림 구독 실패', err);
+    },
+  });
+
+  /**
+   * Firestore 데이터를 Notification 타입으로 변환
+   * useFirestoreQuery는 FirestoreDocument<T>를 반환하므로 id가 이미 포함됨
+   */
+  const notifications = useMemo((): Notification[] => {
+    return rawNotifications.map((doc): Notification => {
+      const withId = doc as unknown as Notification;
+      return {
+        ...withId,
+        createdAt: doc.createdAt ? convertTimestamp(doc.createdAt) : new Date(),
+        sentAt: doc.sentAt ? convertTimestamp(doc.sentAt) : undefined,
+        readAt: doc.readAt ? convertTimestamp(doc.readAt) : undefined,
+      };
+    });
+  }, [rawNotifications]);
 
   /**
    * 필터링된 알림 목록
