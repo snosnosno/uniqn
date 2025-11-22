@@ -12,16 +12,16 @@
  * @since 2025-10-15
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   doc,
-  onSnapshot,
   setDoc,
   updateDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useFirestoreDocument } from './firestore';
 import {
   NotificationSettings,
   NotificationCategory,
@@ -89,60 +89,54 @@ const getDefaultSettings = (userId: string): NotificationSettings => ({
  */
 export const useNotificationSettings = (): UseNotificationSettingsReturn => {
   const { currentUser } = useAuth();
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
-  // Firestore 실시간 구독
-  useEffect(() => {
-    if (!currentUser) {
-      setSettings(null);
-      setLoading(false);
-      return;
+  // 문서 경로 생성
+  const settingsPath = useMemo(() => {
+    if (!currentUser) return null;
+    return `users/${currentUser.uid}/settings/notifications`;
+  }, [currentUser?.uid]);
+
+  // useFirestoreDocument로 구독
+  const {
+    data: settingsData,
+    loading,
+    error,
+  } = useFirestoreDocument<NotificationSettings>(settingsPath || '', {
+    enabled: settingsPath !== null,
+    errorOnNotFound: false,
+    onSuccess: () => {
+      logger.info('알림 설정 로드 완료');
+    },
+    onError: (err) => {
+      logger.error('알림 설정 구독 실패', err);
+    },
+  });
+
+  // 문서가 없으면 기본 설정 생성
+  const settings = useMemo(() => {
+    if (!currentUser) return null;
+
+    if (!settingsData && !loading && settingsPath) {
+      // 기본 설정 생성
+      const defaultSettings = getDefaultSettings(currentUser.uid);
+      const settingsRef = doc(db, settingsPath);
+
+      setDoc(settingsRef, {
+        ...defaultSettings,
+        updatedAt: serverTimestamp(),
+      })
+        .then(() => {
+          logger.info('알림 설정 없음, 기본 설정 생성', { userId: currentUser.uid });
+        })
+        .catch((err) => {
+          logger.error('알림 설정 기본값 생성 실패', err as Error);
+        });
+
+      return defaultSettings;
     }
 
-    const settingsRef = doc(db, 'users', currentUser.uid, 'settings', 'notifications');
-
-    logger.info('알림 설정 실시간 구독 시작');
-
-    const unsubscribe = onSnapshot(
-      settingsRef,
-      async (docSnap) => {
-        try {
-          if (docSnap.exists()) {
-            const data = docSnap.data() as NotificationSettings;
-            logger.info('알림 설정 로드 완료');
-            setSettings(data);
-          } else {
-            // 설정이 없으면 기본 설정 생성
-            logger.info('알림 설정 없음, 기본 설정 생성', { userId: currentUser.uid });
-            const defaultSettings = getDefaultSettings(currentUser.uid);
-            await setDoc(settingsRef, {
-              ...defaultSettings,
-              updatedAt: serverTimestamp(),
-            });
-            setSettings(defaultSettings);
-          }
-          setError(null);
-        } catch (err) {
-          logger.error('알림 설정 로드 실패', err as Error);
-          setError(err as Error);
-        } finally {
-          setLoading(false);
-        }
-      },
-      (err) => {
-        logger.error('알림 설정 구독 실패', err);
-        setError(err as Error);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      logger.info('알림 설정 구독 해제');
-      unsubscribe();
-    };
-  }, [currentUser]);
+    return settingsData;
+  }, [settingsData, loading, currentUser, settingsPath]);
 
   /**
    * 알림 설정 업데이트
