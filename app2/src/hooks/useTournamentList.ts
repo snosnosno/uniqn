@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { collection, query, addDoc, updateDoc, deleteDoc, doc, Timestamp, onSnapshot } from 'firebase/firestore';
+import { useState, useCallback, useMemo } from 'react';
+import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { TournamentSettings } from '../stores/tournamentStore';
+import { useFirestoreCollection } from './firestore';
 
 export interface Tournament {
   id: string;
@@ -21,58 +22,36 @@ export interface Tournament {
  * @returns 토너먼트 목록, 로딩 상태, 에러, CRUD 작업 함수들
  */
 export const useTournamentList = (userId: string | null) => {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  // 컬렉션 경로 생성
+  const collectionPath = useMemo(() => {
+    if (!userId) return null;
+    return `users/${userId}/tournaments`;
+  }, [userId]);
 
-  // 실시간 토너먼트 목록 구독
-  useEffect(() => {
-    if (!userId) {
-      setTournaments([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const tournamentsRef = collection(db, `users/${userId}/tournaments`);
-      const q = query(tournamentsRef);
-
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const tournamentList: Tournament[] = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          } as Tournament));
-
-          setTournaments(tournamentList);
-          setLoading(false);
-          setError(null);
-
-          logger.info('토너먼트 목록 로드 완료', {
-            component: 'useTournamentList',
-            data: { userId, count: tournamentList.length },
-          });
-        },
-        (err) => {
-          logger.error('토너먼트 목록 구독 실패:', err instanceof Error ? err : new Error(String(err)), {
-            component: 'useTournamentList',
-          });
-          setError(err instanceof Error ? err : new Error('토너먼트 목록을 불러오는데 실패했습니다.'));
-          setLoading(false);
-        }
-      );
-
-      return () => unsubscribe();
-    } catch (err) {
-      logger.error('토너먼트 구독 설정 실패:', err instanceof Error ? err : new Error(String(err)), {
+  // useFirestoreCollection으로 구독
+  const {
+    data: tournamentList,
+    loading,
+    error,
+  } = useFirestoreCollection<Omit<Tournament, 'id'>>(collectionPath || '', {
+    enabled: collectionPath !== null,
+    onSuccess: () => {
+      logger.info('토너먼트 목록 로드 완료', {
+        component: 'useTournamentList',
+        data: { userId, count: tournamentList.length },
+      });
+    },
+    onError: (err) => {
+      logger.error('토너먼트 목록 구독 실패:', err, {
         component: 'useTournamentList',
       });
-      setError(err instanceof Error ? err : new Error('토너먼트 구독 설정에 실패했습니다.'));
-      setLoading(false);
-      return undefined; // catch 블록에서도 cleanup 함수 반환
-    }
-  }, [userId]);
+    },
+  });
+
+  // Tournament 타입으로 변환
+  const tournaments = useMemo(() => {
+    return tournamentList.map((doc) => doc as unknown as Tournament);
+  }, [tournamentList]);
 
   /**
    * 새 토너먼트 생성
