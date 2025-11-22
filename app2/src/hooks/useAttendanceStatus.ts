@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Timestamp } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { Timestamp, collection, query, where, type Query, type DocumentData } from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
 import { AttendanceStatus } from '../components/attendance/AttendanceStatusCard';
 import { formatTime } from '../utils/dateUtils';
-import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
+import { db } from '../firebase';
+import { useFirestoreQuery } from './firestore';
 
 import { WorkLog } from './useShiftSchedule';
 
@@ -26,9 +27,6 @@ interface UseAttendanceStatusProps {
 }
 
 export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps) => {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   // Optimistic update를 위한 로컬 업데이트 상태
   const [localUpdates, setLocalUpdates] = useState<Map<string, AttendanceStatus>>(new Map());
 
@@ -36,92 +34,85 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   const currentDate = date || getTodayString();
   const currentEventId = eventId || 'default-event';
 
-  // Optimistic update 함수 추가
+  // Optimistic update 함수
   const applyOptimisticUpdate = (workLogId: string, newStatus: AttendanceStatus) => {
     setLocalUpdates(prev => {
       const newMap = new Map(prev);
       newMap.set(workLogId, newStatus);
       return newMap;
     });
-    
-    // 즉시 attendanceRecords 업데이트
-    setAttendanceRecords(prev => {
-      return prev.map(record => {
-        if (record.workLogId === workLogId) {
-          return { ...record, status: newStatus };
-        }
-        return record;
-      });
-    });
   };
 
-  useEffect(() => {
-    if (!currentEventId) {
-      setLoading(false);
-      return () => {};
+  // Firestore 쿼리 생성 (메모이제이션)
+  const workLogsQuery = useMemo((): Query<DocumentData> | null => {
+    if (!currentEventId) return null;
+
+    let q = query(
+      collection(db, 'workLogs'),
+      where('eventId', '==', currentEventId)
+    );
+
+    // 날짜 필터링 (옵션)
+    if (date) {
+      q = query(q, where('date', '==', date));
+    }
+
+    return q;
+  }, [currentEventId, date]);
+
+  // useFirestoreQuery로 구독
+  const {
+    data: rawWorkLogs,
+    loading,
+    error: hookError,
+  } = useFirestoreQuery<Omit<WorkLog, 'id'>>(
+    workLogsQuery || query(collection(db, 'workLogs'), where('__name__', '==', '__non_existent__')),
+    {
+      enabled: workLogsQuery !== null,
+      onSuccess: () => {
+        logger.debug('출석 기록 실시간 업데이트', {
+          component: 'useAttendanceStatus',
+          data: { count: rawWorkLogs.length, eventId: currentEventId }
+        });
+      },
+      onError: (err) => {
+        logger.error('출석 기록 구독 오류', err, {
+          component: 'useAttendanceStatus'
+        });
+      },
+    }
+  );
+
+  // WorkLogs를 AttendanceRecords로 변환 + Optimistic Update 적용
+  const attendanceRecords = useMemo(() => {
+    if (!rawWorkLogs || rawWorkLogs.length === 0) {
+      return [];
     }
 
     try {
-      // workLogs 컬렉션에서 해당 이벤트의 기록들을 실시간으로 구독
-      // 날짜 필터링을 옵션으로 추가
-      
-      // safeOnSnapshot을 사용하여 안전한 리스너 설정
-      const unsubscribe = safeOnSnapshot<WorkLog>(
-        'workLogs',
-        (workLogs) => {
-          try {
-            const records: AttendanceRecord[] = [];
-            
-            // eventId로 필터링 - 현재 eventId와 일치하는 것만
-            let filteredWorkLogs = workLogs.filter(workLog => 
-              workLog.eventId === currentEventId
-            );
-            
-            // 날짜 필터링 (옵션)
-            if (date) {
-              filteredWorkLogs = filteredWorkLogs.filter(workLog =>
-                workLog.date === date
-              );
-            }
-            
-            // workLogs 처리
-            filteredWorkLogs.forEach((workLog) => {
-              // localUpdates에 있는 경우 해당 상태 사용
-              const localStatus = workLog.id ? localUpdates.get(workLog.id) : undefined;
-              const attendanceRecord = calculateAttendanceStatus(workLog);
-              
-              if (localStatus) {
-                attendanceRecord.status = localStatus;
-              }
-              
-              records.push(attendanceRecord);
-            });
+      const records: AttendanceRecord[] = [];
+      const typedWorkLogs = rawWorkLogs.map((doc) => doc as unknown as WorkLog);
 
-            // 항상 새로운 배열로 설정하여 React가 변경을 감지하도록 함
-            setAttendanceRecords([...records]);
-            setError(null);
-          } catch (err) {
-            logger.error('출석 상태 계산 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useAttendanceStatus' });
-            setError('출석 상태를 계산하는 중 오류가 발생했습니다.');
-          } finally {
-            setLoading(false);
-          }
-        },
-        (err) => {
-          logger.error('출석 기록 구독 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useAttendanceStatus' });
-          setError('출석 기록을 불러오는 중 오류가 발생했습니다.');
-          setLoading(false);
+      typedWorkLogs.forEach((workLog) => {
+        // localUpdates에 있는 경우 해당 상태 사용
+        const localStatus = workLog.id ? localUpdates.get(workLog.id) : undefined;
+        const attendanceRecord = calculateAttendanceStatus(workLog);
+
+        if (localStatus) {
+          attendanceRecord.status = localStatus;
         }
-      );
 
-      return () => unsubscribe();
+        records.push(attendanceRecord);
+      });
+
+      return records;
     } catch (err) {
-      logger.error('출석 상태 훅 초기화 오류:', err instanceof Error ? err : new Error(String(err)), { component: 'useAttendanceStatus' });
-      setError('출석 상태 시스템을 초기화하는 중 오류가 발생했습니다.');
-      setLoading(false);
-      return () => {};
+      logger.error('출석 상태 계산 오류', err as Error, {
+        component: 'useAttendanceStatus'
+      });
+      return [];
     }
-  }, [currentEventId, currentDate, localUpdates]);
+  }, [rawWorkLogs, localUpdates]);
 
   // WorkLog 데이터로부터 출석 상태를 계산하는 함수
   const calculateAttendanceStatus = (workLog: WorkLog): AttendanceRecord => {
@@ -299,7 +290,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   return {
     attendanceRecords,
     loading,
-    error,
+    error: hookError ? hookError.message : null,
     getStaffAttendanceStatus,
     getAttendanceStats,
     currentDate,
