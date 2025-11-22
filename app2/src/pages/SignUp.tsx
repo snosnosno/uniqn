@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { callFunctionLazy } from '../utils/firebase-dynamic';
 import { validatePassword } from '../utils/passwordValidator';
 import { validatePhone, formatPhoneNumber } from '../utils/phoneValidator';
+import { validateEmail, validateEmailRealtime } from '../utils/emailValidator';
 import type { ConsentCreateInput } from '../types/consent';
 import { FirebaseError } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
@@ -97,9 +98,14 @@ const SignUp: React.FC = () => {
     const value = e.target.value;
     setEmail(value);
 
-    // 이메일 형식 간단 검증
-    if (value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setEmailError(t('signUp.validation.invalidEmail', '올바른 이메일 형식이 아닙니다.'));
+    // 이메일 형식 실시간 검증 (emailValidator 유틸리티 사용)
+    if (value.length > 0) {
+      const validation = validateEmailRealtime(value);
+      if (!validation.isValid) {
+        setEmailError(validation.errors?.[0] || t('signUp.validation.invalidEmail', '올바른 이메일 형식이 아닙니다.'));
+      } else {
+        setEmailError('');
+      }
     } else {
       setEmailError('');
     }
@@ -161,6 +167,14 @@ const SignUp: React.FC = () => {
     const phoneValidation = validatePhone(phone);
     if (!phoneValidation.isValid) {
       setError(phoneValidation.errors.join(' '));
+      setIsLoading(false);
+      return;
+    }
+
+    // 이메일 검증 (RFC 5322 표준 준수)
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.errors.join(' '));
       setIsLoading(false);
       return;
     }
