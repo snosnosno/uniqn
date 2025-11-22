@@ -1,62 +1,54 @@
-import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, orderBy, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
+import { useState, useCallback, useMemo } from 'react';
+import { collection, query, where, orderBy, type Query, type DocumentData } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { JobPosting } from '../types/jobPosting/jobPosting';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
+import { useFirestoreQuery } from './firestore';
 
 /**
  * 대회 공고 승인 시스템 Hook
  * admin 전용 - 승인 대기 중인 대회 공고 조회 및 승인/거부 처리
  */
 export const useJobPostingApproval = () => {
-  const [pendingPostings, setPendingPostings] = useState<JobPosting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  // 승인 대기 중인 대회 공고 실시간 구독
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const q = query(
-        collection(db, 'jobPostings'),
-        where('postingType', '==', 'tournament'),
-        where('tournamentConfig.approvalStatus', '==', 'pending'),
-        orderBy('createdAt', 'desc')
-      );
-
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot: QuerySnapshot<DocumentData>) => {
-          const postings = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as JobPosting[];
-
-          setPendingPostings(postings);
-          setLoading(false);
-
-          logger.info('승인 대기 공고 조회 완료');
-        },
-        (err) => {
-          logger.error('승인 대기 공고 조회 실패', err as Error);
-          setError(err as Error);
-          setLoading(false);
-        }
-      );
-
-      return () => unsubscribe();
-    } catch (err) {
-      logger.error('승인 대기 공고 쿼리 생성 실패', err as Error);
-      setError(err as Error);
-      setLoading(false);
-      return undefined;
-    }
+  // 승인 대기 중인 대회 공고 쿼리 생성
+  const pendingQuery = useMemo((): Query<DocumentData> => {
+    return query(
+      collection(db, 'jobPostings'),
+      where('postingType', '==', 'tournament'),
+      where('tournamentConfig.approvalStatus', '==', 'pending'),
+      orderBy('createdAt', 'desc')
+    );
   }, []);
+
+  // useFirestoreQuery로 구독
+  type JobPostingData = Omit<JobPosting, 'id'>;
+
+  const {
+    data: pendingPostingsData,
+    loading,
+    error,
+  } = useFirestoreQuery<JobPostingData>(pendingQuery, {
+    onSuccess: () => {
+      logger.info('승인 대기 공고 조회 완료', {
+        component: 'useJobPostingApproval',
+        data: { count: pendingPostingsData.length }
+      });
+    },
+    onError: (err) => {
+      logger.error('승인 대기 공고 조회 실패', err, {
+        component: 'useJobPostingApproval'
+      });
+    },
+  });
+
+  // JobPosting 타입으로 변환
+  const pendingPostings = useMemo(() => {
+    return pendingPostingsData.map((doc) => doc as unknown as JobPosting);
+  }, [pendingPostingsData]);
 
   /**
    * 대회 공고 승인
