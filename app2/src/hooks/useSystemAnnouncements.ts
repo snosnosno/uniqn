@@ -8,26 +8,28 @@
  * @since 2025-10-25
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   collection,
   query,
   where,
   orderBy,
-  onSnapshot,
   doc,
   addDoc,
   updateDoc,
   deleteDoc,
   increment,
   Timestamp,
-  serverTimestamp
+  serverTimestamp,
+  type Query,
+  type DocumentData
 } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './useToast';
+import { useFirestoreQuery } from './firestore';
 import { extractNameFromDisplayName } from '../utils/userUtils';
 import type {
   SystemAnnouncement,
@@ -65,16 +67,13 @@ export interface UseSystemAnnouncementsReturn {
  * const { announcements, createAnnouncement, loading } = useSystemAnnouncements();
  * ```
  */
-export const useSystemAnnouncements = (): UseSystemAnnouncementsReturn => {
+export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter): UseSystemAnnouncementsReturn => {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
 
-  const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [filter, setFilter] = useState<SystemAnnouncementFilter>({
-    activeOnly: true
-  });
+  const [filter, setFilter] = useState<SystemAnnouncementFilter>(
+    initialFilter || { activeOnly: true }
+  );
 
   /**
    * Firestore Timestamp를 Date로 변환
@@ -87,91 +86,73 @@ export const useSystemAnnouncements = (): UseSystemAnnouncementsReturn => {
   }, []);
 
   /**
-   * Firestore 실시간 구독
+   * Firestore 쿼리 생성 (filter에 따라 동적 생성)
    */
-  useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return undefined;
+  const announcementsQuery = useMemo((): Query<DocumentData> | null => {
+    if (!currentUser) return null;
+
+    const announcementsRef = collection(db, 'systemAnnouncements');
+    let q: Query<DocumentData> = query(announcementsRef, orderBy('createdAt', 'desc'));
+
+    // 활성 공지사항만 필터링
+    if (filter.activeOnly) {
+      q = query(q, where('isActive', '==', true));
     }
 
-    try {
-      const announcementsRef = collection(db, 'systemAnnouncements');
-      let q = query(announcementsRef, orderBy('createdAt', 'desc'));
+    // 우선순위 필터
+    if (filter.priority) {
+      q = query(q, where('priority', '==', filter.priority));
+    }
 
-      // 활성 공지사항만 필터링
-      if (filter.activeOnly) {
-        q = query(q, where('isActive', '==', true));
-      }
+    return q;
+  }, [currentUser, filter]);
 
-      // 우선순위 필터
-      if (filter.priority) {
-        q = query(q, where('priority', '==', filter.priority));
-      }
+  /**
+   * useFirestoreQuery로 구독
+   */
+  type AnnouncementData = Omit<SystemAnnouncement, 'id'>;
 
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const announcementsData = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              ...data,
-              id: doc.id,
-              createdAt: data.createdAt,
-              updatedAt: data.updatedAt,
-              startDate: data.startDate,
-              endDate: data.endDate || null,
-              sendResult: data.sendResult || undefined
-            } as SystemAnnouncement;
-          });
-
-          // 날짜 필터 적용
-          let filteredAnnouncements = announcementsData;
-          const now = new Date();
-
-          if (filter.activeOnly) {
-            filteredAnnouncements = filteredAnnouncements.filter((announcement) => {
-              const startDate = convertTimestamp(announcement.startDate);
-              const endDate = announcement.endDate ? convertTimestamp(announcement.endDate) : null;
-
-              // 시작일 이전이면 제외
-              if (startDate > now) return false;
-
-              // 종료일이 지났으면 제외
-              if (endDate && endDate < now) return false;
-
-              return true;
-            });
-          }
-
-          setAnnouncements(filteredAnnouncements);
-          setLoading(false);
-          setError(null);
-
-          logger.info('시스템 공지사항 조회 완료', {
-            component: 'useSystemAnnouncements',
-            data: { count: filteredAnnouncements.length }
-          });
-        },
-        (err) => {
-          logger.error('시스템 공지사항 구독 실패:', err instanceof Error ? err : new Error(String(err)), {
-            component: 'useSystemAnnouncements'
-          });
-          setError(err instanceof Error ? err : new Error(String(err)));
-          setLoading(false);
-        }
-      );
-
-      return () => unsubscribe();
-    } catch (err) {
-      logger.error('시스템 공지사항 구독 설정 실패:', err instanceof Error ? err : new Error(String(err)), {
+  const {
+    data: rawAnnouncements,
+    loading,
+    error,
+  } = useFirestoreQuery<AnnouncementData>(announcementsQuery, {
+    onSuccess: () => {
+      logger.info('시스템 공지사항 조회 완료', {
+        component: 'useSystemAnnouncements',
+        data: { count: rawAnnouncements.length }
+      });
+    },
+    onError: (err) => {
+      logger.error('시스템 공지사항 구독 실패:', err, {
         component: 'useSystemAnnouncements'
       });
-      setError(err instanceof Error ? err : new Error(String(err)));
-      setLoading(false);
-      return undefined;
-    }
-  }, [currentUser, filter]);
+    },
+  });
+
+  /**
+   * 날짜 필터 적용 및 타입 변환
+   */
+  const announcements = useMemo(() => {
+    const now = new Date();
+
+    return rawAnnouncements
+      .map((doc) => doc as unknown as SystemAnnouncement)
+      .filter((announcement) => {
+        if (!filter.activeOnly) return true;
+
+        const startDate = convertTimestamp(announcement.startDate);
+        const endDate = announcement.endDate ? convertTimestamp(announcement.endDate) : null;
+
+        // 시작일 이전이면 제외
+        if (startDate > now) return false;
+
+        // 종료일이 지났으면 제외
+        if (endDate && endDate < now) return false;
+
+        return true;
+      });
+  }, [rawAnnouncements, filter.activeOnly, convertTimestamp]);
 
   /**
    * 활성 공지사항만 필터링
