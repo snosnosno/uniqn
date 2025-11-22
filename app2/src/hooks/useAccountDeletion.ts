@@ -8,17 +8,16 @@
  * @since 2025-01-23
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { useState, useCallback, useMemo } from 'react';
+import { collection, query, where, type Query, type DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useFirestoreQuery } from './firestore';
 import {
   requestAccountDeletion,
-  getDeletionRequest,
   cancelDeletionRequest,
-  isPendingDeletion,
 } from '../services/accountDeletionService';
 import {
   calculateRemainingDays,
@@ -75,43 +74,49 @@ export interface UseAccountDeletionReturn {
  */
 export const useAccountDeletion = (): UseAccountDeletionReturn => {
   const { currentUser } = useAuth();
-  const [deletionRequest, setDeletionRequest] = useState<DeletionRequest | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  /**
-   * Firestore 실시간 구독 (삭제 요청 상태)
-   */
-  useEffect(() => {
-    if (!currentUser) {
-      setDeletionRequest(null);
-      setLoading(false);
-      return;
-    }
+  // pending 상태의 삭제 요청 쿼리 생성 (메모이제이션)
+  const deletionQuery = useMemo((): Query<DocumentData> | null => {
+    if (!currentUser) return null;
 
-    // pending 상태의 삭제 요청 조회
-    const fetchDeletionRequest = async () => {
-      try {
-        const request = await getDeletionRequest(currentUser.uid);
-        setDeletionRequest(request);
-        setLoading(false);
-      } catch (err) {
-        logger.error('삭제 요청 조회 실패', err as Error, {
-          component: 'useAccountDeletion',
-          data: { userId: currentUser.uid },
-        });
-        setError(err as Error);
-        setLoading(false);
-      }
-    };
-
-    fetchDeletionRequest();
-
-    // 1분마다 상태 갱신 (실시간 구독 대신)
-    const interval = setInterval(fetchDeletionRequest, 60000);
-
-    return () => clearInterval(interval);
+    return query(
+      collection(db, 'deletionRequests'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'pending')
+    );
   }, [currentUser?.uid]);
+
+  // useFirestoreQuery로 실시간 구독
+  const {
+    data: deletionRequestList,
+    loading,
+    error: hookError,
+  } = useFirestoreQuery<Omit<DeletionRequest, 'id'>>(
+    deletionQuery || query(collection(db, 'deletionRequests'), where('__name__', '==', '__non_existent__')),
+    {
+      enabled: deletionQuery !== null,
+      onSuccess: () => {
+        logger.debug('삭제 요청 실시간 업데이트', {
+          component: 'useAccountDeletion',
+          data: { userId: currentUser?.uid, count: deletionRequestList.length }
+        });
+      },
+      onError: (err) => {
+        logger.error('삭제 요청 구독 실패', err, {
+          component: 'useAccountDeletion',
+          data: { userId: currentUser?.uid }
+        });
+        setError(err);
+      },
+    }
+  );
+
+  // 첫 번째 pending 요청만 사용 (일반적으로 1개만 존재)
+  const deletionRequest = useMemo(() => {
+    if (!deletionRequestList || deletionRequestList.length === 0) return null;
+    return deletionRequestList[0] as unknown as DeletionRequest;
+  }, [deletionRequestList]);
 
   /**
    * 계정 삭제 요청
@@ -123,11 +128,9 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
       }
 
       try {
-        setLoading(true);
         setError(null);
 
         const request = await requestAccountDeletion(input);
-        setDeletionRequest(request);
 
         toast.success(
           `계정 삭제가 요청되었습니다. 30일 후 완전히 삭제됩니다.`,
@@ -148,8 +151,6 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
         });
         toast.error(error.message || '계정 삭제 요청에 실패했습니다.');
         throw error;
-      } finally {
-        setLoading(false);
       }
     },
     [currentUser]
@@ -165,11 +166,9 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
       }
 
       try {
-        setLoading(true);
         setError(null);
 
         await cancelDeletionRequest({ requestId });
-        setDeletionRequest(null);
 
         toast.success('계정 삭제가 취소되었습니다.', '삭제 취소');
 
@@ -186,8 +185,6 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
         });
         toast.error(error.message || '계정 삭제 취소에 실패했습니다.');
         throw error;
-      } finally {
-        setLoading(false);
       }
     },
     [currentUser]
@@ -195,28 +192,15 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
 
   /**
    * 삭제 요청 상태 새로고침
+   * useFirestoreQuery는 실시간 구독이므로 별도 새로고침 불필요
+   * 호환성을 위해 빈 함수 제공
    */
   const refreshDeletionStatus = useCallback(async (): Promise<void> => {
-    if (!currentUser) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      const request = await getDeletionRequest(currentUser.uid);
-      setDeletionRequest(request);
-    } catch (err) {
-      const error = err as Error;
-      setError(error);
-      logger.error('삭제 요청 상태 새로고침 실패', error, {
-        component: 'useAccountDeletion',
-        data: { userId: currentUser.uid },
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser]);
+    // useFirestoreQuery는 실시간 구독이므로 별도 새로고침 불필요
+    logger.info('실시간 구독 중이므로 자동 업데이트됩니다', {
+      component: 'useAccountDeletion'
+    });
+  }, []);
 
   /**
    * 계산된 값들 (메모이제이션)
@@ -242,7 +226,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
   return {
     deletionRequest,
     loading,
-    error,
+    error: error || hookError,
     ...computedValues,
     requestDeletion: handleRequestDeletion,
     cancelDeletion: handleCancelDeletion,
