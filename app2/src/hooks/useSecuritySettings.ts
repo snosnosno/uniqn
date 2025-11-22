@@ -8,17 +8,18 @@
  * @since 2025-01-23
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { useState, useCallback, useMemo } from 'react';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword as firebaseUpdatePassword,
 } from 'firebase/auth';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
+import { useFirestoreDocument } from './firestore';
 import { validatePasswordChange, ValidationError, ServiceError } from '../utils/validation/accountValidation';
 import type {
   LoginNotificationSettings,
@@ -74,69 +75,69 @@ const DEFAULT_LOGIN_NOTIFICATION_SETTINGS: Omit<LoginNotificationSettings, 'upda
  */
 export const useSecuritySettings = (): UseSecuritySettingsReturn => {
   const { currentUser } = useAuth();
-  const [loginNotificationSettings, setLoginNotificationSettings] =
-    useState<LoginNotificationSettings | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  /**
-   * Firestore 실시간 구독 (로그인 알림 설정)
-   */
-  useEffect(() => {
-    if (!currentUser) {
-      setLoginNotificationSettings(null);
-      setLoading(false);
-      return;
-    }
+  // 문서 경로 생성
+  const settingsPath = useMemo(() => {
+    if (!currentUser) return null;
+    return `users/${currentUser.uid}/securitySettings/loginNotifications`;
+  }, [currentUser?.uid]);
 
-    const settingsRef = doc(db, 'users', currentUser.uid, 'securitySettings', 'loginNotifications');
+  // useFirestoreDocument로 구독
+  const {
+    data: settingsData,
+    loading,
+    error: hookError,
+  } = useFirestoreDocument<LoginNotificationSettings>(settingsPath || '', {
+    enabled: settingsPath !== null,
+    errorOnNotFound: false,
+    onSuccess: () => {
+      if (settingsData) {
+        logger.debug('로그인 알림 설정 로드', {
+          component: 'useSecuritySettings',
+          data: { userId: currentUser?.uid },
+        });
+      }
+    },
+    onError: (err) => {
+      logger.error('로그인 알림 설정 구독 실패', err, {
+        component: 'useSecuritySettings',
+        data: { userId: currentUser?.uid },
+      });
+    },
+  });
 
-    const unsubscribe = onSnapshot(
-      settingsRef,
-      async (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as LoginNotificationSettings;
-          setLoginNotificationSettings(data);
-          logger.debug('로그인 알림 설정 로드', {
+  // 문서가 없으면 기본값 생성 시도
+  const loginNotificationSettings = useMemo(() => {
+    if (!currentUser) return null;
+
+    if (!settingsData && !loading && settingsPath) {
+      // 기본 설정 생성
+      const defaultSettings: LoginNotificationSettings = {
+        ...DEFAULT_LOGIN_NOTIFICATION_SETTINGS,
+        updatedAt: new Date(),
+      };
+
+      const settingsRef = doc(db, settingsPath);
+      setDoc(settingsRef, defaultSettings)
+        .then(() => {
+          logger.info('기본 로그인 알림 설정 생성', {
             component: 'useSecuritySettings',
             data: { userId: currentUser.uid },
           });
-        } else {
-          // 설정이 없으면 기본값으로 생성
-          const defaultSettings: LoginNotificationSettings = {
-            ...DEFAULT_LOGIN_NOTIFICATION_SETTINGS,
-            updatedAt: new Date(),
-          };
-
-          try {
-            await setDoc(settingsRef, defaultSettings);
-            setLoginNotificationSettings(defaultSettings);
-            logger.info('기본 로그인 알림 설정 생성', {
-              component: 'useSecuritySettings',
-              data: { userId: currentUser.uid },
-            });
-          } catch (err) {
-            logger.error('기본 설정 생성 실패', err as Error, {
-              component: 'useSecuritySettings',
-              data: { userId: currentUser.uid },
-            });
-          }
-        }
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        logger.error('로그인 알림 설정 구독 실패', err, {
-          component: 'useSecuritySettings',
-          data: { userId: currentUser.uid },
+        })
+        .catch((err) => {
+          logger.error('기본 설정 생성 실패', err as Error, {
+            component: 'useSecuritySettings',
+            data: { userId: currentUser.uid },
+          });
         });
-        setError(err);
-        setLoading(false);
-      }
-    );
 
-    return () => unsubscribe();
-  }, [currentUser?.uid]);
+      return defaultSettings;
+    }
+
+    return settingsData;
+  }, [settingsData, loading, currentUser, settingsPath]);
 
   /**
    * 비밀번호 변경
@@ -148,7 +149,6 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
       }
 
       try {
-        setLoading(true);
         setError(null);
 
         // 검증
@@ -197,8 +197,6 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
         });
         toast.error(serviceError.message);
         throw serviceError;
-      } finally {
-        setLoading(false);
       }
     },
     [currentUser]
@@ -243,43 +241,15 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
     [currentUser]
   );
 
-  /**
-   * 설정 새로고침
-   */
-  const refreshSettings = useCallback(async (): Promise<void> => {
-    if (!currentUser) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const settingsRef = doc(db, 'users', currentUser.uid, 'securitySettings', 'loginNotifications');
-      const snapshot = await getDoc(settingsRef);
-
-      if (snapshot.exists()) {
-        const data = snapshot.data() as LoginNotificationSettings;
-        setLoginNotificationSettings(data);
-      }
-    } catch (err) {
-      const error = err as Error;
-      setError(error);
-      logger.error('설정 새로고침 실패', error, {
-        component: 'useSecuritySettings',
-        data: { userId: currentUser.uid },
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser]);
-
   return {
     loginNotificationSettings,
     loading,
-    error,
+    error: error || hookError,
     changePassword: handleChangePassword,
     updateLoginNotifications: handleUpdateLoginNotifications,
-    refreshSettings,
+    refreshSettings: async () => {
+      // useFirestoreDocument는 실시간 구독이므로 별도 새로고침 불필요
+      // 호환성을 위해 빈 함수 제공
+    },
   };
 };
