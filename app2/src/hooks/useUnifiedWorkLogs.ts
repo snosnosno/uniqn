@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   collection,
   query,
@@ -11,10 +11,13 @@ import {
   Unsubscribe,
   QueryConstraint,
   orderBy,
-  limit
+  limit,
+  Query,
+  DocumentData
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import { useFirestoreQuery } from './firestore';
 import {
   UnifiedWorkLog,
   WorkLogFilter,
@@ -79,140 +82,113 @@ export function useUnifiedWorkLogs(
     autoNormalize = true,
     skipSubscription = false // 구독을 완전히 건너뛸지 여부
   } = options;
-  
-  const [workLogs, setWorkLogs] = useState<UnifiedWorkLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+
   const [filter, setFilter] = useState<WorkLogFilter>(initialFilter);
-  const unsubscribeRef = useRef<Unsubscribe | null>(null);
-  
-  // 데이터 조회 및 구독
-  useEffect(() => {
-    // skipSubscription이 true면 구독하지 않음
+
+  // 동적 쿼리 생성 (메모이제이션)
+  const workLogsQuery = useMemo((): Query<DocumentData> | null => {
+    // skipSubscription이 true면 쿼리하지 않음
     if (!realtime || skipSubscription) {
-      setLoading(false);
-      setWorkLogs([]);
-      return undefined;
+      return null;
     }
-    
-    // 이전 구독 정리
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Firebase 쿼리 구성
-      const constraints: QueryConstraint[] = [];
-      
-      // eventId 필터
-      if (filter.eventId) {
-        if (Array.isArray(filter.eventId)) {
-          constraints.push(where('eventId', 'in', filter.eventId));
-        } else {
-          constraints.push(where('eventId', '==', filter.eventId));
-        }
-      }
-      
-      // 날짜 필터
-      if (filter.date) {
-        constraints.push(where('date', '==', filter.date));
+
+    // Firebase 쿼리 구성
+    const constraints: QueryConstraint[] = [];
+
+    // eventId 필터
+    if (filter.eventId) {
+      if (Array.isArray(filter.eventId)) {
+        constraints.push(where('eventId', 'in', filter.eventId));
       } else {
-        if (filter.dateFrom) {
-          constraints.push(where('date', '>=', filter.dateFrom));
-        }
-        if (filter.dateTo) {
-          constraints.push(where('date', '<=', filter.dateTo));
-        }
+        constraints.push(where('eventId', '==', filter.eventId));
       }
-      
-      // 상태 필터
-      if (filter.status) {
-        if (Array.isArray(filter.status)) {
-          constraints.push(where('status', 'in', filter.status));
-        } else {
-          constraints.push(where('status', '==', filter.status));
-        }
-      }
-      
-      // 정렬 - date 필드가 존재하는 경우에만 정렬 추가
-      // Firebase는 존재하지 않는 필드로 정렬하면 오류 발생
-      if (initialSort.field === 'date') {
-        // date 필드가 필터링되었거나 알려진 경우에만 정렬
-        if (filter.date || filter.dateFrom || filter.dateTo) {
-          constraints.push(orderBy(initialSort.field, initialSort.direction));
-        }
-      } else if (initialSort.field && initialSort.field.length > 0) {
-        // 빈 문자열이 아닌 경우에만 정렬 적용
-        constraints.push(orderBy(initialSort.field as Exclude<typeof initialSort.field, ''>, initialSort.direction));
-      }
-      
-      // 제한
-      constraints.push(limit(queryLimit));
-      
-      const q = query(collection(db, 'workLogs'), ...constraints);
-      
-      const unsub = onSnapshot(
-        q,
-        (snapshot) => {
-          try {
-            const rawData = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            
-            // 디버깅 코드 제거
-            
-            // 자동 정규화
-            const normalized = autoNormalize 
-              ? normalizeWorkLogs(rawData)
-              : rawData as UnifiedWorkLog[];
-            
-            // 클라이언트 사이드 필터링 (staffId는 Firestore에서 직접 쿼리 불가)
-            let filtered = normalized;
-            if (filter.staffId) {
-              const staffIds = Array.isArray(filter.staffId) ? filter.staffId : [filter.staffId];
-              filtered = filterWorkLogs(normalized, staffIds);
-            }
-            
-            setWorkLogs(filtered);
-            setLoading(false);
-          } catch (err) {
-            logger.error('WorkLogs 처리 오류', err as Error, {
-              component: 'useUnifiedWorkLogs'
-            });
-            setError(err as Error);
-            setLoading(false);
-          }
-        },
-        (err) => {
-          logger.error('WorkLogs 구독 오류', err as Error, {
-            component: 'useUnifiedWorkLogs'
-          });
-          setError(err);
-          setLoading(false);
-        }
-      );
-      
-      unsubscribeRef.current = unsub;
-      
-      return () => {
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-        }
-      };
-    } catch (error) {
-      logger.error('쿼리 구성 오류', error as Error, {
-        component: 'useUnifiedWorkLogs'
-      });
-      setError(error as Error);
-      setLoading(false);
-      return undefined; // 명시적 반환
     }
-  }, [filter.eventId, filter.staffId, filter.date, filter.dateFrom, filter.dateTo, filter.status, realtime, autoNormalize, initialSort.field, initialSort.direction, queryLimit, skipSubscription]);
+
+    // 날짜 필터
+    if (filter.date) {
+      constraints.push(where('date', '==', filter.date));
+    } else {
+      if (filter.dateFrom) {
+        constraints.push(where('date', '>=', filter.dateFrom));
+      }
+      if (filter.dateTo) {
+        constraints.push(where('date', '<=', filter.dateTo));
+      }
+    }
+
+    // 상태 필터
+    if (filter.status) {
+      if (Array.isArray(filter.status)) {
+        constraints.push(where('status', 'in', filter.status));
+      } else {
+        constraints.push(where('status', '==', filter.status));
+      }
+    }
+
+    // 정렬 - date 필드가 존재하는 경우에만 정렬 추가
+    // Firebase는 존재하지 않는 필드로 정렬하면 오류 발생
+    if (initialSort.field === 'date') {
+      // date 필드가 필터링되었거나 알려진 경우에만 정렬
+      if (filter.date || filter.dateFrom || filter.dateTo) {
+        constraints.push(orderBy(initialSort.field, initialSort.direction));
+      }
+    } else if (initialSort.field && initialSort.field.length > 0) {
+      // 빈 문자열이 아닌 경우에만 정렬 적용
+      constraints.push(orderBy(initialSort.field as Exclude<typeof initialSort.field, ''>, initialSort.direction));
+    }
+
+    // 제한
+    constraints.push(limit(queryLimit));
+
+    return query(collection(db, 'workLogs'), ...constraints);
+  }, [filter.eventId, filter.date, filter.dateFrom, filter.dateTo, filter.status, initialSort.field, initialSort.direction, queryLimit, realtime, skipSubscription]);
+
+  // useFirestoreQuery로 구독
+  const {
+    data: rawWorkLogs,
+    loading,
+    error: hookError,
+  } = useFirestoreQuery<Omit<UnifiedWorkLog, 'id'>>(
+    workLogsQuery || query(collection(db, 'workLogs'), where('__name__', '==', '__non_existent__')), // 빈 쿼리
+    {
+      enabled: workLogsQuery !== null,
+      onSuccess: () => {
+        logger.debug('WorkLogs 실시간 업데이트', {
+          component: 'useUnifiedWorkLogs',
+          data: { count: rawWorkLogs.length }
+        });
+      },
+      onError: (err) => {
+        logger.error('WorkLogs 구독 오류', err, {
+          component: 'useUnifiedWorkLogs'
+        });
+      },
+    }
+  );
+
+  // 클라이언트 사이드 필터링 및 정규화 (메모이제이션)
+  const workLogs = useMemo(() => {
+    if (!rawWorkLogs || rawWorkLogs.length === 0) {
+      return [];
+    }
+
+    // 타입 변환
+    const typedData = rawWorkLogs.map((doc) => doc as unknown as UnifiedWorkLog);
+
+    // 자동 정규화
+    const normalized = autoNormalize
+      ? normalizeWorkLogs(typedData)
+      : typedData;
+
+    // 클라이언트 사이드 필터링 (staffId는 Firestore에서 직접 쿼리 불가)
+    let filtered = normalized;
+    if (filter.staffId) {
+      const staffIds = Array.isArray(filter.staffId) ? filter.staffId : [filter.staffId];
+      filtered = filterWorkLogs(normalized, staffIds);
+    }
+
+    return filtered;
+  }, [rawWorkLogs, autoNormalize, filter.staffId]);
   
   // WorkLog 생성
   const createWorkLog = useCallback(async (input: WorkLogCreateInput): Promise<string> => {
@@ -302,13 +278,8 @@ export function useUnifiedWorkLogs(
     }
   }, [updateWorkLog]);
   
-  // 재조회
+  // 재조회 (실시간 구독이므로 필터 업데이트로 트리거)
   const refetch = useCallback(() => {
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-    // 필터 상태를 업데이트하여 useEffect 트리거
     setFilter(prev => ({ ...prev }));
   }, []);
   
@@ -340,7 +311,7 @@ export function useUnifiedWorkLogs(
   return {
     workLogs,
     loading,
-    error,
+    error: hookError,
     createWorkLog,
     updateWorkLog,
     deleteWorkLog,
