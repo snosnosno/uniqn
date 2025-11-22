@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDoc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
-import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
 import { getTournamentColor, UNASSIGNED_COLOR } from '../utils/tournamentColors';
 import { normalizeDate } from '../utils/dateUtils';
+import { useFirestoreCollection } from './firestore';
 
 // 기본 토너먼트 ID 접두사 (날짜별 전체보기용)
 export const DEFAULT_TOURNAMENT_PREFIX = 'DEFAULT_DATE_';
@@ -48,44 +48,42 @@ export interface Tournament {
  * @returns 토너먼트 목록, 로딩 상태, 에러, CRUD 작업 함수들
  */
 export const useTournaments = (userId: string | null) => {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    if (!userId) {
-      setTournaments([]);
-      setLoading(false);
-      return;
-    }
-
-    const tournamentsPath = `users/${userId}/tournaments`;
-
-    const unsubscribe = safeOnSnapshot<Tournament>(
-      tournamentsPath,
-      (tournamentsData) => {
-        // 색상이 없는 토너먼트에 자동으로 색상 할당
-        const tournamentsWithColors = tournamentsData.map((tournament, index) => ({
-          ...tournament,
-          color: tournament.color || getTournamentColor(index),
-        }));
-
-        setTournaments(tournamentsWithColors);
-        setLoading(false);
-        logger.info('토너먼트 목록 로드 완료', {
-          component: 'useTournaments',
-          data: { userId, count: tournamentsData.length },
-        });
-      },
-      (err) => {
-        setError(err);
-        setLoading(false);
-        logger.error('토너먼트 목록 구독 실패:', err, { component: 'useTournaments' });
-      }
-    );
-
-    return () => unsubscribe();
+  // 컬렉션 경로 생성
+  const collectionPath = useMemo(() => {
+    if (!userId) return null;
+    return `users/${userId}/tournaments`;
   }, [userId]);
+
+  // useFirestoreCollection으로 구독
+  const {
+    data: tournamentList,
+    loading,
+    error,
+  } = useFirestoreCollection<Omit<Tournament, 'id'>>(collectionPath || '', {
+    enabled: collectionPath !== null,
+    onSuccess: () => {
+      logger.info('토너먼트 목록 로드 완료', {
+        component: 'useTournaments',
+        data: { userId, count: tournamentList.length },
+      });
+    },
+    onError: (err) => {
+      logger.error('토너먼트 목록 구독 실패', err, {
+        component: 'useTournaments',
+      });
+    },
+  });
+
+  // Tournament 타입으로 변환 + 자동 색상 할당
+  const tournaments = useMemo(() => {
+    return tournamentList.map((doc, index) => {
+      const tournament = doc as unknown as Tournament;
+      return {
+        ...tournament,
+        color: tournament.color || getTournamentColor(index),
+      };
+    });
+  }, [tournamentList]);
 
   const createTournament = async (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => {
     if (!userId) {
