@@ -1,8 +1,9 @@
-import { collection, doc, onSnapshot, query, where, updateDoc, setDoc, serverTimestamp, Timestamp, addDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, setDoc, serverTimestamp, Timestamp, addDoc, getDocs } from 'firebase/firestore';
 import { logger } from '../utils/logger';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 
 import { db } from '../firebase';
+import { useFirestoreDocument } from './firestore';
 import { validateSchedule, ValidationResult, ValidationSettings, DEFAULT_VALIDATION_SETTINGS, DealerSchedule } from '../utils/shiftValidation';
 import { generateTimeSlots as utilGenerateTimeSlots, convertAssignmentData } from '../utils/timeUtils';
 
@@ -60,46 +61,35 @@ export interface WorkLog {
 export const generateTimeSlots = utilGenerateTimeSlots;
 
 export const useShiftSchedule = (eventId?: string, date?: string) => {
-  const [schedule, setSchedule] = useState<ShiftSchedule | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [validationSettings, setValidationSettings] = useState<ValidationSettings>(DEFAULT_VALIDATION_SETTINGS);
 
   // 스케줄 문서 ID 생성
   const scheduleId = eventId && date ? `${eventId}_${date}` : null;
+  const documentPath = scheduleId ? `shiftSchedules/${scheduleId}` : '';
 
-  // Firebase 실시간 리스너
-  useEffect(() => {
-    if (!scheduleId) {
-      setSchedule(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
-    
-    const unsubscribe = onSnapshot(
-      scheduleRef,
-      (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          setSchedule({ id: docSnapshot.id, ...docSnapshot.data() } as ShiftSchedule);
-        } else {
-          setSchedule(null);
-        }
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        logger.error('Error fetching shift schedule:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
-        setError(err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [scheduleId]);
+  // useFirestoreDocument로 구독
+  const {
+    data: schedule,
+    loading,
+    error: hookError,
+  } = useFirestoreDocument<Omit<ShiftSchedule, 'id'>>(documentPath, {
+    enabled: scheduleId !== null,
+    errorOnNotFound: false,
+    onSuccess: () => {
+      logger.info('스케줄 로드 완료', {
+        component: 'useShiftSchedule',
+        data: { scheduleId }
+      });
+    },
+    onError: (err) => {
+      logger.error('스케줄 구독 실패:', err, {
+        component: 'useShiftSchedule'
+      });
+      setError(err);
+    },
+  });
 
   // 새로운 스케줄 생성
   const createSchedule = useCallback(async (
@@ -139,7 +129,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
     timeSlot: string,
     assignment: string
   ) => {
-    if (!scheduleId || !schedule) return;
+    if (!scheduleId || !schedule?.scheduleData) return;
 
     try {
       const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
@@ -154,7 +144,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       setError(err as Error);
       throw err;
     }
-  }, [scheduleId, schedule]);
+  }, [scheduleId, schedule?.scheduleData]);
 
   // 딜러 추가
   const addDealer = useCallback(async (
@@ -189,7 +179,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
     newStartTime?: string,
     newEndTime?: string
   ) => {
-    if (!scheduleId || !schedule) return;
+    if (!scheduleId || !schedule?.scheduleData || !schedule.timeInterval || !schedule.startTime || !schedule.endTime) return;
   
     try {
       const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
@@ -227,7 +217,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       setError(err as Error);
       throw err;
     }
-  }, [scheduleId, schedule]);
+  }, [scheduleId, schedule?.scheduleData, schedule?.timeInterval, schedule?.startTime, schedule?.endTime]);
 
   // 시간 슬롯 생성 (메모이제이션)
   const timeSlots = useMemo(() => {
@@ -383,9 +373,9 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
   }, [eventId, date]);
 
   return {
-    schedule,
+    schedule: schedule ? { ...schedule, id: scheduleId || '' } as ShiftSchedule : null,
     loading,
-    error,
+    error: error || hookError,
     timeSlots,
     dealers,
     validationResult,
