@@ -4,6 +4,27 @@
  */
 
 // Mock firebase FIRST before any imports
+import React from 'react';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useAuth, AuthProvider } from '../AuthContext';
+import * as firebaseAuth from 'firebase/auth';
+
+// Mock 데이터는 직접 정의 (jest/no-mocks-import 에러 방지)
+const mockAdminUser = { uid: 'admin-123', email: 'admin@test.com', emailVerified: true, displayName: 'Admin User' };
+const mockManagerUser = { uid: 'manager-123', email: 'manager@test.com', emailVerified: true, displayName: 'Manager User' };
+const mockRegularUser = { uid: 'user-123', email: 'user@test.com', emailVerified: true, displayName: 'Regular User' };
+const mockAdminToken = { claims: { role: 'admin' } };
+const mockManagerToken = { claims: { role: 'manager' } };
+const mockNoRoleToken = { claims: {} };
+
+const wrongPasswordError = new Error('Wrong password');
+const userNotFoundError = new Error('User not found');
+const invalidEmailError = new Error('Invalid email');
+const userDisabledError = new Error('User disabled');
+const networkError = new Error('Network error');
+const tooManyRequestsError = new Error('Too many requests');
+const tokenExpiredError = new Error('Token expired');
+
 jest.mock('../../firebase', () => ({
   auth: {
     currentUser: null,
@@ -28,22 +49,6 @@ jest.mock('../../utils/secureStorage', () => ({
     clear: jest.fn(() => Object.keys(mockStorage).forEach(k => delete mockStorage[k])),
   },
 }));
-
-import React from 'react';
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { useAuth, AuthProvider } from '../AuthContext';
-import * as firebaseAuth from 'firebase/auth';
-import { mockAdminUser, mockManagerUser, mockRegularUser } from './__mocks__/test-users';
-import { mockAdminToken, mockManagerToken, mockNoRoleToken } from './__mocks__/test-tokens';
-import {
-  wrongPasswordError,
-  userNotFoundError,
-  invalidEmailError,
-  userDisabledError,
-  networkError,
-  tooManyRequestsError,
-  tokenExpiredError
-} from './__mocks__/test-errors';
 
 jest.mock('firebase/auth');
 

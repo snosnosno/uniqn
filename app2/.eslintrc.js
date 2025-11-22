@@ -43,6 +43,23 @@ module.exports = {
       rules: {
         'no-alert': 'warn'
       }
+    },
+    {
+      // Relax rules for test files
+      files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*'],
+      rules: {
+        'testing-library/no-container': 'warn',  // CSS 클래스 검증 시 필요
+        'jest/no-conditional-expect': 'warn',    // 일부 동적 테스트에서 필요
+        'testing-library/no-wait-for-multiple-assertions': 'warn',
+        'testing-library/no-render-in-setup': 'warn'
+      }
+    },
+    {
+      // Allow console in benchmark and performance test files
+      files: ['**/*.benchmark.test.ts', '**/*.performance.test.ts'],
+      rules: {
+        'no-console': 'off'  // 성능 측정 결과 출력용
+      }
     }
   ]
 }; 

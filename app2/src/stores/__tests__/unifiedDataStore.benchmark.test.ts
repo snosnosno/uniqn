@@ -11,16 +11,16 @@
  */
 
 // Firebase Mocking
+import { renderHook, act } from '@testing-library/react';
+import { useUnifiedDataStore } from '../unifiedDataStore';
+import { Staff, WorkLog } from '../../types/unifiedData';
+import { Timestamp } from 'firebase/firestore';
+
 jest.mock('../../firebase', () => ({
   db: {},
   auth: {},
   functions: {},
 }));
-
-import { renderHook, act } from '@testing-library/react';
-import { useUnifiedDataStore } from '../unifiedDataStore';
-import { Staff, WorkLog } from '../../types/unifiedData';
-import { Timestamp } from 'firebase/firestore';
 
 describe('UnifiedDataStore Performance Benchmark', () => {
   beforeEach(() => {

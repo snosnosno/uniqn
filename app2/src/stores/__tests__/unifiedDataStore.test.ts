@@ -12,16 +12,16 @@
  */
 
 // Firebase 모킹
+import { renderHook, act } from '@testing-library/react';
+import { useUnifiedDataStore } from '../unifiedDataStore';
+import type { Staff, WorkLog, Application } from '../../types/unifiedData';
+import { Timestamp } from 'firebase/firestore';
+
 jest.mock('../../firebase', () => ({
   db: {},
   auth: {},
   functions: {},
 }));
-
-import { renderHook, act } from '@testing-library/react';
-import { useUnifiedDataStore } from '../unifiedDataStore';
-import type { Staff, WorkLog, Application } from '../../types/unifiedData';
-import { Timestamp } from 'firebase/firestore';
 
 describe('UnifiedDataStore - 단위 테스트', () => {
   beforeEach(() => {
