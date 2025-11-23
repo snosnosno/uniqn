@@ -147,7 +147,8 @@ export const useChipBalance = () => {
     if (currentUser) {
       fetchRecentTransactions();
     }
-  }, [currentUser, fetchRecentTransactions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   /**
    * 칩 사용 가능 여부 확인
