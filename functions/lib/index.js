@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.sendManualChipExpiryNotification = exports.chipExpiryNotification = exports.expireChips = exports.manualGrantChips = exports.confirmPayment = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -47,6 +47,17 @@ admin.initializeApp();
 const db = admin.firestore();
 // CORS handler
 const corsHandler = (0, cors_1.default)({ origin: true });
+// --- Payment Functions ---
+var confirmPayment_1 = require("./payment/confirmPayment");
+Object.defineProperty(exports, "confirmPayment", { enumerable: true, get: function () { return confirmPayment_1.confirmPayment; } });
+var grantChips_1 = require("./payment/grantChips");
+Object.defineProperty(exports, "manualGrantChips", { enumerable: true, get: function () { return grantChips_1.manualGrantChips; } });
+// --- Scheduled Functions ---
+var expireChips_1 = require("./scheduled/expireChips");
+Object.defineProperty(exports, "expireChips", { enumerable: true, get: function () { return expireChips_1.expireChips; } });
+var chipExpiryNotification_1 = require("./notifications/chipExpiryNotification");
+Object.defineProperty(exports, "chipExpiryNotification", { enumerable: true, get: function () { return chipExpiryNotification_1.chipExpiryNotification; } });
+Object.defineProperty(exports, "sendManualChipExpiryNotification", { enumerable: true, get: function () { return chipExpiryNotification_1.sendManualChipExpiryNotification; } });
 // --- Notification Functions ---
 var sendJobPostingAnnouncement_1 = require("./notifications/sendJobPostingAnnouncement");
 Object.defineProperty(exports, "sendJobPostingAnnouncement", { enumerable: true, get: function () { return sendJobPostingAnnouncement_1.sendJobPostingAnnouncement; } });

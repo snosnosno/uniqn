@@ -33,6 +33,17 @@
         "@playwright/mcp@latest"
       ],
       "env": {}
+    },
+    "tosspayments-integration-guide": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@tosspayments/integration-guide-mcp@latest"
+      ],
+      "env": {}
     }
   }
 }

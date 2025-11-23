@@ -37,6 +37,8 @@ import { TournamentDataProvider } from './contexts/TournamentDataContext';
 // DateFilterStore - 날짜 선택 상태 관리 (Zustand, Provider 불필요)
 // ThemeContext - 다크모드 지원
 import { ThemeProvider } from './contexts/ThemeContext';
+// ChipContext - 칩 잔액 관리
+import { ChipProvider } from './contexts/ChipContext';
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
@@ -65,6 +67,15 @@ const NotificationSettingsPage = React.lazy(() => import('./pages/NotificationSe
 
 // Job Posting Approval Page (Admin Only)
 const ApprovalManagementPage = React.lazy(() => import('./pages/ApprovalManagementPage'));
+
+// Payment Pages
+const ChipRechargePage = React.lazy(() => import('./pages/ChipRechargePage'));
+const PaymentSuccessPage = React.lazy(() => import('./pages/payment/PaymentSuccessPage'));
+const PaymentFailPage = React.lazy(() => import('./pages/payment/PaymentFailPage'));
+const ChipHistoryPage = React.lazy(() => import('./pages/chip/ChipHistoryPage'));
+
+// Admin Chip Management
+const ChipManagementPage = React.lazy(() => import('./pages/admin/ChipManagementPage'));
 
 // Settings & Legal Pages
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
@@ -196,14 +207,15 @@ const App: React.FC = () => {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AuthProvider>
-              <MaintenanceModeCheck>
-                <CapacitorInitializer>
-                  <UnifiedDataInitializer>
-                    <TournamentProvider>
-                      <TournamentDataProvider>
-                        {/* DateFilterProvider 제거 - Zustand Store 사용 */}
-                        {/* 네트워크 상태 표시 */}
-                        <NetworkStatusIndicator position="top" />
+              <ChipProvider>
+                <MaintenanceModeCheck>
+                  <CapacitorInitializer>
+                    <UnifiedDataInitializer>
+                      <TournamentProvider>
+                        <TournamentDataProvider>
+                          {/* DateFilterProvider 제거 - Zustand Store 사용 */}
+                          {/* 네트워크 상태 표시 */}
+                          <NetworkStatusIndicator position="top" />
 
                 <Routes>
                 {/* Public Routes */}
@@ -216,6 +228,10 @@ const App: React.FC = () => {
                   {/* Legal Documents - Public Access (회원가입 시 확인 가능해야 함) */}
                   <Route path="/terms-of-service" element={<Suspense fallback={<LoadingSpinner />}><TermsOfServicePage /></Suspense>} />
                   <Route path="/privacy-policy" element={<Suspense fallback={<LoadingSpinner />}><PrivacyPolicyPage /></Suspense>} />
+
+                  {/* Payment Routes - Public (토스페이먼츠 리다이렉트) */}
+                  <Route path="/payment/success" element={<Suspense fallback={<LoadingSpinner />}><PaymentSuccessPage /></Suspense>} />
+                  <Route path="/payment/fail" element={<Suspense fallback={<LoadingSpinner />}><PaymentFailPage /></Suspense>} />
 
                   {/* Authenticated Routes */}
                   <Route path="/app" element={<PrivateRoute />}>
@@ -236,6 +252,10 @@ const App: React.FC = () => {
 
                       {/* 설정 */}
                       <Route path="settings" element={<Suspense fallback={<LoadingSpinner />}><SettingsPage /></Suspense>} />
+
+                      {/* 칩 관련 */}
+                      <Route path="chip/recharge" element={<Suspense fallback={<LoadingSpinner />}><ChipRechargePage /></Suspense>} />
+                      <Route path="chip/history" element={<Suspense fallback={<LoadingSpinner />}><ChipHistoryPage /></Suspense>} />
 
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
@@ -301,6 +321,7 @@ const App: React.FC = () => {
                           <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
                           <Route path="inquiries" element={<Suspense fallback={<LoadingSpinner />}><InquiryManagementPage /></Suspense>} />
                           <Route path="job-posting-approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalManagementPage /></Suspense>} />
+                          <Route path="chip-management" element={<Suspense fallback={<LoadingSpinner />}><ChipManagementPage /></Suspense>} />
                       </Route>
                     </Route>
                   </Route>
@@ -310,6 +331,7 @@ const App: React.FC = () => {
                   </UnifiedDataInitializer>
                 </CapacitorInitializer>
               </MaintenanceModeCheck>
+              </ChipProvider>
             </AuthProvider>
             <ToastContainer />
           </ThemeProvider>

@@ -11,6 +11,14 @@ const db = admin.firestore();
 // CORS handler
 const corsHandler = cors({ origin: true });
 
+// --- Payment Functions ---
+export { confirmPayment } from './payment/confirmPayment';
+export { manualGrantChips } from './payment/grantChips';
+
+// --- Scheduled Functions ---
+export { expireChips } from './scheduled/expireChips';
+export { chipExpiryNotification, sendManualChipExpiryNotification } from './notifications/chipExpiryNotification';
+
 // --- Notification Functions ---
 export { sendJobPostingAnnouncement } from './notifications/sendJobPostingAnnouncement';
 export { sendSystemAnnouncement } from './notifications/sendSystemAnnouncement';
