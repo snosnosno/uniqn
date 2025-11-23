@@ -61,7 +61,8 @@ export const useTossPayment = () => {
     };
 
     initializeTossPayments();
-  }, [logger, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 한 번만 실행
 
   /**
    * 주문 ID 생성
@@ -126,13 +127,12 @@ export const useTossPayment = () => {
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentUser,
     isInitialized,
     tossPayments,
     generateOrderId,
-    logger,
-    toast,
     navigate,
   ]);
 
@@ -142,7 +142,8 @@ export const useTossPayment = () => {
   const requestSubscriptionPayment = useCallback(async (planType: 'standard' | 'pro') => {
     logger.info('구독 플랜 결제는 추후 구현 예정', { operation: 'requestSubscriptionPayment', additionalData: { planType } });
     toast.showInfo('구독 플랜 결제는 준비 중입니다');
-  }, [logger, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     // 상태
