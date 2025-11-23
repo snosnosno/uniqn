@@ -87,7 +87,8 @@ export const useChipBalance = () => {
     return () => {
       unsubscribe();
     };
-  }, [currentUser, logger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   /**
    * 최근 거래 내역 조회
@@ -138,7 +139,8 @@ export const useChipBalance = () => {
         operation: 'fetchRecentTransactions',
       });
     }
-  }, [currentUser, logger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   /**
    * 초기 거래 내역 로드
