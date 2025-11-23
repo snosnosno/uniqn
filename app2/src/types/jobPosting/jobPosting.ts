@@ -161,6 +161,18 @@ export interface JobPostingFormData {
   fixedConfig?: FixedConfig;        // 고정 공고 설정
   tournamentConfig?: TournamentConfig; // 대회 공고 설정
   urgentConfig?: UrgentConfig;      // 긴급 공고 설정
+
+  // ========== 고정공고 근무일정 섹션 필드 ==========
+  workSchedule?: {                  // 근무 일정 (고정공고용)
+    daysPerWeek: number;            // 주 출근일수 (1-7)
+    startTime: string;              // 시작시간 (HH:mm)
+    endTime: string;                // 종료시간 (HH:mm)
+  };
+  requiredRolesWithCount?: Array<{  // 역할별 필요 인원 (고정공고용)
+    id: string;                     // React key용 고유 ID
+    role: string;                   // 역할명 (딜러, 플로어, 칩러너, 서빙, 기타)
+    count: number;                  // 필요 인원수
+  }>;
 }
 
 /**

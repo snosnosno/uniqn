@@ -83,7 +83,14 @@ export const createInitialFormData = (): JobPostingFormData => {
     preQuestions: [],
     salaryType: 'hourly',
     salaryAmount: '',
-    benefits: { isPerDay: true } as Benefits
+    benefits: { isPerDay: true } as Benefits,
+    // 고정공고 근무일정 기본값
+    workSchedule: {
+      daysPerWeek: 5,        // 기본값: 주 5일
+      startTime: '18:00',    // 기본값: 오후 6시
+      endTime: '02:00'       // 기본값: 새벽 2시
+    },
+    requiredRolesWithCount: []  // 빈 배열로 시작
   };
 };
 

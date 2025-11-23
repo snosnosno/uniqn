@@ -25,7 +25,8 @@ import {
   BasicInfoSection,
   DateRequirementsSection,
   PreQuestionsSection,
-  SalarySection
+  SalarySection,
+  FixedWorkScheduleSection
 } from './sections';
 
 interface JobPostingFormProps {
@@ -78,7 +79,10 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
     handleRoleChange: _handleRoleChange,
     handleRoleSalaryTypeChange,
     handleRoleSalaryAmountChange,
-    handleCustomRoleNameChange: _handleCustomRoleNameChange
+    handleCustomRoleNameChange: _handleCustomRoleNameChange,
+    // 고정공고 근무일정 핸들러 (T029)
+    handleWorkScheduleChange,
+    handleRolesChange
   } = useJobPostingForm();
 
   // 템플릿 관리
@@ -411,12 +415,28 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
           validation={salaryValidation}
         />
 
-        {/* 날짜별 인원 요구사항 */}
-        <DateRequirementsSection
-          data={dateRequirementsData}
-          handlers={dateRequirementsHandlers}
-          validation={dateRequirementsValidation}
-        />
+        {/* 날짜별 인원 요구사항 (고정공고가 아닐 때만 표시) */}
+        {formData.postingType !== 'fixed' && (
+          <DateRequirementsSection
+            data={dateRequirementsData}
+            handlers={dateRequirementsHandlers}
+            validation={dateRequirementsValidation}
+          />
+        )}
+
+        {/* 고정공고 근무일정 (postingType === 'fixed'일 때만 표시) - T029 */}
+        {formData.postingType === 'fixed' && formData.workSchedule && (
+          <FixedWorkScheduleSection
+            data={{
+              workSchedule: formData.workSchedule,
+              requiredRolesWithCount: formData.requiredRolesWithCount || []
+            }}
+            handlers={{
+              onWorkScheduleChange: handleWorkScheduleChange,
+              onRolesChange: handleRolesChange
+            }}
+          />
+        )}
 
         {/* 사전질문 */}
         <PreQuestionsSection

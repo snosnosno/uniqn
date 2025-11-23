@@ -379,12 +379,28 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     setFormData(templateData);
   }, []);
 
+  // ========== 고정공고 근무일정 핸들러 ==========
+
+  /**
+   * 근무일정 변경 핸들러 (T005)
+   */
+  const handleWorkScheduleChange = useCallback((schedule: { daysPerWeek: number; startTime: string; endTime: string }) => {
+    setFormData((prev: JobPostingFormData) => ({ ...prev, workSchedule: schedule }));
+  }, []);
+
+  /**
+   * 역할 목록 변경 핸들러 (T006)
+   */
+  const handleRolesChange = useCallback((roles: Array<{ id: string; role: string; count: number }>) => {
+    setFormData((prev: JobPostingFormData) => ({ ...prev, requiredRolesWithCount: roles }));
+  }, []);
+
   return {
     formData,
     setFormData,
     isSubmitting,
     setIsSubmitting,
-    
+
     // 기본 핸들러
     handleFormChange,
     resetForm,
@@ -429,5 +445,9 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
     handleRoleSalaryTypeChange,
     handleRoleSalaryAmountChange,
     handleCustomRoleNameChange,
+
+    // 고정공고 근무일정 핸들러 (T007)
+    handleWorkScheduleChange,
+    handleRolesChange,
   };
 };
