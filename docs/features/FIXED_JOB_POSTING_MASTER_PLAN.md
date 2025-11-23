@@ -195,6 +195,27 @@ interface FixedJobPosting {
 
 **결론**: 기존 코드의 **85% 이상 재사용 가능**
 
+#### 호환성 고려사항
+
+**1. requiredRoles 필드 처리**
+
+기존 `JobPosting.requiredRoles: string[]`와 새로운 `FixedJobPostingData.requiredRolesWithCount: RoleWithCount[]`를 함께 사용합니다:
+
+- **requiredRoles**: 검색/필터링용 (자동 생성)
+- **requiredRolesWithCount**: 상세 정보 표시용 (사용자 입력)
+
+저장 시 자동 동기화되므로 기존 기능에 영향 없음:
+```typescript
+// 고정공고 저장 시
+requiredRoles = requiredRolesWithCount.map(r => r.name)  // 자동 생성
+```
+
+**2. 레거시 타입 필드**
+
+`type`, `recruitmentType` 필드는 deprecated 처리되지만 기존 데이터 호환성 유지:
+- 새 공고: `postingType` 사용
+- 기존 공고: `normalizePostingType()` 헬퍼로 변환
+
 ---
 
 ## 3. 아키텍처 설계
@@ -202,18 +223,90 @@ interface FixedJobPosting {
 ### 3.1 타입 확장 전략
 
 #### A. 기존 타입 확장 (src/types/jobPosting/jobPosting.ts)
+
+##### 호환성 전략 (Backward Compatibility)
+
+**1. 레거시 필드 처리 전략**
+
+현재 `JobPosting` 인터페이스에는 공고 타입을 나타내는 필드가 3개 존재합니다:
+- `type?: 'application' | 'fixed'` (레거시 1)
+- `recruitmentType?: 'application' | 'fixed'` (레거시 2)
+- `postingType: PostingType` (표준, 4가지 타입)
+
+**채택 전략: Option A - 레거시 필드 Deprecated 처리 (권장 ⭐)**
+
 ```typescript
-/**
- * 고정공고 전용 데이터 타입
- * JobPostingFormData를 확장하여 기존 필드 재사용
- */
-/**
- * 고정공고 근무 일정 (새 인터페이스)
- */
-export interface WorkSchedule {
-  daysPerWeek: number;      // 주 출근일수 (1-7)
-  startTime: string;        // 근무 시작시간 (HH:mm 형식)
-  endTime: string;          // 근무 종료시간 (HH:mm 형식)
+export interface JobPosting {
+  // ===== 레거시 필드 (Deprecated) =====
+  /**
+   * @deprecated 이 필드는 더 이상 사용되지 않습니다. postingType을 사용하세요.
+   * 기존 데이터 호환성을 위해 유지됩니다.
+   */
+  type?: 'application' | 'fixed';
+
+  /**
+   * @deprecated 이 필드는 더 이상 사용되지 않습니다. postingType을 사용하세요.
+   * 기존 데이터 호환성을 위해 유지됩니다.
+   */
+  recruitmentType?: 'application' | 'fixed';
+
+  // ===== 표준 필드 (사용 권장) =====
+  /**
+   * 공고 타입 (4가지: regular, fixed, tournament, urgent)
+   * @standard 이 필드를 우선적으로 사용하세요.
+   */
+  postingType: PostingType;
+}
+```
+
+**normalizePostingType 헬퍼 활용**:
+```typescript
+// src/utils/jobPosting/jobPostingHelpers.ts (기존 코드)
+export const normalizePostingType = (posting: Partial<JobPosting>): PostingType => {
+  // 1순위: 표준 필드
+  if (posting.postingType) {
+    return posting.postingType;
+  }
+
+  // 2순위: 레거시 필드 변환
+  const legacyType = posting.type || posting.recruitmentType;
+
+  if (legacyType === 'application') {
+    return 'regular';  // 'application' → 'regular' 변환
+  }
+
+  if (legacyType === 'fixed') {
+    return 'fixed';
+  }
+
+  // 3순위: 기본값
+  return 'regular';
+};
+```
+
+**2. requiredRoles 필드 호환성 전략**
+
+기존 `JobPosting`에는 `requiredRoles?: string[]`이 존재하지만, 고정공고는 역할별 인원수가 필요합니다.
+
+**채택 전략: Option A - 별도 필드 추가 + 자동 동기화 (권장 ⭐)**
+
+```typescript
+export interface JobPosting {
+  /**
+   * 모집 역할 목록 (검색/필터링용)
+   * @description 고정공고의 경우 fixedData.requiredRolesWithCount에서 자동 생성됩니다.
+   */
+  requiredRoles?: string[];  // ["딜러", "플로어"] 형태
+}
+
+export interface FixedJobPostingData {
+  /**
+   * 역할별 모집 인원 (고정공고 전용)
+   * @description 이 필드가 source of truth입니다.
+   */
+  requiredRolesWithCount: RoleWithCount[];  // [{ name: "딜러", count: 2 }] 형태
+  workSchedule: WorkSchedule;
+  viewCount: number;
 }
 
 /**
@@ -223,16 +316,56 @@ export interface RoleWithCount {
   name: string;             // 역할명 (딜러, 플로어 등)
   count: number;            // 모집 인원
 }
+```
 
-/**
- * 고정공고 전용 데이터 (새 인터페이스)
- */
+**자동 동기화 로직**:
+```typescript
+// 고정공고 저장 시 requiredRoles 자동 생성
+const saveFixedJobPosting = (formData: FixedJobPosting) => {
+  const requiredRoles = formData.fixedData.requiredRolesWithCount
+    .map(r => r.name);  // ["딜러", "플로어"]
+
+  return {
+    ...formData,
+    requiredRoles,  // ✅ 자동으로 동기화
+    fixedData: {
+      ...formData.fixedData,
+      requiredRolesWithCount: formData.fixedData.requiredRolesWithCount  // ✅ Source of truth
+    }
+  };
+};
+```
+
+##### 타입 정의
+
+**고정공고 근무 일정 (새 인터페이스)**
+```typescript
+export interface WorkSchedule {
+  daysPerWeek: number;      // 주 출근일수 (1-7)
+  startTime: string;        // 근무 시작시간 (HH:mm 형식)
+  endTime: string;          // 근무 종료시간 (HH:mm 형식)
+}
+```
+
+**역할별 인원 (새 인터페이스)**
+```typescript
+export interface RoleWithCount {
+  name: string;             // 역할명 (딜러, 플로어 등)
+  count: number;            // 모집 인원
+}
+```
+
+**고정공고 전용 데이터 (새 인터페이스)**
+```typescript
 export interface FixedJobPostingData {
   workSchedule: WorkSchedule;
-  requiredRolesWithCount: RoleWithCount[];
+  requiredRolesWithCount: RoleWithCount[];  // ✅ Source of truth
   viewCount: number;
 }
+```
 
+**고정공고 타입 (JobPosting 확장)**
+```typescript
 /**
  * 고정공고 타입 (JobPosting 확장)
  *
@@ -244,11 +377,12 @@ export interface FixedJobPostingData {
  * const fixedPosting: FixedJobPosting = {
  *   // JobPosting 필드들
  *   id: 'posting123',
- *   postingType: 'fixed',
+ *   postingType: 'fixed',  // ✅ 표준 필드
  *   title: '강남 홀덤펍 정규직 딜러',
  *   location: '서울',
  *   district: '강남구',
  *   status: 'open',
+ *   requiredRoles: ['딜러', '플로어'],  // ✅ 자동 생성됨
  *   // ... 기타 JobPosting 필드들
  *
  *   // 고정공고 전용 필드들
@@ -264,7 +398,7 @@ export interface FixedJobPostingData {
  *       startTime: '18:00',
  *       endTime: '02:00'
  *     },
- *     requiredRolesWithCount: [
+ *     requiredRolesWithCount: [  // ✅ Source of truth
  *       { name: '딜러', count: 2 },
  *       { name: '플로어', count: 1 }
  *     ],
@@ -278,7 +412,10 @@ export interface FixedJobPosting extends JobPosting {
   fixedConfig: FixedConfig;       // 필수 (고정공고 설정)
   fixedData: FixedJobPostingData; // 필수 (고정공고 데이터)
 }
+```
 
+**타입 가드: 고정공고 여부 확인**
+```typescript
 /**
  * 타입 가드: 고정공고 여부 확인
  *
@@ -289,6 +426,7 @@ export interface FixedJobPosting extends JobPosting {
  * ```typescript
  * if (isFixedJobPosting(posting)) {
  *   console.log(posting.fixedData.viewCount); // ✅ 타입 안전
+ *   console.log(posting.fixedData.requiredRolesWithCount); // ✅ 상세 정보
  * }
  * ```
  */
@@ -2827,3 +2965,336 @@ npm run test:e2e             # E2E 테스트
 **최종 수정일**: 2025-11-20
 **작성자**: Claude Code
 **검토자**: 팀 리더 검토 필요
+
+---
+
+## 13. 호환성 및 마이그레이션 전략
+
+### 13.1 레거시 필드 마이그레이션
+
+#### 현황 분석
+
+기존 코드베이스에는 공고 타입을 나타내는 필드가 중복 존재:
+
+```typescript
+interface JobPosting {
+  type?: 'application' | 'fixed';           // 레거시 1
+  recruitmentType?: 'application' | 'fixed'; // 레거시 2
+  postingType: PostingType;                  // 표준 (4가지 타입)
+}
+```
+
+#### 마이그레이션 전략
+
+**1단계: Deprecated 선언**
+```typescript
+export interface JobPosting {
+  /**
+   * @deprecated 이 필드는 더 이상 사용되지 않습니다. postingType을 사용하세요.
+   * 기존 데이터 호환성을 위해 유지됩니다.
+   */
+  type?: 'application' | 'fixed';
+
+  /**
+   * @deprecated 이 필드는 더 이상 사용되지 않습니다. postingType을 사용하세요.
+   * 기존 데이터 호환성을 위해 유지됩니다.
+   */
+  recruitmentType?: 'application' | 'fixed';
+
+  /**
+   * 공고 타입 (표준)
+   * @standard 이 필드를 우선적으로 사용하세요.
+   */
+  postingType: PostingType;
+}
+```
+
+**2단계: 정규화 헬퍼 유지**
+
+기존 `normalizePostingType` 함수를 계속 사용하여 호환성 유지:
+
+```typescript
+// src/utils/jobPosting/jobPostingHelpers.ts (기존 코드)
+export const normalizePostingType = (posting: Partial<JobPosting>): PostingType => {
+  // 1순위: 표준 필드
+  if (posting.postingType) {
+    return posting.postingType;
+  }
+
+  // 2순위: 레거시 필드 변환
+  const legacyType = posting.type || posting.recruitmentType;
+
+  if (legacyType === 'application') {
+    return 'regular';  // 'application' → 'regular' 변환
+  }
+
+  if (legacyType === 'fixed') {
+    return 'fixed';
+  }
+
+  // 3순위: 기본값
+  return 'regular';
+};
+```
+
+**3단계: 신규 코드에서 표준 필드 사용**
+
+```typescript
+// ✅ 권장 사용
+const createJobPosting = (data: JobPostingFormData) => {
+  return {
+    ...data,
+    postingType: data.postingType,  // 표준 필드 사용
+    // type, recruitmentType 사용 안 함
+  };
+};
+
+// ✅ 기존 데이터 읽기
+const getJobPosting = (posting: JobPosting) => {
+  const type = normalizePostingType(posting);  // 헬퍼로 정규화
+  // 이후 type 사용
+};
+```
+
+**4단계: 점진적 데이터 마이그레이션 (선택사항)**
+
+기존 데이터를 표준 필드로 마이그레이션하려면:
+
+```typescript
+// Firebase Functions으로 배치 마이그레이션
+const migratePostingTypes = async () => {
+  const postingsRef = db.collection('jobPostings');
+  const snapshot = await postingsRef.get();
+
+  const batch = db.batch();
+  let count = 0;
+
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data();
+
+    // postingType이 없는 경우에만 마이그레이션
+    if (!data.postingType) {
+      const normalizedType = normalizePostingType(data);
+      batch.update(doc.ref, {
+        postingType: normalizedType,
+        // 레거시 필드는 유지 (삭제하지 않음)
+      });
+      count++;
+    }
+  });
+
+  if (count > 0) {
+    await batch.commit();
+    logger.info(\`마이그레이션 완료: \${count}개 문서\`);
+  }
+};
+```
+
+### 13.2 requiredRoles 필드 호환성
+
+#### 현황 분석
+
+기존 `JobPosting`에는 `requiredRoles?: string[]`이 존재하지만, 고정공고는 역할별 인원수가 필요합니다.
+
+#### 호환성 전략
+
+**Option A: 별도 필드 + 자동 동기화 (채택 ⭐)**
+
+```typescript
+export interface JobPosting {
+  /**
+   * 모집 역할 목록 (검색/필터링용)
+   * @description 고정공고의 경우 fixedData.requiredRolesWithCount에서 자동 생성됩니다.
+   */
+  requiredRoles?: string[];  // ["딜러", "플로어"]
+}
+
+export interface FixedJobPostingData {
+  /**
+   * 역할별 모집 인원 (고정공고 전용)
+   * @description Source of truth. 저장 시 requiredRoles로 자동 동기화됩니다.
+   */
+  requiredRolesWithCount: RoleWithCount[];  // [{ name: "딜러", count: 2 }]
+  workSchedule: WorkSchedule;
+  viewCount: number;
+}
+```
+
+**자동 동기화 구현**:
+
+```typescript
+// 1. 폼 제출 핸들러
+const handleSubmitFixedJobPosting = async (formData: FixedJobPosting) => {
+  // requiredRoles 자동 생성
+  const requiredRoles = formData.fixedData.requiredRolesWithCount
+    .map(r => r.name);
+
+  const dataToSave = {
+    ...formData,
+    requiredRoles,  // ✅ 자동 동기화
+    fixedData: {
+      ...formData.fixedData,
+      requiredRolesWithCount: formData.fixedData.requiredRolesWithCount
+    }
+  };
+
+  await saveJobPosting(dataToSave);
+};
+
+// 2. 검색/필터링 시
+const filterByRole = (postings: JobPosting[], role: string) => {
+  return postings.filter(p =>
+    p.requiredRoles?.includes(role)  // ✅ 기존 필드 활용
+  );
+};
+
+// 3. 상세 정보 표시 시
+const FixedJobCard = ({ posting }: { posting: FixedJobPosting }) => {
+  return (
+    <div>
+      {/* 역할별 인원수 표시 */}
+      {posting.fixedData.requiredRolesWithCount.map(role => (
+        <div key={role.name}>
+          {role.name}: {role.count}명
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+**장점**:
+- ✅ 기존 검색/필터링 로직 재사용 가능
+- ✅ 고정공고 상세 정보 표시 가능
+- ✅ 데이터 중복이지만 자동 동기화로 일관성 유지
+- ✅ 기존 코드 수정 최소화
+
+### 13.3 데이터 무결성 보장
+
+#### Firestore Security Rules
+
+```javascript
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /jobPostings/{postingId} {
+      // 고정공고 생성 시 검증
+      allow create: if request.auth != null
+        && (
+          // 일반 공고
+          (request.resource.data.postingType == 'regular') ||
+          // 고정공고 - 필수 필드 검증
+          (
+            request.resource.data.postingType == 'fixed'
+            && request.resource.data.fixedConfig != null
+            && request.resource.data.fixedData != null
+            && request.resource.data.fixedData.workSchedule != null
+            && request.resource.data.fixedData.requiredRolesWithCount != null
+            // requiredRoles 동기화 검증
+            && request.resource.data.requiredRoles.size() ==
+               request.resource.data.fixedData.requiredRolesWithCount.size()
+          )
+        );
+
+      // 업데이트 시에도 동일 검증
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.createdBy;
+    }
+  }
+}
+```
+
+#### 클라이언트 측 검증
+
+```typescript
+// src/utils/jobPosting/validation.ts
+
+/**
+ * 고정공고 데이터 무결성 검증
+ */
+export const validateFixedJobPosting = (posting: FixedJobPosting): boolean => {
+  // 1. 필수 필드 검증
+  if (!posting.fixedConfig || !posting.fixedData) {
+    return false;
+  }
+
+  // 2. requiredRoles 동기화 검증
+  const rolesFromCount = posting.fixedData.requiredRolesWithCount.map(r => r.name);
+  const isInSync =
+    posting.requiredRoles?.length === rolesFromCount.length &&
+    posting.requiredRoles.every((role, i) => role === rolesFromCount[i]);
+
+  if (!isInSync) {
+    logger.warn('requiredRoles와 requiredRolesWithCount가 동기화되지 않음', {
+      requiredRoles: posting.requiredRoles,
+      requiredRolesWithCount: posting.fixedData.requiredRolesWithCount
+    });
+    return false;
+  }
+
+  // 3. workSchedule 검증
+  const { daysPerWeek, startTime, endTime } = posting.fixedData.workSchedule;
+  if (daysPerWeek < 1 || daysPerWeek > 7) {
+    return false;
+  }
+
+  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+    return false;
+  }
+
+  return true;
+};
+```
+
+### 13.4 마이그레이션 체크리스트
+
+#### Phase 1: 타입 시스템 업데이트
+
+- [ ] \`JobPosting\` 인터페이스에 deprecated 주석 추가
+- [ ] \`WorkSchedule\`, \`RoleWithCount\`, \`FixedJobPostingData\` 인터페이스 추가
+- [ ] \`FixedJobPosting\` 타입 추가
+- [ ] \`isFixedJobPosting()\` 타입 가드 추가
+- [ ] 기존 \`normalizePostingType\` 헬퍼 유지 확인
+
+#### Phase 2: 데이터 계층 구현
+
+- [ ] \`requiredRoles\` 자동 동기화 로직 구현
+- [ ] Firestore Security Rules 업데이트
+- [ ] 클라이언트 측 검증 함수 추가
+- [ ] 테스트: 동기화 로직 검증
+
+#### Phase 3: UI 컴포넌트 구현
+
+- [ ] \`FixedWorkScheduleSection\` 컴포넌트 구현
+- [ ] \`requiredRolesWithCount\` 입력 UI 구현
+- [ ] 기존 섹션 조건부 렌더링 적용
+- [ ] 테스트: 폼 입력 및 유효성 검사
+
+#### Phase 4: 배포 및 모니터링
+
+- [ ] Staging 환경 배포
+- [ ] 데이터 동기화 로그 모니터링
+- [ ] 기존 공고 동작 확인
+- [ ] Production 배포
+
+---
+
+**문서 버전**: 1.1.0
+**최종 수정일**: 2025-11-23
+**작성자**: Claude Code
+**검토자**: 팀 리더 검토 필요
+
+---
+
+## 변경 이력
+
+### v1.1.0 (2025-11-23)
+- 호환성 및 마이그레이션 전략 섹션 추가 (§13)
+- 레거시 필드 처리 전략 명시 (Option A: Deprecated 처리)
+- requiredRoles 호환성 전략 명시 (Option A: 별도 필드 + 자동 동기화)
+- 데이터 무결성 보장 방안 추가
+- 마이그레이션 체크리스트 추가
+
+### v1.0.0 (2025-11-20)
+- 초기 문서 작성
