@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 import { basicInfoSchema } from './basicInfo.schema';
-import { dateRequirementsSchema } from './dateRequirements.schema';
+import { dateRequirementsSchema, dateSpecificRequirementSchema } from './dateRequirements.schema';
 import { preQuestionsSchema, preQuestionsSchemaBase } from './preQuestions.schema';
 import { salarySchema, salarySchemaBase } from './salary.schema';
 import {
@@ -21,20 +21,45 @@ import { toISODateString } from '../../utils/dateUtils';
 /**
  * 통합 JobPostingForm 검증 스키마
  *
+ * postingType에 따라 조건부 검증 적용:
+ * - fixed: dateSpecificRequirements 선택 (빈 배열 허용)
+ * - 기타: dateSpecificRequirements 필수 (최소 1개)
+ *
  * 4개 섹션 스키마를 `.merge()`로 조합:
  * 1. basicInfoSchema (제목, 장소, 설명, 공고 타입)
- * 2. dateRequirementsSchema (날짜별 요구사항)
+ * 2. dateRequirementsSchema (조건부 - 고정공고가 아닐 때만)
  * 3. preQuestionsSchemaBase (사전 질문 - base)
  * 4. salarySchemaBase (급여 정보 - base)
  */
 export const jobPostingFormSchema = basicInfoSchema
-  .merge(dateRequirementsSchema)
   .merge(preQuestionsSchemaBase)
   .merge(salarySchemaBase)
+  .merge(
+    z.object({
+      // 고정공고일 때는 선택, 아닐 때는 필수
+      dateSpecificRequirements: z
+        .array(dateSpecificRequirementSchema)
+        .optional()
+        .default([])
+    })
+  )
+  .refine(
+    (data) => {
+      // 고정공고가 아닌 경우 dateSpecificRequirements 필수
+      if (data.postingType !== 'fixed') {
+        return data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0;
+      }
+      return true;
+    },
+    {
+      message: '최소 1개 이상의 날짜를 추가해주세요',
+      path: ['dateSpecificRequirements']
+    }
+  )
   .refine(
     (data) => {
       // Cross-field 검증: 긴급 공고는 오늘부터 최대 7일 후까지만 가능
-      if (data.postingType === 'urgent' && data.dateSpecificRequirements.length > 0) {
+      if (data.postingType === 'urgent' && data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0) {
         const firstRequirement = data.dateSpecificRequirements[0];
         if (!firstRequirement || !firstRequirement.date) return true; // 안전한 체크
 
