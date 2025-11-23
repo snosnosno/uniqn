@@ -76,7 +76,7 @@ interface FixedJobPosting {
   description: string;
 
   // 상태 관리
-  status: 'active' | 'closed';
+  status: 'open' | 'closed';
   viewCount?: number;
 
   // 메타 정보
@@ -207,105 +207,140 @@ interface FixedJobPosting {
  * 고정공고 전용 데이터 타입
  * JobPostingFormData를 확장하여 기존 필드 재사용
  */
-export interface FixedJobPostingData extends JobPostingFormData {
+/**
+ * 고정공고 근무 일정 (새 인터페이스)
+ */
+export interface WorkSchedule {
+  daysPerWeek: number;      // 주 출근일수 (1-7)
+  startTime: string;        // 근무 시작시간 (HH:mm 형식)
+  endTime: string;          // 근무 종료시간 (HH:mm 형식)
+}
+
+/**
+ * 역할별 인원 (새 인터페이스)
+ */
+export interface RoleWithCount {
+  name: string;             // 역할명 (딜러, 플로어 등)
+  count: number;            // 모집 인원
+}
+
+/**
+ * 고정공고 전용 데이터 (새 인터페이스)
+ */
+export interface FixedJobPostingData {
+  workSchedule: WorkSchedule;
+  requiredRolesWithCount: RoleWithCount[];
+  viewCount: number;
+}
+
+/**
+ * 고정공고 타입 (JobPosting 확장)
+ *
+ * @description
+ * JobPosting의 모든 필드를 포함하며, 고정공고 전용 필드를 추가로 가짐
+ *
+ * @example
+ * ```typescript
+ * const fixedPosting: FixedJobPosting = {
+ *   // JobPosting 필드들
+ *   id: 'posting123',
+ *   postingType: 'fixed',
+ *   title: '강남 홀덤펍 정규직 딜러',
+ *   location: '서울',
+ *   district: '강남구',
+ *   status: 'open',
+ *   // ... 기타 JobPosting 필드들
+ *
+ *   // 고정공고 전용 필드들
+ *   fixedConfig: {
+ *     durationDays: 30,
+ *     chipCost: 5,
+ *     expiresAt: Timestamp.now(),
+ *     createdAt: Timestamp.now()
+ *   },
+ *   fixedData: {
+ *     workSchedule: {
+ *       daysPerWeek: 5,
+ *       startTime: '18:00',
+ *       endTime: '02:00'
+ *     },
+ *     requiredRolesWithCount: [
+ *       { name: '딜러', count: 2 },
+ *       { name: '플로어', count: 1 }
+ *     ],
+ *     viewCount: 0
+ *   }
+ * };
+ * ```
+ */
+export interface FixedJobPosting extends JobPosting {
   postingType: 'fixed';
-
-  // ========== 기존 필드 재사용 ==========
-  title: string;              // ✅ 기존
-  contactPhone: string;       // ✅ 기존
-  location: string;           // ✅ 기존
-  district: string;           // ✅ 기존
-  detailedAddress: string;    // ✅ 기존
-  salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';  // ✅ 기존
-  salaryAmount: string;       // ✅ 기존
-  roleSalaries?: {            // ✅ 기존 (역할별 급여 이미 지원)
-    [role: string]: {
-      salaryType: string;
-      salaryAmount: string;
-      customRoleName?: string;
-    }
-  };
-  benefits?: Benefits;        // ✅ 기존
-  preQuestions?: PreQuestion[]; // ✅ 기존
-  usesPreQuestions?: boolean; // ✅ 기존
-  description: string;        // ✅ 기존
-
-  // ========== 새 필드 (최소한으로 추가) ==========
-  workSchedule: {
-    daysPerWeek: number;      // 주 출근일수 (1-7)
-    startTime: string;        // 근무 시작시간 (HH:mm 형식)
-    endTime: string;          // 근무 종료시간 (HH:mm 형식)
-  };
-
-  requiredRoles: Array<{      // 필요역할 (단순화)
-    role: string;             // 역할명 (딜러, 플로어 등)
-    count: number;            // 모집 인원
-  }>;
-
-  // ========== 상태 관리 (기존 확장) ==========
-  status: 'active' | 'closed'; // ✅ 기존 'open' | 'closed' 호환
-  viewCount?: number;         // 조회수 (새 필드)
-
-  // ========== 메타 정보 (기존 재사용) ==========
-  fixedConfig?: FixedConfig;  // ✅ 기존 인터페이스 재사용
-  createdBy: string;          // ✅ 기존
-  createdAt: Timestamp;       // ✅ 기존
-  updatedAt: Timestamp;       // ✅ 기존
+  fixedConfig: FixedConfig;       // 필수 (고정공고 설정)
+  fixedData: FixedJobPostingData; // 필수 (고정공고 데이터)
 }
 
 /**
  * 타입 가드: 고정공고 여부 확인
+ *
+ * @param posting - 검사할 공고 객체
+ * @returns 고정공고 여부
+ *
+ * @example
+ * ```typescript
+ * if (isFixedJobPosting(posting)) {
+ *   console.log(posting.fixedData.viewCount); // ✅ 타입 안전
+ * }
+ * ```
  */
-export function isFixedPosting(posting: JobPosting): posting is JobPosting & FixedJobPostingData {
-  return posting.postingType === 'fixed';
+export function isFixedJobPosting(posting: JobPosting): posting is FixedJobPosting {
+  return posting.postingType === 'fixed'
+    && posting.fixedConfig !== undefined
+    && posting.fixedData !== undefined;
 }
 ```
 
 #### B. Zod 스키마 확장 (src/schemas/jobPosting/index.ts)
 ```typescript
 import { z } from 'zod';
-import { jobPostingFormSchema } from './jobPostingFormSchema';
 
 /**
- * 고정공고 전용 검증 스키마
- * 기존 스키마를 확장하여 새 필드만 추가
+ * 근무 일정 스키마
  */
-export const fixedJobPostingSchema = jobPostingFormSchema.extend({
-  postingType: z.literal('fixed'),
+const workScheduleSchema = z.object({
+  daysPerWeek: z.number()
+    .min(1, '최소 주 1일 출근 필요')
+    .max(7, '최대 주 7일'),
+  startTime: z.string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'HH:mm 형식이어야 합니다'),
+  endTime: z.string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'HH:mm 형식이어야 합니다')
+}).refine(
+  (data) => {
+    const start = new Date(`2000-01-01T${data.startTime}`);
+    const end = new Date(`2000-01-01T${data.endTime}`);
+    return end > start;
+  },
+  { message: '종료시간은 시작시간보다 늦어야 합니다' }
+);
 
-  // 근무시간 검증
-  workSchedule: z.object({
-    daysPerWeek: z.number()
-      .min(1, '최소 주 1일 출근 필요')
-      .max(7, '최대 주 7일'),
-    startTime: z.string()
-      .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'HH:mm 형식이어야 합니다'),
-    endTime: z.string()
-      .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'HH:mm 형식이어야 합니다')
-  }).refine(
-    (data) => {
-      const start = new Date(`2000-01-01T${data.startTime}`);
-      const end = new Date(`2000-01-01T${data.endTime}`);
-      return end > start;
-    },
-    { message: '종료시간은 시작시간보다 늦어야 합니다' }
-  ),
+/**
+ * 역할별 인원 스키마
+ */
+const roleWithCountSchema = z.object({
+  name: z.enum(['딜러', '플로어', '캐셔', '서빙', '기타']),
+  count: z.number()
+    .min(1, '최소 1명 필요')
+    .max(50, '최대 50명까지 모집 가능')
+});
 
-  // 필요역할 검증
-  requiredRoles: z.array(
-    z.object({
-      role: z.enum(['딜러', '플로어', '캐셔', '서빙', '기타']),
-      count: z.number()
-        .min(1, '최소 1명 필요')
-        .max(50, '최대 50명까지 모집 가능')
-    })
-  ).min(1, '최소 1개 역할 필요'),
-
-  // 조회수 (선택)
-  viewCount: z.number().optional(),
-
-  // 상태 검증
-  status: z.enum(['active', 'closed'])
+/**
+ * 고정공고 데이터 스키마
+ */
+export const fixedJobPostingDataSchema = z.object({
+  workSchedule: workScheduleSchema,
+  requiredRolesWithCount: z.array(roleWithCountSchema)
+    .min(1, '최소 1개 역할 필요'),
+  viewCount: z.number().min(0).default(0)
 });
 
 export type FixedJobPostingInput = z.infer<typeof fixedJobPostingSchema>;
@@ -611,11 +646,11 @@ const FixedJobCard: React.FC<FixedJobCardProps> = ({ posting, onViewDetails, onA
           📌 고정공고
         </span>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          status === 'active'
+          status === 'open'
             ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
         }`}>
-          {status === 'active' ? '모집중' : '마감'}
+          {status === 'open' ? '모집중' : '마감'}
         </span>
       </div>
 
@@ -893,7 +928,7 @@ export const useFixedJobPostings = (pageSize: number = 20) => {
       const q = query(
         collection(db, 'jobPostings'),
         where('postingType', '==', 'fixed'),
-        where('status', '==', 'active'),
+        where('status', '==', 'open'),
         orderBy('createdAt', 'desc'),
         limit(pageSize)
       );
@@ -1001,7 +1036,7 @@ service cloud.firestore {
         request.resource.data.title is string &&
         request.resource.data.description is string &&
         request.resource.data.location is string &&
-        request.resource.data.status in ['active', 'closed'] &&
+        request.resource.data.status in ['open', 'closed'] &&
         // 고정공고 전용 필드 검증
         (request.resource.data.postingType != 'fixed' ||
          (request.resource.data.workSchedule.daysPerWeek >= 1 &&
@@ -1658,7 +1693,7 @@ const handleCreateFixedPosting = async (formData: FixedJobPostingData) => {
       createdBy: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      status: 'active',
+      status: 'open',
       viewCount: 0
     });
 
@@ -1768,7 +1803,7 @@ import { persist } from 'zustand/middleware';
 interface JobPostingStore {
   // 필터 상태
   filters: {
-    status: 'active' | 'closed' | 'all';
+    status: 'open' | 'closed' | 'all';
     postingType: PostingType | 'all';
     location?: string;
     district?: string;
@@ -1791,14 +1826,14 @@ export const useJobPostingStore = create<JobPostingStore>()(
     (set) => ({
       // 필터
       filters: {
-        status: 'active',
+        status: 'open',
         postingType: 'all'
       },
       setFilters: (newFilters) => set((state) => ({
         filters: { ...state.filters, ...newFilters }
       })),
       resetFilters: () => set({
-        filters: { status: 'active', postingType: 'all' }
+        filters: { status: 'open', postingType: 'all' }
       }),
 
       // 임시 저장
@@ -1902,7 +1937,7 @@ export const createFixedPosting = async (data: FixedJobPostingData): Promise<str
       createdBy: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      status: 'active',
+      status: 'open',
       viewCount: 0,
       isChipDeducted: false
     });
