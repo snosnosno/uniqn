@@ -26,18 +26,82 @@ interface NavItemProps {
 
 const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => {
     const isMobile = useMediaQuery('(max-width: 768px)');
-    
+
     const navLinkClasses = useCallback(({ isActive }: { isActive: boolean }) =>
       `flex items-center rounded-lg transition-colors ${isActive ? 'bg-blue-600 dark:bg-blue-700 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'} ${isOpen ? 'justify-start' : 'justify-center'} ${
         isMobile ? 'p-4 text-lg' : 'p-2'
       }`, [isOpen, isMobile]);
-  
+
     return (
       <NavLink to={to} className={navLinkClasses} onClick={onNavigate}>
         <Icon className={isMobile ? 'w-6 h-6' : 'w-5 h-5'} />
         <span className={`ml-3 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 h-0 w-0'}`}>{label}</span>
       </NavLink>
     );
+});
+
+interface SubMenuItem {
+  to: string;
+  label: string;
+  Icon: React.ComponentType<any>;
+}
+
+interface NavDropdownProps {
+  label: string;
+  Icon: React.ComponentType<any>;
+  items: SubMenuItem[];
+  onNavigate?: () => void;
+}
+
+const NavDropdown = memo(({ label, Icon, items, onNavigate }: NavDropdownProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`w-full flex items-center justify-between rounded-lg transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 ${
+          isMobile ? 'p-4 text-lg' : 'p-2'
+        }`}
+      >
+        <div className="flex items-center">
+          <Icon className={isMobile ? 'w-6 h-6' : 'w-5 h-5'} />
+          <span className="ml-3">{label}</span>
+        </div>
+        <svg
+          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div className={`ml-4 mt-1 space-y-1 ${isMobile ? 'pl-4' : 'pl-2'} border-l-2 border-gray-300 dark:border-gray-600`}>
+          {items.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex items-center rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                } ${isMobile ? 'p-3 text-base' : 'p-2 text-sm'}`
+              }
+              onClick={onNavigate}
+            >
+              <item.Icon className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+              <span className="ml-2">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 });
 
 export const HeaderMenu: React.FC = () => {
@@ -190,10 +254,17 @@ export const HeaderMenu: React.FC = () => {
 
               {/* 결제 메뉴 (모든 사용자) */}
               <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-              <NavItem to="/app/chip/recharge" label="칩 충전" Icon={FaCoins} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/app/payment/history" label="결제 내역" Icon={FaCreditCard} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/app/chip/history" label="칩 사용 내역" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
-              <NavItem to="/app/subscription" label="구독 플랜" Icon={FaStar} isOpen={true} onNavigate={closeMenu} />
+              <NavDropdown
+                label="결제 및 칩 관리"
+                Icon={FaCreditCard}
+                items={[
+                  { to: '/app/chip/recharge', label: '칩 충전', Icon: FaCoins },
+                  { to: '/app/payment/history', label: '결제 내역', Icon: FaCreditCard },
+                  { to: '/app/chip/history', label: '칩 사용 내역', Icon: FaHistory },
+                  { to: '/app/subscription', label: '구독 플랜', Icon: FaStar },
+                ]}
+                onNavigate={closeMenu}
+              />
 
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
               {!authLoading && currentUser && (
@@ -229,8 +300,15 @@ export const HeaderMenu: React.FC = () => {
 
                       {/* 결제 관리 (Admin 전용) */}
                       <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-                      <NavItem to="/app/admin/chip-management" label="칩 관리" Icon={FaCog} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/app/admin/refund-blacklist" label="환불 블랙리스트" Icon={FaExclamationTriangle} isOpen={true} onNavigate={closeMenu} />
+                      <NavDropdown
+                        label="결제 시스템 관리"
+                        Icon={FaCog}
+                        items={[
+                          { to: '/app/admin/chip-management', label: '칩 관리', Icon: FaCog },
+                          { to: '/app/admin/refund-blacklist', label: '환불 블랙리스트', Icon: FaExclamationTriangle },
+                        ]}
+                        onNavigate={closeMenu}
+                      />
                     </>
                   )}
                 </>
