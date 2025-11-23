@@ -48,8 +48,8 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
    * 드롭다운 토글
    */
   const toggleDropdown = useCallback(() => {
-    setIsOpen(!isOpen);
-  }, [isOpen]);
+    setIsOpen(prev => !prev);
+  }, []);
 
   /**
    * 드롭다운 닫기

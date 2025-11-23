@@ -18,7 +18,7 @@
  * - cleanup 자동 처리
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   onSnapshot,
   Query,
@@ -90,6 +90,15 @@ export function useFirestoreQuery<T>(
   // 구독 정리 함수 ref
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
+  // 콜백 함수들을 ref로 저장 (의존성 배열에서 제거)
+  const onErrorRef = useRef(onError);
+  const onSuccessRef = useRef(onSuccess);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+    onSuccessRef.current = onSuccess;
+  }, [onError, onSuccess]);
+
   // refetch 함수
   const refetch = useCallback(() => {
     logger.info('useFirestoreQuery refetch');
@@ -125,7 +134,7 @@ export function useFirestoreQuery<T>(
           logger.info('useFirestoreQuery 데이터 업데이트');
 
           // 성공 콜백
-          onSuccess?.();
+          onSuccessRef.current?.();
         },
         (err) => {
           const firestoreError = err as Error;
@@ -135,7 +144,7 @@ export function useFirestoreQuery<T>(
           logger.error('useFirestoreQuery 에러', firestoreError);
 
           // 에러 콜백
-          onError?.(firestoreError);
+          onErrorRef.current?.(firestoreError);
         }
       );
 
@@ -155,16 +164,15 @@ export function useFirestoreQuery<T>(
 
       logger.error('useFirestoreQuery 초기화 에러', firestoreError);
 
-      onError?.(firestoreError);
+      onErrorRef.current?.(firestoreError);
       return undefined;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     firestoreQuery,
     enabled,
     refetchCount,
     ...deps,
-    onError,
-    onSuccess,
   ]);
 
   return {

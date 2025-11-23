@@ -19,6 +19,7 @@ import {
   updateDoc,
   deleteDoc,
   writeBatch,
+  getDocs,
   Timestamp,
   type Query,
   type DocumentData
@@ -122,7 +123,7 @@ export const useNotifications = (): UseNotificationsReturn => {
     error,
   } = useFirestoreQuery<NotificationData>(notificationsQuery, {
     onSuccess: () => {
-      logger.info('알림 목록 업데이트');
+      // 로그 제거 - 불필요한 재구독 방지
     },
     onError: (err) => {
       logger.error('알림 구독 실패', err);
@@ -236,18 +237,26 @@ export const useNotifications = (): UseNotificationsReturn => {
   const markAllAsRead = useCallback(async () => {
     if (!currentUser) return;
 
-    const unreadNotifications = notifications.filter(n => !n.isRead);
-    if (unreadNotifications.length === 0) {
-      showSuccess('읽지 않은 알림이 없습니다.');
-      return;
-    }
+    // notifications를 직접 참조하지 않고 쿼리로 가져옴
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userId', '==', currentUser.uid),
+      where('isRead', '==', false)
+    );
 
     try {
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        showSuccess('읽지 않은 알림이 없습니다.');
+        return;
+      }
+
       const batch = writeBatch(db);
 
-      unreadNotifications.forEach((notification) => {
-        const notificationRef = doc(db, 'notifications', notification.id);
-        batch.update(notificationRef, {
+      snapshot.docs.forEach((docSnapshot) => {
+        batch.update(docSnapshot.ref, {
           isRead: true,
           readAt: Timestamp.now(),
         });
@@ -256,15 +265,15 @@ export const useNotifications = (): UseNotificationsReturn => {
       await batch.commit();
 
       logger.info('모든 알림 읽음 처리', {
-        data: { count: unreadNotifications.length }
+        data: { count: snapshot.size }
       });
-      showSuccess(`${unreadNotifications.length}개의 알림을 읽음 처리했습니다.`);
+      showSuccess(`${snapshot.size}개의 알림을 읽음 처리했습니다.`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error('모든 알림 읽음 처리 실패', error);
       showError('알림 읽음 처리에 실패했습니다.');
     }
-  }, [currentUser, notifications, showSuccess, showError]);
+  }, [currentUser, showSuccess, showError]);
 
   /**
    * 알림 삭제
@@ -291,32 +300,40 @@ export const useNotifications = (): UseNotificationsReturn => {
   const deleteAllRead = useCallback(async () => {
     if (!currentUser) return;
 
-    const readNotifications = notifications.filter(n => n.isRead);
-    if (readNotifications.length === 0) {
-      showSuccess('읽은 알림이 없습니다.');
-      return;
-    }
+    // notifications를 직접 참조하지 않고 쿼리로 가져옴
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userId', '==', currentUser.uid),
+      where('isRead', '==', true)
+    );
 
     try {
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        showSuccess('읽은 알림이 없습니다.');
+        return;
+      }
+
       const batch = writeBatch(db);
 
-      readNotifications.forEach((notification) => {
-        const notificationRef = doc(db, 'notifications', notification.id);
-        batch.delete(notificationRef);
+      snapshot.docs.forEach((docSnapshot) => {
+        batch.delete(docSnapshot.ref);
       });
 
       await batch.commit();
 
       logger.info('읽은 알림 모두 삭제', {
-        data: { count: readNotifications.length }
+        data: { count: snapshot.size }
       });
-      showSuccess(`${readNotifications.length}개의 알림이 삭제되었습니다.`);
+      showSuccess(`${snapshot.size}개의 알림이 삭제되었습니다.`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error('읽은 알림 삭제 실패', error);
       showError('알림 삭제에 실패했습니다.');
     }
-  }, [currentUser, notifications, showSuccess, showError]);
+  }, [currentUser, showSuccess, showError]);
 
   return {
     // 데이터

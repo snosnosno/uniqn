@@ -62,10 +62,7 @@ export const useTournaments = (userId: string | null) => {
   } = useFirestoreCollection<Omit<Tournament, 'id'>>(collectionPath || '', {
     enabled: collectionPath !== null,
     onSuccess: () => {
-      logger.info('토너먼트 목록 로드 완료', {
-        component: 'useTournaments',
-        data: { userId, count: tournamentList.length },
-      });
+      // 로그 제거 - Context에서 한 번만 출력
     },
     onError: (err) => {
       logger.error('토너먼트 목록 구독 실패', err, {

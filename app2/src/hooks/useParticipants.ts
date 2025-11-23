@@ -76,10 +76,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
     {
       enabled: participantsPath !== null,
       onSuccess: () => {
-        logger.info('참가자 목록 로드 완료', {
-          component: 'useParticipants',
-          data: { userId, tournamentId, count: participantsFromHook.length },
-        });
+        // 로그 제거 - 불필요한 재구독 방지
       },
       onError: (err) => {
         logger.error('참가자 목록 구독 실패:', err, { component: 'useParticipants' });

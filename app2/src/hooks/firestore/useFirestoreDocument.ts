@@ -18,7 +18,7 @@
  * - cleanup 자동 처리
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   doc,
   onSnapshot,
@@ -85,6 +85,15 @@ export function useFirestoreDocument<T>(
   // 구독 정리 함수 ref
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
+  // 콜백 함수들을 ref로 저장 (의존성 배열에서 제거)
+  const onErrorRef = useRef(onError);
+  const onSuccessRef = useRef(onSuccess);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+    onSuccessRef.current = onSuccess;
+  }, [onError, onSuccess]);
+
   // 문서 업데이트 함수
   const update = useCallback(
     async (updateData: Partial<T>): Promise<void> => {
@@ -143,7 +152,7 @@ export function useFirestoreDocument<T>(
             logger.info('useFirestoreDocument 데이터 업데이트');
 
             // 성공 콜백
-            onSuccess?.();
+            onSuccessRef.current?.();
           } else {
             // 문서가 존재하지 않음
             setData(null);
@@ -155,10 +164,10 @@ export function useFirestoreDocument<T>(
               );
               setError(notFoundError);
               logger.error('useFirestoreDocument 문서 없음', notFoundError);
-              onError?.(notFoundError);
+              onErrorRef.current?.(notFoundError);
             } else {
               logger.info('useFirestoreDocument 문서 없음 (정상)');
-              onSuccess?.();
+              onSuccessRef.current?.();
             }
           }
         },
@@ -170,7 +179,7 @@ export function useFirestoreDocument<T>(
           logger.error('useFirestoreDocument 에러', firestoreError);
 
           // 에러 콜백
-          onError?.(firestoreError);
+          onErrorRef.current?.(firestoreError);
         }
       );
 
@@ -190,17 +199,16 @@ export function useFirestoreDocument<T>(
 
       logger.error('useFirestoreDocument 초기화 에러', firestoreError);
 
-      onError?.(firestoreError);
+      onErrorRef.current?.(firestoreError);
       return undefined;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     documentPath,
     enabled,
     errorOnNotFound,
     refetchCount,
     ...deps,
-    onError,
-    onSuccess,
   ]);
 
   return {

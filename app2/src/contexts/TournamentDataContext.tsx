@@ -15,7 +15,7 @@
  * @author T-HOLDEM Development Team
  */
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useCallback } from 'react';
 import { DocumentReference, DocumentData } from 'firebase/firestore';
 import { useTournament } from './TournamentContext';
 import { useTournaments, Tournament } from '../hooks/useTournaments';
@@ -56,9 +56,9 @@ export const TournamentDataProvider: React.FC<{ children: React.ReactNode }> = (
   const { state } = useTournament();
   const tournamentData = useTournaments(state.userId);
 
-  // Provider 초기화 로깅
+  // Provider 초기화 로깅 (한 번만 실행)
   useEffect(() => {
-    if (state.userId) {
+    if (state.userId && !tournamentData.loading) {
       logger.info('TournamentDataProvider initialized', {
         component: 'TournamentDataContext',
         data: {
@@ -68,10 +68,11 @@ export const TournamentDataProvider: React.FC<{ children: React.ReactNode }> = (
         }
       });
     }
-  }, [state.userId, tournamentData.tournaments.length, tournamentData.loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.userId]); // userId 변경 시에만 실행
 
   // createTournament 래핑: 해당 날짜의 첫 번째 토너먼트 생성 시 기본 토너먼트도 자동 생성
-  const createTournamentWithDefault = async (data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => {
+  const createTournamentWithDefault = useCallback(async (data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => {
     const dateKey = data.date; // 정규화된 날짜 키
 
     // 해당 날짜에 토너먼트가 없으면 기본 토너먼트 먼저 생성
@@ -86,12 +87,12 @@ export const TournamentDataProvider: React.FC<{ children: React.ReactNode }> = (
 
     // 실제 토너먼트 생성
     return tournamentData.createTournament(data);
-  };
+  }, [tournamentData]);
 
-  const contextValue: TournamentDataContextType = {
+  const contextValue: TournamentDataContextType = useMemo(() => ({
     ...tournamentData,
     createTournament: createTournamentWithDefault,
-  };
+  }), [tournamentData, createTournamentWithDefault]);
 
   return (
     <TournamentDataContext.Provider value={contextValue}>
