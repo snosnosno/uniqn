@@ -286,18 +286,20 @@ export const HeaderMenu: React.FC = () => {
 
                   {/* Tournament Management - All authenticated users */}
                   <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-                  <NavItem to="/app/tournaments" label="토너먼트 관리" Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/app/participants" label="참가자 관리" Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
-                  <NavItem to="/app/tables" label={t('common.table')} Icon={FaTable} isOpen={true} onNavigate={closeMenu} />
-
-                  {/* Admin and Manager 메뉴 */}
-                  {(role === 'admin' || role === 'manager') && (
-                    <>
-                      <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-                      <NavItem to="/app/admin/shift-schedule" label={t('nav.shiftSchedule', 'Shift Schedule')} Icon={FaClock} isOpen={true} onNavigate={closeMenu} />
-                      <NavItem to="/app/admin/prizes" label={t('nav.prizes', 'Prizes')} Icon={FaTrophy} isOpen={true} onNavigate={closeMenu} />
-                    </>
-                  )}
+                  <NavDropdown
+                    label="토너먼트 관리"
+                    Icon={FaTrophy}
+                    items={[
+                      { to: '/app/tournaments', label: '토너먼트', Icon: FaTrophy },
+                      { to: '/app/participants', label: '참가자 관리', Icon: FaUsers },
+                      { to: '/app/tables', label: t('common.table', '테이블'), Icon: FaTable },
+                      ...(role === 'admin' || role === 'manager' ? [
+                        { to: '/app/admin/shift-schedule', label: t('nav.shiftSchedule', 'Shift Schedule'), Icon: FaClock },
+                        { to: '/app/admin/prizes', label: t('nav.prizes', 'Prizes'), Icon: FaTrophy },
+                      ] : []),
+                    ]}
+                    onNavigate={closeMenu}
+                  />
 
                   {/* Admin 전용 메뉴 */}
                   {role === 'admin' && (
