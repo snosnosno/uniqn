@@ -5,7 +5,8 @@ import {
     FaTachometerAlt, FaUsers, FaTable, FaClock,
     FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList,
     FaSignOutAlt, FaUserCheck, FaCalendarAlt, FaQuestionCircle,
-    FaEnvelope, FaBell
+    FaEnvelope, FaBell, FaCoins, FaCreditCard, FaHistory,
+    FaStar, FaCog, FaExclamationTriangle
 } from '../Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -187,6 +188,13 @@ export const HeaderMenu: React.FC = () => {
               <NavItem to="/app/jobs" label={t('nav.jobBoard', 'Job Board')} Icon={FaClipboardList} isOpen={true} onNavigate={closeMenu} />
               <NavItem to="/app/support" label={t('nav.support', '고객지원')} Icon={FaQuestionCircle} isOpen={true} onNavigate={closeMenu} />
 
+              {/* 결제 메뉴 (모든 사용자) */}
+              <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
+              <NavItem to="/app/chip/recharge" label="칩 충전" Icon={FaCoins} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/payment/history" label="결제 내역" Icon={FaCreditCard} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/chip/history" label="칩 사용 내역" Icon={FaHistory} isOpen={true} onNavigate={closeMenu} />
+              <NavItem to="/app/subscription" label="구독 플랜" Icon={FaStar} isOpen={true} onNavigate={closeMenu} />
+
               {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
               {!authLoading && currentUser && (
                 <>
@@ -218,6 +226,11 @@ export const HeaderMenu: React.FC = () => {
                       <NavItem to="/app/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/inquiries" label={t('nav.inquiryManagement', '문의 관리')} Icon={FaEnvelope} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />
+
+                      {/* 결제 관리 (Admin 전용) */}
+                      <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
+                      <NavItem to="/app/admin/chip-management" label="칩 관리" Icon={FaCog} isOpen={true} onNavigate={closeMenu} />
+                      <NavItem to="/app/admin/refund-blacklist" label="환불 블랙리스트" Icon={FaExclamationTriangle} isOpen={true} onNavigate={closeMenu} />
                     </>
                   )}
                 </>
