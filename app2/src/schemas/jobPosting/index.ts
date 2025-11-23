@@ -11,6 +11,11 @@ import { basicInfoSchema } from './basicInfo.schema';
 import { dateRequirementsSchema } from './dateRequirements.schema';
 import { preQuestionsSchema, preQuestionsSchemaBase } from './preQuestions.schema';
 import { salarySchema, salarySchemaBase } from './salary.schema';
+import {
+  workScheduleSchema,
+  roleWithCountSchema,
+  fixedJobPostingDataSchema
+} from './fixedPosting.schema';
 import { toISODateString } from '../../utils/dateUtils';
 
 /**
@@ -69,7 +74,10 @@ export {
   basicInfoSchema,
   dateRequirementsSchema,
   preQuestionsSchema,
-  salarySchema
+  salarySchema,
+  workScheduleSchema,
+  roleWithCountSchema,
+  fixedJobPostingDataSchema
 };
 
 /**
@@ -79,3 +87,4 @@ export type { BasicInfoData } from './basicInfo.schema';
 export type { DateRequirementsData, DateSpecificRequirementData, TimeSlotData, RoleRequirementData } from './dateRequirements.schema';
 export type { PreQuestionsData, PreQuestionData, QuestionType } from './preQuestions.schema';
 export type { SalaryData, BenefitsData, RoleSalaryData, SalaryType } from './salary.schema';
+export type { WorkScheduleData, RoleWithCountData, FixedJobPostingDataValidated } from './fixedPosting.schema';
