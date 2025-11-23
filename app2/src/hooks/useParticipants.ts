@@ -84,17 +84,18 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
     }
   );
 
+  // 일반 모드: useFirestoreCollection 결과를 participants로 동기화
+  useEffect(() => {
+    if (isGroupMode || !participantsPath) return;
+
+    const converted = participantsFromHook.map(p => p as unknown as Participant);
+    setParticipants(converted);
+    setError(errorFromHook);
+  }, [participantsFromHook, errorFromHook, isGroupMode, participantsPath]);
+
   // collectionGroup 모드 (ALL 또는 DEFAULT_DATE_*)
   useEffect(() => {
-    if (!userId || !tournamentId) {
-      setParticipants([]);
-      return;
-    }
-
-    if (!isGroupMode) {
-      // 일반 모드는 useFirestoreCollection 결과 사용
-      setParticipants(participantsFromHook.map(p => p as unknown as Participant));
-      setError(errorFromHook);
+    if (!userId || !tournamentId || !isGroupMode) {
       return;
     }
 
@@ -174,7 +175,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
     return () => {
       unsubscribe();
     };
-  }, [userId, tournamentId, isGroupMode, participantsFromHook, errorFromHook]);
+  }, [userId, tournamentId, isGroupMode]);
 
   // loading 상태는 일반 모드와 group 모드에 따라 결정
   const loading = isGroupMode ? false : loadingFromHook;

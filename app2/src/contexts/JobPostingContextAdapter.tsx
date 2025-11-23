@@ -31,52 +31,51 @@ interface JobPostingProviderProps {
 // Zustand store를 Context API로 감싸는 어댑터
 export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children, eventId }) => {
   const { currentUser } = useAuth();
-  const store = useJobPostingStore();
-  
+  const { setEventId, cleanup, refreshApplicants, refreshStaff, jobPosting, loading, error, applicants, staff } = useJobPostingStore();
+
   // WorkLogs를 한 곳에서만 구독 - useUnifiedWorkLogs 사용
-  const { 
-    workLogs, 
-    loading: workLogsLoading, 
+  const {
+    workLogs,
+    loading: workLogsLoading,
     error: workLogsError,
-    refetch: refreshWorkLogs 
+    refetch: refreshWorkLogs
   } = useUnifiedWorkLogs({
     filter: { eventId: eventId },
     realtime: true,  // 실시간 동기화 활성화
     autoNormalize: true
   });
-  
+
   // eventId 변경 시 store 업데이트
   useEffect(() => {
-    store.setEventId(eventId);
-  }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
-  
+    setEventId(eventId);
+  }, [eventId, setEventId]);
+
   // 컴포넌트 언마운트 시에만 cleanup 호출
   useEffect(() => {
     return () => {
-      store.cleanup();
+      cleanup();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 빈 배열로 언마운트 시에만 실행
-  
+  }, [cleanup]);
+
   // 지원자와 스태프 데이터 구독
   useEffect(() => {
     if (eventId && currentUser) {
-      store.refreshApplicants();
-      store.refreshStaff();
+      refreshApplicants();
+      refreshStaff();
     }
-  }, [eventId, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  const value: JobPostingContextType = {
-    jobPosting: store.jobPosting,
-    loading: store.loading,
-    error: store.error,
-    refreshJobPosting: store.refreshJobPosting,
-    applicants: store.applicants,
-    staff: store.staff,
-    refreshApplicants: store.refreshApplicants,
+  }, [eventId, currentUser, refreshApplicants, refreshStaff]);
+
+  const value: JobPostingContextType = React.useMemo(() => ({
+    jobPosting,
+    loading,
+    error,
+    refreshJobPosting: useJobPostingStore.getState().refreshJobPosting,
+    applicants,
+    staff,
+    refreshApplicants,
     refreshStaff: () => {
       // 스태프 데이터와 WorkLogs 데이터를 함께 새로고침
-      store.refreshStaff();
+      refreshStaff();
       refreshWorkLogs();
     },
     // WorkLogs 데이터 추가
@@ -84,8 +83,8 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     workLogsLoading: workLogsLoading || false,
     workLogsError: workLogsError || null,
     refreshWorkLogs,
-  };
-  
+  }), [jobPosting, loading, error, applicants, staff, refreshApplicants, refreshStaff, workLogs, workLogsLoading, workLogsError, refreshWorkLogs]);
+
   return (
     <JobPostingContext.Provider value={value}>
       {children}

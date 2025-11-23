@@ -18,8 +18,7 @@ export const UnifiedDataInitializer: React.FC<{ children: React.ReactNode }> = (
   children,
 }) => {
   const { currentUser, role } = useAuth();
-  const subscribeAll = useUnifiedDataStore((state) => state.subscribeAll);
-  const unsubscribeAll = useUnifiedDataStore((state) => state.unsubscribeAll);
+  const { subscribeAll, unsubscribeAll } = useUnifiedDataStore();
 
   // Firebase 실시간 구독 초기화 (전역)
   useEffect(() => {
@@ -40,7 +39,8 @@ export const UnifiedDataInitializer: React.FC<{ children: React.ReactNode }> = (
       logger.info('[UnifiedDataInitializer] 🧹 Firebase 구독 정리');
       unsubscribeAll();
     };
-  }, [currentUser, role, subscribeAll, unsubscribeAll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.uid, role]);
 
   return <>{children}</>;
 };

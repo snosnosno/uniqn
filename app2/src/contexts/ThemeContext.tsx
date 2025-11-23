@@ -55,18 +55,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const setTheme = useCallback((newTheme: Theme) => {
-    logger.info('테마 변경', { component: 'ThemeContext', data: { from: theme, to: newTheme } });
+    logger.info('테마 변경', { component: 'ThemeContext', data: { to: newTheme } });
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
-  }, [theme]);
+  }, []);
 
   const toggleTheme = useCallback(() => {
     const newTheme = isDark ? 'light' : 'dark';
     setTheme(newTheme);
   }, [isDark, setTheme]);
 
+  const value = React.useMemo(
+    () => ({ theme, isDark, setTheme, toggleTheme }),
+    [theme, isDark, setTheme, toggleTheme]
+  );
+
   return (
-    <ThemeContext.Provider value={{ theme, isDark, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

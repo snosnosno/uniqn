@@ -227,19 +227,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   const isAdmin = role === 'admin' || role === 'manager';
 
-  const value: AuthContextType = {
-    currentUser,
-    loading,
-    isAdmin,
-    role,
-    signOut,
-    signIn,
-    sendPasswordReset,
-    signInWithGoogle,
-    signInWithKakao,
-    sendEmailVerification: sendEmailVerificationToUser,
-    reloadUser,
-  };
+  const value: AuthContextType = React.useMemo(
+    () => ({
+      currentUser,
+      loading,
+      isAdmin,
+      role,
+      signOut,
+      signIn,
+      sendPasswordReset,
+      signInWithGoogle,
+      signInWithKakao,
+      sendEmailVerification: sendEmailVerificationToUser,
+      reloadUser,
+    }),
+    [
+      currentUser,
+      loading,
+      isAdmin,
+      role,
+      signOut,
+      signIn,
+      sendPasswordReset,
+      signInWithGoogle,
+      signInWithKakao,
+      sendEmailVerificationToUser,
+      reloadUser,
+    ]
+  );
 
   return (
     <AuthContext.Provider value={value}>
