@@ -975,6 +975,18 @@ service cloud.firestore {
       allow delete: if request.auth.token.role == 'admin';
     }
 
+    // --- User Subscriptions (사용자 구독 - 루트 레벨) ---
+    match /userSubscriptions/{subscriptionId} {
+      // 읽기: 본인의 구독만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;
