@@ -1,0 +1,213 @@
+{
+  "chipRecharge": {
+    "title": "Chip Recharge",
+    "balance": "Current Balance",
+    "redChips": "Red Chips",
+    "blueChips": "Blue Chips",
+    "totalChips": "Total Chips",
+    "selectPackage": "Select Recharge Package",
+    "package": {
+      "title": "{{name}} Package",
+      "chips": "{{amount}} Chips",
+      "price": "₩{{price}}",
+      "bonus": "{{bonus}}% Bonus"
+    },
+    "paymentMethod": {
+      "title": "Select Payment Method",
+      "card": "Credit/Debit Card",
+      "transfer": "Bank Transfer",
+      "mobile": "Mobile Payment"
+    },
+    "terms": {
+      "agree": "I agree to the payment terms",
+      "viewTerms": "View Terms"
+    },
+    "button": {
+      "charge": "Recharge",
+      "cancel": "Cancel"
+    },
+    "error": {
+      "selectPackage": "Please select a package",
+      "selectMethod": "Please select a payment method",
+      "agreeTerms": "Please agree to the payment terms",
+      "loadFailed": "Failed to load package information",
+      "paymentFailed": "Payment failed"
+    }
+  },
+  "paymentSuccess": {
+    "title": "Payment Successful",
+    "message": "Your payment has been completed successfully",
+    "orderInfo": {
+      "title": "Order Information",
+      "orderId": "Order ID",
+      "amount": "Amount",
+      "method": "Payment Method",
+      "date": "Payment Date"
+    },
+    "chipInfo": {
+      "title": "Chip Information",
+      "charged": "Chips Charged",
+      "balance": "Current Balance"
+    },
+    "button": {
+      "confirm": "Confirm",
+      "history": "View Payment History"
+    },
+    "error": {
+      "confirmFailed": "Failed to confirm payment",
+      "missingParams": "Payment information is missing"
+    }
+  },
+  "paymentFail": {
+    "title": "Payment Failed",
+    "message": "An error occurred while processing your payment",
+    "reason": "Failure Reason",
+    "errorCode": "Error Code",
+    "button": {
+      "retry": "Try Again",
+      "home": "Go Home"
+    }
+  },
+  "paymentHistory": {
+    "title": "Payment History",
+    "filter": {
+      "all": "All",
+      "success": "Success",
+      "failed": "Failed",
+      "pending": "Pending"
+    },
+    "table": {
+      "date": "Date",
+      "orderId": "Order ID",
+      "amount": "Amount",
+      "method": "Payment Method",
+      "status": "Status",
+      "receipt": "Receipt"
+    },
+    "status": {
+      "success": "Completed",
+      "failed": "Failed",
+      "pending": "Pending",
+      "refunded": "Refunded"
+    },
+    "empty": "No payment history",
+    "error": {
+      "loadFailed": "Failed to load payment history"
+    }
+  },
+  "chipHistory": {
+    "title": "Chip History",
+    "filter": {
+      "all": "All",
+      "charge": "Charge",
+      "use": "Use",
+      "refund": "Refund"
+    },
+    "table": {
+      "date": "Date",
+      "type": "Type",
+      "amount": "Amount",
+      "balance": "Balance",
+      "description": "Description"
+    },
+    "type": {
+      "charge": "Charge",
+      "use": "Use",
+      "refund": "Refund",
+      "bonus": "Bonus"
+    },
+    "empty": "No chip history",
+    "error": {
+      "loadFailed": "Failed to load chip history"
+    }
+  },
+  "subscription": {
+    "title": "Subscription Management",
+    "currentPlan": "Current Plan",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "Free",
+        "features": [
+          "Basic chip recharge",
+          "Standard customer support"
+        ]
+      },
+      "premium": {
+        "name": "Premium",
+        "price": "₩9,900/month",
+        "features": [
+          "10% discount on chip recharge",
+          "Priority customer support",
+          "Monthly bonus chips"
+        ]
+      },
+      "vip": {
+        "name": "VIP",
+        "price": "₩29,900/month",
+        "features": [
+          "20% discount on chip recharge",
+          "24/7 dedicated support",
+          "Monthly VIP bonus",
+          "Exclusive event invitations"
+        ]
+      }
+    },
+    "button": {
+      "subscribe": "Subscribe",
+      "upgrade": "Upgrade",
+      "cancel": "Cancel Subscription"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "cancelled": "Cancelled"
+    }
+  },
+  "paymentTerms": {
+    "title": "Payment Terms of Service",
+    "sections": {
+      "general": {
+        "title": "Article 1 (Purpose)",
+        "content": "These terms aim to define the basic matters regarding the use of chip payment services in T-HOLDEM."
+      },
+      "payment": {
+        "title": "Article 2 (Payment Methods)",
+        "content": "Members can purchase chips through credit cards, bank transfers, mobile payments, and other methods."
+      },
+      "refund": {
+        "title": "Article 3 (Refund Policy)",
+        "content": "Refunds are available for unused chips within 7 days of purchase, excluding payment processing fees."
+      },
+      "privacy": {
+        "title": "Article 4 (Privacy)",
+        "content": "Personal information collected during payment is used only for payment processing and customer support purposes."
+      }
+    },
+    "button": {
+      "agree": "Agree and Continue",
+      "disagree": "Disagree"
+    }
+  },
+  "common": {
+    "currency": {
+      "krw": "KRW",
+      "usd": "$"
+    },
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit"
+  }
+}

@@ -5,6 +5,12 @@ import {
   extractPackageIdFromOrderId,
   extractUserIdFromOrderId,
 } from './verifySignature';
+import {
+  validateRateLimit,
+  checkDailyPaymentLimit,
+  detectAbusePattern,
+  RATE_LIMIT_CONFIGS,
+} from '../middleware/rateLimiter';
 
 const db = admin.firestore();
 
@@ -38,6 +44,50 @@ export const confirmPayment = functions.https.onCall(async (data: any, context: 
 
   const userId = context.auth.uid;
   const { paymentKey, orderId, amount } = data;
+
+  // 1-1. Rate Limiting 검증
+  try {
+    await validateRateLimit(userId, RATE_LIMIT_CONFIGS.payment);
+  } catch (error: any) {
+    if (error.code === 'RATE_LIMIT_EXCEEDED') {
+      functions.logger.warn('결제 승인 실패: Rate limit 초과', {
+        userId,
+        retryAfter: error.retryAfter,
+      });
+      throw new functions.https.HttpsError(
+        'resource-exhausted',
+        error.message
+      );
+    }
+    throw error;
+  }
+
+  // 1-2. 일일 결제 한도 체크
+  const dailyLimit = await checkDailyPaymentLimit(userId);
+  if (!dailyLimit.allowed) {
+    functions.logger.warn('결제 승인 실패: 일일 한도 초과', {
+      userId,
+      todayPayments: dailyLimit.todayPayments,
+    });
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      '일일 결제 한도를 초과했습니다. 내일 다시 시도하세요.'
+    );
+  }
+
+  // 1-3. 남용 패턴 감지
+  const abuseCheck = await detectAbusePattern(userId);
+  if (abuseCheck.isAbusive) {
+    functions.logger.error('결제 승인 실패: 남용 패턴 감지', {
+      userId,
+      riskScore: abuseCheck.riskScore,
+      reason: abuseCheck.reason,
+    });
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      abuseCheck.reason || '의심스러운 결제 패턴이 감지되었습니다.'
+    );
+  }
 
   // 2. 입력 검증
   if (!paymentKey || !orderId || !amount) {

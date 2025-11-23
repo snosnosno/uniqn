@@ -79,7 +79,7 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
 
-    const chipBalanceRef = doc(db, 'users', currentUser.uid, 'chipBalance', 'current');
+    const chipBalanceRef = doc(db, 'chipBalance', currentUser.uid);
 
     const unsubscribe = onSnapshot(
       chipBalanceRef,
@@ -134,7 +134,8 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
         additionalData: { userId: currentUser.uid },
       });
     };
-  }, [currentUser, logger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   const value: ChipContextType = {
     chipBalance,

@@ -1,0 +1,1494 @@
+{
+  "approve": "승인",
+  "locations": {
+    "seoul": "서울",
+    "gyeonggi": "경기",
+    "incheon": "인천",
+    "gangwon": "강원",
+    "daejeon": "대전",
+    "sejong": "세종",
+    "chungnam": "충남",
+    "chungbuk": "충북",
+    "gwangju": "광주",
+    "jeonnam": "전남",
+    "jeonbuk": "전북",
+    "daegu": "대구",
+    "gyeongbuk": "경북",
+    "busan": "부산",
+    "ulsan": "울산",
+    "gyeongnam": "경남",
+    "jeju": "제주",
+    "overseas": "해외",
+    "other": "기타"
+  },
+  "gender": {},
+  "login": {
+    "rememberMe": "로그인 상태 유지",
+    "forgotPassword": "비밀번호를 잊으셨나요?",
+    "orContinueWith": "또는 다음으로 계속",
+    "googleSignIn": "Google 계정으로 로그인",
+    "noAccount": "계정이 없으신가요? 가입하기",
+    "errorMessage": "로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해주세요.",
+    "approvalPending": "가입 승인 대기중입니다. 관리자에게 문의하세요.",
+    "googleSignInError": "Google 로그인 중 오류가 발생했습니다. 나중에 다시 시도해주세요.",
+    "blockedMessage": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.",
+    "blockedButton": "차단됨",
+    "attemptWarning": "로그인 실패 횟수가 증가했습니다. 5회 실패 시 15분간 차단됩니다.",
+    "tooManyRequests": "너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.",
+    "networkError": "네트워크 연결을 확인해주세요.",
+    "emailVerificationRequired": "이메일 인증이 필요합니다",
+    "emailVerificationMessage": "계정을 사용하기 위해서는 이메일 인증이 필요합니다. 인증 이메일을 확인해주세요.",
+    "emailVerificationCheck": "이메일을 받지 못하셨나요? 스팸 폴더를 확인해주세요.",
+    "emailVerificationResend": "인증 이메일 재발송",
+    "emailVerificationResending": "재발송 중...",
+    "emailVerificationResent": "인증 이메일이 재발송되었습니다.",
+    "emailVerificationResendFailed": "이메일 재발송에 실패했습니다."
+  },
+  "adminLogin": {
+    "approvalPending": "가입 승인 대기중입니다. 관리자에게 문의하세요.",
+    "errorMessage": "로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해주세요."
+  },
+  "googleSignIn": {
+    "error": "Google 로그인 중 오류가 발생했습니다. 나중에 다시 시도해주세요.",
+    "popupBlocked": "팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.",
+    "popupClosed": "로그인이 취소되었습니다."
+  },
+  "forgotPassword": {
+    "title": "비밀번호 재설정",
+    "instruction": "계정의 이메일 주소를 입력하시면, 비밀번호 재설정 링크를 보내드립니다.",
+    "sendButton": "재설정 링크 받기",
+    "sendingButton": "보내는 중...",
+    "successMessage": "비밀번호 재설정 링크가 이메일로 전송되었습니다. 받은 편지함을 확인해주세요.",
+    "errorMessage": "요청 처리 중 오류가 발생했습니다. 이메일 주소를 확인하고 다시 시도해주세요.",
+    "backToLogin": "로그인으로 돌아가기",
+    "genderLabel": "성별",
+    "genderMale": "남성",
+    "genderFemale": "여성"
+  },
+  "signUp": {
+    "title": "회원가입",
+    "passwordPlaceholder": "비밀번호 (8자 이상)",
+    "confirmPassword": "비밀번호 확인",
+    "confirmPasswordPlaceholder": "비밀번호를 다시 입력하세요",
+    "showPassword": "비밀번호 보기",
+    "hidePassword": "비밀번호 숨기기",
+    "signUpButton": "가입하기",
+    "signingUpButton": "가입 처리 중...",
+    "orSignUpWith": "또는 다음으로 가입",
+    "googleSignUp": "Google 계정으로 가입",
+    "haveAccount": "이미 계정이 있으신가요? 로그인",
+    "successMessage": "회원가입이 완료되었습니다.",
+    "errorMessage": "가입 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+    "passwordLengthError": "비밀번호는 6자 이상이어야 합니다.",
+    "emailInUseError": "이미 사용 중인 이메일 주소입니다.",
+    "invalidEmailError": "유효하지 않은 이메일 주소 형식입니다.",
+    "weakPasswordError": "비밀번호가 너무 취약합니다. 더 강력한 비밀번호를 사용해주세요.",
+    "backToLogin": "로그인으로 돌아가기",
+    "genderLabel": "성별",
+    "genderMale": "남성",
+    "genderFemale": "여성",
+    "emailVerificationNote": "가입한 이메일로 인증 메일이 발송됩니다.",
+    "emailVerificationRequired": "이메일 인증 필요",
+    "emailVerificationInstruction": "이메일을 확인하여 인증을 완료한 후 로그인해주세요.",
+    "passwordToggleHint": "비밀번호 필드의 눈 아이콘을 클릭하여 입력 내용을 확인할 수 있습니다.",
+    "nickname": "닉네임",
+    "nicknamePlaceholder": "닉네임을 입력하세요",
+    "validation": {
+      "nameTooShort": "이름은 최소 2자 이상이어야 합니다.",
+      "nameTooLong": "이름은 최대 20자까지 입력 가능합니다.",
+      "nicknameTooShort": "닉네임은 최소 2자 이상이어야 합니다.",
+      "nicknameTooLong": "닉네임은 최대 15자까지 입력 가능합니다.",
+      "invalidEmail": "올바른 이메일 형식이 아닙니다.",
+      "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+      "genderRequired": "성별을 선택해주세요."
+    }
+  },
+  "passwordStrength": {
+    "title": "비밀번호 강도",
+    "requirements": "비밀번호 요구사항",
+    "length": "8자 이상",
+    "english": "영문자 포함",
+    "numbers": "숫자 포함",
+    "specialChars": "특수문자 포함 (보너스 +10점)"
+  },
+  "modal": {},
+  "nav": {
+    "dashboard": "대시보드",
+    "jobBoard": "구인구직",
+    "myProfile": "내 프로필",
+    "myAvailability": "가능 시간",
+    "attendance": "출석체크",
+    "staffManagement": "스태프 관리",
+    "managePostings": "공고 관리",
+    "shiftSchedule": "교대 관리",
+    "processPayroll": "급여 처리",
+    "blinds": "블라인드",
+    "prizes": "프라이즈",
+    "announcements": "공지사항",
+    "history": "기록",
+    "logout": "로그아웃",
+    "approvals": "가입 승인",
+    "userManagement": "사용자 관리",
+    "inquiryManagement": "문의 관리",
+    "support": "고객지원",
+    "ceoDashboard": "CEO 대시보드"
+  },
+  "layout": {
+    "title": "UNIQN",
+    "subtitle": "토너먼트 관리"
+  },
+  "dashboard": {
+    "loading": "대시보드 로딩 중...",
+    "title": "관리자 대시보드",
+    "ongoingEvents": "진행중인 이벤트",
+    "totalDealers": "총 딜러 수",
+    "quickLinks": "빠른 링크",
+    "manageEventsLink": "이벤트 관리",
+    "manageStaffLink": "스태프 관리",
+    "processPayrollLink": "급여 처리",
+    "topRatedDealers": "상위 평점 딜러",
+    "ratingsCount": "({{count}}개 평점)",
+    "noRatings": "아직 딜러 평점이 없습니다.",
+    "ceo": {
+      "title": "CEO 대시보드",
+      "subtitle": "비즈니스 전체 통계 및 분석",
+      "lastUpdated": "마지막 업데이트",
+      "realtime": "실시간"
+    }
+  },
+  "approvalPage": {
+    "title": "가입 승인 대기 목록",
+    "fetchError": "승인 대기 목록을 불러오는 데 실패했습니다.",
+    "processError": "{{action}} 요청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    "actionsHeader": "작업",
+    "noPending": "현재 승인 대기 중인 사용자가 없습니다."
+  },
+  "userManagement": {
+    "loading": "사용자 목록 로딩 중...",
+    "accessDenied": "이 페이지를 볼 권한이 없습니다.",
+    "title": "사용자 관리",
+    "addNew": "새 사용자 추가",
+    "noUsersFound": "사용자를 찾을 수 없습니다.",
+    "fetchError": "사용자 목록을 불러오는 데 실패했습니다.",
+    "confirmDelete": "정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "deleteSuccess": "사용자가 성공적으로 삭제되었습니다.",
+    "deleteError": "사용자 삭제에 실패했습니다."
+  },
+  "staffNew": {
+    "accessDeniedAction": "이 작업을 수행할 권한이 없습니다.",
+    "accessDeniedView": "이 페이지를 볼 권한이 없습니다.",
+    "alertSuccess": "스태프가 성공적으로 생성되었습니다!",
+    "errorUnknown": "알 수 없는 오류가 발생했습니다.",
+    "title": "새 스태프 추가",
+    "roleAdmin": "관리자",
+    "buttonCreate": "스태프 생성"
+  },
+  "staffListPage": {
+    "title": "확정 스태프",
+    "fetchError": "스태프 정보를 가져오는 데 실패했습니다.",
+    "noPostings": "생성한 구인 공고가 없습니다.",
+    "noConfirmedStaff": "이 공고에 확정된 스태프가 아직 없습니다.",
+    "unknownUser": "알 수 없는 사용자",
+    "cannotAddStaff": "스태프를 추가할 수 없습니다. 현재 사용자 또는 공고 정보가 없습니다.",
+    "newStaff": "새 스태프",
+    "staffAddedSuccess": "새 스태프가 성공적으로 추가되었습니다!",
+    "addStaffError": "스태프 추가 중 오류가 발생했습니다.",
+    "staffNotFound": "스태프를 찾을 수 없습니다.",
+    "updateError": "스태프 정보 업데이트 중 오류가 발생했습니다.",
+    "addStaffModal": "스태프 추가",
+    "searchExistingUser": "기존 사용자 검색",
+    "searchPlaceholder": "이름, 이메일, 전화번호로 검색...",
+    "searching": "검색중...",
+    "noName": "이름 없음",
+    "selectedUser": "선택된 사용자",
+    "addSelectedUser": "이 사용자를 스태프로 추가",
+    "addTempStaff": "임시 스태프 추가",
+    "nameRequired": "이름 *",
+    "phone": "전화번호",
+    "nationality": "국적",
+    "notes": "비고",
+    "addTempStaffBtn": "임시 스태프 추가",
+    "nameRequiredError": "스태프 이름을 입력해주세요.",
+    "userSearchError": "사용자 검색에 실패했습니다."
+  },
+  "editUserModal": {
+    "title": "사용자 정보 수정",
+    "updateSuccess": "사용자 정보가 성공적으로 업데이트되었습니다!",
+    "updateError": "사용자 정보 업데이트에 실패했습니다."
+  },
+  "roles": {
+    "dealer": "딜러",
+    "floor": "플로어",
+    "serving": "서빙",
+    "tournament_director": "토너먼트 디렉터",
+    "chip_master": "칩 마스터",
+    "registration": "등록",
+    "security": "보안요원",
+    "cashier": "캐셔"
+  },
+  "common": {
+    "back": "뒤로가기",
+    "close": "닫기",
+    "cancel": "취소",
+    "save": "저장",
+    "all": "전체",
+    "sort": "정렬",
+    "none": "없음",
+    "refresh": "새로고침",
+    "comingSoon": "향후 업데이트 예정",
+    "closeNotification": "알림 닫기",
+    "requiredField": "필수 항목",
+    "optional": "선택",
+    "show": "보기",
+    "noName": "이름 없음",
+    "chipRebalance": "칩 균형 재배치",
+    "undecided": "미정",
+    "timeUndecided": "시간 미정",
+    "dateUndecided": "날짜 미정",
+    "jobManagement": "공고 관리",
+    "viewList": "목록 보기",
+    "createPost": "공고 작성",
+    "preQuestionAnswer": "사전질문 답변",
+    "applying": "지원중",
+    "confirm": "확인",
+    "delete": "삭제",
+    "edit": "수정",
+    "add": "추가",
+    "search": "검색",
+    "role": "역할",
+    "messages": {
+      "loading": "로딩 중...",
+      "saving": "저장 중...",
+      "submitting": "제출 중...",
+      "generating": "생성 중...",
+      "searching": "검색중...",
+      "processing": "처리 중..."
+    },
+    "days": "일",
+    "processing": "처리 중...",
+    "name": "이름",
+    "emailAddress": "이메일 주소",
+    "date": "날짜",
+    "phone": "연락처",
+    "statusLabel": "상태",
+    "status": {
+      "confirmed": "확정됨",
+      "pending": "대기 중",
+      "rejected": "거절됨"
+    },
+    "location": "지역",
+    "time": "시간",
+    "application": "지원",
+    "other": "기타",
+    "gender": "성별",
+    "email": "이메일",
+    "age": "나이",
+    "payrollHistory": "급여 내역",
+    "password": "비밀번호",
+    "participants": "참가자",
+    "error": "오류",
+    "experience": "경력",
+    "notApplicable": "해당 없음",
+    "chips": "칩",
+    "fixed": "고정",
+    "apply": "지원하기",
+    "event": "이벤트",
+    "totalPay": "총 급여",
+    "reject": "거절",
+    "male": "남성",
+    "female": "여성",
+    "login": "로그인",
+    "staff": "스태프",
+    "table": "테이블",
+    "totalHours": "총 근무 시간",
+    "loading": "로딩 중..."
+  },
+  "payrollAdmin": {
+    "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
+    "errorFetch": "급여 정보를 가져오는 데 실패했습니다.",
+    "errorCalculate": "급여를 계산하는 데 실패했습니다.",
+    "title": "급여 관리",
+    "selectEvent": "이벤트 선택",
+    "buttonLoadPayrolls": "급여 불러오기",
+    "buttonCalculating": "계산 중...",
+    "buttonCalculateAll": "전체 급여 계산하기",
+    "tableHeaderName": "딜러 이름",
+    "tableHeaderHours": "근무 시간 (근사치)",
+    "tableHeaderAmount": "금액",
+    "unknownDealer": "알 수 없는 딜러",
+    "status": {
+      "pending": "지급 대기중"
+    }
+  },
+  "dealerEvents": {
+    "loading": "참여 가능한 이벤트를 불러오는 중...",
+    "title": "지원 가능한 이벤트 목록",
+    "applyButton": "지금 지원하기",
+    "noEvents": "현재 모집 중인 이벤트가 없습니다.",
+    "dateInvalid": "유효하지 않은 날짜"
+  },
+  "participants": {
+    "errorParticipants": "참가자 로딩 오류:",
+    "errorTables": "테이블 로딩 오류:",
+    "confirmDelete": "정말로 삭제하시겠습니까?",
+    "title": "참가자 관리",
+    "searchPlaceholder": "이름으로 검색",
+    "addNew": "+ 참가자 추가",
+    "tableHeaderActions": "관리",
+    "modalTitleEdit": "참가자 수정",
+    "modalTitleAdd": "참가자 추가",
+    "modalButtonAdd": "추가"
+  },
+  "tables": {
+    "error": "오류:",
+    "errorMoveFailed": "자리 이동에 실패했습니다:",
+    "title": "테이블 현황",
+    "buttonAutoAssign": "자동 재배치",
+    "buttonAddTable": "테이블 추가",
+    "exportExcel": "엑셀 내보내기",
+    "exportExcelSuccess": "엑셀 파일이 성공적으로 다운로드되었습니다.",
+    "exportExcelError": "엑셀 내보내기 중 오류가 발생했습니다.",
+    "infoTables": "테이블:",
+    "infoEmptySeats": "빈 자리:",
+    "labelMaxSeats": "최대 좌석:",
+    "participantEmpty": "빈 자리",
+    "participantUnknown": "알 수 없음"
+  },
+  "tableDetailModal": {
+    "changeBorderColorTitle": "테두리 색상 변경",
+    "defaultTableName": "테이블 {{number}}",
+    "infoParticipants": "참가자:",
+    "infoEmptySeats": "빈 좌석:",
+    "labelMaxSeats": "최대 좌석:",
+    "buttonActivate": "테이블 활성화",
+    "buttonClose": "테이블 닫기",
+    "participantUnknown": "알 수 없음"
+  },
+  "playerActionModal": {
+    "showDetails": "상세 정보",
+    "moveSeat": "자리 이동",
+    "bustOut": "탈락 처리"
+  },
+  "moveSeatModal": {
+    "title": "{{name}}님 자리 이동",
+    "sectionTitle": "이동 대상 플레이어",
+    "labelName": "이름:",
+    "labelCurrentLocation": "현재 위치:",
+    "seatSuffix": "번 좌석",
+    "defaultTableName": "테이블 {{number}}",
+    "statusOccupied": "(자리 있음)",
+    "statusEmpty": "(빈 자리)",
+    "statusUnavailable": "(이동 불가)",
+    "buttonConfirm": "이동 확인"
+  },
+  "blinds": {
+    "title": "블라인드 컨트롤",
+    "breakTime": "휴식 시간",
+    "level": "레벨 {{level}}",
+    "ante": "앤티 {{ante}}",
+    "next": "다음:",
+    "nextBreak": "휴식",
+    "end": "종료",
+    "buttonPrev": "이전",
+    "buttonPause": "일시정지",
+    "buttonStart": "시작",
+    "buttonNext": "다음"
+  },
+  "prizes": {
+    "alertSaved": "상금 분배가 저장되었습니다.",
+    "title": "상금 계산기",
+    "totalPrizePool": "총상금",
+    "itm": "ITM",
+    "adjustManually": "수동으로 상금 조정",
+    "totalDistributed": "분배된 총액:",
+    "rank": "{{rank}}등",
+    "saveButton": "상금 구조 저장"
+  },
+  "announcements": {
+    "title": "공지사항",
+    "subtitle": "시스템 공지 및 업데이트 정보",
+    "createButton": "공지사항 등록",
+    "totalCount": "전체 {{count}}개",
+    "activeCount": "활성 {{count}}개",
+    "emptyTitle": "공지사항이 없습니다",
+    "emptyDescription": "새로운 공지사항이 등록되면 알림을 받으실 수 있습니다.",
+    "goToNotifications": "알림 센터로 이동",
+    "viewDetail": "자세히 보기",
+    "notificationSettingsTitle": "알림 설정",
+    "notificationSettingsDescription": "중요한 공지사항을 놓치지 않도록 알림 센터에서 알림 설정을 확인하세요.",
+    "priority": {
+      "normal": "일반",
+      "important": "중요",
+      "urgent": "긴급"
+    },
+    "createModal": {
+      "title": "시스템 공지사항 등록",
+      "togglePreview": "미리보기",
+      "toggleEdit": "편집 모드",
+      "fieldTitle": "제목",
+      "fieldContent": "내용",
+      "fieldPriority": "우선순위",
+      "fieldStartDate": "공개 시작일",
+      "fieldEndDate": "공개 종료일",
+      "enableEndDate": "공개 종료일 설정",
+      "placeholderTitle": "공지사항 제목을 입력하세요",
+      "placeholderContent": "공지사항 내용을 입력하세요",
+      "characterCount": "{{count}}/{{max}}자",
+      "validationError": "입력 오류",
+      "buttonCancel": "취소",
+      "buttonSubmit": "등록하기",
+      "submitting": "등록 중...",
+      "successMessage": "공지사항이 등록되고 모든 사용자에게 알림이 전송되었습니다.",
+      "errorMessage": "공지사항 등록에 실패했습니다.",
+      "previewEmpty": {
+        "title": "(제목 없음)",
+        "content": "(내용 없음)"
+      },
+      "period": {
+        "indefinite": "무기한",
+        "start": "공개 시작",
+        "end": "공개 종료"
+      }
+    },
+    "detailModal": {
+      "title": "공지사항",
+      "author": "작성자",
+      "createdAt": "작성일",
+      "period": "공개 기간",
+      "viewCount": "조회수",
+      "times": "회",
+      "indefinite": "무기한",
+      "sendResult": {
+        "title": "알림 전송 결과",
+        "totalUsers": "전체 사용자",
+        "successCount": "전송 성공",
+        "failedCount": "전송 실패",
+        "sentAt": "전송 시간",
+        "people": "명"
+      },
+      "buttonEdit": "수정",
+      "buttonDelete": "삭제",
+      "buttonClose": "닫기",
+      "confirmDelete": "정말 이 공지사항을 삭제하시겠습니까?",
+      "deleteSuccess": "공지사항이 삭제되었습니다.",
+      "deleteError": "공지사항 삭제에 실패했습니다."
+    },
+    "error": {
+      "loadFailed": "공지사항을 불러올 수 없습니다",
+      "retryButton": "다시 시도"
+    }
+  },
+  "participantDetailModal": {
+    "title": "참가자 상세 정보",
+    "editTitle": "참가자 정보 수정",
+    "statusActive": "참가중",
+    "statusBusted": "탈락",
+    "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
+    "buttonClose": "닫기"
+  },
+  "qrScannerModal": {
+    "title": "QR 코드 스캐너",
+    "scanMessage": "출석 체크를 위해 QR 코드를 스캔해주세요."
+  },
+  "attendancePage": {
+    "title": "QR 출석",
+    "lastScanned": "QR 코드 스캔됨",
+    "submitting": "처리 중...",
+    "success": "출석이 완료되었습니다",
+    "fail": "출석 처리에 실패했습니다",
+    "howToUse": "사용 방법",
+    "guide1": "관리자가 생성한 QR 코드를 스캔하세요.",
+    "guide2": "출근과 퇴근은 각각 다른 QR 코드입니다.",
+    "guide3": "QR 코드는 1분마다 자동으로 변경됩니다."
+  },
+  "availableTimes": {
+    "title": "주간 근무 가능 시간 설정",
+    "days": {
+      "monday": "월요일",
+      "tuesday": "화요일",
+      "wednesday": "수요일",
+      "thursday": "목요일",
+      "friday": "금요일",
+      "saturday": "토요일",
+      "sunday": "일요일"
+    },
+    "times": {
+      "morning": "오전 (8시-12시)",
+      "afternoon": "오후 (12시-16시)",
+      "evening": "저녁 (16시-20시)",
+      "night": "야간 (20시-24시)"
+    },
+    "alerts": {
+      "notLoggedIn": "로그인이 필요합니다.",
+      "updateSuccess": "근무 가능 시간이 성공적으로 업데이트되었습니다!",
+      "updateFailed": "업데이트에 실패했습니다."
+    },
+    "status": {
+      "loading": "데이터 로딩 중...",
+      "error": "오류: {{message}}",
+      "loginRequired": "로그인 후 이용해주세요."
+    }
+  },
+  "dealerRotation": {
+    "loading": "스태프 및 테이블 정보 로딩 중...",
+    "title": "딜러 순환 대시보드",
+    "onTables": "테이블 근무 중",
+    "tableName": "{{tableNumber}}번 테이블",
+    "noDealerAssigned": "배정된 딜러 없음",
+    "availableDealers": "대기 중인 딜러",
+    "noDealersAvailable": "대기 중인 딜러 없음",
+    "onBreak": "휴식 중",
+    "noDealersOnBreak": "휴식 중인 딜러 없음"
+  },
+  "historyDetail": {
+    "title": "{{name}} 결과",
+    "backToList": "목록으로",
+    "playerCount": "{{count}}명",
+    "prizePool": "총상금",
+    "currency": "{{amount}}원",
+    "winner": "우승자",
+    "finalRanking": "최종 순위",
+    "rank": "순위",
+    "prize": "상금"
+  },
+  "historyPage": {
+    "title": "토너먼트 기록",
+    "tournamentName": "대회명",
+    "winner": "우승자",
+    "details": "상세",
+    "viewResults": "결과 보기"
+  },
+  "jobBoard": {
+    "title": "구인구직 게시판",
+    "noJobsAvailable": "구인 공고가 없습니다.",
+    "alerts": {
+      "applicationFailed": "지원에 실패했습니다.",
+      "applicationSuccess": "지원이 완료되었습니다!",
+      "cancelFailed": "지원 취소에 실패했습니다.",
+      "cancelSuccess": "지원이 취소되었습니다.",
+      "confirmCancel": "정말로 지원을 취소하시겠습니까?",
+      "cancelMessage": "정말로 지원을 취소하시겠습니까?",
+      "loginRequired": "로그인이 필요합니다.",
+      "profileNotFound": "프로필을 찾을 수 없습니다.",
+      "selectAssignment": "시간대와 역할을 선택해주세요."
+    },
+    "search": {
+      "placeholder": "공고 제목, 설명으로 검색..."
+    },
+    "filters": {
+      "allLocations": "전체 지역",
+      "type": "고용형태",
+      "allTypes": "전체 유형",
+      "allRoles": "전체 역할",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "month": "월",
+      "day": "일",
+      "reset": "초기화",
+      "search": {
+        "placeholder": "공고 제목, 설명으로 검색..."
+      }
+    },
+    "types": {},
+    "tabs": {
+      "regular": "지원",
+      "fixed": "고정",
+      "tournament": "대회",
+      "urgent": "긴급",
+      "myApplications": "내지원"
+    },
+    "fixed": {
+      "durationLabel": "노출 기간",
+      "7days": "7일",
+      "30days": "30일",
+      "90days": "90일",
+      "7daysWithChip": "7일 (3칩)",
+      "30daysWithChip": "30일 (5칩)",
+      "90daysWithChip": "90일 (10칩)",
+      "7daysDescription": "1주일 노출",
+      "30daysDescription": "1개월 노출",
+      "90daysDescription": "3개월 노출",
+      "selectedDuration": "선택한 기간",
+      "chipCostLabel": "차감 예정",
+      "expiresIn": "만료: D-{{days}}",
+      "expired": "만료됨",
+      "expiresOn": "만료일: {{date}}"
+    },
+    "urgent": {
+      "label": "긴급",
+      "chipCost": "5칩 (고정)",
+      "badge": "긴급 모집",
+      "description": "긴급 공고로 상단에 노출됩니다"
+    },
+    "tournament": {
+      "label": "대회",
+      "badge": "대회 공고",
+      "approvalRequired": "관리자 승인 필요",
+      "description": "대회 공고는 관리자 승인 후 게시됩니다. 승인 결과는 알림으로 안내드립니다",
+      "status": {
+        "pending": "승인 대기",
+        "approved": "승인 완료",
+        "rejected": "승인 거부"
+      },
+      "approval": {
+        "pageTitle": "대회 공고 승인 관리",
+        "pageDescription": "승인 대기 중인 대회 공고를 확인하고 승인 또는 거부하세요",
+        "emptyTitle": "승인 대기 중인 공고가 없습니다",
+        "emptyDescription": "새로운 대회 공고가 등록되면 여기에 표시됩니다",
+        "approveButton": "승인",
+        "rejectButton": "거부",
+        "modalApproveTitle": "공고 승인",
+        "modalRejectTitle": "공고 거부",
+        "modalMessage": "다음 공고를 {{action}}하시겠습니까?",
+        "modalReasonLabel": "거부 사유",
+        "modalReasonPlaceholder": "거부 사유를 10자 이상 입력해주세요",
+        "modalReasonCount": "{{count}}/10자 이상",
+        "modalCancel": "취소",
+        "modalConfirmApprove": "승인",
+        "modalConfirmReject": "거부",
+        "processing": "처리 중...",
+        "errorReasonRequired": "거부 사유를 입력해주세요",
+        "errorReasonLength": "거부 사유는 최소 10자 이상이어야 합니다",
+        "errorProcessing": "처리 중 오류가 발생했습니다",
+        "successApprove": "공고가 승인되었습니다",
+        "successReject": "공고가 거부되었습니다"
+      }
+    },
+    "noResults": "검색 결과가 없습니다.",
+    "loadMore": "더 보기",
+    "applying": "지원 중...",
+    "cancelApplication": "지원 취소",
+    "cancelling": "취소 중...",
+    "viewDetails": "자세히 보기",
+    "loginRequired": "로그인 필요",
+    "applied": "지원완료",
+    "preQuestions": "(사전질문)",
+    "preQuestion": {
+      "checkButton": "📝 사전질문 확인",
+      "completeFirst": "사전질문을 먼저 작성해주세요",
+      "modalTitle": "사전질문",
+      "noQuestions": "사전질문이 없습니다.",
+      "submit": "사전질문 제출",
+      "success": "사전질문이 성공적으로 제출되었습니다!",
+      "error": "사전질문 제출 중 오류가 발생했습니다.",
+      "completed": "✓ 사전질문 완료",
+      "requiredField": "필수 항목",
+      "answerPlaceholder": "답변을 입력하세요...",
+      "selectOption": "옵션을 선택하세요"
+    },
+    "applyModal": {
+      "title": "공고 지원",
+      "selectTimeAndRole": "시간대와 역할을 선택하세요:",
+      "selectAssignment": "시간 및 역할 선택",
+      "selectPlaceholder": "시간과 역할을 선택하세요",
+      "full": "마감",
+      "confirm": "지원 확정",
+      "success": "지원이 완료되었습니다!",
+      "error": "지원 중 오류가 발생했습니다.",
+      "alreadyApplied": "이미 지원한 공고입니다.",
+      "loginRequired": "지원하려면 로그인이 필요합니다."
+    },
+    "error": "공고를 불러오는 중 오류가 발생했습니다.",
+    "loading": "공고를 불러오는 중...",
+    "unknownApplicant": "알 수 없는 지원자"
+  },
+  "jobPosting": {
+    "announcement": {
+      "button": "공지 전송",
+      "modalTitle": "스태프 공지 전송",
+      "titleLabel": "공지 제목",
+      "titlePlaceholder": "공지 제목을 입력하세요 (최대 50자)",
+      "messageLabel": "공지 내용",
+      "messagePlaceholder": "공지 내용을 입력하세요 (최대 500자)",
+      "targetStaff": "수신 대상",
+      "staffCount": "{{count}}명의 확정된 스태프",
+      "postingInfo": "공고 정보",
+      "sendButton": "전송",
+      "sending": "전송 중..."
+    },
+    "info": {
+      "expand": "정보 열기",
+      "collapse": "정보 닫기",
+      "section": "공고 기본 정보"
+    }
+  },
+  "jobPostingAdmin": {
+    "alerts": {
+      "createSuccess": "구인 공고가 성공적으로 생성되었습니다!",
+      "createFailed": "구인 공고 생성에 실패했습니다.",
+      "matchFailed": "자동 매칭 실행에 실패했습니다. 로그를 확인하세요.",
+      "updateSuccess": "구인공고가 성공적으로 업데이트되었습니다.",
+      "updateFailed": "구인공고 업데이트에 실패했습니다.",
+      "fetchApplicantsFailed": "지원자 정보를 가져오는데 실패했습니다.",
+      "confirmDelete": "정말로 이 공고를 삭제하시겠습니까?",
+      "deleteSuccess": "공고가 성공적으로 삭제되었습니다.",
+      "deleteFailed": "공고 삭제에 실패했습니다.",
+      "invalidRoleInfo": "역할 이름과 필요 인원(1 이상)을 모두 올바르게 입력해주세요.",
+      "selectRoleToAssign": "배정할 역할을 선택해주세요.",
+      "applicantAlreadyConfirmed": "이미 확정된 지원자입니다.",
+      "applicantConfirmSuccess": "지원자가 성공적으로 확정되었습니다.",
+      "applicantConfirmFailed": "지원자 확정에 실패했습니다.",
+      "postingClosed": "모든 역할이 채워졌습니다. 구인 공고가 마감되었습니다."
+    },
+    "form": {
+      "postingTitle": "공고 제목",
+      "type": "고용 형태",
+      "rolesAndCounts": "역할 및 필요 인원",
+      "roleName": "역할 이름",
+      "roleNamePlaceholder": "예: 딜러, 플로어",
+      "staffNeeded": "필요 인원",
+      "addRole": "역할 추가",
+      "remove": "삭제",
+      "description": "설명 / 조건",
+      "detailedAddress": "상세 주소",
+      "detailedAddressPlaceholder": "상세 주소를 입력하세요",
+      "contactPhone": "문의 연락처",
+      "contactPhonePlaceholder": "문의 연락처를 입력하세요 (최대 25자)",
+      "usePreQuestions": "사전질문 사용",
+      "preQuestions": "사전질문 (선택사항)",
+      "question": "질문",
+      "addPreQuestion": "질문 추가",
+      "addQuestion": "질문 추가",
+      "removePreQuestion": "질문 삭제",
+      "questionText": "질문 내용",
+      "questionPlaceholder": "질문을 입력하세요",
+      "questionType": "답변 형식",
+      "typeText": "단답형",
+      "typeTextarea": "장문형",
+      "typeSelect": "객관식",
+      "questionTypeText": "단답형",
+      "questionTypeTextarea": "장문형",
+      "questionTypeSelect": "객관식",
+      "requiredQuestion": "필수 답변",
+      "questionRequired": "필수 답변",
+      "questionOptional": "선택 답변",
+      "addOption": "선택지 추가",
+      "optionPlaceholder": "선택지를 입력하세요",
+      "submitting": "제출 중...",
+      "location": "지역",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "timeAndRoles": "시간대 및 역할",
+      "addTimeSlot": "시간대 추가",
+      "removeTimeSlot": "시간대 삭제",
+      "selectOptions": "옵션 선택",
+      "removeQuestion": "질문 삭제"
+    },
+    "create": {
+      "title": "공고 생성",
+      "button": "공고 작성"
+    },
+    "manage": {
+      "title": "구인 공고 관리",
+      "loading": "공고 로딩 중...",
+      "people": "명",
+      "type": "고용 형태",
+      "matching": "매칭 중...",
+      "button": "자동 매칭",
+      "applicants": "지원자",
+      "detailManagement": "상세 관리"
+    },
+    "edit": {
+      "title": "구인공고 수정",
+      "statusOpen": "진행중",
+      "statusClosed": "마감"
+    },
+    "applicants": {
+      "title": "지원자 목록",
+      "loading": "지원자 정보를 불러오는 중...",
+      "none": "아직 지원자가 없습니다.",
+      "close": "닫기",
+      "status": "상태: ",
+      "as": " (으)로",
+      "selectRole": "역할 선택",
+      "viewProfile": "프로필 보기",
+      "ageUnit": "세",
+      "statusValue": {},
+      "status_applied": "지원함",
+      "status_confirmed": "확정됨"
+    },
+    "unknownUser": "알 수 없는 사용자"
+  },
+  "profile": {
+    "residentId": "주민등록번호",
+    "region": "지역",
+    "selectRegion": "지역을 선택하세요"
+  },
+  "profilePage": {
+    "eventIdMissing": "이벤트 ID가 없습니다",
+    "unknownEvent": "알 수 없는 이벤트",
+    "loginRequired": "프로필을 업데이트하려면 로그인해야 합니다.",
+    "updateSuccess": "프로필이 성공적으로 업데이트되었습니다!",
+    "updateFailed": "프로필 업데이트 실패: {{message}}",
+    "profileImage": "프로필 사진",
+    "imageUpdateFailed": "프로필 사진 업데이트에 실패했습니다.",
+    "requiredFields": "다음 필수 정보를 입력해주세요: {{fields}}",
+    "loadingProfile": "프로필 로딩 중...",
+    "error": "오류: {{message}}",
+    "viewProfileLogin": "프로필을 보려면 로그인해주세요.",
+    "ratings": "개 평점",
+    "editProfile": "프로필 수정",
+    "profileDetails": "프로필 상세 정보",
+    "name": "이름:",
+    "email": "이메일:",
+    "phone": "연락처:",
+    "notProvided": "제공되지 않음",
+    "experience": "경력:",
+    "history": "이력:",
+    "historyPlaceholder": "자세한 이력을 입력하세요...",
+    "hourlyRate": "시급:",
+    "editDetails": "정보 수정",
+    "saveChanges": "변경사항 저장",
+    "loadingPayroll": "급여 내역 로딩 중...",
+    "tableHours": "시간",
+    "tablePay": "급여",
+    "noPayroll": "급여 내역이 없습니다.",
+    "statusPending": "지급 대기중",
+    "nationality": "국적",
+    "bankName": "은행명",
+    "bankAccount": "계좌번호",
+    "privateInfo": "개인 정보",
+    "privateInfoNote": "(정산시 필요, 허가된 사람에게만 보입니다)",
+    "notes": "기타 사항",
+    "selectExperience": "경력을 선택하세요",
+    "selectNationality": "국적을 선택하세요",
+    "residentId": "주민등록번호:",
+    "gender": "성별:"
+  },
+  "profileImage": {
+    "uploadSuccess": "프로필 사진이 업로드되었습니다.",
+    "deleteSuccess": "프로필 사진이 삭제되었습니다.",
+    "currentImage": "현재 프로필 사진",
+    "selectImage": "이미지 선택",
+    "uploadError": "프로필 사진 업로드에 실패했습니다.",
+    "deleteError": "프로필 사진 삭제에 실패했습니다."
+  },
+  "payrollPage": {
+    "loading": "급여 데이터를 불러오는 중...",
+    "accessDenied": "접근 권한이 없습니다.",
+    "accessDeniedMessage": "본인의 급여내역만 조회할 수 있습니다.",
+    "userNotFound": "사용자를 찾을 수 없습니다.",
+    "fetchError": "급여 데이터를 불러오는데 실패했습니다.",
+    "eventIdMissing": "이벤트 ID 없음",
+    "unknownEvent": "알 수 없는 이벤트",
+    "goBack": "뒤로 가기",
+    "adminView": "관리자 조회",
+    "totalEvents": "총 이벤트 수",
+    "tableHours": "근무시간",
+    "tablePay": "급여",
+    "statusPending": "지급대기",
+    "noPayroll": "급여 내역이 없습니다",
+    "noPayrollMessage": "아직 급여 내역이 생성되지 않았습니다."
+  },
+  "participantLivePage": {
+    "notFound": "참가자를 찾을 수 없습니다. (ID: {{id}})",
+    "announcements": "📢 공지사항",
+    "table": "테이블: {{tableNumber}}",
+    "seat": "좌석: {{seatNumber}}",
+    "chips": "칩: {{chipCount}}",
+    "nextLevelIn": "다음 레벨까지",
+    "nextBlind": "다음 블라인드: {{blind}}",
+    "tournamentEnd": "토너먼트 종료",
+    "tournamentInfo": "토너먼트 정보",
+    "currentBlind": "현재 블라인드",
+    "remainingPlayers": "남은 플레이어",
+    "avgStack": "평균 스택",
+    "totalChips": "총 칩",
+    "rulesTitle": "대회 규칙",
+    "rule1": "1. TDA 룰을 기본으로 합니다.",
+    "rule2": "2. 참가자 간의 예의를 지켜주세요.",
+    "dummyAnnouncement1": "다음 블라인드 레벨은 5분 후에 시작됩니다.",
+    "dummyAnnouncement2": "10분간 휴식 시간을 갖겠습니다."
+  },
+  "tournamentDashboard": {
+    "seeding": {
+      "success": "테스트 데이터가 성공적으로 생성되었습니다! 페이지를 다시 로드합니다.",
+      "skipped": "테스트 데이터가 이미 존재하여 건너뜁니다.",
+      "error": "테스트 데이터를 생성하는 중에 오류가 발생했습니다.",
+      "unexpectedError": "예상치 못한 오류가 발생했습니다. 콘솔을 확인하세요."
+    },
+    "title": "토너먼트 대시보드",
+    "devTools": {
+      "title": "개발자 도구",
+      "button": "테스트 데이터 생성 (테이블 10개, 플레이어 80명)",
+      "buttonSeeding": "테스트 데이터 생성 중...",
+      "description": "샘플 데이터로 데이터베이스를 채웁니다. 초기 데이터베이스에서만 사용하세요."
+    },
+    "stats": {
+      "totalParticipants": "총 참가자",
+      "currentBlindLevel": "현재 블라인드 레벨",
+      "estimatedPrizePool": "예상 총상금"
+    },
+    "status": {
+      "title": "토너먼트 상태",
+      "welcome": "토너먼트 관리 패널에 오신 것을 환영합니다. 왼쪽 메뉴를 사용하여 이벤트의 다양한 측면을 관리하세요.",
+      "running": "진행중",
+      "paused": "일시중지됨",
+      "stopped": "중지됨"
+    }
+  },
+  "privateRoute": {
+    "loading": "사용자 정보 로딩 중..."
+  },
+  "tableCard": {
+    "dealer": "딜러:"
+  },
+  "days": {
+    "0": "일",
+    "1": "월",
+    "2": "화",
+    "3": "수",
+    "4": "목",
+    "5": "금",
+    "6": "토"
+  },
+  "months": {
+    "1": "1월",
+    "2": "2월",
+    "3": "3월",
+    "4": "4월",
+    "5": "5월",
+    "6": "6월",
+    "7": "7월",
+    "8": "8월",
+    "9": "9월",
+    "10": "10월",
+    "11": "11월",
+    "12": "12월"
+  },
+  "tournament": {
+    "initialName": "UNIQN Initial Tournament"
+  },
+  "theme": {
+    "switchToLight": "라이트 모드로 전환",
+    "switchToDark": "다크 모드로 전환"
+  },
+  "kakaoLogin": {
+    "button": "카카오로 로그인"
+  },
+  "shiftSchedule": {
+    "title": "교대 스케줄 관리",
+    "subtitle": "딜러 교대 스케줄을 관리하고 근무기록을 생성하세요",
+    "loading": "스케줄 데이터를 불러오는 중...",
+    "selectDate": "날짜 선택",
+    "timeInterval": "시간 간격",
+    "settings": "설정",
+    "createSchedule": "새 스케줄 생성",
+    "scheduleGrid": "교대 스케줄",
+    "noSchedule": "스케줄이 없습니다",
+    "availableDealers": "사용 가능한 딜러",
+    "addToSchedule": "스케줄에 추가",
+    "noDealersAvailable": "사용 가능한 딜러가 없습니다",
+    "availableTables": "사용 가능한 테이블",
+    "noTablesAvailable": "사용 가능한 테이블이 없습니다",
+    "assignedDealers": "배정된 딜러",
+    "workLogsGenerated": "이 날짜의 근무기록이 이미 생성되었습니다",
+    "workLogsNotGenerated": "스케줄 완료 후 근무기록을 생성하세요",
+    "regenerateWorkLogs": "근무기록 재생성",
+    "generateWorkLogs": "근무기록 생성",
+    "startTime": "출근시간",
+    "allDealersAssigned": "모든 딜러가 스케줄에 추가되었습니다",
+    "removeFromSchedule": "스케줄에서 제거",
+    "confirmRemoveStaff": "정말로 {staffName} 스태프를 스케줄에서 제거하시겠습니까?",
+    "confirmRemoveDealer": "정말로 {dealerName} 딜러를 스케줄에서 제거하시겠습니까?",
+    "validationResults": "스케줄 검증 결과",
+    "errors": "개 오류",
+    "warnings": "개 경고",
+    "infos": "개 정보",
+    "validationPassed": "검증 통과",
+    "noScheduleMessage": "일정이 아직 생성되지 않았습니다",
+    "defaultWorkTimeSettings": "기본 근무 시간 설정",
+    "autoSaveSettings": "자동 저장 설정",
+    "autoSaveChanges": "변경 사항 자동 저장",
+    "notificationSettings": "알림 설정",
+    "conflictNotifications": "예약 충돌 알림",
+    "assignedDealer": "명 배정됨",
+    "minuteInterval": "분 간격"
+  },
+  "attendance": {
+    "status": {
+      "not_started": "출근 전",
+      "notStarted": "출근 전",
+      "checked_in": "출근",
+      "checkedIn": "출근",
+      "checked_out": "퇴근",
+      "checkedOut": "퇴근",
+      "absent": "결근"
+    },
+    "labels": {
+      "checkIn": "출근 시간",
+      "checkOut": "퇴근 시간",
+      "scheduled": "예정 시간",
+      "actual": "실제 시간",
+      "attendanceStatus": "출석 상태",
+      "workingHours": "근무 시간",
+      "breakTime": "휴식 시간"
+    },
+    "actions": {
+      "checkIn": "출근 체크",
+      "checkOut": "퇴근 체크",
+      "editTime": "시간 수정",
+      "generateQR": "QR 생성",
+      "scanQR": "QR 스캔"
+    },
+    "messages": {
+      "checkInSuccess": "출근이 성공적으로 기록되었습니다!",
+      "checkOutSuccess": "퇴근이 성공적으로 기록되었습니다!",
+      "alreadyCheckedIn": "이미 출근 체크가 완료되었습니다.",
+      "alreadyCheckedOut": "이미 퇴근 체크가 완료되었습니다.",
+      "qrCodeGenerated": "QR 코드가 생성되었습니다.",
+      "attendanceError": "출석 기록 중 오류가 발생했습니다.",
+      "timeUpdated": "시간이 성공적으로 수정되었습니다.",
+      "updateError": "시간 수정 중 오류가 발생했습니다."
+    },
+    "editWorkTime": "출퇴근 시간 수정",
+    "eventId": "이벤트 ID",
+    "scheduledTimes": "예정 시간",
+    "scheduledStartTime": "예정 출근시간",
+    "scheduledEndTime": "예정 퇴근시간",
+    "actualTimes": "실제 시간",
+    "actualStartTime": "실제 출근시간",
+    "actualEndTime": "실제 퇴근시간",
+    "workTimeSummary": "근무시간 요약",
+    "scheduledMinutes": "예정 근무시간",
+    "actualMinutes": "실제 근무시간",
+    "validation": {
+      "startTimeRequired": "출근시간을 입력해주세요.",
+      "endTimeRequired": "퇴근시간을 입력해주세요.",
+      "invalidTimeFormat": "올바른 시간 형식(HH:MM)을 입력해주세요.",
+      "endTimeAfterStart": "퇴근시간은 출근시간보다 늦어야 합니다."
+    }
+  },
+  "errors": {
+    "title": "오류가 발생했습니다",
+    "general": "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+    "network": "네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.",
+    "permission": "권한이 없습니다. 로그인을 다시 시도해주세요.",
+    "quota": "일시적으로 서비스 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.",
+    "retry": "다시 시도",
+    "refresh": "페이지 새로고침",
+    "details": "개발자 정보 보기"
+  },
+  "exceptions": {
+    "late": {
+      "description": "지각 ({{minutes}}분 늦음)"
+    },
+    "earlyLeave": {
+      "description": "조퇴 ({{minutes}}분 일찍 퇴근)"
+    },
+    "absence": {
+      "description": "출근 기록이 없습니다"
+    },
+    "overtime": {
+      "description": "초과근무 ({{minutes}}분 초과)"
+    },
+    "managerNote": "매니저 메모",
+    "managerNotePlaceholder": "예외 상황에 대한 설명을 입력하세요...",
+    "note": "메모",
+    "updateSuccess": "예외 상황이 업데이트되었습니다",
+    "updateError": "예외 상황 업데이트에 실패했습니다"
+  },
+  "payroll": {
+    "calculate": "급여 계산",
+    "generating": "급여 계산중...",
+    "export": "급여 CSV 내보내기",
+    "noDataToExport": "내보낼 급여 데이터가 없습니다.",
+    "summary": {
+      "title": "급여 계산 요약",
+      "regularHours": "정규",
+      "overtimeHours": "초과",
+      "basePay": "기본급",
+      "exceptions": "예외 사항",
+      "deductions": "공제액"
+    },
+    "details": {
+      "title": "스태프별 급여 상세",
+      "staffName": "스태프명",
+      "workHours": "근무시간",
+      "overtime": "초과근무",
+      "exceptions": "예외사항"
+    }
+  },
+  "support": {
+    "title": "고객지원",
+    "subtitle": "FAQ를 확인하거나 문의사항을 보내주세요",
+    "tabs": {
+      "faq": "FAQ",
+      "inquiry": "문의하기",
+      "myInquiries": "내 문의"
+    },
+    "faq": {
+      "title": "자주 묻는 질문",
+      "noResults": "해당 카테고리에 FAQ가 없습니다."
+    },
+    "inquiry": {
+      "title": "문의하기",
+      "loginRequired": "로그인이 필요합니다",
+      "loginMessage": "문의를 작성하려면 먼저 로그인해주세요.",
+      "category": "문의 분류",
+      "subject": "제목",
+      "subjectPlaceholder": "문의 제목을 입력해주세요",
+      "message": "내용",
+      "messagePlaceholder": "문의 내용을 자세히 작성해주세요",
+      "submit": "문의 제출",
+      "success": "문의가 성공적으로 제출되었습니다!",
+      "error": "문의 제출 중 오류가 발생했습니다."
+    },
+    "myInquiries": {
+      "title": "내 문의 내역",
+      "loading": "문의 내역을 불러오는 중...",
+      "empty": "문의 내역이 없습니다",
+      "emptyMessage": "문의사항이 있으시면 언제든지 문의해주세요.",
+      "response": "답변"
+    }
+  },
+  "report": {
+    "title": "신고하기",
+    "targetInfo": "신고 대상",
+    "targetName": "이름",
+    "eventTitle": "이벤트",
+    "eventDate": "날짜",
+    "type": "신고 유형",
+    "types": {
+      "tardiness": {
+        "label": "지각",
+        "description": "약속된 시간에 늦게 도착하는 경우"
+      },
+      "negligence": {
+        "label": "근무태만",
+        "description": "업무를 소홀히 하거나 책임감이 부족한 경우"
+      },
+      "no_show": {
+        "label": "노쇼",
+        "description": "사전 연락 없이 나타나지 않는 경우"
+      },
+      "inappropriate_behavior": {
+        "label": "부적절한 행동",
+        "description": "예의에 어긋나거나 부적절한 언행"
+      },
+      "other": {
+        "label": "기타",
+        "description": "위에 해당하지 않는 기타 문제"
+      }
+    },
+    "severity": {
+      "low": "낮음",
+      "medium": "보통",
+      "high": "높음",
+      "critical": "심각"
+    },
+    "description": "상세 설명",
+    "descriptionPlaceholder": {
+      "default": "발생한 상황을 구체적으로 설명해주세요",
+      "other": "구체적인 상황과 문제점을 자세히 설명해주세요 (최소 10자)"
+    },
+    "otherTypeNotice": "기타 유형은 10자 이상의 자세한 설명이 필요합니다.",
+    "characterCount": "현재 글자 수",
+    "minCharacters": "최소 10자",
+    "warning": {
+      "title": "신고 전 확인사항",
+      "falseReport": "허위 신고 시 제재를 받을 수 있습니다.",
+      "evidence": "가능한 한 구체적이고 객관적인 사실을 기재해주세요.",
+      "processing": "신고 접수 후 관리자가 검토하여 처리합니다."
+    },
+    "submit": "신고 제출",
+    "status": {
+      "reviewed": "검토중",
+      "resolved": "해결됨",
+      "dismissed": "기각됨"
+    }
+  },
+  "inquiry": {
+    "categories": {
+      "general": {
+        "label": "일반 문의"
+      },
+      "technical": {
+        "label": "기술 문의"
+      },
+      "payment": {
+        "label": "결제 문의"
+      },
+      "account": {
+        "label": "계정 문의"
+      },
+      "report": {
+        "label": "신고",
+        "description": "스태프 신고 관련 문의"
+      },
+      "other": {}
+    },
+    "status": {
+      "open": "열림",
+      "in_progress": "처리중",
+      "closed": "완료"
+    }
+  },
+  "faq": {
+    "general": {
+      "q1": {
+        "question": "회원가입은 어떻게 하나요?",
+        "answer": "상단의 '회원가입' 버튼을 클릭하여 스태프 또는 관리자로 가입할 수 있습니다. 관리자 가입은 운영자의 승인이 필요합니다."
+      },
+      "q2": {
+        "question": "비밀번호를 잊어버렸어요.",
+        "answer": "로그인 페이지에서 '비밀번호 찾기'를 클릭하여 이메일로 재설정 링크를 받을 수 있습니다."
+      }
+    },
+    "account": {
+      "q1": {
+        "question": "구인공고는 어떻게 지원하나요?",
+        "answer": "구인구직 게시판에서 원하는 공고를 클릭하고 '지원하기' 버튼을 눌러 지원할 수 있습니다."
+      }
+    },
+    "payment": {
+      "q1": {
+        "question": "급여는 언제 지급되나요?",
+        "answer": "일반적으로 근무 완료 후 관리자의 급여 계산 및 승인 후 지급됩니다. 자세한 사항은 관리자에게 문의하세요."
+      }
+    },
+    "technical": {
+      "q1": {
+        "question": "출석 체크는 어떻게 하나요?",
+        "answer": "출석 페이지에서 QR 코드를 스캔하거나 관리자가 수동으로 출석을 체크할 수 있습니다."
+      }
+    }
+  },
+  "notifications": {
+    "title": "알림",
+    "noNotifications": "알림이 없습니다",
+    "markAllAsRead": "모두 읽음",
+    "viewAll": "모두 보기",
+    "notificationCenter": "알림센터",
+    "deleteAllRead": "읽은 알림 모두 삭제",
+    "filters": {
+      "unread": "안읽음",
+      "read": "읽음"
+    },
+    "categories": {
+      "system": "시스템",
+      "work": "근무",
+      "schedule": "일정",
+      "finance": "재무"
+    },
+    "types": {
+      "job_posting_announcement": "공고 공지",
+      "new_job_posting": "신규 공고",
+      "system_announcement": "시스템 공지",
+      "app_update": "앱 업데이트",
+      "job_application": "지원서 제출",
+      "staff_approval": "지원 확정",
+      "staff_rejection": "지원 취소",
+      "schedule_change": "근무시간 변경"
+    },
+    "descriptions": {
+      "system": "시스템 공지 및 신규 공고 알림",
+      "work": "지원, 확정, 취소 관련 알림",
+      "schedule": "근무시간 변경 알림"
+    },
+    "settings": {
+      "title": "알림 설정",
+      "updated": "알림 설정이 업데이트되었습니다",
+      "updateFailed": "알림 설정 업데이트에 실패했습니다",
+      "loadFailed": "알림 설정 로드에 실패했습니다",
+      "globalEnabled": "전체 알림",
+      "globalDescription": "모든 알림을 받습니다",
+      "quietHours": "조용한 시간대",
+      "quietHoursDescription": "설정한 시간대에는 알림을 받지 않습니다",
+      "startTime": "시작 시간",
+      "endTime": "종료 시간"
+    }
+  },
+  "qr": {
+    "modalTitle": "QR 코드 생성",
+    "modalDescription": "출근 또는 퇴근용 QR 코드를 생성하여 스태프에게 공유하세요.",
+    "checkInTab": "출근용 QR",
+    "checkOutTab": "퇴근용 QR",
+    "checkInTitle": "출근 QR 코드",
+    "checkOutTitle": "퇴근 QR 코드",
+    "checkInBadge": "출근",
+    "checkOutBadge": "퇴근",
+    "scanInstructions": "아래 QR 코드를 스캔하세요",
+    "checkInGuide": "출근 시 위 QR 코드를 스캔하세요.",
+    "checkOutGuide": "퇴근 시 위 QR 코드를 스캔하세요.",
+    "roundUpInfo": "퇴근 시간은 {{interval}}분 단위로 조정됩니다.",
+    "loading": "QR 코드 생성 중...",
+    "error": "QR 코드 생성 실패",
+    "retry": "다시 시도",
+    "refresh": "수동 새로고침",
+    "seconds": "초",
+    "autoRefreshIn": "자동 재생성까지",
+    "infoTitle": "안내사항",
+    "info1": "QR 코드는 1분마다 자동으로 재생성됩니다.",
+    "info2": "출근과 퇴근은 각각 별도의 QR 코드를 사용합니다.",
+    "info3": "각 QR 코드는 한 번만 사용 가능하며, 2분 후 만료됩니다.",
+    "info4": "퇴근 시간은 {{interval}}분 단위로 자동 조정됩니다."
+  },
+  "consent": {
+    "title": "서비스 이용 동의",
+    "description": "서비스 이용을 위해 다음 항목에 동의해주세요.",
+    "agreeAll": "전체 동의",
+    "required": "필수 동의 항목",
+    "requiredDetails": {
+      "pleaseAgree": "필수 약관에 동의해주세요."
+    },
+    "optional": "선택 동의 항목",
+    "termsOfService": "이용약관",
+    "privacyPolicy": "개인정보처리방침",
+    "marketing": "마케팅 수신 동의",
+    "locationService": "위치 서비스 동의",
+    "pushNotification": "푸시 알림 수신 동의",
+    "termsOfServiceDescription": "서비스 이용을 위한 약관에 동의합니다.",
+    "privacyPolicyDescription": "개인정보 수집 및 이용에 동의합니다.",
+    "marketingDescription": "이벤트, 프로모션 등 마케팅 정보를 받습니다.",
+    "locationServiceDescription": "내 위치 기반 서비스를 이용합니다.",
+    "pushNotificationDescription": "앱 푸시 알림을 받습니다.",
+    "viewDetails": "자세히 보기",
+    "requiredWarning": "필수 항목에 모두 동의해주세요.",
+    "submit": "동의하고 계속하기",
+    "error": {
+      "requiredConsentsNotAgreed": "필수 동의 항목에 모두 동의해주세요.",
+      "submitFailed": "동의 처리에 실패했습니다."
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "tabs": {
+      "consent": "동의 관리",
+      "security": "보안",
+      "notifications": "알림",
+      "language": "언어",
+      "account": "계정 관리"
+    },
+    "consent": {
+      "title": "동의 관리",
+      "required": "필수 동의 항목",
+      "optional": "선택 동의 항목",
+      "agreedAt": "동의일시",
+      "version": "버전",
+      "requiredNote": "필수 동의 항목은 변경할 수 없습니다. 철회를 원하시면 회원 탈퇴를 진행해주세요.",
+      "optionalNote": "선택 동의 항목은 언제든지 변경할 수 있습니다.",
+      "marketingEnabled": "마케팅 수신 동의를 활성화했습니다.",
+      "marketingDisabled": "마케팅 수신 동의를 해제했습니다.",
+      "locationServiceEnabled": "위치 서비스 동의를 활성화했습니다.",
+      "locationServiceDisabled": "위치 서비스 동의를 해제했습니다.",
+      "pushNotificationEnabled": "푸시 알림 수신 동의를 활성화했습니다.",
+      "pushNotificationDisabled": "푸시 알림 수신 동의를 해제했습니다.",
+      "updateFailed": "동의 설정 업데이트에 실패했습니다.",
+      "loadFailed": "동의 정보를 불러오는데 실패했습니다.",
+      "noConsent": "동의 정보가 없습니다.",
+      "infoTitle": "안내",
+      "infoMessage": "선택 동의 항목은 서비스 이용 중 언제든지 변경 가능합니다."
+    },
+    "security": {
+      "title": "보안 설정",
+      "password": "비밀번호 변경",
+      "passwordDescription": "주기적으로 비밀번호를 변경하여 계정을 안전하게 보호하세요.",
+      "changePassword": "비밀번호 변경",
+      "currentPassword": "현재 비밀번호",
+      "newPassword": "새 비밀번호",
+      "confirmPassword": "비밀번호 확인",
+      "passwordStrength": "비밀번호 강도",
+      "passwordWeak": "약함",
+      "passwordMedium": "보통",
+      "passwordStrong": "강함",
+      "passwordRequirement1": "8자 이상",
+      "passwordRequirement2": "대문자와 소문자 포함",
+      "passwordRequirement3": "숫자 포함",
+      "passwordRequirement4": "특수문자 포함 (권장)",
+      "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+      "passwordSameAsCurrent": "현재 비밀번호와 동일합니다.",
+      "invalidPassword": "비밀번호 입력 정보가 올바르지 않습니다.",
+      "wrongPassword": "현재 비밀번호가 일치하지 않습니다.",
+      "weakPassword": "비밀번호가 너무 약합니다.",
+      "passwordChanged": "비밀번호가 성공적으로 변경되었습니다.",
+      "passwordChangeFailed": "비밀번호 변경에 실패했습니다.",
+      "loginNotifications": "로그인 알림 설정",
+      "enableNotifications": "로그인 알림 활성화",
+      "enableNotificationsDescription": "새로운 로그인 활동이 감지되면 알림을 받습니다.",
+      "newDeviceNotification": "새 기기 로그인 알림",
+      "newDeviceNotificationDescription": "새로운 기기에서 로그인 시 알림을 받습니다.",
+      "newLocationNotification": "새 위치 로그인 알림",
+      "newLocationNotificationDescription": "새로운 위치에서 로그인 시 알림을 받습니다.",
+      "suspiciousActivityNotification": "의심스러운 활동 알림",
+      "suspiciousActivityNotificationDescription": "비정상적인 로그인 활동 감지 시 알림을 받습니다.",
+      "recommendedSetting": "보안을 위해 활성화를 권장합니다.",
+      "loginNotificationEnabled": "로그인 알림이 활성화되었습니다.",
+      "loginNotificationDisabled": "로그인 알림이 비활성화되었습니다.",
+      "newDeviceNotificationUpdated": "새 기기 알림 설정이 업데이트되었습니다.",
+      "newLocationNotificationUpdated": "새 위치 알림 설정이 업데이트되었습니다.",
+      "suspiciousActivityNotificationUpdated": "의심스러운 활동 알림 설정이 업데이트되었습니다.",
+      "updateFailed": "보안 설정 업데이트에 실패했습니다.",
+      "loadFailed": "보안 설정을 불러오는데 실패했습니다.",
+      "infoTitle": "안내",
+      "infoMessage": "보안 알림은 계정을 안전하게 보호하는 데 도움이 됩니다."
+    },
+    "language": {
+      "title": "언어 설정",
+      "description": "서비스에서 사용할 언어를 선택하세요."
+    },
+    "account": {
+      "title": "계정 관리",
+      "dangerZoneWarning": "위험 영역",
+      "dangerZoneDescription": "계정 삭제는 되돌릴 수 없습니다. 신중하게 진행해주세요.",
+      "deleteAccount": "계정 삭제",
+      "deleteAccountDescription": "계정과 모든 데이터를 영구적으로 삭제합니다.",
+      "deletionEffects": "계정 삭제 시 영향",
+      "deletionEffect1": "모든 개인정보가 영구적으로 삭제됩니다.",
+      "deletionEffect2": "작성한 모든 콘텐츠가 삭제됩니다.",
+      "deletionEffect3": "30일 후 자동으로 삭제됩니다. 기간 내 취소 가능합니다.",
+      "deletionEffect4": "삭제 후에는 복구할 수 없습니다.",
+      "gracePeriodTitle": "30일 유예 기간",
+      "gracePeriodDescription": "삭제 요청 후 30일 동안 취소할 수 있습니다. 기간 내 로그인하면 자동으로 취소됩니다.",
+      "requestDeletion": "계정 삭제 요청",
+      "irreversibleAction": "이 작업은 되돌릴 수 없습니다.",
+      "deletionPending": "계정 삭제 대기 중",
+      "deletionPendingDescription": "계정 삭제가 예약되었습니다. 아래 날짜에 자동으로 삭제됩니다.",
+      "requestedAt": "요청일시",
+      "scheduledDeletionAt": "예정 삭제일",
+      "remainingDays": "남은 기간",
+      "cancelDeletion": "삭제 취소",
+      "cancelDeletionNote": "계정 삭제를 취소하고 정상적으로 서비스를 이용할 수 있습니다.",
+      "deletionCancelled": "계정 삭제가 취소되었습니다.",
+      "deletionCancelFailed": "계정 삭제 취소에 실패했습니다.",
+      "pending": {
+        "cancelSuccess": "계정 삭제가 성공적으로 취소되었습니다."
+      },
+      "confirmDeletion": "계정 삭제 확인",
+      "finalWarning": "⚠️ 최종 경고",
+      "deletionReason": "삭제 사유 (선택)",
+      "selectReason": "사유를 선택하세요",
+      "reason": {
+        "notUseful": "서비스가 유용하지 않음",
+        "privacyConcerns": "개인정보 보호 우려",
+        "switchingService": "다른 서비스로 전환",
+        "tooManyEmails": "알림이 너무 많음",
+        "difficultToUse": "사용이 어려움",
+        "other": "기타"
+      },
+      "additionalFeedback": "추가 의견",
+      "feedbackPlaceholder": "개선이 필요한 점을 알려주세요 (선택사항)",
+      "confirmPassword": "비밀번호 확인",
+      "confirmPasswordDescription": "본인 확인을 위해 비밀번호를 입력해주세요.",
+      "confirmCheckbox": "위 내용을 모두 확인했으며, 계정 삭제에 동의합니다.",
+      "invalidDeletionRequest": "삭제 요청 정보가 올바르지 않습니다.",
+      "wrongPassword": "비밀번호가 일치하지 않습니다.",
+      "tooManyRequests": "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+      "deletionRequested": "계정 삭제가 요청되었습니다. 30일 후 자동 삭제됩니다.",
+      "deletionRequestFailed": "계정 삭제 요청에 실패했습니다.",
+      "gracePeriodNote": "💡 30일 유예 기간",
+      "gracePeriodNoteDescription": "삭제 요청 후 30일 동안 계정이 비활성화되며, 기간 내 취소할 수 있습니다."
+    }
+  },
+  "legal": {
+    "termsOfService": {
+      "title": "이용약관"
+    },
+    "privacyPolicy": {
+      "title": "개인정보처리방침"
+    },
+    "version": "버전",
+    "effectiveDate": "시행일",
+    "lastUpdated": "최종 수정일"
+  }
+}

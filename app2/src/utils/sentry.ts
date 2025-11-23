@@ -3,12 +3,6 @@ import { logger } from './logger';
 
 // Sentry 초기화 함수
 export const initSentry = () => {
-  // 프로덕션 환경에서만 Sentry 활성화
-  if (process.env.NODE_ENV !== 'production') {
-    logger.info('Sentry is disabled in development mode', { component: 'Sentry' });
-    return;
-  }
-
   // Sentry DSN이 설정되어 있는지 확인
   const dsn = process.env.REACT_APP_SENTRY_DSN;
   if (!dsn) {
@@ -16,17 +10,20 @@ export const initSentry = () => {
     return;
   }
 
+  // 개발 환경에서는 콘솔에만 로깅
+  if (process.env.NODE_ENV !== 'production') {
+    logger.info('Sentry is in development mode (console logging only)', { component: 'Sentry' });
+  }
+
   try {
     Sentry.init({
       dsn,
+
       // 성능 모니터링
-      tracesSampleRate: 0.1, // 10% 샘플링
-      // 세션 리플레이
-      replaysSessionSampleRate: 0.1, // 10% 샘플링
-      replaysOnErrorSampleRate: 1.0, // 에러 발생 시 100% 캡처
-      
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
       // 환경 설정
-      environment: process.env.REACT_APP_ENV || 'production',
+      environment: process.env.REACT_APP_ENV || process.env.NODE_ENV || 'production',
       
       // 에러 필터링
       beforeSend(event) {
@@ -136,11 +133,41 @@ export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'i
   if (process.env.NODE_ENV === 'production') {
     Sentry.captureMessage(message, level);
   }
-  
+
   // 로컬에서도 로깅
-  logger.info('Message captured', { 
+  logger.info('Message captured', {
     component: 'Sentry',
     data: { message, level }
   });
+};
+
+// 브레드크럼 추가 (사용자 행동 추적)
+export const addBreadcrumb = (
+  message: string,
+  category: string,
+  data?: Record<string, unknown>
+) => {
+  if (process.env.NODE_ENV === 'production') {
+    Sentry.addBreadcrumb({
+      message,
+      category,
+      data,
+      level: 'info',
+    });
+  }
+};
+
+// 성능 측정 헬퍼 (단순 에러 캡처)
+export const measurePerformance = async <T>(
+  name: string,
+  fn: () => Promise<T>
+): Promise<T> => {
+  try {
+    const result = await fn();
+    return result;
+  } catch (error) {
+    captureError(error as Error, { function: name });
+    throw error;
+  }
 };
 

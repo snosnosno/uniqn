@@ -227,6 +227,96 @@ export interface TossDiscount {
 }
 
 /**
+ * 토스페이먼츠 환불 요청
+ */
+export interface TossRefundRequest {
+  cancelReason: string;              // 환불 사유 (최대 200자)
+  cancelAmount?: number;             // 환불 금액 (없으면 전액 환불)
+  refundReceiveAccount?: {           // 가상계좌 환불 시 필수
+    bank: string;                    // 은행 코드
+    accountNumber: string;           // 계좌번호 (숫자만, 최대 20자)
+    holderName: string;              // 예금주명 (최대 60자)
+  };
+  taxFreeAmount?: number;            // 면세 금액
+  currency?: string;                 // 통화 (해외 결제 시 필수)
+}
+
+/**
+ * 토스페이먼츠 환불 상태
+ */
+export type TossCancelStatus =
+  | 'DONE'                           // 환불 완료
+  | 'ABORTED';                       // 환불 실패
+
+/**
+ * 토스페이먼츠 환불 응답
+ */
+export interface TossRefundResponse {
+  // 기본 정보
+  mId: string;
+  version: string;
+  paymentKey: string;
+  orderId: string;
+  orderName: string;
+
+  // 금액 정보
+  totalAmount: number;               // 원 결제 금액
+  balanceAmount: number;             // 남은 금액
+  suppliedAmount: number;
+  vat: number;
+  taxFreeAmount: number;
+  taxExemptionAmount: number;
+
+  // 상태 정보
+  status: TossPaymentStatus;         // CANCELED or PARTIAL_CANCELED
+  currency: string;
+  method: TossPaymentMethod;
+
+  // 취소 내역
+  cancels: Array<{
+    cancelReason: string;            // 환불 사유
+    canceledAt: string;              // 환불 시각 (ISO 8601)
+    cancelAmount: number;            // 환불 금액
+    taxFreeAmount: number;
+    taxExemptionAmount: number;
+    refundableAmount: number;        // 환불 가능 금액
+    transferDiscountAmount: number;
+    easyPayDiscountAmount: number;
+    transactionKey: string;          // 거래 키
+    receiptKey: string | null;       // 영수증 키
+    cancelStatus: TossCancelStatus;  // 환불 상태
+    cancelRequestId: string | null;  // 환불 요청 ID
+  }>;
+
+  // 결제 수단별 정보
+  card: TossPaymentCard | null;
+  virtualAccount: TossVirtualAccount | null;
+  transfer: TossTransfer | null;
+  mobilePhone: TossMobilePhone | null;
+  giftCertificate: TossGiftCertificate | null;
+  easyPay: TossEasyPay | null;
+
+  // 기타
+  requestedAt: string;
+  approvedAt: string;
+  useEscrow: boolean;
+  cultureExpense: boolean;
+  lastTransactionKey: string | null;
+  isPartialCancelable: boolean;
+  country: string;
+  failure: TossPaymentFailure | null;
+  cashReceipt: TossCashReceipt | null;
+  cashReceipts: TossCashReceipt[] | null;
+  discount: TossDiscount | null;
+  secret: string | null;
+  type: string;
+  checkout: {
+    url: string;
+  };
+  metadata: Record<string, unknown> | null;
+}
+
+/**
  * 토스페이먼츠 에러 응답
  */
 export interface TossPaymentError {

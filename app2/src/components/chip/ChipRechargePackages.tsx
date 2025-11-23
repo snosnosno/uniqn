@@ -1,8 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SparklesIcon, FireIcon, TrophyIcon } from '@heroicons/react/24/solid';
 import { useTossPayment } from '../../hooks/useTossPayment';
 import { getAllChipPackages } from '../../config/chipPricing';
 import type { ChipPackage, ChipPackageId } from '../../types/payment';
+import PaymentStepIndicator from '../payment/PaymentStepIndicator';
 
 /**
  * 칩 충전 패키지 카드 컴포넌트
@@ -18,6 +20,8 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
   onPurchase,
   isLoading,
 }) => {
+  const { t } = useTranslation('payment');
+
   const getBadgeIcon = () => {
     if (pkg.isPopular) return <SparklesIcon className="h-5 w-5" />;
     if (pkg.isRecommended) return <TrophyIcon className="h-5 w-5" />;
@@ -72,7 +76,7 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
           <div className="flex items-center justify-center gap-2 mb-1">
             <span className="text-3xl">🔴</span>
             <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              {pkg.chipCount}칩
+              {t('chipRecharge.package.chips', { amount: pkg.chipCount })}
             </span>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -83,10 +87,10 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
         {/* 가격 */}
         <div className="mb-4">
           <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-            {pkg.price.toLocaleString()}원
+            {t('chipRecharge.package.price', { price: pkg.price.toLocaleString() })}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            ({pkg.pricePerChip.toLocaleString()}원/칩)
+            ({pkg.pricePerChip.toLocaleString()}{t('common.currency.krw')}/칩)
           </div>
         </div>
 
@@ -94,10 +98,10 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
         {pkg.discountRate > 0 && (
           <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
             <div className="text-sm font-semibold text-green-700 dark:text-green-400 mb-1">
-              💰 {pkg.discountRate}% 할인
+              💰 {t('chipRecharge.package.bonus', { bonus: pkg.discountRate })}
             </div>
             <div className="text-xs text-green-600 dark:text-green-500">
-              {pkg.savings.toLocaleString()}원 절약
+              {pkg.savings.toLocaleString()}{t('common.currency.krw')} 절약
             </div>
           </div>
         )}
@@ -115,7 +119,7 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
             disabled:opacity-50 disabled:cursor-not-allowed
           `}
         >
-          {isLoading ? '처리 중...' : '구매하기'}
+          {isLoading ? t('common.loading') : t('chipRecharge.button.charge')}
         </button>
       </div>
     </div>
@@ -126,6 +130,7 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
  * 칩 충전 패키지 목록 컴포넌트
  */
 export const ChipRechargePackages: React.FC = () => {
+  const { t } = useTranslation('payment');
   const { requestChipPayment, isLoading } = useTossPayment();
   const packages = getAllChipPackages();
 
@@ -135,15 +140,16 @@ export const ChipRechargePackages: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* 단계 표시 */}
+      <PaymentStepIndicator currentStep="package" />
+
       {/* 헤더 */}
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-          🔴 빨간칩 충전하기
+          🔴 {t('chipRecharge.title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          충전한 빨간칩은 구매일로부터 <strong>1년간</strong> 사용할 수 있습니다.
-          <br />
-          대량 구매할수록 더 많은 할인 혜택을 받을 수 있습니다.
+          {t('chipRecharge.selectPackage')}
         </p>
       </div>
 

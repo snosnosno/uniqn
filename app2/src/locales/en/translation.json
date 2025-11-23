@@ -1,0 +1,1481 @@
+{
+  "approve": "Approve",
+  "locations": {
+    "seoul": "Seoul",
+    "gyeonggi": "Gyeonggi",
+    "incheon": "Incheon",
+    "gangwon": "Gangwon",
+    "daejeon": "Daejeon",
+    "sejong": "Sejong",
+    "chungnam": "Chungnam",
+    "chungbuk": "Chungbuk",
+    "gwangju": "Gwangju",
+    "jeonnam": "Jeonnam",
+    "jeonbuk": "Jeonbuk",
+    "daegu": "Daegu",
+    "gyeongbuk": "Gyeongbuk",
+    "busan": "Busan",
+    "ulsan": "Ulsan",
+    "gyeongnam": "Gyeongnam",
+    "jeju": "Jeju",
+    "overseas": "Overseas"
+  },
+  "gender": {},
+  "login": {
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot your password?",
+    "orContinueWith": "Or continue with",
+    "googleSignIn": "Sign in with Google",
+    "noAccount": "Don't have an account? Sign Up",
+    "errorMessage": "Failed to log in. Please check your email and password.",
+    "approvalPending": "Your account is pending approval. Please contact an administrator.",
+    "googleSignInError": "An error occurred during Google Sign-In. Please try again later.",
+    "blockedMessage": "Too many login attempts. Please try again later.",
+    "blockedButton": "Blocked",
+    "attemptWarning": "Login failure count increased. Account will be blocked for 15 minutes after 5 failed attempts.",
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "networkError": "Please check your network connection.",
+    "emailVerificationRequired": "Email Verification Required",
+    "emailVerificationMessage": "Email verification is required to use your account. Please check your verification email.",
+    "emailVerificationCheck": "Didn't receive the email? Please check your spam folder.",
+    "emailVerificationResend": "Resend Verification Email",
+    "emailVerificationResending": "Resending...",
+    "emailVerificationResent": "Verification email has been resent.",
+    "emailVerificationResendFailed": "Failed to resend verification email."
+  },
+  "adminLogin": {
+    "approvalPending": "Your account is pending approval. Please contact an administrator.",
+    "errorMessage": "Failed to log in. Please check your email and password."
+  },
+  "googleSignIn": {
+    "error": "An error occurred during Google Sign-In. Please try again later.",
+    "popupBlocked": "Popup blocked. Please check your browser settings.",
+    "popupClosed": "Login was cancelled."
+  },
+  "forgotPassword": {
+    "title": "Reset Password",
+    "instruction": "Enter your account's email address and we will send you a password reset link.",
+    "sendButton": "Send Reset Link",
+    "sendingButton": "Sending...",
+    "successMessage": "A password reset link has been sent to your email. Please check your inbox.",
+    "errorMessage": "An error occurred. Please check the email address and try again.",
+    "backToLogin": "Back to Login",
+    "genderLabel": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female"
+  },
+  "signUp": {
+    "title": "Sign Up",
+    "passwordPlaceholder": "Password (min. 8 characters)",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "signUpButton": "Sign Up",
+    "signingUpButton": "Signing up...",
+    "orSignUpWith": "Or sign up with",
+    "googleSignUp": "Sign up with Google",
+    "haveAccount": "Already have an account? Log In",
+    "successMessage": "Sign-up successful.",
+    "errorMessage": "An error occurred during sign-up. Please try again later.",
+    "passwordLengthError": "Password must be at least 6 characters long.",
+    "emailInUseError": "This email address is already in use.",
+    "invalidEmailError": "The email address format is not valid.",
+    "weakPasswordError": "The password is too weak. Please use a stronger password.",
+    "backToLogin": "Back to Login",
+    "genderLabel": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "emailVerificationNote": "A verification email will be sent to your email address.",
+    "emailVerificationRequired": "Email verification required",
+    "emailVerificationInstruction": "Please check your email and complete verification before logging in.",
+    "passwordToggleHint": "Click the eye icon in the password field to view your input.",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "Enter your nickname",
+    "validation": {
+      "nameTooShort": "Name must be at least 2 characters.",
+      "nameTooLong": "Name must be at most 20 characters.",
+      "nicknameTooShort": "Nickname must be at least 2 characters.",
+      "nicknameTooLong": "Nickname must be at most 15 characters.",
+      "invalidEmail": "Invalid email format.",
+      "passwordMismatch": "Passwords do not match.",
+      "genderRequired": "Please select your gender."
+    }
+  },
+  "passwordStrength": {
+    "title": "Password Strength",
+    "requirements": "Password Requirements",
+    "length": "At least 8 characters",
+    "english": "Include letters",
+    "numbers": "Include numbers",
+    "specialChars": "Include special characters (Bonus +10 points)"
+  },
+  "modal": {},
+  "nav": {
+    "dashboard": "Dashboard",
+    "jobBoard": "Job Board",
+    "myProfile": "My Profile",
+    "myAvailability": "My Availability",
+    "attendance": "Attendance",
+    "staffManagement": "Staff Management",
+    "managePostings": "Manage Postings",
+    "shiftSchedule": "Shift Schedule",
+    "processPayroll": "Process Payroll",
+    "blinds": "Blinds",
+    "prizes": "Prizes",
+    "announcements": "Announcements",
+    "history": "History",
+    "logout": "Logout",
+    "approvals": "Approvals",
+    "userManagement": "User Management",
+    "inquiryManagement": "Inquiry Management",
+    "support": "Support",
+    "ceoDashboard": "CEO Dashboard"
+  },
+  "layout": {
+    "title": "UNIQN",
+    "subtitle": "Tournament Management"
+  },
+  "dashboard": {
+    "loading": "Loading dashboard...",
+    "title": "Admin Dashboard",
+    "ongoingEvents": "Ongoing Events",
+    "totalDealers": "Total Dealers",
+    "quickLinks": "Quick Links",
+    "manageEventsLink": "Manage Events",
+    "manageStaffLink": "Manage Staff",
+    "processPayrollLink": "Process Payroll",
+    "topRatedDealers": "Top Rated Dealers",
+    "ratingsCount": "({{count}} ratings)",
+    "noRatings": "No dealer ratings yet.",
+    "ceo": {
+      "title": "CEO Dashboard",
+      "subtitle": "Business-wide statistics and analytics",
+      "lastUpdated": "Last updated",
+      "realtime": "Real-time"
+    }
+  },
+  "approvalPage": {
+    "title": "Pending Registration Approvals",
+    "fetchError": "Failed to fetch pending approvals.",
+    "processError": "Failed to process {{action}} request. Please try again.",
+    "actionsHeader": "Actions",
+    "noPending": "There are no users awaiting approval."
+  },
+  "userManagement": {
+    "loading": "Loading user list...",
+    "accessDenied": "You do not have permission to view this page.",
+    "title": "User Management",
+    "addNew": "Add New User",
+    "noUsersFound": "No users found.",
+    "fetchError": "Failed to fetch user list.",
+    "confirmDelete": "Are you sure you want to delete this user? This action cannot be undone.",
+    "deleteSuccess": "User deleted successfully.",
+    "deleteError": "Failed to delete user."
+  },
+  "staffNew": {
+    "accessDeniedAction": "You do not have permission to perform this action.",
+    "accessDeniedView": "You do not have permission to view this page.",
+    "alertSuccess": "Staff created successfully!",
+    "errorUnknown": "An unknown error occurred.",
+    "title": "Add New Staff",
+    "roleAdmin": "Admin",
+    "buttonCreate": "Create Staff"
+  },
+  "staffListPage": {
+    "title": "My Confirmed Staff",
+    "fetchError": "Failed to fetch staff data.",
+    "noPostings": "You have not created any job postings.",
+    "noConfirmedStaff": "No staff have been confirmed for this posting yet.",
+    "unknownUser": "Unknown User",
+    "cannotAddStaff": "Cannot add staff. Current user or posting information is not available.",
+    "newStaff": "New Staff",
+    "staffAddedSuccess": "New staff added successfully!",
+    "addStaffError": "An error occurred while adding staff.",
+    "staffNotFound": "Staff not found.",
+    "updateError": "An error occurred while updating staff information.",
+    "addStaffModal": "Add Staff",
+    "searchExistingUser": "Search Existing Users",
+    "searchPlaceholder": "Search by name, email, phone...",
+    "searching": "Searching...",
+    "noName": "No Name",
+    "selectedUser": "Selected User",
+    "addSelectedUser": "Add this user as staff",
+    "addTempStaff": "Add Temporary Staff",
+    "nameRequired": "Name *",
+    "phone": "Phone",
+    "nationality": "Nationality",
+    "notes": "Notes",
+    "addTempStaffBtn": "Add Temporary Staff",
+    "nameRequiredError": "Please enter staff name.",
+    "userSearchError": "Failed to search users."
+  },
+  "editUserModal": {
+    "title": "Edit User Information",
+    "updateSuccess": "User updated successfully!",
+    "updateError": "Failed to update user."
+  },
+  "roles": {
+    "dealer": "Dealer",
+    "floor": "Floor",
+    "serving": "Serving",
+    "tournament_director": "Tournament Director",
+    "chip_master": "Chip Master",
+    "registration": "Registration",
+    "security": "Security",
+    "cashier": "Cashier"
+  },
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "all": "All",
+    "sort": "Sort",
+    "none": "None",
+    "refresh": "Refresh",
+    "comingSoon": "Coming Soon",
+    "closeNotification": "Close notification",
+    "requiredField": "Required field",
+    "noName": "No name",
+    "chipRebalance": "Chip rebalance",
+    "undecided": "Undecided",
+    "timeUndecided": "Time undecided",
+    "dateUndecided": "Date undecided",
+    "jobManagement": "Job Management",
+    "viewList": "View List",
+    "createPost": "Create Post",
+    "preQuestionAnswer": "Pre-question answer",
+    "applying": "Applying",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "role": "Role",
+    "messages": {
+      "loading": "Loading...",
+      "saving": "Saving...",
+      "submitting": "Submitting...",
+      "generating": "Generating...",
+      "searching": "Searching...",
+      "processing": "Processing..."
+    },
+    "name": "Name",
+    "emailAddress": "Email Address",
+    "date": "Date",
+    "phone": "Phone",
+    "statusLabel": "Status",
+    "status": "Status",
+    "location": "Location",
+    "time": "Time",
+    "application": "Application",
+    "other": "Other",
+    "gender": "Gender",
+    "email": "Email",
+    "age": "Age",
+    "payrollHistory": "Payroll History",
+    "password": "Password",
+    "participants": "Participants",
+    "error": "Error",
+    "experience": "Experience",
+    "notApplicable": "N/A",
+    "chips": "Chips",
+    "fixed": "Fixed",
+    "apply": "Apply",
+    "event": "Event",
+    "totalPay": "Total Pay",
+    "reject": "Reject",
+    "male": "Male",
+    "female": "Female",
+    "login": "Login",
+    "staff": "Staff",
+    "table": "Table",
+    "totalHours": "Total Hours",
+    "loading": "Loading..."
+  },
+  "payrollAdmin": {
+    "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
+    "errorFetch": "Failed to fetch payroll information.",
+    "errorCalculate": "Failed to calculate payrolls.",
+    "title": "Payroll Management",
+    "selectEvent": "Select an event",
+    "buttonLoadPayrolls": "Load Payrolls",
+    "buttonCalculating": "Calculating...",
+    "buttonCalculateAll": "Calculate All Payrolls",
+    "tableHeaderName": "Dealer Name",
+    "tableHeaderHours": "Hours Worked (approx.)",
+    "tableHeaderAmount": "Amount",
+    "unknownDealer": "Unknown Dealer",
+    "status": {
+      "pending": "Pending"
+    }
+  },
+  "dealerEvents": {
+    "loading": "Loading available events...",
+    "title": "Available Events to Apply For",
+    "applyButton": "Apply Now",
+    "noEvents": "No events are currently recruiting.",
+    "dateInvalid": "Invalid Date"
+  },
+  "participants": {
+    "errorParticipants": "Error loading participants:",
+    "errorTables": "Error loading tables:",
+    "confirmDelete": "Are you sure you want to delete?",
+    "title": "Participant Management",
+    "searchPlaceholder": "Search by name",
+    "addNew": "+ Add Participant",
+    "tableHeaderActions": "Actions",
+    "modalTitleEdit": "Edit Participant",
+    "modalTitleAdd": "Add Participant",
+    "modalButtonAdd": "Add"
+  },
+  "tables": {
+    "error": "Error:",
+    "errorMoveFailed": "Move failed:",
+    "title": "Table Status",
+    "buttonAutoAssign": "Auto Re-assign",
+    "buttonAddTable": "Add Table",
+    "exportExcel": "Export to Excel",
+    "exportExcelSuccess": "Excel file has been successfully downloaded.",
+    "exportExcelError": "An error occurred while exporting to Excel.",
+    "infoTables": "Tables:",
+    "infoEmptySeats": "Empty Seats:",
+    "labelMaxSeats": "Max Seats:",
+    "participantEmpty": "Empty",
+    "participantUnknown": "Unknown"
+  },
+  "tableDetailModal": {
+    "changeBorderColorTitle": "Change Border Color",
+    "defaultTableName": "Table {{number}}",
+    "infoParticipants": "Participants:",
+    "infoEmptySeats": "Empty Seats:",
+    "labelMaxSeats": "Max Seats:",
+    "buttonActivate": "Activate Table",
+    "buttonClose": "Close Table",
+    "participantUnknown": "Unknown"
+  },
+  "playerActionModal": {
+    "showDetails": "Details",
+    "moveSeat": "Move Seat",
+    "bustOut": "Bust Out"
+  },
+  "moveSeatModal": {
+    "title": "Move {{name}}",
+    "sectionTitle": "Target Player",
+    "labelName": "Name:",
+    "labelCurrentLocation": "Current Location:",
+    "seatSuffix": "Seat",
+    "defaultTableName": "Table {{number}}",
+    "statusOccupied": "(Occupied)",
+    "statusEmpty": "(Empty)",
+    "statusUnavailable": "(Unavailable)",
+    "buttonConfirm": "Confirm Move"
+  },
+  "blinds": {
+    "title": "Blinds Control",
+    "breakTime": "Break Time",
+    "level": "Level {{level}}",
+    "ante": "Ante {{ante}}",
+    "next": "Next:",
+    "nextBreak": "Break",
+    "end": "End",
+    "buttonPrev": "Prev",
+    "buttonPause": "Pause",
+    "buttonStart": "Start",
+    "buttonNext": "Next"
+  },
+  "prizes": {
+    "alertSaved": "Prize distribution saved.",
+    "title": "Prize Calculator",
+    "totalPrizePool": "Total Prize Pool",
+    "itm": "ITM",
+    "adjustManually": "Adjust Prizes Manually",
+    "totalDistributed": "Total Distributed:",
+    "rank": "Rank {{rank}}",
+    "saveButton": "Save Prize Structure"
+  },
+  "announcements": {
+    "title": "Announcements",
+    "pageTitle": "🔔 Announcements",
+    "description": "System announcements and update information",
+    "createButton": "Create Announcement",
+    "noAnnouncements": "No Announcements",
+    "noAnnouncementsDescription": "You will be notified when new announcements are posted.",
+    "goToNotifications": "Go to Notification Center",
+    "viewDetails": "View Details →",
+    "stats": {
+      "total": "Total {{count}}",
+      "active": "Active {{count}}"
+    },
+    "priority": {
+      "normal": "Normal",
+      "important": "Important",
+      "urgent": "Urgent"
+    },
+    "createModal": {
+      "title": "📢 Create System Announcement",
+      "editMode": "✏️ Edit Mode",
+      "previewMode": "👁️ Preview",
+      "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Enter announcement title",
+        "titleHelp": "{{count}}/100 characters",
+        "content": "Content",
+        "contentPlaceholder": "Enter announcement content",
+        "contentHelp": "{{count}}/2000 characters",
+        "priority": "Priority",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "enableEndDate": "Set End Date",
+        "endDateDisabled": "End date setting disabled"
+      },
+      "preview": {
+        "noTitle": "(No title)",
+        "noContent": "(No content)",
+        "startDate": "• Start: {{date}}",
+        "endDate": "• End: {{date}}",
+        "indefinite": "• Duration: Indefinite"
+      },
+      "validation": {
+        "error": "⚠️ Input Error",
+        "titleRequired": "Title is required.",
+        "titleTooLong": "Title must be 100 characters or less.",
+        "contentRequired": "Content is required.",
+        "contentTooLong": "Content must be 2000 characters or less.",
+        "startDateRequired": "Start date is required.",
+        "startDateInvalid": "Start date is invalid.",
+        "endDateInvalid": "End date is invalid.",
+        "endDateBeforeStart": "End date must be after start date.",
+        "priorityRequired": "Priority is required.",
+        "priorityInvalid": "Please select a valid priority."
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "submit": "Create",
+        "submitting": "Creating..."
+      }
+    },
+    "detailModal": {
+      "title": "Announcement Details",
+      "metadata": {
+        "author": "👤 Author: {{name}}",
+        "createdAt": "📅 Created: {{date}}",
+        "updatedAt": "📝 Updated: {{date}}",
+        "startDate": "📅 Start: {{date}}",
+        "endDate": "📅 End: {{date}}",
+        "indefinite": "📅 Duration: Indefinite",
+        "views": "👁️ Views: {{count}}"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "close": "Close"
+      },
+      "deleteConfirm": "Are you sure you want to delete this announcement?",
+      "messages": {
+        "deleteSuccess": "Announcement deleted successfully.",
+        "deleteError": "Failed to delete announcement."
+      }
+    },
+    "messages": {
+      "createSuccess": "Announcement created and notifications sent to all users.",
+      "createError": "Failed to create announcement.",
+      "loadError": "Failed to load announcements.",
+      "retry": "Retry"
+    },
+    "info": {
+      "title": "Notification Settings",
+      "description": "Check your notification settings to not miss important announcements."
+    }
+  },
+  "participantDetailModal": {
+    "title": "Participant Details",
+    "editTitle": "Edit Participant Info",
+    "statusActive": "Active",
+    "statusBusted": "Busted",
+    "tableSeatFormat": "{{tableName}} - S{{seatNumber}}",
+    "buttonClose": "Close"
+  },
+  "qrScannerModal": {
+    "title": "QR Code Scanner",
+    "scanMessage": "Please scan the QR code for attendance."
+  },
+  "attendancePage": {
+    "title": "Scan Attendance QR Code",
+    "lastScanned": "Last scan: {{scanResult}}",
+    "submitting": "Submitting attendance...",
+    "success": "Attendance recorded successfully!",
+    "fail": "Failed to record attendance."
+  },
+  "availableTimes": {
+    "title": "Set Weekly Availability",
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "times": {
+      "morning": "Morning (8am-12pm)",
+      "afternoon": "Afternoon (12pm-4pm)",
+      "evening": "Evening (4pm-8pm)",
+      "night": "Night (8pm-12am)"
+    },
+    "alerts": {
+      "notLoggedIn": "You must be logged in.",
+      "updateSuccess": "Availability updated successfully!",
+      "updateFailed": "Failed to update."
+    },
+    "status": {
+      "loading": "Loading data...",
+      "error": "Error: {{message}}",
+      "loginRequired": "Please log in to continue."
+    }
+  },
+  "dealerRotation": {
+    "loading": "Loading staff and table information...",
+    "title": "Dealer Rotation Dashboard",
+    "onTables": "On Tables",
+    "tableName": "Table {{tableNumber}}",
+    "noDealerAssigned": "No Dealer Assigned",
+    "availableDealers": "Available Dealers",
+    "noDealersAvailable": "No dealers available",
+    "onBreak": "On Break",
+    "noDealersOnBreak": "No dealers on break"
+  },
+  "historyDetail": {
+    "title": "{{name}} Results",
+    "backToList": "Back to List",
+    "playerCount": "{{count}} players",
+    "prizePool": "Total Prize Pool",
+    "currency": "${{amount, currency}}",
+    "winner": "Winner",
+    "finalRanking": "Final Ranking",
+    "rank": "Rank",
+    "prize": "Prize"
+  },
+  "historyPage": {
+    "title": "Tournament History",
+    "tournamentName": "Tournament Name",
+    "winner": "Winner",
+    "details": "Details",
+    "viewResults": "View Results"
+  },
+  "jobBoard": {
+    "alerts": {
+      "loginRequired": "You must be logged in to apply.",
+      "profileNotFound": "Could not find staff profile.",
+      "applicationSuccess": "Application submitted successfully!",
+      "applicationFailed": "Failed to submit application.",
+      "selectAssignment": "Please select a time and role to apply for.",
+      "confirmCancel": "Are you sure you want to cancel your application?",
+      "cancelMessage": "Are you sure you want to cancel your application?",
+      "cancelSuccess": "Application cancelled successfully.",
+      "cancelFailed": "Failed to cancel application."
+    },
+    "loading": "Loading job postings...",
+    "title": "Job Board",
+    "applying": "Applying...",
+    "cancelling": "Cancelling...",
+    "applied": "Applied",
+    "cancelApplication": "Cancel Application",
+    "viewDetails": "View Details",
+    "loginRequired": "Login Required",
+    "preQuestions": "(Pre-screening)",
+    "unknownApplicant": "Unknown Applicant",
+    "preQuestion": {
+      "checkButton": "📝 Pre-screening Questions",
+      "completeFirst": "Please complete the pre-screening questions first",
+      "modalTitle": "Pre-screening Questions",
+      "noQuestions": "No pre-screening questions available.",
+      "submit": "Submit Answers",
+      "success": "Pre-screening questions submitted successfully!",
+      "error": "Error submitting pre-screening questions.",
+      "completed": "✓ Pre-screening Completed",
+      "requiredField": "Required field",
+      "answerPlaceholder": "Enter your answer...",
+      "selectOption": "Select an option"
+    },
+    "applyModal": {
+      "selectAssignment": "Select Time & Role",
+      "selectPlaceholder": "Select a time and role",
+      "full": "Full",
+      "confirm": "Confirm Application"
+    },
+    "filters": {
+      "allLocations": "All Locations",
+      "type": "Recruitment Type",
+      "allTypes": "All Types",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "reset": "Reset Filters",
+      "search": {
+        "placeholder": "Search in title or description..."
+      }
+    },
+    "tabs": {
+      "regular": "Regular",
+      "fixed": "Fixed",
+      "tournament": "Tournament",
+      "urgent": "Urgent",
+      "myApplications": "My Applications"
+    },
+    "fixed": {
+      "durationLabel": "Duration",
+      "7days": "7 days",
+      "30days": "30 days",
+      "90days": "90 days",
+      "7daysWithChip": "7 days (3 chips)",
+      "30daysWithChip": "30 days (5 chips)",
+      "90daysWithChip": "90 days (10 chips)",
+      "7daysDescription": "1 week exposure",
+      "30daysDescription": "1 month exposure",
+      "90daysDescription": "3 months exposure",
+      "selectedDuration": "Selected duration",
+      "chipCostLabel": "Chip cost",
+      "expiresIn": "Expires: D-{{days}}",
+      "expired": "Expired",
+      "expiresOn": "Expires on: {{date}}"
+    },
+    "urgent": {
+      "label": "Urgent",
+      "chipCost": "5 chips (fixed)",
+      "badge": "Urgent Hiring",
+      "description": "Featured at the top as urgent posting"
+    },
+    "tournament": {
+      "label": "Tournament",
+      "badge": "Tournament Posting",
+      "approvalRequired": "Admin approval required",
+      "description": "Tournament postings will be published after admin approval. You will be notified of the approval result",
+      "status": {
+        "pending": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "approval": {
+        "pageTitle": "Tournament Posting Approval Management",
+        "pageDescription": "Review pending tournament postings and approve or reject them",
+        "emptyTitle": "No pending approvals",
+        "emptyDescription": "New tournament postings will appear here when submitted",
+        "approveButton": "Approve",
+        "rejectButton": "Reject",
+        "modalApproveTitle": "Approve Posting",
+        "modalRejectTitle": "Reject Posting",
+        "modalMessage": "Are you sure you want to {{action}} this posting?",
+        "modalReasonLabel": "Rejection Reason",
+        "modalReasonPlaceholder": "Enter rejection reason (minimum 10 characters)",
+        "modalReasonCount": "{{count}}/10 characters minimum",
+        "modalCancel": "Cancel",
+        "modalConfirmApprove": "Approve",
+        "modalConfirmReject": "Reject",
+        "processing": "Processing...",
+        "errorReasonRequired": "Please enter a rejection reason",
+        "errorReasonLength": "Rejection reason must be at least 10 characters",
+        "errorProcessing": "An error occurred during processing",
+        "successApprove": "Posting has been approved",
+        "successReject": "Posting has been rejected"
+      }
+    }
+  },
+  "jobPosting": {
+    "announcement": {
+      "button": "Send Announcement",
+      "modalTitle": "Send Staff Announcement",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter announcement title (max 50 characters)",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Enter announcement message (max 500 characters)",
+      "targetStaff": "Recipients",
+      "staffCount": "{{count}} confirmed staff",
+      "postingInfo": "Posting Info",
+      "sendButton": "Send",
+      "sending": "Sending..."
+    },
+    "info": {
+      "expand": "Expand Info",
+      "collapse": "Collapse Info",
+      "section": "Job Posting Basic Information"
+    }
+  },
+  "jobPostingAdmin": {
+    "alerts": {
+      "createSuccess": "Job posting created successfully!",
+      "createFailed": "Failed to create job posting.",
+      "matchFailed": "Failed to run auto-match. Check logs.",
+      "updateSuccess": "Job posting updated successfully.",
+      "updateFailed": "Failed to update job posting.",
+      "fetchApplicantsFailed": "Failed to fetch applicants.",
+      "confirmDelete": "Are you sure you want to delete this job posting?",
+      "deleteSuccess": "Job posting deleted successfully.",
+      "deleteFailed": "Failed to delete job posting.",
+      "invalidRoleInfo": "Please ensure all roles have a name and a required count of at least 1.",
+      "selectRoleToAssign": "Please select a role to assign.",
+      "applicantAlreadyConfirmed": "This applicant is already confirmed.",
+      "applicantConfirmSuccess": "Applicant confirmed successfully.",
+      "applicantConfirmFailed": "Failed to confirm applicant.",
+      "postingClosed": "All roles have been filled. The job posting is now closed."
+    },
+    "form": {
+      "postingTitle": "Posting Title",
+      "type": "Employment Type",
+      "rolesAndCounts": "Roles & Headcount",
+      "roleName": "Role Name",
+      "roleNamePlaceholder": "e.g., Dealer, Floor",
+      "staffNeeded": "Headcount",
+      "addRole": "Add Role",
+      "remove": "Remove",
+      "description": "Description / Requirements",
+      "detailedAddress": "Detailed Address",
+      "detailedAddressPlaceholder": "Enter detailed address",
+      "contactPhone": "Contact Phone",
+      "contactPhonePlaceholder": "Enter contact phone number (max 25 chars)",
+      "usePreQuestions": "Use Pre-screening Questions",
+      "preQuestions": "Pre-screening Questions (Optional)",
+      "question": "Question",
+      "addPreQuestion": "Add Question",
+      "addQuestion": "Add Question",
+      "removePreQuestion": "Remove Question",
+      "questionText": "Question Text",
+      "questionPlaceholder": "Enter your question",
+      "questionType": "Answer Type",
+      "typeText": "Short Text",
+      "typeTextarea": "Long Text",
+      "typeSelect": "Multiple Choice",
+      "questionTypeText": "Short Text",
+      "questionTypeTextarea": "Long Text",
+      "questionTypeSelect": "Multiple Choice",
+      "requiredQuestion": "Required",
+      "questionRequired": "Required",
+      "questionOptional": "Optional",
+      "addOption": "Add Option",
+      "optionPlaceholder": "Enter option text",
+      "submitting": "Submitting...",
+      "location": "Location",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "timeAndRoles": "Time Slots & Roles",
+      "addTimeSlot": "Add Time Slot",
+      "removeTimeSlot": "Remove Time Slot",
+      "selectOptions": "Select Options",
+      "removeQuestion": "Remove Question"
+    },
+    "create": {
+      "title": "Create Job Posting",
+      "button": "Create New Posting"
+    },
+    "manage": {
+      "title": "Manage Job Postings",
+      "loading": "Loading postings...",
+      "people": "people",
+      "type": "Employment Type",
+      "matching": "Matching...",
+      "button": "Auto Match",
+      "applicants": "Applicants"
+    },
+    "edit": {
+      "title": "Edit Job Posting",
+      "statusOpen": "Open",
+      "statusClosed": "Closed"
+    },
+    "applicants": {
+      "title": "Applicant List",
+      "loading": "Loading applicants...",
+      "none": "No applicants yet.",
+      "close": "Close",
+      "status": "Status: ",
+      "as": " as ",
+      "selectRole": "Select role",
+      "viewProfile": "View Profile",
+      "ageUnit": " years old",
+      "statusValue": {},
+      "status_confirmed": "Confirmed"
+    },
+    "unknownUser": "Unknown User"
+  },
+  "profile": {
+    "residentId": "Resident ID",
+    "region": "Region",
+    "selectRegion": "Please select a region"
+  },
+  "profilePage": {
+    "eventIdMissing": "Event ID is missing",
+    "unknownEvent": "Unknown Event",
+    "loginRequired": "You must be logged in to update your profile.",
+    "updateSuccess": "Profile updated successfully!",
+    "updateFailed": "Profile update failed: {{message}}",
+    "profileImage": "Profile Image",
+    "imageUpdateFailed": "Failed to update profile image.",
+    "requiredFields": "Please fill in the following required fields: {{fields}}",
+    "loadingProfile": "Loading profile...",
+    "error": "Error: {{message}}",
+    "viewProfileLogin": "Please log in to view your profile.",
+    "ratings": "ratings",
+    "editProfile": "Edit Profile",
+    "profileDetails": "Profile Details",
+    "name": "Name:",
+    "email": "Email:",
+    "phone": "Phone:",
+    "notProvided": "Not provided",
+    "experience": "Experience:",
+    "history": "Career History:",
+    "historyPlaceholder": "Please enter your detailed career history...",
+    "hourlyRate": "Hourly Rate:",
+    "editDetails": "Edit Details",
+    "saveChanges": "Save Changes",
+    "loadingPayroll": "Loading payroll history...",
+    "tableHours": "Hours",
+    "tablePay": "Pay",
+    "noPayroll": "No payroll history available.",
+    "statusPending": "Pending",
+    "nationality": "Nationality",
+    "bankName": "Bank Name",
+    "bankAccount": "Account Number",
+    "privateInfo": "Private Info",
+    "privateInfoNote": "(Required for settlement, visible only to authorized personnel)",
+    "notes": "Notes",
+    "selectExperience": "Please select your years of experience",
+    "selectNationality": "Please select your nationality",
+    "residentId": "Resident ID:",
+    "gender": "Gender:"
+  },
+  "profileImage": {
+    "uploadSuccess": "Profile image uploaded successfully.",
+    "deleteSuccess": "Profile image deleted successfully.",
+    "currentImage": "Current profile image",
+    "uploadError": "Failed to upload profile image.",
+    "deleteError": "Failed to delete profile image."
+  },
+  "payrollPage": {
+    "loading": "Loading payroll data...",
+    "accessDenied": "Access denied.",
+    "accessDeniedMessage": "You can only view your own payroll history.",
+    "userNotFound": "User not found.",
+    "fetchError": "Failed to load payroll data.",
+    "eventIdMissing": "Event ID missing",
+    "unknownEvent": "Unknown event",
+    "goBack": "Go Back",
+    "adminView": "Admin View",
+    "totalEvents": "Total Events",
+    "tableHours": "Hours",
+    "tablePay": "Pay",
+    "statusPending": "Pending",
+    "noPayroll": "No payroll history",
+    "noPayrollMessage": "No payroll history has been generated yet."
+  },
+  "participantLivePage": {
+    "notFound": "Participant not found (ID: {{id}})",
+    "announcements": "📢 Announcements",
+    "table": "Table: {{tableNumber}}",
+    "seat": "Seat: {{seatNumber}}",
+    "chips": "Chips: {{chipCount}}",
+    "nextLevelIn": "Next Level In",
+    "nextBlind": "Next Blind: {{blind}}",
+    "tournamentEnd": "Tournament Ended",
+    "tournamentInfo": "Tournament Info",
+    "currentBlind": "Current Blind",
+    "remainingPlayers": "Players Left",
+    "avgStack": "Avg. Stack",
+    "totalChips": "Total Chips",
+    "rulesTitle": "Tournament Rules",
+    "rule1": "1. TDA rules are applied as standard.",
+    "rule2": "2. Please be respectful to other participants.",
+    "dummyAnnouncement1": "Next blind level will start in 5 minutes.",
+    "dummyAnnouncement2": "We will have a 10-minute break."
+  },
+  "tournamentDashboard": {
+    "seeding": {
+      "success": "Test data seeded successfully! Reloading page.",
+      "skipped": "Skipped seeding because test data already exists.",
+      "error": "An error occurred while seeding test data.",
+      "unexpectedError": "An unexpected error occurred. Check the console."
+    },
+    "title": "Tournament Dashboard",
+    "devTools": {
+      "title": "Developer Tools",
+      "button": "Seed Test Data (10 tables, 80 players)",
+      "buttonSeeding": "Seeding test data...",
+      "description": "Populates the database with sample data. Use only on an initial database."
+    },
+    "stats": {
+      "totalParticipants": "Total Participants",
+      "currentBlindLevel": "Current Blind Level",
+      "estimatedPrizePool": "Est. Prize Pool"
+    },
+    "status": {
+      "title": "Tournament Status",
+      "welcome": "Welcome to the tournament control panel. Use the menu on the left to manage different aspects of the event.",
+      "running": "Running",
+      "paused": "Paused",
+      "stopped": "Stopped"
+    }
+  },
+  "privateRoute": {
+    "loading": "Loading user..."
+  },
+  "tableCard": {
+    "dealer": "Dealer:"
+  },
+  "tournament": {
+    "initialName": "UNIQN Initial Tournament"
+  },
+  "theme": {
+    "switchToLight": "Switch to Light Mode",
+    "switchToDark": "Switch to Dark Mode"
+  },
+  "shiftSchedule": {
+    "title": "Shift Schedule Management",
+    "subtitle": "Manage dealer shift schedules and generate work logs",
+    "loading": "Loading schedule data...",
+    "selectDate": "Select Date",
+    "timeInterval": "Time Interval",
+    "settings": "Settings",
+    "createSchedule": "Create New Schedule",
+    "scheduleGrid": "Schedule Grid",
+    "noSchedule": "No Schedule Available",
+    "availableDealers": "Available Dealers",
+    "addToSchedule": "Add to Schedule",
+    "noDealersAvailable": "No dealers available",
+    "availableTables": "Available Tables",
+    "noTablesAvailable": "No tables available",
+    "assignedDealers": "Assigned Dealers",
+    "workLogsGenerated": "Work logs for this date have already been generated",
+    "workLogsNotGenerated": "Generate work logs after completing the schedule",
+    "regenerateWorkLogs": "Regenerate Work Logs",
+    "generateWorkLogs": "Generate Work Logs",
+    "startTime": "Start Time",
+    "allDealersAssigned": "All dealers have been added to the schedule",
+    "removeFromSchedule": "Remove from Schedule",
+    "confirmRemoveStaff": "Are you sure you want to remove staff {staffName} from the schedule?",
+    "confirmRemoveDealer": "Are you sure you want to remove dealer {dealerName} from the schedule?",
+    "validationResults": "Schedule Validation Results",
+    "errors": "errors",
+    "warnings": "warnings",
+    "infos": "infos",
+    "validationPassed": "Validation Passed",
+    "noScheduleMessage": "Schedule has not been created yet",
+    "defaultWorkTimeSettings": "Default Work Time Settings",
+    "autoSaveSettings": "Auto Save Settings",
+    "autoSaveChanges": "Auto save changes",
+    "notificationSettings": "Notification Settings",
+    "conflictNotifications": "Conflict notifications",
+    "assignedDealer": "assigned",
+    "minuteInterval": "minute interval"
+  },
+  "attendance": {
+    "status": {
+      "not_started": "Not Started",
+      "checked_in": "Checked In",
+      "checked_out": "Checked Out",
+      "absent": "Absent"
+    },
+    "labels": {
+      "checkIn": "Check In Time",
+      "checkOut": "Check Out Time",
+      "scheduled": "Scheduled Time",
+      "actual": "Actual Time",
+      "attendanceStatus": "Attendance Status",
+      "workingHours": "Working Hours",
+      "breakTime": "Break Time"
+    },
+    "actions": {
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "editTime": "Edit Time",
+      "generateQR": "Generate QR",
+      "scanQR": "Scan QR"
+    },
+    "messages": {
+      "checkInSuccess": "Check-in recorded successfully!",
+      "checkOutSuccess": "Check-out recorded successfully!",
+      "alreadyCheckedIn": "Already checked in.",
+      "alreadyCheckedOut": "Already checked out.",
+      "qrCodeGenerated": "QR code generated.",
+      "attendanceError": "Error occurred while recording attendance.",
+      "timeUpdated": "Time updated successfully.",
+      "updateError": "Error occurred while updating time."
+    },
+    "editWorkTime": "Edit Work Time",
+    "eventId": "Event ID",
+    "scheduledTimes": "Scheduled Times",
+    "scheduledStartTime": "Scheduled Start Time",
+    "scheduledEndTime": "Scheduled End Time",
+    "actualTimes": "Actual Times",
+    "actualStartTime": "Actual Start Time",
+    "actualEndTime": "Actual End Time",
+    "workTimeSummary": "Work Time Summary",
+    "scheduledMinutes": "Scheduled Minutes",
+    "actualMinutes": "Actual Minutes",
+    "validation": {
+      "startTimeRequired": "Please enter start time.",
+      "endTimeRequired": "Please enter end time.",
+      "invalidTimeFormat": "Please enter valid time format (HH:MM).",
+      "endTimeAfterStart": "End time must be after start time."
+    }
+  },
+  "errors": {
+    "title": "An error has occurred",
+    "general": "A temporary error has occurred. Please try again later.",
+    "network": "There is a network connection issue. Please check your internet connection.",
+    "permission": "You do not have permission. Please try logging in again.",
+    "quota": "Service usage limit has been temporarily exceeded. Please try again later.",
+    "retry": "Try again",
+    "refresh": "Refresh page",
+    "details": "Show developer information"
+  },
+  "days": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
+  },
+  "exceptions": {
+    "late": {
+      "description": "Late ({{minutes}} minutes)"
+    },
+    "earlyLeave": {
+      "description": "Early leave ({{minutes}} minutes early)"
+    },
+    "absence": {
+      "description": "No check-in record"
+    },
+    "overtime": {
+      "description": "Overtime ({{minutes}} minutes over)"
+    },
+    "managerNote": "Manager Note",
+    "managerNotePlaceholder": "Enter description for exception...",
+    "note": "Note",
+    "updateSuccess": "Exception updated successfully",
+    "updateError": "Failed to update exception"
+  },
+  "payroll": {
+    "calculate": "Calculate Payroll",
+    "generating": "Generating Payroll...",
+    "export": "Export Payroll CSV",
+    "noDataToExport": "No payroll data to export.",
+    "summary": {
+      "title": "Payroll Summary",
+      "regularHours": "Regular",
+      "overtimeHours": "Overtime",
+      "basePay": "Base Pay",
+      "exceptions": "Exceptions",
+      "deductions": "Deductions"
+    },
+    "details": {
+      "title": "Staff Payroll Details",
+      "staffName": "Staff Name",
+      "workHours": "Work Hours",
+      "overtime": "Overtime",
+      "exceptions": "Exceptions"
+    }
+  },
+  "support": {
+    "title": "Customer Support",
+    "subtitle": "Check our FAQ or submit your inquiry",
+    "tabs": {
+      "faq": "FAQ",
+      "inquiry": "Submit Inquiry",
+      "myInquiries": "My Inquiries"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "noResults": "No FAQs found for this category."
+    },
+    "inquiry": {
+      "title": "Submit Inquiry",
+      "loginRequired": "Login Required",
+      "loginMessage": "Please login first to submit an inquiry.",
+      "category": "Inquiry Category",
+      "subject": "Subject",
+      "subjectPlaceholder": "Enter inquiry subject",
+      "message": "Message",
+      "messagePlaceholder": "Please describe your inquiry in detail",
+      "submit": "Submit Inquiry",
+      "success": "Your inquiry has been submitted successfully!",
+      "error": "An error occurred while submitting your inquiry."
+    },
+    "myInquiries": {
+      "title": "My Inquiries",
+      "loading": "Loading inquiry history...",
+      "empty": "No inquiries found",
+      "emptyMessage": "Feel free to contact us if you have any questions.",
+      "response": "Response"
+    }
+  },
+  "report": {
+    "title": "Submit Report",
+    "targetInfo": "Report Target",
+    "type": "Report Type",
+    "types": {
+      "tardiness": {
+        "label": "Tardiness",
+        "description": "Arriving late to scheduled time"
+      },
+      "negligence": {
+        "label": "Work Negligence",
+        "description": "Neglecting duties or lacking responsibility"
+      },
+      "no_show": {
+        "label": "No Show",
+        "description": "Not showing up without prior notice"
+      },
+      "inappropriate_behavior": {
+        "label": "Inappropriate Behavior",
+        "description": "Improper conduct or inappropriate language"
+      },
+      "other": {
+        "description": "Other issues not listed above"
+      }
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "description": "Detailed Description",
+    "descriptionPlaceholder": {
+      "default": "Please describe the situation in detail",
+      "other": "Please describe the specific situation and issues in detail (minimum 10 characters)"
+    },
+    "otherTypeNotice": "Other type requires at least 10 characters of detailed description.",
+    "characterCount": "Character Count",
+    "minCharacters": "Minimum 10 characters",
+    "warning": {
+      "title": "Important Notice",
+      "falseReport": "False reports may result in penalties.",
+      "evidence": "Please provide specific and objective facts when possible.",
+      "processing": "Reports will be reviewed and processed by administrators."
+    },
+    "submit": "Submit Report",
+    "status": {
+      "reviewed": "Under Review",
+      "resolved": "Resolved",
+      "dismissed": "Dismissed"
+    }
+  },
+  "inquiry": {
+    "categories": {
+      "general": {
+        "label": "General Inquiry"
+      },
+      "technical": {
+        "label": "Technical Support"
+      },
+      "payment": {
+        "label": "Payment Inquiry"
+      },
+      "account": {
+        "label": "Account Inquiry"
+      },
+      "other": {}
+    },
+    "status": {
+      "open": "Open",
+      "in_progress": "In Progress",
+      "closed": "Closed"
+    }
+  },
+  "faq": {
+    "general": {
+      "q1": {
+        "question": "How do I sign up?",
+        "answer": "Click the 'Sign Up' button at the top to register as Staff or Admin. Admin registration requires operator approval."
+      },
+      "q2": {
+        "question": "I forgot my password.",
+        "answer": "Click 'Forgot Password' on the login page to receive a reset link via email."
+      }
+    },
+    "account": {
+      "q1": {
+        "question": "How do I apply for job postings?",
+        "answer": "Browse the Job Board, click on desired postings, and click the 'Apply' button to submit your application."
+      }
+    },
+    "payment": {
+      "q1": {
+        "question": "When will I receive payment?",
+        "answer": "Payment is typically processed after work completion and admin approval. Contact your administrator for specific details."
+      }
+    },
+    "technical": {
+      "q1": {
+        "question": "How do I check attendance?",
+        "answer": "Use the Attendance page to scan QR codes or have an administrator manually record your attendance."
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "No notifications",
+    "markAllAsRead": "Mark all as read",
+    "viewAll": "View all",
+    "notificationCenter": "Notification Center",
+    "deleteAllRead": "Delete all read",
+    "filters": {
+      "unread": "Unread",
+      "read": "Read"
+    },
+    "categories": {
+      "system": "System",
+      "work": "Work",
+      "schedule": "Schedule",
+      "finance": "Finance"
+    },
+    "types": {
+      "job_posting_announcement": "Job Announcement",
+      "new_job_posting": "New Job Posting",
+      "system_announcement": "System Announcement",
+      "app_update": "App Update",
+      "job_application": "Application Submitted",
+      "staff_approval": "Application Confirmed",
+      "staff_rejection": "Application Cancelled",
+      "schedule_change": "Schedule Changed"
+    },
+    "descriptions": {
+      "system": "System announcements and new job postings",
+      "work": "Application, confirmation, and cancellation notifications",
+      "schedule": "Schedule change notifications"
+    },
+    "settings": {
+      "title": "Notification Settings",
+      "updated": "Notification settings updated",
+      "updateFailed": "Failed to update notification settings",
+      "loadFailed": "Failed to load notification settings",
+      "globalEnabled": "All Notifications",
+      "globalDescription": "Receive all notifications",
+      "quietHours": "Quiet Hours",
+      "quietHoursDescription": "Do not disturb during these hours",
+      "startTime": "Start Time",
+      "endTime": "End Time"
+    }
+  },
+  "consent": {
+    "title": "Service Agreement",
+    "description": "Please agree to the following terms to use the service.",
+    "agreeAll": "Agree to All",
+    "required": "Required Agreements",
+    "requiredDetails": {
+      "pleaseAgree": "Please agree to the required terms."
+    },
+    "optional": "Optional Agreements",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "marketing": "Marketing Communications",
+    "locationService": "Location Services",
+    "pushNotification": "Push Notifications",
+    "descriptions": {
+      "termsOfService": "Terms and conditions for using our service",
+      "privacyPolicy": "How we collect and use your personal information",
+      "marketing": "Receive promotional emails and notifications",
+      "locationService": "Allow access to location information for enhanced service",
+      "pushNotification": "Receive push notifications about important updates"
+    },
+    "agreedAt": "Agreed on: {{date}}",
+    "viewDocument": "View Full Document",
+    "submit": "Agree and Continue",
+    "errors": {
+      "requiredConsents": "You must agree to the required terms to continue.",
+      "updateFailed": "Failed to update consent preferences.",
+      "loadFailed": "Failed to load consent information."
+    },
+    "success": {
+      "updated": "Your consent preferences have been updated successfully.",
+      "created": "Service agreement completed successfully."
+    },
+    "history": {
+      "title": "Consent Change History",
+      "changedAt": "Changed on",
+      "changedFields": "Changed Items",
+      "previousValue": "Previous",
+      "newValue": "New",
+      "noHistory": "No change history available."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "consent": "Consent Management",
+      "security": "Security",
+      "notifications": "Notifications",
+      "language": "Language",
+      "account": "Account Management"
+    },
+    "consent": {
+      "title": "Consent Management",
+      "description": "Manage your consent preferences for optional services.",
+      "agreedAt": "Agreed on",
+      "notAgreed": "Not agreed",
+      "requiredNotice": "Required consents cannot be modified after signup. To withdraw, please delete your account.",
+      "marketingEnabled": "Marketing communications enabled.",
+      "marketingDisabled": "Marketing communications disabled.",
+      "locationEnabled": "Location services enabled.",
+      "locationDisabled": "Location services disabled.",
+      "pushEnabled": "Push notifications enabled.",
+      "pushDisabled": "Push notifications disabled.",
+      "updateSuccess": "Consent preferences updated successfully.",
+      "updateFailed": "Failed to update consent preferences.",
+      "viewHistory": "View Change History"
+    },
+    "security": {
+      "title": "Security Settings",
+      "description": "Manage password and login notification settings.",
+      "password": {
+        "title": "Password Management",
+        "description": "Change your account password",
+        "changeButton": "Change Password",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm New Password",
+        "currentPasswordPlaceholder": "Enter current password",
+        "newPasswordPlaceholder": "Enter new password (min. 8 characters)",
+        "confirmPasswordPlaceholder": "Re-enter new password",
+        "strength": {
+          "title": "Password Strength",
+          "weak": "Weak",
+          "medium": "Medium",
+          "strong": "Strong"
+        },
+        "requirements": {
+          "title": "Password Requirements",
+          "length": "At least 8 characters",
+          "uppercase": "Include uppercase letters",
+          "lowercase": "Include lowercase letters",
+          "number": "Include numbers",
+          "special": "Include special characters (!@#$%^&*)"
+        },
+        "errors": {
+          "currentRequired": "Please enter your current password.",
+          "newRequired": "Please enter a new password.",
+          "tooShort": "Password must be at least 8 characters long.",
+          "mismatch": "Passwords do not match.",
+          "sameAsCurrent": "New password must be different from current password.",
+          "authFailed": "Current password is incorrect.",
+          "updateFailed": "Failed to update password."
+        },
+        "success": "Password changed successfully. Please log in again.",
+        "cancel": "Cancel",
+        "confirm": "Change Password"
+      },
+      "loginNotifications": {
+        "title": "Login Notification Settings",
+        "description": "Receive notifications for login activities",
+        "enabled": "Enable Login Notifications",
+        "enabledDescription": "Receive in-app notifications when login activity is detected",
+        "newDevice": "New Device Login",
+        "newDeviceDescription": "Notify when logging in from a new device",
+        "newLocation": "New Location Login",
+        "newLocationDescription": "Notify when logging in from a new location",
+        "suspiciousActivity": "Suspicious Activity Detection",
+        "suspiciousActivityDescription": "Notify when suspicious login activity is detected (recommended)",
+        "updateSuccess": "Login notification settings updated successfully.",
+        "updateFailed": "Failed to update login notification settings."
+      },
+      "sessionManagement": {
+        "title": "Session Management",
+        "description": "Manage active login sessions",
+        "currentSession": "Current Session",
+        "otherSessions": "Other Sessions",
+        "lastActive": "Last active",
+        "logoutAll": "Log Out All Sessions",
+        "logoutSuccess": "All sessions logged out successfully."
+      }
+    },
+    "language": {
+      "title": "Language Settings",
+      "description": "Select your preferred language",
+      "current": "Current Language",
+      "korean": "한국어",
+      "english": "English",
+      "updateSuccess": "Language settings updated successfully.",
+      "updateFailed": "Failed to update language settings."
+    },
+    "account": {
+      "title": "Account Management",
+      "description": "Delete your account and all associated data",
+      "deleteAccount": {
+        "title": "Delete Account",
+        "description": "Permanently delete your account and all data",
+        "button": "Request Account Deletion",
+        "warning": {
+          "title": "⚠️ Warning",
+          "message": "This action cannot be undone. All your data will be permanently deleted.",
+          "effects": "Once you delete your account, the following will happen:",
+          "effect1": "• All personal information will be permanently deleted",
+          "effect2": "• All application and work history will be deleted",
+          "effect3": "• All payroll information will be deleted",
+          "effect4": "• You will not be able to use this account again"
+        },
+        "gracePeriod": {
+          "title": "30-Day Grace Period",
+          "description": "After requesting deletion, you have 30 days to cancel. Your account will be deactivated during this period.",
+          "deactivated": "Your account is currently deactivated and scheduled for deletion.",
+          "canReactivate": "You can cancel the deletion request and reactivate your account anytime within 30 days."
+        },
+        "modal": {
+          "title": "Confirm Account Deletion",
+          "subtitle": "This action cannot be undone",
+          "reasonLabel": "Reason for Deletion (Optional)",
+          "reasonPlaceholder": "Please select a reason",
+          "reason": {
+            "notUseful": "Service not useful",
+            "privacyConcerns": "Privacy concerns",
+            "switchingService": "Switching to another service",
+            "tooManyEmails": "Too many notifications",
+            "difficultToUse": "Difficult to use",
+            "other": "Other"
+          },
+          "feedbackLabel": "Additional Feedback (Optional)",
+          "feedbackPlaceholder": "Please share any feedback to help us improve (max 500 characters)",
+          "passwordLabel": "Password Confirmation (Required)",
+          "passwordPlaceholder": "Enter your password to confirm deletion",
+          "confirmCheckbox": "I understand that this action cannot be undone and all my data will be permanently deleted.",
+          "cancel": "Cancel",
+          "confirm": "Confirm Deletion",
+          "errors": {
+            "passwordRequired": "Please enter your password to confirm.",
+            "confirmRequired": "Please check the confirmation box.",
+            "invalidPassword": "Password is incorrect.",
+            "deletionFailed": "Failed to request account deletion."
+          },
+          "success": "Account deletion requested. Your account will be deleted in 30 days."
+        },
+        "pending": {
+          "title": "Account Deletion Pending",
+          "requestedAt": "Requested on",
+          "scheduledDeletionAt": "Scheduled deletion date",
+          "remainingDays": "{{days}} days remaining",
+          "cancelButton": "Cancel Deletion Request",
+          "confirmCancel": "Are you sure you want to cancel the account deletion request?",
+          "cancelSuccess": "Account deletion request cancelled successfully. Your account has been reactivated.",
+          "cancelFailed": "Failed to cancel account deletion request."
+        }
+      }
+    }
+  },
+  "legal": {
+    "termsOfService": {
+      "title": "Terms of Service",
+      "pageTitle": "Terms of Service"
+    },
+    "privacyPolicy": {
+      "title": "Privacy Policy",
+      "pageTitle": "Privacy Policy"
+    },
+    "version": "Version",
+    "effectiveDate": "Effective Date",
+    "lastUpdated": "Last Updated",
+    "backButton": "Back",
+    "printButton": "Print",
+    "article": "Article {{number}}",
+    "section": "Section {{number}}"
+  }
+}

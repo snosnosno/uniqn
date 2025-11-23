@@ -45,6 +45,8 @@ import { initializePerformance } from './utils/firebasePerformance';
 import { initializeFontOptimization } from './utils/fontOptimizer';
 import { initializeOfflineSupport } from './utils/offlineSupport';
 import { logger } from './utils/logger';
+// i18n 초기화
+import './i18n/config';
 
 // Capacitor 네이티브 서비스 초기화 컴포넌트
 import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
@@ -70,15 +72,22 @@ const ApprovalManagementPage = React.lazy(() => import('./pages/ApprovalManageme
 
 // Payment Pages
 const ChipRechargePage = React.lazy(() => import('./pages/ChipRechargePage'));
+const PaymentTermsPage = React.lazy(() => import('./pages/payment/PaymentTermsPage'));
 const PaymentSuccessPage = React.lazy(() => import('./pages/payment/PaymentSuccessPage'));
 const PaymentFailPage = React.lazy(() => import('./pages/payment/PaymentFailPage'));
+const PaymentHistoryPage = React.lazy(() => import('./pages/payment/PaymentHistoryPage'));
 const ChipHistoryPage = React.lazy(() => import('./pages/chip/ChipHistoryPage'));
+
+// Subscription Pages
+const SubscriptionPage = React.lazy(() => import('./pages/subscription/SubscriptionPage'));
 
 // Admin Chip Management
 const ChipManagementPage = React.lazy(() => import('./pages/admin/ChipManagementPage'));
+const RefundBlacklistPage = React.lazy(() => import('./pages/admin/RefundBlacklistPage'));
 
 // Settings & Legal Pages
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const VerificationSettingsPage = React.lazy(() => import('./pages/settings/VerificationSettingsPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = React.lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 
@@ -184,6 +193,10 @@ const App: React.FC = () => {
       performanceMonitor.measureWebVitals();
       performanceMonitor.measureMemory();
 
+      // Web Vitals 측정 (P3-3: 성능 메트릭)
+      const { measureWebVitals } = await import('./utils/performanceMetrics');
+      measureWebVitals();
+
       // 이미지 프리로딩 비활성화 (preload 경고 방지)
       // 이미지는 실제 사용 시점에 로딩됨
       logger.debug('이미지 프리로딩이 비활성화되었습니다 (성능 최적화)');
@@ -230,6 +243,7 @@ const App: React.FC = () => {
                   <Route path="/privacy-policy" element={<Suspense fallback={<LoadingSpinner />}><PrivacyPolicyPage /></Suspense>} />
 
                   {/* Payment Routes - Public (토스페이먼츠 리다이렉트) */}
+                  <Route path="/payment/terms" element={<Suspense fallback={<LoadingSpinner />}><PaymentTermsPage /></Suspense>} />
                   <Route path="/payment/success" element={<Suspense fallback={<LoadingSpinner />}><PaymentSuccessPage /></Suspense>} />
                   <Route path="/payment/fail" element={<Suspense fallback={<LoadingSpinner />}><PaymentFailPage /></Suspense>} />
 
@@ -252,10 +266,17 @@ const App: React.FC = () => {
 
                       {/* 설정 */}
                       <Route path="settings" element={<Suspense fallback={<LoadingSpinner />}><SettingsPage /></Suspense>} />
+                      <Route path="settings/verification" element={<Suspense fallback={<LoadingSpinner />}><VerificationSettingsPage /></Suspense>} />
 
                       {/* 칩 관련 */}
                       <Route path="chip/recharge" element={<Suspense fallback={<LoadingSpinner />}><ChipRechargePage /></Suspense>} />
                       <Route path="chip/history" element={<Suspense fallback={<LoadingSpinner />}><ChipHistoryPage /></Suspense>} />
+
+                      {/* 결제 관련 */}
+                      <Route path="payment/history" element={<Suspense fallback={<LoadingSpinner />}><PaymentHistoryPage /></Suspense>} />
+
+                      {/* 구독 관련 */}
+                      <Route path="subscription" element={<Suspense fallback={<LoadingSpinner />}><SubscriptionPage /></Suspense>} />
 
                       {/* Dealer facing routes */}
                       <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
@@ -322,6 +343,7 @@ const App: React.FC = () => {
                           <Route path="inquiries" element={<Suspense fallback={<LoadingSpinner />}><InquiryManagementPage /></Suspense>} />
                           <Route path="job-posting-approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalManagementPage /></Suspense>} />
                           <Route path="chip-management" element={<Suspense fallback={<LoadingSpinner />}><ChipManagementPage /></Suspense>} />
+                          <Route path="refund-blacklist" element={<Suspense fallback={<LoadingSpinner />}><RefundBlacklistPage /></Suspense>} />
                       </Route>
                     </Route>
                   </Route>
