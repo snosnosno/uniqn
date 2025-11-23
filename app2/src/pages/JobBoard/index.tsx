@@ -7,6 +7,7 @@ import IncompleteProfileModal from '../../components/modals/IncompleteProfileMod
 import JobFiltersComponent from './JobFilters';
 import JobListTab from './components/JobListTab';
 import MyApplicationsTab from './components/MyApplicationsTab';
+import FixedJobListTab from './components/FixedJobListTab';
 import ApplyModal from './components/ApplyModal';
 import JobDetailModal from './components/JobDetailModal';
 import { useJobBoard } from './hooks/useJobBoard';
@@ -142,8 +143,15 @@ const JobBoardPage = () => {
           </div>
         )}
         
-        {/* 구인 목록 탭 */}
-        {activeTab === 'jobs' && (
+        {/* 고정공고 탭 */}
+        {activeTab === 'jobs' && activePostingType === 'fixed' && (
+          <div role="tabpanel" id="fixed-panel" aria-labelledby="fixed-tab">
+            <FixedJobListTab />
+          </div>
+        )}
+
+        {/* 구인 목록 탭 (regular, tournament, urgent, all) */}
+        {activeTab === 'jobs' && activePostingType !== 'fixed' && (
           <div role="tabpanel" id="jobs-panel" aria-labelledby="jobs-tab">
             <JobListTab
             jobPostings={(() => {

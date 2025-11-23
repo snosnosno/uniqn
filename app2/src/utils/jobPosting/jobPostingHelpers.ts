@@ -240,6 +240,19 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
           ? convertToTimestamp(formData.urgentConfig.createdAt)
           : convertToTimestamp(new Date())
       }
+    }),
+    // ✅ 고정공고용 fixedData 객체 생성 (postingType === 'fixed'일 때)
+    ...(formData.postingType === 'fixed' && formData.workSchedule && formData.requiredRolesWithCount && {
+      fixedData: {
+        workSchedule: formData.workSchedule,
+        requiredRolesWithCount: formData.requiredRolesWithCount.map(({ role, count }) => ({
+          name: role,  // role → name 변환 (FixedJobPosting 타입 호환)
+          count
+        })),
+        viewCount: 0  // 초기 조회수
+      },
+      // 고정공고의 경우 requiredRoles를 requiredRolesWithCount에서 추출
+      requiredRoles: formData.requiredRolesWithCount.map(r => r.role)
     })
   };
 
