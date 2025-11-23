@@ -17,3 +17,10 @@ export type {
   FixedWorkScheduleSectionProps
 } from './workSchedule';
 export { STAFF_ROLES } from './workSchedule';
+
+// 서비스 관련 타입 (Phase 4: 조회수 증가 및 상세보기)
+export type {
+  ViewCountService,
+  JobDetailData,
+  ViewCountError
+} from './services';

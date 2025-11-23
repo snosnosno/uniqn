@@ -7,6 +7,71 @@
 
 ## [Unreleased]
 
+### 📌 고정공고 Phase 4: 상세보기 및 Firestore 인덱스 설정 완료 (2025-11-23)
+
+#### 고정공고 상세보기 UI 구현
+- **JobPostingDetailContent.tsx**: 고정공고 전용 섹션 추가
+  - 근무 조건 표시: 주 출근일수, 근무시간
+  - 모집 역할 표시: 역할명 및 필요 인원수
+  - 다크모드 완전 지원: `dark:` 클래스 100% 적용
+- **FixedJobCard.tsx**: 카드 클릭 시 조회수 자동 증가
+  - Fire-and-forget 패턴: 사용자 경험 방해 없이 조회수 증가
+  - 상세보기 모달과 독립적으로 동작
+
+#### 조회수 증가 시스템 구현
+- **fixedJobPosting.ts 서비스 생성**:
+  - `incrementViewCount()`: Firestore increment() 원자적 연산 사용
+  - `ViewCountService` 인터페이스 구현
+  - Fire-and-forget 패턴: 에러 발생 시 logger.error로 기록만 하고 throw하지 않음
+  - 에러 분류: permission, network, unknown 타입별 분류
+  - 케이스 비구분 에러 분류: toLowerCase()로 안정적 에러 처리
+- **타입 시스템 확장**:
+  - `ViewCountService`, `JobDetailData`, `ViewCountError` 타입 추가
+  - Phase 4 서비스 타입 분리 (`types/jobPosting/services.ts`)
+
+#### Firestore 최적화
+- **Composite Index 검증**: postingType + status + createdAt 인덱스 존재 확인
+- **useFixedJobPostings Hook**: 최적화된 쿼리 사용 검증 완료
+- **Security Rules 업데이트**:
+  - viewCount 증가 권한 추가 (로그인한 사용자 누구나)
+  - `diff()`, `affectedKeys()` 함수로 정밀한 권한 제어
+  - fixedData.viewCount 필드만 변경 가능하도록 제한
+
+#### 테스트 완료 (15개 테스트)
+- **단위 테스트 7개** (`fixedJobPosting.test.ts`):
+  - 조회수 증가 성공 케이스
+  - Fire-and-forget 패턴 검증
+  - 에러 타입 분류 (permission, network, unknown)
+  - ViewCountService 인터페이스 구현 검증
+- **통합 테스트 8개** (`fixedJobPosting.test.ts`):
+  - Firestore increment() 원자적 연산 검증
+  - 동시성 처리 (concurrent calls) 안전성
+  - 네트워크 에러 처리
+  - 권한 에러 처리
+
+#### 기술 지표
+- TypeScript 에러: 0개 (strict mode 100% 준수)
+- ESLint 경고: 0개 (고정공고 관련)
+- 프로덕션 빌드: 성공 ✅
+- 테스트: 15개 통과 (단위 7개 + 통합 8개)
+- 다크모드: 100% 적용 완료
+
+#### 구현된 파일
+- `src/types/jobPosting/services.ts` - Phase 4 서비스 타입 (CREATED)
+- `src/services/fixedJobPosting.ts` - 조회수 증가 서비스 (CREATED)
+- `src/__tests__/unit/fixedJobPosting.test.ts` - 단위 테스트 (CREATED)
+- `src/__tests__/integration/fixedJobPosting.test.ts` - 통합 테스트 (CREATED)
+- `src/__tests__/e2e/fixedJobDetail.spec.ts` - E2E 테스트 (CREATED)
+- `src/components/jobPosting/JobPostingDetailContent.tsx` - UI 추가 (MODIFIED)
+- `src/components/jobPosting/FixedJobCard.tsx` - 조회수 증가 통합 (MODIFIED)
+- `src/types/jobPosting/index.ts` - 타입 export 추가 (MODIFIED)
+- `firestore.rules` - viewCount 권한 추가 (MODIFIED)
+
+#### 배포 완료
+- ✅ Firestore Rules 배포 완료 (viewCount 증가 권한 추가)
+- ✅ 코드 품질 검증 완료 (TypeScript 0 에러, ESLint 0 경고)
+- ✅ 테스트 통과 (15개 테스트)
+
 ### 🔄 Zustand 마이그레이션 Phase 1-2: Context → Zustand 완전 마이그레이션 (2025-11-19)
 
 #### Context API 완전 제거

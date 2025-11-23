@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, isFixedJobPosting, FixedJobPosting, WorkSchedule, RoleWithCount } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
@@ -227,6 +227,52 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         )}
       </div>
 
+      {/* 고정공고 전용 섹션 (Phase 4) */}
+      {isFixedJobPosting(jobPosting) && jobPosting.fixedData && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          {/* 근무 조건 */}
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            🏢 근무 조건
+          </h4>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <label className="text-gray-600 dark:text-gray-400">주 출근일수</label>
+              <p className="text-gray-900 dark:text-gray-100 font-medium">
+                {jobPosting.fixedData.workSchedule.daysPerWeek}일
+              </p>
+            </div>
+            <div>
+              <label className="text-gray-600 dark:text-gray-400">근무시간</label>
+              <p className="text-gray-900 dark:text-gray-100 font-medium">
+                {jobPosting.fixedData.workSchedule.startTime} ~ {jobPosting.fixedData.workSchedule.endTime}
+              </p>
+            </div>
+          </div>
+
+          {/* 모집 역할 */}
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-2">
+            👥 모집 역할
+          </h4>
+
+          {jobPosting.fixedData.requiredRolesWithCount && jobPosting.fixedData.requiredRolesWithCount.length > 0 ? (
+            <ul className="space-y-2">
+              {jobPosting.fixedData.requiredRolesWithCount.map((roleItem, index) => (
+                <li key={index} className="flex justify-between text-sm">
+                  <span className="text-gray-700 dark:text-gray-300">{roleItem.name}</span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                    {roleItem.count}명
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              모집 역할이 없습니다
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 사전질문 */}
       {jobPosting.preQuestions && jobPosting.preQuestions.length > 0 && (

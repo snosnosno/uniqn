@@ -313,6 +313,12 @@ service cloud.firestore {
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
 
+      // Phase 4: 조회수 증가 권한 (로그인한 사용자는 누구나 조회수 증가 가능)
+      // fixedData.viewCount 필드만 변경되는 경우 허용
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fixedData']) &&
+        request.resource.data.fixedData.diff(resource.data.fixedData).affectedKeys().hasOnly(['viewCount']);
+
       // Admin can delete any job posting, Manager/Staff can delete their own
       allow delete: if (request.auth.token.role == 'admin') ||
         (hasValidRole() && request.auth.uid == resource.data.createdBy);

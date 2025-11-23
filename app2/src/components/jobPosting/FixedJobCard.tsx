@@ -1,5 +1,6 @@
 import React from 'react';
 import { FixedJobPosting } from '../../types/jobPosting/jobPosting';
+import { incrementViewCount } from '../../services/fixedJobPosting';
 
 export interface FixedJobCardProps {
   posting: FixedJobPosting;
@@ -45,6 +46,11 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
       if ((e.target as HTMLElement).tagName === 'BUTTON') {
         return;
       }
+
+      // Phase 4: 조회수 증가 (fire-and-forget, 모달 렌더링 전)
+      incrementViewCount(posting.id);
+
+      // 상세보기 모달 열기 (조회수 증가 실패와 무관하게 진행)
       onViewDetail(posting.id);
     };
 

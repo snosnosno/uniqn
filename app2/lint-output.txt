@@ -1,0 +1,528 @@
+
+> app@0.2.3 lint
+> eslint src --ext .ts,.tsx
+
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\integration\approvalWorkflow.test.ts
+  14:3  warning  'doc' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  15:3  warning  'getDoc' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  19:3  warning  'addDoc' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  20:3  warning  'updateDoc' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\integration\dateFilterMigration.test.tsx
+  18:10  warning  'useDateFilter' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\mocks\firebase.ts
+  113:40  warning  'db' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\jobPosting\ApprovalModal.test.tsx
+  137:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  137:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  151:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  151:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  166:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  166:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  181:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  181:29  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  204:56  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  204:56  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  208:9   error    Avoid calling `expect` conditionally`                                                                jest/no-conditional-expect
+  215:24  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  215:34  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  215:34  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  218:9   error    Avoid calling `expect` conditionally`                                                                jest/no-conditional-expect
+  244:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  244:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  244:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  248:24  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  248:34  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  248:34  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\jobPosting\DateSlider.test.tsx
+   17:3   warning  Useless constructor                                                                                  @typescript-eslint/no-useless-constructor
+   61:23  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+   61:33  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   61:33  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  205:31  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  205:41  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  205:41  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  237:23  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  237:33  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  237:33  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\jobPosting\FixedPostingBadge.test.tsx
+   49:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+   49:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   49:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   97:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+   97:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   97:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  105:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  105:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  105:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  131:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  131:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  131:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  171:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  171:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  171:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  174:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  174:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  174:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  182:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  182:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  182:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  185:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  185:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  185:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  193:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  193:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  193:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  196:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  196:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  196:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  208:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  208:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  208:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  219:14  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  219:24  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  227:14  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  227:24  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  235:14  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  235:24  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  243:14  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  243:24  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\jobPosting\JobPostingCard.test.tsx
+   82:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+   82:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+   82:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+   90:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+   90:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+   90:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+   98:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+   98:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+   98:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  106:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  106:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  106:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  116:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  116:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  116:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  124:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  124:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  124:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  132:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  132:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  132:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  150:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  150:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  150:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  169:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  169:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  169:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  179:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  179:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  179:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  216:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  216:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  216:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  225:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  225:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  225:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  233:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  233:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  233:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  241:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  241:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  241:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  249:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  249:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  249:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  257:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  257:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  257:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  265:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  265:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  265:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  273:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  273:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  273:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  282:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  282:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  282:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  291:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  291:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  291:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  298:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  298:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  298:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  305:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  305:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  305:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  332:20  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"             testing-library/no-container
+  332:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  332:30  warning  Avoid direct Node access. Prefer using the methods from Testing Library                                         testing-library/no-node-access
+  487:34  warning  'post' is defined but never used. Allowed unused args must match /^_/u                                          @typescript-eslint/no-unused-vars
+  572:34  warning  'post' is defined but never used. Allowed unused args must match /^_/u                                          @typescript-eslint/no-unused-vars
+  574:11  warning  The element button has an implicit role of button. Defining this explicitly is redundant and should be avoided  jsx-a11y/no-redundant-roles
+  591:34  warning  'post' is defined but never used. Allowed unused args must match /^_/u                                          @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\jobPosting\TournamentStatusBadge.test.tsx
+   30:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+   30:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   30:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   61:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+   61:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   61:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   94:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+   94:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+   94:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  111:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  111:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  111:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  125:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  125:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  125:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  140:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  140:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  140:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  156:21  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  156:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  156:31  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\notifications\NotificationDropdown.accessibility.test.tsx
+   13:26  warning  'within' is defined but never used. Allowed unused vars must match /^_/u                             @typescript-eslint/no-unused-vars
+   17:38  warning  'mockNotifications' is defined but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+   52:31  warning  'type' is defined but never used. Allowed unused args must match /^_/u                               @typescript-eslint/no-unused-vars
+   87:15  warning  'container' is assigned a value but never used. Allowed unused vars must match /^_/u                 @typescript-eslint/no-unused-vars
+  103:24  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  103:34  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  103:34  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  260:39  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+  260:39  warning  Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\notifications\NotificationDropdown.interaction.test.tsx
+  51:31  warning  'type' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  56:40  warning  'relatedId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\__tests__\unit\components\notifications\NotificationDropdown.test.tsx
+  282:15  warning  'container' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\announcements\AnnouncementDetailModal.tsx
+  39:11  warning  't' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\announcements\CreateAnnouncementModal.tsx
+  38:11  warning  't' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\applicants\ApplicantListTab\hooks\__tests__\useApplicantActions.test.ts
+  8:22  warning  'waitFor' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\consent\ConsentManager.tsx
+  223:6  warning  React Hook useCallback has a missing dependency: 'consents.userId'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\jobPosting\JobPostingFormOld.tsx
+    1:17  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+    1:27  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+    7:87  warning  'PostingType' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   17:10  warning  'calculateChipCost' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   18:10  warning  'notifyChipDeduction' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  227:30  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  228:29  warning  'fixedConfig' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  228:42  warning  'urgentConfig' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  262:30  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  263:29  warning  'fixedConfig' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  263:42  warning  'tournamentConfig' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  340:32  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  380:32  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  421:32  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\jobPosting\JobPostingForm\sections\SalarySection\RoleSalaryManager.tsx
+  49:28  warning  'value' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\jobPosting\JobPostingForm\sections\SalarySection\index.tsx
+  57:10  warning  'calculateChipCost' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  57:29  warning  'formatChipCost' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\jobPosting\_backup_JobPostingForm_old.tsx
+    1:17  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+    1:27  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+    7:87  warning  'PostingType' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   17:10  warning  'calculateChipCost' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   18:10  warning  'notifyChipDeduction' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  227:30  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  228:29  warning  'fixedConfig' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  228:42  warning  'urgentConfig' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  262:30  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  263:29  warning  'fixedConfig' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  263:42  warning  'tournamentConfig' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  340:32  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  380:32  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+  421:32  warning  'e' is defined but never used. Allowed unused args must match /^_/u                          @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\components\settings\ConsentSettings.tsx
+  38:5  warning  'hasRequiredConsents' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\config\notificationConfig.ts
+  42:13  warning  'relatedId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\contexts\__tests__\AuthContext.test.tsx
+    7:8  warning  'React' is defined but never used. Allowed unused vars must match /^_/u                                                             @typescript-eslint/no-unused-vars
+   11:1  error    Mocks should not be manually imported from a __mocks__ directory. Instead use `jest.mock` and import from the original module path  jest/no-mocks-import
+   12:1  error    Mocks should not be manually imported from a __mocks__ directory. Instead use `jest.mock` and import from the original module path  jest/no-mocks-import
+   13:1  error    Mocks should not be manually imported from a __mocks__ directory. Instead use `jest.mock` and import from the original module path  jest/no-mocks-import
+  181:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+  244:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+  264:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+  284:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+  387:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+  388:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+  543:7  error    Avoid using multiple assertions within `waitFor` callback                                                                           testing-library/no-wait-for-multiple-assertions
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\contexts\__tests__\__mocks__\test-firestore.ts
+  7:24  warning  'collectionName' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  8:41  warning  'errorCallback' is defined but never used. Allowed unused args must match /^_/u   @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\__tests__\useNotifications.test.ts
+   14:3   warning  'mockCollection' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+   15:3   warning  'mockQuery' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   16:3   warning  'mockWhere' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   17:3   warning  'mockOrderBy' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   18:3   warning  'mockLimit' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   22:3   warning  'triggerSnapshot' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+   27:3   warning  'notificationFactories' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   97:70  warning  'onError' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  173:72  warning  'onError' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  218:72  warning  'onError' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  277:72  warning  'onError' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  343:72  warning  'onError' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  373:72  warning  'onError' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\firestore\__tests__\useFirestoreCollection.test.ts
+  14:10  warning  'collection' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  14:22  warning  'query' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\firestore\__tests__\useFirestoreMutation.test.ts
+  13:22  warning  'waitFor' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\firestore\__tests__\useFirestoreQuery.test.ts
+  380:9  error  Avoid calling `expect` conditionally`  jest/no-conditional-expect
+  381:9  error  Avoid calling `expect` conditionally`  jest/no-conditional-expect
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\firestore\useFirestoreCollection.ts
+   26:3  warning  'QueryConstraint' is defined but never used. Allowed unused vars must match /^_/u                                                                        @typescript-eslint/no-unused-vars
+   93:6  warning  React Hook useCallback has an unnecessary dependency: 'collectionPath'. Either exclude it or remove the dependency array                                 react-hooks/exhaustive-deps
+  163:6  warning  React Hook useEffect has a missing dependency: 'queryConstraints'. Either include it or remove the dependency array                                      react-hooks/exhaustive-deps
+  167:5  warning  React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies  react-hooks/exhaustive-deps
+  168:5  warning  React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\firestore\useFirestoreDocument.ts
+  201:5  warning  React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\firestore\useFirestoreQuery.ts
+  165:5  warning  React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\staff\useStaffActions.ts
+  25:10  warning  'createWorkLogId' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\tables\utils\participantMover.ts
+  22:10  warning  'getActualTournamentId' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useAccountDeletion.ts
+  88:6  warning  React Hook useMemo has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useAttendanceStatus.ts
+  1:20  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useCEODashboardOptimized.ts
+  220:6  warning  React Hook useCallback has a missing dependency: 'workLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  517:6  warning  React Hook useEffect has a missing dependency: 'workLogs'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useConsent.ts
+  12:10  warning  'db' is defined but never used. Allowed unused vars must match /^_/u                                          @typescript-eslint/no-unused-vars
+  20:3   warning  'getConsent' is defined but never used. Allowed unused vars must match /^_/u                                  @typescript-eslint/no-unused-vars
+  75:6   warning  React Hook useMemo has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useDevTools.ts
+  35:6  warning  React Hook useCallback has an unnecessary dependency: 'state.isOpen'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useEventService.ts
+  249:6  warning  React Hook useEffect has a missing dependency: 'refresh'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useGroupByDate.ts
+  85:6  warning  React Hook useEffect has missing dependencies: 'data' and 'getDateKey'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useJobPostingForm.ts
+   12:3   warning  'PreQuestion' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   14:3   warning  'TimeSlot' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+   15:3   warning  'RoleRequirement' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+   17:10  warning  'Timestamp' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  115:17  warning  'preQuestions' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useJobPostingOperations.ts
+  13:10  warning  'ScheduleEvent' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useNotificationSettings.ts
+  97:6  warning  React Hook useMemo has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useParticipants.ts
+  17:10  warning  'safeOnSnapshot' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useScheduleData\index.ts
+   13:10  warning  'calculatePayroll' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  330:13  warning  'allowancesResult' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useSecuritySettings.ts
+  84:6  warning  React Hook useMemo has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useShiftSchedule.ts
+  226:6  warning  React Hook useMemo has a missing dependency: 'schedule'. Either include it or remove the dependency array                  react-hooks/exhaustive-deps
+  235:6  warning  React Hook useMemo has a missing dependency: 'schedule'. Either include it or remove the dependency array                  react-hooks/exhaustive-deps
+  273:6  warning  React Hook useMemo has missing dependencies: 'dealers' and 'schedule'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useStaffManagement.ts
+  271:6  warning  React Hook useCallback has unnecessary dependencies: 'showError', 'showSuccess', and 't'. Either exclude them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useStaffWorkData.ts
+   75:9  warning  The 'workLogs' logical expression could make the dependencies of useMemo Hook (at line 96) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'workLogs' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  312:6  warning  React Hook useMemo has missing dependencies: 'endDate' and 'startDate'. Either include them or remove the dependency array                                                                                                              react-hooks/exhaustive-deps
+  352:6  warning  React Hook useMemo has missing dependencies: 'endDate' and 'startDate'. Either include them or remove the dependency array                                                                                                              react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useSystemAnnouncements.ts
+  173:6  warning  React Hook useMemo has a missing dependency: 'convertTimestamp'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useTournamentList.ts
+  1:10  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useTournaments.ts
+  1:10  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useUnifiedData.ts
+   27:10  warning  'Timestamp' is defined but never used. Allowed unused vars must match /^_/u                                                                                                              @typescript-eslint/no-unused-vars
+   51:5   warning  'getApplicationsByEventId' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                      @typescript-eslint/no-unused-vars
+  479:5   warning  'attendanceRecordsMap' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                          @typescript-eslint/no-unused-vars
+  574:27  warning  'applicationsMap' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                               @typescript-eslint/no-unused-vars
+  847:9   warning  The 'finalOptions' object makes the dependencies of useMemo Hook (at line 907) change on every render. To fix this, wrap the initialization of 'finalOptions' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\hooks\useUnifiedWorkLogs.ts
+    1:20  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u                                   @typescript-eslint/no-unused-vars
+    1:44  warning  'useRef' is defined but never used. Allowed unused vars must match /^_/u                                      @typescript-eslint/no-unused-vars
+    6:3   warning  'onSnapshot' is defined but never used. Allowed unused vars must match /^_/u                                  @typescript-eslint/no-unused-vars
+   11:3   warning  'Unsubscribe' is defined but never used. Allowed unused vars must match /^_/u                                 @typescript-eslint/no-unused-vars
+  144:6   warning  React Hook useMemo has a missing dependency: 'initialSort'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\JobBoard\hooks\useJobBoard.ts
+  414:13  warning  'newApplication' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\MySchedulePage\components\ScheduleDetailModal\index.tsx
+  300:6  warning  React Hook useCallback has a missing dependency: 'getTargetWorkLog'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\MySchedulePage\index.tsx
+  337:3  warning  React Hook useMemo has a missing dependency: 'schedules'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\ParticipantsPage.tsx
+  4:27  warning  'runTransaction' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\SupportPage.tsx
+  210:6  warning  React Hook useEffect has a missing dependency: 'showError'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\admin\InquiryManagementPage.tsx
+  113:6  warning  React Hook useEffect has a missing dependency: 'showError'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\pages\admin\UserManagementPage.tsx
+  56:6  warning  React Hook useEffect has a missing dependency: 'error'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\schemas\jobPosting\preQuestions.schema.ts
+  10:25  warning  'validateArrayNoXss' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\services\accountDeletionService.ts
+  42:3  warning  'DeletionStatus' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  43:3  warning  'calculateDeletionDate' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\services\consentService.ts
+  27:3  warning  'PermissionError' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  35:3  warning  'CURRENT_TERMS_VERSION' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  36:3  warning  'CURRENT_PRIVACY_VERSION' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\setupTests.ts
+  41:5  warning  Useless constructor  @typescript-eslint/no-useless-constructor
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\stores\__tests__\dateFilterStore.test.ts
+   11:27  warning  'waitFor' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+   21:24  error    Forbidden usage of `render` within testing framework `beforeEach` setup           testing-library/no-render-in-setup
+  218:13  warning  'today' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\stores\__tests__\unifiedDataStore.benchmark.test.ts
+   28:24  error  Forbidden usage of `render` within testing framework `beforeEach` setup  testing-library/no-render-in-setup
+   64:7   error  Unexpected console statement                                             no-console
+   92:7   error  Unexpected console statement                                             no-console
+  125:7   error  Unexpected console statement                                             no-console
+  171:7   error  Unexpected console statement                                             no-console
+  172:7   error  Unexpected console statement                                             no-console
+  173:7   error  Unexpected console statement                                             no-console
+  174:7   error  Unexpected console statement                                             no-console
+  220:7   error  Unexpected console statement                                             no-console
+  221:7   error  Unexpected console statement                                             no-console
+  222:7   error  Unexpected console statement                                             no-console
+  223:7   error  Unexpected console statement                                             no-console
+  262:7   error  Unexpected console statement                                             no-console
+  310:7   error  Unexpected console statement                                             no-console
+  346:7   error  Unexpected console statement                                             no-console
+  347:7   error  Unexpected console statement                                             no-console
+  397:7   error  Unexpected console statement                                             no-console
+  427:7   error  Unexpected console statement                                             no-console
+  428:7   error  Unexpected console statement                                             no-console
+  429:7   error  Unexpected console statement                                             no-console
+  430:7   error  Unexpected console statement                                             no-console
+  460:7   error  Unexpected console statement                                             no-console
+  468:7   error  Unexpected console statement                                             no-console
+  469:7   error  Unexpected console statement                                             no-console
+  470:7   error  Unexpected console statement                                             no-console
+  472:7   error  Unexpected console statement                                             no-console
+  473:7   error  Unexpected console statement                                             no-console
+  474:7   error  Unexpected console statement                                             no-console
+  475:7   error  Unexpected console statement                                             no-console
+  476:7   error  Unexpected console statement                                             no-console
+  477:7   error  Unexpected console statement                                             no-console
+  478:7   error  Unexpected console statement                                             no-console
+  480:7   error  Unexpected console statement                                             no-console
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\stores\__tests__\unifiedDataStore.integration.test.ts
+   46:24  error  Forbidden usage of `render` within testing framework `beforeEach` setup  testing-library/no-render-in-setup
+  104:9   error  Avoid using multiple assertions within `waitFor` callback                testing-library/no-wait-for-multiple-assertions
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\stores\__tests__\unifiedDataStore.performance.test.ts
+   29:24  error  Forbidden usage of `render` within testing framework `beforeEach` setup  testing-library/no-render-in-setup
+  381:7   error  Unexpected console statement                                             no-console
+  382:7   error  Unexpected console statement                                             no-console
+  383:7   error  Unexpected console statement                                             no-console
+  437:7   error  Unexpected console statement                                             no-console
+  438:7   error  Unexpected console statement                                             no-console
+  439:7   error  Unexpected console statement                                             no-console
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\stores\__tests__\unifiedDataStore.test.ts
+  17:22  warning  'WorkLog' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  17:31  warning  'Application' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  29:24  error    Forbidden usage of `render` within testing framework `beforeEach` setup        testing-library/no-render-in-setup
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\types\jobPosting\dateRequirementsProps.ts
+  7:24  warning  'ValidationState' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\utils\__tests__\dateUtils.test.ts
+  257:11  error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+  295:9   error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+  296:9   error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+  297:9   error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+  299:9   error  Illegal usage of `fail`, prefer throwing an error, or the `done.fail` callback  jest/no-jasmine-globals
+  336:9   error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+  339:9   error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+  356:9   error  Avoid calling `expect` conditionally`                                           jest/no-conditional-expect
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\utils\__tests__\emailValidator.test.ts
+  22:8  warning  'EmailValidationResult' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\user\Desktop\T-HOLDEM\app2\src\utils\workLogMapper.ts
+  13:10  warning  'parseTimeSlot' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 375 problems (118 errors, 257 warnings)
+
