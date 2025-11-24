@@ -40,6 +40,18 @@ export const jobPostingFormSchema = basicInfoSchema
       dateSpecificRequirements: z
         .array(dateSpecificRequirementSchema)
         .optional()
+        .default([]),
+      // 고정공고 근무일정 필드
+      workSchedule: workScheduleSchema.optional(),
+      requiredRolesWithCount: z
+        .array(
+          z.object({
+            id: z.string(),
+            role: z.string(),
+            count: z.number()
+          })
+        )
+        .optional()
         .default([])
     })
   )
@@ -84,6 +96,19 @@ export const jobPostingFormSchema = basicInfoSchema
     {
       message: '긴급 공고는 오늘부터 최대 7일 이내의 날짜만 가능합니다',
       path: ['dateSpecificRequirements']
+    }
+  )
+  .refine(
+    (data) => {
+      // 고정공고일 때 requiredRolesWithCount 필수 검증
+      if (data.postingType === 'fixed') {
+        return data.requiredRolesWithCount && data.requiredRolesWithCount.length > 0;
+      }
+      return true;
+    },
+    {
+      message: '최소 1개 이상의 역할을 추가해주세요',
+      path: ['requiredRolesWithCount']
     }
   );
 

@@ -8,13 +8,18 @@ import { timestampToLocalDateString } from '../../utils/dateUtils';
 interface JobPostingDetailContentProps {
   jobPosting: JobPosting;
   hideTitle?: boolean; // 제목과 뱃지를 숨길지 여부
+  hideScheduleInfo?: boolean; // 고정공고의 기간 및 모집 시간대 정보를 숨길지 여부
 }
 
 /**
  * 구인공고 상세 정보 컨텐츠 컴포넌트
  * JobDetailModal과 JobPostingDetailPage에서 공통으로 사용
  */
-const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPosting, hideTitle = false }) => {
+const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
+  jobPosting,
+  hideTitle = false,
+  hideScheduleInfo = false
+}) => {
   const { t } = useTranslation();
 
 
@@ -74,10 +79,13 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         )}
         
         <div className="space-y-2 text-sm text-gray-900 dark:text-gray-100">
-          <p className="flex items-center">
-            <span className="font-medium w-20">기간:</span>
-            <span>📅 {dateRangeDisplay}</span>
-          </p>
+          {/* 고정공고에서는 기간 정보 숨기기 */}
+          {!hideScheduleInfo && (
+            <p className="flex items-center">
+              <span className="font-medium w-20">기간:</span>
+              <span>📅 {dateRangeDisplay}</span>
+            </p>
+          )}
           <p className="flex items-center">
             <span className="font-medium w-20">지역:</span>
             <span>📍 {jobPosting.location}</span>
@@ -157,12 +165,13 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
         </div>
       )}
 
-      {/* 시간대 및 역할 정보 */}
-      <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">⏰ 모집 시간대 및 역할</h4>
-        
-        {/* 일자별 인원 요구사항 표시 */}
-        {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
+      {/* 시간대 및 역할 정보 - 고정공고에서는 숨기기 */}
+      {!hideScheduleInfo && (
+        <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">⏰ 모집 시간대 및 역할</h4>
+
+          {/* 일자별 인원 요구사항 표시 */}
+          {jobPosting.dateSpecificRequirements && jobPosting.dateSpecificRequirements.length > 0 ? (
           <div className="space-y-4">
             {jobPosting.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => {
               // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
@@ -219,13 +228,14 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({ jobPo
               );
             })}
           </div>
-        ) : (
-          /* 날짜별 요구사항이 없는 경우 */
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            모집 시간대 정보가 없습니다.
-          </div>
-        )}
-      </div>
+          ) : (
+            /* 날짜별 요구사항이 없는 경우 */
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              모집 시간대 정보가 없습니다.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 고정공고 전용 섹션 (Phase 4) */}
       {isFixedJobPosting(jobPosting) && jobPosting.fixedData && (

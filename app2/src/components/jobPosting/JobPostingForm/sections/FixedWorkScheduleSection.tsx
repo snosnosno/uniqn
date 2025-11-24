@@ -188,10 +188,10 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
             + 역할 추가
           </button>
 
-          {/* T022: 빈 상태 메시지 */}
+          {/* T022: 빈 상태 메시지 (에러 스타일) */}
           {data.requiredRolesWithCount.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              역할을 추가해주세요.
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+              ⚠️ 최소 1개 이상의 역할을 추가해주세요 (필수)
             </p>
           )}
         </div>

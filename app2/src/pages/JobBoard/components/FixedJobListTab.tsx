@@ -1,10 +1,17 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useFixedJobPostings } from '../../../hooks/useFixedJobPostings';
 import { FixedJobCard } from '../../../components/jobPosting/FixedJobCard';
 import { FixedJobPosting } from '../../../types/jobPosting/jobPosting';
 import JobPostingSkeleton from '../../../components/JobPostingSkeleton';
+import JobDetailModal from './JobDetailModal';
+import ApplyModal from './ApplyModal';
 import { logger } from '../../../utils/logger';
+import { Assignment } from '../../../types/application';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { useToast } from '../../../stores/toastStore';
+import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { db } from '../../../firebase';
 
 /**
  * 고정공고 목록 탭 컴포넌트
@@ -12,11 +19,20 @@ import { logger } from '../../../utils/logger';
  * 무한 스크롤 지원, 다크모드 완전 적용
  */
 const FixedJobListTab: React.FC = () => {
-  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { t } = useTranslation();
+  const { showSuccess, showError, showWarning } = useToast();
   const { postings, loading, error, hasMore, loadMore } = useFixedJobPostings();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // 모달 상태 관리
+  const [selectedPosting, setSelectedPosting] = useState<FixedJobPosting | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // 지원하기 핸들러 (메모이제이션)
   const handleApply = useCallback((posting: FixedJobPosting) => {
@@ -24,17 +40,123 @@ const FixedJobListTab: React.FC = () => {
       postingId: posting.id,
       component: 'FixedJobListTab',
     });
-    navigate(`/apply/${posting.id}`);
-  }, [navigate]);
+    setSelectedPosting(posting);
+    setIsApplyModalOpen(true);
+    setSelectedAssignments([]);
+  }, []);
 
-  // 상세보기 핸들러 (메모이제이션)
+  // 상세보기 핸들러 (메모이제이션) - 모달 열기
   const handleViewDetail = useCallback((postingId: string) => {
     logger.info('FixedJobListTab: 상세보기 클릭', {
       postingId,
       component: 'FixedJobListTab',
     });
-    navigate(`/job-postings/${postingId}`);
-  }, [navigate]);
+    const posting = postings.find(p => p.id === postingId);
+    if (posting) {
+      setSelectedPosting(posting);
+      setIsDetailModalOpen(true);
+    }
+  }, [postings]);
+
+  // Assignment 변경 핸들러
+  const handleAssignmentChange = useCallback((assignment: Assignment, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedAssignments(prev => [...prev, assignment]);
+    } else {
+      setSelectedAssignments(prev => prev.filter(item =>
+        !(item.timeSlot === assignment.timeSlot &&
+          item.role === assignment.role &&
+          JSON.stringify(item.dates?.sort()) === JSON.stringify(assignment.dates?.sort()))
+      ));
+    }
+  }, []);
+
+  // 지원 제출 핸들러
+  const handleSubmitApplication = useCallback(async () => {
+    if (!currentUser) {
+      showError(t('jobBoard.alerts.loginRequired'));
+      return;
+    }
+    if (!selectedPosting || selectedAssignments.length === 0) {
+      showWarning('최소 1개 이상의 시간대/역할을 선택해주세요.');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const staffDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (!staffDoc.exists()) {
+        showError(t('jobBoard.alerts.profileNotFound'));
+        return;
+      }
+
+      // 그룹 선택 통합 처리
+      const groupedAssignments = new Map<string, Assignment[]>();
+
+      selectedAssignments.forEach(item => {
+        const dates = item.dates && item.dates.length > 0 ? item.dates : [];
+        const groupKey = `${item.timeSlot}__${JSON.stringify(dates.sort())}`;
+
+        if (!groupedAssignments.has(groupKey)) {
+          groupedAssignments.set(groupKey, []);
+        }
+        groupedAssignments.get(groupKey)!.push(item);
+      });
+
+      const assignments = Array.from(groupedAssignments.entries()).map(([_groupKey, items]) => {
+        if (!items.length) return null;
+
+        const firstItem = items[0]!;
+        const dates = firstItem.dates && firstItem.dates.length > 0 ? firstItem.dates : [];
+        const isGroupSelection = items.length > 1;
+
+        if (isGroupSelection) {
+          const roles = items.map(item => item.role).filter((role): role is string => Boolean(role));
+
+          return {
+            roles: roles,
+            timeSlot: firstItem.timeSlot,
+            dates: dates,
+            checkMethod: 'group' as const,
+            isGrouped: true,
+            groupId: firstItem.groupId || `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            ...(firstItem.duration && { duration: firstItem.duration })
+          };
+        } else {
+          return {
+            role: firstItem.role,
+            timeSlot: firstItem.timeSlot,
+            dates: dates,
+            checkMethod: 'individual' as const,
+            isGrouped: false,
+            ...(firstItem.duration && { duration: firstItem.duration })
+          };
+        }
+      }).filter(Boolean);
+
+      await addDoc(collection(db, 'applications'), {
+        applicantId: currentUser.uid,
+        applicantEmail: currentUser.email,
+        eventId: selectedPosting.id,
+        postTitle: selectedPosting.title,
+        assignments: assignments,
+        status: 'pending',
+        appliedAt: Timestamp.now(),
+        recruitmentType: 'fixed',
+        fixedData: selectedPosting.fixedData || null
+      });
+
+      showSuccess(t('jobBoard.alerts.applicationSubmitted'));
+      setIsApplyModalOpen(false);
+      setSelectedPosting(null);
+      setSelectedAssignments([]);
+    } catch (err) {
+      logger.error('지원 제출 오류:', err as Error);
+      showError('지원서 제출 중 오류가 발생했습니다.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [currentUser, selectedPosting, selectedAssignments, t]);
 
   // 무한 스크롤 IntersectionObserver 설정
   useEffect(() => {
@@ -185,6 +307,33 @@ const FixedJobListTab: React.FC = () => {
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
           모든 공고를 확인했습니다.
         </p>
+      )}
+
+      {/* 상세보기 모달 */}
+      <JobDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedPosting(null);
+        }}
+        jobPosting={selectedPosting}
+      />
+
+      {/* 지원하기 모달 */}
+      {selectedPosting && (
+        <ApplyModal
+          isOpen={isApplyModalOpen}
+          onClose={() => {
+            setIsApplyModalOpen(false);
+            setSelectedPosting(null);
+            setSelectedAssignments([]);
+          }}
+          jobPosting={selectedPosting}
+          selectedAssignments={selectedAssignments}
+          onAssignmentChange={handleAssignmentChange}
+          onApply={handleSubmitApplication}
+          isProcessing={isProcessing}
+        />
       )}
     </div>
   );

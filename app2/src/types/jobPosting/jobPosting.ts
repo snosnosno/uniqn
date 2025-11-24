@@ -205,6 +205,7 @@ export interface JobPosting {
    * 하위 호환성을 위해 유지되지만 향후 버전에서 제거될 예정입니다.
    */
   recruitmentType?: 'application' | 'fixed';
+  usesPreQuestions?: boolean;  // 사전질문 사용 여부
   preQuestions?: PreQuestion[];
 
   // 변경 사유 기록

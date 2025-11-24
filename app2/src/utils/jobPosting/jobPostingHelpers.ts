@@ -80,6 +80,7 @@ export const createInitialFormData = (): JobPostingFormData => {
     detailedAddress: '',
     district: '',
     contactPhone: '',
+    usesPreQuestions: false,  // 사전질문 사용 여부 기본값
     preQuestions: [],
     salaryType: 'hourly',
     salaryAmount: '',
@@ -90,7 +91,13 @@ export const createInitialFormData = (): JobPostingFormData => {
       startTime: '18:00',    // 기본값: 오후 6시
       endTime: '02:00'       // 기본값: 새벽 2시
     },
-    requiredRolesWithCount: []  // 빈 배열로 시작
+    requiredRolesWithCount: [
+      {
+        id: Date.now().toString(),  // 고유 ID
+        role: '딜러',               // 기본 역할
+        count: 1                    // 기본 인원 1명
+      }
+    ]
   };
 };
 
@@ -290,6 +297,7 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
       ...req,
       date: convertDate(req.date)
     })),
+    usesPreQuestions: data.usesPreQuestions ?? false,  // 기본값 false
     preQuestions: data.preQuestions,
     requiredRoles: data.requiredRoles,
     salaryType: data.salaryType || 'hourly',
