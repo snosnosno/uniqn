@@ -290,7 +290,12 @@ service cloud.firestore {
         // 타입별 config 검증
         (!('fixedConfig' in request.resource.data) || (request.resource.data.postingType == 'fixed' && validateFixedConfig(request.resource.data.fixedConfig))) &&
         (!('tournamentConfig' in request.resource.data) || (request.resource.data.postingType == 'tournament' && validateTournamentConfig(request.resource.data.tournamentConfig))) &&
-        (!('urgentConfig' in request.resource.data) || (request.resource.data.postingType == 'urgent' && validateUrgentConfig(request.resource.data.urgentConfig)));
+        (!('urgentConfig' in request.resource.data) || (request.resource.data.postingType == 'urgent' && validateUrgentConfig(request.resource.data.urgentConfig))) &&
+        // 고정공고 requiredRoles 동기화 검증 (v0.2.5 - 보안 강화)
+        (request.resource.data.postingType != 'fixed' ||
+         (!('fixedData' in request.resource.data) ||
+          (!('requiredRoles' in request.resource.data) ||
+           (request.resource.data.requiredRoles.size() == request.resource.data.fixedData.requiredRolesWithCount.size()))));
 
       // Admin can update any job posting, Manager/Staff can update their own
       // Tournament 승인은 admin만 가능
