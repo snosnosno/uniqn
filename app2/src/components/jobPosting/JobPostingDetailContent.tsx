@@ -144,11 +144,17 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
       )}
 
       {/* 복리후생 */}
-      {jobPosting.benefits && Object.keys(jobPosting.benefits).length > 0 && (
+      {jobPosting.benefits && (() => {
+        const validBenefits = Object.entries(jobPosting.benefits).filter(([_, value]) => {
+          // 값이 존재하고, 빈 문자열이 아니며, 공백만 있는 문자열도 아닌 경우만 표시
+          return value && typeof value === 'string' && value.trim() !== '';
+        });
+        return validBenefits.length > 0;
+      })() && (
         <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🎁 복리후생</h4>
           <div className="grid grid-cols-2 gap-2 text-sm text-gray-900 dark:text-gray-100">
-            {Object.entries(jobPosting.benefits).map(([key, value]) => (
+            {Object.entries(jobPosting.benefits).filter(([_, value]) => value && typeof value === 'string' && value.trim() !== '').map(([key, value]) => (
               <div key={key} className="flex">
                 <span className="font-medium min-w-[80px]">
                   {key === 'guaranteedHours' && '보장시간'}
@@ -264,21 +270,26 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           </div>
 
           {/* 모집 역할 */}
-          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-2">
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-3">
             👥 모집 역할
           </h4>
 
           {jobPosting.fixedData.requiredRolesWithCount && jobPosting.fixedData.requiredRolesWithCount.length > 0 ? (
-            <ul className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               {jobPosting.fixedData.requiredRolesWithCount.map((roleItem, index) => (
-                <li key={index} className="flex justify-between text-sm">
-                  <span className="text-gray-700 dark:text-gray-300">{roleItem.name}</span>
-                  <span className="text-gray-900 dark:text-gray-100 font-medium">
+                <div
+                  key={index}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {roleItem.name}
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {roleItem.count}명
                   </span>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400">
               모집 역할이 없습니다

@@ -822,7 +822,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               )}
               
               {/* 복리후생 */}
-              {post.benefits && Object.keys(post.benefits || {}).length > 0 && (
+              {post.benefits && (() => {
+                const benefits = getBenefitDisplayNames(post.benefits || {});
+                return benefits.length > 0;
+              })() && (
                 <div className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}>
                   <span className="flex items-start">
                     <span className="mr-2 mt-0.5">🎁</span>
@@ -832,7 +835,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                         const midPoint = Math.ceil(benefits.length / 2);
                         const firstLine = benefits.slice(0, midPoint);
                         const secondLine = benefits.slice(midPoint);
-                        
+
                         return (
                           <>
                             <div className="mb-0.5">

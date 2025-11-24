@@ -1,7 +1,7 @@
 import React from 'react';
 import { FixedJobPosting } from '../../types/jobPosting/jobPosting';
 import { incrementViewCount } from '../../services/fixedJobPosting';
-import { formatWorkTimeDisplay } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatWorkTimeDisplay, formatSalaryDisplay, getBenefitDisplayNames } from '../../utils/jobPosting/jobPostingHelpers';
 
 export interface FixedJobCardProps {
   posting: FixedJobPosting;
@@ -64,7 +64,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
     return (
       <div
         onClick={handleCardClick}
-        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm hover:shadow-md dark:hover:shadow-gray-900/50 transition-shadow cursor-pointer"
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm hover:shadow-md dark:hover:shadow-gray-900/50 transition-shadow cursor-pointer group relative"
         role="article"
         aria-label={`고정공고: ${posting.title}`}
       >
@@ -73,29 +73,49 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
           {posting.title}
         </h3>
 
+        {/* 지역 */}
+        {posting.location && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg" aria-hidden="true">📍</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              {posting.location}
+              {posting.district && ` (${posting.district})`}
+            </span>
+          </div>
+        )}
+
+        {/* 급여 */}
+        {posting.salaryType && posting.salaryAmount && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg" aria-hidden="true">💰</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              {formatSalaryDisplay(posting.salaryType, posting.salaryAmount)}
+            </span>
+          </div>
+        )}
+
+        {/* 복리후생 */}
+        {posting.benefits && Object.keys(posting.benefits).length > 0 && getBenefitDisplayNames(posting.benefits).length > 0 && (
+          <div className="flex items-start gap-2 mb-3">
+            <span className="text-lg mt-0.5" aria-hidden="true">🎁</span>
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              {getBenefitDisplayNames(posting.benefits).join(', ')}
+            </div>
+          </div>
+        )}
+
         {/* 근무 일정 */}
-        <div className="flex items-center gap-2 mb-4">
-          <svg
-            className="w-5 h-5 text-gray-500 dark:text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-lg" aria-hidden="true">📅</span>
           <span className="text-sm text-gray-600 dark:text-gray-300">{scheduleText}</span>
         </div>
 
         {/* 모집 역할 목록 */}
         <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">모집 역할</p>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg" aria-hidden="true">👥</span>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">모집 역할</p>
+          </div>
           <div className="flex flex-wrap gap-2">
             {requiredRolesWithCount.length > 0 ? (
               requiredRolesWithCount.map((role, index) => (
@@ -114,35 +134,57 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
           </div>
         </div>
 
-        {/* 하단: 조회수 & 지원하기 버튼 */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          {/* 조회수 */}
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-gray-500 dark:text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{viewCountText}</span>
+        {/* 하단: 조회수 & 상세보기 & 지원하기 버튼 */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+          {/* 왼쪽: 조회수 & 상세보기 안내 */}
+          <div className="flex items-center gap-3">
+            {/* 조회수 */}
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5 text-gray-500 dark:text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{viewCountText}</span>
+            </div>
+
+            {/* 상세보기 안내 */}
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full text-xs text-blue-700 dark:text-blue-300">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>클릭하여 상세보기</span>
+            </div>
           </div>
 
-          {/* 지원하기 버튼 */}
+          {/* 오른쪽: 지원하기 버튼 */}
           <button
             onClick={handleApplyClick}
             className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
