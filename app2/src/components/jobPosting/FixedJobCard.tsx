@@ -1,6 +1,7 @@
 import React from 'react';
 import { FixedJobPosting } from '../../types/jobPosting/jobPosting';
 import { incrementViewCount } from '../../services/fixedJobPosting';
+import { formatWorkTimeDisplay } from '../../utils/jobPosting/jobPostingHelpers';
 
 export interface FixedJobCardProps {
   posting: FixedJobPosting;
@@ -34,8 +35,8 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
       return null;
     }
 
-    // 근무 일정 텍스트
-    const scheduleText = `주 ${workSchedule.daysPerWeek}일 근무 · ${workSchedule.startTime} - ${workSchedule.endTime}`;
+    // 근무 일정 텍스트 (익일 자동 표시)
+    const scheduleText = `주 ${workSchedule.daysPerWeek}일 근무 · ${formatWorkTimeDisplay(workSchedule.startTime, workSchedule.endTime)}`;
 
     // 조회수 텍스트
     const viewCountText = `조회 ${viewCount.toLocaleString()}`;

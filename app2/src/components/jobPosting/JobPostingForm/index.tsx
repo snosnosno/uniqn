@@ -461,6 +461,24 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(({
           />
         </div>
 
+        {/* 검증 에러 표시 */}
+        {touchedFields && Object.keys(validationErrors).length > 0 && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+              ⚠️ 입력 내용을 확인해주세요
+            </h4>
+            <ul className="space-y-1">
+              {Object.entries(validationErrors).map(([key, error]) =>
+                error ? (
+                  <li key={key} className="text-sm text-red-600 dark:text-red-400">
+                    • {error}
+                  </li>
+                ) : null
+              )}
+            </ul>
+          </div>
+        )}
+
         {/* 제출 버튼 */}
         <div className="flex justify-end space-x-3">
           <Button

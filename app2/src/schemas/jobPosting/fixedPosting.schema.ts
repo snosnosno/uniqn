@@ -33,7 +33,7 @@ const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
  * 검증 규칙:
  * - daysPerWeek: 1-7일 (정수)
  * - startTime: HH:mm 형식, 24시간제
- * - endTime: HH:mm 형식, 24시간제, startTime보다 늦어야 함
+ * - endTime: HH:mm 형식, 24시간제 (startTime보다 늦으면 익일로 자동 계산)
  */
 export const workScheduleSchema = z
   .object({
@@ -70,6 +70,7 @@ export const workScheduleSchema = z
      * 근무 종료 시간
      * - HH:mm 형식 (24시간제)
      * - 예: "18:00", "22:30"
+     * - 시작시간보다 늦으면 익일로 자동 계산됨
      */
     endTime: z
       .string({
@@ -79,37 +80,7 @@ export const workScheduleSchema = z
       .regex(TIME_FORMAT_REGEX, {
         message: '근무 종료 시간은 HH:mm 형식이어야 합니다 (예: 18:00)'
       })
-  })
-  .refine(
-    (data) => {
-      // HH:mm 형식을 분(minutes) 단위로 변환하여 비교
-      const startParts = data.startTime.split(':');
-      const endParts = data.endTime.split(':');
-
-      // 안전한 타입 체크
-      if (startParts.length !== 2 || endParts.length !== 2) {
-        return false;
-      }
-
-      const startHour = Number(startParts[0]);
-      const startMin = Number(startParts[1]);
-      const endHour = Number(endParts[0]);
-      const endMin = Number(endParts[1]);
-
-      // NaN 체크
-      if (isNaN(startHour) || isNaN(startMin) || isNaN(endHour) || isNaN(endMin)) {
-        return false;
-      }
-
-      const startMinutes = startHour * 60 + startMin;
-      const endMinutes = endHour * 60 + endMin;
-      return endMinutes > startMinutes;
-    },
-    {
-      message: '근무 종료 시간은 시작 시간보다 늦어야 합니다',
-      path: ['endTime']
-    }
-  );
+  });
 
 /**
  * RoleWithCount 검증 스키마

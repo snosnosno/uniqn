@@ -467,10 +467,42 @@ export const formatRoleSalaryDisplay = (
  */
 export const formatRoleSalariesDisplay = (roleSalaries?: Record<string, any>): string => {
   if (!roleSalaries || Object.keys(roleSalaries).length === 0) return '';
-  
+
   return Object.entries(roleSalaries)
     .map(([role, salary]) => formatRoleSalaryDisplay(role, salary))
     .join(' | ');
+};
+
+/**
+ * 시작시간이 종료시간보다 늦은지 확인 (익일 근무 여부)
+ * @param startTime - "HH:MM" 형식의 시작시간
+ * @param endTime - "HH:MM" 형식의 종료시간
+ * @returns 익일 근무 여부
+ */
+export const isNextDayWork = (startTime: string, endTime: string): boolean => {
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+
+  const startMinutes = (startHour ?? 0) * 60 + (startMinute ?? 0);
+  const endMinutes = (endHour ?? 0) * 60 + (endMinute ?? 0);
+
+  return endMinutes <= startMinutes;
+};
+
+/**
+ * 근무시간 표시 문자열 생성 (익일 자동 표시)
+ * @param startTime - "HH:MM" 형식의 시작시간
+ * @param endTime - "HH:MM" 형식의 종료시간
+ * @returns "시작 ~ [익일] 종료" 형식의 문자열
+ * @example
+ * formatWorkTimeDisplay("09:00", "18:00") // "09:00 ~ 18:00"
+ * formatWorkTimeDisplay("18:00", "02:00") // "18:00 ~ 익일 02:00"
+ */
+export const formatWorkTimeDisplay = (startTime: string, endTime: string): string => {
+  const isNextDay = isNextDayWork(startTime, endTime);
+  return isNextDay
+    ? `${startTime} ~ 익일 ${endTime}`
+    : `${startTime} ~ ${endTime}`;
 };
 
 /**

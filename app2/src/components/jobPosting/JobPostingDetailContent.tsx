@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, isFixedJobPosting, FixedJobPosting, WorkSchedule, RoleWithCount } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, getRoleDisplayName, formatWorkTimeDisplay } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 
 interface JobPostingDetailContentProps {
@@ -255,7 +255,10 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
             <div>
               <label className="text-gray-600 dark:text-gray-400">근무시간</label>
               <p className="text-gray-900 dark:text-gray-100 font-medium">
-                {jobPosting.fixedData.workSchedule.startTime} ~ {jobPosting.fixedData.workSchedule.endTime}
+                {formatWorkTimeDisplay(
+                  jobPosting.fixedData.workSchedule.startTime,
+                  jobPosting.fixedData.workSchedule.endTime
+                )}
               </p>
             </div>
           </div>

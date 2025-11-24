@@ -100,19 +100,6 @@ const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(({
             onAddPreQuestionOption={handlers.onAddOption}
             onRemovePreQuestionOption={handlers.onRemoveOption}
           />
-
-          {/* 검증 에러 표시 */}
-          {validation?.touched && Object.keys(validation.errors).length > 0 && (
-            <div className="mt-2 space-y-1">
-              {Object.entries(validation.errors).map(([key, error]) =>
-                error ? (
-                  <p key={key} className="text-sm text-red-600 dark:text-red-400">
-                    {error}
-                  </p>
-                ) : null
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import type { FixedWorkScheduleSectionProps } from '../../../../types/jobPosting';
 import { STAFF_ROLES } from '../../../../types/jobPosting';
+import { isNextDayWork } from '../../../../utils/jobPosting/jobPostingHelpers';
 
 /**
  * 고정공고 근무일정 입력 섹션
@@ -18,6 +19,11 @@ import { STAFF_ROLES } from '../../../../types/jobPosting';
  */
 const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
   ({ data, handlers, validation }) => {
+    // ========== 익일 근무 여부 체크 ==========
+    const isNextDay = useMemo(() => {
+      return isNextDayWork(data.workSchedule.startTime, data.workSchedule.endTime);
+    }, [data.workSchedule.startTime, data.workSchedule.endTime]);
+
     // ========== 근무일정 핸들러 (T011-T013) ==========
 
     const handleDaysChange = useCallback(
@@ -159,6 +165,20 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
             </p>
           </div>
         </div>
+
+        {/* 익일 근무 표시 */}
+        {isNextDay && (
+          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-300 flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span>
+                익일 근무로 인식됩니다: <strong>{data.workSchedule.startTime} ~ 익일 {data.workSchedule.endTime}</strong>
+              </span>
+            </p>
+          </div>
+        )}
 
         {/* T022: 역할 목록 섹션 */}
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
