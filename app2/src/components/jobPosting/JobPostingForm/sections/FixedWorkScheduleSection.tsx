@@ -129,7 +129,8 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
               onChange={handleStartTimeChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                          bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                         focus:ring-2 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+                         focus:ring-2 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
+                         [color-scheme:light] dark:[color-scheme:dark]"
             />
           </div>
 
@@ -150,7 +151,8 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
               onChange={handleEndTimeChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                          bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                         focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+                         focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
+                         [color-scheme:light] dark:[color-scheme:dark]"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
               * 익일 새벽 시간도 입력 가능합니다 (예: 02:00)
