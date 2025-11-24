@@ -8,7 +8,7 @@
  */
 
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+// import { ProfilingIntegration } from '@sentry/profiling-node'; // 추후 프로파일링 필요 시 활성화
 import * as functions from 'firebase-functions';
 
 /**
@@ -27,34 +27,29 @@ export const initSentry = (): void => {
     dsn,
     environment: process.env.GCLOUD_PROJECT || 'development',
 
-    // 통합 기능
-    integrations: [
-      new ProfilingIntegration(),
-    ],
-
     // 성능 모니터링 샘플링 비율
     tracesSampleRate: 0.1, // 10%
-
-    // 프로파일링 샘플링 비율
-    profilesSampleRate: 0.1, // 10%
 
     // 민감 정보 필터링
     beforeSend(event) {
       // 환경변수에서 민감 정보 제거
       if (event.contexts?.runtime?.env) {
-        const filteredEnv = {} as Record<string, string>;
-        Object.keys(event.contexts.runtime.env).forEach((key) => {
+        const env = event.contexts.runtime.env as Record<string, any>;
+        const filteredEnv: Record<string, string> = {};
+
+        Object.keys(env).forEach((key) => {
           if (
             !key.toLowerCase().includes('secret') &&
             !key.toLowerCase().includes('key') &&
             !key.toLowerCase().includes('password') &&
             !key.toLowerCase().includes('token')
           ) {
-            filteredEnv[key] = event.contexts.runtime.env[key];
+            filteredEnv[key] = String(env[key]);
           } else {
             filteredEnv[key] = '[FILTERED]';
           }
         });
+
         event.contexts.runtime.env = filteredEnv;
       }
 
@@ -69,12 +64,15 @@ export const initSentry = (): void => {
           'ssn',
         ];
 
-        const filteredData = { ...event.request.data };
+        const requestData = event.request.data as Record<string, any>;
+        const filteredData: Record<string, any> = { ...requestData };
+
         sensitiveFields.forEach((field) => {
           if (filteredData[field]) {
             filteredData[field] = '[FILTERED]';
           }
         });
+
         event.request.data = filteredData;
       }
 
@@ -100,30 +98,22 @@ export const initSentry = (): void => {
  */
 export const wrapFunction = <T extends (...args: any[]) => any>(fn: T): T => {
   return ((...args: Parameters<T>) => {
-    return Sentry.startTransaction(
-      {
-        name: fn.name || 'anonymous',
-        op: 'function.cloud',
-      },
-      () => {
-        try {
-          const result = fn(...args);
+    try {
+      const result = fn(...args);
 
-          // Promise를 반환하는 경우
-          if (result && typeof result.then === 'function') {
-            return result.catch((error: Error) => {
-              Sentry.captureException(error);
-              throw error;
-            });
-          }
-
-          return result;
-        } catch (error) {
+      // Promise를 반환하는 경우
+      if (result && typeof result.then === 'function') {
+        return result.catch((error: Error) => {
           Sentry.captureException(error);
           throw error;
-        }
+        });
       }
-    );
+
+      return result;
+    } catch (error) {
+      Sentry.captureException(error);
+      throw error;
+    }
   }) as T;
 };
 
@@ -157,7 +147,7 @@ export const captureError = (
  */
 export const captureMessage = (
   message: string,
-  level: Sentry.SeverityLevel = 'info',
+  level: 'fatal' | 'error' | 'warning' | 'info' | 'debug' = 'info',
   context?: Record<string, unknown>
 ): void => {
   if (context) {
@@ -168,16 +158,21 @@ export const captureMessage = (
 };
 
 /**
- * 사용자 정보 설정
+ * 사용자 컨텍스트 설정
  *
  * @param userId 사용자 ID
- * @param email 사용자 이메일
+ * @param email 이메일
  */
-export const setSentryUser = (userId: string, email?: string): void => {
+export const setUserContext = (userId: string, email?: string): void => {
   Sentry.setUser({
     id: userId,
     email,
   });
 };
 
-export default Sentry;
+/**
+ * 사용자 컨텍스트 제거
+ */
+export const clearUserContext = (): void => {
+  Sentry.setUser(null);
+};

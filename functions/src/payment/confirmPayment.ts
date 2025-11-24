@@ -165,11 +165,54 @@ export const confirmPayment = functions.https.onCall(async (data: any, context: 
 
     if (!tossResponse.ok) {
       const errorData = await tossResponse.json();
+      const tossErrorCode = errorData.code || 'UNKNOWN_ERROR';
+      const tossErrorMessage = errorData.message || '알 수 없는 오류';
+
       functions.logger.error('토스페이먼츠 API 오류', {
         status: tossResponse.status,
+        code: tossErrorCode,
+        message: tossErrorMessage,
         error: errorData
       });
-      throw new functions.https.HttpsError('internal', '결제 승인 중 오류가 발생했습니다');
+
+      // 토스 에러 코드별 사용자 메시지 매핑
+      const errorMessages: Record<string, string> = {
+        'ALREADY_PROCESSED_PAYMENT': '이미 처리된 결제입니다',
+        'PROVIDER_ERROR': '결제 처리 중 오류가 발생했습니다',
+        'EXCEED_MAX_CARD_INSTALLMENT_PLAN': '할부 개월 수가 초과되었습니다',
+        'INVALID_REQUEST': '잘못된 결제 요청입니다',
+        'NOT_ALLOWED_POINT_USE': '포인트 사용이 불가능합니다',
+        'INVALID_API_KEY': '결제 시스템 설정 오류',
+        'INVALID_REJECT_CARD': '사용할 수 없는 카드입니다',
+        'BELOW_MINIMUM_AMOUNT': '최소 결제 금액 미만입니다',
+        'INVALID_CARD_EXPIRATION': '카드 유효기간이 만료되었습니다',
+        'INVALID_STOPPED_CARD': '정지된 카드입니다',
+        'EXCEED_MAX_DAILY_PAYMENT_COUNT': '일일 결제 한도를 초과했습니다',
+        'NOT_SUPPORTED_INSTALLMENT': '할부가 지원되지 않는 카드입니다',
+        'INVALID_CARD_INSTALLMENT_PLAN': '잘못된 할부 개월 수입니다',
+        'NOT_SUPPORTED_MONTHLY_INSTALLMENT_PLAN': '월 할부가 지원되지 않습니다',
+        'EXCEED_MAX_PAYMENT_AMOUNT': '최대 결제 금액을 초과했습니다',
+        'INVALID_CARD_LOST_OR_STOLEN': '분실 또는 도난 카드입니다',
+        'RESTRICTED_TRANSFER_ACCOUNT': '계좌 이체가 제한된 계좌입니다',
+        'INVALID_AUTHORIZE': '카드 인증에 실패했습니다',
+        'INVALID_CARD_NUMBER': '잘못된 카드 번호입니다',
+        'INVALID_UNREGISTERED_SUBMALL': '등록되지 않은 서브몰입니다',
+        'NOT_REGISTERED_BUSINESS': '등록되지 않은 사업자입니다',
+        'EXCEED_MAX_ONE_DAY_WITHDRAW_AMOUNT': '1일 출금 한도를 초과했습니다',
+        'EXCEED_MAX_ONE_TIME_WITHDRAW_AMOUNT': '1회 출금 한도를 초과했습니다',
+        'CARD_PROCESSING_ERROR': '카드사 처리 중 오류가 발생했습니다',
+        'EXCEED_MAX_AMOUNT': '거래 금액 한도를 초과했습니다',
+        'INVALID_ACCOUNT_INFO': '잘못된 계좌 정보입니다',
+        'ACCOUNT_VERIFICATION_FAILED': '계좌 인증에 실패했습니다',
+        'UNAUTHORIZED_KEY': '인증되지 않은 시크릿키입니다',
+      };
+
+      const userMessage = errorMessages[tossErrorCode] || '결제 승인 중 오류가 발생했습니다';
+
+      throw new functions.https.HttpsError('internal', userMessage, {
+        code: tossErrorCode,
+        details: tossErrorMessage,
+      });
     }
 
     const tossPaymentData = await tossResponse.json();

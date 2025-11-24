@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLogger } from './useLogger';
@@ -31,6 +31,12 @@ export const usePaymentHistory = (
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // options를 ref로 저장하여 안정적인 참조 유지
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options?.status, options?.startDate, options?.endDate]);
+
   useEffect(() => {
     if (!userId) {
       setTransactions([]);
@@ -43,6 +49,8 @@ export const usePaymentHistory = (
     setError(null);
 
     try {
+      const currentOptions = optionsRef.current;
+
       // Firestore 쿼리 구성
       const transactionsRef = collection(db, 'paymentTransactions');
       let q = query(
@@ -52,11 +60,11 @@ export const usePaymentHistory = (
       );
 
       // 상태 필터링
-      if (options?.status) {
+      if (currentOptions?.status) {
         q = query(
           transactionsRef,
           where('userId', '==', userId),
-          where('status', '==', options.status),
+          where('status', '==', currentOptions.status),
           orderBy('createdAt', 'desc')
         );
       }
@@ -80,13 +88,14 @@ export const usePaymentHistory = (
 
           // 날짜 범위 필터링 (클라이언트 사이드)
           let filteredData = data;
-          if (options?.startDate) {
+          const currentOptions = optionsRef.current;
+          if (currentOptions?.startDate) {
             filteredData = filteredData.filter(
-              (tx) => tx.createdAt.toDate() >= options.startDate!
+              (tx) => tx.createdAt.toDate() >= currentOptions.startDate!
             );
           }
-          if (options?.endDate) {
-            const endOfDay = new Date(options.endDate);
+          if (currentOptions?.endDate) {
+            const endOfDay = new Date(currentOptions.endDate);
             endOfDay.setHours(23, 59, 59, 999);
             filteredData = filteredData.filter(
               (tx) => tx.createdAt.toDate() <= endOfDay
@@ -129,8 +138,7 @@ export const usePaymentHistory = (
       setIsLoading(false);
       return undefined;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, options?.status, options?.startDate, options?.endDate]);
+  }, [userId, options?.status, options?.startDate, options?.endDate, logger]);
 
   // 통계 계산
   const statistics = useMemo(() => {

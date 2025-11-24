@@ -87,8 +87,7 @@ export const useChipBalance = () => {
     return () => {
       unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser, logger]);
 
   /**
    * 최근 거래 내역 조회
@@ -149,8 +148,7 @@ export const useChipBalance = () => {
     if (currentUser) {
       fetchRecentTransactions();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser, fetchRecentTransactions]);
 
   /**
    * 칩 사용 가능 여부 확인

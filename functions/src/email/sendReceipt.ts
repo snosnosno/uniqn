@@ -82,13 +82,13 @@ export const sendReceiptEmail = functions
         );
       }
 
-      // 5. 영수증 HTML 생성
-      const receiptHTML = generateReceiptEmailHTML({
-        ...transaction,
-        customerName: userData?.name || '고객',
-        customerEmail: userEmail,
-        customerPhone: userData?.phone,
-      });
+      // 5. 영수증 HTML 생성 (추후 이메일 발송 시 사용)
+      // const receiptHTML = generateReceiptEmailHTML({
+      //   ...transaction,
+      //   customerName: userData?.name || '고객',
+      //   customerEmail: userEmail,
+      //   customerPhone: userData?.phone,
+      // });
 
       // 6. 이메일 발송 (실제 구현 시 SendGrid 또는 Nodemailer 사용)
       // 현재는 로그만 출력
@@ -175,25 +175,24 @@ async function getTransactionData(
   return null;
 }
 
-/**
- * 영수증 타입 이름 반환
- */
-function getReceiptTypeName(type: string): string {
-  switch (type) {
-    case 'payment':
-      return '결제 영수증';
-    case 'subscription':
-      return '구독 결제 영수증';
-    case 'refund':
-      return '환불 영수증';
-    default:
-      return '영수증';
-  }
-}
+// 영수증 타입 이름 반환 함수는 추후 필요 시 사용
+// function getReceiptTypeName(type: string): string {
+//   switch (type) {
+//     case 'payment':
+//       return '결제 영수증';
+//     case 'subscription':
+//       return '구독 결제 영수증';
+//     case 'refund':
+//       return '환불 영수증';
+//     default:
+//       return '영수증';
+//   }
+// }
 
 /**
- * 영수증 이메일 HTML 생성
+ * 영수증 이메일 HTML 생성 (추후 이메일 발송 시 사용)
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateReceiptEmailHTML(data: any): string {
   return `
 <!DOCTYPE html>
