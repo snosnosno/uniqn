@@ -163,9 +163,19 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
   
   // 모든 역할을 수집하여 requiredRoles 배열 생성
   const requiredRoles = new Set<string>();
-  
-  // 날짜별 요구사항만 사용
-  if (formData.dateSpecificRequirements) {
+
+  // ✅ 고정공고: requiredRolesWithCount에서 역할 추출
+  if (formData.postingType === 'fixed' && formData.requiredRolesWithCount) {
+    logger.debug('🔧 고정공고 역할 요구사항 처리 중...', { component: 'jobPostingHelpers' });
+    formData.requiredRolesWithCount.forEach((roleWithCount) => {
+      if (roleWithCount.role) {
+        requiredRoles.add(roleWithCount.role);
+        logger.debug('👤 역할 추가 (고정공고):', { component: 'jobPostingHelpers', data: roleWithCount.role });
+      }
+    });
+  }
+  // 일반공고: 날짜별 요구사항에서 역할 추출
+  else if (formData.dateSpecificRequirements) {
     logger.debug('📅 일자별 요구사항 처리 중...', { component: 'jobPostingHelpers' });
     formData.dateSpecificRequirements.forEach((req: DateSpecificRequirement) => {
       req.timeSlots.forEach((timeSlot: TimeSlot) => {
@@ -199,10 +209,13 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
     createdAt: convertToTimestamp(new Date()),
     updatedAt: convertToTimestamp(new Date()),
     requiredRoles: requiredRolesArray, // 검색을 위한 역할 배열 추가
-    dateSpecificRequirements: formData.dateSpecificRequirements?.map((req: DateSpecificRequirement) => ({
-      ...req,
-      date: convertToTimestamp(req.date)
-    })) || [],
+    // ✅ 고정공고는 dateSpecificRequirements 저장하지 않음
+    ...(formData.postingType !== 'fixed' && {
+      dateSpecificRequirements: formData.dateSpecificRequirements?.map((req: DateSpecificRequirement) => ({
+        ...req,
+        date: convertToTimestamp(req.date)
+      })) || []
+    }),
     // 새로운 필드들 추가 (undefined 값은 Firebase에 저장되지 않음)
     ...(formData.district && { district: formData.district }),
     salaryType: formData.salaryType || 'hourly',

@@ -247,6 +247,15 @@ export interface JobPosting {
   urgentConfig?: UrgentConfig;          // 긴급 공고 설정 (postingType === 'urgent'일 때)
   chipCost?: number;                    // 칩 비용 (fixed/urgent 타입)
   isChipDeducted: boolean;              // 칩 차감 여부 (기본값: false)
+
+  // ========== 고정공고 근무일정 필드 ==========
+  workSchedule?: WorkSchedule;          // 근무 일정 (고정공고용)
+  requiredRolesWithCount?: Array<{      // 역할별 필요 인원 (고정공고용)
+    id?: string;                        // React key용 고유 ID (폼에서만 사용)
+    role?: string;                      // 역할명 (폼 호환)
+    name?: string;                      // 역할명 (RoleWithCount 호환)
+    count: number;                      // 필요 인원수
+  }>;
 }
 
 /**

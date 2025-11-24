@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, PostingType } from '../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, PostingType, RoleWithCount } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, getTypeDisplayName, formatRoleSalaryDisplay, normalizePostingType } from '../../utils/jobPosting/jobPostingHelpers';
+import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, formatRoleSalaryDisplay, normalizePostingType } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { doc, getDoc } from 'firebase/firestore';
@@ -213,12 +213,21 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
   // 날짜 범위 표시 개선
   const getDateRangeDisplay = () => {
+    // ✅ 고정공고: 기간 표시
+    if (normalizePostingType(post) === 'fixed' && post.fixedConfig) {
+      const expiresAt = post.fixedConfig.expiresAt;
+      if (expiresAt) {
+        return `${formatDate(post.fixedConfig.createdAt)} ~ ${formatDate(expiresAt)}`;
+      }
+      return `${post.fixedConfig.durationDays}일 고정공고`;
+    }
+
     const dates: string[] = [];
-    
+
     // 모든 날짜 수집
     post.dateSpecificRequirements?.forEach(req => {
       dates.push(convertToDateString(req.date));
-      
+
       // multi duration 처리
       req.timeSlots?.forEach(slot => {
         if (slot.duration?.type === 'multi' && slot.duration.endDate) {
@@ -231,13 +240,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
         }
       });
     });
-    
+
     // 중복 제거 및 정렬
     const uniqueDates = Array.from(new Set(dates)).sort();
-    
+
     return formatDateRangeDisplay(uniqueDates);
   };
-  
+
   const dateRangeDisplay = getDateRangeDisplay();
 
   // 전체 진행률 계산 (관리자용)
@@ -321,7 +330,44 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
   // 시간대 및 역할 렌더링
   const renderTimeSlots = () => {
-    // 날짜별 요구사항 표시
+    // ✅ 고정공고: 근무조건 및 모집역할 표시
+    if (normalizePostingType(post) === 'fixed' && post.workSchedule && post.requiredRolesWithCount) {
+      return (
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+          {/* 근무조건 */}
+          <div className="mb-3">
+            <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
+              🕐 근무조건
+            </div>
+            <div className="ml-4 space-y-1">
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-medium text-gray-700 dark:text-gray-200">주 {post.workSchedule.daysPerWeek}일</span>
+                <span className="ml-3">{post.workSchedule.startTime} ~ {post.workSchedule.endTime}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 모집역할 */}
+          <div>
+            <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
+              👥 모집역할
+            </div>
+            <div className="ml-4 space-y-1">
+              {post.requiredRolesWithCount.map((roleWithCount, index: number) => {
+                const roleName = roleWithCount.role || roleWithCount.name || '';
+                return (
+                  <div key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                    {t(`roles.${roleName}`, roleName)}: {roleWithCount.count}명
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 일반공고: 날짜별 요구사항 표시
     const dateReqs = post.dateSpecificRequirements || [];
     if (dateReqs.length > 0) {
       // 모든 날짜를 표시하도록 변경 (expandTimeSlots 조건 제거)
@@ -448,6 +494,43 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   // 사용자 카드용 상세 시간대 렌더링
   const renderDetailedTimeSlots = () => {
     if (variant !== 'user-card') return null;
+
+    // ✅ 고정공고: 근무조건 및 모집역할 표시
+    if (normalizePostingType(post) === 'fixed' && post.workSchedule && post.requiredRolesWithCount) {
+      return (
+        <div className="mb-2">
+          <div className="space-y-2">
+            {/* 근무조건 */}
+            <div>
+              <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                🕐 근무조건
+              </div>
+              <div className="ml-2 text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-medium text-gray-700 dark:text-gray-200">주 {post.workSchedule.daysPerWeek}일</span>
+                <span className="ml-3">{post.workSchedule.startTime} ~ {post.workSchedule.endTime}</span>
+              </div>
+            </div>
+
+            {/* 모집역할 */}
+            <div>
+              <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                👥 모집역할
+              </div>
+              <div className="ml-2 space-y-1">
+                {post.requiredRolesWithCount.map((roleWithCount, index: number) => {
+                  const roleName = roleWithCount.role || roleWithCount.name || '';
+                  return (
+                    <div key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                      {t(`roles.${roleName}`, roleName)}: {roleWithCount.count}명
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     if ((post.dateSpecificRequirements || []).length > 0) {
       return (
@@ -677,17 +760,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   {getStatusDisplayName(post.status)}
                 </span>
               )}
-
-              {/* 모집타입 배지 (레거시 - 하위 호환성) */}
-              {post.recruitmentType && (
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  post.recruitmentType === 'fixed'
-                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
-                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                }`}>
-                  {post.recruitmentType === 'fixed' ? '고정' : '지원'}
-                </span>
-              )}
             </div>
 
             {/* 기본 정보 */}
@@ -715,17 +787,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
               {/* 문의 연락처는 하단으로 이동 */}
 
-              {/* 유형 (관리자용) */}
-              {variant === 'admin-list' && post.type && (
-                <div className={getInfoItemClasses()}>
-                  <span className="flex items-center">
-                    <span className="mr-2">📋</span>
-                    <span>{getTypeDisplayName(post.type)}</span>
-                  </span>
-                </div>
-              )}
-              
-              
+
               {/* 급여 */}
               {post.useRoleSalary && post.roleSalaries ? (
                 <div className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}>
