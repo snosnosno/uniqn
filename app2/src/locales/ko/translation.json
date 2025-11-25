@@ -224,7 +224,15 @@
     "chip_master": "칩 마스터",
     "registration": "등록",
     "security": "보안요원",
-    "cashier": "캐셔"
+    "cashier": "캐셔",
+    "딜러": "딜러",
+    "플로어": "플로어",
+    "서빙": "서빙",
+    "토너먼트 디렉터": "토너먼트 디렉터",
+    "칩 마스터": "칩 마스터",
+    "등록": "등록",
+    "보안요원": "보안요원",
+    "캐셔": "캐셔"
   },
   "common": {
     "back": "뒤로가기",
@@ -564,6 +572,7 @@
     "alerts": {
       "applicationFailed": "지원에 실패했습니다.",
       "applicationSuccess": "지원이 완료되었습니다!",
+      "applicationSubmitted": "지원이 완료되었습니다!",
       "cancelFailed": "지원 취소에 실패했습니다.",
       "cancelSuccess": "지원이 취소되었습니다.",
       "confirmCancel": "정말로 지원을 취소하시겠습니까?",
@@ -805,7 +814,8 @@
       "ageUnit": "세",
       "statusValue": {},
       "status_applied": "지원함",
-      "status_confirmed": "확정됨"
+      "status_confirmed": "확정됨",
+      "status_pending": "대기 중"
     },
     "unknownUser": "알 수 없는 사용자"
   },

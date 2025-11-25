@@ -223,7 +223,15 @@
     "chip_master": "Chip Master",
     "registration": "Registration",
     "security": "Security",
-    "cashier": "Cashier"
+    "cashier": "Cashier",
+    "딜러": "Dealer",
+    "플로어": "Floor",
+    "서빙": "Serving",
+    "토너먼트 디렉터": "Tournament Director",
+    "칩 마스터": "Chip Master",
+    "등록": "Registration",
+    "보안요원": "Security",
+    "캐셔": "Cashier"
   },
   "common": {
     "back": "Back",
@@ -570,6 +578,7 @@
       "loginRequired": "You must be logged in to apply.",
       "profileNotFound": "Could not find staff profile.",
       "applicationSuccess": "Application submitted successfully!",
+      "applicationSubmitted": "Application submitted successfully!",
       "applicationFailed": "Failed to submit application.",
       "selectAssignment": "Please select a time and role to apply for.",
       "confirmCancel": "Are you sure you want to cancel your application?",
@@ -793,7 +802,9 @@
       "viewProfile": "View Profile",
       "ageUnit": " years old",
       "statusValue": {},
-      "status_confirmed": "Confirmed"
+      "status_applied": "Applied",
+      "status_confirmed": "Confirmed",
+      "status_pending": "Pending"
     },
     "unknownUser": "Unknown User"
   },

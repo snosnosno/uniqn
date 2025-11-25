@@ -219,10 +219,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             노출 기간 <span className="text-red-500 dark:text-red-400">*</span>
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {/* 7일 (3칩) */}
             <label className={`
-              relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+              relative flex flex-col items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all text-center
               ${data.fixedConfig?.durationDays === 7
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                 : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -236,18 +236,14 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
                 onChange={() => handlers.onFixedDurationChange?.(7)}
                 className="sr-only"
               />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">7일</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">1주일 노출</div>
-              </div>
-              <div className="ml-3 text-right">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">3칩</div>
-              </div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">7일</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">1주일</div>
+              <div className="text-base font-bold text-blue-600 dark:text-blue-400 mt-1">3칩</div>
             </label>
 
             {/* 30일 (5칩) */}
             <label className={`
-              relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+              relative flex flex-col items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all text-center
               ${data.fixedConfig?.durationDays === 30
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                 : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -261,19 +257,15 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
                 onChange={() => handlers.onFixedDurationChange?.(30)}
                 className="sr-only"
               />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">30일</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">1개월 노출</div>
-              </div>
-              <div className="ml-3 text-right">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">5칩</div>
-                <div className="text-xs text-green-600 dark:text-green-400">인기</div>
-              </div>
+              <div className="text-xs text-green-600 dark:text-green-400 font-medium">인기</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">30일</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">1개월</div>
+              <div className="text-base font-bold text-blue-600 dark:text-blue-400 mt-1">5칩</div>
             </label>
 
             {/* 90일 (10칩) */}
             <label className={`
-              relative flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all
+              relative flex flex-col items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all text-center
               ${data.fixedConfig?.durationDays === 90
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                 : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -287,14 +279,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(({
                 onChange={() => handlers.onFixedDurationChange?.(90)}
                 className="sr-only"
               />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">90일</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">3개월 노출</div>
-              </div>
-              <div className="ml-3 text-right">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">10칩</div>
-                <div className="text-xs text-purple-600 dark:text-purple-400">최고</div>
-              </div>
+              <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">최고</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">90일</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">3개월</div>
+              <div className="text-base font-bold text-blue-600 dark:text-blue-400 mt-1">10칩</div>
             </label>
           </div>
         </div>

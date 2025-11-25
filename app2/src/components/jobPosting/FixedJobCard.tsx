@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FixedJobPosting } from '../../types/jobPosting/jobPosting';
 import { incrementViewCount } from '../../services/fixedJobPosting';
 import { formatWorkTimeDisplay, formatSalaryDisplay, getBenefitDisplayNames } from '../../utils/jobPosting/jobPostingHelpers';
@@ -8,6 +9,7 @@ export interface FixedJobCardProps {
   posting: FixedJobPosting;
   onApply: (posting: FixedJobPosting) => void;
   onViewDetail: (postingId: string) => void;
+  appliedStatus?: string;
 }
 
 /**
@@ -20,7 +22,8 @@ export interface FixedJobCardProps {
  * @param onViewDetail - 상세보기 핸들러
  */
 export const FixedJobCard = React.memo<FixedJobCardProps>(
-  ({ posting, onApply, onViewDetail }) => {
+  ({ posting, onApply, onViewDetail, appliedStatus }) => {
+    const { t } = useTranslation();
     // fixedData 방어 코드
     if (!posting.fixedData) {
       logger.warn('FixedJobCard: fixedData가 없는 공고', {
@@ -192,13 +195,31 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
           </div>
 
           {/* 오른쪽: 지원하기 버튼 */}
-          <button
-            onClick={handleApplyClick}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
-            aria-label={`${posting.title} 공고에 지원하기`}
-          >
-            지원하기
-          </button>
+          {appliedStatus === 'pending' || appliedStatus === 'applied' ? (
+            <button
+              disabled
+              className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white font-medium rounded-md cursor-not-allowed"
+              aria-label="이미 지원완료한 공고입니다"
+            >
+              {t('jobBoard.applied')}
+            </button>
+          ) : appliedStatus === 'confirmed' ? (
+            <button
+              disabled
+              className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white font-medium rounded-md cursor-not-allowed"
+              aria-label="지원이 확정된 공고입니다"
+            >
+              {t('common.status.confirmed')}
+            </button>
+          ) : (
+            <button
+              onClick={handleApplyClick}
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
+              aria-label={`${posting.title} 공고에 지원하기`}
+            >
+              {t('common.apply')}
+            </button>
+          )}
         </div>
       </div>
     );

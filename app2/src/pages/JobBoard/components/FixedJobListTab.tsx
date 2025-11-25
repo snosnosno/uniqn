@@ -1,17 +1,17 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useFixedJobPostings } from '../../../hooks/useFixedJobPostings';
 import { FixedJobCard } from '../../../components/jobPosting/FixedJobCard';
 import { FixedJobPosting } from '../../../types/jobPosting/jobPosting';
 import JobPostingSkeleton from '../../../components/JobPostingSkeleton';
 import JobDetailModal from './JobDetailModal';
-import ApplyModal from './ApplyModal';
+import FixedApplyModal from './FixedApplyModal';
 import { logger } from '../../../utils/logger';
-import { Assignment } from '../../../types/application';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../../stores/toastStore';
 import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
+import useUnifiedData from '../../../hooks/useUnifiedData';
 
 /**
  * 고정공고 목록 탭 컴포넌트
@@ -23,6 +23,7 @@ const FixedJobListTab: React.FC = () => {
   const { t } = useTranslation();
   const { showSuccess, showError, showWarning } = useToast();
   const { postings, loading, error, hasMore, loadMore } = useFixedJobPostings();
+  const { applications } = useUnifiedData();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -31,8 +32,41 @@ const FixedJobListTab: React.FC = () => {
   const [selectedPosting, setSelectedPosting] = useState<FixedJobPosting | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [appliedJobs, setAppliedJobs] = useState<Map<string, string>>(new Map());
+
+  // 지원한 고정공고 상태 계산
+  const appliedJobsMap = useMemo(() => {
+    if (!currentUser || !postings || postings.length === 0) {
+      return new Map<string, string>();
+    }
+
+    const postIds = postings.map(p => p.id);
+    const userApplications = applications.filter(
+      app => app.applicantId === currentUser.uid &&
+             (app.recruitmentType === 'fixed' || postIds.includes(app.eventId || app.postId || ''))
+    );
+
+    const appliedMap = new Map<string, string>();
+    userApplications.forEach(app => {
+      const jobId = app.eventId || app.postId;
+      if (jobId && postIds.includes(jobId)) {
+        appliedMap.set(jobId, app.status);
+      }
+    });
+
+    return appliedMap;
+  }, [currentUser, postings, applications]);
+
+  // 로컬 상태와 서버 상태 병합
+  const mergedAppliedJobs = useMemo(() => {
+    const merged = new Map(appliedJobsMap);
+    appliedJobs.forEach((status, id) => {
+      merged.set(id, status);
+    });
+    return merged;
+  }, [appliedJobsMap, appliedJobs]);
 
   // 지원하기 핸들러 (메모이제이션)
   const handleApply = useCallback((posting: FixedJobPosting) => {
@@ -42,7 +76,7 @@ const FixedJobListTab: React.FC = () => {
     });
     setSelectedPosting(posting);
     setIsApplyModalOpen(true);
-    setSelectedAssignments([]);
+    setSelectedRoles([]);
   }, []);
 
   // 상세보기 핸들러 (메모이제이션) - 모달 열기
@@ -58,16 +92,12 @@ const FixedJobListTab: React.FC = () => {
     }
   }, [postings]);
 
-  // Assignment 변경 핸들러
-  const handleAssignmentChange = useCallback((assignment: Assignment, isChecked: boolean) => {
+  // 역할 변경 핸들러
+  const handleRoleChange = useCallback((role: string, isChecked: boolean) => {
     if (isChecked) {
-      setSelectedAssignments(prev => [...prev, assignment]);
+      setSelectedRoles(prev => [...prev, role]);
     } else {
-      setSelectedAssignments(prev => prev.filter(item =>
-        !(item.timeSlot === assignment.timeSlot &&
-          item.role === assignment.role &&
-          JSON.stringify(item.dates?.sort()) === JSON.stringify(assignment.dates?.sort()))
-      ));
+      setSelectedRoles(prev => prev.filter(r => r !== role));
     }
   }, []);
 
@@ -77,8 +107,8 @@ const FixedJobListTab: React.FC = () => {
       showError(t('jobBoard.alerts.loginRequired'));
       return;
     }
-    if (!selectedPosting || selectedAssignments.length === 0) {
-      showWarning('최소 1개 이상의 시간대/역할을 선택해주세요.');
+    if (!selectedPosting || selectedRoles.length === 0) {
+      showWarning('최소 1개 이상의 역할을 선택해주세요.');
       return;
     }
 
@@ -90,73 +120,44 @@ const FixedJobListTab: React.FC = () => {
         return;
       }
 
-      // 그룹 선택 통합 처리
-      const groupedAssignments = new Map<string, Assignment[]>();
+      const staffData = staffDoc.data();
+      const now = Timestamp.now();
 
-      selectedAssignments.forEach(item => {
-        const dates = item.dates && item.dates.length > 0 ? item.dates : [];
-        const groupKey = `${item.timeSlot}__${JSON.stringify(dates.sort())}`;
-
-        if (!groupedAssignments.has(groupKey)) {
-          groupedAssignments.set(groupKey, []);
-        }
-        groupedAssignments.get(groupKey)!.push(item);
-      });
-
-      const assignments = Array.from(groupedAssignments.entries()).map(([_groupKey, items]) => {
-        if (!items.length) return null;
-
-        const firstItem = items[0]!;
-        const dates = firstItem.dates && firstItem.dates.length > 0 ? firstItem.dates : [];
-        const isGroupSelection = items.length > 1;
-
-        if (isGroupSelection) {
-          const roles = items.map(item => item.role).filter((role): role is string => Boolean(role));
-
-          return {
-            roles: roles,
-            timeSlot: firstItem.timeSlot,
-            dates: dates,
-            checkMethod: 'group' as const,
-            isGrouped: true,
-            groupId: firstItem.groupId || `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            ...(firstItem.duration && { duration: firstItem.duration })
-          };
-        } else {
-          return {
-            role: firstItem.role,
-            timeSlot: firstItem.timeSlot,
-            dates: dates,
-            checkMethod: 'individual' as const,
-            isGrouped: false,
-            ...(firstItem.duration && { duration: firstItem.duration })
-          };
-        }
-      }).filter(Boolean);
-
-      await addDoc(collection(db, 'applications'), {
+      // 고정공고용 지원서 데이터 구성
+      const applicationData = {
         applicantId: currentUser.uid,
-        applicantEmail: currentUser.email,
+        applicantName: staffData.name || staffData.displayName || currentUser.displayName || '이름 없음',
+        applicantEmail: currentUser.email || staffData.email || '',
+        applicantPhone: staffData.phone || '',
         eventId: selectedPosting.id,
+        postId: selectedPosting.id,
         postTitle: selectedPosting.title,
-        assignments: assignments,
+        selectedRoles: selectedRoles,
+        assignments: [],  // 고정공고는 날짜 기반 assignments가 없음
         status: 'pending',
-        appliedAt: Timestamp.now(),
+        appliedAt: now,
+        createdAt: now,
+        updatedAt: now,
         recruitmentType: 'fixed',
         fixedData: selectedPosting.fixedData || null
-      });
+      };
+
+      await addDoc(collection(db, 'applications'), applicationData);
+
+      // 지원 성공 시 로컬 상태 즉시 업데이트
+      setAppliedJobs(prev => new Map(prev).set(selectedPosting.id, 'pending'));
 
       showSuccess(t('jobBoard.alerts.applicationSubmitted'));
       setIsApplyModalOpen(false);
       setSelectedPosting(null);
-      setSelectedAssignments([]);
+      setSelectedRoles([]);
     } catch (err) {
       logger.error('지원 제출 오류:', err as Error);
       showError('지원서 제출 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
     }
-  }, [currentUser, selectedPosting, selectedAssignments, t]);
+  }, [currentUser, selectedPosting, selectedRoles, t, showError, showWarning, showSuccess]);
 
   // 무한 스크롤 IntersectionObserver 설정
   useEffect(() => {
@@ -177,7 +178,7 @@ const FixedJobListTab: React.FC = () => {
           loadMore();
         }
       },
-      { threshold: 0.1 } // 10% 보이면 트리거
+      { threshold: 0.1 }
     );
 
     const target = loadMoreRef.current;
@@ -284,6 +285,7 @@ const FixedJobListTab: React.FC = () => {
             posting={posting}
             onApply={handleApply}
             onViewDetail={handleViewDetail}
+            appliedStatus={mergedAppliedJobs.get(posting.id)}
           />
         ))}
       </div>
@@ -319,18 +321,18 @@ const FixedJobListTab: React.FC = () => {
         jobPosting={selectedPosting}
       />
 
-      {/* 지원하기 모달 */}
+      {/* 고정공고 지원하기 모달 */}
       {selectedPosting && (
-        <ApplyModal
+        <FixedApplyModal
           isOpen={isApplyModalOpen}
           onClose={() => {
             setIsApplyModalOpen(false);
             setSelectedPosting(null);
-            setSelectedAssignments([]);
+            setSelectedRoles([]);
           }}
-          jobPosting={selectedPosting}
-          selectedAssignments={selectedAssignments}
-          onAssignmentChange={handleAssignmentChange}
+          posting={selectedPosting}
+          selectedRoles={selectedRoles}
+          onRoleChange={handleRoleChange}
           onApply={handleSubmitApplication}
           isProcessing={isProcessing}
         />

@@ -90,7 +90,10 @@ export interface Application {
   postTitle: string;
   
   // === 상태 관리 ===
-  status: 'applied' | 'confirmed' | 'cancelled';
+  status: 'applied' | 'confirmed' | 'cancelled' | 'pending';
+
+  // === 모집 유형 구분 ===
+  recruitmentType?: 'event' | 'fixed';  // event: 이벤트 공고, fixed: 고정 공고
   
   // === 핵심 배정 정보 (Single Source of Truth) ===
   assignments: Assignment[];
