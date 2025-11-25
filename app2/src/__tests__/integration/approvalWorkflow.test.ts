@@ -11,13 +11,9 @@
 
 import {
   collection,
-  doc,
-  getDoc,
   getDocs,
   query,
   where,
-  addDoc,
-  updateDoc,
   Timestamp
 } from 'firebase/firestore';
 import { JobPosting, TournamentConfig } from '../../types/jobPosting/jobPosting';
@@ -31,13 +27,9 @@ jest.mock('../../firebase', () => ({
 // Firestore 함수 모킹
 jest.mock('firebase/firestore', () => ({
   collection: jest.fn(),
-  doc: jest.fn(),
-  getDoc: jest.fn(),
   getDocs: jest.fn(),
   query: jest.fn(),
   where: jest.fn(),
-  addDoc: jest.fn(),
-  updateDoc: jest.fn(),
   Timestamp: {
     now: jest.fn(() => ({ seconds: 1704067200, nanoseconds: 0 })),
     fromDate: jest.fn((date: Date) => ({ seconds: Math.floor(date.getTime() / 1000), nanoseconds: 0 }))

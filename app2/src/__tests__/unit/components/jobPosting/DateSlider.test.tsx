@@ -14,7 +14,8 @@ import { DateSlider } from '@/components/jobPosting/DateSlider';
 
 // IntersectionObserver 모킹
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
+  constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
   disconnect() {}
   observe() {}
   takeRecords() {

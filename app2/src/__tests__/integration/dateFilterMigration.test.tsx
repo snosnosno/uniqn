@@ -15,7 +15,6 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useDateFilterStore } from '../../stores/dateFilterStore';
-import { useDateFilter } from '../../hooks/useDateFilter';
 
 // localStorage mock
 const localStorageMock = (() => {

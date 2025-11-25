@@ -110,7 +110,7 @@ export const mockDoc = jest.fn((db: any, collection: string, id: string) => ({
 /**
  * Mock writeBatch - Firestore batch write
  */
-export const mockWriteBatch = jest.fn((db: any) => ({
+export const mockWriteBatch = jest.fn((_db: any) => ({
   update: jest.fn(),
   set: jest.fn(),
   delete: jest.fn(),
