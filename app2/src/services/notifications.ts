@@ -4,7 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
-import { useToast } from '../hooks/useToast';
+import { useToastStore } from '../stores/toastStore';
 
 export interface PushNotificationToken {
   token: string;
@@ -60,9 +60,11 @@ export const initializePushNotifications = async (userId: string) => {
     PushNotifications.addListener('pushNotificationReceived', (notification) => {
       logger.info('푸시 알림 수신', { data: notification });
 
-      // Toast로 알림 표시
-      const { showInfo } = useToast();
-      showInfo(`${notification.title}: ${notification.body}`);
+      // Toast로 알림 표시 - Zustand store 직접 접근 (React 외부에서 사용 가능)
+      useToastStore.getState().addToast({
+        type: 'info',
+        message: `${notification.title}: ${notification.body}`,
+      });
     });
 
     // 푸시 알림 액션 리스너 (사용자가 알림을 탭했을 때)
