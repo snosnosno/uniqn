@@ -1,7 +1,7 @@
 /**
  * 스태프 역할 유형
  */
-export type StaffRole = '딜러' | '플로어' | '칩러너' | '서빙' | '기타';
+export type StaffRole = '딜러' | '플로어' | '서빙' | '매니저' | '직원' | '기타';
 
 /**
  * 역할 목록 상수
@@ -9,8 +9,9 @@ export type StaffRole = '딜러' | '플로어' | '칩러너' | '서빙' | '기�
 export const STAFF_ROLES: StaffRole[] = [
   '딜러',
   '플로어',
-  '칩러너',
   '서빙',
+  '매니저',
+  '직원',
   '기타'
 ];
 

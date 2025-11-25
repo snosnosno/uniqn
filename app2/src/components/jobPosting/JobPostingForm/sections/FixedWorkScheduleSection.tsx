@@ -227,9 +227,9 @@ FixedWorkScheduleSection.displayName = 'FixedWorkScheduleSection';
 // ========== T019: RoleInputRow 서브 컴포넌트 ==========
 
 interface RoleInputRowProps {
-  role: { id: string; role: string; count: number };
+  role: { id: string; role: string; count: number; customRole?: string };
   index: number;
-  onUpdate: (index: number, updated: { id: string; role: string; count: number }) => void;
+  onUpdate: (index: number, updated: { id: string; role: string; count: number; customRole?: string }) => void;
   onRemove: (index: number) => void;
 }
 
@@ -242,7 +242,19 @@ const RoleInputRow: React.FC<RoleInputRowProps> = memo(
   ({ role, index, onUpdate, onRemove }) => {
     const handleRoleChange = useCallback(
       (e: React.ChangeEvent<HTMLSelectElement>) => {
-        onUpdate(index, { ...role, role: e.target.value });
+        const newRole = e.target.value;
+        onUpdate(index, {
+          ...role,
+          role: newRole,
+          customRole: newRole === '기타' ? role.customRole || '' : undefined
+        });
+      },
+      [index, role, onUpdate]
+    );
+
+    const handleCustomRoleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        onUpdate(index, { ...role, customRole: e.target.value });
       },
       [index, role, onUpdate]
     );
@@ -254,43 +266,61 @@ const RoleInputRow: React.FC<RoleInputRowProps> = memo(
       [index, role, onUpdate]
     );
 
+    const isCustomRole = role.role === '기타';
+
     return (
-      <div className="flex items-center gap-4">
-        {/* 역할 선택 드롭다운 */}
-        <select
-          value={role.role}
-          onChange={handleRoleChange}
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                     bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                     focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-        >
-          {STAFF_ROLES.map(r => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          {/* 역할 선택 드롭다운 */}
+          <select
+            value={role.role}
+            onChange={handleRoleChange}
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+          >
+            {STAFF_ROLES.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
 
-        {/* 인원수 입력 */}
-        <input
-          type="number"
-          min="1"
-          required
-          value={role.count}
-          onChange={handleCountChange}
-          className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                     bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                     focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-        />
+          {/* 인원수 입력 */}
+          <input
+            type="number"
+            min="1"
+            required
+            value={role.count}
+            onChange={handleCountChange}
+            className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+          />
 
-        {/* 삭제 버튼 */}
-        <button
-          type="button"
-          onClick={() => onRemove(index)}
-          className="px-3 py-2 bg-red-600 dark:bg-red-700 text-white rounded-md
-                     hover:bg-red-700 dark:hover:bg-red-800
-                     focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600"
-        >
-          삭제
-        </button>
+          {/* 삭제 버튼 */}
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            className="px-3 py-2 bg-red-600 dark:bg-red-700 text-white rounded-md
+                       hover:bg-red-700 dark:hover:bg-red-800
+                       focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600"
+          >
+            삭제
+          </button>
+        </div>
+
+        {/* 기타 선택 시 직접 입력 필드 */}
+        {isCustomRole && (
+          <input
+            type="text"
+            placeholder="역할명을 직접 입력하세요"
+            value={role.customRole || ''}
+            onChange={handleCustomRoleChange}
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
+                       ml-0"
+          />
+        )}
       </div>
     );
   }
