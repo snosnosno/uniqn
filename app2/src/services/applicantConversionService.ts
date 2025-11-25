@@ -1,5 +1,5 @@
-import { 
-  doc, 
+import {
+  doc,
   collection,
   getDoc,
   getDocs,
@@ -8,8 +8,8 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { 
-  createStaffFromApplicant, 
+import {
+  createStaffFromApplicant,
   batchConvertApplicants,
   validateConversion,
   checkDuplicateStaff,
@@ -18,6 +18,7 @@ import {
   StaffCreationResult
 } from '../utils/applicantToStaffConverter';
 import { logger } from '../utils/logger';
+import { extractErrorMessage, toError } from '../utils/errorHandler';
 
 /**
  * 지원자를 스태프로 변환하고 Firebase에 저장하는 서비스
@@ -88,14 +89,14 @@ export class ApplicantConversionService {
       
       return { success: true };
     } catch (error) {
-      logger.error('스태프 변환 및 저장 실패', error as Error, {
+      logger.error('스태프 변환 및 저장 실패', toError(error), {
         component: 'ApplicantConversionService',
         data: { applicant, eventId }
       });
-      
-      return { 
-        success: false, 
-        error: (error as Error).message 
+
+      return {
+        success: false,
+        error: extractErrorMessage(error)
       };
     }
   }
@@ -211,15 +212,15 @@ export class ApplicantConversionService {
         errors: validation.errors
       };
     } catch (error) {
-      logger.error('일괄 변환 및 저장 실패', error as Error, {
+      logger.error('일괄 변환 및 저장 실패', toError(error), {
         component: 'ApplicantConversionService'
       });
-      
+
       return {
         success: false,
         successCount: 0,
         failureCount: applicants.length,
-        errors: [(error as Error).message]
+        errors: [extractErrorMessage(error)]
       };
     }
   }
@@ -256,13 +257,13 @@ export class ApplicantConversionService {
       
       return { success: true };
     } catch (error) {
-      logger.error('변환 롤백 실패', error as Error, {
+      logger.error('변환 롤백 실패', toError(error), {
         component: 'ApplicantConversionService'
       });
-      
-      return { 
-        success: false, 
-        error: (error as Error).message 
+
+      return {
+        success: false,
+        error: extractErrorMessage(error)
       };
     }
   }
@@ -341,15 +342,15 @@ export class ApplicantConversionService {
         error: result.errors.join(', ')
       };
     } catch (error) {
-      logger.error('이벤트 지원자 변환 실패', error as Error, {
+      logger.error('이벤트 지원자 변환 실패', toError(error), {
         component: 'ApplicantConversionService',
         data: { eventId }
       });
-      
+
       return {
         success: false,
         convertedCount: 0,
-        error: (error as Error).message
+        error: extractErrorMessage(error)
       };
     }
   }

@@ -10,6 +10,56 @@ import {
   FirebaseError
 } from './firebaseErrors';
 
+/**
+ * unknown 타입의 에러에서 안전하게 메시지를 추출합니다.
+ *
+ * @param error - 에러 객체 (unknown 타입)
+ * @param fallbackMessage - 메시지 추출 실패 시 반환할 기본 메시지
+ * @returns 에러 메시지 문자열
+ *
+ * @example
+ * ```typescript
+ * catch (error) {
+ *   return { success: false, error: extractErrorMessage(error) };
+ * }
+ * ```
+ */
+export const extractErrorMessage = (
+  error: unknown,
+  fallbackMessage: string = '알 수 없는 오류가 발생했습니다.'
+): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object') {
+    // Firebase/Firestore 에러 등 code와 message가 있는 경우
+    if ('message' in error && typeof (error as { message: unknown }).message === 'string') {
+      return (error as { message: string }).message;
+    }
+    // code만 있는 경우
+    if ('code' in error && typeof (error as { code: unknown }).code === 'string') {
+      return `에러 코드: ${(error as { code: string }).code}`;
+    }
+  }
+  return fallbackMessage;
+};
+
+/**
+ * unknown 타입의 에러를 Error 객체로 안전하게 변환합니다.
+ *
+ * @param error - 에러 객체 (unknown 타입)
+ * @returns Error 객체
+ */
+export const toError = (error: unknown): Error => {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(extractErrorMessage(error));
+};
+
 export interface ErrorHandlerOptions {
   component: string;
   action?: string;

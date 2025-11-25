@@ -2,6 +2,7 @@ import React from 'react';
 import { FixedJobPosting } from '../../types/jobPosting/jobPosting';
 import { incrementViewCount } from '../../services/fixedJobPosting';
 import { formatWorkTimeDisplay, formatSalaryDisplay, getBenefitDisplayNames } from '../../utils/jobPosting/jobPostingHelpers';
+import { logger } from '../../utils/logger';
 
 export interface FixedJobCardProps {
   posting: FixedJobPosting;
@@ -22,7 +23,10 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
   ({ posting, onApply, onViewDetail }) => {
     // fixedData 방어 코드
     if (!posting.fixedData) {
-      console.error('FixedJobCard: fixedData가 없는 공고', posting.id);
+      logger.warn('FixedJobCard: fixedData가 없는 공고', {
+        component: 'FixedJobCard',
+        data: { postingId: posting.id }
+      });
       return null;
     }
 
@@ -31,7 +35,10 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
 
     // workSchedule 방어 코드
     if (!workSchedule) {
-      console.error('FixedJobCard: workSchedule이 없는 공고', posting.id);
+      logger.warn('FixedJobCard: workSchedule이 없는 공고', {
+        component: 'FixedJobCard',
+        data: { postingId: posting.id }
+      });
       return null;
     }
 
