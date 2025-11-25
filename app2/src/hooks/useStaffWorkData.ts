@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState } from 'react';
 import { useJobPostingContext } from '../contexts/JobPostingContextAdapter';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
+import { JobPosting } from '../types/jobPosting/jobPosting';
 import { EnhancedPayrollCalculation, BulkAllowanceSettings, PayrollSummary, RoleSalaryConfig } from '../types/payroll';
 import { DEFAULT_HOURLY_RATES } from '../types/simplePayroll';
 import { calculateWorkHours } from '../utils/workLogMapper';
@@ -56,18 +57,17 @@ export const useStaffWorkData = ({
   // Context에서 데이터 가져오기 (Context가 없는 환경 체크)
   let contextWorkLogs: UnifiedWorkLog[] | undefined;
   let contextLoading = false;
-  let jobPosting: any = null;
-  let confirmedStaff: any[] = [];
-  
+  let jobPosting: JobPosting | null = null;
+  let confirmedStaff: ConfirmedStaff[] = [];
+
   try {
     const context = useJobPostingContext();
-    jobPosting = context.jobPosting;
+    jobPosting = context.jobPosting as JobPosting | null;
     contextWorkLogs = context.workLogs;
     contextLoading = context.workLogsLoading;
     confirmedStaff = jobPosting?.confirmedStaff || [];
-  } catch (error) {
+  } catch {
     // Context가 없는 환경 (Provider 밖에서 사용)
-
   }
   
   // Context에서 WorkLogs 사용 (직접 구독 완전 제거)
@@ -166,26 +166,23 @@ export const useStaffWorkData = ({
     const defaultAllowances = getDefaultAllowances();
     const result: StaffWorkDataItem[] = [];
 
-    const uniqueStaffMap = new Map<string, any>();
-    confirmedStaff.forEach((staff: any) => {
+    const uniqueStaffMap = new Map<string, ConfirmedStaff>();
+    confirmedStaff.forEach((staff) => {
       if (!uniqueStaffMap.has(staff.userId)) {
         uniqueStaffMap.set(staff.userId, staff);
       }
     });
 
-    uniqueStaffMap.forEach((staff: any) => {
-
+    uniqueStaffMap.forEach((staff) => {
       const staffWorkLogs = filteredWorkLogs.filter(log => {
+        // userId로 매칭 (주 식별자)
         const staffIdentifiers = [staff.userId];
-
-        if (staff.applicantId && staff.applicantId !== staff.userId) {
-          staffIdentifiers.push(staff.applicantId);
-        }
 
         if (matchStaffIdentifier(log, staffIdentifiers)) {
           return true;
         }
 
+        // 이름으로도 매칭 (fallback)
         if (log.staffName === staff.name) {
           return true;
         }
@@ -284,7 +281,7 @@ export const useStaffWorkData = ({
         // 각 역할별로 별도의 데이터 생성
         const item: StaffWorkDataItem = {
           uniqueKey,
-          staffId: staff.userId || staff.applicantId || '',
+          staffId: staff.userId,
           staffName: staff.name || '이름 미정',
           role,  // 해당 역할
           roles: allRoles,    // 모든 역할 배열

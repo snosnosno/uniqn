@@ -1,10 +1,22 @@
+import { DateLike } from './types';
+
+/** 지원서 데이터 (역할 결정용) */
+interface ApplicationRoleData {
+  status?: string;
+  assignedDates?: DateLike[];
+  assignedRoles?: string[];
+  assignedRole?: string;
+  confirmedRole?: string;
+  role?: string;
+}
+
 /**
  * 지원서 상태에 따른 역할 결정 함수 (날짜별 역할 매칭)
  * @param data applications 컬렉션 데이터
  * @param targetDate 대상 날짜 (YYYY-MM-DD 형식)
  * @returns 해당 날짜에 지원한 역할 문자열
  */
-export const getRoleForApplicationStatus = (data: any, targetDate?: string): string => {
+export const getRoleForApplicationStatus = (data: ApplicationRoleData, targetDate?: string): string => {
   // 확정된 경우: 날짜별 확정 역할 찾기
   if (data.status === 'confirmed') {
     // 날짜별 역할 매칭 시도
@@ -12,18 +24,18 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
         Array.isArray(data.assignedDates) && Array.isArray(data.assignedRoles)) {
       
       // 대상 날짜와 일치하는 인덱스 찾기
-      const dateIndex = data.assignedDates.findIndex((date: any) => {
-        const dateStr = typeof date === 'string' ? date : 
-                       date?.toDate ? date.toDate().toISOString().substring(0, 10) :
-                       date?.seconds ? new Date(date.seconds * 1000).toISOString().substring(0, 10) :
+      const dateIndex = data.assignedDates.findIndex((date) => {
+        const dateStr = typeof date === 'string' ? date :
+                       date instanceof Date ? date.toISOString().substring(0, 10) :
+                       'toDate' in date && typeof date.toDate === 'function' ? date.toDate().toISOString().substring(0, 10) :
+                       'seconds' in date ? new Date(date.seconds * 1000).toISOString().substring(0, 10) :
                        String(date);
         return dateStr === targetDate;
       });
       
-      if (dateIndex >= 0 && data.assignedRoles[dateIndex]) {
-        const confirmedRole = data.assignedRoles[dateIndex];
-
-        return confirmedRole;
+      const role = data.assignedRoles[dateIndex];
+      if (dateIndex >= 0 && role) {
+        return role;
       }
     }
     
@@ -41,14 +53,16 @@ export const getRoleForApplicationStatus = (data: any, targetDate?: string): str
         Array.isArray(data.assignedDates) && Array.isArray(data.assignedRoles)) {
       // 해당 날짜의 모든 역할 수집
       const dateRoles: string[] = [];
-      data.assignedDates.forEach((date: any, index: number) => {
+      data.assignedDates.forEach((date, index: number) => {
         const dateStr = typeof date === 'string' ? date :
-                       date?.toDate ? date.toDate().toISOString().substring(0, 10) :
-                       date?.seconds ? new Date(date.seconds * 1000).toISOString().substring(0, 10) :
+                       date instanceof Date ? date.toISOString().substring(0, 10) :
+                       'toDate' in date && typeof date.toDate === 'function' ? date.toDate().toISOString().substring(0, 10) :
+                       'seconds' in date ? new Date(date.seconds * 1000).toISOString().substring(0, 10) :
                        String(date);
 
-        if (dateStr === targetDate && data.assignedRoles[index]) {
-          dateRoles.push(data.assignedRoles[index]);
+        const roleAtIndex = data.assignedRoles?.[index];
+        if (dateStr === targetDate && roleAtIndex) {
+          dateRoles.push(roleAtIndex);
         }
       });
       

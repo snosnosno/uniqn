@@ -1,4 +1,46 @@
+import { Timestamp } from 'firebase/firestore';
 import { ScheduleEvent, ScheduleFilters, ScheduleStats } from '../../types/schedule';
+
+/** Firebase Timestamp 또는 문자열/Date 형태의 날짜 타입 */
+export type DateLike = Timestamp | string | Date;
+
+/** 날짜별 요구사항 */
+export interface DateSpecificRequirement {
+  date: string;
+  roles: Array<{ role: string; count: number }>;
+  timeSlots?: string[];
+}
+
+/** 시간대 슬롯 */
+export interface TimeSlot {
+  startTime: string;
+  endTime: string;
+  label?: string;
+}
+
+/** 역할별 급여 설정 */
+export interface RoleSalary {
+  role: string;
+  salaryType: string;
+  salaryAmount: number;
+}
+
+/** 복리후생 설정 */
+export interface BenefitSettings {
+  meals?: boolean;
+  mealAllowance?: string;
+  transportation?: string | boolean;
+  housing?: boolean;
+  accommodation?: string;
+  other?: string[];
+}
+
+/** 세금 설정 */
+export interface TaxSettings {
+  applyTax: boolean;
+  taxRate?: number;
+  taxType?: string;
+}
 
 export interface UseScheduleDataReturn {
   schedules: ScheduleEvent[];
@@ -24,17 +66,20 @@ export interface ApplicationData {
   assignedRole?: string;
   assignedRoles?: string[];
   confirmedRole?: string;
-  assignedDate?: any;
-  assignedDates?: any[];
+  assignedDate?: DateLike;
+  assignedDates?: DateLike[];
   /** @deprecated - workLog의 scheduledStartTime/scheduledEndTime 사용 권장. 하위 호환성을 위해 유지 */
   assignedTime?: string;
   assignedTimes?: string[];
   confirmedTime?: string;
-  createdAt?: any;
-  updatedAt?: any;
-  appliedAt?: any;
-  confirmedAt?: any;
+  createdAt?: DateLike;
+  updatedAt?: DateLike;
+  appliedAt?: DateLike;
+  confirmedAt?: DateLike;
 }
+
+/** 근무 로그 상태 */
+export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
 
 export interface WorkLogData {
   id: string;
@@ -50,11 +95,10 @@ export interface WorkLogData {
   overtimeHours?: number;
   earlyLeaveHours?: number;
   notes?: string;
-  createdAt?: any;
-  updatedAt?: any;
-  // 추가된 필드들
-  status?: string; // 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'absent'
-  eventId?: string; // 연관된 이벤트 ID
+  createdAt?: DateLike;
+  updatedAt?: DateLike;
+  status?: WorkLogStatus;
+  eventId?: string;
 }
 
 export interface JobPostingData {
@@ -63,21 +107,21 @@ export interface JobPostingData {
   location?: string;
   district?: string;
   detailedAddress?: string;
-  startDate?: any;
-  endDate?: any;
-  dateSpecificRequirements?: any[];
-  timeSlots?: any[];
-  createdAt?: any;
-  updatedAt?: any;
-  // 급여 정보
+  startDate?: DateLike;
+  endDate?: DateLike;
+  dateSpecificRequirements?: DateSpecificRequirement[];
+  timeSlots?: TimeSlot[];
+  createdAt?: DateLike;
+  updatedAt?: DateLike;
+  /** 급여 정보 */
   salaryType?: string;
   salaryAmount?: string;
   useRoleSalary?: boolean;
-  roleSalaries?: any;
-  // 복리후생
-  benefits?: any;
-  // 세금 설정
-  taxSettings?: any;
-  // 생성자
+  roleSalaries?: RoleSalary[];
+  /** 복리후생 */
+  benefits?: BenefitSettings;
+  /** 세금 설정 */
+  taxSettings?: TaxSettings;
+  /** 생성자 */
   createdBy?: string;
 }

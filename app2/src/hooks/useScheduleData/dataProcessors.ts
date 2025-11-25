@@ -329,7 +329,9 @@ export const processWorkLogData = async (
             },
             allowances: {
               meal: jobPostingData.benefits?.mealAllowance ? parseInt(jobPostingData.benefits.mealAllowance) : 0,
-              transportation: jobPostingData.benefits?.transportation ? parseInt(jobPostingData.benefits.transportation) : 0,
+              transportation: typeof jobPostingData.benefits?.transportation === 'string'
+                ? parseInt(jobPostingData.benefits.transportation)
+                : 0,
               accommodation: jobPostingData.benefits?.accommodation ? parseInt(jobPostingData.benefits.accommodation) : 0
             },
             taxSettings: jobPostingData.taxSettings,
