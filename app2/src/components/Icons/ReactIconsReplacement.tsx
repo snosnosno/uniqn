@@ -46,7 +46,10 @@ import {
   ArrowUturnLeftIcon,
   CheckIcon,
   Bars3BottomLeftIcon,
-  BellIcon
+  BellIcon,
+  CurrencyDollarIcon,
+  CreditCardIcon,
+  ClockIcon as ClockHistoryIcon
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleIconSolid,
@@ -124,6 +127,11 @@ export const FaReply = createIconWrapper(ArrowUturnLeftIcon);
 export const FaCheck = createIconWrapper(CheckIcon);
 export const FaSort = createIconWrapper(Bars3BottomLeftIcon);
 export const FaBell = createIconWrapper(BellIcon);
+
+// 결제 시스템 아이콘
+export const FaCoins = createIconWrapper(CurrencyDollarIcon);
+export const FaCreditCard = createIconWrapper(CreditCardIcon);
+export const FaHistory = createIconWrapper(ClockHistoryIcon);
 
 // Solid 버전 (필요한 경우)
 export const FaCheckCircleSolid = createIconWrapper(CheckCircleIconSolid);

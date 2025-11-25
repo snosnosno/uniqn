@@ -59,3 +59,18 @@ export const getChipCost = (
 
   throw new Error(`지원하지 않는 공고 타입입니다: ${postingType}`);
 };
+
+// ================= 충전 패키지 & 구독 플랜 =================
+// 문서 출처: MODEL_B_CHIP_SYSTEM_FINAL.md
+
+/**
+ * 충전 패키지 정보 (재export)
+ * src/types/payment/package.ts에서 관리
+ */
+export { CHIP_PACKAGES, CHIP_PACKAGE_IDS, getAllChipPackages, getChipPackage } from '../types/payment/package';
+
+/**
+ * 구독 플랜 정보 (재export)
+ * src/types/payment/subscription.ts에서 관리
+ */
+export { SUBSCRIPTION_PLANS } from '../types/payment/subscription';

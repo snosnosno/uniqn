@@ -824,6 +824,180 @@ service cloud.firestore {
       allow update, delete: if request.auth.token.role == 'admin';
     }
 
+    // ================= 결제 시스템 (v0.2.4) =================
+
+    // --- Chip Balance (칩 잔액 - 루트 레벨) ---
+    match /chipBalance/{userId} {
+      // 읽기: 본인만 가능
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- User Chip Balance (사용자 칩 잔액 - 서브컬렉션, 하위 호환성) ---
+    match /users/{userId}/chipBalance/{balanceId} {
+      // 읽기: 본인만 가능
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Chip Transactions (칩 트랜잭션 기록 - 루트 레벨) ---
+    match /chipTransactions/{transactionId} {
+      // 읽기: 본인의 트랜잭션만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create: if false;
+
+      // 수정/삭제: 불가 (감사 추적 보존)
+      allow update, delete: if false;
+    }
+
+    // --- Chip Transactions (칩 트랜잭션 기록 - 서브컬렉션, 하위 호환성) ---
+    match /users/{userId}/chipTransactions/{transactionId} {
+      // 읽기: 본인만 가능
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 생성: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create: if false;
+
+      // 수정/삭제: 불가 (감사 추적 보존)
+      allow update, delete: if false;
+    }
+
+    // --- Subscriptions (구독 정보 - 루트 레벨) ---
+    match /subscriptions/{subscriptionId} {
+      // 읽기: 본인의 구독만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- User Subscriptions (사용자 구독 정보 - 서브컬렉션, 하위 호환성) ---
+    match /users/{userId}/subscription/{subscriptionId} {
+      // 읽기: 본인과 관리자만
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Payment Transactions (결제 트랜잭션) ---
+    match /paymentTransactions/{transactionId} {
+      // 읽기: 본인의 결제만 조회 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create: if false;
+
+      // 수정/삭제: 불가 (결제 기록 보존)
+      allow update, delete: if false;
+    }
+
+    // --- Refund Requests (환불 요청) ---
+    match /refundRequests/{requestId} {
+      // 읽기: 본인의 환불 요청과 관리자만
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+
+      // 생성: 본인만 가능 (필수 필드 검증)
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['userId', 'transactionId', 'packageId', 'reason', 'reasonDetail', 'status']) &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.reason in ['unused', 'partial_use', 'dissatisfaction', 'error', 'other'];
+
+      // 수정: 관리자만 가능 (상태 변경)
+      allow update: if isPrivileged();
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Refund Blacklist (환불 블랙리스트) ---
+    match /refundBlacklist/{blacklistId} {
+      // 읽기: 본인과 관리자만
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+
+      // 생성/수정/삭제: 관리자만 가능
+      allow create, update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Chip Packages (충전 패키지 설정) ---
+    match /chipPackages/{packageId} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 생성/수정/삭제: 관리자만 가능
+      allow create, update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Subscription Plans (구독 플랜 설정) ---
+    match /subscriptionPlans/{planId} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 생성/수정/삭제: 관리자만 가능
+      allow create, update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Receipts (영수증) ---
+    match /receipts/{receiptId} {
+      // 읽기: 본인의 영수증만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Phone Verifications (전화번호 인증) ---
+    match /phoneVerifications/{verificationId} {
+      // 읽기: 본인의 인증만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- User Subscriptions (사용자 구독 - 루트 레벨) ---
+    match /userSubscriptions/{subscriptionId} {
+      // 읽기: 본인의 구독만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
+      allow create, update: if false;
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;
