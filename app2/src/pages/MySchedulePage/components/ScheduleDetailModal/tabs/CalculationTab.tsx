@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { FaInfoCircle } from '../../../../../components/Icons/ReactIconsReplacement';
+import { FaInfoCircle } from '@/components/Icons/ReactIconsReplacement';
 import { CalculationTabProps } from '../types';
 
 /**

@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
-import type { FixedWorkScheduleSectionProps } from '../../../../types/jobPosting';
-import { STAFF_ROLES } from '../../../../types/jobPosting';
-import { isNextDayWork } from '../../../../utils/jobPosting/jobPostingHelpers';
+import type { FixedWorkScheduleSectionProps } from '@/types/jobPosting';
+import { STAFF_ROLES } from '@/types/jobPosting';
+import { isNextDayWork } from '@/utils/jobPosting/jobPostingHelpers';
 
 /**
  * 고정공고 근무일정 입력 섹션

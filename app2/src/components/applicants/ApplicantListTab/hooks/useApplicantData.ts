@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { logger } from '../../../../utils/logger';
-import { db } from '../../../../firebase';
+import { logger } from '@/utils/logger';
+import { db } from '@/firebase';
 import { Applicant } from '../types';
-import { useApplicationData } from '../../../../hooks/useUnifiedData';
-import { Application } from '../../../../types/unifiedData';
+import { useApplicationData } from '@/hooks/useUnifiedData';
+import { Application } from '@/types/unifiedData';
 
 /**
  * 지원자 데이터를 관리하는 Custom Hook (UnifiedDataContext 통합)

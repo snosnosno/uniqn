@@ -10,8 +10,8 @@ import {
   removeStaffIdDateSuffix,
   type StaffData,
 } from '../staffDataTransformer';
-import type { WorkLog } from '../../../types/unifiedData';
-import type { JobPosting } from '../../../types/jobPosting/jobPosting';
+import type { WorkLog } from '@/types/unifiedData';
+import type { JobPosting } from '@/types/jobPosting/jobPosting';
 import { Timestamp } from 'firebase/firestore';
 
 describe('staffDataTransformer', () => {

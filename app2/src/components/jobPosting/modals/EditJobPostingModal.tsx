@@ -1,7 +1,7 @@
 import React from 'react';
-import { useJobPostingForm } from '../../../hooks/useJobPostingForm';
-import { useTemplateManager } from '../../../hooks/useTemplateManager';
-import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '../../../utils/jobPosting/jobPostingHelpers';
+import { useJobPostingForm } from '@/hooks/useJobPostingForm';
+import { useTemplateManager } from '@/hooks/useTemplateManager';
+import { LOCATIONS, PREDEFINED_ROLES, getRoleDisplayName } from '@/utils/jobPosting/jobPostingHelpers';
 import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
 import Input from '../../ui/Input';
@@ -11,7 +11,7 @@ import PreQuestionManager from '../PreQuestionManager';
 import TemplateModal from './TemplateModal';
 import LoadTemplateModal from './LoadTemplateModal';
 import ConfirmModal from '../../modals/ConfirmModal';
-import { toast } from '../../../utils/toast';
+import { toast } from '@/utils/toast';
 
 interface EditJobPostingModalProps {
   isOpen: boolean;

@@ -6,7 +6,7 @@
  *
  * 마이그레이션 가이드:
  * - Before: import { ... } from './utils/applicantHelpers'
- * - After:  import { ... } from '../../../utils/applicants'
+ * - After:  import { ... } from '@/utils/applicants'
  */
 
-export * from '../../../../utils/applicants';
+export * from '@/utils/applicants';

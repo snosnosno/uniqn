@@ -3,7 +3,7 @@
  * Google Analytics 4, 사용자 정의 분석, 성능 모니터링 통합
  */
 
-import { logger } from '../../../utils/logger';
+import { logger } from '@/utils/logger';
 import type { PerformanceMetrics } from './performanceMonitor';
 
 interface AnalyticsEvent {

@@ -10,8 +10,8 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, ConfirmedStaff, validateAnnouncement } from '../../../types';
-import { logger } from '../../../utils/logger';
+import { JobPosting, ConfirmedStaff, validateAnnouncement } from '@/types';
+import { logger } from '@/utils/logger';
 
 export interface SendAnnouncementModalProps {
   /** 모달 열림 상태 */

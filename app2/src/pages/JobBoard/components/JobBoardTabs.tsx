@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { BOARD_TABS } from '../../../config/boardTabs';
-import { PostingType } from '../../../types/jobPosting/jobPosting';
+import { BOARD_TABS } from '@/config/boardTabs';
+import { PostingType } from '@/types/jobPosting/jobPosting';
 
 interface JobBoardTabsProps {
   activeTab: PostingType | 'myApplications' | 'all';

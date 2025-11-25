@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { ApprovalModal } from '../../../../components/jobPosting/ApprovalModal';
+import { ApprovalModal } from '@/components/jobPosting/ApprovalModal';
 
 /**
  * ApprovalModal 컴포넌트 단위 테스트

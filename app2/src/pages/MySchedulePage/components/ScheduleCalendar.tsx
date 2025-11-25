@@ -1,9 +1,9 @@
 import React from 'react';
-import LightweightCalendar from '../../../components/LightweightCalendar';
+import LightweightCalendar from '@/components/LightweightCalendar';
 import { 
   ScheduleEvent, 
   CalendarView
-} from '../../../types/schedule';
+} from '@/types/schedule';
 
 interface ScheduleCalendarProps {
   schedules: ScheduleEvent[];

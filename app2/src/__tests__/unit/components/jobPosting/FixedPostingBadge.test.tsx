@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { FixedPostingBadge } from '../../../../components/jobPosting/FixedPostingBadge';
+import { FixedPostingBadge } from '@/components/jobPosting/FixedPostingBadge';
 import { Timestamp } from 'firebase/firestore';
 
 /**

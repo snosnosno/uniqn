@@ -1,8 +1,8 @@
 // Applicant 관련 타입 정의
 import { Timestamp } from 'firebase/firestore';
-import { JobPosting } from '../../../types/jobPosting';
-import { ApplicationGroup, ApplicationAssignment, DateBasedAssignment } from '../../../types/unifiedData';
-import { Assignment } from '../../../types/application';
+import { JobPosting } from '@/types/jobPosting';
+import { ApplicationGroup, ApplicationAssignment, DateBasedAssignment } from '@/types/unifiedData';
+import { Assignment } from '@/types/application';
 
 export interface Applicant {
   id: string;
@@ -57,6 +57,6 @@ export interface ApplicantListTabProps {
 }
 
 // Assignment 타입은 통합된 types/application.ts에서 import함 (중복 제거)
-export type { Assignment } from '../../../types/application';
+export type { Assignment } from '@/types/application';
 
 export type SelectedAssignments = { [key: string]: Assignment[] };

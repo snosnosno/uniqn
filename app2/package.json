@@ -48,9 +48,9 @@
     "zustand": "^5.0.7"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build --no-eslint",
-    "test": "react-scripts test",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject",
     "analyze": "npm run build && npx serve -s build",
     "lint": "eslint src --ext .ts,.tsx",
@@ -62,7 +62,7 @@
     "test:ci": "npm test -- --watchAll=false --passWithNoTests",
     "analyze:bundle": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
     "analyze:bundle:interactive": "npm run build:stats && npx webpack-bundle-analyzer build/bundle-stats.json -m static -r build/bundle-report.html -O",
-    "build:stats": "react-scripts build --stats",
+    "build:stats": "craco build",
     "emulators": "cd .. && firebase emulators:start --only functions,auth,firestore",
     "dev": "npm run emulators & npm run start",
     "deploy:hosting": "cd .. && firebase deploy --only hosting",
@@ -129,6 +129,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
+    "@craco/craco": "^7.1.0",
     "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",

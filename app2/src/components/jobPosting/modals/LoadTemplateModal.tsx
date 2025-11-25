@@ -1,12 +1,12 @@
 import React from 'react';
-import { JobPostingTemplate } from '../../../types/jobPosting';
-import { useDateUtils } from '../../../hooks/useDateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames } from '../../../utils/jobPosting/jobPostingHelpers';
+import { JobPostingTemplate } from '@/types/jobPosting';
+import { useDateUtils } from '@/hooks/useDateUtils';
+import { formatSalaryDisplay, getBenefitDisplayNames } from '@/utils/jobPosting/jobPostingHelpers';
 import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
 import LoadingSpinner from '../../LoadingSpinner';
 import { EmptyState, Badge, InfoCard } from '../../common';
-import { toast } from '../../../utils/toast';
+import { toast } from '@/utils/toast';
 
 interface LoadTemplateModalProps {
   isOpen: boolean;

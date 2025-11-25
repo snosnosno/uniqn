@@ -41,8 +41,8 @@
  */
 
 import React from 'react';
-import { PreQuestionsSectionProps } from '../../../../types/jobPosting/preQuestionsProps';
-import Toggle from '../../../ui/Toggle';
+import { PreQuestionsSectionProps } from '@/types/jobPosting/preQuestionsProps';
+import Toggle from '@/components/ui/Toggle';
 import PreQuestionManager from '../../PreQuestionManager';
 
 /**

@@ -49,12 +49,12 @@
  */
 
 import React from 'react';
-import { SalarySectionProps } from '../../../../../types/jobPosting/salaryProps';
-import Input from '../../../../ui/Input';
-import { Select } from '../../../../common/Select';
-import Toggle from '../../../../ui/Toggle';
+import { SalarySectionProps } from '@/types/jobPosting/salaryProps';
+import Input from '@/components/ui/Input';
+import { Select } from '@/components/common/Select';
+import Toggle from '@/components/ui/Toggle';
 import RoleSalaryManager from './RoleSalaryManager';
-import { calculateChipCost, formatChipCost } from '../../../../../utils/jobPosting/chipCalculator';
+import { calculateChipCost, formatChipCost } from '@/utils/jobPosting/chipCalculator';
 
 /**
  * SalarySection 컴포넌트 (React.memo 적용)

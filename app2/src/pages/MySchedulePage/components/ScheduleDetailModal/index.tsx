@@ -8,18 +8,18 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { getTodayString } from '../../../../utils/jobPosting/dateUtils';
-import { calculateWorkHours } from '../../../../utils/workLogMapper';
-import { calculateAllowances } from '../../../../utils/payrollCalculations';
-import { JobPosting } from '../../../../types/jobPosting/jobPosting';
+import { getTodayString } from '@/utils/jobPosting/dateUtils';
+import { calculateWorkHours } from '@/utils/workLogMapper';
+import { calculateAllowances } from '@/utils/payrollCalculations';
+import { JobPosting } from '@/types/jobPosting/jobPosting';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../../../firebase';
-import { logger } from '../../../../utils/logger';
-import { getSnapshotOrFallback } from '../../../../utils/scheduleSnapshot';
+import { db } from '@/firebase';
+import { logger } from '@/utils/logger';
+import { getSnapshotOrFallback } from '@/utils/scheduleSnapshot';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { UnifiedWorkLog } from '../../../../types/unified/workLog';
-import ReportModal from '../../../../components/modals/ReportModal';
-import ConfirmModal from '../../../../components/modals/ConfirmModal';
+import { UnifiedWorkLog } from '@/types/unified/workLog';
+import ReportModal from '@/components/modals/ReportModal';
+import ConfirmModal from '@/components/modals/ConfirmModal';
 
 // Import tab components
 import BasicInfoTab from './tabs/BasicInfoTab';

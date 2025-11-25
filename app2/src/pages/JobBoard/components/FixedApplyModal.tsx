@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FixedJobPosting, RoleWithCount } from '../../../types/jobPosting/jobPosting';
-import { formatWorkTimeDisplay } from '../../../utils/jobPosting/jobPostingHelpers';
+import { FixedJobPosting, RoleWithCount } from '@/types/jobPosting/jobPosting';
+import { formatWorkTimeDisplay } from '@/utils/jobPosting/jobPostingHelpers';
 
 interface FixedApplyModalProps {
   isOpen: boolean;

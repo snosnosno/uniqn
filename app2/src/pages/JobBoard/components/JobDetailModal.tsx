@@ -1,7 +1,7 @@
 import React from 'react';
-import Modal from '../../../components/ui/Modal';
-import JobPostingDetailContent from '../../../components/jobPosting/JobPostingDetailContent';
-import { JobPosting } from '../../../types/jobPosting';
+import Modal from '@/components/ui/Modal';
+import JobPostingDetailContent from '@/components/jobPosting/JobPostingDetailContent';
+import { JobPosting } from '@/types/jobPosting';
 
 interface JobDetailModalProps {
   isOpen: boolean;

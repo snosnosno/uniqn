@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FixedSizeList as List } from 'react-window';
 import JobCard from './JobCard';
-import { JobPosting } from '../../../types/jobPosting';
+import { JobPosting } from '@/types/jobPosting';
 import { JobFilters } from '../hooks/useJobBoard';
 
 interface JobListTabProps {

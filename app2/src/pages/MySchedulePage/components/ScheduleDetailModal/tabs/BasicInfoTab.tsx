@@ -8,9 +8,9 @@
 
 import React, { useMemo } from 'react';
 import { BasicInfoTabProps } from '../types';
-import { getSnapshotOrFallback } from '../../../../../utils/scheduleSnapshot';
-import { parseTimeToString, calculateWorkHours } from '../../../../../utils/workLogMapper';
-import { useUnifiedData } from '../../../../../hooks/useUnifiedData';
+import { getSnapshotOrFallback } from '@/utils/scheduleSnapshot';
+import { parseTimeToString, calculateWorkHours } from '@/utils/workLogMapper';
+import { useUnifiedData } from '@/hooks/useUnifiedData';
 
 /**
  * BasicInfoTab - 일정 기본 정보 표시 컴포넌트

@@ -8,8 +8,8 @@
 
 import React, { useMemo } from 'react';
 import { WorkInfoTabProps } from '../types';
-import { parseTimeToString, calculateWorkHours } from '../../../../../utils/workLogMapper';
-import { logger } from '../../../../../utils/logger';
+import { parseTimeToString, calculateWorkHours } from '@/utils/workLogMapper';
+import { logger } from '@/utils/logger';
 
 /**
  * WorkInfoTab - 근무 내역 표시 컴포넌트

@@ -1,4 +1,4 @@
-import { calculateChipCost } from '../../../../utils/jobPosting/chipCalculator';
+import { calculateChipCost } from '@/utils/jobPosting/chipCalculator';
 
 describe('calculateChipCost', () => {
   describe('고정 공고 (fixed)', () => {

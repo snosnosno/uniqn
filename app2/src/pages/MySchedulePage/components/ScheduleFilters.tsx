@@ -1,6 +1,6 @@
 import React from 'react';
-import { FaFilter, FaSearch, FaTimes } from '../../../components/Icons/ReactIconsReplacement';
-import { ScheduleFilters as FiltersType } from '../../../types/schedule';
+import { FaFilter, FaSearch, FaTimes } from '@/components/Icons/ReactIconsReplacement';
+import { ScheduleFilters as FiltersType } from '@/types/schedule';
 
 interface ScheduleFiltersProps {
   filters: FiltersType;

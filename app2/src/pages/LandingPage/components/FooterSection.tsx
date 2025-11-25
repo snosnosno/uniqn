@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { toast } from '../../../utils/toast';
+import { toast } from '@/utils/toast';
 
 const FooterSection: React.FC = () => {
   const currentYear = new Date().getFullYear();

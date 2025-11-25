@@ -36,7 +36,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { DateRequirementsSectionProps } from '../../../../types/jobPosting/dateRequirementsProps';
+import { DateRequirementsSectionProps } from '@/types/jobPosting/dateRequirementsProps';
 import DateSpecificRequirementsNew from '../../DateSpecificRequirementsNew';
 
 /**

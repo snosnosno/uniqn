@@ -4,8 +4,8 @@ import {
   FaHourglassHalf, 
   FaMoneyBillWave, 
   FaClock 
-} from '../../../components/Icons/ReactIconsReplacement';
-import { ScheduleStats as StatsType } from '../../../types/schedule';
+} from '@/components/Icons/ReactIconsReplacement';
+import { ScheduleStats as StatsType } from '@/types/schedule';
 
 interface ScheduleStatsProps {
   stats: StatsType;

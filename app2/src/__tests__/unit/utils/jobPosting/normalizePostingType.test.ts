@@ -1,5 +1,5 @@
-import { normalizePostingType } from '../../../../utils/jobPosting/jobPostingHelpers';
-import { JobPosting } from '../../../../types/jobPosting/jobPosting';
+import { normalizePostingType } from '@/utils/jobPosting/jobPostingHelpers';
+import { JobPosting } from '@/types/jobPosting/jobPosting';
 
 describe('normalizePostingType', () => {
   describe('새 필드 (postingType) 사용', () => {

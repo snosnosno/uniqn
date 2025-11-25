@@ -4,9 +4,9 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import { Staff, WorkLog, AttendanceRecord, Application } from '../../../types/unifiedData';
-import { ScheduleEvent } from '../../../types/schedule';
-import { toISODateString } from '../../../utils/dateUtils';
+import { Staff, WorkLog, AttendanceRecord, Application } from '@/types/unifiedData';
+import { ScheduleEvent } from '@/types/schedule';
+import { toISODateString } from '@/utils/dateUtils';
 
 // ===========================
 // Mock Staff Data

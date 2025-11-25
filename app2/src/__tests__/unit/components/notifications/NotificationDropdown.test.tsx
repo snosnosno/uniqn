@@ -13,7 +13,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { NotificationDropdown } from '../../../../components/notifications/NotificationDropdown';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { createMockUseNotifications, mockNotifications } from '../../testUtils/mockNotifications';
 
 // Mock useNotifications hook

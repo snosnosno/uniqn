@@ -5,9 +5,9 @@ import PreQuestionDisplay from './PreQuestionDisplay';
 import {
   getApplicantSelections,
   formatDateDisplay
-} from '../../../utils/applicants';
+} from '@/utils/applicants';
 import StaffProfileModal from '../../modals/StaffProfileModal';
-import { StaffData } from '../../../hooks/useStaffManagement';
+import { StaffData } from '@/hooks/useStaffManagement';
 
 interface ApplicantCardProps {
   applicant: Applicant;

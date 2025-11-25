@@ -6,10 +6,10 @@
  * Purpose: TypeScript 인터페이스 정의 - 각 컴포넌트의 Props 및 공통 타입
  */
 
-import { ScheduleEvent } from '../../../../types/schedule';
-import { JobPosting } from '../../../../types/jobPosting/jobPosting';
-import { UnifiedWorkLog } from '../../../../types/unified/workLog';
-import { PayrollCalculationResult } from '../../../../utils/payrollCalculations';
+import { ScheduleEvent } from '@/types/schedule';
+import { JobPosting } from '@/types/jobPosting/jobPosting';
+import { UnifiedWorkLog } from '@/types/unified/workLog';
+import { PayrollCalculationResult } from '@/utils/payrollCalculations';
 
 /**
  * ScheduleDetailModal 컨테이너 컴포넌트 Props

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting } from '../../../types/jobPosting';
-import JobPostingCard from '../../../components/common/JobPostingCard';
+import { JobPosting } from '@/types/jobPosting';
+import JobPostingCard from '@/components/common/JobPostingCard';
 
 interface JobCardProps {
   post: JobPosting;

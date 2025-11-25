@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react';
 import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
-import { logger } from '../../../../utils/logger';
-import { toast } from '../../../../utils/toast';
-import { db } from '../../../../firebase';
-import { JobPostingUtils, JobPosting } from '../../../../types/jobPosting';
-import { Assignment } from '../../../../types/application';
+import { logger } from '@/utils/logger';
+import { toast } from '@/utils/toast';
+import { db } from '@/firebase';
+import { JobPostingUtils, JobPosting } from '@/types/jobPosting';
+import { Assignment } from '@/types/application';
 import { Applicant } from '../types';
-import { jobRoleMap } from '../../../../utils/applicants';
-import { ApplicationHistoryService } from '../../../../services/ApplicationHistoryService';
-import { timestampToLocalDateString } from '../../../../utils/dateUtils';
+import { jobRoleMap } from '@/utils/applicants';
+import { ApplicationHistoryService } from '@/services/ApplicationHistoryService';
+import { timestampToLocalDateString } from '@/utils/dateUtils';
 
 interface UseApplicantActionsProps {
   jobPosting?: any;

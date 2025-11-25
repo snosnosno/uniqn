@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from '../../../utils/toast';
+import { toast } from '@/utils/toast';
 import { Applicant, Assignment } from './types';
-import { JobPosting } from '../../../types/jobPosting/jobPosting';
-import type { Selection } from '../../../types/applicants/selection';
+import { JobPosting } from '@/types/jobPosting/jobPosting';
+import type { Selection } from '@/types/applicants/selection';
 import {
   getApplicantSelectionsByDate,
   getDateSelectionStats,
@@ -11,7 +11,7 @@ import {
   groupSingleDaySelections,
   formatDateDisplay,
   getStaffCounts
-} from '../../../utils/applicants';
+} from '@/utils/applicants';
 
 /**
  * 시간대별 그룹

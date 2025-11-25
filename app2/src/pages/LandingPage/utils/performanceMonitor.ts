@@ -3,7 +3,7 @@
  * Core Web Vitals 및 실시간 성능 지표 수집
  */
 
-import { logger } from '../../../utils/logger';
+import { logger } from '@/utils/logger';
 
 interface PerformanceMetrics {
   // Core Web Vitals

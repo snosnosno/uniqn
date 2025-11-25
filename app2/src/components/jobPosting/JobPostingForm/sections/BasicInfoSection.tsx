@@ -31,10 +31,10 @@
  */
 
 import React from 'react';
-import { BasicInfoSectionProps } from '../../../../types/jobPosting/basicInfoProps';
-import Input from '../../../ui/Input';
-import { Select } from '../../../common/Select';
-import { LOCATIONS } from '../../../../utils/jobPosting/jobPostingHelpers';
+import { BasicInfoSectionProps } from '@/types/jobPosting/basicInfoProps';
+import Input from '@/components/ui/Input';
+import { Select } from '@/components/common/Select';
+import { LOCATIONS } from '@/utils/jobPosting/jobPostingHelpers';
 
 /**
  * BasicInfoSection 컴포넌트 (React.memo 적용)

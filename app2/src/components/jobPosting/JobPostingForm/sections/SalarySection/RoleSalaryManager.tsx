@@ -5,10 +5,10 @@
  */
 
 import React from 'react';
-import { Select } from '../../../../common/Select';
-import Input from '../../../../ui/Input';
-import Button from '../../../../ui/Button';
-import { PREDEFINED_ROLES, getRoleDisplayName } from '../../../../../utils/jobPosting/jobPostingHelpers';
+import { Select } from '@/components/common/Select';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import { PREDEFINED_ROLES, getRoleDisplayName } from '@/utils/jobPosting/jobPostingHelpers';
 
 interface RoleSalaryManagerProps {
   roleSalaries: {

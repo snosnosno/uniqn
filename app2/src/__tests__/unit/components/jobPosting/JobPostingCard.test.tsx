@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import JobPostingCard from '../../../../components/common/JobPostingCard';
-import { JobPosting } from '../../../../types/jobPosting';
+import JobPostingCard from '@/components/common/JobPostingCard';
+import { JobPosting } from '@/types/jobPosting';
 import { Timestamp } from 'firebase/firestore';
 import { testAccessibility } from '../../testUtils/accessibilityHelpers';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { DateSlider } from '../../../../components/jobPosting/DateSlider';
+import { DateSlider } from '@/components/jobPosting/DateSlider';
 
 /**
  * DateSlider 컴포넌트 단위 테스트

@@ -10,11 +10,11 @@
 import React, { useState } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { ZodError } from 'zod';
-import { useJobPostingForm } from '../../../hooks/useJobPostingForm';
-import { useTemplateManager } from '../../../hooks/useTemplateManager';
-import { JobPosting, JobPostingTemplate, Benefits } from '../../../types/jobPosting';
-import { toast } from '../../../utils/toast';
-import { jobPostingFormSchema } from '../../../schemas/jobPosting';
+import { useJobPostingForm } from '@/hooks/useJobPostingForm';
+import { useTemplateManager } from '@/hooks/useTemplateManager';
+import { JobPosting, JobPostingTemplate, Benefits } from '@/types/jobPosting';
+import { toast } from '@/utils/toast';
+import { jobPostingFormSchema } from '@/schemas/jobPosting';
 import Button from '../../ui/Button';
 import TemplateModal from '../modals/TemplateModal';
 import LoadTemplateModal from '../modals/LoadTemplateModal';

@@ -7,8 +7,8 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useApplicantActions } from '../useApplicantActions';
-import { mockUpdateDoc, resetFirebaseMocks } from '../../../../../__tests__/mocks/firebase';
-import { createMockApplicant } from '../../../../../__tests__/mocks/testData';
+import { mockUpdateDoc, resetFirebaseMocks } from '@/__tests__/mocks/firebase';
+import { createMockApplicant } from '@/__tests__/mocks/testData';
 
 // ========================================
 // Mock Setup

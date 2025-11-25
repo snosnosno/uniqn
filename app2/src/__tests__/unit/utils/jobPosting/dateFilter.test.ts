@@ -3,8 +3,8 @@ import {
   filterPostingsByDate,
   isToday,
   isYesterday
-} from '../../../../utils/jobPosting/dateFilter';
-import { JobPosting } from '../../../../types/jobPosting/jobPosting';
+} from '@/utils/jobPosting/dateFilter';
+import { JobPosting } from '@/types/jobPosting/jobPosting';
 import { Timestamp } from 'firebase/firestore';
 import { addDays, subDays } from 'date-fns';
 

@@ -13,9 +13,9 @@ import {
   doc,
   runTransaction,
 } from 'firebase/firestore';
-import { db } from '../../../firebase';
-import { logger } from '../../../utils/logger';
-import { toast } from '../../../utils/toast';
+import { db } from '@/firebase';
+import { logger } from '@/utils/logger';
+import { toast } from '@/utils/toast';
 import { logAction } from '../../useLogger';
 
 import { Table, BalancingResult } from '../../useTables';

@@ -21,8 +21,8 @@ export { default as SalarySection } from './SalarySection';
 export { default as FixedWorkScheduleSection } from './FixedWorkScheduleSection';
 
 // Re-export types for convenience
-export type { BasicInfoSectionProps } from '../../../../types/jobPosting/basicInfoProps';
-export type { DateRequirementsSectionProps } from '../../../../types/jobPosting/dateRequirementsProps';
-export type { PreQuestionsSectionProps } from '../../../../types/jobPosting/preQuestionsProps';
-export type { SalarySectionProps } from '../../../../types/jobPosting/salaryProps';
-export type { FixedWorkScheduleSectionProps } from '../../../../types/jobPosting';
+export type { BasicInfoSectionProps } from '@/types/jobPosting/basicInfoProps';
+export type { DateRequirementsSectionProps } from '@/types/jobPosting/dateRequirementsProps';
+export type { PreQuestionsSectionProps } from '@/types/jobPosting/preQuestionsProps';
+export type { SalarySectionProps } from '@/types/jobPosting/salaryProps';
+export type { FixedWorkScheduleSectionProps } from '@/types/jobPosting';

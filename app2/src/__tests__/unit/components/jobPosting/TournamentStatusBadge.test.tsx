@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { TournamentStatusBadge } from '../../../../components/jobPosting/TournamentStatusBadge';
-import { TournamentConfig } from '../../../../types/jobPosting/jobPosting';
+import { TournamentStatusBadge } from '@/components/jobPosting/TournamentStatusBadge';
+import { TournamentConfig } from '@/types/jobPosting/jobPosting';
 import { Timestamp } from 'firebase/firestore';
 
 describe('TournamentStatusBadge', () => {

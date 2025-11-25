@@ -1,23 +1,23 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { serverTimestamp, addDoc, collection, doc, deleteDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
-import useUnifiedData from '../../../hooks/useUnifiedData';
+import useUnifiedData from '@/hooks/useUnifiedData';
 // { useJobPostingData } - 향후 사용 예정
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../hooks/useToast';
-import { db } from '../../../firebase';
-import { useInfiniteJobPostings } from '../../../hooks/useJobPostings';
-import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
-import { logger } from '../../../utils/logger';
-import { JobPosting, PreQuestionAnswer } from '../../../types/jobPosting';
-import { Assignment } from '../../../types/application';
-import { sortJobPostingsByPriority } from '../../../utils/jobPosting/sortingUtils';
-import { validateRequiredProfileFields } from '../../../utils/profile/profileValidation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
+import { db } from '@/firebase';
+import { useInfiniteJobPostings } from '@/hooks/useJobPostings';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { logger } from '@/utils/logger';
+import { JobPosting, PreQuestionAnswer } from '@/types/jobPosting';
+import { Assignment } from '@/types/application';
+import { sortJobPostingsByPriority } from '@/utils/jobPosting/sortingUtils';
+import { validateRequiredProfileFields } from '@/utils/profile/profileValidation';
 import {
   handleFirebaseError,
   isPermissionDenied,
   FirebaseError,
-} from '../../../utils/firebaseErrors';
+} from '@/utils/firebaseErrors';
 
 export interface JobFilters {
   location: string;

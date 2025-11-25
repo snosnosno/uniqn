@@ -1,10 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '../../../types/jobPosting';
-import { timestampToLocalDateString } from '../../../utils/dateUtils';
-import { logger } from '../../../utils/logger';
+import { TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '@/types/jobPosting';
+import { timestampToLocalDateString } from '@/utils/dateUtils';
+import { logger } from '@/utils/logger';
 import { Applicant, Assignment } from './types';
-import { formatDateDisplay } from '../../../utils/applicants';
+import { formatDateDisplay } from '@/utils/applicants';
 
 interface ApplicantActionsProps {
   applicant: Applicant;
