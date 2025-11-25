@@ -21,7 +21,7 @@ import { filterPostingsByDate } from '../../utils/jobPosting/dateFilter';
  */
 const JobBoardPage = () => {
   // 탭 및 필터 상태
-  const [activePostingType, setActivePostingType] = useState<PostingType | 'myApplications' | 'all'>('regular');
+  const [activePostingType, setActivePostingType] = useState<PostingType | 'myApplications' | 'all'>('urgent');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const {

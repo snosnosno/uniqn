@@ -15,7 +15,7 @@ export const JobBoardTabs: React.FC<JobBoardTabsProps> = ({ activeTab, onTabChan
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-      <nav className="-mb-px flex space-x-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+      <nav className="-mb-px flex space-x-0 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {enabledTabs.map((tab) => {
           const isActive = tab.postingType ? activeTab === tab.postingType : activeTab === tab.id;
 
@@ -25,7 +25,7 @@ export const JobBoardTabs: React.FC<JobBoardTabsProps> = ({ activeTab, onTabChan
               onClick={() => onTabChange((tab.postingType || tab.id) as PostingType | 'myApplications' | 'all')}
               className={`
                 flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
-                border-b-2 -mb-px
+                border-b-2 -mb-px first:pl-1
                 ${
                   isActive
                     ? 'border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400'

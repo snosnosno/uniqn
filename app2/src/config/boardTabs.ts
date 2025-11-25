@@ -11,20 +11,20 @@ import { BoardTab } from '../types/jobPosting/boardTab';
  */
 export const BOARD_TABS: BoardTab[] = [
   {
+    id: 'urgent',
+    labelKey: 'jobBoard.tabs.urgent',
+    icon: '🚨',
+    postingType: 'urgent',
+    order: 1,
+    enabled: true  // 긴급 공고
+  },
+  {
     id: 'regular',
     labelKey: 'jobBoard.tabs.regular',
     icon: '📋',
     postingType: 'regular',
-    order: 1,
-    enabled: true  // 지원 공고 (항상 활성화)
-  },
-  {
-    id: 'fixed',
-    labelKey: 'jobBoard.tabs.fixed',
-    icon: '📌',
-    postingType: 'fixed',
     order: 2,
-    enabled: true  // 고정 공고 (항상 활성화)
+    enabled: true  // 지원 공고 (항상 활성화)
   },
   {
     id: 'tournament',
@@ -32,15 +32,15 @@ export const BOARD_TABS: BoardTab[] = [
     icon: '🏆',
     postingType: 'tournament',
     order: 3,
-    enabled: true  // 대회 공고 (Feature Flag로 제어 가능)
+    enabled: true  // 대회 공고
   },
   {
-    id: 'urgent',
-    labelKey: 'jobBoard.tabs.urgent',
-    icon: '🚨',
-    postingType: 'urgent',
+    id: 'fixed',
+    labelKey: 'jobBoard.tabs.fixed',
+    icon: '📌',
+    postingType: 'fixed',
     order: 4,
-    enabled: true  // 긴급 공고 (Feature Flag로 제어 가능)
+    enabled: true  // 고정 공고 (항상 활성화)
   },
   {
     id: 'myApplications',
