@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { doc, onSnapshot, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { useLogger } from './useLogger';
+import { logger } from '../utils/logger';
 import type { ChipBalance, ChipTransactionView } from '../types/payment/chip';
 
 /**
@@ -19,7 +19,7 @@ import type { ChipBalance, ChipTransactionView } from '../types/payment/chip';
  */
 export const useChipBalance = () => {
   const { currentUser } = useAuth();
-  const logger = useLogger();
+  const isInitializedRef = useRef(false);
 
   const [chipBalance, setChipBalance] = useState<ChipBalance | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<ChipTransactionView[]>([]);
@@ -35,6 +35,7 @@ export const useChipBalance = () => {
       setRecentTransactions([]);
       setIsLoading(false);
       setError(null);
+      isInitializedRef.current = false;
       return;
     }
 
@@ -57,10 +58,15 @@ export const useChipBalance = () => {
           };
 
           setChipBalance(balance);
-          logger.info('칩 잔액 업데이트', {
-            operation: 'chipBalance',
-            additionalData: balance as unknown as Record<string, unknown>,
-          });
+
+          // 초기 로드 시에만 로그 출력
+          if (!isInitializedRef.current) {
+            logger.info('칩 잔액 로드 완료', {
+              operation: 'chipBalance',
+              additionalData: { userId: currentUser.uid, totalChips: balance.totalChips },
+            });
+            isInitializedRef.current = true;
+          }
         } else {
           // 초기값
           const initialBalance: ChipBalance = {
@@ -71,6 +77,14 @@ export const useChipBalance = () => {
             lastUpdated: new Date(),
           };
           setChipBalance(initialBalance);
+
+          if (!isInitializedRef.current) {
+            logger.info('칩 잔액 초기화 (문서 없음)', {
+              operation: 'chipBalance',
+              additionalData: { userId: currentUser.uid },
+            });
+            isInitializedRef.current = true;
+          }
         }
         setIsLoading(false);
       },
@@ -87,14 +101,13 @@ export const useChipBalance = () => {
     return () => {
       unsubscribe();
     };
-  }, [currentUser, logger]);
+  }, [currentUser]);
 
   /**
    * 최근 거래 내역 조회
    */
   const fetchRecentTransactions = useCallback(async (limitCount: number = 10) => {
     if (!currentUser) {
-      logger.warn('거래 내역 조회 실패: 로그인되지 않음');
       return;
     }
 
@@ -107,10 +120,10 @@ export const useChipBalance = () => {
       );
 
       const snapshot = await getDocs(q);
-      const transactions: ChipTransactionView[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
+      const transactions: ChipTransactionView[] = snapshot.docs.map((docSnapshot) => {
+        const data = docSnapshot.data();
         return {
-          id: doc.id,
+          id: docSnapshot.id,
           userId: data.userId,
           type: data.type,
           chipType: data.chipType,
@@ -129,16 +142,11 @@ export const useChipBalance = () => {
       });
 
       setRecentTransactions(transactions);
-      logger.info('거래 내역 조회 완료', {
-        operation: 'fetchRecentTransactions',
-        additionalData: { count: transactions.length },
-      });
     } catch (err) {
       logger.error('거래 내역 조회 실패', err instanceof Error ? err : undefined, {
         operation: 'fetchRecentTransactions',
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   /**

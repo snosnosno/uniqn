@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useLogger } from '../../hooks/useLogger';
+import { logger } from '../../utils/logger';
 import { useToast } from '../../hooks/useToast';
 import type { ChipType } from '../../types/payment/chip';
 
@@ -20,7 +20,7 @@ interface ManualChipGrantProps {
  * - 관리자 권한 필요
  */
 export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) => {
-  const logger = useLogger();
+  // logger is imported from utils/logger
   const toast = useToast();
 
   const [userId, setUserId] = useState('');

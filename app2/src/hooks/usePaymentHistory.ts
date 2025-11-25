@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useLogger } from './useLogger';
+import { logger } from '../utils/logger';
 import type { PaymentTransaction, PaymentStatus } from '../types/payment';
 
 /**
@@ -26,10 +26,10 @@ export const usePaymentHistory = (
     endDate?: Date;
   }
 ) => {
-  const logger = useLogger();
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isInitializedRef = useRef(false);
 
   // options를 ref로 저장하여 안정적인 참조 유지
   const optionsRef = useRef(options);
@@ -42,6 +42,7 @@ export const usePaymentHistory = (
       setTransactions([]);
       setIsLoading(false);
       setError(null);
+      isInitializedRef.current = false;
       return undefined;
     }
 
@@ -105,10 +106,13 @@ export const usePaymentHistory = (
           setTransactions(filteredData);
           setIsLoading(false);
 
-          logger.info('결제 내역 조회 성공', {
-            operation: 'usePaymentHistory',
-            additionalData: { count: filteredData.length },
-          });
+          if (!isInitializedRef.current) {
+            logger.info('결제 내역 조회 성공', {
+              operation: 'usePaymentHistory',
+              additionalData: { count: filteredData.length },
+            });
+            isInitializedRef.current = true;
+          }
         },
         (err) => {
           const errorMessage = err.message || '결제 내역 조회 중 오류가 발생했습니다';
@@ -123,10 +127,6 @@ export const usePaymentHistory = (
 
       return () => {
         unsubscribe();
-        logger.debug('결제 내역 구독 해제', {
-          operation: 'usePaymentHistory',
-          additionalData: { userId },
-        });
       };
     } catch (err) {
       const errorMessage =
@@ -138,7 +138,7 @@ export const usePaymentHistory = (
       setIsLoading(false);
       return undefined;
     }
-  }, [userId, options?.status, options?.startDate, options?.endDate, logger]);
+  }, [userId, options?.status, options?.startDate, options?.endDate]);
 
   // 통계 계산
   const statistics = useMemo(() => {

@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthContext';
-import { useLogger } from '../hooks/useLogger';
+import { logger } from '../utils/logger';
 import type { ChipBalance } from '../types/payment/chip';
 
 /**
@@ -29,7 +29,7 @@ const ChipContext = createContext<ChipContextType | undefined>(undefined);
  */
 export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
-  const logger = useLogger();
+  const isInitializedRef = useRef(false);
 
   const [chipBalance, setChipBalance] = useState<ChipBalance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +40,6 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const refreshBalance = useCallback(async () => {
     if (!currentUser) {
-      logger.warn('칩 잔액 새로고침 실패: 로그인되지 않음');
       return;
     }
 
@@ -48,12 +47,8 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     try {
-      // Firestore에서 재조회 (실시간 구독이 자동으로 처리하지만 수동 새로고침 옵션)
-      logger.info('칩 잔액 수동 새로고침', { operation: 'refreshBalance' });
-
       // onSnapshot이 자동으로 업데이트를 감지하므로 별도 로직 불필요
       // 필요시 강제 재조회 로직 추가 가능
-
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
       logger.error('칩 잔액 새로고침 실패', err instanceof Error ? err : undefined, {
@@ -63,7 +58,7 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, logger]);
+  }, [currentUser]);
 
   /**
    * Firestore 실시간 구독
@@ -73,6 +68,7 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setChipBalance(null);
       setIsLoading(false);
       setError(null);
+      isInitializedRef.current = false;
       return;
     }
 
@@ -95,10 +91,15 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
 
           setChipBalance(balance);
-          logger.info('칩 잔액 업데이트', {
-            operation: 'chipBalance',
-            additionalData: balance as unknown as Record<string, unknown>,
-          });
+
+          // 초기 로드 시에만 로그 출력
+          if (!isInitializedRef.current) {
+            logger.info('칩 잔액 로드 완료 (Context)', {
+              operation: 'chipBalance',
+              additionalData: { userId: currentUser.uid, totalChips: balance.totalChips },
+            });
+            isInitializedRef.current = true;
+          }
         } else {
           // 칩 잔액 문서가 없으면 초기값 설정
           const initialBalance: ChipBalance = {
@@ -109,10 +110,14 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastUpdated: new Date(),
           };
           setChipBalance(initialBalance);
-          logger.info('칩 잔액 초기화', {
-            operation: 'chipBalance',
-            additionalData: initialBalance as unknown as Record<string, unknown>,
-          });
+
+          if (!isInitializedRef.current) {
+            logger.info('칩 잔액 초기화 (Context, 문서 없음)', {
+              operation: 'chipBalance',
+              additionalData: { userId: currentUser.uid },
+            });
+            isInitializedRef.current = true;
+          }
         }
         setIsLoading(false);
       },
@@ -129,12 +134,8 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       unsubscribe();
-      logger.debug('칩 잔액 구독 해제', {
-        operation: 'chipBalance',
-        additionalData: { userId: currentUser.uid },
-      });
     };
-  }, [currentUser, logger]);
+  }, [currentUser]);
 
   const value: ChipContextType = {
     chipBalance,

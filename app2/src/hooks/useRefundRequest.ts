@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
-import { useLogger } from './useLogger';
+import { logger } from '../utils/logger';
 import { useToast } from './useToast';
 
 /**
@@ -12,7 +12,6 @@ import { useToast } from './useToast';
  * @returns 환불 요청 함수 및 상태
  */
 export const useRefundRequest = () => {
-  const logger = useLogger();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
 

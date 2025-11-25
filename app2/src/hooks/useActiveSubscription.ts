@@ -7,23 +7,24 @@
  * @returns 활성 구독 정보 및 상태
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useLogger } from './useLogger';
+import { logger } from '../utils/logger';
 import type { UserSubscription } from '../types/payment/subscription';
 
 export const useActiveSubscription = (userId: string | null) => {
-  const logger = useLogger();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
     if (!userId) {
       setSubscription(null);
       setIsLoading(false);
       setError(null);
+      isInitializedRef.current = false;
       return undefined;
     }
 
@@ -48,10 +49,13 @@ export const useActiveSubscription = (userId: string | null) => {
           if (snapshot.empty) {
             setSubscription(null);
             setIsLoading(false);
-            logger.info('활성 구독 없음', {
-              operation: 'useActiveSubscription',
-              additionalData: { userId },
-            });
+            if (!isInitializedRef.current) {
+              logger.info('활성 구독 없음', {
+                operation: 'useActiveSubscription',
+                additionalData: { userId },
+              });
+              isInitializedRef.current = true;
+            }
             return;
           }
 
@@ -70,10 +74,13 @@ export const useActiveSubscription = (userId: string | null) => {
           setSubscription(data);
           setIsLoading(false);
 
-          logger.info('활성 구독 조회 성공', {
-            operation: 'useActiveSubscription',
-            additionalData: { userId, subscriptionId: data.id },
-          });
+          if (!isInitializedRef.current) {
+            logger.info('활성 구독 조회 성공', {
+              operation: 'useActiveSubscription',
+              additionalData: { userId, subscriptionId: data.id },
+            });
+            isInitializedRef.current = true;
+          }
         },
         (err) => {
           const errorMessage = err.message || '구독 정보 조회 중 오류가 발생했습니다';
@@ -88,10 +95,6 @@ export const useActiveSubscription = (userId: string | null) => {
 
       return () => {
         unsubscribe();
-        logger.debug('구독 정보 구독 해제', {
-          operation: 'useActiveSubscription',
-          additionalData: { userId },
-        });
       };
     } catch (err) {
       const errorMessage =
@@ -103,7 +106,7 @@ export const useActiveSubscription = (userId: string | null) => {
       setIsLoading(false);
       return undefined;
     }
-  }, [userId, logger]);
+  }, [userId]);
 
   return {
     subscription,

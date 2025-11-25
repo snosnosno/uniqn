@@ -6,17 +6,17 @@
  * @returns 구독 플랜 목록 및 상태
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useLogger } from './useLogger';
+import { logger } from '../utils/logger';
 import type { SubscriptionPlan } from '../types/payment/subscription';
 
 export const useSubscriptionPlans = () => {
-  const logger = useLogger();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -56,10 +56,13 @@ export const useSubscriptionPlans = () => {
           setPlans(data);
           setIsLoading(false);
 
-          logger.info('구독 플랜 조회 성공', {
-            operation: 'useSubscriptionPlans',
-            additionalData: { count: data.length },
-          });
+          if (!isInitializedRef.current) {
+            logger.info('구독 플랜 조회 성공', {
+              operation: 'useSubscriptionPlans',
+              additionalData: { count: data.length },
+            });
+            isInitializedRef.current = true;
+          }
         },
         (err) => {
           const errorMessage = err.message || '구독 플랜 조회 중 오류가 발생했습니다';
@@ -73,9 +76,6 @@ export const useSubscriptionPlans = () => {
 
       return () => {
         unsubscribe();
-        logger.debug('구독 플랜 구독 해제', {
-          operation: 'useSubscriptionPlans',
-        });
       };
     } catch (err) {
       const errorMessage =
@@ -87,7 +87,7 @@ export const useSubscriptionPlans = () => {
       setIsLoading(false);
       return undefined;
     }
-  }, [logger]);
+  }, []);
 
   return {
     plans,
