@@ -13,7 +13,6 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';

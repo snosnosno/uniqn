@@ -24,7 +24,6 @@ import {
   validateConsentCreate,
   validateConsentUpdate,
   ValidationError,
-  PermissionError,
   ServiceError,
 } from '../utils/validation/accountValidation';
 import type {
@@ -32,8 +31,6 @@ import type {
   ConsentCreateInput,
   ConsentUpdateInput,
   ConsentChange,
-  CURRENT_TERMS_VERSION,
-  CURRENT_PRIVACY_VERSION,
 } from '../types/consent';
 
 /**

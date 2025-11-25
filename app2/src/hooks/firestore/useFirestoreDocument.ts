@@ -18,7 +18,7 @@
  * - cleanup 자동 처리
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   doc,
   onSnapshot,

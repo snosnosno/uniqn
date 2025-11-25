@@ -22,7 +22,6 @@ import { toISODateString } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 import { useToast } from '../useToast';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
-import { createWorkLogId } from '../../utils/workLogSimplified';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
 import type { ConfirmedStaff } from '../../types/jobPosting/base';
 import type { StaffData } from '../../utils/staff/staffDataTransformer';

@@ -9,7 +9,6 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,7 +16,6 @@ import { useFirestoreDocument } from './firestore';
 import {
   createConsent,
   updateConsent,
-  getConsent,
   hasRequiredConsents,
 } from '../services/consentService';
 import type {

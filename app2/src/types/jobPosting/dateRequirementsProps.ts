@@ -4,7 +4,7 @@
  * @see app2/src/components/jobPosting/JobPostingForm/sections/DateRequirementsSection.tsx
  */
 
-import { SectionProps, ValidationState } from './sectionProps';
+import { SectionProps } from './sectionProps';
 import { DateSpecificRequirement } from './base';
 
 /**

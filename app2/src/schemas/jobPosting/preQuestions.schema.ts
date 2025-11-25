@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { xssValidation, validateArrayNoXss } from '../../utils/validation/xssProtection';
+import { xssValidation } from '../../utils/validation/xssProtection';
 
 /**
  * 질문 타입 열거형

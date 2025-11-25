@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTournament } from '../contexts/TournamentContext';
 import { useTranslation } from 'react-i18next';
-import { writeBatch, doc, runTransaction, collection } from 'firebase/firestore';
+import { writeBatch, doc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';

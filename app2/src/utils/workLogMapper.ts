@@ -6,45 +6,6 @@ import {
 import { logger } from './logger';
 
 /**
- * timeSlot 문자열을 파싱하여 시작/종료 시간 추출
- * @param timeSlot "17:00-21:00" 형식의 문자열
- * @returns { start: string, end: string } | null
- */
-function parseTimeSlot(timeSlot: string | null | undefined): { start: string; end: string } | null {
-  if (!timeSlot || timeSlot === '미정') {
-    return null;
-  }
-  
-  try {
-    // "17:00-21:00" 형식 파싱
-    const match = timeSlot.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
-    if (match && match[1] && match[2]) {
-      return {
-        start: match[1],
-        end: match[2]
-      };
-    }
-    
-    // "17:00 - 21:00" (공백 포함) 형식도 처리
-    const matchWithSpace = timeSlot.match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
-    if (matchWithSpace && matchWithSpace[1] && matchWithSpace[2]) {
-      return {
-        start: matchWithSpace[1],
-        end: matchWithSpace[2]
-      };
-    }
-    
-    return null;
-  } catch (error) {
-    logger.error('timeSlot 파싱 오류', error as Error, {
-      component: 'workLogMapper',
-      data: { timeSlot }
-    });
-    return null;
-  }
-}
-
-/**
  * Firebase Timestamp를 HH:mm 형식 문자열로 변환
  * 모든 시간 데이터 변환에 사용되는 통합 함수
  */

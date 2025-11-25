@@ -39,8 +39,6 @@ import type {
   DeletionRequest,
   DeletionRequestInput,
   DeletionCancellationInput,
-  DeletionStatus,
-  calculateDeletionDate,
 } from '../types/accountDeletion';
 import crypto from 'crypto-js';
 

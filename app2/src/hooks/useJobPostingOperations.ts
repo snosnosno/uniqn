@@ -10,7 +10,6 @@ import { JobPosting, JobPostingFormData } from '../types/jobPosting';
 import { prepareFormDataForFirebase } from '../utils/jobPosting/jobPostingHelpers';
 import { validateJobPostingForm } from '../utils/jobPosting/formValidation';
 import { createSnapshotFromJobPosting } from '../utils/scheduleSnapshot';
-import { ScheduleEvent } from '../types/schedule';
 import { calculateChipCost } from '../utils/jobPosting/chipCalculator';
 
 export const useJobPostingOperations = () => {

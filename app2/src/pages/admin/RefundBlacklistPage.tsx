@@ -34,7 +34,7 @@ interface UserRefundHistory {
 }
 
 const RefundBlacklistPage: React.FC = () => {
-  const { currentUser, role } = useAuth();
+  const { role } = useAuth();
   const [blacklist, setBlacklist] = useState<RefundBlacklistEntry[]>([]);
   const [refundHistory, setRefundHistory] = useState<UserRefundHistory[]>([]);
   const [loading, setLoading] = useState(true);

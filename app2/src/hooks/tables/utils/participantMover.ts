@@ -19,7 +19,6 @@ import { toast } from '@/utils/toast';
 import { logAction } from '../../useLogger';
 
 import { Table, BalancingResult } from '../../useTables';
-import { getActualTournamentId } from './tableHelpers';
 
 /**
  * 참가자 이동 상세 정보
