@@ -35,7 +35,7 @@ export const ConsentSettings: React.FC = () => {
     consent,
     loading,
     error,
-    hasRequiredConsents,
+    hasRequiredConsents: _hasRequiredConsents,
     isMarketingAgreed,
     isLocationServiceAgreed,
     isPushNotificationAgreed,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, PostingType, RoleWithCount } from '../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, PostingType } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, formatRoleSalaryDisplay, normalizePostingType } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';

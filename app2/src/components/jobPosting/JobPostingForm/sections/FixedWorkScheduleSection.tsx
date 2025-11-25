@@ -18,7 +18,7 @@ import { isNextDayWork } from '@/utils/jobPosting/jobPostingHelpers';
  * ```
  */
 const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
-  ({ data, handlers, validation }) => {
+  ({ data, handlers, validation: _validation }) => {
     // ========== 익일 근무 여부 체크 ==========
     const isNextDay = useMemo(() => {
       return isNextDayWork(data.workSchedule.startTime, data.workSchedule.endTime);

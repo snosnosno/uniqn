@@ -46,7 +46,7 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
               </label>
               <Select
                 value={role}
-                onChange={(value) => {
+                onChange={(_value) => {
                   // 역할 변경 로직 (간단히 처리)
                 }}
                 options={PREDEFINED_ROLES.map(r => ({

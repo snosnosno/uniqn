@@ -54,7 +54,8 @@ import Input from '@/components/ui/Input';
 import { Select } from '@/components/common/Select';
 import Toggle from '@/components/ui/Toggle';
 import RoleSalaryManager from './RoleSalaryManager';
-import { calculateChipCost, formatChipCost } from '@/utils/jobPosting/chipCalculator';
+// 향후 칩 비용 계산 기능에서 사용 예정
+// import { calculateChipCost, formatChipCost } from '@/utils/jobPosting/chipCalculator';
 
 /**
  * SalarySection 컴포넌트 (React.memo 적용)

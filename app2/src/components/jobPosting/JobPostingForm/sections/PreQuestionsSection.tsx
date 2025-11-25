@@ -65,7 +65,7 @@ import PreQuestionManager from '../../PreQuestionManager';
 const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(({
   data,
   handlers,
-  validation
+  validation: _validation
 }) => {
   return (
     <div className="space-y-4">

@@ -35,7 +35,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const { createAnnouncement } = useSystemAnnouncements();
 

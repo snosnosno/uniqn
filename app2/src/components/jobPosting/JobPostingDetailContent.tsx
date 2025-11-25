@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, isFixedJobPosting, FixedJobPosting, WorkSchedule, RoleWithCount } from '../../types/jobPosting';
+import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, isFixedJobPosting } from '../../types/jobPosting';
 import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { formatSalaryDisplay, getRoleDisplayName, formatWorkTimeDisplay } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';

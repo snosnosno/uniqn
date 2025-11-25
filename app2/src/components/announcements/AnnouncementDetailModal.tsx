@@ -36,7 +36,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
   onEdit,
   onDelete
 }) => {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
 
   /**
    * 수정 버튼 클릭
