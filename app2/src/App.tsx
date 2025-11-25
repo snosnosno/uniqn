@@ -1,6 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { Suspense } from 'react';
-// import { lazyWithRetry } from './utils/lazyWithRetry';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Feature Flags
@@ -19,33 +17,27 @@ import ComingSoon from './components/ComingSoon';
 // Maintenance page
 import MaintenancePage from './pages/MaintenancePage';
 
-import FirebaseErrorBoundary from './components/errors/FirebaseErrorBoundary';
-import ErrorBoundary from './components/errors/ErrorBoundary';
 import { Layout } from './components/layout/Layout';
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleBasedRoute from './components/auth/RoleBasedRoute';
 import { ToastContainer } from './components/Toast';
 import LoadingSpinner from './components/LoadingSpinner';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import NetworkStatusIndicator from './components/NetworkStatusIndicator';
-// Zustand 마이그레이션: Context 대신 Adapter 사용
-import { TournamentProvider } from './contexts/TournamentContextAdapter';
-// UnifiedDataInitializer - Zustand Store 초기화
-import { UnifiedDataInitializer } from './components/UnifiedDataInitializer';
-// TournamentDataContext - 토너먼트 데이터 전역 관리
-import { TournamentDataProvider } from './contexts/TournamentDataContext';
-// DateFilterStore - 날짜 선택 상태 관리 (Zustand, Provider 불필요)
-// ThemeContext - 다크모드 지원
-import { ThemeProvider } from './contexts/ThemeContext';
+
+// Provider 그룹 - 중첩 최적화
+import { CoreProviders, DataProviders } from './components/providers';
+
+// Capacitor 네이티브 서비스 초기화 컴포넌트
+import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
+
+// 초기화 유틸리티
 import { firebaseConnectionManager } from './utils/firebaseConnectionManager';
 import { performanceMonitor } from './utils/performanceMonitor';
 import { initializePerformance } from './utils/firebasePerformance';
 import { initializeFontOptimization } from './utils/fontOptimizer';
 import { initializeOfflineSupport } from './utils/offlineSupport';
 import { logger } from './utils/logger';
-
-// Capacitor 네이티브 서비스 초기화 컴포넌트
-import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
 
 
 
@@ -138,18 +130,6 @@ const MaintenanceModeCheck: React.FC<{ children: React.ReactNode }> = ({ childre
   return <>{children}</>;
 };
 
-// Create a client with optimized cache settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: 2,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
 const App: React.FC = () => {
   // Firebase 자동 복구 활성화 및 성능 모니터링
   React.useEffect(() => {
@@ -191,21 +171,14 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <FirebaseErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <AuthProvider>
-              <MaintenanceModeCheck>
-                <CapacitorInitializer>
-                  <UnifiedDataInitializer>
-                    <TournamentProvider>
-                      <TournamentDataProvider>
-                        {/* DateFilterProvider 제거 - Zustand Store 사용 */}
-                        {/* 네트워크 상태 표시 */}
-                        <NetworkStatusIndicator position="top" />
+    <CoreProviders>
+      <MaintenanceModeCheck>
+        <CapacitorInitializer>
+          <DataProviders>
+            {/* 네트워크 상태 표시 */}
+            <NetworkStatusIndicator position="top" />
 
-                <Routes>
+            <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
                 <Route path="/login" element={<Login />} />
@@ -304,18 +277,12 @@ const App: React.FC = () => {
                       </Route>
                     </Route>
                   </Route>
-                </Routes>
-                      </TournamentDataProvider>
-                    </TournamentProvider>
-                  </UnifiedDataInitializer>
-                </CapacitorInitializer>
-              </MaintenanceModeCheck>
-            </AuthProvider>
-            <ToastContainer />
-          </ThemeProvider>
-        </QueryClientProvider>
-      </FirebaseErrorBoundary>
-    </ErrorBoundary>
+            </Routes>
+          </DataProviders>
+        </CapacitorInitializer>
+      </MaintenanceModeCheck>
+      <ToastContainer />
+    </CoreProviders>
   );
 }
 
