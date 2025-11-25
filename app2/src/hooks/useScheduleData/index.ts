@@ -10,7 +10,7 @@ import type { Application, WorkLog } from '../../types/unifiedData';
 import { UseScheduleDataReturn } from './types';
 import { processApplicationData, processWorkLogData } from './dataProcessors';
 import { filterSchedules, createDefaultFilters } from './filterUtils';
-import { calculatePayroll, calculateAllowances } from '../../utils/payrollCalculations';
+import { calculateAllowances } from '../../utils/payrollCalculations';
 
 /**
  * 스케줄 데이터를 관리하는 커스텀 훅

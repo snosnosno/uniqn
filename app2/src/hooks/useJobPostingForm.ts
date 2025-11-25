@@ -9,7 +9,6 @@ import {
 import { JobPosting, JobPostingFormData } from '../types/jobPosting';
 import {
   DateSpecificRequirement,
-  PreQuestion,
   Benefits,
   TimeSlot,
   RoleRequirement
