@@ -5,14 +5,29 @@
 import { Timestamp } from 'firebase/firestore';
 
 /**
- * 신고 유형
+ * 신고 유형 (구직자 → 구인자 신고)
  */
-export type ReportType =
+export type EmployerReportType =
+  | 'false_posting'          // 허위공고
+  | 'employer_negligence'    // 근무태만
+  | 'unfair_treatment'       // 부당한 대우
+  | 'inappropriate_behavior' // 부적절한 행동
+  | 'other';                 // 기타
+
+/**
+ * 신고 유형 (구인자 → 구직자 신고)
+ */
+export type EmployeeReportType =
   | 'tardiness'              // 지각
   | 'negligence'             // 근무태만
   | 'no_show'               // 노쇼
   | 'inappropriate_behavior' // 부적절한 행동
   | 'other';                // 기타
+
+/**
+ * 신고 유형 (통합)
+ */
+export type ReportType = EmployerReportType | EmployeeReportType;
 
 /**
  * 신고자 유형
@@ -119,9 +134,9 @@ export interface ReportTypeInfo {
 }
 
 /**
- * 신고 유형별 정보 상수
+ * 구인자 → 구직자 신고 유형 (기존)
  */
-export const REPORT_TYPES: ReportTypeInfo[] = [
+export const EMPLOYEE_REPORT_TYPES: ReportTypeInfo[] = [
   {
     key: 'tardiness',
     labelKey: 'report.types.tardiness.label',
@@ -153,6 +168,47 @@ export const REPORT_TYPES: ReportTypeInfo[] = [
     severity: 'medium'
   }
 ];
+
+/**
+ * 구직자 → 구인자 신고 유형 (내 스케줄용)
+ */
+export const EMPLOYER_REPORT_TYPES: ReportTypeInfo[] = [
+  {
+    key: 'false_posting',
+    labelKey: 'report.types.false_posting.label',
+    descriptionKey: 'report.types.false_posting.description',
+    severity: 'high'
+  },
+  {
+    key: 'employer_negligence',
+    labelKey: 'report.types.employer_negligence.label',
+    descriptionKey: 'report.types.employer_negligence.description',
+    severity: 'medium'
+  },
+  {
+    key: 'unfair_treatment',
+    labelKey: 'report.types.unfair_treatment.label',
+    descriptionKey: 'report.types.unfair_treatment.description',
+    severity: 'high'
+  },
+  {
+    key: 'inappropriate_behavior',
+    labelKey: 'report.types.inappropriate_behavior.label',
+    descriptionKey: 'report.types.inappropriate_behavior.description',
+    severity: 'critical'
+  },
+  {
+    key: 'other',
+    labelKey: 'report.types.other.label',
+    descriptionKey: 'report.types.other.description',
+    severity: 'medium'
+  }
+];
+
+/**
+ * 신고 유형별 정보 상수 (통합 - 모든 유형 포함)
+ */
+export const REPORT_TYPES: ReportTypeInfo[] = [...EMPLOYEE_REPORT_TYPES, ...EMPLOYER_REPORT_TYPES.filter(t => !EMPLOYEE_REPORT_TYPES.find(e => e.key === t.key))];
 
 /**
  * 신고 상태별 스타일 정보

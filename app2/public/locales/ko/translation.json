@@ -1169,6 +1169,18 @@
       "other": {
         "label": "기타",
         "description": "위에 해당하지 않는 기타 문제"
+      },
+      "false_posting": {
+        "label": "허위공고",
+        "description": "실제 내용과 다른 허위 정보가 포함된 공고"
+      },
+      "employer_negligence": {
+        "label": "근무태만",
+        "description": "구인자가 약속한 사항을 이행하지 않는 경우"
+      },
+      "unfair_treatment": {
+        "label": "부당한 대우",
+        "description": "부당한 급여 지급, 불합리한 요구 등"
       }
     },
     "severity": {

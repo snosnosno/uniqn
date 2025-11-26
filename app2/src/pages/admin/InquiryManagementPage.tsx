@@ -39,6 +39,7 @@ import {
   INQUIRY_STATUS_STYLES,
   InquiryUpdateInput
 } from '../../types/inquiry';
+import { REPORT_TYPES, ReportType } from '../../types/report';
 
 // 필터 인터페이스
 interface InquiryFilters {
@@ -265,6 +266,39 @@ const InquiryManagementPage: React.FC = () => {
     setShowModal(true);
   };
 
+  // userName에서 순수 이름만 추출 (JSON 데이터 제거)
+  const extractUserName = (userName: string): string => {
+    if (!userName) return '알 수 없음';
+    // "[" 이전의 텍스트만 추출하고 trim
+    const bracketIndex = userName.indexOf('[');
+    if (bracketIndex > 0) {
+      return userName.substring(0, bracketIndex).trim();
+    }
+    return userName.trim();
+  };
+
+  // message에서 JSON 데이터 제거 (신고 상세정보는 별도 섹션에 표시)
+  const extractMessage = (message: string): string => {
+    if (!message) return '';
+    // "[" 또는 "{" 이전의 텍스트만 추출
+    const bracketIndex = message.indexOf('[');
+    const braceIndex = message.indexOf('{');
+
+    let cutIndex = -1;
+    if (bracketIndex > 0 && braceIndex > 0) {
+      cutIndex = Math.min(bracketIndex, braceIndex);
+    } else if (bracketIndex > 0) {
+      cutIndex = bracketIndex;
+    } else if (braceIndex > 0) {
+      cutIndex = braceIndex;
+    }
+
+    if (cutIndex > 0) {
+      return message.substring(0, cutIndex).trim();
+    }
+    return message.trim();
+  };
+
   // 날짜 포맷팅
   const formatDate = (timestamp: Timestamp) => {
     return timestamp.toDate().toLocaleDateString('ko-KR', {
@@ -283,6 +317,12 @@ const InquiryManagementPage: React.FC = () => {
       icon: categoryInfo?.icon || '❓',
       name: t(categoryInfo?.labelKey || 'inquiry.categories.other.label')
     };
+  };
+
+  // 신고 유형 번역
+  const getReportTypeName = (type: string): string => {
+    const reportType = REPORT_TYPES.find(rt => rt.key === type as ReportType);
+    return reportType ? t(reportType.labelKey) : type;
   };
 
   if (loading) {
@@ -304,7 +344,7 @@ const InquiryManagementPage: React.FC = () => {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
           <div className="flex items-center">
             <FaEnvelope className="h-8 w-8 text-blue-500 dark:text-blue-400" />
@@ -470,7 +510,7 @@ const InquiryManagementPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {inquiry.userName}
+                            {extractUserName(inquiry.userName)}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
                             {inquiry.userEmail}
@@ -541,7 +581,7 @@ const InquiryManagementPage: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="font-medium text-gray-500 dark:text-gray-400">작성자:</span>
-                        <span className="ml-2 dark:text-gray-300">{selectedInquiry.userName}</span>
+                        <span className="ml-2 dark:text-gray-300">{extractUserName(selectedInquiry.userName)}</span>
                       </div>
                       <div>
                         <span className="font-medium text-gray-500 dark:text-gray-400">이메일:</span>
@@ -567,7 +607,7 @@ const InquiryManagementPage: React.FC = () => {
                 <div className="mb-6">
                   <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">내용</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedInquiry.message}</p>
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{extractMessage(selectedInquiry.message)}</p>
                   </div>
                 </div>
 
@@ -579,7 +619,7 @@ const InquiryManagementPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">신고 유형:</span>
-                          <span className="ml-2 text-red-800 dark:text-red-200">{selectedInquiry.reportMetadata.type}</span>
+                          <span className="ml-2 text-red-800 dark:text-red-200">{getReportTypeName(selectedInquiry.reportMetadata.type)}</span>
                         </div>
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">신고자 유형:</span>

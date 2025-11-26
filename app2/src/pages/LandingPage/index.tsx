@@ -252,7 +252,7 @@ const LandingPage: React.FC = () => {
     const routeMap: Record<string, string> = {
       'job-posting': '/admin/job-postings',
       'staff-management': '/admin/shift-schedule',
-      'payroll': '/admin/ceo-dashboard',
+      'payroll': '/admin/job-postings',
       'tournament-management': '/admin/participants',
     };
 
@@ -273,7 +273,7 @@ const LandingPage: React.FC = () => {
 
     // 타겟별 실제 기능으로 이동
     const routeMap: Record<string, string> = {
-      'tournament-organizers': '/admin/ceo-dashboard',
+      'tournament-organizers': '/admin/job-postings',
       'poker-rooms': '/admin/job-postings',
       'staff': '/jobs',
     };

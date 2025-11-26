@@ -993,17 +993,6 @@ export const usePageOptimizedData = (page: string) => {
         tournaments: false
       },
       cacheStrategy: 'moderate'
-    },
-    '/admin/ceo-dashboard': {
-      subscriptions: {
-        staff: true,
-        workLogs: true,
-        applications: true,
-        jobPostings: true,
-        attendance: true,
-        tournaments: true
-      },
-      cacheStrategy: 'minimal'
     }
   };
 

@@ -3,7 +3,6 @@ import { lazyWithRetry } from './lazyWithRetry';
 // Admin 기능 그룹 - 하나의 청크로 묶음
 export const adminChunk = {
   ApprovalPage: lazyWithRetry(() => import('../pages/admin/Approval')),
-  CEODashboard: lazyWithRetry(() => import('../pages/admin/CEODashboard')),
   UserManagementPage: lazyWithRetry(() => import('../pages/admin/UserManagementPage')),
   InquiryManagementPage: lazyWithRetry(() => import('../pages/admin/InquiryManagementPage')),
 };

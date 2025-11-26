@@ -1131,7 +1131,20 @@
         "description": "Improper conduct or inappropriate language"
       },
       "other": {
+        "label": "Other",
         "description": "Other issues not listed above"
+      },
+      "false_posting": {
+        "label": "False Posting",
+        "description": "Job posting containing false or misleading information"
+      },
+      "employer_negligence": {
+        "label": "Employer Negligence",
+        "description": "Employer failing to fulfill promised obligations"
+      },
+      "unfair_treatment": {
+        "label": "Unfair Treatment",
+        "description": "Unfair pay, unreasonable demands, etc."
       }
     },
     "severity": {

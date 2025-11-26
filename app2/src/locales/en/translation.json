@@ -129,8 +129,7 @@
     "approvals": "Approvals",
     "userManagement": "User Management",
     "inquiryManagement": "Inquiry Management",
-    "support": "Support",
-    "ceoDashboard": "CEO Dashboard"
+    "support": "Support"
   },
   "layout": {
     "title": "UNIQN",
@@ -147,13 +146,7 @@
     "processPayrollLink": "Process Payroll",
     "topRatedDealers": "Top Rated Dealers",
     "ratingsCount": "({{count}} ratings)",
-    "noRatings": "No dealer ratings yet.",
-    "ceo": {
-      "title": "CEO Dashboard",
-      "subtitle": "Business-wide statistics and analytics",
-      "lastUpdated": "Last updated",
-      "realtime": "Real-time"
-    }
+    "noRatings": "No dealer ratings yet."
   },
   "approvalPage": {
     "title": "Pending Registration Approvals",
@@ -1141,7 +1134,20 @@
         "label": "Inappropriate Behavior",
         "description": "Improper conduct or inappropriate language"
       },
+      "false_posting": {
+        "label": "False Posting",
+        "description": "Posting false information or misleading job conditions"
+      },
+      "employer_negligence": {
+        "label": "Employer Negligence",
+        "description": "Non-payment, poor working conditions, or failure to fulfill employer obligations"
+      },
+      "unfair_treatment": {
+        "label": "Unfair Treatment",
+        "description": "Unreasonable or discriminatory treatment"
+      },
       "other": {
+        "label": "Other",
         "description": "Other issues not listed above"
       }
     },

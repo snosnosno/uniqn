@@ -130,8 +130,7 @@
     "approvals": "가입 승인",
     "userManagement": "사용자 관리",
     "inquiryManagement": "문의 관리",
-    "support": "고객지원",
-    "ceoDashboard": "CEO 대시보드"
+    "support": "고객지원"
   },
   "layout": {
     "title": "UNIQN",
@@ -1175,6 +1174,18 @@
       "inappropriate_behavior": {
         "label": "부적절한 행동",
         "description": "예의에 어긋나거나 부적절한 언행"
+      },
+      "false_posting": {
+        "label": "허위 공고",
+        "description": "실제와 다른 근무 조건이나 허위 정보를 게시한 경우"
+      },
+      "employer_negligence": {
+        "label": "고용주 태만",
+        "description": "급여 미지급, 근무 환경 불량 등 고용주의 의무 불이행"
+      },
+      "unfair_treatment": {
+        "label": "부당 대우",
+        "description": "불합리한 대우나 차별적인 행동을 받은 경우"
       },
       "other": {
         "label": "기타",

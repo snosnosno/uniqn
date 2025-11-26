@@ -56,7 +56,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
   };
 
   const handleAdminDashboardClick = () => {
-    navigate('/app/admin/ceo-dashboard');
+    navigate('/app/admin/job-postings');
     setIsMobileMenuOpen(false);
   };
 

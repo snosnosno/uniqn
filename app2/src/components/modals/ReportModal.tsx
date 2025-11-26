@@ -23,7 +23,8 @@ import { db } from '../../firebase';
 import {
   ReportType,
   ReporterType,
-  REPORT_TYPES
+  EMPLOYEE_REPORT_TYPES,
+  EMPLOYER_REPORT_TYPES
 } from '../../types/report';
 import { InquiryCreateInput } from '../../types/inquiry';
 
@@ -56,13 +57,19 @@ const ReportModal: React.FC<ReportModalProps> = ({
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
 
-  const [reportType, setReportType] = useState<ReportType>('tardiness');
+  // reporterType에 따라 신고 유형 목록 선택
+  // employee가 신고 → 구인자 대상 (EMPLOYER_REPORT_TYPES)
+  // employer가 신고 → 구직자 대상 (EMPLOYEE_REPORT_TYPES)
+  const reportTypes = reporterType === 'employee' ? EMPLOYER_REPORT_TYPES : EMPLOYEE_REPORT_TYPES;
+  const defaultReportType = reportTypes[0]?.key || 'other';
+
+  const [reportType, setReportType] = useState<ReportType>(defaultReportType);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 폼 초기화
   const resetForm = () => {
-    setReportType('tardiness');
+    setReportType(defaultReportType);
     // textarea 값 직접 초기화
     if (textareaRef.current) {
       textareaRef.current.value = '';
@@ -115,10 +122,16 @@ const ReportModal: React.FC<ReportModalProps> = ({
 
     try {
       // 신고 유형에 따른 한국어 제목 생성
-      const reportTypeNames: Record<ReportType, string> = {
+      const reportTypeNames: Record<string, string> = {
+        // 구직자 대상 (구인자가 신고)
         tardiness: '지각',
         negligence: '근무태만',
         no_show: '노쇼',
+        // 구인자 대상 (구직자가 신고)
+        false_posting: '허위공고',
+        employer_negligence: '근무태만',
+        unfair_treatment: '부당한 대우',
+        // 공통
         inappropriate_behavior: '부적절한 행동',
         other: '기타 문제'
       };
@@ -227,7 +240,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
               {t('report.type', '신고 유형')}
             </label>
             <div className="grid grid-cols-1 gap-3">
-              {REPORT_TYPES.map((typeOption) => (
+              {reportTypes.map((typeOption) => (
                 <label
                   key={typeOption.key}
                   className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${

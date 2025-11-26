@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import {
-    FaTachometerAlt, FaUsers, FaTable, FaClock,
+    FaUsers, FaTable, FaClock,
     FaTrophy, FaUserCircle, FaFileInvoice, FaClipboardList,
     FaSignOutAlt, FaUserCheck, FaCalendarAlt, FaQuestionCircle,
     FaEnvelope, FaBell, FaCoins, FaCreditCard, FaHistory,
@@ -305,7 +305,6 @@ export const HeaderMenu: React.FC = () => {
                   {role === 'admin' && (
                     <>
                       <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-                      <NavItem to="/app/admin/ceo-dashboard" label={t('nav.ceoDashboard', 'CEO 대시보드')} Icon={FaTachometerAlt} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/user-management" label={t('nav.userManagement', 'User Management')} Icon={FaUsers} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/inquiries" label={t('nav.inquiryManagement', '문의 관리')} Icon={FaEnvelope} isOpen={true} onNavigate={closeMenu} />
                       <NavItem to="/app/admin/approvals" label={t('nav.approvals', 'Approvals')} Icon={FaUserCheck} isOpen={true} onNavigate={closeMenu} />

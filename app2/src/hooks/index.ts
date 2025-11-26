@@ -338,8 +338,5 @@ export { useSmartCache } from './useSmartCache';
 export { useDevTools } from './useDevTools';
 export { default as useDevToolsDefault } from './useDevTools';
 
-/** CEO 대시보드 최적화 Hook */
-export { useCEODashboardOptimized } from './useCEODashboardOptimized';
-
 /** 템플릿 관리자 Hook */
 export { useTemplateManager } from './useTemplateManager';

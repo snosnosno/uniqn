@@ -94,7 +94,6 @@ const PrivacyPolicyPage = React.lazy(() => import('./pages/legal/PrivacyPolicyPa
 // Extract components from chunks
 const {
   ApprovalPage,
-  CEODashboard,
   UserManagementPage,
   InquiryManagementPage,
 } = adminChunk;
@@ -133,7 +132,7 @@ const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
 // A component to handle role-based redirection for authenticated users
 const AppRedirect: React.FC = () => {
   const { isAdmin } = useAuth(); // isAdmin is kept for compatibility
-  return isAdmin ? <Navigate to="/app/admin/ceo-dashboard" replace /> : <Navigate to="/app/profile" replace />;
+  return isAdmin ? <Navigate to="/app/admin/job-postings" replace /> : <Navigate to="/app/profile" replace />;
 };
 
 // Maintenance mode checker component
@@ -337,7 +336,6 @@ const App: React.FC = () => {
 
                       {/* Admin Only Route */}
                       <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
-                          <Route path="ceo-dashboard" element={<Suspense fallback={<LoadingSpinner />}><CEODashboard /></Suspense>} />
                           <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
                           <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
                           <Route path="inquiries" element={<Suspense fallback={<LoadingSpinner />}><InquiryManagementPage /></Suspense>} />
