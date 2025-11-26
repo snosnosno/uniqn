@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { FaExclamationTriangle } from '../Icons/ReactIconsReplacement';
 
@@ -24,6 +24,12 @@ interface ConfirmModalProps {
  * 재사용 가능한 확인 모달 컴포넌트
  * window.confirm()을 대체하는 사용자 친화적인 확인 다이얼로그
  * 텍스트 입력 검증 기능 포함 (전체삭제 등 위험한 작업에 사용)
+ *
+ * 접근성 기능:
+ * - ARIA 속성 (role="dialog", aria-modal, aria-labelledby)
+ * - ESC 키로 닫기
+ * - Focus trap (모달 내부에서만 Tab 이동)
+ * - 배경 클릭으로 닫기
  */
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
@@ -35,26 +41,83 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelText = '취소',
   isDangerous = false,
   isLoading = false,
-  requireTextInput
+  requireTextInput,
 }) => {
   const [inputValue, setInputValue] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
 
-  // 모달이 열릴 때마다 입력값 초기화
+  // ESC 키 핸들러
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    },
+    [isLoading, onClose]
+  );
+
+  // Focus trap 핸들러
+  const handleTabKey = useCallback((e: KeyboardEvent) => {
+    if (e.key !== 'Tab' || !modalRef.current) return;
+
+    const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (e.shiftKey && document.activeElement === firstElement) {
+      e.preventDefault();
+      lastElement?.focus();
+    } else if (!e.shiftKey && document.activeElement === lastElement) {
+      e.preventDefault();
+      firstElement?.focus();
+    }
+  }, []);
+
+  // 모달이 열릴 때마다 입력값 초기화 및 포커스 관리
   useEffect(() => {
     if (isOpen) {
       setInputValue('');
+      // 이전 포커스 요소 저장
+      previousActiveElement.current = document.activeElement as HTMLElement;
+      // body 스크롤 방지
+      document.body.style.overflow = 'hidden';
+      // 키보드 이벤트 등록
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', handleTabKey);
+      // 모달 내 첫 번째 요소에 포커스
+      setTimeout(() => {
+        const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
+          'button:not([disabled]), input:not([disabled])'
+        );
+        firstFocusable?.focus();
+      }, 0);
     }
-  }, [isOpen]);
+
+    return () => {
+      if (isOpen) {
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keydown', handleTabKey);
+        // 이전 포커스 요소로 복원
+        previousActiveElement.current?.focus();
+      }
+    };
+  }, [isOpen, handleKeyDown, handleTabKey]);
 
   // 입력값 검증 (계산된 값으로 변경)
-  const isInputValid = !requireTextInput || (() => {
-    const { confirmValue, caseSensitive = true } = requireTextInput;
-    if (caseSensitive) {
-      return inputValue === confirmValue;
-    } else {
-      return inputValue.toLowerCase() === confirmValue.toLowerCase();
-    }
-  })();
+  const isInputValid =
+    !requireTextInput ||
+    (() => {
+      const { confirmValue, caseSensitive = true } = requireTextInput;
+      if (caseSensitive) {
+        return inputValue === confirmValue;
+      } else {
+        return inputValue.toLowerCase() === confirmValue.toLowerCase();
+      }
+    })();
 
   if (!isOpen) return null;
 
@@ -72,33 +135,55 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     }
   };
 
+  // 배경 클릭 핸들러
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && !isLoading) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-[60] p-4"
+      onClick={handleBackdropClick}
+      role="presentation"
+    >
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md animate-scale-up"
+      >
         {/* 헤더 */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             {isDangerous && (
-              <FaExclamationTriangle className="w-6 h-6 text-red-500 dark:text-red-400" />
+              <FaExclamationTriangle
+                className="w-6 h-6 text-red-500 dark:text-red-400"
+                aria-hidden="true"
+              />
             )}
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h3
+              id="confirm-modal-title"
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+            >
               {title}
             </h3>
           </div>
           <button
             onClick={handleCancel}
             disabled={isLoading}
+            aria-label="닫기"
             className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
           >
-            <XMarkIcon className="w-6 h-6" />
+            <XMarkIcon className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
 
         {/* 내용 */}
         <div className="p-6">
-          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line mb-4">
-            {message}
-          </p>
+          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line mb-4">{message}</p>
 
           {/* 텍스트 입력 필드 */}
           {requireTextInput && (
@@ -115,7 +200,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     ? 'border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400'
                 } focus:outline-none focus:ring-2 disabled:opacity-50`}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter' && isInputValid) {
                     handleConfirm();
                   }
@@ -123,7 +208,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               />
               {inputValue && !isInputValid && (
                 <p className="text-sm text-red-500 dark:text-red-400 mt-2">
-                  입력값이 일치하지 않습니다. "{requireTextInput.confirmValue}"를 정확히 입력해주세요.
+                  입력값이 일치하지 않습니다. "{requireTextInput.confirmValue}"를 정확히
+                  입력해주세요.
                 </p>
               )}
             </div>

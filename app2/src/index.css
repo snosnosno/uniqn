@@ -421,4 +421,124 @@ code {
     transform: translateY(calc(-1 * var(--keyboard-height, 0px)));
     transition: transform 0.3s ease-in-out;
   }
+
+  /* ========================================
+   * Micro-interaction 애니메이션 유틸리티
+   * ======================================== */
+
+  /* 호버 시 확대 효과 */
+  .hover-scale {
+    @apply transition-transform duration-200 ease-out hover:scale-105;
+  }
+
+  .hover-scale-sm {
+    @apply transition-transform duration-200 ease-out hover:scale-[1.02];
+  }
+
+  /* 클릭 시 축소 효과 (버튼용) */
+  .active-scale {
+    @apply transition-transform duration-150 ease-out active:scale-[0.97];
+  }
+
+  /* 포커스 시 링 애니메이션 */
+  .focus-ring-animated {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply transition-shadow duration-200;
+  }
+
+  /* 리스트 아이템 순차 등장 애니메이션 */
+  .animate-list-item {
+    @apply animate-list-item;
+  }
+
+  .animate-list-item:nth-child(1) { animation-delay: 0ms; }
+  .animate-list-item:nth-child(2) { animation-delay: 50ms; }
+  .animate-list-item:nth-child(3) { animation-delay: 100ms; }
+  .animate-list-item:nth-child(4) { animation-delay: 150ms; }
+  .animate-list-item:nth-child(5) { animation-delay: 200ms; }
+  .animate-list-item:nth-child(6) { animation-delay: 250ms; }
+  .animate-list-item:nth-child(7) { animation-delay: 300ms; }
+  .animate-list-item:nth-child(8) { animation-delay: 350ms; }
+  .animate-list-item:nth-child(9) { animation-delay: 400ms; }
+  .animate-list-item:nth-child(10) { animation-delay: 450ms; }
+
+  /* 모달/드롭다운 등장 애니메이션 */
+  .animate-modal-enter {
+    @apply animate-scale-up;
+  }
+
+  .animate-dropdown-enter {
+    @apply animate-slide-down;
+  }
+
+  .animate-tooltip-enter {
+    @apply animate-slide-up;
+  }
+
+  /* 로딩 상태 shimmer 효과 */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.2) 20%,
+      rgba(255, 255, 255, 0.5) 60%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .dark .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.05) 20%,
+      rgba(255, 255, 255, 0.1) 60%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* 에러 상태 흔들림 애니메이션 */
+  .animate-error-shake {
+    @apply animate-shake;
+  }
+
+  /* 성공 상태 팝 애니메이션 */
+  .animate-success-pop {
+    @apply animate-pop;
+  }
+
+  /* 알림 배지 펄스 애니메이션 */
+  .animate-notification-pulse {
+    @apply animate-bounce-subtle;
+  }
+
+  /* 스크롤 시 페이드인 (Intersection Observer 사용 시) */
+  .scroll-fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+
+  .scroll-fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* 카드 호버 효과 */
+  .card-interactive {
+    @apply transition-all duration-200 ease-out;
+    @apply hover:shadow-lg hover:-translate-y-1;
+    @apply active:translate-y-0 active:shadow-md;
+  }
+
+  .dark .card-interactive {
+    @apply hover:shadow-gray-900/50;
+  }
 }

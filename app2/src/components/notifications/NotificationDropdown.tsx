@@ -16,6 +16,21 @@ import { FaBell, FaCog } from '../Icons/ReactIconsReplacement';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationBadge from './NotificationBadge';
 import NotificationItem from './NotificationItem';
+import Skeleton from '../common/Skeleton';
+
+/**
+ * 알림 스켈레톤 컴포넌트
+ */
+const NotificationSkeleton: React.FC = () => (
+  <div className="p-3 flex gap-3 animate-pulse">
+    <Skeleton variant="circular" width={40} height={40} />
+    <div className="flex-1 space-y-2">
+      <Skeleton variant="text" width="70%" height={16} />
+      <Skeleton variant="text" width="90%" height={14} />
+      <Skeleton variant="text" width="40%" height={12} />
+    </div>
+  </div>
+);
 
 export interface NotificationDropdownProps {
   /** 추가 CSS 클래스 */
@@ -33,13 +48,7 @@ export interface NotificationDropdownProps {
 export const NotificationDropdown = memo<NotificationDropdownProps>(({ className = '' }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const {
-    notifications,
-    unreadCount,
-    loading,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,7 +57,7 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
    * 드롭다운 토글
    */
   const toggleDropdown = useCallback(() => {
-    setIsOpen(prev => !prev);
+    setIsOpen((prev) => !prev);
   }, []);
 
   /**
@@ -136,13 +145,10 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
       {isOpen && (
         <>
           {/* 오버레이 (모바일용) */}
-          <div
-            className="fixed inset-0 z-40 md:hidden"
-            onClick={closeDropdown}
-          />
+          <div className="fixed inset-0 z-40 md:hidden" onClick={closeDropdown} />
 
           {/* 드롭다운 컨테이너 */}
-          <div className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-[80vh] overflow-hidden flex flex-col animate-slide-down">
             {/* 헤더 */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 dark:text-gray-100">
@@ -171,15 +177,18 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
             {/* 알림 목록 */}
             <div className="overflow-y-auto flex-1">
               {loading ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                  {t('notifications.loading', '로딩 중...')}
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {[...Array(3)].map((_, i) => (
+                    <NotificationSkeleton key={i} />
+                  ))}
                 </div>
               ) : recentNotifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <FaBell className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   {t('notifications.noNotifications', '알림이 없습니다')}
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {recentNotifications.map((notification) => (
                     <NotificationItem
                       key={notification.id}

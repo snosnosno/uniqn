@@ -1,5 +1,12 @@
 import { logger } from '../utils/logger';
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import { useTournamentStore } from '../stores/tournamentStore';
 import type { User } from '../types/common';
 import { TournamentState } from './TournamentContext';
@@ -37,7 +44,7 @@ interface TournamentProviderProps {
 export const TournamentProvider = ({ children }: TournamentProviderProps) => {
   // AuthContext에서 현재 사용자 가져오기
   const { currentUser } = useAuth();
-  
+
   // Zustand store 사용
   const store = useTournamentStore();
 
@@ -46,71 +53,104 @@ export const TournamentProvider = ({ children }: TournamentProviderProps) => {
     if (currentUser?.uid && currentUser.uid !== store.userId) {
       logger.info('TournamentProvider: userId 업데이트', {
         component: 'TournamentContextAdapter',
-        data: { userId: currentUser.uid }
+        data: { userId: currentUser.uid },
       });
       store.setTournament({ userId: currentUser.uid });
     }
   }, [currentUser, store]);
 
-  // Zustand state를 기존 TournamentState 형태로 변환
-  const state: TournamentState = {
-    tournamentId: store.tournamentId,
-    userId: store.userId,
-    participants: store.participants,
-    tables: store.tables,
-    blinds: store.blinds,
-    currentLevel: store.currentLevel,
-    tournamentStatus: store.tournamentStatus,
-    settings: store.settings,
-    blindLevel: store.blindLevel,
-    remainingTime: store.remainingTime,
-    isTimerRunning: store.isTimerRunning,
-    currentUser: store.currentUser,
-  };
-
-  // dispatch 함수를 Zustand actions로 매핑
-  const dispatch: React.Dispatch<Action> = (action: Action) => {
-    switch (action.type) {
-      case 'SET_TOURNAMENT':
-        store.setTournament(action.payload);
-        break;
-      case 'UPDATE_PARTICIPANTS':
-        store.updateParticipants(action.payload);
-        break;
-      case 'SET_TABLES':
-        store.setTables(action.payload);
-        break;
-      case 'SET_STATUS':
-        store.setStatus(action.payload);
-        break;
-      case 'UPDATE_SETTINGS':
-        store.updateSettings(action.payload);
-        break;
-      case 'SET_BLIND_LEVEL':
-        store.setBlindLevel(action.payload);
-        break;
-      case 'TICK_TIMER':
-        store.tickTimer();
-        break;
-      case 'SET_TIMER_RUNNING':
-        store.setTimerRunning(action.payload);
-        break;
-      case 'SET_USER':
-        store.setUser(action.payload);
-        break;
-      case 'ADD_PARTICIPANT':
-        store.addParticipant(action.payload.name);
-        break;
-      default:
-        logger.warn('Unknown action type:', { component: 'TournamentContextAdapter', data: action });
-    }
-  };
-
-  return (
-    <TournamentContext.Provider value={{ state, dispatch }}>
-      {children}
-    </TournamentContext.Provider>
+  /**
+   * Zustand state를 기존 TournamentState 형태로 변환
+   *
+   * ⚠️ 성능 최적화: useMemo로 메모이제이션하여 불필요한 리렌더링 방지
+   */
+  const state: TournamentState = useMemo(
+    () => ({
+      tournamentId: store.tournamentId,
+      userId: store.userId,
+      participants: store.participants,
+      tables: store.tables,
+      blinds: store.blinds,
+      currentLevel: store.currentLevel,
+      tournamentStatus: store.tournamentStatus,
+      settings: store.settings,
+      blindLevel: store.blindLevel,
+      remainingTime: store.remainingTime,
+      isTimerRunning: store.isTimerRunning,
+      currentUser: store.currentUser,
+    }),
+    [
+      store.tournamentId,
+      store.userId,
+      store.participants,
+      store.tables,
+      store.blinds,
+      store.currentLevel,
+      store.tournamentStatus,
+      store.settings,
+      store.blindLevel,
+      store.remainingTime,
+      store.isTimerRunning,
+      store.currentUser,
+    ]
   );
+
+  /**
+   * dispatch 함수를 Zustand actions로 매핑
+   *
+   * ⚠️ 성능 최적화: useCallback으로 안정적인 참조 유지
+   */
+  const dispatch: React.Dispatch<Action> = useCallback(
+    (action: Action) => {
+      switch (action.type) {
+        case 'SET_TOURNAMENT':
+          store.setTournament(action.payload);
+          break;
+        case 'UPDATE_PARTICIPANTS':
+          store.updateParticipants(action.payload);
+          break;
+        case 'SET_TABLES':
+          store.setTables(action.payload);
+          break;
+        case 'SET_STATUS':
+          store.setStatus(action.payload);
+          break;
+        case 'UPDATE_SETTINGS':
+          store.updateSettings(action.payload);
+          break;
+        case 'SET_BLIND_LEVEL':
+          store.setBlindLevel(action.payload);
+          break;
+        case 'TICK_TIMER':
+          store.tickTimer();
+          break;
+        case 'SET_TIMER_RUNNING':
+          store.setTimerRunning(action.payload);
+          break;
+        case 'SET_USER':
+          store.setUser(action.payload);
+          break;
+        case 'ADD_PARTICIPANT':
+          store.addParticipant(action.payload.name);
+          break;
+        default:
+          logger.warn('Unknown action type:', {
+            component: 'TournamentContextAdapter',
+            data: action,
+          });
+      }
+    },
+    [store]
+  );
+
+  /**
+   * Context value 메모이제이션
+   *
+   * ⚠️ 성능 최적화: 매 렌더링마다 새 객체 생성 방지
+   */
+  const contextValue = useMemo(() => ({ state, dispatch }), [state, dispatch]);
+
+  return <TournamentContext.Provider value={contextValue}>{children}</TournamentContext.Provider>;
 };
 
 /**

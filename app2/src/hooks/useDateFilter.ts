@@ -24,12 +24,12 @@ import { toISODateString } from '../utils/dateUtils';
  * 기존 DateFilterContext.tsx와 동일한 인터페이스
  */
 export interface DateFilterContextType {
-  selectedDate: string;          // YYYY-MM-DD 형식
+  selectedDate: string; // YYYY-MM-DD 형식
   setSelectedDate: (date: string) => void;
   goToNextDate: () => void;
   goToPreviousDate: () => void;
   goToToday: () => void;
-  availableDates: string[];      // 토너먼트가 있는 날짜 목록 (정렬됨)
+  availableDates: string[]; // 토너먼트가 있는 날짜 목록 (정렬됨)
 }
 
 /**
@@ -47,7 +47,15 @@ export interface DateFilterContextType {
  */
 export const useDateFilter = (): DateFilterContextType => {
   const { tournaments } = useTournamentData();
-  const store = useDateFilterStore();
+
+  // Zustand selector 패턴: 개별 값/함수를 추출하여 안정적인 참조 유지
+  const selectedDate = useDateFilterStore((state) => state.selectedDate);
+  const availableDates = useDateFilterStore((state) => state.availableDates);
+  const setSelectedDate = useDateFilterStore((state) => state.setSelectedDate);
+  const setAvailableDates = useDateFilterStore((state) => state.setAvailableDates);
+  const goToNextDate = useDateFilterStore((state) => state.goToNextDate);
+  const goToPreviousDate = useDateFilterStore((state) => state.goToPreviousDate);
+  const goToToday = useDateFilterStore((state) => state.goToToday);
 
   /**
    * availableDates 자동 계산
@@ -57,15 +65,21 @@ export const useDateFilter = (): DateFilterContextType => {
    */
   useEffect(() => {
     const dates = tournaments
-      .map(t => t.dateKey)
-      .filter(dateKey => dateKey) // 빈 dateKey 제외
-      .sort();                    // 오름차순 정렬
+      .map((t) => t.dateKey)
+      .filter((dateKey) => dateKey) // 빈 dateKey 제외
+      .sort(); // 오름차순 정렬
 
     // 중복 제거
     const uniqueDates = Array.from(new Set(dates));
 
-    store.setAvailableDates(uniqueDates);
-  }, [tournaments, store]);
+    // 배열 내용이 동일하면 업데이트 스킵 (무한 루프 방지)
+    const currentDates = useDateFilterStore.getState().availableDates;
+    if (JSON.stringify(uniqueDates) === JSON.stringify(currentDates)) {
+      return;
+    }
+
+    setAvailableDates(uniqueDates);
+  }, [tournaments, setAvailableDates]);
 
   /**
    * 기본 날짜 선택 로직
@@ -76,15 +90,20 @@ export const useDateFilter = (): DateFilterContextType => {
    *    - 오늘 날짜가 목록에 있으면 선택
    *    - 없으면 가장 가까운 미래 날짜
    *    - 미래 날짜 없으면 마지막 날짜
+   *
+   * ⚠️ 무한루프 방지: selectedDate를 의존성에서 제거하고 getState()로 현재 값 확인
    */
   useEffect(() => {
-    if (store.availableDates.length === 0) return;
+    if (availableDates.length === 0) return;
+
+    // getState()로 현재 selectedDate 확인 (의존성 배열에서 제거하여 무한루프 방지)
+    const currentSelectedDate = useDateFilterStore.getState().selectedDate;
 
     // localStorage에서 복원된 날짜가 목록에 있으면 유지
-    if (store.selectedDate && store.availableDates.includes(store.selectedDate)) {
+    if (currentSelectedDate && availableDates.includes(currentSelectedDate)) {
       logger.info('날짜 선택 유지됨 (localStorage 복원)', {
         component: 'useDateFilter',
-        data: { selectedDate: store.selectedDate },
+        data: { selectedDate: currentSelectedDate },
       });
       return;
     }
@@ -92,27 +111,27 @@ export const useDateFilter = (): DateFilterContextType => {
     // 복원 실패 또는 목록에 없으면 기본 날짜 선택
     const today = toISODateString(new Date()) || '';
 
-    if (store.availableDates.includes(today)) {
+    if (availableDates.includes(today)) {
       // 오늘 날짜가 목록에 있으면 선택
-      store.setSelectedDate(today);
+      setSelectedDate(today);
       logger.info('날짜 선택 초기화 (오늘)', {
         component: 'useDateFilter',
         data: { selectedDate: today },
       });
     } else {
       // 오늘 날짜가 없으면 가장 가까운 미래 날짜 선택
-      const futureDates = store.availableDates.filter(date => date >= today);
-      const defaultDate = futureDates[0] || store.availableDates[store.availableDates.length - 1] || '';
+      const futureDates = availableDates.filter((date) => date >= today);
+      const defaultDate = futureDates[0] || availableDates[availableDates.length - 1] || '';
 
       if (defaultDate) {
-        store.setSelectedDate(defaultDate);
+        setSelectedDate(defaultDate);
         logger.info('날짜 선택 초기화 (기본 날짜)', {
           component: 'useDateFilter',
           data: { selectedDate: defaultDate },
         });
       }
     }
-  }, [store.availableDates, store.selectedDate, store]);
+  }, [availableDates, setSelectedDate]); // ✅ selectedDate 제거 - 무한루프 방지
 
   /**
    * Context API와 동일한 인터페이스 반환
@@ -120,12 +139,12 @@ export const useDateFilter = (): DateFilterContextType => {
    * 기존 코드에서 import만 변경하면 동작
    */
   return {
-    selectedDate: store.selectedDate,
-    setSelectedDate: store.setSelectedDate,
-    goToNextDate: store.goToNextDate,
-    goToPreviousDate: store.goToPreviousDate,
-    goToToday: store.goToToday,
-    availableDates: store.availableDates,
+    selectedDate,
+    setSelectedDate,
+    goToNextDate,
+    goToPreviousDate,
+    goToToday,
+    availableDates,
   };
 };
 

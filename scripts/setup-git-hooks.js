@@ -21,9 +21,36 @@ const hooksDir = path.join(__dirname, '../.git/hooks');
 const hooks = {
   'pre-commit': `#!/bin/sh
 # T-HOLDEM Pre-commit Hook
-# 문서 일관성 검사 및 자동 포맷
+# 코드 품질 검사 + 문서 일관성 검사
 
-echo "🔍 문서 일관성 검사 중..."
+echo "🔍 코드 품질 검사 중..."
+
+# ============================================
+# 1. lint-staged 실행 (staged 파일에 대해 ESLint/Prettier)
+# ============================================
+cd app2
+
+# lint-staged가 설치되어 있는지 확인
+if command -v npx >/dev/null 2>&1 && [ -f "node_modules/.bin/lint-staged" ]; then
+  echo "📏 lint-staged 실행 중..."
+  npx lint-staged
+
+  if [ $? -ne 0 ]; then
+    echo "❌ lint-staged 검사 실패. 커밋을 중단합니다."
+    echo "💡 'npm run lint:fix'를 실행하여 문제를 수정하세요."
+    exit 1
+  fi
+  echo "✅ lint-staged 검사 통과"
+else
+  echo "⚠️ lint-staged가 설치되지 않았습니다. 'npm install lint-staged --save-dev'로 설치하세요."
+fi
+
+cd ..
+
+# ============================================
+# 2. 문서 일관성 검사
+# ============================================
+echo "📝 문서 일관성 검사 중..."
 
 # 스테이징된 마크다운 파일 확인
 STAGED_MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\\.md$' || true)
@@ -31,25 +58,25 @@ STAGED_MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\\.md$
 if [ -n "$STAGED_MD_FILES" ]; then
   echo "📝 스테이징된 마크다운 파일:"
   echo "$STAGED_MD_FILES"
-  
+
   # 문서 검사 실행
   cd app2
   npm run docs:check
-  
+
   if [ $? -ne 0 ]; then
     echo "❌ 문서 품질 검사 실패. 커밋을 중단합니다."
     echo "💡 'npm run docs:check'를 실행하여 문제를 확인하세요."
     exit 1
   fi
-  
+
   # 문서 자동 업데이트
   echo "🔧 문서 자동 업데이트 중..."
   npm run docs:update
-  
+
   # 업데이트된 파일이 있으면 스테이징에 추가
   cd ..
   git add README.md ROADMAP.md TODO.md CONTRIBUTING.md CLAUDE.md docs/
-  
+
   echo "✅ 문서 검사 및 업데이트 완료"
 fi
 
