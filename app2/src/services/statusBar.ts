@@ -39,25 +39,27 @@ export const initializeStatusBar = async (config: Partial<StatusBarConfig> = {})
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
   try {
-
     // 상태바 스타일 설정
     await StatusBar.setStyle({
-      style: finalConfig.style === 'dark' ? Style.Dark : Style.Light
+      style: finalConfig.style === 'dark' ? Style.Dark : Style.Light,
     });
 
     // 배경색 설정 (Android만 해당)
     if (Capacitor.getPlatform() === 'android') {
       await StatusBar.setBackgroundColor({
-        color: finalConfig.backgroundColor
+        color: finalConfig.backgroundColor,
       });
     }
 
     // 오버레이 설정
     await StatusBar.setOverlaysWebView({
-      overlay: finalConfig.overlaysWebView
+      overlay: finalConfig.overlaysWebView,
     });
   } catch (error) {
-    logger.error('StatusBar: 상태바 설정 중 오류 발생', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'StatusBar: 상태바 설정 중 오류 발생',
+      error instanceof Error ? error : new Error(String(error))
+    );
     // 상태바 설정 실패해도 앱 실행에는 영향 없음
   }
 };
@@ -71,7 +73,10 @@ export const hideStatusBar = async (): Promise<void> => {
   try {
     await StatusBar.hide();
   } catch (error) {
-    logger.error('StatusBar: 상태바 숨김 중 오류', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'StatusBar: 상태바 숨김 중 오류',
+      error instanceof Error ? error : new Error(String(error))
+    );
   }
 };
 
@@ -84,7 +89,10 @@ export const showStatusBar = async (): Promise<void> => {
   try {
     await StatusBar.show();
   } catch (error) {
-    logger.error('StatusBar: 상태바 표시 중 오류', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'StatusBar: 상태바 표시 중 오류',
+      error instanceof Error ? error : new Error(String(error))
+    );
   }
 };
 
@@ -106,7 +114,10 @@ export const getStatusBarInfo = async () => {
     const info = await StatusBar.getInfo();
     return info;
   } catch (error) {
-    logger.error('StatusBar: 상태바 정보 조회 중 오류', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'StatusBar: 상태바 정보 조회 중 오류',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return null;
   }
 };

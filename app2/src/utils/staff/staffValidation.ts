@@ -59,8 +59,7 @@ export async function canDeleteStaff(
         };
         return {
           canDelete: false,
-          reason:
-            statusMessages[status] || '삭제할 수 없는 상태입니다.',
+          reason: statusMessages[status] || '삭제할 수 없는 상태입니다.',
         };
       }
 
@@ -83,7 +82,7 @@ export async function canDeleteStaff(
 
     const attendanceSnapshot = await getDocs(attendanceQuery);
     if (!attendanceSnapshot.empty) {
-      const hasActiveAttendance = attendanceSnapshot.docs.some(doc => {
+      const hasActiveAttendance = attendanceSnapshot.docs.some((doc) => {
         const data = doc.data();
         return data.status === 'checked_in' || data.status === 'checked_out';
       });
@@ -123,8 +122,7 @@ export async function validateBulkDelete(
   deletable: Array<{ staffId: string; staffName: string; date: string }>;
   nonDeletable: Array<{ staffId: string; staffName: string; reason: string }>;
 }> {
-  const deletable: Array<{ staffId: string; staffName: string; date: string }> =
-    [];
+  const deletable: Array<{ staffId: string; staffName: string; date: string }> = [];
   const nonDeletable: Array<{
     staffId: string;
     staffName: string;

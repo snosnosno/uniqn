@@ -10,7 +10,7 @@ const DEFAULT_CONFIG = {
   ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p', 'span'],
   ALLOWED_ATTR: ['class'],
   KEEP_CONTENT: true,
-  RETURN_DOM: false
+  RETURN_DOM: false,
 };
 
 // 엄격한 설정 (태그 완전 제거)
@@ -18,7 +18,7 @@ const STRICT_CONFIG = {
   ALLOWED_TAGS: [],
   ALLOWED_ATTR: [],
   KEEP_CONTENT: true,
-  RETURN_DOM: false
+  RETURN_DOM: false,
 };
 
 /**
@@ -34,22 +34,22 @@ export function sanitizeHtml(dirty: string, config = DEFAULT_CONFIG): string {
     }
 
     const clean = DOMPurify.sanitize(dirty, config);
-    
+
     // XSS 시도가 감지된 경우 로깅
     if (clean !== dirty) {
-      logger.warn('XSS 시도가 감지되어 제거되었습니다', { 
+      logger.warn('XSS 시도가 감지되어 제거되었습니다', {
         component: 'sanitizer',
         data: {
           original: dirty.substring(0, 100) + '...',
-          sanitized: clean.substring(0, 100) + '...'
-        }
+          sanitized: clean.substring(0, 100) + '...',
+        },
       });
     }
-    
+
     return clean;
   } catch (error) {
-    logger.error('Sanitize 오류', error instanceof Error ? error : new Error(String(error)), { 
-      component: 'sanitizer' 
+    logger.error('Sanitize 오류', error instanceof Error ? error : new Error(String(error)), {
+      component: 'sanitizer',
     });
     return '';
   }
@@ -72,27 +72,27 @@ export function sanitizeText(dirty: string): string {
 export function isSafeUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
-    
+
     // 허용된 프로토콜만 허용
     const allowedProtocols = ['http:', 'https:', 'mailto:'];
     if (!allowedProtocols.includes(urlObj.protocol)) {
-      logger.warn('안전하지 않은 URL 프로토콜', { 
+      logger.warn('안전하지 않은 URL 프로토콜', {
         component: 'sanitizer',
-        data: { protocol: urlObj.protocol, url }
+        data: { protocol: urlObj.protocol, url },
       });
       return false;
     }
-    
+
     // JavaScript URL 차단
     // eslint-disable-next-line no-script-url
     if (url.toLowerCase().includes('javascript:')) {
-      logger.warn('JavaScript URL 시도가 차단되었습니다', { 
+      logger.warn('JavaScript URL 시도가 차단되었습니다', {
         component: 'sanitizer',
-        data: { url }
+        data: { url },
       });
       return false;
     }
-    
+
     return true;
   } catch (error) {
     // 유효하지 않은 URL
@@ -122,27 +122,23 @@ export function sanitizeUrl(url: string, defaultUrl: string = '#'): string {
 export function safeJsonParse<T = any>(jsonString: string, defaultValue: T): T {
   try {
     // JSON 파싱 전에 XSS 패턴 검사
-    const xssPatterns = [
-      /<script[^>]*>.*?<\/script>/gi,
-      /javascript:/gi,
-      /on\w+\s*=/gi
-    ];
-    
+    const xssPatterns = [/<script[^>]*>.*?<\/script>/gi, /javascript:/gi, /on\w+\s*=/gi];
+
     for (const pattern of xssPatterns) {
       if (pattern.test(jsonString)) {
-        logger.warn('JSON에서 XSS 패턴이 감지되었습니다', { 
+        logger.warn('JSON에서 XSS 패턴이 감지되었습니다', {
           component: 'sanitizer',
-          data: { pattern: pattern.toString() }
+          data: { pattern: pattern.toString() },
         });
         return defaultValue;
       }
     }
-    
+
     return JSON.parse(jsonString);
   } catch (error) {
-    logger.debug('JSON 파싱 오류', { 
+    logger.debug('JSON 파싱 오류', {
       component: 'sanitizer',
-      data: { error: error instanceof Error ? error.message : String(error) }
+      data: { error: error instanceof Error ? error.message : String(error) },
     });
     return defaultValue;
   }
@@ -155,14 +151,14 @@ export function safeJsonParse<T = any>(jsonString: string, defaultValue: T): T {
  */
 export function sanitizeFormData<T extends Record<string, any>>(formData: T): T {
   const sanitized = {} as T;
-  
+
   for (const [key, value] of Object.entries(formData)) {
     if (typeof value === 'string') {
       // 문자열 값은 sanitize
       sanitized[key as keyof T] = sanitizeText(value) as T[keyof T];
     } else if (Array.isArray(value)) {
       // 배열인 경우 각 요소를 처리
-      sanitized[key as keyof T] = value.map(item => 
+      sanitized[key as keyof T] = value.map((item) =>
         typeof item === 'string' ? sanitizeText(item) : item
       ) as T[keyof T];
     } else if (value && typeof value === 'object') {
@@ -173,7 +169,7 @@ export function sanitizeFormData<T extends Record<string, any>>(formData: T): T 
       sanitized[key as keyof T] = value;
     }
   }
-  
+
   return sanitized;
 }
 
@@ -184,7 +180,7 @@ const sanitizerUtils = {
   isSafeUrl,
   sanitizeUrl,
   safeJsonParse,
-  sanitizeFormData
+  sanitizeFormData,
 };
 
 export default sanitizerUtils;

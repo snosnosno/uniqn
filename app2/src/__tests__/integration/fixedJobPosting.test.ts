@@ -52,10 +52,9 @@ describe('fixedJobPosting 통합 테스트', () => {
 
       expect(doc).toHaveBeenCalledWith(db, 'jobPostings', postingId);
       expect(increment).toHaveBeenCalledWith(1);
-      expect(updateDoc).toHaveBeenCalledWith(
-        mockDocRef,
-        { 'fixedData.viewCount': mockIncrementValue }
-      );
+      expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+        'fixedData.viewCount': mockIncrementValue,
+      });
     });
 
     it('viewCount 값이 실제로 증가하는 것을 시뮬레이션한다', async () => {

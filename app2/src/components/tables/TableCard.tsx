@@ -13,7 +13,12 @@ interface TableCardProps {
   isMobile: boolean;
   getDealerName: (staffId: string | null) => string;
   participants?: Participant[];
-  onPlayerSelect?: (participant: Participant | null, table: Table, seatIndex: number, event?: React.MouseEvent) => void;
+  onPlayerSelect?: (
+    participant: Participant | null,
+    table: Table,
+    seatIndex: number,
+    event?: React.MouseEvent
+  ) => void;
   tournamentColor?: string; // 토너먼트 색상
   isSelectionMode?: boolean; // 선택 모드 여부
   isSelected?: boolean; // 선택 상태
@@ -33,14 +38,9 @@ const TableCard: React.FC<TableCardProps> = ({
   onSelect,
 }) => {
   const { t } = useTranslation();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: table.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: table.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -51,18 +51,18 @@ const TableCard: React.FC<TableCardProps> = ({
     borderLeftWidth: tournamentColor ? '8px' : '4px',
     borderLeftColor: tournamentColor || 'transparent',
   };
-  
+
   const isStandby = table.status === 'standby';
-  const playerCount = table.seats?.filter(s => s !== null).length || 0;
+  const playerCount = table.seats?.filter((s) => s !== null).length || 0;
   const maxSeats = table.seats?.length || 9;
-  
+
   // 테이블의 총 칩 카운트 계산 (메모이제이션으로 성능 최적화)
   const totalChips = useMemo(() => {
     if (!participants || !table.seats) return 0;
-    
+
     return table.seats.reduce((total, participantId) => {
       if (!participantId) return total;
-      const participant = participants.find(p => p.id === participantId);
+      const participant = participants.find((p) => p.id === participantId);
       return total + (participant?.chips || 0);
     }, 0);
   }, [participants, table.seats]);
@@ -72,12 +72,12 @@ const TableCard: React.FC<TableCardProps> = ({
     if (!table.seats) return [];
     return table.seats.map((participantId, index) => {
       if (!participantId) return { seatNumber: index + 1, name: null, chips: 0, participant: null };
-      const participant = participants?.find(p => p.id === participantId);
+      const participant = participants?.find((p) => p.id === participantId);
       return {
         seatNumber: index + 1,
         name: participant?.name || 'Unknown',
         chips: participant?.chips || 0,
-        participant: participant || null
+        participant: participant || null,
       };
     });
   }, [participants, table.seats]);
@@ -90,9 +90,7 @@ const TableCard: React.FC<TableCardProps> = ({
       onClick={onTableClick}
     >
       {/* Card Header */}
-      <div
-        className="w-full flex justify-between items-center mb-3 pb-2 border-b dark:border-gray-700"
-      >
+      <div className="w-full flex justify-between items-center mb-3 pb-2 border-b dark:border-gray-700">
         <div className="flex items-center gap-2 flex-1">
           {/* 선택 모드 체크박스 */}
           {isSelectionMode && (
@@ -107,33 +105,35 @@ const TableCard: React.FC<TableCardProps> = ({
             />
           )}
           <h3
-              className={`font-bold text-lg truncate text-gray-900 dark:text-gray-100 ${!isMobile && !isSelectionMode ? 'cursor-grab' : ''}`}
-              {...(!isSelectionMode ? listeners : {})}
-              {...(!isSelectionMode ? attributes : {})}
+            className={`font-bold text-lg truncate text-gray-900 dark:text-gray-100 ${!isMobile && !isSelectionMode ? 'cursor-grab' : ''}`}
+            {...(!isSelectionMode ? listeners : {})}
+            {...(!isSelectionMode ? attributes : {})}
           >
-              {table.name || `Table ${table.tableNumber}`}
+            {table.name || `Table ${table.tableNumber}`}
           </h3>
         </div>
         <div className="flex items-center gap-3">
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <FaUsers className="w-4 h-4 mr-1 text-gray-600 dark:text-gray-300" />
-                <span>{playerCount}/{maxSeats}</span>
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+            <FaUsers className="w-4 h-4 mr-1 text-gray-600 dark:text-gray-300" />
+            <span>
+              {playerCount}/{maxSeats}
+            </span>
+          </div>
+          {totalChips > 0 && (
+            <div className="flex items-center text-sm font-semibold text-green-600 dark:text-green-400">
+              <FaMoneyBillWave className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
+              <span>{totalChips.toLocaleString()}</span>
             </div>
-            {totalChips > 0 && (
-                <div className="flex items-center text-sm font-semibold text-green-600 dark:text-green-400">
-                    <FaMoneyBillWave className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
-                    <span>{totalChips.toLocaleString()}</span>
-                </div>
-            )}
+          )}
         </div>
         <button
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={(e) => {
-                e.stopPropagation();
-                onTableClick();
-            }}
+          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            onTableClick();
+          }}
         >
-            <FaEllipsisV className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          <FaEllipsisV className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
 
@@ -173,18 +173,20 @@ const TableCard: React.FC<TableCardProps> = ({
                 <div className="text-xs text-gray-400 dark:text-gray-500">
                   {seat.seatNumber}. 빈자리
                 </div>
-                <div className="text-xs text-gray-300 dark:text-gray-600">
-                  -
-                </div>
+                <div className="text-xs text-gray-300 dark:text-gray-600">-</div>
               </div>
             )}
           </div>
         ))}
       </div>
 
-      {isStandby ? <div className="absolute inset-0 bg-gray-400 dark:bg-gray-600 bg-opacity-50 dark:bg-opacity-60 flex items-center justify-center rounded-lg pointer-events-none">
-              <span className="text-white font-bold text-lg bg-black dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 px-4 py-2 rounded">{t('common.status.pending')}</span>
-          </div> : null}
+      {isStandby ? (
+        <div className="absolute inset-0 bg-gray-400 dark:bg-gray-600 bg-opacity-50 dark:bg-opacity-60 flex items-center justify-center rounded-lg pointer-events-none">
+          <span className="text-white font-bold text-lg bg-black dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 px-4 py-2 rounded">
+            {t('common.status.pending')}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 };

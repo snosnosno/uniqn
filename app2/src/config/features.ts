@@ -217,7 +217,5 @@ export const getDisabledFeatures = (): FeatureFlag[] => {
  * @returns 활성화된 기능 플래그 목록
  */
 export const getEnabledFeatures = (): FeatureFlag[] => {
-  return (Object.keys(FEATURE_FLAGS) as FeatureFlag[]).filter(
-    (key) => FEATURE_FLAGS[key] === true
-  );
+  return (Object.keys(FEATURE_FLAGS) as FeatureFlag[]).filter((key) => FEATURE_FLAGS[key] === true);
 };

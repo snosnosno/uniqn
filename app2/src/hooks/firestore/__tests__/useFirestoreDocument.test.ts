@@ -76,9 +76,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -93,10 +91,7 @@ describe('useFirestoreDocument', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _docRef: unknown,
-          onNext: (snapshot: { exists: () => boolean }) => void
-        ) => {
+        (_docRef: unknown, onNext: (snapshot: { exists: () => boolean }) => void) => {
           onNext({
             exists: () => false,
           });
@@ -104,9 +99,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/999')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/999'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -123,10 +116,7 @@ describe('useFirestoreDocument', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _docRef: unknown,
-          onNext: (snapshot: { exists: () => boolean }) => void
-        ) => {
+        (_docRef: unknown, onNext: (snapshot: { exists: () => boolean }) => void) => {
           onNext({
             exists: () => false,
           });
@@ -145,9 +135,7 @@ describe('useFirestoreDocument', () => {
       });
 
       expect(result.current.data).toBeNull();
-      expect(result.current.error).toEqual(
-        new Error('Document not found: staff/999')
-      );
+      expect(result.current.error).toEqual(new Error('Document not found: staff/999'));
     });
 
     it('errorOnNotFound=false일 때 문서 없어도 정상', async () => {
@@ -155,10 +143,7 @@ describe('useFirestoreDocument', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _docRef: unknown,
-          onNext: (snapshot: { exists: () => boolean }) => void
-        ) => {
+        (_docRef: unknown, onNext: (snapshot: { exists: () => boolean }) => void) => {
           onNext({
             exists: () => false,
           });
@@ -213,9 +198,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -261,9 +244,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -284,19 +265,13 @@ describe('useFirestoreDocument', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _docRef: unknown,
-          _onNext: unknown,
-          onError: (error: Error) => void
-        ) => {
+        (_docRef: unknown, _onNext: unknown, onError: (error: Error) => void) => {
           onError(mockError);
           return jest.fn();
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -312,11 +287,7 @@ describe('useFirestoreDocument', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _docRef: unknown,
-          _onNext: unknown,
-          onError: (error: Error) => void
-        ) => {
+        (_docRef: unknown, _onNext: unknown, onError: (error: Error) => void) => {
           onError(mockError);
           return jest.fn();
         }
@@ -423,9 +394,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -450,18 +419,13 @@ describe('useFirestoreDocument', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _docRef: unknown,
-          onNext: (snapshot: { exists: () => boolean }) => void
-        ) => {
+        (_docRef: unknown, onNext: (snapshot: { exists: () => boolean }) => void) => {
           onNext({ exists: () => false });
           return mockUnsubscribe;
         }
       );
 
-      const { unmount } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { unmount } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(mockUnsubscribe).not.toHaveBeenCalled();
@@ -503,9 +467,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -547,9 +509,7 @@ describe('useFirestoreDocument', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreDocument<Staff>('staff/1')
-      );
+      const { result } = renderHook(() => useFirestoreDocument<Staff>('staff/1'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);

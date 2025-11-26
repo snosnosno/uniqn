@@ -10,8 +10,8 @@ export const generateSearchIndex = (title: string, description: string): string[
   const words = text
     .replace(/[^\w\s가-힣]/g, ' ')
     .split(/\s+/)
-    .filter(word => word.length > 1); // Filter out single characters
-  
+    .filter((word) => word.length > 1); // Filter out single characters
+
   // Remove duplicates
   return Array.from(new Set(words));
 };
@@ -22,12 +22,12 @@ export const generateSearchIndex = (title: string, description: string): string[
  */
 export const prepareSearchTerms = (searchQuery: string): string[] => {
   if (!searchQuery.trim()) return [];
-  
+
   return searchQuery
     .toLowerCase()
     .trim()
     .split(/\s+/)
-    .filter(term => term.length > 1); // Filter out single characters
+    .filter((term) => term.length > 1); // Filter out single characters
 };
 
 /**
@@ -36,13 +36,13 @@ export const prepareSearchTerms = (searchQuery: string): string[] => {
  */
 export const highlightSearchTerms = (text: string, searchTerms: string[]): string => {
   if (!searchTerms.length) return text;
-  
+
   let highlightedText = text;
-  searchTerms.forEach(term => {
+  searchTerms.forEach((term) => {
     const regex = new RegExp(`(${term})`, 'gi');
     highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
   });
-  
+
   return highlightedText;
 };
 
@@ -52,8 +52,6 @@ export const highlightSearchTerms = (text: string, searchTerms: string[]): strin
  */
 export const matchesSearchTerms = (searchIndex: string[], searchTerms: string[]): boolean => {
   if (!searchTerms.length) return true;
-  
-  return searchTerms.some(term => 
-    searchIndex.some(indexTerm => indexTerm.includes(term))
-  );
+
+  return searchTerms.some((term) => searchIndex.some((indexTerm) => indexTerm.includes(term)));
 };

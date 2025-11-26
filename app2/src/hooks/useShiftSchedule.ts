@@ -1,12 +1,31 @@
-import { collection, query, where, doc, updateDoc, setDoc, serverTimestamp, Timestamp, addDoc, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  doc,
+  updateDoc,
+  setDoc,
+  serverTimestamp,
+  Timestamp,
+  addDoc,
+  getDocs,
+} from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 
 import { db } from '../firebase';
 import { useFirestoreDocument } from './firestore';
-import { validateSchedule, ValidationResult, ValidationSettings, DEFAULT_VALIDATION_SETTINGS, DealerSchedule } from '../utils/shiftValidation';
-import { generateTimeSlots as utilGenerateTimeSlots, convertAssignmentData } from '../utils/timeUtils';
-
+import {
+  validateSchedule,
+  ValidationResult,
+  ValidationSettings,
+  DEFAULT_VALIDATION_SETTINGS,
+  DealerSchedule,
+} from '../utils/shiftValidation';
+import {
+  generateTimeSlots as utilGenerateTimeSlots,
+  convertAssignmentData,
+} from '../utils/timeUtils';
 
 // ShiftSchedule 데이터 구조 정의
 export interface ShiftSchedule {
@@ -17,11 +36,12 @@ export interface ShiftSchedule {
   startTime: string; // HH:MM 형식
   endTime: string; // HH:MM 형식
   scheduleData: {
-    [staffId: string]: { // staffId를 표준으로 사용
+    [staffId: string]: {
+      // staffId를 표준으로 사용
       staffName: string;
       startTime: string; // 개인별 출근시간
       assignments: { [timeSlot: string]: string }; // "Table1" | "Table2" | "휴식" | "대기"
-    }
+    };
   };
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -63,7 +83,9 @@ export const generateTimeSlots = utilGenerateTimeSlots;
 export const useShiftSchedule = (eventId?: string, date?: string) => {
   const [error, setError] = useState<Error | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
-  const [validationSettings, setValidationSettings] = useState<ValidationSettings>(DEFAULT_VALIDATION_SETTINGS);
+  const [validationSettings, setValidationSettings] = useState<ValidationSettings>(
+    DEFAULT_VALIDATION_SETTINGS
+  );
 
   // 스케줄 문서 ID 생성
   const scheduleId = eventId && date ? `${eventId}_${date}` : null;
@@ -80,144 +102,175 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
     onSuccess: () => {
       logger.info('스케줄 로드 완료', {
         component: 'useShiftSchedule',
-        data: { scheduleId }
+        data: { scheduleId },
       });
     },
     onError: (err) => {
       logger.error('스케줄 구독 실패:', err, {
-        component: 'useShiftSchedule'
+        component: 'useShiftSchedule',
       });
       setError(err);
     },
   });
 
   // 새로운 스케줄 생성
-  const createSchedule = useCallback(async (
-    eventId: string,
-    date: string,
-    timeInterval: number = 30,
-    startTime: string = '09:00',
-    endTime: string = '18:00'
-  ) => {
-    try {
-      const newScheduleId = `${eventId}_${date}`;
-      const newSchedule: Omit<ShiftSchedule, 'id'> = {
-        eventId,
-        date,
-        timeInterval,
-        startTime,
-        endTime,
-        scheduleData: {},
-        createdAt: serverTimestamp() as Timestamp,
-        updatedAt: serverTimestamp() as Timestamp,
-      };
+  const createSchedule = useCallback(
+    async (
+      eventId: string,
+      date: string,
+      timeInterval: number = 30,
+      startTime: string = '09:00',
+      endTime: string = '18:00'
+    ) => {
+      try {
+        const newScheduleId = `${eventId}_${date}`;
+        const newSchedule: Omit<ShiftSchedule, 'id'> = {
+          eventId,
+          date,
+          timeInterval,
+          startTime,
+          endTime,
+          scheduleData: {},
+          createdAt: serverTimestamp() as Timestamp,
+          updatedAt: serverTimestamp() as Timestamp,
+        };
 
-      const scheduleRef = doc(db, 'shiftSchedules', newScheduleId);
-      await setDoc(scheduleRef, newSchedule);
-      
-      return newScheduleId;
-    } catch (err) {
-      logger.error('Error creating schedule:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
-      setError(err as Error);
-      throw err;
-    }
-  }, []);
+        const scheduleRef = doc(db, 'shiftSchedules', newScheduleId);
+        await setDoc(scheduleRef, newSchedule);
+
+        return newScheduleId;
+      } catch (err) {
+        logger.error(
+          'Error creating schedule:',
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'useShiftSchedule' }
+        );
+        setError(err as Error);
+        throw err;
+      }
+    },
+    []
+  );
 
   // 딜러 할당 업데이트
-  const updateDealerAssignment = useCallback(async (
-    staffId: string, // 스태프 ID
-    timeSlot: string,
-    assignment: string
-  ) => {
-    if (!scheduleId || !schedule?.scheduleData) return;
+  const updateDealerAssignment = useCallback(
+    async (
+      staffId: string, // 스태프 ID
+      timeSlot: string,
+      assignment: string
+    ) => {
+      if (!scheduleId || !schedule?.scheduleData) return;
 
-    try {
-      const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
-      const updatePath = `scheduleData.${staffId}.assignments.${timeSlot}`;
-      
-      await updateDoc(scheduleRef, {
-        [updatePath]: assignment,
-        updatedAt: serverTimestamp(),
-      });
-    } catch (err) {
-      logger.error('Error updating dealer assignment:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
-      setError(err as Error);
-      throw err;
-    }
-  }, [scheduleId, schedule?.scheduleData]);
+      try {
+        const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
+        const updatePath = `scheduleData.${staffId}.assignments.${timeSlot}`;
+
+        await updateDoc(scheduleRef, {
+          [updatePath]: assignment,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (err) {
+        logger.error(
+          'Error updating dealer assignment:',
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'useShiftSchedule' }
+        );
+        setError(err as Error);
+        throw err;
+      }
+    },
+    [scheduleId, schedule?.scheduleData]
+  );
 
   // 딜러 추가
-  const addDealer = useCallback(async (
-    staffId: string,
-    staffName: string,
-    startTime: string = '09:00'
-  ) => {
-    if (!scheduleId) return;
+  const addDealer = useCallback(
+    async (staffId: string, staffName: string, startTime: string = '09:00') => {
+      if (!scheduleId) return;
 
-    try {
-      const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
-      const dealerData = {
-        staffName,
-        startTime,
-        assignments: {},
-      };
+      try {
+        const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
+        const dealerData = {
+          staffName,
+          startTime,
+          assignments: {},
+        };
 
-      await updateDoc(scheduleRef, {
-        [`scheduleData.${staffId}`]: dealerData,
-        updatedAt: serverTimestamp(),
-      });
-    } catch (err) {
-      logger.error('Error adding dealer:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
-      setError(err as Error);
-      throw err;
-    }
-  }, [scheduleId]);
-  
-  // 시간 간격 및 시간 범위 업데이트
-  const updateScheduleSettings = useCallback(async (
-    newInterval?: number,
-    newStartTime?: string,
-    newEndTime?: string
-  ) => {
-    if (!scheduleId || !schedule?.scheduleData || !schedule.timeInterval || !schedule.startTime || !schedule.endTime) return;
-  
-    try {
-      const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
-      const updates: any = {
-        updatedAt: serverTimestamp(),
-      };
-  
-      // 시간 간격 변경 시 기존 데이터 변환
-      if (newInterval && newInterval !== schedule.timeInterval) {
-        updates.timeInterval = newInterval;
-        
-        // 기존 할당 데이터 변환
-        const convertedScheduleData: any = {};
-        Object.entries(schedule.scheduleData).forEach(([staffId, dealerData]) => {
-          convertedScheduleData[staffId] = {
-            ...dealerData,
-            assignments: convertAssignmentData(
-              dealerData.assignments,
-              schedule.timeInterval,
-              newInterval,
-              newStartTime || schedule.startTime,
-              newEndTime || schedule.endTime
-            )
-          };
+        await updateDoc(scheduleRef, {
+          [`scheduleData.${staffId}`]: dealerData,
+          updatedAt: serverTimestamp(),
         });
-        updates.scheduleData = convertedScheduleData;
+      } catch (err) {
+        logger.error('Error adding dealer:', err instanceof Error ? err : new Error(String(err)), {
+          component: 'useShiftSchedule',
+        });
+        setError(err as Error);
+        throw err;
       }
-  
-      if (newStartTime) updates.startTime = newStartTime;
-      if (newEndTime) updates.endTime = newEndTime;
-  
-      await updateDoc(scheduleRef, updates);
-    } catch (err) {
-      logger.error('Error updating schedule settings:', err instanceof Error ? err : new Error(String(err)), { component: 'useShiftSchedule' });
-      setError(err as Error);
-      throw err;
-    }
-  }, [scheduleId, schedule?.scheduleData, schedule?.timeInterval, schedule?.startTime, schedule?.endTime]);
+    },
+    [scheduleId]
+  );
+
+  // 시간 간격 및 시간 범위 업데이트
+  const updateScheduleSettings = useCallback(
+    async (newInterval?: number, newStartTime?: string, newEndTime?: string) => {
+      if (
+        !scheduleId ||
+        !schedule?.scheduleData ||
+        !schedule.timeInterval ||
+        !schedule.startTime ||
+        !schedule.endTime
+      )
+        return;
+
+      try {
+        const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
+        const updates: any = {
+          updatedAt: serverTimestamp(),
+        };
+
+        // 시간 간격 변경 시 기존 데이터 변환
+        if (newInterval && newInterval !== schedule.timeInterval) {
+          updates.timeInterval = newInterval;
+
+          // 기존 할당 데이터 변환
+          const convertedScheduleData: any = {};
+          Object.entries(schedule.scheduleData).forEach(([staffId, dealerData]) => {
+            convertedScheduleData[staffId] = {
+              ...dealerData,
+              assignments: convertAssignmentData(
+                dealerData.assignments,
+                schedule.timeInterval,
+                newInterval,
+                newStartTime || schedule.startTime,
+                newEndTime || schedule.endTime
+              ),
+            };
+          });
+          updates.scheduleData = convertedScheduleData;
+        }
+
+        if (newStartTime) updates.startTime = newStartTime;
+        if (newEndTime) updates.endTime = newEndTime;
+
+        await updateDoc(scheduleRef, updates);
+      } catch (err) {
+        logger.error(
+          'Error updating schedule settings:',
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'useShiftSchedule' }
+        );
+        setError(err as Error);
+        throw err;
+      }
+    },
+    [
+      scheduleId,
+      schedule?.scheduleData,
+      schedule?.timeInterval,
+      schedule?.startTime,
+      schedule?.endTime,
+    ]
+  );
 
   // 시간 슬롯 생성 (메모이제이션)
   const timeSlots = useMemo(() => {
@@ -241,7 +294,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       return null;
     }
 
-    const dealerSchedules: DealerSchedule[] = dealers.map(dealer => ({
+    const dealerSchedules: DealerSchedule[] = dealers.map((dealer) => ({
       id: dealer.id,
       staffName: dealer.staffName,
       startTime: dealer.startTime,
@@ -255,14 +308,14 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
   // 검증 설정 업데이트
   const updateValidationSettings = useCallback((newSettings: Partial<ValidationSettings>) => {
-    setValidationSettings(prev => ({ ...prev, ...newSettings }));
+    setValidationSettings((prev) => ({ ...prev, ...newSettings }));
   }, []);
 
   // 스케줄 변경 시 자동 검증 (메모이제이션)
   const autoValidationResult = useMemo(() => {
     if (!schedule || !timeSlots.length || !dealers.length) return null;
 
-    const dealerSchedules: DealerSchedule[] = dealers.map(dealer => ({
+    const dealerSchedules: DealerSchedule[] = dealers.map((dealer) => ({
       id: dealer.id,
       staffName: dealer.staffName,
       startTime: dealer.startTime,
@@ -290,7 +343,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       // 각 딜러별로 근무기록 생성
       for (const dealer of dealers) {
         const { id: staffId, staffName, startTime: dealerStartTime, assignments } = dealer;
-        
+
         // 시간 슬롯별 할당 데이터 분석
         let totalWorkMinutes = 0;
         let totalBreakMinutes = 0;
@@ -299,12 +352,12 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         let actualEndTime: string | null = null;
 
         // 할당된 시간 슬롯들 순회
-        timeSlots.forEach(timeSlot => {
+        timeSlots.forEach((timeSlot) => {
           const assignment = assignments[timeSlot];
           if (assignment && assignment !== '대기') {
             if (!actualStartTime) actualStartTime = timeSlot;
             actualEndTime = timeSlot;
-            
+
             if (assignment === '휴식') {
               totalBreakMinutes += schedule.timeInterval;
             } else if (assignment.startsWith('T') || assignment.startsWith('Table')) {
@@ -344,10 +397,13 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         await addDoc(workLogsCollection, log);
       }
 
-
       return generatedLogs;
     } catch (error) {
-      logger.error('근무기록 생성 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useShiftSchedule' });
+      logger.error(
+        '근무기록 생성 중 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'useShiftSchedule' }
+      );
       throw error;
     }
   }, [schedule, eventId, date, dealers, timeSlots]);
@@ -363,17 +419,21 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
         where('date', '==', date),
         where('type', '==', 'schedule')
       );
-      
+
       const snapshot = await getDocs(workLogsQuery);
       return !snapshot.empty;
     } catch (error) {
-      logger.error('근무기록 확인 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useShiftSchedule' });
+      logger.error(
+        '근무기록 확인 중 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'useShiftSchedule' }
+      );
       return false;
     }
   }, [eventId, date]);
 
   return {
-    schedule: schedule ? { ...schedule, id: scheduleId || '' } as ShiftSchedule : null,
+    schedule: schedule ? ({ ...schedule, id: scheduleId || '' } as ShiftSchedule) : null,
     loading,
     error: error || hookError,
     timeSlots,

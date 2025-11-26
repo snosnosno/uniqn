@@ -12,7 +12,10 @@ interface TournamentSelectorProps {
   dateFilter?: string | null; // YYYY-MM-DD 형식의 날짜 필터 (옵션)
 }
 
-const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '', dateFilter = null }) => {
+const TournamentSelector: React.FC<TournamentSelectorProps> = ({
+  className = '',
+  dateFilter = null,
+}) => {
   const navigate = useNavigate();
   const { state, dispatch } = useTournament();
   const { tournaments, loading } = useTournamentData();
@@ -20,14 +23,14 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '',
   // 날짜 필터가 있으면 해당 날짜의 토너먼트만 표시
   const filteredTournaments = React.useMemo(() => {
     if (!dateFilter) return tournaments;
-    return tournaments.filter(t => t.dateKey === dateFilter || t.date === dateFilter);
+    return tournaments.filter((t) => t.dateKey === dateFilter || t.date === dateFilter);
   }, [tournaments, dateFilter]);
 
   // 날짜별 기본 토너먼트(전체보기) 찾기
   const defaultTournamentForDate = React.useMemo(() => {
     if (!dateFilter) return null;
     const defaultId = getDefaultTournamentId(dateFilter);
-    return tournaments.find(t => t.id === defaultId);
+    return tournaments.find((t) => t.id === defaultId);
   }, [tournaments, dateFilter]);
 
   const handleTournamentChange = (tournamentId: string) => {
@@ -80,9 +83,7 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({ className = '',
               {!dateFilter && <option value="ALL">🌐 전체 토너먼트</option>}
               {/* 날짜가 선택되었고 해당 날짜의 기본 토너먼트가 있으면 표시 */}
               {dateFilter && defaultTournamentForDate && (
-                <option value={defaultTournamentForDate.id}>
-                  🌐 전체 ({dateFilter})
-                </option>
+                <option value={defaultTournamentForDate.id}>🌐 전체 ({dateFilter})</option>
               )}
               {filteredTournaments
                 .filter((tournament) => !isDefaultTournament(tournament.id))

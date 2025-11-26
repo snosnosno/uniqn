@@ -8,10 +8,7 @@
  * @since 2025-01-23
  */
 
-import type {
-  ConsentCreateInput,
-  ConsentUpdateInput,
-} from '../../types/consent';
+import type { ConsentCreateInput, ConsentUpdateInput } from '../../types/consent';
 import type { DeletionRequestInput } from '../../types/accountDeletion';
 import type { PasswordChangeInput } from '../../types/security';
 

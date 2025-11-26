@@ -13,12 +13,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import {
-  doc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreDocument } from './firestore';

@@ -91,9 +91,7 @@ describe('useScheduleData', () => {
     mockUseUnifiedDataContext.mockReturnValue({
       state: {
         staff: new Map(),
-        workLogs: new Map([
-          ['log-1', createMockWorkLog({ id: 'log-1', staffId: 'test-user-1' })],
-        ]),
+        workLogs: new Map([['log-1', createMockWorkLog({ id: 'log-1', staffId: 'test-user-1' })]]),
         applications: new Map(),
         jobPostings: new Map(),
         loading: {
@@ -249,9 +247,18 @@ describe('useScheduleData', () => {
         state: {
           staff: new Map(),
           workLogs: new Map([
-            ['log-1', createMockWorkLog({ id: 'log-1', staffId: 'test-user-1', date: '2025-11-01' })],
-            ['log-2', createMockWorkLog({ id: 'log-2', staffId: 'test-user-1', date: '2025-11-02' })],
-            ['log-3', createMockWorkLog({ id: 'log-3', staffId: 'test-user-1', date: '2025-11-03' })],
+            [
+              'log-1',
+              createMockWorkLog({ id: 'log-1', staffId: 'test-user-1', date: '2025-11-01' }),
+            ],
+            [
+              'log-2',
+              createMockWorkLog({ id: 'log-2', staffId: 'test-user-1', date: '2025-11-02' }),
+            ],
+            [
+              'log-3',
+              createMockWorkLog({ id: 'log-3', staffId: 'test-user-1', date: '2025-11-03' }),
+            ],
           ]),
           applications: new Map(),
           jobPostings: new Map(),
@@ -287,9 +294,18 @@ describe('useScheduleData', () => {
         state: {
           staff: new Map(),
           workLogs: new Map([
-            ['log-1', createMockWorkLog({ id: 'log-1', staffId: 'test-user-1', date: '2025-11-01' })],
-            ['log-2', createMockWorkLog({ id: 'log-2', staffId: 'other-user', date: '2025-11-02' })],
-            ['log-3', createMockWorkLog({ id: 'log-3', staffId: 'test-user-1', date: '2025-11-03' })],
+            [
+              'log-1',
+              createMockWorkLog({ id: 'log-1', staffId: 'test-user-1', date: '2025-11-01' }),
+            ],
+            [
+              'log-2',
+              createMockWorkLog({ id: 'log-2', staffId: 'other-user', date: '2025-11-02' }),
+            ],
+            [
+              'log-3',
+              createMockWorkLog({ id: 'log-3', staffId: 'test-user-1', date: '2025-11-03' }),
+            ],
           ]),
           applications: new Map(),
           jobPostings: new Map(),

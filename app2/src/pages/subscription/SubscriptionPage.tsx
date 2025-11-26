@@ -57,12 +57,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
 
       {/* 플랜 정보 */}
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {plan.name}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          {plan.description}
-        </p>
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{plan.description}</p>
 
         {/* 가격 */}
         <div className="mb-4">
@@ -70,9 +66,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
             {plan.price === 0 ? '무료' : `${plan.price.toLocaleString()}원`}
           </div>
           {plan.price > 0 && (
-            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              / 월
-            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">/ 월</div>
           )}
         </div>
 
@@ -84,9 +78,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
               {plan.monthlyChips}칩
             </span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            매월 자동 지급
-          </p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">매월 자동 지급</p>
         </div>
       </div>
 
@@ -95,9 +87,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
         {plan.features.map((feature, index) => (
           <div key={index} className="flex items-start gap-2">
             <CheckIcon className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {feature}
-            </span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
           </div>
         ))}
       </div>
@@ -108,11 +98,12 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
         disabled={isCurrentPlan}
         className={`
           w-full py-3 px-4 rounded-md font-semibold transition-colors
-          ${isCurrentPlan
-            ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-            : isPopular
-              ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
-              : 'bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white'
+          ${
+            isCurrentPlan
+              ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              : isPopular
+                ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
+                : 'bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white'
           }
         `}
       >
@@ -168,9 +159,7 @@ const SubscriptionPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* 헤더 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            구독 플랜 선택
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">구독 플랜 선택</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             매월 자동으로 파란칩이 지급됩니다. <br />
             지급된 파란칩은 다음 달 1일까지 사용할 수 있습니다.
@@ -216,7 +205,8 @@ const SubscriptionPage: React.FC = () => {
                 파란칩 유효기간은 얼마나 되나요?
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                파란칩은 발급월 말일까지 사용할 수 있습니다. 예를 들어 1월에 지급된 칩은 1월 31일까지 사용 가능합니다.
+                파란칩은 발급월 말일까지 사용할 수 있습니다. 예를 들어 1월에 지급된 칩은 1월
+                31일까지 사용 가능합니다.
               </p>
             </div>
 
@@ -225,7 +215,8 @@ const SubscriptionPage: React.FC = () => {
                 구독을 취소하면 어떻게 되나요?
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                구독 취소 시 현재 결제 기간이 만료될 때까지는 서비스를 계속 이용할 수 있습니다. 남은 파란칩도 유효기간까지 사용 가능합니다.
+                구독 취소 시 현재 결제 기간이 만료될 때까지는 서비스를 계속 이용할 수 있습니다. 남은
+                파란칩도 유효기간까지 사용 가능합니다.
               </p>
             </div>
 
@@ -234,7 +225,8 @@ const SubscriptionPage: React.FC = () => {
                 플랜을 변경할 수 있나요?
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                언제든지 플랜을 업그레이드하거나 다운그레이드할 수 있습니다. 업그레이드 시 즉시 적용되며, 다운그레이드 시 다음 결제 기간부터 적용됩니다.
+                언제든지 플랜을 업그레이드하거나 다운그레이드할 수 있습니다. 업그레이드 시 즉시
+                적용되며, 다운그레이드 시 다음 결제 기간부터 적용됩니다.
               </p>
             </div>
           </div>

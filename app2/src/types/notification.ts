@@ -18,25 +18,25 @@ import { Timestamp as FirebaseTimestamp } from 'firebase/firestore';
  * 알림 카테고리 (대분류)
  */
 export type NotificationCategory =
-  | 'system'      // 시스템 공지, 신규 공고
-  | 'work'        // 지원, 확정, 취소 관련
-  | 'schedule';   // 근무시간 변경
+  | 'system' // 시스템 공지, 신규 공고
+  | 'work' // 지원, 확정, 취소 관련
+  | 'schedule'; // 근무시간 변경
 
 /**
  * 알림 타입 (세부 분류)
  */
 export type NotificationType =
   // System
-  | 'job_posting_announcement'  // 공고별 공지 전송 (구현됨)
-  | 'new_job_posting'            // 신규 공고 등록 알림 (구현 예정)
-  | 'system_announcement'        // 시스템 공지
-  | 'app_update'                 // 앱 업데이트
+  | 'job_posting_announcement' // 공고별 공지 전송 (구현됨)
+  | 'new_job_posting' // 신규 공고 등록 알림 (구현 예정)
+  | 'system_announcement' // 시스템 공지
+  | 'app_update' // 앱 업데이트
   // Work
-  | 'job_application'            // 지원서 제출 알림 (구현 예정)
-  | 'staff_approval'             // 지원 확정 알림 (구현 예정)
-  | 'staff_rejection'            // 지원 취소 알림 (구현 예정)
+  | 'job_application' // 지원서 제출 알림 (구현 예정)
+  | 'staff_approval' // 지원 확정 알림 (구현 예정)
+  | 'staff_rejection' // 지원 취소 알림 (구현 예정)
   // Schedule
-  | 'schedule_change';           // 근무시간 변경 알림 (구현 예정)
+  | 'schedule_change'; // 근무시간 변경 알림 (구현 예정)
 
 /**
  * 알림 우선순위
@@ -47,10 +47,10 @@ export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
  * 알림 액션 타입
  */
 export type NotificationActionType =
-  | 'navigate'      // 특정 페이지로 이동
-  | 'open_modal'    // 모달 열기
+  | 'navigate' // 특정 페이지로 이동
+  | 'open_modal' // 모달 열기
   | 'external_link' // 외부 링크
-  | 'none';         // 액션 없음
+  | 'none'; // 액션 없음
 
 /**
  * 알림 액션
@@ -104,7 +104,7 @@ export interface Notification {
 export interface QuietHours {
   enabled: boolean;
   start: string; // "22:00" 형식
-  end: string;   // "08:00" 형식
+  end: string; // "08:00" 형식
 }
 
 /**

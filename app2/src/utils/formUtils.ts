@@ -29,9 +29,7 @@ export interface FormHandlers<T extends Record<string, any>> {
    * @example
    * <input name="username" value={form.username} onChange={handleChange} />
    */
-  handleChange: (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void;
+  handleChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 
   /**
    * Select 요소 변경 핸들러
@@ -44,9 +42,7 @@ export interface FormHandlers<T extends Record<string, any>> {
    *   <option value="admin">Admin</option>
    * </select>
    */
-  handleSelectChange: (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => void;
+  handleSelectChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 
   /**
    * Checkbox 요소 변경 핸들러
@@ -56,9 +52,7 @@ export interface FormHandlers<T extends Record<string, any>> {
    * @example
    * <input type="checkbox" name="isActive" checked={form.isActive} onChange={handleCheckboxChange} />
    */
-  handleCheckboxChange: (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => void;
+  handleCheckboxChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 
   /**
    * 폼 상태 리셋 핸들러
@@ -113,9 +107,7 @@ export function createFormHandler<T extends Record<string, any>>(
   /**
    * 일반 input/textarea 변경 핸들러
    */
-  const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, value } = event.target;
     setState((prevState) => ({
       ...prevState,
@@ -126,9 +118,7 @@ export function createFormHandler<T extends Record<string, any>>(
   /**
    * Select 변경 핸들러
    */
-  const handleSelectChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ): void => {
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
     const { name, value } = event.target;
     setState((prevState) => ({
       ...prevState,
@@ -139,9 +129,7 @@ export function createFormHandler<T extends Record<string, any>>(
   /**
    * Checkbox 변경 핸들러
    */
-  const handleCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ): void => {
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, checked } = event.target;
     setState((prevState) => ({
       ...prevState,

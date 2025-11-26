@@ -18,20 +18,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  DocumentData,
-} from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
-import type {
-  FirestoreMutationResult,
-  MutationHookOptions,
-} from './types';
+import type { FirestoreMutationResult, MutationHookOptions } from './types';
 
 /**
  * Firestore Mutation Hook

@@ -187,30 +187,18 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
         {/* 통계 정보 */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-              1,000+
-            </div>
-            <div className="text-gray-100 dark:text-gray-200">
-              활성 사용자
-            </div>
+            <div className="text-3xl md:text-4xl font-bold text-white mb-2">1,000+</div>
+            <div className="text-gray-100 dark:text-gray-200">활성 사용자</div>
           </div>
 
           <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-              500+
-            </div>
-            <div className="text-gray-100 dark:text-gray-200">
-              토너먼트 운영
-            </div>
+            <div className="text-3xl md:text-4xl font-bold text-white mb-2">500+</div>
+            <div className="text-gray-100 dark:text-gray-200">토너먼트 운영</div>
           </div>
 
           <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-              99.9%
-            </div>
-            <div className="text-gray-100 dark:text-gray-200">
-              서비스 가동률
-            </div>
+            <div className="text-3xl md:text-4xl font-bold text-white mb-2">99.9%</div>
+            <div className="text-gray-100 dark:text-gray-200">서비스 가동률</div>
           </div>
         </div>
 
@@ -236,8 +224,13 @@ const CTASection: React.FC<CTASectionProps> = ({ content, onCtaClick }) => {
             </span>
           </div>
           <p className="text-white dark:text-gray-100 text-center">
-            지금 가입하시면 <span className="font-bold text-yellow-400 dark:text-yellow-300">첫 3개월 무료</span> +
-            <span className="font-bold text-yellow-400 dark:text-yellow-300"> 프리미엄 기능 무료</span> 제공
+            지금 가입하시면{' '}
+            <span className="font-bold text-yellow-400 dark:text-yellow-300">첫 3개월 무료</span> +
+            <span className="font-bold text-yellow-400 dark:text-yellow-300">
+              {' '}
+              프리미엄 기능 무료
+            </span>{' '}
+            제공
           </p>
         </div>
       </div>

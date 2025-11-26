@@ -22,7 +22,7 @@ import {
   Timestamp,
   serverTimestamp,
   type Query,
-  type DocumentData
+  type DocumentData,
 } from 'firebase/firestore';
 
 import { db } from '../firebase';
@@ -35,7 +35,7 @@ import type {
   SystemAnnouncement,
   CreateSystemAnnouncementInput,
   UpdateSystemAnnouncementInput,
-  SystemAnnouncementFilter
+  SystemAnnouncementFilter,
 } from '../types';
 
 export interface UseSystemAnnouncementsReturn {
@@ -67,7 +67,9 @@ export interface UseSystemAnnouncementsReturn {
  * const { announcements, createAnnouncement, loading } = useSystemAnnouncements();
  * ```
  */
-export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter): UseSystemAnnouncementsReturn => {
+export const useSystemAnnouncements = (
+  initialFilter?: SystemAnnouncementFilter
+): UseSystemAnnouncementsReturn => {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
 
@@ -120,12 +122,12 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
     onSuccess: () => {
       logger.info('시스템 공지사항 조회 완료', {
         component: 'useSystemAnnouncements',
-        data: { count: rawAnnouncements.length }
+        data: { count: rawAnnouncements.length },
       });
     },
     onError: (err) => {
       logger.error('시스템 공지사항 구독 실패:', err, {
-        component: 'useSystemAnnouncements'
+        component: 'useSystemAnnouncements',
       });
     },
   });
@@ -196,16 +198,17 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
           startDate: Timestamp.fromDate(input.startDate),
           endDate: input.endDate ? Timestamp.fromDate(input.endDate) : null,
           createdBy: currentUser.uid,
-          createdByName: extractNameFromDisplayName(currentUser.displayName) || currentUser.email || '관리자',
+          createdByName:
+            extractNameFromDisplayName(currentUser.displayName) || currentUser.email || '관리자',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           isActive: true,
-          viewCount: 0
+          viewCount: 0,
         });
 
         logger.info('시스템 공지사항 생성 완료', {
           component: 'useSystemAnnouncements',
-          data: { id: docRef.id, title: input.title }
+          data: { id: docRef.id, title: input.title },
         });
 
         // 2. Firebase Functions 호출하여 모든 사용자에게 알림 전송
@@ -215,26 +218,34 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
             announcementId: docRef.id,
             title: input.title,
             content: input.content,
-            priority: input.priority
+            priority: input.priority,
           });
 
           logger.info('시스템 공지사항 알림 전송 완료', {
             component: 'useSystemAnnouncements',
-            data: { id: docRef.id, result }
+            data: { id: docRef.id, result },
           });
         } catch (funcErr) {
           // 알림 전송 실패 시에도 공지사항은 생성된 상태 유지
-          logger.error('시스템 공지사항 알림 전송 실패 (공지사항은 생성됨):', funcErr instanceof Error ? funcErr : new Error(String(funcErr)), {
-            component: 'useSystemAnnouncements',
-            data: { id: docRef.id }
-          });
+          logger.error(
+            '시스템 공지사항 알림 전송 실패 (공지사항은 생성됨):',
+            funcErr instanceof Error ? funcErr : new Error(String(funcErr)),
+            {
+              component: 'useSystemAnnouncements',
+              data: { id: docRef.id },
+            }
+          );
         }
 
         return docRef.id;
       } catch (err) {
-        logger.error('시스템 공지사항 생성 실패:', err instanceof Error ? err : new Error(String(err)), {
-          component: 'useSystemAnnouncements'
-        });
+        logger.error(
+          '시스템 공지사항 생성 실패:',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            component: 'useSystemAnnouncements',
+          }
+        );
         throw err;
       }
     },
@@ -253,7 +264,7 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
       try {
         const announcementRef = doc(db, 'systemAnnouncements', id);
         const updateData: Record<string, unknown> = {
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         };
 
         if (input.title !== undefined) updateData.title = input.title;
@@ -271,14 +282,18 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
 
         logger.info('시스템 공지사항 수정 완료', {
           component: 'useSystemAnnouncements',
-          data: { id }
+          data: { id },
         });
 
         showSuccess('공지사항이 수정되었습니다.');
       } catch (err) {
-        logger.error('시스템 공지사항 수정 실패:', err instanceof Error ? err : new Error(String(err)), {
-          component: 'useSystemAnnouncements'
-        });
+        logger.error(
+          '시스템 공지사항 수정 실패:',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            component: 'useSystemAnnouncements',
+          }
+        );
         showError('공지사항 수정에 실패했습니다.');
         throw err;
       }
@@ -301,14 +316,18 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
 
         logger.info('시스템 공지사항 삭제 완료', {
           component: 'useSystemAnnouncements',
-          data: { id }
+          data: { id },
         });
 
         showSuccess('공지사항이 삭제되었습니다.');
       } catch (err) {
-        logger.error('시스템 공지사항 삭제 실패:', err instanceof Error ? err : new Error(String(err)), {
-          component: 'useSystemAnnouncements'
-        });
+        logger.error(
+          '시스템 공지사항 삭제 실패:',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            component: 'useSystemAnnouncements',
+          }
+        );
         showError('공지사항 삭제에 실패했습니다.');
         throw err;
       }
@@ -319,26 +338,23 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
   /**
    * 조회수 증가
    */
-  const incrementViewCount = useCallback(
-    async (id: string): Promise<void> => {
-      try {
-        const announcementRef = doc(db, 'systemAnnouncements', id);
-        await updateDoc(announcementRef, {
-          viewCount: increment(1)
-        });
+  const incrementViewCount = useCallback(async (id: string): Promise<void> => {
+    try {
+      const announcementRef = doc(db, 'systemAnnouncements', id);
+      await updateDoc(announcementRef, {
+        viewCount: increment(1),
+      });
 
-        logger.info('공지사항 조회수 증가', {
-          component: 'useSystemAnnouncements',
-          data: { id }
-        });
-      } catch (err) {
-        logger.error('조회수 증가 실패:', err instanceof Error ? err : new Error(String(err)), {
-          component: 'useSystemAnnouncements'
-        });
-      }
-    },
-    []
-  );
+      logger.info('공지사항 조회수 증가', {
+        component: 'useSystemAnnouncements',
+        data: { id },
+      });
+    } catch (err) {
+      logger.error('조회수 증가 실패:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'useSystemAnnouncements',
+      });
+    }
+  }, []);
 
   return {
     announcements,
@@ -351,6 +367,6 @@ export const useSystemAnnouncements = (initialFilter?: SystemAnnouncementFilter)
     deleteAnnouncement,
     incrementViewCount,
     filter,
-    setFilter
+    setFilter,
   };
 };

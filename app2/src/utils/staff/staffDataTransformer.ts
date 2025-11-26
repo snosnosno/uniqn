@@ -65,7 +65,7 @@ export function transformWorkLogsToStaffData(
 
   // 디버깅: eventId별 WorkLog 통계 (eventId 추출 로직 적용)
   const workLogsByEvent = new Map<string, number>();
-  Array.from(workLogs.values()).forEach(wl => {
+  Array.from(workLogs.values()).forEach((wl) => {
     let eventId = wl.eventId;
 
     // eventId가 없으면 ID에서 추출
@@ -97,7 +97,7 @@ export function transformWorkLogsToStaffData(
     },
   });
 
-  Array.from(workLogs.values()).forEach(workLog => {
+  Array.from(workLogs.values()).forEach((workLog) => {
     // ✅ eventId 필터링 - 현재 공고의 WorkLog만 처리
     // 🔧 eventId가 없는 경우 WorkLog ID에서 추출 시도
     let eventId = workLog.eventId;
@@ -157,8 +157,7 @@ export function transformWorkLogsToStaffData(
         assignedDate: workLog.date || assignmentInfo.assignedDate || '',
         // 원래 지원 정보
         postingId: assignmentInfo.postingId,
-        postingTitle:
-          jobPostings.get(assignmentInfo.postingId)?.title || '알 수 없는 공고',
+        postingTitle: jobPostings.get(assignmentInfo.postingId)?.title || '알 수 없는 공고',
         // 기타
         status: staffInfo.isActive ? 'active' : 'inactive',
       };
@@ -184,8 +183,8 @@ export function transformWorkLogsToStaffData(
     component: 'staffDataTransformer',
     data: {
       staffCount: result.length,
-      staffIds: result.map(s => s.id),
-      staffNames: result.map(s => s.name),
+      staffIds: result.map((s) => s.id),
+      staffNames: result.map((s) => s.name),
     },
   });
 
@@ -196,7 +195,7 @@ export function transformWorkLogsToStaffData(
  * 고유한 스태프 수 계산 (이름 기준 중복 제거)
  */
 export function getUniqueStaffCount(staffData: StaffData[]): number {
-  const uniqueNames = new Set(staffData.map(staff => staff.name));
+  const uniqueNames = new Set(staffData.map((staff) => staff.name));
   return uniqueNames.size;
 }
 

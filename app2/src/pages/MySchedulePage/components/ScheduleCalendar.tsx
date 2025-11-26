@@ -1,9 +1,6 @@
 import React from 'react';
 import LightweightCalendar from '@/components/LightweightCalendar';
-import { 
-  ScheduleEvent, 
-  CalendarView
-} from '@/types/schedule';
+import { ScheduleEvent, CalendarView } from '@/types/schedule';
 
 interface ScheduleCalendarProps {
   schedules: ScheduleEvent[];
@@ -18,7 +15,7 @@ const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   currentView,
   onViewChange,
   onEventClick,
-  onDateClick
+  onDateClick,
 }) => {
   // LightweightCalendar는 이미 필요한 모든 기능을 구현하고 있으므로
   // 단순히 props를 전달하기만 하면 됩니다.

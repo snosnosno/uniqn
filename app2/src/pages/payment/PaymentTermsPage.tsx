@@ -14,10 +14,10 @@ import { toast } from '../../utils/toast';
 import PaymentStepIndicator from '../../components/payment/PaymentStepIndicator';
 
 interface TermsAgreement {
-  paymentTerms: boolean;        // 결제 약관 (필수)
-  refundPolicy: boolean;         // 환불 정책 (필수)
-  privacyPolicy: boolean;        // 개인정보 처리 (필수)
-  marketingConsent: boolean;     // 마케팅 수신 (선택)
+  paymentTerms: boolean; // 결제 약관 (필수)
+  refundPolicy: boolean; // 환불 정책 (필수)
+  privacyPolicy: boolean; // 개인정보 처리 (필수)
+  marketingConsent: boolean; // 마케팅 수신 (선택)
 }
 
 const PaymentTermsPage: React.FC = () => {
@@ -38,9 +38,7 @@ const PaymentTermsPage: React.FC = () => {
 
   // 전체 동의 체크
   const isAllRequiredAgreed =
-    agreement.paymentTerms &&
-    agreement.refundPolicy &&
-    agreement.privacyPolicy;
+    agreement.paymentTerms && agreement.refundPolicy && agreement.privacyPolicy;
 
   const handleAllAgree = () => {
     const newValue = !isAllRequiredAgreed;
@@ -88,9 +86,7 @@ const PaymentTermsPage: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            약관 동의
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">약관 동의</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-300">
             결제를 진행하기 위해 아래 약관에 동의해주세요.
           </p>
@@ -143,30 +139,39 @@ const PaymentTermsPage: React.FC = () => {
                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 max-h-60 overflow-y-auto">
                   <h3 className="font-semibold mb-2">제1조 (목적)</h3>
                   <p className="mb-4">
-                    본 약관은 T-HOLDEM(이하 "회사")이 제공하는 칩 충전 서비스(이하 "서비스")의 이용과 관련하여
-                    회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+                    본 약관은 T-HOLDEM(이하 "회사")이 제공하는 칩 충전 서비스(이하 "서비스")의
+                    이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로
+                    합니다.
                   </p>
 
                   <h3 className="font-semibold mb-2">제2조 (결제 방법)</h3>
                   <p className="mb-4">
-                    1. 회사는 토스페이먼츠를 통한 안전한 결제 시스템을 제공합니다.<br />
-                    2. 이용자는 신용카드, 계좌이체 등 다양한 결제 수단을 선택할 수 있습니다.<br />
+                    1. 회사는 토스페이먼츠를 통한 안전한 결제 시스템을 제공합니다.
+                    <br />
+                    2. 이용자는 신용카드, 계좌이체 등 다양한 결제 수단을 선택할 수 있습니다.
+                    <br />
                     3. 결제 완료 시 구매한 칩은 즉시 지급됩니다.
                   </p>
 
                   <h3 className="font-semibold mb-2">제3조 (칩 유효기간)</h3>
                   <p className="mb-4">
-                    1. 빨간칩(충전칩): 구매일로부터 1년<br />
-                    2. 파란칩(구독칩): 발급월 말일까지<br />
+                    1. 빨간칩(충전칩): 구매일로부터 1년
+                    <br />
+                    2. 파란칩(구독칩): 발급월 말일까지
+                    <br />
                     3. 유효기간 만료 시 자동 소멸되며 별도 보상은 제공하지 않습니다.
                   </p>
 
                   <h3 className="font-semibold mb-2">제4조 (부정 사용 금지)</h3>
                   <p>
-                    이용자는 다음 행위를 할 수 없습니다:<br />
-                    1. 타인 명의 도용<br />
-                    2. 허위 정보 입력<br />
-                    3. 결제 시스템 악용<br />
+                    이용자는 다음 행위를 할 수 없습니다:
+                    <br />
+                    1. 타인 명의 도용
+                    <br />
+                    2. 허위 정보 입력
+                    <br />
+                    3. 결제 시스템 악용
+                    <br />
                     4. 기타 불법적인 행위
                   </p>
                 </div>
@@ -200,28 +205,32 @@ const PaymentTermsPage: React.FC = () => {
               {expandedSection === 'refundPolicy' && (
                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 max-h-60 overflow-y-auto">
                   <h3 className="font-semibold mb-2">제1조 (환불 가능 기간)</h3>
-                  <p className="mb-4">
-                    결제일로부터 7일 이내에 환불을 요청할 수 있습니다.
-                  </p>
+                  <p className="mb-4">결제일로부터 7일 이내에 환불을 요청할 수 있습니다.</p>
 
                   <h3 className="font-semibold mb-2">제2조 (환불 수수료)</h3>
                   <p className="mb-4">
-                    1. 미사용 시: 수수료 없음 (100% 환불)<br />
-                    2. 부분 사용 시: 20% 수수료 차감<br />
+                    1. 미사용 시: 수수료 없음 (100% 환불)
+                    <br />
+                    2. 부분 사용 시: 20% 수수료 차감
+                    <br />
                     3. 환불 금액 = (잔여 칩 / 총 칩) × 결제 금액 × 0.8
                   </p>
 
                   <h3 className="font-semibold mb-2">제3조 (환불 제한)</h3>
                   <p className="mb-4">
-                    1. 월 1회, 연 3회로 환불 횟수가 제한됩니다.<br />
-                    2. 환불 악용 시 블랙리스트 등록 및 환불이 영구 제한될 수 있습니다.<br />
+                    1. 월 1회, 연 3회로 환불 횟수가 제한됩니다.
+                    <br />
+                    2. 환불 악용 시 블랙리스트 등록 및 환불이 영구 제한될 수 있습니다.
+                    <br />
                     3. 7일 경과 후에는 환불이 불가능합니다.
                   </p>
 
                   <h3 className="font-semibold mb-2">제4조 (환불 처리)</h3>
                   <p>
-                    1. 환불 요청 후 관리자 승인을 거쳐 처리됩니다.<br />
-                    2. 승인 시 3~5 영업일 이내 환불 처리됩니다.<br />
+                    1. 환불 요청 후 관리자 승인을 거쳐 처리됩니다.
+                    <br />
+                    2. 승인 시 3~5 영업일 이내 환불 처리됩니다.
+                    <br />
                     3. 환불 금액은 원 결제 수단으로 환불됩니다.
                   </p>
                 </div>
@@ -256,22 +265,27 @@ const PaymentTermsPage: React.FC = () => {
                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 max-h-60 overflow-y-auto">
                   <h3 className="font-semibold mb-2">수집하는 개인정보 항목</h3>
                   <p className="mb-4">
-                    - 필수: 이름, 이메일, 결제 정보<br />
-                    - 자동 수집: IP 주소, 쿠키, 서비스 이용 기록
+                    - 필수: 이름, 이메일, 결제 정보
+                    <br />- 자동 수집: IP 주소, 쿠키, 서비스 이용 기록
                   </p>
 
                   <h3 className="font-semibold mb-2">개인정보의 수집 및 이용 목적</h3>
                   <p className="mb-4">
-                    1. 결제 처리 및 서비스 제공<br />
-                    2. 본인 확인 및 부정 사용 방지<br />
-                    3. 고객 문의 응대<br />
+                    1. 결제 처리 및 서비스 제공
+                    <br />
+                    2. 본인 확인 및 부정 사용 방지
+                    <br />
+                    3. 고객 문의 응대
+                    <br />
                     4. 통계 분석 및 서비스 개선
                   </p>
 
                   <h3 className="font-semibold mb-2">개인정보의 보유 및 이용 기간</h3>
                   <p>
-                    1. 회원 탈퇴 시까지 (단, 관련 법령에 따라 일정 기간 보관)<br />
-                    2. 전자상거래법: 5년 (계약 및 청약철회 기록)<br />
+                    1. 회원 탈퇴 시까지 (단, 관련 법령에 따라 일정 기간 보관)
+                    <br />
+                    2. 전자상거래법: 5년 (계약 및 청약철회 기록)
+                    <br />
                     3. 소비자 불만 기록: 3년
                   </p>
                 </div>

@@ -1,7 +1,7 @@
 /**
  * smartCache.ts - IndexedDB 기반 스마트 캐싱 시스템
  * Week 4 성능 최적화: 지능형 데이터 캐싱으로 Firebase 호출 90% 감소
- * 
+ *
  * @version 4.0
  * @since 2025-02-02 (Week 4)
  */
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG: CacheConfig = {
   version: 1,
   maxSize: 50 * 1024 * 1024, // 50MB
   defaultTTL: 30 * 60 * 1000, // 30 minutes
-  cleanupInterval: 5 * 60 * 1000 // 5 minutes
+  cleanupInterval: 5 * 60 * 1000, // 5 minutes
 };
 
 class SmartCache {
@@ -62,7 +62,7 @@ class SmartCache {
       deletes: 0,
       evictions: 0,
       totalSize: 0,
-      lastCleanup: Date.now()
+      lastCleanup: Date.now(),
     };
 
     this.initPromise = this.initDB();
@@ -75,7 +75,7 @@ class SmartCache {
 
       request.onerror = () => {
         logger.error('IndexedDB 초기화 실패', new Error(request.error?.message), {
-          component: 'SmartCache'
+          component: 'SmartCache',
         });
         _reject(request.error);
       };
@@ -84,25 +84,25 @@ class SmartCache {
         this.db = (event.target as IDBOpenDBRequest).result;
         logger.info('SmartCache IndexedDB 초기화 완료', {
           component: 'SmartCache',
-          data: { dbName: this.config.dbName, version: this.config.version }
+          data: { dbName: this.config.dbName, version: this.config.version },
         });
         resolve();
       };
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
+
         if (!db.objectStoreNames.contains(this.config.storeName)) {
           const store = db.createObjectStore(this.config.storeName, { keyPath: 'id' });
-          
+
           // 인덱스 생성
           store.createIndex('timestamp', 'timestamp', { unique: false });
           store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
           store.createIndex('ttl', ['timestamp', 'ttl'], { unique: false });
-          
+
           logger.info('SmartCache ObjectStore 생성 완료', {
             component: 'SmartCache',
-            data: { storeName: this.config.storeName }
+            data: { storeName: this.config.storeName },
           });
         }
       };
@@ -117,10 +117,14 @@ class SmartCache {
 
   private startCleanupScheduler(): void {
     this.cleanupTimer = setInterval(() => {
-      this.cleanup().catch(error => {
-        logger.error('정기 캐시 정리 실패', error instanceof Error ? error : new Error(String(error)), {
-          component: 'SmartCache'
-        });
+      this.cleanup().catch((error) => {
+        logger.error(
+          '정기 캐시 정리 실패',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'SmartCache',
+          }
+        );
       });
     }, this.config.cleanupInterval);
   }
@@ -140,7 +144,7 @@ class SmartCache {
 
   async set<T>(
     namespace: string,
-    key: string, 
+    key: string,
     data: T,
     options: {
       ttl?: number;
@@ -149,7 +153,7 @@ class SmartCache {
     } = {}
   ): Promise<void> {
     await this.waitForInit();
-    
+
     if (!this.db) {
       throw new Error('IndexedDB가 초기화되지 않았습니다.');
     }
@@ -163,7 +167,7 @@ class SmartCache {
       ttl: options.ttl || this.config.defaultTTL,
       version: options.version || 1,
       tags: options.tags || [namespace],
-      size
+      size,
     };
 
     try {
@@ -172,7 +176,7 @@ class SmartCache {
 
       const transaction = this.db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
-      
+
       await new Promise<void>((resolve, _reject) => {
         const request = store.put(entry);
         request.onsuccess = () => {
@@ -185,16 +189,16 @@ class SmartCache {
 
       logger.debug('캐시 저장 완료', {
         component: 'SmartCache',
-        data: { 
-          cacheId, 
+        data: {
+          cacheId,
           size: `${(size / 1024).toFixed(2)}KB`,
-          tags: entry.tags
-        }
+          tags: entry.tags,
+        },
       });
     } catch (error) {
       logger.error('캐시 저장 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'SmartCache',
-        data: { cacheId, namespace, key }
+        data: { cacheId, namespace, key },
       });
       throw error;
     }
@@ -202,7 +206,7 @@ class SmartCache {
 
   async get<T>(namespace: string, key: string): Promise<T | null> {
     await this.waitForInit();
-    
+
     if (!this.db) {
       this.stats.misses++;
       return null;
@@ -213,7 +217,7 @@ class SmartCache {
     try {
       const transaction = this.db.transaction([this.config.storeName], 'readonly');
       const store = transaction.objectStore(this.config.storeName);
-      
+
       const entry = await new Promise<CacheEntry<T> | null>((resolve, _reject) => {
         const request = store.get(cacheId);
         request.onsuccess = () => {
@@ -239,18 +243,18 @@ class SmartCache {
       this.stats.hits++;
       logger.debug('캐시 히트', {
         component: 'SmartCache',
-        data: { 
+        data: {
           cacheId,
           age: `${Math.round((now - entry.timestamp) / 1000)}s`,
-          size: `${(entry.size / 1024).toFixed(2)}KB`
-        }
+          size: `${(entry.size / 1024).toFixed(2)}KB`,
+        },
       });
 
       return entry.data;
     } catch (error) {
       logger.error('캐시 조회 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'SmartCache',
-        data: { cacheId, namespace, key }
+        data: { cacheId, namespace, key },
       });
       this.stats.misses++;
       return null;
@@ -259,7 +263,7 @@ class SmartCache {
 
   async delete(namespace: string, key: string): Promise<boolean> {
     await this.waitForInit();
-    
+
     if (!this.db) {
       return false;
     }
@@ -289,7 +293,7 @@ class SmartCache {
         request.onerror = () => {
           logger.error('캐시 삭제 실패', new Error(request.error?.message), {
             component: 'SmartCache',
-            data: { cacheId }
+            data: { cacheId },
           });
           resolve(false);
         };
@@ -299,7 +303,7 @@ class SmartCache {
     } catch (error) {
       logger.error('캐시 삭제 중 오류', error instanceof Error ? error : new Error(String(error)), {
         component: 'SmartCache',
-        data: { cacheId, namespace, key }
+        data: { cacheId, namespace, key },
       });
       return false;
     }
@@ -307,7 +311,7 @@ class SmartCache {
 
   async invalidateByTags(tags: string[]): Promise<number> {
     await this.waitForInit();
-    
+
     if (!this.db) {
       return 0;
     }
@@ -316,9 +320,9 @@ class SmartCache {
       const transaction = this.db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
       const index = store.index('tags');
-      
+
       let deletedCount = 0;
-      
+
       for (const tag of tags) {
         const range = IDBKeyRange.only(tag);
         const entries = await new Promise<CacheEntry[]>((resolve, _reject) => {
@@ -336,7 +340,7 @@ class SmartCache {
             };
             deleteRequest.onerror = () => resolve(false);
           });
-          
+
           if (success) {
             deletedCount++;
           }
@@ -344,18 +348,22 @@ class SmartCache {
       }
 
       this.stats.deletes += deletedCount;
-      
+
       logger.info('태그별 캐시 무효화 완료', {
         component: 'SmartCache',
-        data: { tags, deletedCount }
+        data: { tags, deletedCount },
       });
 
       return deletedCount;
     } catch (error) {
-      logger.error('태그별 캐시 무효화 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'SmartCache',
-        data: { tags }
-      });
+      logger.error(
+        '태그별 캐시 무효화 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'SmartCache',
+          data: { tags },
+        }
+      );
       return 0;
     }
   }
@@ -370,8 +378,8 @@ class SmartCache {
       data: {
         currentSize: `${(this.stats.totalSize / 1024 / 1024).toFixed(2)}MB`,
         requiredSize: `${(requiredSize / 1024).toFixed(2)}KB`,
-        maxSize: `${(this.config.maxSize / 1024 / 1024).toFixed(2)}MB`
-      }
+        maxSize: `${(this.config.maxSize / 1024 / 1024).toFixed(2)}MB`,
+      },
     });
 
     await this.cleanup(true);
@@ -379,13 +387,13 @@ class SmartCache {
 
   async cleanup(force = false): Promise<number> {
     await this.waitForInit();
-    
+
     if (!this.db) {
       return 0;
     }
 
     const now = Date.now();
-    
+
     // 일반 정리는 5분마다만 실행
     if (!force && now - this.stats.lastCleanup < this.config.cleanupInterval) {
       return 0;
@@ -394,7 +402,7 @@ class SmartCache {
     try {
       const transaction = this.db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
-      
+
       // 만료된 엔트리들 찾기
       const allEntries = await new Promise<CacheEntry[]>((resolve, _reject) => {
         const request = store.getAll();
@@ -402,17 +410,13 @@ class SmartCache {
         request.onerror = () => _reject(request.error);
       });
 
-      const expiredEntries = allEntries.filter(entry => 
-        now > entry.timestamp + entry.ttl
-      );
+      const expiredEntries = allEntries.filter((entry) => now > entry.timestamp + entry.ttl);
 
       // LRU 정책으로 추가 삭제가 필요한 경우
       let additionalEvictions: CacheEntry[] = [];
       if (force && this.stats.totalSize > this.config.maxSize * 0.8) {
-        const remaining = allEntries.filter(entry => 
-          now <= entry.timestamp + entry.ttl
-        );
-        
+        const remaining = allEntries.filter((entry) => now <= entry.timestamp + entry.ttl);
+
         // 오래된 순으로 정렬하여 20% 제거
         remaining.sort((a, b) => a.timestamp - b.timestamp);
         const evictCount = Math.floor(remaining.length * 0.2);
@@ -431,7 +435,7 @@ class SmartCache {
           };
           deleteRequest.onerror = () => resolve(false);
         });
-        
+
         if (success) {
           deletedCount++;
         }
@@ -449,15 +453,15 @@ class SmartCache {
             expired: expiredEntries.length,
             evicted: additionalEvictions.length,
             totalDeleted: deletedCount,
-            currentSize: `${(this.stats.totalSize / 1024 / 1024).toFixed(2)}MB`
-          }
+            currentSize: `${(this.stats.totalSize / 1024 / 1024).toFixed(2)}MB`,
+          },
         });
       }
 
       return deletedCount;
     } catch (error) {
       logger.error('캐시 정리 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'SmartCache'
+        component: 'SmartCache',
       });
       return 0;
     }
@@ -465,7 +469,7 @@ class SmartCache {
 
   async clear(): Promise<void> {
     await this.waitForInit();
-    
+
     if (!this.db) {
       return;
     }
@@ -473,7 +477,7 @@ class SmartCache {
     try {
       const transaction = this.db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
-      
+
       await new Promise<void>((resolve, _reject) => {
         const request = store.clear();
         request.onsuccess = () => {
@@ -484,9 +488,13 @@ class SmartCache {
         request.onerror = () => _reject(request.error);
       });
     } catch (error) {
-      logger.error('전체 캐시 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'SmartCache'
-      });
+      logger.error(
+        '전체 캐시 삭제 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'SmartCache',
+        }
+      );
       throw error;
     }
   }
@@ -499,7 +507,7 @@ class SmartCache {
     return {
       ...this.stats,
       hitRate: Math.round(hitRate * 100) / 100,
-      sizeMB: Math.round(sizeMB * 100) / 100
+      sizeMB: Math.round(sizeMB * 100) / 100,
     };
   }
 
@@ -508,7 +516,7 @@ class SmartCache {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
     }
-    
+
     if (this.db) {
       this.db.close();
       this.db = null;

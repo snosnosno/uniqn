@@ -32,7 +32,7 @@ export const takePhoto = async (options: CameraOptions = {}): Promise<Photo | nu
       source: CameraSource.Prompt, // 카메라 또는 갤러리 선택
       width: 1024,
       height: 1024,
-      ...options
+      ...options,
     };
 
     const photo = await Camera.getPhoto(defaultOptions);
@@ -57,7 +57,7 @@ export const selectFromGallery = async (options: CameraOptions = {}): Promise<Ph
       source: CameraSource.Photos, // 갤러리만
       width: 1024,
       height: 1024,
-      ...options
+      ...options,
     };
 
     const photo = await Camera.getPhoto(defaultOptions);
@@ -82,7 +82,7 @@ export const takeCameraPhoto = async (options: CameraOptions = {}): Promise<Phot
       source: CameraSource.Camera, // 카메라만
       width: 1024,
       height: 1024,
-      ...options
+      ...options,
     };
 
     const photo = await Camera.getPhoto(defaultOptions);
@@ -120,7 +120,7 @@ const selectImageFromGallery = (): Promise<Photo | null> => {
         const photo: Photo = {
           dataUrl,
           format: file.type.split('/')[1] || 'jpeg',
-          saved: false
+          saved: false,
         };
 
         logger.info('웹 이미지 선택 완료');

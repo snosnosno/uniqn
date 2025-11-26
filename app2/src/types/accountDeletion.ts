@@ -124,9 +124,7 @@ export const getDeletionReasonLabel = (category: DeletionReasonCategory): string
 /**
  * Firestore 타임스탬프를 Date로 변환
  */
-export const convertDeletionTimestamp = (
-  timestamp: Date | FirebaseTimestamp
-): Date => {
+export const convertDeletionTimestamp = (timestamp: Date | FirebaseTimestamp): Date => {
   if (timestamp instanceof Date) {
     return timestamp;
   }

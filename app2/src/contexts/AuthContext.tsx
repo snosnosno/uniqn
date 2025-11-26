@@ -10,7 +10,7 @@ import {
   browserSessionPersistence,
   browserLocalPersistence,
   sendEmailVerification,
-  reload
+  reload,
 } from 'firebase/auth';
 import { logger } from '../utils/logger';
 import { setSentryUser } from '../utils/sentry';
@@ -62,36 +62,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setCurrentUser(user);
       if (user) {
         try {
-          logger.info('사용자 토큰 조회 시작', { 
+          logger.info('사용자 토큰 조회 시작', {
             component: 'AuthContext',
-            data: { uid: user.uid, email: user.email }
+            data: { uid: user.uid, email: user.email },
           });
-          
+
           const idTokenResult = await user.getIdTokenResult(true);
-          const userRole = idTokenResult.claims.role as string || null;
-          
-          logger.info('사용자 role 조회 결과', { 
+          const userRole = (idTokenResult.claims.role as string) || null;
+
+          logger.info('사용자 role 조회 결과', {
             component: 'AuthContext',
-            data: { 
-              uid: user.uid, 
+            data: {
+              uid: user.uid,
               email: user.email,
               role: userRole,
               allClaims: idTokenResult.claims,
-              isAdmin: userRole === 'admin' || userRole === 'manager'
-            }
+              isAdmin: userRole === 'admin' || userRole === 'manager',
+            },
           });
-          
+
           setRole(userRole);
-          
+
           // Sentry에 사용자 정보 설정
           const sentryUserData: { id: string; email?: string; username?: string } = {
-            id: user.uid
+            id: user.uid,
           };
           if (user.email) sentryUserData.email = user.email;
           if (user.displayName) sentryUserData.username = user.displayName;
           setSentryUser(sentryUserData);
         } catch (error) {
-          logger.error('Error fetching user role:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
+          logger.error(
+            'Error fetching user role:',
+            error instanceof Error ? error : new Error(String(error)),
+            { component: 'AuthContext' }
+          );
           setRole(null);
         }
       } else {
@@ -119,13 +123,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         component: 'AuthContext',
         data: {
           rememberMe,
-          persistence: rememberMe ? 'local' : 'session'
-        }
+          persistence: rememberMe ? 'local' : 'session',
+        },
       });
 
       return signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      logger.error('로그인 persistence 설정 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
+      logger.error(
+        '로그인 persistence 설정 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'AuthContext' }
+      );
       throw error;
     }
   };
@@ -145,15 +153,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         component: 'AuthContext',
         data: {
           kakaoUserId: (userInfo as any)?.id,
-          hasEmail: !!(userInfo as any)?.kakao_account?.email
-        }
+          hasEmail: !!(userInfo as any)?.kakao_account?.email,
+        },
       });
 
       // Firebase Functions을 통해 Custom Token 생성 및 로그인
       const { callFunctionLazy } = await import('../utils/firebase-dynamic');
       const result = await callFunctionLazy('authenticateWithKakao', {
         accessToken: kakaoToken,
-        userInfo: userInfo
+        userInfo: userInfo,
       });
 
       if (result.customToken) {
@@ -165,8 +173,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           component: 'AuthContext',
           data: {
             firebaseUid: userCredential.user.uid,
-            email: userCredential.user.email
-          }
+            email: userCredential.user.email,
+          },
         });
 
         return userCredential;
@@ -174,7 +182,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Custom Token 생성에 실패했습니다.');
       }
     } catch (error) {
-      logger.error('카카오 로그인 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
+      logger.error(
+        '카카오 로그인 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'AuthContext' }
+      );
       throw error;
     }
   };
@@ -185,10 +197,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await sendEmailVerification(auth.currentUser);
         logger.info('이메일 인증 발송 완료', {
           component: 'AuthContext',
-          data: { email: auth.currentUser.email }
+          data: { email: auth.currentUser.email },
         });
       } catch (error) {
-        logger.error('이메일 인증 발송 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
+        logger.error(
+          '이메일 인증 발송 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'AuthContext' }
+        );
         throw error;
       }
     } else {
@@ -202,10 +218,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await reload(auth.currentUser);
         logger.info('사용자 정보 새로고침 완료', {
           component: 'AuthContext',
-          data: { emailVerified: auth.currentUser.emailVerified }
+          data: { emailVerified: auth.currentUser.emailVerified },
         });
       } catch (error) {
-        logger.error('사용자 정보 새로고침 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
+        logger.error(
+          '사용자 정보 새로고침 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'AuthContext' }
+        );
         throw error;
       }
     }
@@ -220,11 +240,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return auth.signOut();
     } catch (error) {
-      logger.error('로그아웃 처리 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'AuthContext' });
+      logger.error(
+        '로그아웃 처리 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'AuthContext' }
+      );
       throw error;
     }
   };
-  
+
   const isAdmin = role === 'admin' || role === 'manager';
 
   const value: AuthContextType = React.useMemo(
@@ -256,9 +280,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     ]
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };

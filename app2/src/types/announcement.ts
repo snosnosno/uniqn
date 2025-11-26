@@ -175,7 +175,9 @@ export interface AnnouncementFilterOptions {
 /**
  * 공지 유효성 검증
  */
-export const validateAnnouncement = (input: CreateAnnouncementInput): { isValid: boolean; errors: string[] } => {
+export const validateAnnouncement = (
+  input: CreateAnnouncementInput
+): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
   if (!input.title || input.title.trim().length === 0) {
@@ -200,6 +202,6 @@ export const validateAnnouncement = (input: CreateAnnouncementInput): { isValid:
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };

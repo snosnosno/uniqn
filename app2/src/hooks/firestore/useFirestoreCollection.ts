@@ -19,20 +19,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-  collection,
-  query,
-  onSnapshot,
-  QueryConstraint,
-  DocumentData,
-} from 'firebase/firestore';
+import { collection, query, onSnapshot, QueryConstraint, DocumentData } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
-import type {
-  FirestoreCollectionResult,
-  FirestoreDocument,
-  CollectionHookOptions,
-} from './types';
+import type { FirestoreCollectionResult, FirestoreDocument, CollectionHookOptions } from './types';
 import { convertDocument } from './types';
 
 /**
@@ -67,17 +57,11 @@ export function useFirestoreCollection<T>(
   collectionPath: string,
   options: CollectionHookOptions = {}
 ): FirestoreCollectionResult<T> {
-  const {
-    queryConstraints = [],
-    enabled = true,
-    onError,
-    onSuccess,
-    deps = [],
-  } = options;
+  const { queryConstraints = [], enabled = true, onError, onSuccess, deps = [] } = options;
 
   // queryConstraints를 문자열로 변환하여 메모이제이션
   const queryConstraintsKey = useMemo(
-    () => JSON.stringify(queryConstraints.map(c => c.toString())),
+    () => JSON.stringify(queryConstraints.map((c) => c.toString())),
     [queryConstraints]
   );
 
@@ -124,9 +108,7 @@ export function useFirestoreCollection<T>(
       // Firestore 쿼리 생성
       const collectionRef = collection(db, collectionPath);
       const q =
-        queryConstraints.length > 0
-          ? query(collectionRef, ...queryConstraints)
-          : collectionRef;
+        queryConstraints.length > 0 ? query(collectionRef, ...queryConstraints) : collectionRef;
 
       // onSnapshot 구독
       const unsubscribe = onSnapshot(
@@ -176,13 +158,7 @@ export function useFirestoreCollection<T>(
       return undefined;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    collectionPath,
-    enabled,
-    refetchCount,
-    queryConstraintsKey,
-    ...deps,
-  ]);
+  }, [collectionPath, enabled, refetchCount, queryConstraintsKey, ...deps]);
 
   return {
     data,

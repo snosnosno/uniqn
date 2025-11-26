@@ -14,9 +14,7 @@ import { useUnifiedDataStore } from '../stores/unifiedDataStore';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 
-export const UnifiedDataInitializer: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const UnifiedDataInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, role } = useAuth();
   const { subscribeAll, unsubscribeAll } = useUnifiedDataStore();
 

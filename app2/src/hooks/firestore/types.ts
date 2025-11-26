@@ -195,10 +195,7 @@ export type Unsubscribe = () => void;
  *
  * @template T - 변환될 데이터 타입
  */
-export type DocumentConverter<T> = (
-  id: string,
-  data: DocumentData
-) => FirestoreDocument<T>;
+export type DocumentConverter<T> = (id: string, data: DocumentData) => FirestoreDocument<T>;
 
 /**
  * 기본 문서 변환 함수
@@ -217,10 +214,7 @@ export type DocumentConverter<T> = (
  * const staff = convertDocument<Staff>(doc.id, doc.data());
  * ```
  */
-export function convertDocument<T>(
-  id: string,
-  data: DocumentData
-): FirestoreDocument<T> {
+export function convertDocument<T>(id: string, data: DocumentData): FirestoreDocument<T> {
   return {
     id,
     ...data,

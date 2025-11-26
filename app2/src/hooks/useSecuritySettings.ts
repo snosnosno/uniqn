@@ -20,11 +20,12 @@ import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreDocument } from './firestore';
-import { validatePasswordChange, ValidationError, ServiceError } from '../utils/validation/accountValidation';
-import type {
-  LoginNotificationSettings,
-  PasswordChangeInput,
-} from '../types/security';
+import {
+  validatePasswordChange,
+  ValidationError,
+  ServiceError,
+} from '../utils/validation/accountValidation';
+import type { LoginNotificationSettings, PasswordChangeInput } from '../types/security';
 
 export interface UseSecuritySettingsReturn {
   // 데이터
@@ -158,10 +159,7 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
         }
 
         // 1. 재인증 (본인 확인)
-        const credential = EmailAuthProvider.credential(
-          currentUser.email,
-          input.currentPassword
-        );
+        const credential = EmailAuthProvider.credential(currentUser.email, input.currentPassword);
         await reauthenticateWithCredential(currentUser, credential);
 
         // 2. 비밀번호 변경
@@ -214,7 +212,13 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
       try {
         setError(null);
 
-        const settingsRef = doc(db, 'users', currentUser.uid, 'securitySettings', 'loginNotifications');
+        const settingsRef = doc(
+          db,
+          'users',
+          currentUser.uid,
+          'securitySettings',
+          'loginNotifications'
+        );
 
         await updateDoc(settingsRef, {
           ...updates,

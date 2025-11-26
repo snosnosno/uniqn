@@ -65,11 +65,11 @@ const VirtualizedStaffItem: React.FC<{
     onShowProfile,
     eventId,
     canEdit,
-    getStaffWorkLog
+    getStaffWorkLog,
   } = data;
 
   const staff = staffList[index];
-  
+
   if (!staff) {
     return <div style={style} />;
   }
@@ -115,42 +115,45 @@ const VirtualizedStaffList: React.FC<VirtualizedStaffListProps> = ({
   onShowProfile,
   eventId,
   canEdit,
-  getStaffWorkLog
+  getStaffWorkLog,
 }) => {
   // 메모이제이션된 아이템 데이터
-  const itemData = useMemo((): ItemData => ({
-    staffList,
-    onEditWorkTime,
-    onDeleteStaff,
-    getStaffAttendanceStatus,
-    attendanceRecords,
-    formatTimeDisplay,
-    getTimeSlotColor,
-    showDate: showDate || false,
-    multiSelectMode: multiSelectMode || false,
-    selectedStaff: selectedStaff || new Set(),
-    ...(onStaffSelect && { onStaffSelect }),
-    ...(onShowProfile && { onShowProfile }),
-    ...(eventId && { eventId }),
-    canEdit: canEdit || false,
-    ...(getStaffWorkLog && { getStaffWorkLog })
-  }), [
-    staffList,
-    onEditWorkTime,
-    onDeleteStaff,
-    getStaffAttendanceStatus,
-    attendanceRecords,
-    formatTimeDisplay,
-    getTimeSlotColor,
-    showDate,
-    multiSelectMode,
-    selectedStaff,
-    onStaffSelect,
-    onShowProfile,
-    eventId,
-    canEdit,
-    getStaffWorkLog
-  ]);
+  const itemData = useMemo(
+    (): ItemData => ({
+      staffList,
+      onEditWorkTime,
+      onDeleteStaff,
+      getStaffAttendanceStatus,
+      attendanceRecords,
+      formatTimeDisplay,
+      getTimeSlotColor,
+      showDate: showDate || false,
+      multiSelectMode: multiSelectMode || false,
+      selectedStaff: selectedStaff || new Set(),
+      ...(onStaffSelect && { onStaffSelect }),
+      ...(onShowProfile && { onShowProfile }),
+      ...(eventId && { eventId }),
+      canEdit: canEdit || false,
+      ...(getStaffWorkLog && { getStaffWorkLog }),
+    }),
+    [
+      staffList,
+      onEditWorkTime,
+      onDeleteStaff,
+      getStaffAttendanceStatus,
+      attendanceRecords,
+      formatTimeDisplay,
+      getTimeSlotColor,
+      showDate,
+      multiSelectMode,
+      selectedStaff,
+      onStaffSelect,
+      onShowProfile,
+      eventId,
+      canEdit,
+      getStaffWorkLog,
+    ]
+  );
 
   // 스태프 리스트가 비어있는 경우
   if (staffList.length === 0) {

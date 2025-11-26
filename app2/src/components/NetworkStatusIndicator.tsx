@@ -56,8 +56,13 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   const baseClasses = `
     fixed left-0 right-0 z-50 transition-all duration-300 transform
     ${position === 'top' ? 'top-0' : 'bottom-0'}
-    ${isVisible ? 'translate-y-0 opacity-100' :
-      position === 'top' ? '-translate-y-full opacity-0' : 'translate-y-full opacity-0'}
+    ${
+      isVisible
+        ? 'translate-y-0 opacity-100'
+        : position === 'top'
+          ? '-translate-y-full opacity-0'
+          : 'translate-y-full opacity-0'
+    }
   `;
 
   const statusClasses = isOnline
@@ -70,11 +75,7 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
         <div className="flex items-center space-x-2">
           {isOnline ? (
             <>
-              <svg
-                className="w-4 h-4 animate-pulse"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c5.076-5.077 13.308-5.077 18.384 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM9 16a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
@@ -85,11 +86,7 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
             </>
           ) : (
             <>
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"

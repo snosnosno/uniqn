@@ -59,8 +59,8 @@ export interface Selection {
   time: string;
 
   // 날짜 (단일 vs 다중)
-  date?: string;         // 단일 날짜 (YYYY-MM-DD 형식, 하위 호환)
-  dates?: string[];      // 다중 날짜 배열 (신규)
+  date?: string; // 단일 날짜 (YYYY-MM-DD 형식, 하위 호환)
+  dates?: string[]; // 다중 날짜 배열 (신규)
 
   // 그룹화 메타데이터
   checkMethod?: 'group' | 'individual';
@@ -110,10 +110,7 @@ export interface DateGroupedSelections {
 export function isSelection(obj: unknown): obj is Selection {
   if (!obj || typeof obj !== 'object') return false;
   const s = obj as Record<string, unknown>;
-  return (
-    typeof s.role === 'string' &&
-    typeof s.time === 'string'
-  );
+  return typeof s.role === 'string' && typeof s.time === 'string';
 }
 
 /**

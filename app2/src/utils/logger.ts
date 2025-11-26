@@ -5,7 +5,7 @@ export enum LogLevel {
   INFO = 'info',
   WARN = 'warn',
   ERROR = 'error',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 // 로그 컨텍스트 인터페이스
@@ -74,7 +74,7 @@ export interface LogContext {
   dateHeaders?: (string | undefined)[];
   memoryUsageMB?: number;
   newLevel?: string;
-  
+
   // WorkLog 관련 필드 (useApplicantActions.ts에서 사용)
   workLogId?: string;
   applicantName?: string;
@@ -139,21 +139,21 @@ export interface LogEntry {
 class StructuredLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
   private isProduction = process.env.NODE_ENV === 'production';
-  
+
   // 로그 레벨 제어를 위한 환경변수
   private minLogLevel: LogLevel;
-  
+
   constructor() {
     // 환경변수로 로그 레벨 설정 (기본값: 개발환경은 debug, 프로덕션은 warn)
     const envLogLevel = process.env.REACT_APP_LOG_LEVEL?.toLowerCase();
-    
+
     if (envLogLevel && Object.values(LogLevel).includes(envLogLevel as LogLevel)) {
       this.minLogLevel = envLogLevel as LogLevel;
     } else {
       this.minLogLevel = this.isDevelopment ? LogLevel.DEBUG : LogLevel.WARN;
     }
   }
-  
+
   // 로그 레벨 우선순위
   private getLogLevelPriority(level: LogLevel): number {
     const priorities = {
@@ -161,11 +161,11 @@ class StructuredLogger {
       [LogLevel.INFO]: 1,
       [LogLevel.WARN]: 2,
       [LogLevel.ERROR]: 3,
-      [LogLevel.CRITICAL]: 4
+      [LogLevel.CRITICAL]: 4,
     };
     return priorities[level];
   }
-  
+
   // 로그 레벨 체크
   private shouldLog(level: LogLevel): boolean {
     return this.getLogLevelPriority(level) >= this.getLogLevelPriority(this.minLogLevel);
@@ -177,7 +177,7 @@ class StructuredLogger {
     [LogLevel.INFO]: '#17a2b8',
     [LogLevel.WARN]: '#ffc107',
     [LogLevel.ERROR]: '#dc3545',
-    [LogLevel.CRITICAL]: '#721c24'
+    [LogLevel.CRITICAL]: '#721c24',
   };
 
   // 로그 레벨별 이모지
@@ -186,14 +186,14 @@ class StructuredLogger {
     [LogLevel.INFO]: 'ℹ️',
     [LogLevel.WARN]: '⚠️',
     [LogLevel.ERROR]: '❌',
-    [LogLevel.CRITICAL]: '🚨'
+    [LogLevel.CRITICAL]: '🚨',
   };
 
   // 기본 컨텍스트 생성
   private createBaseContext(additionalContext?: Partial<LogContext>): LogContext {
     return {
       timestamp: new Date().toISOString(),
-      ...additionalContext
+      ...additionalContext,
     };
   }
 
@@ -210,14 +210,14 @@ class StructuredLogger {
 
     console.group(`%c${logMessage}`, `color: ${color}; font-weight: bold;`);
     console.log('Context:', contextStr);
-    
+
     if (error) {
       console.error('Error:', error);
       if (error instanceof Error && error.stack) {
         console.log('Stack:', error.stack);
       }
     }
-    
+
     console.groupEnd();
   }
 
@@ -228,18 +228,20 @@ class StructuredLogger {
     try {
       const functions = getFunctions();
       const logActionCallable = httpsCallable(functions, 'logAction');
-      
+
       await logActionCallable({
         action: `log_${entry.level}`,
         details: {
           message: entry.message,
           context: entry.context,
-          error: entry.error ? {
-            message: entry.error.message,
-            stack: entry.error.stack,
-            name: entry.error.name
-          } : undefined
-        }
+          error: entry.error
+            ? {
+                message: entry.error.message,
+                stack: entry.error.stack,
+                name: entry.error.name,
+              }
+            : undefined,
+        },
       });
     } catch (error) {
       // 서버 로깅 실패 시 콘솔에 기록
@@ -248,13 +250,18 @@ class StructuredLogger {
   }
 
   // 로그 엔트리 생성 및 처리
-  private async log(level: LogLevel, message: string, context?: Partial<LogContext>, error?: Error): Promise<void> {
+  private async log(
+    level: LogLevel,
+    message: string,
+    context?: Partial<LogContext>,
+    error?: Error
+  ): Promise<void> {
     const logEntry: LogEntry = {
       level,
       message,
       context: this.createBaseContext(context),
       error,
-      stack: error?.stack
+      stack: error?.stack,
     };
 
     // 콘솔 로깅 (개발 환경)
@@ -311,29 +318,46 @@ class StructuredLogger {
     try {
       this.info(`Starting operation: ${operationName}`, { ...context, operation: operationName });
       const result = await operation();
-      this.info(`Operation completed successfully: ${operationName}`, { ...context, operation: operationName });
+      this.info(`Operation completed successfully: ${operationName}`, {
+        ...context,
+        operation: operationName,
+      });
       return result;
     } catch (error) {
-      this.error(`Operation failed: ${operationName}`, error instanceof Error ? error : new Error(String(error)), { ...context, operation: operationName });
-      
+      this.error(
+        `Operation failed: ${operationName}`,
+        error instanceof Error ? error : new Error(String(error)),
+        { ...context, operation: operationName }
+      );
+
       // Firebase 내부 에러 처리
-      if (error instanceof Error && error.message && error.message.includes('INTERNAL ASSERTION FAILED')) {
+      if (
+        error instanceof Error &&
+        error.message &&
+        error.message.includes('INTERNAL ASSERTION FAILED')
+      ) {
         this.warn(`Detected Firebase internal error, attempting recovery for: ${operationName}`, {
           ...context,
-          operation: operationName
+          operation: operationName,
         });
-        
+
         // 재시도 로직
         try {
           const retryResult = await operation();
-          this.info(`Operation recovered successfully: ${operationName}`, { ...context, operation: operationName });
+          this.info(`Operation recovered successfully: ${operationName}`, {
+            ...context,
+            operation: operationName,
+          });
           return retryResult;
         } catch (retryError: any) {
-          this.critical(`Operation recovery failed: ${operationName}`, retryError, { ...context, operation: operationName });
+          this.critical(`Operation recovery failed: ${operationName}`, retryError, {
+            ...context,
+            operation: operationName,
+          });
           throw retryError;
         }
       }
-      
+
       throw error;
     }
   }
@@ -345,29 +369,33 @@ class StructuredLogger {
     context?: Partial<LogContext>
   ): Promise<T> {
     const startTime = performance.now();
-    
+
     try {
       const result = await operation();
       const endTime = performance.now();
       const duration = endTime - startTime;
-      
+
       this.info(`Performance: ${operationName} completed in ${duration.toFixed(2)}ms`, {
         ...context,
         operation: operationName,
-        duration
+        duration,
       });
-      
+
       return result;
     } catch (error) {
       const endTime = performance.now();
       const duration = endTime - startTime;
-      
-      this.error(`Performance: ${operationName} failed after ${duration.toFixed(2)}ms`, error instanceof Error ? error : new Error(String(error)), {
-        ...context,
-        operation: operationName,
-        duration
-      });
-      
+
+      this.error(
+        `Performance: ${operationName} failed after ${duration.toFixed(2)}ms`,
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          ...context,
+          operation: operationName,
+          duration,
+        }
+      );
+
       throw error;
     }
   }
@@ -380,10 +408,14 @@ export const logger = new StructuredLogger();
 export const logDebug = (_message: string, _context?: Partial<LogContext>) => {
   // Debug 로그는 프로덕션에서 제거됨
 };
-export const logInfo = (message: string, context?: Partial<LogContext>) => logger.info(message, context);
-export const logWarn = (message: string, context?: Partial<LogContext>) => logger.warn(message, context);
-export const logError = (message: string, error?: Error, context?: Partial<LogContext>) => logger.error(message, error, context);
-export const logCritical = (message: string, error?: Error, context?: Partial<LogContext>) => logger.critical(message, error, context);
+export const logInfo = (message: string, context?: Partial<LogContext>) =>
+  logger.info(message, context);
+export const logWarn = (message: string, context?: Partial<LogContext>) =>
+  logger.warn(message, context);
+export const logError = (message: string, error?: Error, context?: Partial<LogContext>) =>
+  logger.error(message, error, context);
+export const logCritical = (message: string, error?: Error, context?: Partial<LogContext>) =>
+  logger.critical(message, error, context);
 
 // Firebase 작업 래퍼 함수들
 export const withErrorHandling = <T>(

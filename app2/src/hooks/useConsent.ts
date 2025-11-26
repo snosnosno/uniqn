@@ -13,16 +13,8 @@ import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreDocument } from './firestore';
-import {
-  createConsent,
-  updateConsent,
-  hasRequiredConsents,
-} from '../services/consentService';
-import type {
-  ConsentRecord,
-  ConsentCreateInput,
-  ConsentUpdateInput,
-} from '../types/consent';
+import { createConsent, updateConsent, hasRequiredConsents } from '../services/consentService';
+import type { ConsentRecord, ConsentCreateInput, ConsentUpdateInput } from '../types/consent';
 
 export interface UseConsentReturn {
   // 데이터

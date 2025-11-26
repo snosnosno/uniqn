@@ -52,7 +52,7 @@ export function getRoleSalaryInfo(
   if (override) {
     return {
       salaryType: override.salaryType,
-      salaryAmount: override.salaryAmount
+      salaryAmount: override.salaryAmount,
     };
   }
 
@@ -62,7 +62,7 @@ export function getRoleSalaryInfo(
     if (snapshotRoleSalary) {
       return {
         salaryType: snapshotRoleSalary.type === 'negotiable' ? 'other' : snapshotRoleSalary.type,
-        salaryAmount: snapshotRoleSalary.amount || 0
+        salaryAmount: snapshotRoleSalary.amount || 0,
       };
     }
   }
@@ -71,7 +71,7 @@ export function getRoleSalaryInfo(
   if (snapshot?.salary) {
     return {
       salaryType: snapshot.salary.type,
-      salaryAmount: snapshot.salary.amount
+      salaryAmount: snapshot.salary.amount,
     };
   }
 
@@ -81,7 +81,7 @@ export function getRoleSalaryInfo(
     if (roleSalary) {
       return {
         salaryType: roleSalary.salaryType === 'negotiable' ? 'other' : roleSalary.salaryType,
-        salaryAmount: parseFloat(roleSalary.salaryAmount) || 0
+        salaryAmount: parseFloat(roleSalary.salaryAmount) || 0,
       };
     }
   }
@@ -89,9 +89,9 @@ export function getRoleSalaryInfo(
   // 5순위: JobPosting (기본 급여)
   const baseSalaryType = jobPosting?.salaryType || 'hourly';
   const salaryType = baseSalaryType === 'negotiable' ? 'other' : baseSalaryType;
-  const salaryAmount = jobPosting?.salaryAmount ?
-    parseFloat(jobPosting.salaryAmount) :
-    (DEFAULT_HOURLY_RATES[role] || DEFAULT_HOURLY_RATES['default'] || 10000);
+  const salaryAmount = jobPosting?.salaryAmount
+    ? parseFloat(jobPosting.salaryAmount)
+    : DEFAULT_HOURLY_RATES[role] || DEFAULT_HOURLY_RATES['default'] || 10000;
 
   return { salaryType, salaryAmount };
 }
@@ -113,7 +113,7 @@ export function calculateBasePay(
   totalHours: number,
   totalDays: number
 ): number {
-  switch(salaryType) {
+  switch (salaryType) {
     case 'hourly':
       return Math.round(totalHours * salaryAmount);
     case 'daily':
@@ -153,10 +153,14 @@ export function calculateAllowances(
       other: 0,
       dailyRates: {
         ...(snapshotAllowances.meal !== undefined && { meal: snapshotAllowances.meal }),
-        ...(snapshotAllowances.transportation !== undefined && { transportation: snapshotAllowances.transportation }),
-        ...(snapshotAllowances.accommodation !== undefined && { accommodation: snapshotAllowances.accommodation })
+        ...(snapshotAllowances.transportation !== undefined && {
+          transportation: snapshotAllowances.transportation,
+        }),
+        ...(snapshotAllowances.accommodation !== undefined && {
+          accommodation: snapshotAllowances.accommodation,
+        }),
       },
-      workDays: totalDays
+      workDays: totalDays,
     };
   }
 
@@ -165,9 +169,9 @@ export function calculateAllowances(
   const isPerDay = benefits?.isPerDay !== false; // 기본값은 true (일당 계산)
 
   // 일당 정보 추출
-  const mealDaily = benefits?.mealAllowance ? (parseInt(benefits.mealAllowance) || 0) : 0;
-  const transportationDaily = benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0;
-  const accommodationDaily = benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0;
+  const mealDaily = benefits?.mealAllowance ? parseInt(benefits.mealAllowance) || 0 : 0;
+  const transportationDaily = benefits?.transportation ? parseInt(benefits.transportation) || 0 : 0;
+  const accommodationDaily = benefits?.accommodation ? parseInt(benefits.accommodation) || 0 : 0;
 
   logger.info('수당 계산', {
     component: 'payrollCalculations',
@@ -177,14 +181,14 @@ export function calculateAllowances(
       dailyRates: {
         meal: mealDaily,
         transportation: transportationDaily,
-        accommodation: accommodationDaily
+        accommodation: accommodationDaily,
       },
       calculatedAllowances: {
         meal: isPerDay ? mealDaily * totalDays : mealDaily,
         transportation: isPerDay ? transportationDaily * totalDays : transportationDaily,
-        accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily
-      }
-    }
+        accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily,
+      },
+    },
   });
 
   const result: PayrollCalculationResult['allowances'] = {
@@ -192,11 +196,15 @@ export function calculateAllowances(
     transportation: isPerDay ? transportationDaily * totalDays : transportationDaily,
     accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily,
     bonus: 0,
-    other: 0
+    other: 0,
   };
 
   // 일당 계산 정보 추가 (일당 계산 과정 표시용)
-  if (isPerDay && totalDays > 0 && (mealDaily > 0 || transportationDaily > 0 || accommodationDaily > 0)) {
+  if (
+    isPerDay &&
+    totalDays > 0 &&
+    (mealDaily > 0 || transportationDaily > 0 || accommodationDaily > 0)
+  ) {
     const dailyRates: { meal?: number; transportation?: number; accommodation?: number } = {};
 
     if (mealDaily > 0) dailyRates.meal = mealDaily;
@@ -226,17 +234,17 @@ export function calculatePayroll(
       data: {
         role,
         workLogsCount: workLogs.length,
-        workLogIds: workLogs.map(log => ({ 
-          id: log.id, 
-          staffId: log.staffId, 
-          date: log.date, 
-          role: log.role 
-        }))
-      }
+        workLogIds: workLogs.map((log) => ({
+          id: log.id,
+          staffId: log.staffId,
+          date: log.date,
+          role: log.role,
+        })),
+      },
     });
 
     // 중복 WorkLog 검사
-    const workLogIds = workLogs.map(log => log.id);
+    const workLogIds = workLogs.map((log) => log.id);
     const uniqueIds = new Set(workLogIds);
     if (workLogIds.length !== uniqueIds.size) {
       logger.warn('중복 WorkLog 감지', {
@@ -245,14 +253,14 @@ export function calculatePayroll(
           role,
           totalWorkLogs: workLogIds.length,
           uniqueWorkLogs: uniqueIds.size,
-          duplicateIds: workLogIds.filter((id, index) => workLogIds.indexOf(id) !== index)
-        }
+          duplicateIds: workLogIds.filter((id, index) => workLogIds.indexOf(id) !== index),
+        },
       });
     }
-    
+
     // 역할별 급여 정보 가져오기
     const { salaryType, salaryAmount } = getRoleSalaryInfo(role, jobPosting, roleSalaryOverrides);
-    
+
     // 총 근무 시간 계산 (각 WorkLog별 상세 추적)
     const hoursPerLog: { id: string; hours: number; date: string }[] = [];
     const totalHours = workLogs.reduce((sum, log) => {
@@ -269,29 +277,37 @@ export function calculatePayroll(
           role,
           totalHours,
           workLogsAnalysis: hoursPerLog,
-          abnormalLogs: hoursPerLog.filter(log => log.hours >= 24),
-          dateDistribution: hoursPerLog.reduce((acc, log) => {
-            acc[log.date] = (acc[log.date] || 0) + log.hours;
-            return acc;
-          }, {} as Record<string, number>)
-        }
+          abnormalLogs: hoursPerLog.filter((log) => log.hours >= 24),
+          dateDistribution: hoursPerLog.reduce(
+            (acc, log) => {
+              acc[log.date] = (acc[log.date] || 0) + log.hours;
+              return acc;
+            },
+            {} as Record<string, number>
+          ),
+        },
       });
     }
-    
+
     // 총 근무 일수 계산
-    const uniqueDates = new Set(workLogs.map(log => log.date));
+    const uniqueDates = new Set(workLogs.map((log) => log.date));
     const totalDays = uniqueDates.size;
-    
+
     // 기본 급여 계산
     const basePayment = calculateBasePay(salaryType, salaryAmount, totalHours, totalDays);
-    
+
     // 수당 계산
     const allowances = calculateAllowances(jobPosting, totalDays);
-    const totalAllowances = allowances.meal + allowances.transportation + allowances.accommodation + allowances.bonus + allowances.other;
-    
+    const totalAllowances =
+      allowances.meal +
+      allowances.transportation +
+      allowances.accommodation +
+      allowances.bonus +
+      allowances.other;
+
     // 총 급여 계산
     const totalPayment = basePayment + totalAllowances;
-    
+
     logger.debug('급여 계산 완료', {
       component: 'payrollCalculations',
       data: {
@@ -303,24 +319,24 @@ export function calculatePayroll(
         basePayment,
         totalAllowances,
         totalPayment,
-        hoursBreakdown: hoursPerLog
-      }
+        hoursBreakdown: hoursPerLog,
+      },
     });
-    
+
     return {
       hourlyRate: salaryAmount,
       totalHours,
       basePayment,
       allowances,
       totalPayment,
-      salaryType: salaryType as PayrollCalculationResult['salaryType']
+      salaryType: salaryType as PayrollCalculationResult['salaryType'],
     };
   } catch (error) {
     logger.error('급여 계산 오류', error instanceof Error ? error : new Error(String(error)), {
       component: 'payrollCalculations',
-      data: { role, workLogsCount: workLogs.length }
+      data: { role, workLogsCount: workLogs.length },
     });
-    
+
     // 오류 발생 시 기본값 반환
     return {
       hourlyRate: 10000,
@@ -328,7 +344,7 @@ export function calculatePayroll(
       basePayment: 0,
       allowances: { meal: 0, transportation: 0, accommodation: 0, bonus: 0, other: 0 },
       totalPayment: 0,
-      salaryType: 'hourly'
+      salaryType: 'hourly',
     };
   }
 }
@@ -352,7 +368,7 @@ export function formatPayrollAmount(amount: number): string {
   return new Intl.NumberFormat('ko-KR', {
     style: 'currency',
     currency: 'KRW',
-    minimumFractionDigits: 0
+    minimumFractionDigits: 0,
   }).format(amount);
 }
 

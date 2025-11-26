@@ -11,50 +11,50 @@ export interface Person {
   name: string;
   phone: string;
   email?: string;
-  
+
   // 타입 구분 (staff 또는 applicant)
-  type: 'staff' | 'applicant' | 'both';  // both는 스태프이면서 다른 공고에 지원자인 경우
-  
+  type: 'staff' | 'applicant' | 'both'; // both는 스태프이면서 다른 공고에 지원자인 경우
+
   // ========== 기존 staff 필드들 ==========
   // 역할 및 근무 정보
-  role?: string;  // 기본 역할 (딜러, 매니저 등)
-  assignedTime?: string;  // 기본 배정 시간
-  assignedDate?: string;  // 기본 배정 날짜
-  
+  role?: string; // 기본 역할 (딜러, 매니저 등)
+  assignedTime?: string; // 기본 배정 시간
+  assignedDate?: string; // 기본 배정 날짜
+
   // 은행 정보
   bankName?: string;
   accountNumber?: string;
-  
+
   // 상태 정보
-  status?: string;  // active, inactive 등
+  status?: string; // active, inactive 등
   isActive?: boolean;
-  
+
   // 기타 staff 필드
   department?: string;
   position?: string;
   joinDate?: Timestamp | Date | string;
-  
+
   // ========== 기존 applicant 필드들 ==========
   // 지원 관련 정보
-  availableRoles?: string[];  // 지원 가능한 역할들
-  availableDates?: string[];  // 지원 가능한 날짜들
-  availableTimes?: string[];  // 지원 가능한 시간대들
-  
+  availableRoles?: string[]; // 지원 가능한 역할들
+  availableDates?: string[]; // 지원 가능한 날짜들
+  availableTimes?: string[]; // 지원 가능한 시간대들
+
   // 지원 이력
-  applicationHistory?: string[];  // 지원한 공고 ID 목록
-  applicationCount?: number;  // 총 지원 횟수
-  
+  applicationHistory?: string[]; // 지원한 공고 ID 목록
+  applicationCount?: number; // 총 지원 횟수
+
   // 경력 및 자격
-  experience?: string;  // 경력 설명
-  certifications?: string[];  // 보유 자격증
-  skills?: string[];  // 보유 기술
-  
+  experience?: string; // 경력 설명
+  certifications?: string[]; // 보유 자격증
+  skills?: string[]; // 보유 기술
+
   // ========== 공통 메타데이터 ==========
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  createdBy?: string;  // 생성한 사용자 ID
-  updatedBy?: string;  // 마지막 수정한 사용자 ID
-  
+  createdBy?: string; // 생성한 사용자 ID
+  updatedBy?: string; // 마지막 수정한 사용자 ID
+
   // 추가 정보 (확장 가능)
   metadata?: {
     [key: string]: any;
@@ -150,7 +150,11 @@ export function personToApplicant(person: Person): Applicant | null {
  * 기존 staffId/applicantId를 personId로 통합
  * 하위 호환성을 위한 헬퍼 함수
  */
-export function getPersonId(entity: { id?: string; staffId?: string; applicantId?: string; personId?: string }): string | undefined {
+export function getPersonId(entity: {
+  id?: string;
+  staffId?: string;
+  applicantId?: string;
+  personId?: string;
+}): string | undefined {
   return entity.personId || entity.staffId || entity.applicantId || entity.id;
 }
-

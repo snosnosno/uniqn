@@ -36,14 +36,20 @@ export const safeDateToString = (dateValue: any): string => {
           const seconds = parseInt(match[1]);
           date = new Date(seconds * 1000);
         } else {
-          logger.warn('Timestamp 문자열 파싱 실패:', { component: 'scheduleUtils', data: dateValue });
+          logger.warn('Timestamp 문자열 파싱 실패:', {
+            component: 'scheduleUtils',
+            data: dateValue,
+          });
           return '';
         }
       } else {
         date = new Date(dateValue);
       }
     } else {
-      logger.warn('지원되지 않는 날짜 타입:', { component: 'scheduleUtils', data: { type: typeof dateValue, value: dateValue } });
+      logger.warn('지원되지 않는 날짜 타입:', {
+        component: 'scheduleUtils',
+        data: { type: typeof dateValue, value: dateValue },
+      });
       return '';
     }
 
@@ -57,7 +63,10 @@ export const safeDateToString = (dateValue: any): string => {
     const isoString = date.toISOString();
     return isoString.substring(0, 10);
   } catch (error) {
-    logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'scheduleUtils', data: { dateValue } });
+    logger.error('날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), {
+      component: 'scheduleUtils',
+      data: { dateValue },
+    });
     return '';
   }
 };
@@ -66,7 +75,7 @@ export const safeDateToString = (dateValue: any): string => {
  * 시간 문자열 (HH:MM-HH:MM)을 파싱하여 Timestamp 객체들 반환
  */
 export const parseTimeString = (
-  timeString: string, 
+  timeString: string,
   dateString: string
 ): { startTime: Timestamp | null; endTime: Timestamp | null } => {
   // 빈 문자열, 미정, 단일 대시 등 무효한 값 처리
@@ -79,15 +88,15 @@ export const parseTimeString = (
       return { startTime: null, endTime: null };
     }
 
-    const timeParts = timeString.split('-').map(s => s.trim());
+    const timeParts = timeString.split('-').map((s) => s.trim());
     const startStr = timeParts[0];
     const endStr = timeParts[1];
-    
+
     // 빈 문자열이거나 유효하지 않은 시간 형식인 경우 조용히 null 반환
     if (!startStr || !endStr || startStr === '' || endStr === '') {
       return { startTime: null, endTime: null };
     }
-    
+
     const dateObj = new Date(dateString);
 
     if (isNaN(dateObj.getTime())) {
@@ -99,7 +108,7 @@ export const parseTimeString = (
     const startTimeParts = startStr.split(':');
     const startHour = startTimeParts[0] ? Number(startTimeParts[0]) : NaN;
     const startMin = startTimeParts[1] ? Number(startTimeParts[1]) : NaN;
-    
+
     if (isNaN(startHour) || isNaN(startMin)) {
       logger.warn('잘못된 시작 시간:', { component: 'scheduleUtils', data: startStr });
       return { startTime: null, endTime: null };
@@ -112,7 +121,7 @@ export const parseTimeString = (
     const endTimeParts = endStr.split(':');
     const endHour = endTimeParts[0] ? Number(endTimeParts[0]) : NaN;
     const endMin = endTimeParts[1] ? Number(endTimeParts[1]) : NaN;
-    
+
     if (isNaN(endHour) || isNaN(endMin)) {
       logger.warn('잘못된 종료 시간:', { component: 'scheduleUtils', data: endStr });
       return { startTime: null, endTime: null };
@@ -128,10 +137,13 @@ export const parseTimeString = (
 
     return {
       startTime: Timestamp.fromDate(startDate),
-      endTime: Timestamp.fromDate(endDate)
+      endTime: Timestamp.fromDate(endDate),
     };
   } catch (error) {
-    logger.error('시간 파싱 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'scheduleUtils', data: { timeString, dateString } });
+    logger.error('시간 파싱 오류:', error instanceof Error ? error : new Error(String(error)), {
+      component: 'scheduleUtils',
+      data: { timeString, dateString },
+    });
     return { startTime: null, endTime: null };
   }
 };
@@ -142,9 +154,7 @@ export const parseTimeString = (
 export const parseDateArray = (dateArray: any[]): string[] => {
   if (!Array.isArray(dateArray)) return [];
 
-  return dateArray
-    .map(safeDateToString)
-    .filter(date => date !== ''); // 빈 문자열 제거
+  return dateArray.map(safeDateToString).filter((date) => date !== ''); // 빈 문자열 제거
 };
 
 /**

@@ -100,7 +100,9 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
         case 'jobPostings':
           return items; // 공고는 모두가 볼 수 있음
         default:
-          logger.warn(`⚠️ 알 수 없는 컬렉션 접근 시도 차단: ${collection} (사용자: ${currentUser.uid}, 역할: ${normalizedRole})`);
+          logger.warn(
+            `⚠️ 알 수 없는 컬렉션 접근 시도 차단: ${collection} (사용자: ${currentUser.uid}, 역할: ${normalizedRole})`
+          );
           return [];
       }
     },
@@ -124,17 +126,10 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
   );
 
   // JobPosting은 보안 필터링 불필요 (모두 공개)
-  const jobPostings = useMemo(
-    () => Array.from(jobPostingsMap.values()),
-    [jobPostingsMap]
-  );
+  const jobPostings = useMemo(() => Array.from(jobPostingsMap.values()), [jobPostingsMap]);
 
   const attendanceRecords = useMemo(
-    () =>
-      securityFilter(
-        Array.from(attendanceRecordsMap.values()),
-        'attendanceRecords'
-      ),
+    () => securityFilter(Array.from(attendanceRecordsMap.values()), 'attendanceRecords'),
     [attendanceRecordsMap, securityFilter]
   );
 
@@ -214,15 +209,7 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
       cacheKeys: [],
       lastUpdated: new Date().toISOString(),
     }),
-    [
-      staffMap,
-      workLogsMap,
-      applicationsMap,
-      jobPostingsMap,
-      attendanceRecordsMap,
-      isLoading,
-      error,
-    ]
+    [staffMap, workLogsMap, applicationsMap, jobPostingsMap, attendanceRecordsMap, isLoading, error]
   );
 
   // 기존 API 호환: stats
@@ -321,15 +308,19 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
  * 스케줄 페이지에서 사용하는 모든 데이터와 함수들
  */
 export const useScheduleData = (options?: { userId?: string }) => {
-  const { workLogs: workLogsMap, applications: applicationsMap, isLoading, error } =
-    useUnifiedDataStore(
-      useShallow((state) => ({
-        workLogs: state.workLogs,
-        applications: state.applications,
-        isLoading: state.isLoading,
-        error: state.error,
-      }))
-    );
+  const {
+    workLogs: workLogsMap,
+    applications: applicationsMap,
+    isLoading,
+    error,
+  } = useUnifiedDataStore(
+    useShallow((state) => ({
+      workLogs: state.workLogs,
+      applications: state.applications,
+      isLoading: state.isLoading,
+      error: state.error,
+    }))
+  );
 
   // 스케줄 이벤트들 (필터링 적용, 사용자 필터링 포함)
   const schedules = useMemo(() => {
@@ -388,14 +379,14 @@ export const useScheduleData = (options?: { userId?: string }) => {
 
     return {
       totalSchedules: allEvents.length,
-      completedSchedules: allEvents.filter(event => event.type === 'completed').length,
-      upcomingSchedules: allEvents.filter(event => 
-        event.type === 'confirmed' && new Date(event.date) >= now
+      completedSchedules: allEvents.filter((event) => event.type === 'completed').length,
+      upcomingSchedules: allEvents.filter(
+        (event) => event.type === 'confirmed' && new Date(event.date) >= now
       ).length,
       totalEarnings: 0, // 수입 계산 기능 (PayrollStatus 통합 필요)
       thisMonthEarnings: 0, // 이번달 수입 계산 기능 (추후 구현)
       hoursWorked: allEvents
-        .filter(event => event.actualStartTime && event.actualEndTime)
+        .filter((event) => event.actualStartTime && event.actualEndTime)
         .reduce((total, event) => {
           if (event.actualStartTime && event.actualEndTime) {
             const start = event.actualStartTime.toDate();
@@ -409,15 +400,18 @@ export const useScheduleData = (options?: { userId?: string }) => {
   }, [schedules]);
 
   // 특정 스케줄 이벤트 조회
-  const getScheduleById = useCallback((id: string): ScheduleEvent | undefined => {
-    return schedules.find(schedule => schedule.id === id);
-  }, [schedules]);
+  const getScheduleById = useCallback(
+    (id: string): ScheduleEvent | undefined => {
+      return schedules.find((schedule) => schedule.id === id);
+    },
+    [schedules]
+  );
 
   // 날짜별 스케줄 그룹화
   const getSchedulesByDate = useCallback(() => {
     const groupedSchedules = new Map<string, ScheduleEvent[]>();
-    
-    schedules.forEach(schedule => {
+
+    schedules.forEach((schedule) => {
       if (!groupedSchedules.has(schedule.date)) {
         groupedSchedules.set(schedule.date, []);
       }
@@ -670,15 +664,14 @@ export const useApplicationData = () => {
  * 출석 관리 전용 훅 (Zustand 기반)
  */
 export const useAttendanceData = () => {
-  const { attendanceRecordsMap, workLogsMap, isLoading, error } =
-    useUnifiedDataStore(
-      useShallow((state) => ({
-        attendanceRecordsMap: state.attendanceRecords,
-        workLogsMap: state.workLogs,
-        isLoading: state.isLoading,
-        error: state.error,
-      }))
-    );
+  const { attendanceRecordsMap, workLogsMap, isLoading, error } = useUnifiedDataStore(
+    useShallow((state) => ({
+      attendanceRecordsMap: state.attendanceRecords,
+      workLogsMap: state.workLogs,
+      isLoading: state.isLoading,
+      error: state.error,
+    }))
+  );
 
   const attendanceRecords = useMemo(() => {
     return Array.from(attendanceRecordsMap.values());
@@ -702,15 +695,9 @@ export const useAttendanceData = () => {
 
   const getAttendanceStats = useMemo(() => {
     const total = attendanceRecords.length;
-    const checkedIn = attendanceRecords.filter(
-      (r) => r.status === 'checked_in'
-    ).length;
-    const checkedOut = attendanceRecords.filter(
-      (r) => r.status === 'checked_out'
-    ).length;
-    const notStarted = attendanceRecords.filter(
-      (r) => r.status === 'not_started'
-    ).length;
+    const checkedIn = attendanceRecords.filter((r) => r.status === 'checked_in').length;
+    const checkedOut = attendanceRecords.filter((r) => r.status === 'checked_out').length;
+    const notStarted = attendanceRecords.filter((r) => r.status === 'not_started').length;
 
     return {
       total,
@@ -774,8 +761,7 @@ export const useUnifiedDataPerformance = () => {
   return {
     metrics,
     optimizationSuggestions: getOptimizationSuggestions,
-    isPerformanceGood:
-      metrics.cacheHitRate >= 80 && metrics.averageQueryTime <= 100,
+    isPerformanceGood: metrics.cacheHitRate >= 80 && metrics.averageQueryTime <= 100,
   };
 };
 
@@ -783,9 +769,7 @@ export const useUnifiedDataPerformance = () => {
  * Smart Hybrid Context - 역할 기반 최적화된 데이터 훅 (Zustand 기반)
  * 사용자 역할에 따라 구독을 최적화하여 Firebase 비용 절감
  */
-export const useSmartUnifiedData = (
-  customOptions?: Partial<UnifiedDataOptions>
-) => {
+export const useSmartUnifiedData = (customOptions?: Partial<UnifiedDataOptions>) => {
   const { currentUser, role } = useAuth();
   const {
     staff: staffMap,
@@ -815,7 +799,7 @@ export const useSmartUnifiedData = (
       applications: true,
       jobPostings: true,
       attendance: true,
-      tournaments: true
+      tournaments: true,
     },
     manager: {
       staff: true,
@@ -823,24 +807,24 @@ export const useSmartUnifiedData = (
       applications: true,
       jobPostings: true,
       attendance: true,
-      tournaments: true
+      tournaments: true,
     },
     staff: {
-      staff: 'myData',      // 자신의 정보만
-      workLogs: 'myData',    // 자신의 근무 기록만
+      staff: 'myData', // 자신의 정보만
+      workLogs: 'myData', // 자신의 근무 기록만
       applications: 'myData', // 자신의 지원만
-      jobPostings: true,     // 구인공고는 모두 봐야 함
-      attendance: 'myData',  // 자신의 출석만
-      tournaments: false     // 토너먼트는 필요 없음
+      jobPostings: true, // 구인공고는 모두 봐야 함
+      attendance: 'myData', // 자신의 출석만
+      tournaments: false, // 토너먼트는 필요 없음
     },
     user: {
-      staff: false,          // 스태프 정보 불필요
-      workLogs: false,       // 근무 기록 불필요
+      staff: false, // 스태프 정보 불필요
+      workLogs: false, // 근무 기록 불필요
       applications: 'myData', // 자신의 지원만
-      jobPostings: true,     // 구인공고는 모두 봐야 함
-      attendance: false,     // 출석 불필요
-      tournaments: false     // 토너먼트 불필요
-    }
+      jobPostings: true, // 구인공고는 모두 봐야 함
+      attendance: false, // 출석 불필요
+      tournaments: false, // 토너먼트 불필요
+    },
   };
 
   // 옵션 병합 (Enum 검증 적용)
@@ -849,14 +833,16 @@ export const useSmartUnifiedData = (
     role: normalizedRole,
     userId: currentUser?.uid || '',
     subscriptions: customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'user'] || {},
-    cacheStrategy: customOptions?.cacheStrategy || (hasAdminPrivilege(normalizedRole) ? 'minimal' : 'aggressive'),
+    cacheStrategy:
+      customOptions?.cacheStrategy ||
+      (hasAdminPrivilege(normalizedRole) ? 'minimal' : 'aggressive'),
     performance: {
       maxDocuments: normalizedRole === UserRole.STAFF ? 100 : 1000,
       realtimeUpdates: hasAdminPrivilege(normalizedRole),
       batchSize: 20,
-      ...customOptions?.performance
+      ...customOptions?.performance,
     },
-    ...customOptions
+    ...customOptions,
   };
 
   // 필터링된 데이터 반환
@@ -873,46 +859,30 @@ export const useSmartUnifiedData = (
 
       workLogs:
         subscriptions?.workLogs === 'myData'
-          ? Array.from(workLogsMap.values()).filter(
-              (w) => w.staffId === userId
-            )
+          ? Array.from(workLogsMap.values()).filter((w) => w.staffId === userId)
           : subscriptions?.workLogs === false
             ? []
             : Array.from(workLogsMap.values()),
 
       applications:
         subscriptions?.applications === 'myData'
-          ? Array.from(applicationsMap.values()).filter(
-              (a) => a.applicantId === userId
-            )
+          ? Array.from(applicationsMap.values()).filter((a) => a.applicantId === userId)
           : subscriptions?.applications === false
             ? []
             : Array.from(applicationsMap.values()),
 
-      jobPostings:
-        subscriptions?.jobPostings === false
-          ? []
-          : Array.from(jobPostingsMap.values()),
+      jobPostings: subscriptions?.jobPostings === false ? [] : Array.from(jobPostingsMap.values()),
 
       attendanceRecords:
         subscriptions?.attendance === 'myData'
-          ? Array.from(attendanceRecordsMap.values()).filter(
-              (a) => a.staffId === userId
-            )
+          ? Array.from(attendanceRecordsMap.values()).filter((a) => a.staffId === userId)
           : subscriptions?.attendance === false
             ? []
             : Array.from(attendanceRecordsMap.values()),
 
       tournaments: subscriptions?.tournaments === false ? [] : [],
     };
-  }, [
-    staffMap,
-    workLogsMap,
-    applicationsMap,
-    jobPostingsMap,
-    attendanceRecordsMap,
-    finalOptions,
-  ]);
+  }, [staffMap, workLogsMap, applicationsMap, jobPostingsMap, attendanceRecordsMap, finalOptions]);
 
   logger.info('Smart Hybrid Context 활성화', {
     component: 'useSmartUnifiedData',
@@ -924,9 +894,9 @@ export const useSmartUnifiedData = (
         workLogs: filteredData.workLogs.length,
         applications: filteredData.applications.length,
         jobPostings: filteredData.jobPostings.length,
-        attendance: filteredData.attendanceRecords.length
-      }
-    }
+        attendance: filteredData.attendanceRecords.length,
+      },
+    },
   });
 
   const refresh = useCallback(async () => {
@@ -957,9 +927,9 @@ export const usePageOptimizedData = (page: string) => {
         staff: false,
         applications: false,
         jobPostings: false,
-        tournaments: false
+        tournaments: false,
       },
-      cacheStrategy: 'aggressive'
+      cacheStrategy: 'aggressive',
     },
     '/profile': {
       subscriptions: {
@@ -968,9 +938,9 @@ export const usePageOptimizedData = (page: string) => {
         applications: 'myData',
         jobPostings: false,
         attendance: false,
-        tournaments: false
+        tournaments: false,
       },
-      cacheStrategy: 'aggressive'
+      cacheStrategy: 'aggressive',
     },
     '/jobs': {
       subscriptions: {
@@ -979,9 +949,9 @@ export const usePageOptimizedData = (page: string) => {
         staff: false,
         workLogs: false,
         attendance: false,
-        tournaments: false
+        tournaments: false,
       },
-      cacheStrategy: 'moderate'
+      cacheStrategy: 'moderate',
     },
     '/my-schedule': {
       subscriptions: {
@@ -990,10 +960,10 @@ export const usePageOptimizedData = (page: string) => {
         jobPostings: true,
         staff: false,
         attendance: false,
-        tournaments: false
+        tournaments: false,
       },
-      cacheStrategy: 'moderate'
-    }
+      cacheStrategy: 'moderate',
+    },
   };
 
   const config = pageConfigs[page] || {};
@@ -1004,13 +974,7 @@ export const usePageOptimizedData = (page: string) => {
  * 개발자 디버깅용 훅 (Zustand 기반)
  */
 export const useUnifiedDataDebug = () => {
-  const {
-    staff,
-    workLogs,
-    attendanceRecords,
-    jobPostings,
-    applications,
-  } = useUnifiedDataStore(
+  const { staff, workLogs, attendanceRecords, jobPostings, applications } = useUnifiedDataStore(
     useShallow((state) => ({
       staff: state.staff,
       workLogs: state.workLogs,

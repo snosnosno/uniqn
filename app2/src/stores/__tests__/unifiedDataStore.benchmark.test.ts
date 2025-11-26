@@ -81,7 +81,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       const startTime = performance.now();
 
       act(() => {
-        staffList.forEach(staff => result.current.updateStaff(staff));
+        staffList.forEach((staff) => result.current.updateStaff(staff));
       });
 
       const endTime = performance.now();
@@ -114,7 +114,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       const startTime = performance.now();
 
       act(() => {
-        staffList.forEach(staff => result.current.deleteStaff(staff.id));
+        staffList.forEach((staff) => result.current.deleteStaff(staff.id));
       });
 
       const endTime = performance.now();
@@ -145,7 +145,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       // 1. 개별 업데이트 성능 측정
       const individualStart = performance.now();
       act(() => {
-        staffList.forEach(staff => result.current.updateStaff(staff));
+        staffList.forEach((staff) => result.current.updateStaff(staff));
       });
       const individualEnd = performance.now();
       const individualTime = individualEnd - individualStart;
@@ -166,7 +166,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       // Batch가 개별보다 빠르거나 비슷해야 함
       expect(batchTime).toBeLessThanOrEqual(individualTime * 1.5);
 
-      const improvement = ((individualTime - batchTime) / individualTime * 100).toFixed(1);
+      const improvement = (((individualTime - batchTime) / individualTime) * 100).toFixed(1);
 
       console.log(`\n📊 Batch vs Individual Update (100 items):`);
       console.log(`  Individual: ${individualTime.toFixed(3)}ms`);
@@ -194,7 +194,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
 
       const individualStart = performance.now();
       act(() => {
-        staffList.forEach(staff => result.current.deleteStaff(staff.id));
+        staffList.forEach((staff) => result.current.deleteStaff(staff.id));
       });
       const individualEnd = performance.now();
       const individualTime = individualEnd - individualStart;
@@ -207,7 +207,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       // 2. Batch 삭제 성능 측정
       const batchStart = performance.now();
       act(() => {
-        result.current.deleteStaffBatch(staffList.map(s => s.id));
+        result.current.deleteStaffBatch(staffList.map((s) => s.id));
       });
       const batchEnd = performance.now();
       const batchTime = batchEnd - batchStart;
@@ -215,7 +215,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
       // Batch가 개별보다 빠르거나 비슷해야 함
       expect(batchTime).toBeLessThanOrEqual(individualTime * 1.5);
 
-      const improvement = ((individualTime - batchTime) / individualTime * 100).toFixed(1);
+      const improvement = (((individualTime - batchTime) / individualTime) * 100).toFixed(1);
 
       console.log(`\n📊 Batch vs Individual Delete (100 items):`);
       console.log(`  Individual: ${individualTime.toFixed(3)}ms`);
@@ -451,7 +451,7 @@ describe('UnifiedDataStore Performance Benchmark', () => {
 
       // 모두 삭제
       act(() => {
-        result.current.deleteStaffBatch(staffList.map(s => s.id));
+        result.current.deleteStaffBatch(staffList.map((s) => s.id));
       });
 
       // Map이 비어있는지 확인

@@ -45,10 +45,10 @@ const translations = {
   '연락처 정보': '연락처 정보',
   '스와이프 액션': '스와이프 액션',
   '←': '←',
-  '액션': '액션',
+  액션: '액션',
   '•': '•',
-  '선택': '선택',
-  '→': '→'
+  선택: '선택',
+  '→': '→',
 };
 
 export const useTranslation = () => {
@@ -56,8 +56,8 @@ export const useTranslation = () => {
     t: (key) => translations[key] || key,
     i18n: {
       changeLanguage: () => new Promise(() => {}),
-      language: 'ko'
-    }
+      language: 'ko',
+    },
   };
 };
 
@@ -65,5 +65,5 @@ export const Trans = ({ children }) => children;
 
 export const initReactI18next = {
   type: '3rdParty',
-  init: () => {}
+  init: () => {},
 };

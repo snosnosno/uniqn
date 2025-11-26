@@ -14,15 +14,8 @@ import Modal from '../ui/Modal';
 import { useToast } from '../../hooks/useToast';
 import { useSystemAnnouncements } from '../../hooks/useSystemAnnouncements';
 import { logger } from '../../utils/logger';
-import type {
-  CreateSystemAnnouncementInput,
-  AnnouncementPriority
-} from '../../types';
-import {
-  validateSystemAnnouncement,
-  getPriorityLabel,
-  getPriorityBadgeStyle
-} from '../../types';
+import type { CreateSystemAnnouncementInput, AnnouncementPriority } from '../../types';
+import { validateSystemAnnouncement, getPriorityLabel, getPriorityBadgeStyle } from '../../types';
 
 interface CreateAnnouncementModalProps {
   isOpen: boolean;
@@ -33,7 +26,7 @@ interface CreateAnnouncementModalProps {
 const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const { t: _t } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -43,9 +36,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<AnnouncementPriority>('normal');
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().slice(0, 16)
-  );
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 16));
   const [endDate, setEndDate] = useState('');
   const [hasEndDate, setHasEndDate] = useState(false);
 
@@ -64,7 +55,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
       content: content.trim(),
       priority,
       startDate: new Date(startDate),
-      endDate: hasEndDate && endDate ? new Date(endDate) : null
+      endDate: hasEndDate && endDate ? new Date(endDate) : null,
     };
 
     const validation = validateSystemAnnouncement(input);
@@ -104,7 +95,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
         content: content.trim(),
         priority,
         startDate: new Date(startDate),
-        endDate: hasEndDate && endDate ? new Date(endDate) : null
+        endDate: hasEndDate && endDate ? new Date(endDate) : null,
       };
 
       // 유효성 검증
@@ -119,7 +110,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
 
       logger.info('시스템 공지사항 등록 완료', {
         component: 'CreateAnnouncementModal',
-        data: { title: input.title, priority: input.priority }
+        data: { title: input.title, priority: input.priority },
       });
 
       showSuccess('공지사항이 등록되고 모든 사용자에게 알림이 전송되었습니다.');
@@ -127,14 +118,31 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
       onSuccess();
       onClose();
     } catch (error) {
-      logger.error('공지사항 등록 실패:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'CreateAnnouncementModal'
-      });
+      logger.error(
+        '공지사항 등록 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'CreateAnnouncementModal',
+        }
+      );
       showError('공지사항 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [title, content, priority, startDate, endDate, hasEndDate, createAnnouncement, showSuccess, showError, resetForm, onSuccess, onClose]);
+  }, [
+    title,
+    content,
+    priority,
+    startDate,
+    endDate,
+    hasEndDate,
+    createAnnouncement,
+    showSuccess,
+    showError,
+    resetForm,
+    onSuccess,
+    onClose,
+  ]);
 
   /**
    * 우선순위 옵션
@@ -142,16 +150,11 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
   const priorityOptions: Array<{ value: AnnouncementPriority; label: string }> = [
     { value: 'normal', label: getPriorityLabel('normal') },
     { value: 'important', label: getPriorityLabel('important') },
-    { value: 'urgent', label: getPriorityLabel('urgent') }
+    { value: 'urgent', label: getPriorityLabel('urgent') },
   ];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      size="lg"
-      title="📢 시스템 공지사항 등록"
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg" title="📢 시스템 공지사항 등록">
       <div className="space-y-6">
         {/* 미리보기 모드 토글 */}
         <div className="flex justify-end">
@@ -167,8 +170,12 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
           /* 미리보기 */
           <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-700">
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{title || '(제목 없음)'}</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityBadgeStyle(priority)}`}>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {title || '(제목 없음)'}
+              </h3>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityBadgeStyle(priority)}`}
+              >
                 {getPriorityLabel(priority)}
               </span>
             </div>
@@ -287,7 +294,9 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
             {/* 유효성 검증 에러 */}
             {validationErrors.length > 0 && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">⚠️ 입력 오류</p>
+                <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+                  ⚠️ 입력 오류
+                </p>
                 <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-400 space-y-1">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error}</li>

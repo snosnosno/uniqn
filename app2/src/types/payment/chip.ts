@@ -9,11 +9,11 @@ export type ChipType = 'blue' | 'red';
  * 칩 트랜잭션 타입
  */
 export type ChipTransactionType =
-  | 'grant'           // 지급 (구독 플랜)
-  | 'purchase'        // 구매 (충전)
-  | 'use'             // 사용 (지원 신청, 고정 공고)
-  | 'expire'          // 소멸
-  | 'refund';         // 환불
+  | 'grant' // 지급 (구독 플랜)
+  | 'purchase' // 구매 (충전)
+  | 'use' // 사용 (지원 신청, 고정 공고)
+  | 'expire' // 소멸
+  | 'refund'; // 환불
 
 /**
  * 파란칩 (구독 칩)
@@ -24,7 +24,7 @@ export interface BlueChip {
   type: 'blue';
   amount: number;
   grantedAt: Timestamp;
-  expiresAt: Timestamp;        // 해당 월 말일 24시
+  expiresAt: Timestamp; // 해당 월 말일 24시
   planType: 'free' | 'standard' | 'pro';
   isExpired: boolean;
 }
@@ -38,9 +38,9 @@ export interface RedChip {
   type: 'red';
   amount: number;
   purchasedAt: Timestamp;
-  expiresAt: Timestamp;        // 구매일 + 1년
-  packageId: string;           // 충전 패키지 ID
-  transactionId: string;       // 결제 트랜잭션 ID
+  expiresAt: Timestamp; // 구매일 + 1년
+  packageId: string; // 충전 패키지 ID
+  transactionId: string; // 결제 트랜잭션 ID
   isExpired: boolean;
 }
 
@@ -49,9 +49,9 @@ export interface RedChip {
  */
 export interface UserChipBalance {
   userId: string;
-  blueChips: number;           // 파란칩 잔액
-  redChips: number;            // 빨간칩 잔액
-  totalChips: number;          // 전체 칩 잔액
+  blueChips: number; // 파란칩 잔액
+  redChips: number; // 빨간칩 잔액
+  totalChips: number; // 전체 칩 잔액
   lastUpdatedAt: Timestamp;
 }
 
@@ -74,15 +74,15 @@ export interface ChipTransaction {
   userId: string;
   type: ChipTransactionType;
   chipType: ChipType;
-  amount: number;              // 양수: 증가, 음수: 감소
-  balanceBefore: number;       // 거래 전 잔액
-  balanceAfter: number;        // 거래 후 잔액
-  description: string;         // 트랜잭션 설명
+  amount: number; // 양수: 증가, 음수: 감소
+  balanceBefore: number; // 거래 전 잔액
+  balanceAfter: number; // 거래 후 잔액
+  description: string; // 트랜잭션 설명
   metadata?: {
-    postingId?: string;        // 공고 ID (use 타입일 때)
-    packageId?: string;        // 패키지 ID (purchase 타입일 때)
-    transactionId?: string;    // 결제 ID (purchase 타입일 때)
-    refundId?: string;         // 환불 ID (refund 타입일 때)
+    postingId?: string; // 공고 ID (use 타입일 때)
+    packageId?: string; // 패키지 ID (purchase 타입일 때)
+    transactionId?: string; // 결제 ID (purchase 타입일 때)
+    refundId?: string; // 환불 ID (refund 타입일 때)
   };
   createdAt: Timestamp;
 }
@@ -98,10 +98,10 @@ export interface ChipTransactionView extends Omit<ChipTransaction, 'createdAt'> 
  * 칩 만료 알림 단계
  */
 export type ChipExpiryNotificationStage =
-  | 'days_30'         // 30일 전
-  | 'days_7'          // 7일 전
-  | 'days_3'          // 3일 전
-  | 'day_current';    // 당일
+  | 'days_30' // 30일 전
+  | 'days_7' // 7일 전
+  | 'days_3' // 3일 전
+  | 'day_current'; // 당일
 
 /**
  * 칩 만료 알림 기록
@@ -123,9 +123,9 @@ export interface ChipExpiryNotification {
 export interface ChipUsage {
   id: string;
   userId: string;
-  chipType: ChipType;         // 사용된 칩 타입 (우선순위: 파란칩 먼저)
+  chipType: ChipType; // 사용된 칩 타입 (우선순위: 파란칩 먼저)
   amount: number;
   usageType: 'application' | 'fixed_posting' | 'urgent_posting';
-  relatedId: string;          // 관련 문서 ID (postingId, applicationId 등)
+  relatedId: string; // 관련 문서 ID (postingId, applicationId 등)
   usedAt: Timestamp;
 }

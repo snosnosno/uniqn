@@ -23,7 +23,13 @@ export interface SendAnnouncementModalProps {
   /** 확정된 스태프 목록 */
   confirmedStaff: ConfirmedStaff[];
   /** 전송 핸들러 */
-  onSend: (eventId: string, title: string, message: string, targetStaffIds: string[], jobPostingTitle?: string) => Promise<void>;
+  onSend: (
+    eventId: string,
+    title: string,
+    message: string,
+    targetStaffIds: string[],
+    jobPostingTitle?: string
+  ) => Promise<void>;
   /** 전송 중 상태 */
   isSending?: boolean;
 }
@@ -34,7 +40,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
   jobPosting,
   confirmedStaff,
   onSend,
-  isSending = false
+  isSending = false,
 }) => {
   const { t } = useTranslation();
 
@@ -45,13 +51,13 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
 
   // 수신 대상 스태프 ID 목록
   const targetStaffIds = useMemo(() => {
-    return Array.from(new Set(confirmedStaff.map(staff => staff.userId)));
+    return Array.from(new Set(confirmedStaff.map((staff) => staff.userId)));
   }, [confirmedStaff]);
 
   // 수신 대상 그룹핑 (중복 제거)
   const uniqueStaff = useMemo(() => {
     const staffMap = new Map<string, ConfirmedStaff>();
-    confirmedStaff.forEach(staff => {
+    confirmedStaff.forEach((staff) => {
       if (!staffMap.has(staff.userId)) {
         staffMap.set(staff.userId, staff);
       }
@@ -84,7 +90,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
       eventId: jobPosting.id,
       title: title.trim(),
       message: announcementMessage.trim(),
-      targetStaffIds
+      targetStaffIds,
     });
 
     if (!validation.isValid) {
@@ -94,7 +100,13 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
     }
 
     try {
-      await onSend(jobPosting.id, title.trim(), announcementMessage.trim(), targetStaffIds, jobPosting.title);
+      await onSend(
+        jobPosting.id,
+        title.trim(),
+        announcementMessage.trim(),
+        targetStaffIds,
+        jobPosting.title
+      );
 
       // 성공 시 폼 초기화 및 모달 닫기
       setTitle('');
@@ -105,7 +117,15 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
       logger.error('공지 전송 실패', error as Error);
       setErrors(['공지 전송에 실패했습니다. 다시 시도해주세요.']);
     }
-  }, [jobPosting.id, jobPosting.title, title, announcementMessage, targetStaffIds, onSend, onClose]);
+  }, [
+    jobPosting.id,
+    jobPosting.title,
+    title,
+    announcementMessage,
+    targetStaffIds,
+    onSend,
+    onClose,
+  ]);
 
   // 취소 핸들러
   const handleCancel = useCallback(() => {
@@ -116,11 +136,14 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
   }, [onClose]);
 
   // 키보드 이벤트 (Esc 키로 닫기)
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSending) {
-      handleCancel();
-    }
-  }, [isSending, handleCancel]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSending) {
+        handleCancel();
+      }
+    },
+    [isSending, handleCancel]
+  );
 
   if (!isOpen) return null;
 
@@ -139,7 +162,10 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-          <h2 id="announcement-modal-title" className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
+          <h2
+            id="announcement-modal-title"
+            className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100"
+          >
             {t('jobPosting.announcement.modalTitle')}
           </h2>
           <button
@@ -149,7 +175,12 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
             aria-label={t('common.cancel')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -188,7 +219,10 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
 
           {/* 제목 입력 */}
           <div className="mb-4">
-            <label htmlFor="announcement-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="announcement-title"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               {t('jobPosting.announcement.titleLabel')}
               <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
@@ -210,7 +244,10 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
 
           {/* 내용 입력 */}
           <div className="mb-4">
-            <label htmlFor="announcement-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="announcement-message"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               {t('jobPosting.announcement.messageLabel')}
               <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
@@ -241,7 +278,10 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
                 </p>
                 <div className="max-h-32 overflow-y-auto space-y-1">
                   {uniqueStaff.map((staff, index) => (
-                    <div key={staff.userId} className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                    <div
+                      key={staff.userId}
+                      className="flex items-center text-sm text-gray-700 dark:text-gray-300"
+                    >
                       <span className="w-6 text-gray-400 dark:text-gray-500">{index + 1}.</span>
                       <span className="font-medium">{staff.name}</span>
                       <span className="ml-2 text-gray-500 dark:text-gray-400">({staff.role})</span>
@@ -257,9 +297,7 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
             <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
               📍 {t('jobPosting.announcement.postingInfo')}
             </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              {jobPosting.title}
-            </p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{jobPosting.title}</p>
             {jobPosting.location && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 위치: {jobPosting.location}
@@ -279,14 +317,30 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           </button>
           <button
             onClick={handleSend}
-            disabled={isSending || !title.trim() || !announcementMessage.trim() || confirmedStaff.length === 0}
+            disabled={
+              isSending ||
+              !title.trim() ||
+              !announcementMessage.trim() ||
+              confirmedStaff.length === 0
+            }
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSending ? (
               <>
                 <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 {t('jobPosting.announcement.sending')}
               </>

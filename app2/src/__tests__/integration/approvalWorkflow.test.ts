@@ -9,19 +9,13 @@
  * 5. 권한 검증 (non-admin 차단)
  */
 
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  Timestamp
-} from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { JobPosting, TournamentConfig } from '../../types/jobPosting/jobPosting';
 
 // Firebase 모킹
 jest.mock('../../firebase', () => ({
   db: {},
-  functions: {}
+  functions: {},
 }));
 
 // Firestore 함수 모킹
@@ -32,8 +26,11 @@ jest.mock('firebase/firestore', () => ({
   where: jest.fn(),
   Timestamp: {
     now: jest.fn(() => ({ seconds: 1704067200, nanoseconds: 0 })),
-    fromDate: jest.fn((date: Date) => ({ seconds: Math.floor(date.getTime() / 1000), nanoseconds: 0 }))
-  }
+    fromDate: jest.fn((date: Date) => ({
+      seconds: Math.floor(date.getTime() / 1000),
+      nanoseconds: 0,
+    })),
+  },
 }));
 
 describe('승인 워크플로우 통합 테스트', () => {
@@ -52,8 +49,8 @@ describe('승인 워크플로우 통합 테스트', () => {
     dateSpecificRequirements: [],
     tournamentConfig: {
       approvalStatus: 'pending',
-      submittedAt: now
-    }
+      submittedAt: now,
+    },
   };
 
   beforeEach(() => {
@@ -83,7 +80,7 @@ describe('승인 워크플로우 통합 테스트', () => {
     it('일반 공고는 tournamentConfig가 없음', () => {
       const regularPosting: Partial<JobPosting> = {
         ...mockTournamentPosting,
-        postingType: 'regular'
+        postingType: 'regular',
       };
       delete regularPosting.tournamentConfig;
 
@@ -99,8 +96,8 @@ describe('승인 워크플로우 통합 테스트', () => {
           approvalStatus: 'approved' as const,
           submittedAt: now,
           approvedBy: 'admin-1',
-          approvedAt: now
-        }
+          approvedAt: now,
+        },
       };
 
       expect(approvedPosting.tournamentConfig.approvalStatus).toBe('approved');
@@ -113,7 +110,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         approvalStatus: 'approved' as const,
         submittedAt: now,
         approvedBy: 'admin-1',
-        approvedAt: now
+        approvedAt: now,
       };
 
       expect('rejectionReason' in approvedConfig).toBe(false);
@@ -129,8 +126,8 @@ describe('승인 워크플로우 통합 테스트', () => {
           submittedAt: now,
           rejectedBy: 'admin-1',
           rejectedAt: now,
-          rejectionReason: '대회 일정이 너무 촉박합니다'
-        }
+          rejectionReason: '대회 일정이 너무 촉박합니다',
+        },
       };
 
       expect(rejectedPosting.tournamentConfig.approvalStatus).toBe('rejected');
@@ -158,14 +155,14 @@ describe('승인 워크플로우 통합 테스트', () => {
     it('pending 상태 공고 조회', async () => {
       const mockPendingPostings = [
         { ...mockTournamentPosting, id: '1' },
-        { ...mockTournamentPosting, id: '2' }
+        { ...mockTournamentPosting, id: '2' },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue({
-        docs: mockPendingPostings.map(p => ({
+        docs: mockPendingPostings.map((p) => ({
           id: p.id,
-          data: () => p
-        }))
+          data: () => p,
+        })),
       });
 
       const q = query(
@@ -175,10 +172,12 @@ describe('승인 워크플로우 통합 테스트', () => {
       );
 
       const snapshot = await getDocs(q);
-      const postings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const postings = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
       expect(postings).toHaveLength(2);
-      expect(postings.every((p: any) => p.tournamentConfig?.approvalStatus === 'pending')).toBe(true);
+      expect(postings.every((p: any) => p.tournamentConfig?.approvalStatus === 'pending')).toBe(
+        true
+      );
     });
 
     it('approved 상태 공고 조회', async () => {
@@ -188,15 +187,17 @@ describe('승인 워크플로우 통합 테스트', () => {
           approvalStatus: 'approved' as const,
           submittedAt: now,
           approvedBy: 'admin-1',
-          approvedAt: now
-        }
+          approvedAt: now,
+        },
       };
 
       (getDocs as jest.Mock).mockResolvedValue({
-        docs: [{
-          id: 'approved-1',
-          data: () => approvedPosting
-        }]
+        docs: [
+          {
+            id: 'approved-1',
+            data: () => approvedPosting,
+          },
+        ],
       });
 
       const q = query(
@@ -206,7 +207,7 @@ describe('승인 워크플로우 통합 테스트', () => {
       );
 
       const snapshot = await getDocs(q);
-      const postings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const postings = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
       expect(postings).toHaveLength(1);
       expect((postings[0] as any).tournamentConfig.approvalStatus).toBe('approved');
@@ -220,15 +221,17 @@ describe('승인 워크플로우 통합 테스트', () => {
           submittedAt: now,
           rejectedBy: 'admin-1',
           rejectedAt: now,
-          rejectionReason: '대회 일정이 너무 촉박합니다'
-        }
+          rejectionReason: '대회 일정이 너무 촉박합니다',
+        },
       };
 
       (getDocs as jest.Mock).mockResolvedValue({
-        docs: [{
-          id: 'rejected-1',
-          data: () => rejectedPosting
-        }]
+        docs: [
+          {
+            id: 'rejected-1',
+            data: () => rejectedPosting,
+          },
+        ],
       });
 
       const q = query(
@@ -238,7 +241,7 @@ describe('승인 워크플로우 통합 테스트', () => {
       );
 
       const snapshot = await getDocs(q);
-      const postings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const postings = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
       expect(postings).toHaveLength(1);
       expect((postings[0] as any).tournamentConfig.approvalStatus).toBe('rejected');
@@ -255,7 +258,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         message: '대회 공고가 승인되었습니다',
         relatedId: 'tournament-1',
         isRead: false,
-        createdAt: now
+        createdAt: now,
       };
 
       expect(approvalNotification.type).toBe('tournament_approved');
@@ -271,7 +274,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         message: '대회 공고가 거부되었습니다: 대회 일정이 너무 촉박합니다',
         relatedId: 'tournament-1',
         isRead: false,
-        createdAt: now
+        createdAt: now,
       };
 
       expect(rejectionNotification.type).toBe('tournament_rejected');
@@ -283,7 +286,7 @@ describe('승인 워크플로우 통합 테스트', () => {
     it('Admin 권한 확인', () => {
       const adminUser = {
         uid: 'admin-1',
-        role: 'admin'
+        role: 'admin',
       };
 
       expect(adminUser.role).toBe('admin');
@@ -292,7 +295,7 @@ describe('승인 워크플로우 통합 테스트', () => {
     it('Non-admin 권한 거부', () => {
       const normalUser = {
         uid: 'user-1',
-        role: 'user'
+        role: 'user',
       };
 
       expect(normalUser.role).not.toBe('admin');
@@ -301,7 +304,7 @@ describe('승인 워크플로우 통합 테스트', () => {
     it('Manager는 승인 불가', () => {
       const managerUser = {
         uid: 'manager-1',
-        role: 'manager'
+        role: 'manager',
       };
 
       expect(managerUser.role).not.toBe('admin');
@@ -321,8 +324,8 @@ describe('승인 워크플로우 통합 테스트', () => {
           approvalStatus: 'approved' as const,
           submittedAt: now,
           approvedBy: 'admin-1',
-          approvedAt: now
-        }
+          approvedAt: now,
+        },
       };
       expect(approvedPosting.tournamentConfig.approvalStatus).toBe('approved');
 
@@ -331,7 +334,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         userId: newPosting.createdBy,
         type: 'tournament_approved',
         title: '대회 공고 승인',
-        message: '대회 공고가 승인되었습니다'
+        message: '대회 공고가 승인되었습니다',
       };
       expect(notification.type).toBe('tournament_approved');
     });
@@ -350,8 +353,8 @@ describe('승인 워크플로우 통합 테스트', () => {
           submittedAt: now,
           rejectedBy: 'admin-1',
           rejectedAt: now,
-          rejectionReason
-        }
+          rejectionReason,
+        },
       };
       expect(rejectedPosting.tournamentConfig.approvalStatus).toBe('rejected');
       expect(rejectedPosting.tournamentConfig.rejectionReason).toBe(rejectionReason);
@@ -361,7 +364,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         userId: newPosting.createdBy,
         type: 'tournament_rejected',
         title: '대회 공고 거부',
-        message: `대회 공고가 거부되었습니다: ${rejectionReason}`
+        message: `대회 공고가 거부되었습니다: ${rejectionReason}`,
       };
       expect(notification.message).toContain(rejectionReason);
     });
@@ -373,7 +376,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         approvalStatus: 'approved' as const,
         submittedAt: now,
         approvedBy: 'admin-1',
-        approvedAt: now
+        approvedAt: now,
       };
 
       expect('rejectionReason' in approvedConfig).toBe(false);
@@ -387,7 +390,7 @@ describe('승인 워크플로우 통합 테스트', () => {
         submittedAt: now,
         rejectedBy: 'admin-1',
         rejectedAt: now,
-        rejectionReason: '대회 일정이 너무 촉박합니다'
+        rejectionReason: '대회 일정이 너무 촉박합니다',
       };
 
       expect('approvedBy' in rejectedConfig).toBe(false);
@@ -429,8 +432,8 @@ describe('승인 워크플로우 통합 테스트', () => {
           approvalStatus: 'approved' as const,
           submittedAt: now,
           approvedBy: 'admin-1',
-          approvedAt: now
-        }
+          approvedAt: now,
+        },
       };
 
       // 이미 approved 상태이므로 재승인 불필요

@@ -28,18 +28,16 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">사전질문</h4>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onAddPreQuestion}
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onAddPreQuestion}>
           질문 추가
         </Button>
       </div>
 
       {preQuestions.map((question, questionIndex) => (
-        <div key={question.id} className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3">
+        <div
+          key={question.id}
+          className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3"
+        >
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               질문 {questionIndex + 1}
@@ -82,7 +80,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
                 options={[
                   { value: 'text', label: '단답형' },
                   { value: 'textarea', label: '장문형' },
-                  { value: 'select', label: '선택형' }
+                  { value: 'select', label: '선택형' },
                 ]}
               />
             </div>
@@ -93,10 +91,12 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
               </label>
               <Select
                 value={question.required ? 'true' : 'false'}
-                onChange={(value) => onPreQuestionChange(questionIndex, 'required', value === 'true')}
+                onChange={(value) =>
+                  onPreQuestionChange(questionIndex, 'required', value === 'true')
+                }
                 options={[
                   { value: 'true', label: '필수' },
-                  { value: 'false', label: '선택' }
+                  { value: 'false', label: '선택' },
                 ]}
               />
             </div>
@@ -125,7 +125,9 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
                     type="text"
                     placeholder={`옵션 ${optionIndex + 1}`}
                     value={option}
-                    onChange={(e) => onPreQuestionOptionChange(questionIndex, optionIndex, e.target.value)}
+                    onChange={(e) =>
+                      onPreQuestionOptionChange(questionIndex, optionIndex, e.target.value)
+                    }
                     className="flex-1"
                   />
                   {(question.options?.length || 0) > 1 && (
@@ -166,12 +168,7 @@ const PreQuestionManager: React.FC<PreQuestionManagerProps> = ({
         <EmptyState
           title="사전질문을 추가해주세요."
           action={
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={onAddPreQuestion}
-            >
+            <Button type="button" variant="primary" size="sm" onClick={onAddPreQuestion}>
               첫 번째 질문 추가
             </Button>
           }

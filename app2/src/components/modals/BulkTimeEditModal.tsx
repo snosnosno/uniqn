@@ -9,11 +9,7 @@ import { useToast } from '../../hooks/useToast';
 import { parseToDate } from '../../utils/jobPosting/dateUtils';
 import Modal, { ModalFooter } from '../ui/Modal';
 import { toISODateString } from '../../utils/dateUtils';
-import {
-  handleFirebaseError,
-  isPermissionDenied,
-  FirebaseError,
-} from '../../utils/firebaseErrors';
+import { handleFirebaseError, isPermissionDenied, FirebaseError } from '../../utils/firebaseErrors';
 
 interface SelectedStaff {
   id: string;
@@ -44,23 +40,25 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
   onClose,
   selectedStaff,
   eventId,
-  onComplete
+  onComplete,
 }) => {
   useTranslation();
   const { showSuccess, showError } = useToast();
-  
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [editMode, setEditMode] = useState<'time' | 'status'>('time');
-  
+
   // 시간 설정 상태
   const [startHour, setStartHour] = useState('');
   const [startMinute, setStartMinute] = useState('');
   const [endHour, setEndHour] = useState('');
   const [endMinute, setEndMinute] = useState('');
-  
+
   // 출석 상태 설정
-  const [attendanceStatus, setAttendanceStatus] = useState<'not_started' | 'checked_in' | 'checked_out'>('not_started');
-  
+  const [attendanceStatus, setAttendanceStatus] = useState<
+    'not_started' | 'checked_in' | 'checked_out'
+  >('not_started');
+
   // 유효성 검사 상태
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -70,7 +68,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     for (let hour = 0; hour < 24; hour++) {
       options.push({
         value: hour.toString().padStart(2, '0'),
-        label: `${hour.toString().padStart(2, '0')}시`
+        label: `${hour.toString().padStart(2, '0')}시`,
       });
     }
     return options;
@@ -81,7 +79,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     for (let minute = 0; minute < 60; minute += 5) {
       options.push({
         value: minute.toString().padStart(2, '0'),
-        label: `${minute.toString().padStart(2, '0')}분`
+        label: `${minute.toString().padStart(2, '0')}분`,
       });
     }
     return options;
@@ -99,50 +97,74 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
   };
 
   // 시간 문자열을 Timestamp로 변환
-  const parseTimeString = (timeString: string, baseDate: Date, isEndTime = false, startTimeString = '') => {
+  const parseTimeString = (
+    timeString: string,
+    baseDate: Date,
+    isEndTime = false,
+    startTimeString = ''
+  ) => {
     if (!timeString) return null;
-    
+
     try {
       const timeParts = timeString.split(':').map(Number);
       if (timeParts.length !== 2) {
-        logger.error('Invalid time string format:', new Error('Invalid time format'), { component: 'BulkTimeEditModal' });
+        logger.error('Invalid time string format:', new Error('Invalid time format'), {
+          component: 'BulkTimeEditModal',
+        });
         return null;
       }
-      
+
       const [hours, minutes] = timeParts;
-      
-      if (hours === undefined || minutes === undefined || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        logger.error('Invalid time string:', new Error(`Invalid time: ${timeString}`), { component: 'BulkTimeEditModal' });
+
+      if (
+        hours === undefined ||
+        minutes === undefined ||
+        isNaN(hours) ||
+        isNaN(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+      ) {
+        logger.error('Invalid time string:', new Error(`Invalid time: ${timeString}`), {
+          component: 'BulkTimeEditModal',
+        });
         return null;
       }
-      
+
       const date = new Date();
       date.setFullYear(baseDate.getFullYear());
       date.setMonth(baseDate.getMonth());
       date.setDate(baseDate.getDate());
       date.setHours(hours, minutes, 0, 0);
-      
+
       // 종료 시간이 시작 시간보다 이른 경우 다음날로 설정
       if (isEndTime && startTimeString) {
         const startTimeParts = startTimeString.split(':');
         if (startTimeParts.length === 2 && startTimeParts[0]) {
           const startHour = parseInt(startTimeParts[0]);
           const endHour = hours;
-          
+
           if (endHour < startHour) {
             date.setDate(date.getDate() + 1);
           }
         }
       }
-      
+
       if (isNaN(date.getTime())) {
-        logger.error('Invalid date created:', new Error('Invalid date'), { component: 'BulkTimeEditModal' });
+        logger.error('Invalid date created:', new Error('Invalid date'), {
+          component: 'BulkTimeEditModal',
+        });
         return null;
       }
-      
+
       return Timestamp.fromDate(date);
     } catch (error) {
-      logger.error('Error parsing time string:', error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal', data: { timeString } });
+      logger.error(
+        'Error parsing time string:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'BulkTimeEditModal', data: { timeString } }
+      );
       return null;
     }
   };
@@ -150,26 +172,26 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
   // 유효성 검사
   const validateInputs = () => {
     const errors: string[] = [];
-    
+
     if (editMode === 'time') {
       // 시간 편집 모드에서는 최소한 시작 시간이 있어야 함
       const startTime = combineTime(startHour, startMinute);
       const endTime = combineTime(endHour, endMinute);
-      
+
       if (!startTime && !endTime) {
         errors.push('최소한 시작 시간 또는 종료 시간 중 하나는 설정해야 합니다.');
       }
-      
+
       // 시간 형식 검증
       if (startTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(startTime)) {
         errors.push('시작 시간 형식이 올바르지 않습니다.');
       }
-      
+
       if (endTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(endTime)) {
         errors.push('종료 시간 형식이 올바르지 않습니다.');
       }
     }
-    
+
     setValidationErrors(errors);
     return errors.length === 0;
   };
@@ -209,7 +231,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             const baseDate = parseToDate(dateString) || new Date();
 
             const updateData: WorkLogUpdateData = {
-              updatedAt: now
+              updatedAt: now,
             };
 
             // 시간이 설정된 경우에만 업데이트
@@ -233,7 +255,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             // ✅ 출석 상태 수정 모드: status만 업데이트
             const updateData: WorkLogUpdateData = {
               status: attendanceStatus,
-              updatedAt: now
+              updatedAt: now,
             };
 
             // ✅ 무조건 update만 사용 (set 사용 금지 - 기존 필드 보존)
@@ -242,7 +264,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
 
           successCount++;
         } catch (error) {
-          logger.error(`Error updating staff ${staff.id}:`, error instanceof Error ? error : new Error(String(error)), { component: 'BulkTimeEditModal' });
+          logger.error(
+            `Error updating staff ${staff.id}:`,
+            error instanceof Error ? error : new Error(String(error)),
+            { component: 'BulkTimeEditModal' }
+          );
           errorCount++;
         }
       }
@@ -257,15 +283,15 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       logger.info('일괄 시간 수정 완료 - Firebase Functions가 알림 전송 예정', {
         data: {
           successCount,
-          editMode
-        }
+          editMode,
+        },
       });
 
       // ⚠️ WorkLog가 없는 스태프가 있으면 경고 메시지 표시
       if (missingWorkLogs.length > 0) {
         showError(
           `⚠️ 다음 스태프는 WorkLog가 없어 수정할 수 없습니다:\n${missingWorkLogs.join(', ')}\n\n` +
-          `성공: ${successCount}명 / 실패: ${errorCount}명`
+            `성공: ${successCount}명 / 실패: ${errorCount}명`
         );
       } else if (errorCount === 0) {
         // 성공 메시지를 더 구체적으로 표시
@@ -274,11 +300,15 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           const endTime = combineTime(endHour, endMinute);
           showSuccess(
             `✅ ${successCount}명의 근무 시간이 성공적으로 수정되었습니다.\n` +
-            `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`
+              `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`
           );
         } else {
-          const statusText = attendanceStatus === 'not_started' ? '출근 전' :
-                            attendanceStatus === 'checked_in' ? '출근' : '퇴근';
+          const statusText =
+            attendanceStatus === 'not_started'
+              ? '출근 전'
+              : attendanceStatus === 'checked_in'
+                ? '출근'
+                : '퇴근';
           showSuccess(`✅ ${successCount}명의 출석 상태가 "${statusText}"(으)로 변경되었습니다.`);
         }
       } else {
@@ -294,10 +324,14 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
         showError('일괄 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
-        logger.error('일괄 수정 권한 거부', error instanceof Error ? error : new Error(String(error)), {
-          component: 'BulkTimeEditModal',
-          data: { staffCount: selectedStaff.length, eventId, editMode }
-        });
+        logger.error(
+          '일괄 수정 권한 거부',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'BulkTimeEditModal',
+            data: { staffCount: selectedStaff.length, eventId, editMode },
+          }
+        );
         return;
       }
 
@@ -379,7 +413,8 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             <h3 className="font-semibold text-lg">선택된 스태프</h3>
           </div>
           <p className="text-gray-700 dark:text-gray-200">
-            총 <span className="font-bold text-blue-600">{selectedStaff.length}명</span>의 스태프가 선택되었습니다.
+            총 <span className="font-bold text-blue-600">{selectedStaff.length}명</span>의 스태프가
+            선택되었습니다.
           </p>
           <div className="mt-2 max-h-32 overflow-y-auto">
             <div className="flex flex-wrap gap-2">
@@ -500,13 +535,14 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {/* 미리보기 */}
             {(combineTime(startHour, startMinute) || combineTime(endHour, endMinute)) && (
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-2">적용될 시간</h4>
                 <div className="text-lg font-mono dark:text-gray-100">
-                  {combineTime(startHour, startMinute) || '변경 없음'} ~ {combineTime(endHour, endMinute) || '미정'}
+                  {combineTime(startHour, startMinute) || '변경 없음'} ~{' '}
+                  {combineTime(endHour, endMinute) || '미정'}
                 </div>
               </div>
             )}
@@ -519,7 +555,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                 ⚠️ 선택한 출석 상태가 모든 스태프에게 동일하게 적용됩니다.
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
                 출석 상태 선택
@@ -552,7 +588,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     <span className="font-medium">출근</span>
                   </div>
                 </label>
-                
+
                 <label className="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                   <input
                     type="radio"
@@ -582,7 +618,6 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             </ul>
           </div>
         )}
-
       </div>
     </Modal>
   );

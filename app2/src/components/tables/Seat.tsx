@@ -16,10 +16,24 @@ export interface SeatProps {
     to: { tableId: string; seatIndex: number }
   ) => void;
   _onBustOut: (participantId: string) => void;
-  onPlayerSelect?: (participantId: string, tableId: string, seatIndex: number, event: React.MouseEvent) => void;
+  onPlayerSelect?: (
+    participantId: string,
+    tableId: string,
+    seatIndex: number,
+    event: React.MouseEvent
+  ) => void;
 }
 
-export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, participant, getParticipantName, onMoveSeat: _onMoveSeat, _onBustOut, onPlayerSelect }) => {
+export const Seat: React.FC<SeatProps> = ({
+  table,
+  seatIndex,
+  participantId,
+  participant,
+  getParticipantName,
+  onMoveSeat: _onMoveSeat,
+  _onBustOut,
+  onPlayerSelect,
+}) => {
   const participantName = getParticipantName(participantId);
 
   const getBackgroundColor = () => {
@@ -39,8 +53,8 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, par
           tableId: table.id,
           tableName: table.name,
           seatIndex,
-          hasOnPlayerSelect: !!onPlayerSelect
-        }
+          hasOnPlayerSelect: !!onPlayerSelect,
+        },
       });
 
       event.preventDefault();
@@ -52,8 +66,8 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, par
         additionalData: {
           hasParticipant: !!participantId,
           hasOnPlayerSelect: !!onPlayerSelect,
-          participantName: participantName
-        }
+          participantName: participantName,
+        },
       });
     }
   };
@@ -62,14 +76,18 @@ export const Seat: React.FC<SeatProps> = ({ table, seatIndex, participantId, par
     <div
       onClick={participantId ? handleClick : undefined}
       className={`relative p-2 rounded-md h-20 flex flex-col justify-center items-center text-xs group ${getBackgroundColor()}`}
-      role={participantId ? "button" : undefined}
+      role={participantId ? 'button' : undefined}
       tabIndex={participantId ? 0 : undefined}
-      onKeyDown={participantId ? (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleClick(e as any);
-        }
-      } : undefined}
+      onKeyDown={
+        participantId
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleClick(e as any);
+              }
+            }
+          : undefined
+      }
     >
       <span className="font-bold text-sm">{seatIndex + 1}</span>
       <span className="font-semibold truncate w-full text-center">{participantName}</span>

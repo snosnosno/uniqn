@@ -24,7 +24,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = document.documentElement;
 
     const applyTheme = () => {
-      const shouldBeDark = theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const shouldBeDark =
+        theme === 'dark' ||
+        (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
       if (shouldBeDark) {
         root.classList.add('dark');
@@ -70,11 +72,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     [theme, isDark, setTheme, toggleTheme]
   );
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {

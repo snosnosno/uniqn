@@ -14,10 +14,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Modal from '../ui/Modal';
 import type { SystemAnnouncement } from '../../types';
-import {
-  getPriorityLabel,
-  getPriorityBadgeStyle
-} from '../../types';
+import { getPriorityLabel, getPriorityBadgeStyle } from '../../types';
 
 interface AnnouncementDetailModalProps {
   isOpen: boolean;
@@ -34,7 +31,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
   announcement,
   isAdmin = false,
   onEdit,
-  onDelete
+  onDelete,
 }) => {
   const { t: _t } = useTranslation();
 
@@ -65,12 +62,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
   if (!announcement) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="lg"
-      title="📢 공지사항"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" title="📢 공지사항">
       <div className="space-y-6">
         {/* 헤더 */}
         <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
@@ -78,7 +70,9 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex-1 pr-4">
               {announcement.title}
             </h2>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getPriorityBadgeStyle(announcement.priority)}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getPriorityBadgeStyle(announcement.priority)}`}
+            >
               {getPriorityLabel(announcement.priority)}
             </span>
           </div>

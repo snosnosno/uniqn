@@ -65,7 +65,10 @@ export interface UseTablesReturn {
   maxSeatsSetting: number;
 
   // 테이블 CRUD (11개)
-  updateTableDetails: (tableId: string, data: { name?: string; borderColor?: string }) => Promise<void>;
+  updateTableDetails: (
+    tableId: string,
+    data: { name?: string; borderColor?: string }
+  ) => Promise<void>;
   updateTablePosition: (tableId: string, position: { x: number; y: number }) => Promise<void>;
   updateTableOrder: (tables: Table[]) => Promise<void>;
   openNewTable: () => Promise<void>;

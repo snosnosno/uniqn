@@ -137,8 +137,5 @@ export type SalaryValidation = ValidationState<SalaryErrors>;
 /**
  * SalarySection Props
  */
-export interface SalarySectionProps extends SectionProps<
-  SalaryData,
-  SalaryHandlers,
-  SalaryValidation
-> {}
+export interface SalarySectionProps
+  extends SectionProps<SalaryData, SalaryHandlers, SalaryValidation> {}

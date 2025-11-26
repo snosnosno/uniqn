@@ -33,16 +33,31 @@ class PerformanceMonitor {
         for (const entry of list.getEntries()) {
           if (entry.entryType === 'navigation') {
             const navEntry = entry as PerformanceNavigationTiming;
-            this.recordMetric('페이지 로드 시간', navEntry.loadEventEnd - navEntry.fetchStart, 'ms');
-            this.recordMetric('DOM 콘텐츠 로드', navEntry.domContentLoadedEventEnd - navEntry.fetchStart, 'ms');
-            this.recordMetric('첫 바이트까지 시간 (TTFB)', navEntry.responseStart - navEntry.fetchStart, 'ms');
+            this.recordMetric(
+              '페이지 로드 시간',
+              navEntry.loadEventEnd - navEntry.fetchStart,
+              'ms'
+            );
+            this.recordMetric(
+              'DOM 콘텐츠 로드',
+              navEntry.domContentLoadedEventEnd - navEntry.fetchStart,
+              'ms'
+            );
+            this.recordMetric(
+              '첫 바이트까지 시간 (TTFB)',
+              navEntry.responseStart - navEntry.fetchStart,
+              'ms'
+            );
           }
         }
       });
       navigationObserver.observe({ entryTypes: ['navigation'] });
       this.observers.push(navigationObserver);
     } catch (error) {
-      logger.warn('Navigation timing observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
+      logger.warn('Navigation timing observer 초기화 실패', {
+        component: 'performanceMonitor',
+        data: { error: String(error) },
+      });
     }
 
     // Resource Timing API
@@ -64,7 +79,10 @@ class PerformanceMonitor {
       resourceObserver.observe({ entryTypes: ['resource'] });
       this.observers.push(resourceObserver);
     } catch (error) {
-      logger.warn('Resource timing observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
+      logger.warn('Resource timing observer 초기화 실패', {
+        component: 'performanceMonitor',
+        data: { error: String(error) },
+      });
     }
 
     // Long Task API
@@ -76,15 +94,18 @@ class PerformanceMonitor {
             duration: entry.duration,
             additionalData: {
               startTime: entry.startTime,
-              name: entry.name
-            }
+              name: entry.name,
+            },
           });
         }
       });
       longTaskObserver.observe({ entryTypes: ['longtask'] });
       this.observers.push(longTaskObserver);
     } catch (error) {
-      logger.warn('Long task observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
+      logger.warn('Long task observer 초기화 실패', {
+        component: 'performanceMonitor',
+        data: { error: String(error) },
+      });
     }
   }
 
@@ -94,7 +115,7 @@ class PerformanceMonitor {
       name,
       value,
       unit,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     this.metrics.push(metric);
     // 성능 매트릭은 메모리에만 저장하고 로그 출력하지 않음
@@ -112,7 +133,7 @@ class PerformanceMonitor {
         componentName,
         renderTime,
         renderCount: 1,
-        averageRenderTime: renderTime
+        averageRenderTime: renderTime,
       });
     }
   }
@@ -131,12 +152,12 @@ class PerformanceMonitor {
   analyzeBundleSize(): void {
     if (typeof window !== 'undefined' && 'performance' in window) {
       const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      
+
       let totalJS = 0;
       let totalCSS = 0;
       let totalImages = 0;
 
-      resources.forEach(resource => {
+      resources.forEach((resource) => {
         const size = resource.transferSize || 0;
         if (resource.name.includes('.js')) {
           totalJS += size;
@@ -157,7 +178,7 @@ class PerformanceMonitor {
   measureWebVitals(): void {
     // First Contentful Paint (FCP)
     const paintEntries = performance.getEntriesByType('paint');
-    const fcp = paintEntries.find(entry => entry.name === 'first-contentful-paint');
+    const fcp = paintEntries.find((entry) => entry.name === 'first-contentful-paint');
     if (fcp) {
       this.recordMetric('First Contentful Paint (FCP)', fcp.startTime, 'ms');
     }
@@ -174,7 +195,10 @@ class PerformanceMonitor {
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(lcpObserver);
     } catch (error) {
-      logger.warn('LCP observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
+      logger.warn('LCP observer 초기화 실패', {
+        component: 'performanceMonitor',
+        data: { error: String(error) },
+      });
     }
 
     // Cumulative Layout Shift (CLS)
@@ -191,17 +215,20 @@ class PerformanceMonitor {
       clsObserver.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(clsObserver);
     } catch (error) {
-      logger.warn('CLS observer 초기화 실패', { component: 'performanceMonitor', data: {  error: String(error)  } });
+      logger.warn('CLS observer 초기화 실패', {
+        component: 'performanceMonitor',
+        data: { error: String(error) },
+      });
     }
   }
 
   // 성능 보고서 생성
   generateReport(): string {
     const report = ['=== 성능 측정 보고서 ===\n'];
-    
+
     // 메트릭 그룹화
     const groupedMetrics: { [key: string]: PerformanceMetric[] } = {};
-    this.metrics.forEach(metric => {
+    this.metrics.forEach((metric) => {
       const category = metric.name.split(':')[0] || '기타';
       if (!groupedMetrics[category]) {
         groupedMetrics[category] = [];
@@ -215,7 +242,7 @@ class PerformanceMonitor {
     // 카테고리별 출력
     Object.entries(groupedMetrics).forEach(([category, metrics]) => {
       report.push(`\n### ${category}`);
-      metrics.forEach(metric => {
+      metrics.forEach((metric) => {
         report.push(`- ${metric.name}: ${metric.value.toFixed(2)} ${metric.unit}`);
       });
     });
@@ -223,10 +250,11 @@ class PerformanceMonitor {
     // 컴포넌트 렌더링 통계
     if (this.componentRenders.size > 0) {
       report.push('\n### 컴포넌트 렌더링 성능');
-      const sortedComponents = Array.from(this.componentRenders.values())
-        .sort((a, b) => b.averageRenderTime - a.averageRenderTime);
-      
-      sortedComponents.forEach(comp => {
+      const sortedComponents = Array.from(this.componentRenders.values()).sort(
+        (a, b) => b.averageRenderTime - a.averageRenderTime
+      );
+
+      sortedComponents.forEach((comp) => {
         report.push(
           `- ${comp.componentName}: 평균 ${comp.averageRenderTime.toFixed(2)}ms (${comp.renderCount}회 렌더링)`
         );
@@ -237,13 +265,11 @@ class PerformanceMonitor {
   }
 
   // 콘솔에 보고서 출력
-  logReport(): void {
-
-  }
+  logReport(): void {}
 
   // 정리
   cleanup(): void {
-    this.observers.forEach(observer => observer.disconnect());
+    this.observers.forEach((observer) => observer.disconnect());
     this.observers = [];
     this.metrics = [];
     this.componentRenders.clear();

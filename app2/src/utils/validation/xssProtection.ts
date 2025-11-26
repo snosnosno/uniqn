@@ -24,7 +24,7 @@ const DANGEROUS_PATTERNS = [
   /data:text\/html/gi, // data:text/html URL
   /<iframe/gi, // <iframe> 태그
   /<object/gi, // <object> 태그
-  /<embed/gi // <embed> 태그
+  /<embed/gi, // <embed> 태그
 ];
 
 /**
@@ -48,7 +48,7 @@ export function sanitizeHtml(dirty: string): string {
     ALLOW_UNKNOWN_PROTOCOLS: false, // 알 수 없는 프로토콜 차단
     RETURN_DOM: false, // 문자열 반환
     RETURN_DOM_FRAGMENT: false, // DocumentFragment 반환 안 함
-    RETURN_TRUSTED_TYPE: false // TrustedHTML 반환 안 함
+    RETURN_TRUSTED_TYPE: false, // TrustedHTML 반환 안 함
   });
 }
 
@@ -214,13 +214,14 @@ export function sanitizeJobPostingInput(
   // 배열 필드 정제
   if (Array.isArray(data.requiredRoles)) {
     sanitized.requiredRoles = data.requiredRoles
-      .filter((role): role is { name: string; count: number } =>
-        typeof role === 'object' &&
-        role !== null &&
-        'name' in role &&
-        'count' in role &&
-        typeof role.name === 'string' &&
-        typeof role.count === 'number'
+      .filter(
+        (role): role is { name: string; count: number } =>
+          typeof role === 'object' &&
+          role !== null &&
+          'name' in role &&
+          'count' in role &&
+          typeof role.name === 'string' &&
+          typeof role.count === 'number'
       )
       .map((role) => ({
         name: sanitizeHtml(role.name),

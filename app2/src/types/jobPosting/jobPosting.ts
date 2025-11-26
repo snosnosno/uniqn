@@ -1,10 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import {
-  DateSpecificRequirement,
-  PreQuestion,
-  Benefits,
-  ConfirmedStaff
-} from './base';
+import { DateSpecificRequirement, PreQuestion, Benefits, ConfirmedStaff } from './base';
 
 /**
  * 공고 타입 (4가지)
@@ -15,10 +10,10 @@ export type PostingType = 'regular' | 'fixed' | 'tournament' | 'urgent';
  * 고정 공고 설정
  */
 export interface FixedConfig {
-  durationDays: 7 | 30 | 90;        // 노출 기간
-  chipCost: 3 | 5 | 10;             // 칩 비용 (기간에 따라)
-  expiresAt: Timestamp;             // 만료일
-  createdAt: Timestamp;             // 생성일
+  durationDays: 7 | 30 | 90; // 노출 기간
+  chipCost: 3 | 5 | 10; // 칩 비용 (기간에 따라)
+  expiresAt: Timestamp; // 만료일
+  createdAt: Timestamp; // 생성일
 }
 
 /**
@@ -100,22 +95,22 @@ export interface FixedJobPostingData {
  */
 export interface TournamentConfig {
   approvalStatus: 'pending' | 'approved' | 'rejected'; // 승인 상태
-  approvedBy?: string;              // 승인자 userId (admin)
-  approvedAt?: Timestamp;           // 승인일
-  rejectedBy?: string;              // 거부자 userId (admin)
-  rejectedAt?: Timestamp;           // 거부일
-  rejectionReason?: string;         // 거부 사유 (최소 10자)
-  resubmittedAt?: Timestamp;        // 재신청일 (거부 후)
-  submittedAt: Timestamp;           // 최초 제출일
+  approvedBy?: string; // 승인자 userId (admin)
+  approvedAt?: Timestamp; // 승인일
+  rejectedBy?: string; // 거부자 userId (admin)
+  rejectedAt?: Timestamp; // 거부일
+  rejectionReason?: string; // 거부 사유 (최소 10자)
+  resubmittedAt?: Timestamp; // 재신청일 (거부 후)
+  submittedAt: Timestamp; // 최초 제출일
 }
 
 /**
  * 긴급 공고 설정
  */
 export interface UrgentConfig {
-  chipCost: 5;                      // 고정 5칩
-  createdAt: Timestamp;             // 생성일
-  priority: 'high';                 // 우선순위 (향후 확장 대비)
+  chipCost: 5; // 고정 5칩
+  createdAt: Timestamp; // 생성일
+  priority: 'high'; // 우선순위 (향후 확장 대비)
 }
 
 /**
@@ -131,47 +126,51 @@ export interface JobPostingFormData {
   description: string;
   location: string;
   detailedAddress?: string;
-  district?: string;       // 시/군/구
-  contactPhone?: string;   // 문의 연락처
+  district?: string; // 시/군/구
+  contactPhone?: string; // 문의 연락처
   // startDate와 endDate 제거 - dateSpecificRequirements로 대체
   status: 'open' | 'closed';
   dateSpecificRequirements: DateSpecificRequirement[];
   preQuestions?: PreQuestion[];
-  usesPreQuestions?: boolean;  // 사전질문 사용 여부
+  usesPreQuestions?: boolean; // 사전질문 사용 여부
   requiredRoles?: string[];
   salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'; // 급여 유형 (협의 추가)
-  salaryAmount?: string;    // 급여 금액
-  benefits?: Benefits;       // 복리후생 정보
-  useRoleSalary?: boolean;  // 역할별 급여 사용 여부
-  roleSalaries?: {          // 역할별 급여 정보
+  salaryAmount?: string; // 급여 금액
+  benefits?: Benefits; // 복리후생 정보
+  useRoleSalary?: boolean; // 역할별 급여 사용 여부
+  roleSalaries?: {
+    // 역할별 급여 정보
     [role: string]: {
       salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
       salaryAmount: string;
-      customRoleName?: string;  // 기타 선택 시 직접 입력한 역할명
-    }
+      customRoleName?: string; // 기타 선택 시 직접 입력한 역할명
+    };
   };
-  taxSettings?: {           // 세금 설정
-    enabled: boolean;       // 세금 적용 여부
-    taxRate?: number;       // 세율 (%) - 비율 기반 계산
-    taxAmount?: number;     // 고정 세금 - 고정 금액 계산
+  taxSettings?: {
+    // 세금 설정
+    enabled: boolean; // 세금 적용 여부
+    taxRate?: number; // 세율 (%) - 비율 기반 계산
+    taxAmount?: number; // 고정 세금 - 고정 금액 계산
   };
 
   // ========== 새 필드 (확장) ==========
-  postingType: PostingType;         // 공고 타입 (필수)
-  fixedConfig?: FixedConfig;        // 고정 공고 설정
+  postingType: PostingType; // 공고 타입 (필수)
+  fixedConfig?: FixedConfig; // 고정 공고 설정
   tournamentConfig?: TournamentConfig; // 대회 공고 설정
-  urgentConfig?: UrgentConfig;      // 긴급 공고 설정
+  urgentConfig?: UrgentConfig; // 긴급 공고 설정
 
   // ========== 고정공고 근무일정 섹션 필드 ==========
-  workSchedule?: {                  // 근무 일정 (고정공고용)
-    daysPerWeek: number;            // 주 출근일수 (1-7)
-    startTime: string;              // 시작시간 (HH:mm)
-    endTime: string;                // 종료시간 (HH:mm)
+  workSchedule?: {
+    // 근무 일정 (고정공고용)
+    daysPerWeek: number; // 주 출근일수 (1-7)
+    startTime: string; // 시작시간 (HH:mm)
+    endTime: string; // 종료시간 (HH:mm)
   };
-  requiredRolesWithCount?: Array<{  // 역할별 필요 인원 (고정공고용)
-    id: string;                     // React key용 고유 ID
-    role: string;                   // 역할명 (딜러, 플로어, 칩러너, 서빙, 기타)
-    count: number;                  // 필요 인원수
+  requiredRolesWithCount?: Array<{
+    // 역할별 필요 인원 (고정공고용)
+    id: string; // React key용 고유 ID
+    role: string; // 역할명 (딜러, 플로어, 칩러너, 서빙, 기타)
+    count: number; // 필요 인원수
   }>;
 }
 
@@ -190,7 +189,7 @@ export interface JobPosting {
   location: string;
   district?: string;
   detailedAddress?: string;
-  contactPhone?: string;  // 문의 연락처
+  contactPhone?: string; // 문의 연락처
   // startDate와 endDate 제거 - dateSpecificRequirements로 대체
   dateSpecificRequirements: DateSpecificRequirement[];
   requiredRoles?: string[];
@@ -205,7 +204,7 @@ export interface JobPosting {
    * 하위 호환성을 위해 유지되지만 향후 버전에서 제거될 예정입니다.
    */
   recruitmentType?: 'application' | 'fixed';
-  usesPreQuestions?: boolean;  // 사전질문 사용 여부
+  usesPreQuestions?: boolean; // 사전질문 사용 여부
   preQuestions?: PreQuestion[];
 
   // 변경 사유 기록
@@ -227,34 +226,35 @@ export interface JobPosting {
       salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
       salaryAmount: string;
       customRoleName?: string;
-    }
+    };
   };
 
   // 세금 설정
   taxSettings?: {
-    enabled: boolean;      // 세금 적용 여부
-    taxRate?: number;      // 세율 (%) - 비율 기반 계산
-    taxAmount?: number;    // 고정 세금 - 고정 금액 계산
+    enabled: boolean; // 세금 적용 여부
+    taxRate?: number; // 세율 (%) - 비율 기반 계산
+    taxAmount?: number; // 고정 세금 - 고정 금액 계산
   };
 
   // 자동 관리 기능 플래그
   autoManageStatus?: boolean; // 자동 상태 관리 활성화 여부
 
   // ========== 새 필드 (확장) ==========
-  postingType: PostingType;             // 공고 타입 (필수)
-  fixedConfig?: FixedConfig;            // 고정 공고 설정 (postingType === 'fixed'일 때)
-  tournamentConfig?: TournamentConfig;  // 대회 공고 설정 (postingType === 'tournament'일 때)
-  urgentConfig?: UrgentConfig;          // 긴급 공고 설정 (postingType === 'urgent'일 때)
-  chipCost?: number;                    // 칩 비용 (fixed/urgent 타입)
-  isChipDeducted: boolean;              // 칩 차감 여부 (기본값: false)
+  postingType: PostingType; // 공고 타입 (필수)
+  fixedConfig?: FixedConfig; // 고정 공고 설정 (postingType === 'fixed'일 때)
+  tournamentConfig?: TournamentConfig; // 대회 공고 설정 (postingType === 'tournament'일 때)
+  urgentConfig?: UrgentConfig; // 긴급 공고 설정 (postingType === 'urgent'일 때)
+  chipCost?: number; // 칩 비용 (fixed/urgent 타입)
+  isChipDeducted: boolean; // 칩 차감 여부 (기본값: false)
 
   // ========== 고정공고 근무일정 필드 ==========
-  workSchedule?: WorkSchedule;          // 근무 일정 (고정공고용)
-  requiredRolesWithCount?: Array<{      // 역할별 필요 인원 (고정공고용)
-    id?: string;                        // React key용 고유 ID (폼에서만 사용)
-    role?: string;                      // 역할명 (폼 호환)
-    name?: string;                      // 역할명 (RoleWithCount 호환)
-    count: number;                      // 필요 인원수
+  workSchedule?: WorkSchedule; // 근무 일정 (고정공고용)
+  requiredRolesWithCount?: Array<{
+    // 역할별 필요 인원 (고정공고용)
+    id?: string; // React key용 고유 ID (폼에서만 사용)
+    role?: string; // 역할명 (폼 호환)
+    name?: string; // 역할명 (RoleWithCount 호환)
+    count: number; // 필요 인원수
   }>;
 }
 

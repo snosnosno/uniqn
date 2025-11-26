@@ -49,10 +49,10 @@ export const getStorageRefLazy = async (path: string) => {
 export const uploadFileLazy = async (file: File, path: string) => {
   const storage = await getStorageLazy();
   const storageRef = storageModule.ref(storage, path);
-  
+
   // 업로드 진행
   const uploadTask = storageModule.uploadBytesResumable(storageRef, file);
-  
+
   return new Promise((resolve, reject) => {
     uploadTask.on(
       'state_changed',
@@ -60,7 +60,9 @@ export const uploadFileLazy = async (file: File, path: string) => {
         // 진행률 추적 (UI 업데이트 시 활용 가능)
       },
       (error: any) => {
-        logger.error('❌ 업로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
+        logger.error('❌ 업로드 오류:', error instanceof Error ? error : new Error(String(error)), {
+          component: 'firebase-dynamic',
+        });
         reject(error);
       },
       async () => {
@@ -109,7 +111,11 @@ export const callFunctionLazy = async (functionName: string, data?: any) => {
     const result = await callable(data);
     return result.data;
   } catch (error) {
-    logger.error(`❌ Cloud Function 호출 실패: ${functionName}`, error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
+    logger.error(
+      `❌ Cloud Function 호출 실패: ${functionName}`,
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'firebase-dynamic' }
+    );
     throw error;
   }
 };
@@ -122,15 +128,19 @@ export const getDownloadURLLazy = async (path: string) => {
   if (!storageModule) {
     await getStorageLazy();
   }
-  
+
   const storage = storageModule.getStorage();
   const storageRef = storageModule.ref(storage, path);
-  
+
   try {
     const url = await storageModule.getDownloadURL(storageRef);
     return url;
   } catch (error) {
-    logger.error('다운로드 URL 가져오기 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
+    logger.error(
+      '다운로드 URL 가져오기 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'firebase-dynamic' }
+    );
     throw error;
   }
 };
@@ -143,14 +153,16 @@ export const deleteFileLazy = async (path: string) => {
   if (!storageModule) {
     await getStorageLazy();
   }
-  
+
   const storage = storageModule.getStorage();
   const storageRef = storageModule.ref(storage, path);
-  
+
   try {
     await storageModule.deleteObject(storageRef);
   } catch (error) {
-    logger.error('파일 삭제 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase-dynamic' });
+    logger.error('파일 삭제 실패:', error instanceof Error ? error : new Error(String(error)), {
+      component: 'firebase-dynamic',
+    });
     throw error;
   }
 };
@@ -161,7 +173,7 @@ export const deleteFileLazy = async (path: string) => {
 export const getLoadStatus = () => {
   return {
     storage: storageModule !== null,
-    functions: functionsModule !== null
+    functions: functionsModule !== null,
   };
 };
 

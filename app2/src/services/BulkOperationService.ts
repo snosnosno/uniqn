@@ -3,16 +3,12 @@ import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { createWorkLogId, createWorkLog, SimpleWorkLogInput } from '../utils/workLogSimplified';
 import { toISODateString } from '../utils/dateUtils';
-import {
-  handleFirebaseError,
-  isPermissionDenied,
-  FirebaseError,
-} from '../utils/firebaseErrors';
+import { handleFirebaseError, isPermissionDenied, FirebaseError } from '../utils/firebaseErrors';
 
 interface StaffInfo {
   id: string;
   name: string;
-  role?: string;  // 역할 추가
+  role?: string; // 역할 추가
   assignedDate?: string;
   workLogId?: string;
 }
@@ -43,11 +39,12 @@ export class BulkOperationService {
       for (const staff of staffList) {
         try {
           const dateString = staff.assignedDate || toISODateString(new Date()) || '';
-          const workLogId = staff.workLogId || createWorkLogId(eventId, staff.id, dateString as string);
+          const workLogId =
+            staff.workLogId || createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 
           const updateData: any = {
-            updatedAt: now
+            updatedAt: now,
           };
 
           if (startTime) {
@@ -70,16 +67,16 @@ export class BulkOperationService {
               const endStr = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
               timeSlot = `${startStr}-${endStr}`;
             }
-            
+
             const workLogInput: SimpleWorkLogInput = {
               eventId,
               staffId: staff.id,
               staffName: staff.name,
               role: staff.role || '',
               date: dateString as string,
-              timeSlot
+              timeSlot,
             };
-            
+
             const newWorkLogData = createWorkLog(workLogInput);
             batch.set(workLogRef, newWorkLogData);
           } else {
@@ -90,12 +87,16 @@ export class BulkOperationService {
         } catch (error) {
           errors.push({
             staffId: staff.id,
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           });
-          logger.error('스태프 시간 업데이트 실패', error instanceof Error ? error : new Error(String(error)), {
-            component: 'BulkOperationService',
-            data: { staffId: staff.id }
-          });
+          logger.error(
+            '스태프 시간 업데이트 실패',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              component: 'BulkOperationService',
+              data: { staffId: staff.id },
+            }
+          );
         }
       }
 
@@ -105,15 +106,17 @@ export class BulkOperationService {
         success: errors.length === 0,
         successCount,
         errorCount: errors.length,
-        errors
+        errors,
       };
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        const permissionError = new Error('일괄 시간 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        const permissionError = new Error(
+          '일괄 시간 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.'
+        );
         logger.error('일괄 시간 수정 권한 거부', permissionError, {
           component: 'BulkOperationService',
-          data: { staffCount: staffList.length, eventId }
+          data: { staffCount: staffList.length, eventId },
         });
         throw permissionError;
       }
@@ -155,7 +158,7 @@ export class BulkOperationService {
 
           const updateData: any = {
             status,
-            updatedAt: now
+            updatedAt: now,
           };
 
           // workLog가 없는 경우 새로 생성
@@ -166,9 +169,9 @@ export class BulkOperationService {
               staffName: staff.name,
               role: staff.role || '',
               date: dateString as string,
-              status: status as 'not_started' | 'checked_in' | 'completed' | 'absent'
+              status: status as 'not_started' | 'checked_in' | 'completed' | 'absent',
             };
-            
+
             const newWorkLogData = createWorkLog(workLogInput);
             batch.set(workLogRef, newWorkLogData);
           } else {
@@ -179,12 +182,16 @@ export class BulkOperationService {
         } catch (error) {
           errors.push({
             staffId: staff.id,
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           });
-          logger.error('스태프 상태 업데이트 실패', error instanceof Error ? error : new Error(String(error)), {
-            component: 'BulkOperationService',
-            data: { staffId: staff.id }
-          });
+          logger.error(
+            '스태프 상태 업데이트 실패',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              component: 'BulkOperationService',
+              data: { staffId: staff.id },
+            }
+          );
         }
       }
 
@@ -194,15 +201,17 @@ export class BulkOperationService {
         success: errors.length === 0,
         successCount,
         errorCount: errors.length,
-        errors
+        errors,
       };
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        const permissionError = new Error('일괄 상태 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        const permissionError = new Error(
+          '일괄 상태 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.'
+        );
         logger.error('일괄 상태 수정 권한 거부', permissionError, {
           component: 'BulkOperationService',
-          data: { staffCount: staffList.length, eventId, status }
+          data: { staffCount: staffList.length, eventId, status },
         });
         throw permissionError;
       }
@@ -233,7 +242,7 @@ export class BulkOperationService {
   ): { type: 'success' | 'error'; message: string } {
     if (result.errorCount === 0) {
       let message = `✅ ${result.successCount}명의 `;
-      
+
       if (operationType === 'time') {
         message += '근무 시간이 성공적으로 수정되었습니다.';
         if (details?.startTime || details?.endTime) {
@@ -246,12 +255,12 @@ export class BulkOperationService {
         const statusMap: Record<string, string> = {
           not_started: '출근 전',
           checked_in: '출근',
-          checked_out: '퇴근'
+          checked_out: '퇴근',
         };
         const statusText = statusMap[details?.status || ''] || details?.status;
         message += `출석 상태가 "${statusText}"(으)로 변경되었습니다.`;
       }
-      
+
       return { type: 'success', message };
     } else {
       const message = `⚠️ 일부 업데이트 실패\n성공: ${result.successCount}명 / 실패: ${result.errorCount}명`;

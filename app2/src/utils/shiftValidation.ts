@@ -89,11 +89,11 @@ export const validateTableConflicts = (
 ): ValidationViolation[] => {
   const violations: ValidationViolation[] = [];
 
-  timeSlots.forEach(timeSlot => {
+  timeSlots.forEach((timeSlot) => {
     const tableAssignments: { [tableId: string]: string[] } = {};
 
     // 같은 시간대에 배정된 테이블들 수집
-    dealers.forEach(dealer => {
+    dealers.forEach((dealer) => {
       const assignment = dealer.assignments[timeSlot];
       if (assignment && assignment.startsWith('T')) {
         if (!tableAssignments[assignment]) {
@@ -109,14 +109,14 @@ export const validateTableConflicts = (
     // 중복 배정 검사
     Object.entries(tableAssignments).forEach(([tableId, staffIds]) => {
       if (staffIds.length > 1) {
-        staffIds.forEach(staffId => {
+        staffIds.forEach((staffId) => {
           violations.push({
             type: 'table_conflict',
             severity: 'error',
             message: `${timeSlot}에 ${tableId} 테이블이 중복 배정되었습니다 (${staffIds.length}명 배정됨)`,
             staffId,
             timeSlot,
-            suggestedFix: `다른 테이블로 변경하거나 대기/휴식 상태로 변경하세요`
+            suggestedFix: `다른 테이블로 변경하거나 대기/휴식 상태로 변경하세요`,
           });
         });
       }
@@ -139,10 +139,10 @@ export const validateContinuousWork = (
   settings: ValidationSettings
 ): ValidationViolation[] => {
   const violations: ValidationViolation[] = [];
-  
+
   // 시간 순으로 정렬된 슬롯들
   const sortedSlots = [...timeSlots].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
-  
+
   let continuousStart: string | null = null;
   let continuousMinutes = 0;
 
@@ -155,7 +155,7 @@ export const validateContinuousWork = (
         continuousStart = timeSlot;
         continuousMinutes = 0;
       }
-      
+
       // 다음 시간 슬롯과의 간격 계산
       if (index < sortedSlots.length - 1) {
         const nextTimeSlot = sortedSlots[index + 1];
@@ -173,7 +173,7 @@ export const validateContinuousWork = (
           message: `${continuousStart}부터 ${timeSlot}까지 ${Math.round(continuousMinutes / 60)}시간 연속 근무입니다 (제한: ${settings.maxContinuousHours}시간)`,
           staffId: dealer.id,
           timeSlot: continuousStart,
-          suggestedFix: `중간에 휴식 시간을 추가하세요`
+          suggestedFix: `중간에 휴식 시간을 추가하세요`,
         });
       }
       continuousStart = null;
@@ -197,19 +197,19 @@ export const validateRestTime = (
   settings: ValidationSettings
 ): ValidationViolation[] => {
   const violations: ValidationViolation[] = [];
-  
+
   const sortedSlots = [...timeSlots].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
-  
+
   let lastWorkTime: string | null = null;
 
-  sortedSlots.forEach(timeSlot => {
+  sortedSlots.forEach((timeSlot) => {
     const assignment = dealer.assignments[timeSlot];
     const isWorking = assignment && assignment !== '대기' && assignment !== '휴식';
 
     if (isWorking) {
       if (lastWorkTime !== null) {
         const restMinutes = getTimeSlotDifference(lastWorkTime, timeSlot);
-        
+
         if (restMinutes > 0 && restMinutes < settings.minRestMinutes) {
           violations.push({
             type: 'insufficient_rest',
@@ -217,7 +217,7 @@ export const validateRestTime = (
             message: `${lastWorkTime}과 ${timeSlot} 사이 휴식 시간이 부족합니다 (${restMinutes}분, 최소: ${settings.minRestMinutes}분)`,
             staffId: dealer.id,
             timeSlot,
-            suggestedFix: `중간에 충분한 휴식 시간을 추가하세요`
+            suggestedFix: `중간에 충분한 휴식 시간을 추가하세요`,
           });
         }
       }
@@ -239,26 +239,27 @@ export const validateScheduleGaps = (
   timeSlots: string[]
 ): ValidationViolation[] => {
   const violations: ValidationViolation[] = [];
-  
+
   const sortedSlots = [...timeSlots].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
-  
+
   let hasAssignment = false;
   let gapStart: string | null = null;
 
-  sortedSlots.forEach(timeSlot => {
+  sortedSlots.forEach((timeSlot) => {
     const assignment = dealer.assignments[timeSlot];
-    
+
     if (assignment) {
       hasAssignment = true;
       if (gapStart !== null) {
         const gapMinutes = getTimeSlotDifference(gapStart, timeSlot);
-        if (gapMinutes > 120) { // 2시간 이상 공백
+        if (gapMinutes > 120) {
+          // 2시간 이상 공백
           violations.push({
             type: 'schedule_gap',
             severity: 'info',
             message: `${gapStart}과 ${timeSlot} 사이에 ${Math.round(gapMinutes / 60)}시간 공백이 있습니다`,
             staffId: dealer.id,
-            timeSlot: gapStart
+            timeSlot: gapStart,
           });
         }
         gapStart = null;
@@ -292,7 +293,7 @@ export const validateSchedule = (
   }
 
   // 각 딜러별 검증
-  dealers.forEach(dealer => {
+  dealers.forEach((dealer) => {
     violations.push(...validateContinuousWork(dealer, timeSlots, settings));
     violations.push(...validateRestTime(dealer, timeSlots, settings));
     violations.push(...validateScheduleGaps(dealer, timeSlots));
@@ -302,27 +303,29 @@ export const validateSchedule = (
   if (violations.length === 0) {
     suggestions.push('스케줄이 모든 규칙을 준수합니다');
   } else {
-    const errorCount = violations.filter(v => v.severity === 'error').length;
-    const warningCount = violations.filter(v => v.severity === 'warning').length;
-    
+    const errorCount = violations.filter((v) => v.severity === 'error').length;
+    const warningCount = violations.filter((v) => v.severity === 'warning').length;
+
     if (errorCount > 0) {
       suggestions.push(`${errorCount}개의 오류를 수정해야 합니다`);
     }
     if (warningCount > 0) {
       suggestions.push(`${warningCount}개의 경고를 검토하세요`);
     }
-    
+
     // 자동 수정 제안
-    const tableConflicts = violations.filter(v => v.type === 'table_conflict');
+    const tableConflicts = violations.filter((v) => v.type === 'table_conflict');
     if (tableConflicts.length > 0) {
-      suggestions.push('테이블 중복 배정을 해결하기 위해 일부 딜러를 다른 테이블이나 휴식으로 변경하세요');
+      suggestions.push(
+        '테이블 중복 배정을 해결하기 위해 일부 딜러를 다른 테이블이나 휴식으로 변경하세요'
+      );
     }
   }
 
   return {
-    isValid: violations.filter(v => v.severity === 'error').length === 0,
+    isValid: violations.filter((v) => v.severity === 'error').length === 0,
     violations,
-    suggestions
+    suggestions,
   };
 };
 
@@ -335,7 +338,7 @@ const shiftValidationUtils = {
   timeToMinutes,
   minutesToTime,
   getTimeSlotDifference,
-  DEFAULT_VALIDATION_SETTINGS
+  DEFAULT_VALIDATION_SETTINGS,
 };
 
 export default shiftValidationUtils;

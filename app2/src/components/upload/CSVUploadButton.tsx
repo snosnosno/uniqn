@@ -27,7 +27,7 @@ const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled 
     } catch (error) {
       logger.error('파일 읽기 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'CSVUploadButton',
-        data: { fileName: file.name }
+        data: { fileName: file.name },
       });
       toast.error('파일을 읽는 중 오류가 발생했습니다.');
     }

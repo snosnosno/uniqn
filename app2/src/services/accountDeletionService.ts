@@ -23,11 +23,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updateProfile,
-} from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updateProfile } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { logger } from '../utils/logger';
 import {
@@ -144,9 +140,7 @@ export const requestAccountDeletion = async (
 /**
  * 계정 삭제 요청 조회
  */
-export const getDeletionRequest = async (
-  userId: string
-): Promise<DeletionRequest | null> => {
+export const getDeletionRequest = async (userId: string): Promise<DeletionRequest | null> => {
   try {
     // 해당 사용자의 pending 상태 삭제 요청 조회
     const deletionQuery = query(
@@ -194,9 +188,7 @@ export const getDeletionRequest = async (
 /**
  * 계정 삭제 요청 취소
  */
-export const cancelDeletionRequest = async (
-  input: DeletionCancellationInput
-): Promise<void> => {
+export const cancelDeletionRequest = async (input: DeletionCancellationInput): Promise<void> => {
   try {
     const deletionRef = doc(db, 'deletionRequests', input.requestId);
     const snapshot = await getDoc(deletionRef);

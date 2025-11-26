@@ -43,8 +43,8 @@ const getRoleFromJobPosting = (
     }
 
     // 해당 시간대의 TimeSlot 찾기
-    const timeSlotObj = dateReq.timeSlots.find((ts: TimeSlot) =>
-      ts.time === timeSlot || (ts.isTimeToBeAnnounced && timeSlot === '미정')
+    const timeSlotObj = dateReq.timeSlots.find(
+      (ts: TimeSlot) => ts.time === timeSlot || (ts.isTimeToBeAnnounced && timeSlot === '미정')
     );
 
     if (!timeSlotObj?.roles || timeSlotObj.roles.length === 0) {
@@ -60,16 +60,20 @@ const getRoleFromJobPosting = (
         data: {
           date: normalizedDate,
           timeSlot,
-          foundRole: role
-        }
+          foundRole: role,
+        },
       });
       return role;
     }
   } catch (error) {
-    logger.error('❌ 구인공고 역할 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'getRoleFromJobPosting',
-      data: { timeSlot, date }
-    });
+    logger.error(
+      '❌ 구인공고 역할 정보 조회 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'getRoleFromJobPosting',
+        data: { timeSlot, date },
+      }
+    );
   }
 
   return undefined;
@@ -93,10 +97,14 @@ export const convertDateToString = (rawDate: any): string => {
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     } catch (error) {
-      logger.error('❌ Timestamp 변환 오류:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'applicantTransform',
-        data: { rawDate }
-      });
+      logger.error(
+        '❌ Timestamp 변환 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'applicantTransform',
+          data: { rawDate },
+        }
+      );
       return '';
     }
   } else if (rawDate.seconds) {
@@ -108,10 +116,14 @@ export const convertDateToString = (rawDate: any): string => {
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     } catch (error) {
-      logger.error('❌ seconds 변환 오류:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'applicantTransform',
-        data: { rawDate }
-      });
+      logger.error(
+        '❌ seconds 변환 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'applicantTransform',
+          data: { rawDate },
+        }
+      );
       return '';
     }
   } else if (rawDate instanceof Date) {
@@ -122,10 +134,14 @@ export const convertDateToString = (rawDate: any): string => {
       const day = String(rawDate.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     } catch (error) {
-      logger.error('❌ Date 변환 오류:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'applicantTransform',
-        data: { rawDate }
-      });
+      logger.error(
+        '❌ Date 변환 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'applicantTransform',
+          data: { rawDate },
+        }
+      );
       return '';
     }
   } else {
@@ -138,10 +154,14 @@ export const convertDateToString = (rawDate: any): string => {
       }
       return '';
     } catch (error) {
-      logger.error('❌ 날짜 변환 오류:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'applicantTransform',
-        data: { rawDate }
-      });
+      logger.error(
+        '❌ 날짜 변환 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'applicantTransform',
+          data: { rawDate },
+        }
+      );
       return '';
     }
   }
@@ -171,7 +191,7 @@ export const formatDateDisplay = (dateStr: string): string => {
   } catch (error) {
     logger.error('날짜 포맷팅 오류:', error instanceof Error ? error : new Error(String(error)), {
       component: 'applicantTransform',
-      data: { dateStr }
+      data: { dateStr },
     });
     return dateStr;
   }
@@ -183,16 +203,27 @@ export const formatDateDisplay = (dateStr: string): string => {
  * @param jobPosting 구인공고 (역할 정보 복원용)
  * @returns Selection 배열
  */
-export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPosting): Selection[] => {
+export const getApplicantSelections = (
+  applicant: Applicant,
+  jobPosting?: JobPosting
+): Selection[] => {
   // 🚀 최우선: dateAssignments 사용 (최신 버전)
-  if (applicant.dateAssignments && Array.isArray(applicant.dateAssignments) && applicant.dateAssignments.length > 0) {
+  if (
+    applicant.dateAssignments &&
+    Array.isArray(applicant.dateAssignments) &&
+    applicant.dateAssignments.length > 0
+  ) {
     const selections = applicant.dateAssignments.flatMap((dateAssignment) => {
       return dateAssignment.selections.map((selection) => {
         let effectiveRole = selection.role || '';
 
         // 역할 정보 복원
         if (!effectiveRole && jobPosting && selection.timeSlot && dateAssignment.date) {
-          const recoveredRole = getRoleFromJobPosting(jobPosting, selection.timeSlot, dateAssignment.date);
+          const recoveredRole = getRoleFromJobPosting(
+            jobPosting,
+            selection.timeSlot,
+            dateAssignment.date
+          );
           if (recoveredRole) {
             effectiveRole = recoveredRole;
           }
@@ -214,26 +245,46 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
   }
 
   // 🔥 우선순위 1: assignments 사용
-  if (applicant.assignments && Array.isArray(applicant.assignments) && applicant.assignments.length > 0) {
+  if (
+    applicant.assignments &&
+    Array.isArray(applicant.assignments) &&
+    applicant.assignments.length > 0
+  ) {
     const selections: Selection[] = [];
 
     applicant.assignments.forEach((assignment, index) => {
       let effectiveRole = '';
 
       // 역할 결정 로직
-      if (assignment.checkMethod === 'group' && assignment.roles && Array.isArray(assignment.roles) && assignment.roles.length > 0) {
+      if (
+        assignment.checkMethod === 'group' &&
+        assignment.roles &&
+        Array.isArray(assignment.roles) &&
+        assignment.roles.length > 0
+      ) {
         effectiveRole = assignment.roles[0] || '';
       } else if (assignment.role) {
         effectiveRole = assignment.role;
-      } else if (jobPosting && assignment.timeSlot && assignment.dates && assignment.dates.length > 0 && assignment.dates[0]) {
-        const recoveredRole = getRoleFromJobPosting(jobPosting, assignment.timeSlot, assignment.dates[0]);
+      } else if (
+        jobPosting &&
+        assignment.timeSlot &&
+        assignment.dates &&
+        assignment.dates.length > 0 &&
+        assignment.dates[0]
+      ) {
+        const recoveredRole = getRoleFromJobPosting(
+          jobPosting,
+          assignment.timeSlot,
+          assignment.dates[0]
+        );
         if (recoveredRole) {
           effectiveRole = recoveredRole;
         }
       }
 
-      const isGroupSelection = assignment.checkMethod === 'group' ||
-                              (assignment.isGrouped && assignment.dates && assignment.dates.length > 1);
+      const isGroupSelection =
+        assignment.checkMethod === 'group' ||
+        (assignment.isGrouped && assignment.dates && assignment.dates.length > 1);
 
       if (isGroupSelection && assignment.dates && assignment.dates.length >= 1) {
         // 그룹 선택
@@ -251,8 +302,8 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
               ...(assignment.duration && {
                 duration: {
                   type: assignment.duration.type,
-                  endDate: assignment.duration.endDate
-                }
+                  endDate: assignment.duration.endDate,
+                },
               }),
             });
           });
@@ -268,8 +319,8 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
             ...(assignment.duration && {
               duration: {
                 type: assignment.duration.type,
-                endDate: assignment.duration.endDate
-              }
+                endDate: assignment.duration.endDate,
+              },
             }),
           });
         }
@@ -288,8 +339,8 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
               ...(assignment.duration && {
                 duration: {
                   type: assignment.duration.type,
-                  endDate: assignment.duration.endDate
-                }
+                  endDate: assignment.duration.endDate,
+                },
               }),
             });
           });
@@ -305,8 +356,8 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
             ...(assignment.duration && {
               duration: {
                 type: assignment.duration.type,
-                endDate: assignment.duration.endDate
-              }
+                endDate: assignment.duration.endDate,
+              },
             }),
           });
         }
@@ -317,10 +368,14 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
   }
 
   // 🔧 Fallback: assignedGroups 사용
-  if (applicant.assignedGroups && Array.isArray(applicant.assignedGroups) && applicant.assignedGroups.length > 0) {
+  if (
+    applicant.assignedGroups &&
+    Array.isArray(applicant.assignedGroups) &&
+    applicant.assignedGroups.length > 0
+  ) {
     const selections: Selection[] = [];
 
-    applicant.assignedGroups.forEach(group => {
+    applicant.assignedGroups.forEach((group) => {
       const firstDate = group.dates && group.dates.length > 0 ? group.dates[0] : null;
 
       selections.push({
@@ -331,7 +386,7 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
         checkMethod: group.checkMethod || 'individual',
         isGrouped: group.dates && group.dates.length > 1,
         ...(group.groupId && { groupId: group.groupId }),
-        ...(group.duration && { duration: group.duration })
+        ...(group.duration && { duration: group.duration }),
       });
     });
 
@@ -343,7 +398,7 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
     try {
       const confirmed = ApplicationHistoryService.getConfirmedSelections(applicant as any);
       // Assignment[]를 Selection[]로 변환
-      return confirmed.map(assignment => ({
+      return confirmed.map((assignment) => ({
         role: assignment.role || '',
         time: assignment.timeSlot || '',
         date: assignment.dates?.[0] || '',
@@ -351,12 +406,12 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
         checkMethod: assignment.checkMethod || 'individual',
         ...(assignment.groupId && { groupId: assignment.groupId }),
         isGrouped: assignment.isGrouped || false,
-        ...(assignment.duration && { duration: assignment.duration })
+        ...(assignment.duration && { duration: assignment.duration }),
       }));
     } catch (error) {
       logger.warn('⚠️ 확정된 선택사항 조회 실패:', {
         component: 'applicantTransform',
-        data: { error: error instanceof Error ? error.message : String(error) }
+        data: { error: error instanceof Error ? error.message : String(error) },
       });
       return [];
     }
@@ -365,9 +420,9 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
   // ApplicationHistory 서비스 사용
   try {
     const originalData = ApplicationHistoryService.getOriginalApplicationData(applicant as any);
-    const roles = originalData.map(assignment => assignment.role).filter(Boolean);
-    const times = originalData.map(assignment => assignment.timeSlot).filter(Boolean);
-    const dates = originalData.flatMap(assignment => assignment.dates || []).filter(Boolean);
+    const roles = originalData.map((assignment) => assignment.role).filter(Boolean);
+    const times = originalData.map((assignment) => assignment.timeSlot).filter(Boolean);
+    const dates = originalData.flatMap((assignment) => assignment.dates || []).filter(Boolean);
 
     if (roles.length > 0 || times.length > 0 || dates.length > 0) {
       const selections = [];
@@ -383,7 +438,7 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
           role: roleValue,
           time: timeValue,
           date: dateValue,
-          ...(duration && { duration })
+          ...(duration && { duration }),
         });
       }
 
@@ -392,15 +447,17 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
   } catch (error) {
     logger.warn('⚠️ ApplicationHistory 원본 데이터 접근 실패:', {
       component: 'applicantTransform',
-      data: { error: error instanceof Error ? error.message : String(error) }
+      data: { error: error instanceof Error ? error.message : String(error) },
     });
   }
 
   // 레거시 배열 데이터
-  const hasMultiple = !!(applicant.assignedRoles?.length ||
-                         applicant.assignedTimes?.length ||
-                         applicant.assignedDates?.length ||
-                         (applicant.assignments && applicant.assignments.length > 1));
+  const hasMultiple = !!(
+    applicant.assignedRoles?.length ||
+    applicant.assignedTimes?.length ||
+    applicant.assignedDates?.length ||
+    (applicant.assignments && applicant.assignments.length > 1)
+  );
 
   if (hasMultiple) {
     const selections = [];
@@ -430,7 +487,7 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
         dates: [dateValue],
         checkMethod: 'individual' as const,
         isGrouped: false,
-        ...(duration && { duration })
+        ...(duration && { duration }),
       });
     }
 
@@ -441,14 +498,16 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
   if (applicant.assignedRole && applicant.assignedTime) {
     const singleDateValue = convertDateToString(applicant.assignedDate);
 
-    return [{
-      role: applicant.assignedRole,
-      time: applicant.assignedTime,
-      date: singleDateValue,
-      dates: [singleDateValue],
-      checkMethod: 'individual' as const,
-      isGrouped: false
-    }];
+    return [
+      {
+        role: applicant.assignedRole,
+        time: applicant.assignedTime,
+        date: singleDateValue,
+        dates: [singleDateValue],
+        checkMethod: 'individual' as const,
+        isGrouped: false,
+      },
+    ];
   }
 
   return [];
@@ -457,7 +516,10 @@ export const getApplicantSelections = (applicant: Applicant, jobPosting?: JobPos
 /**
  * 지원자의 선택 사항을 날짜별로 그룹화하는 함수
  */
-export const getApplicantSelectionsByDate = (applicant: Applicant, jobPosting?: JobPosting): DateGroupedSelections[] => {
+export const getApplicantSelectionsByDate = (
+  applicant: Applicant,
+  jobPosting?: JobPosting
+): DateGroupedSelections[] => {
   const selections = getApplicantSelections(applicant, jobPosting);
 
   if (selections.length === 0) {
@@ -467,7 +529,7 @@ export const getApplicantSelectionsByDate = (applicant: Applicant, jobPosting?: 
   // 날짜별로 그룹화
   const dateGroups = new Map<string, Selection[]>();
 
-  selections.forEach(selection => {
+  selections.forEach((selection) => {
     const dateKey = selection.date || 'no-date';
     if (!dateGroups.has(dateKey)) {
       dateGroups.set(dateKey, []);
@@ -482,7 +544,7 @@ export const getApplicantSelectionsByDate = (applicant: Applicant, jobPosting?: 
       displayDate: formatDateDisplay(date),
       selections,
       selectedCount: 0,
-      totalCount: selections.length
+      totalCount: selections.length,
     }))
     .sort((a, b) => {
       if (a.date === 'no-date') return 1;

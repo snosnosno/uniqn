@@ -1,7 +1,7 @@
 /**
  * usePayrollWorker - Web Worker를 활용한 정산 계산 훅
  * Week 4 성능 최적화: 메인 스레드 블로킹 없는 백그라운드 계산
- * 
+ *
  * @version 4.0
  * @since 2025-02-02 (Week 4)
  */
@@ -10,18 +10,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   // PayrollCalculationMessage, // 현재 사용하지 않음
   PayrollCalculationResult,
-  PayrollCalculationError
+  PayrollCalculationError,
 } from '../workers/payrollCalculator.worker';
 import { EnhancedPayrollCalculation, PayrollSummary } from '../types/payroll';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
 import { JobPosting } from '../types/jobPosting';
 import { logger } from '../utils/logger';
-import { 
-  getRoleSalaryInfo, 
-  calculateBasePay, 
+import {
+  getRoleSalaryInfo,
+  calculateBasePay,
   calculateAllowances,
-  calculateWorkHours
+  calculateWorkHours,
 } from '../utils/payrollCalculations';
 import { matchStaffIdentifier } from '../utils/staffIdMapper';
 import { groupWorkLogsByStaff, filterWorkLogsByRole } from '../utils/workLogHelpers';
@@ -51,7 +51,7 @@ export const usePayrollWorker = () => {
     summary: null,
     loading: false,
     error: null,
-    calculationTime: 0
+    calculationTime: 0,
   });
 
   // Web Worker 초기화
@@ -69,13 +69,13 @@ export const usePayrollWorker = () => {
       ) => {
         if (event.data.type === 'PAYROLL_RESULT') {
           const { payrollData, summary, calculationTime } = event.data.payload;
-          
+
           setState({
             payrollData,
             summary,
             loading: false,
             error: null,
-            calculationTime
+            calculationTime,
           });
 
           // 성능이 좋지 않을 때만 로그 출력 (성능 최적화)
@@ -85,48 +85,52 @@ export const usePayrollWorker = () => {
               data: {
                 staffCount: payrollData.length,
                 calculationTime: Math.round(calculationTime),
-                totalAmount: summary.totalAmount
-              }
+                totalAmount: summary.totalAmount,
+              },
             });
           }
         } else if (event.data.type === 'PAYROLL_ERROR') {
           const { error, stack } = event.data.payload;
-          
-          setState(prev => ({
+
+          setState((prev) => ({
             ...prev,
             loading: false,
-            error
+            error,
           }));
 
           logger.error('Web Worker 정산 계산 오류', new Error(error), {
             component: 'usePayrollWorker',
-            data: { stack }
+            data: { stack },
           });
         }
       };
 
       // 에러 핸들러 설정
       workerRef.current.onerror = (error) => {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           loading: false,
-          error: 'Web Worker 실행 오류가 발생했습니다.'
+          error: 'Web Worker 실행 오류가 발생했습니다.',
         }));
 
         logger.error('Web Worker 오류', new Error(error.message || 'Unknown error'), {
-          component: 'usePayrollWorker'
+          component: 'usePayrollWorker',
         });
       };
 
       // Web Worker 초기화 로그 제거 (성능 최적화)
     } catch (error) {
-      logger.error('Web Worker 생성 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'usePayrollWorker'
-      });
+      logger.error(
+        'Web Worker 생성 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'usePayrollWorker',
+        }
+      );
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: 'Web Worker를 지원하지 않는 브라우저입니다.'
+        error: 'Web Worker를 지원하지 않는 브라우저입니다.',
       }));
     }
 
@@ -135,7 +139,7 @@ export const usePayrollWorker = () => {
       if (workerRef.current) {
         workerRef.current.terminate();
         workerRef.current = null;
-        
+
         // Web Worker 종료 로그 제거 (성능 최적화)
       }
     };
@@ -143,10 +147,10 @@ export const usePayrollWorker = () => {
 
   // 정산 계산 실행 (Web Worker 우회 - 임시 수정)
   const calculatePayroll = useCallback(async (params: PayrollCalculationParams) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       loading: true,
-      error: null
+      error: null,
     }));
 
     const startTime = performance.now();
@@ -156,47 +160,50 @@ export const usePayrollWorker = () => {
       const calculationTime = performance.now() - startTime;
 
       const payrollData: EnhancedPayrollCalculation[] = [];
-      const staffRoleMap = new Map<string, {
-        staffId: string;
-        staffName: string;
-        role: string;
-        workLogs: UnifiedWorkLog[];
-        phone?: string;  // ✅ phone 필드 추가
-        email?: string;  // ✅ email 필드 추가
-      }>();
+      const staffRoleMap = new Map<
+        string,
+        {
+          staffId: string;
+          staffName: string;
+          role: string;
+          workLogs: UnifiedWorkLog[];
+          phone?: string; // ✅ phone 필드 추가
+          email?: string; // ✅ email 필드 추가
+        }
+      >();
 
       // 1단계: 날짜 필터링된 WorkLog만 선별
-      const dateFilteredWorkLogs = params.workLogs.filter(log =>
-        log.date >= params.startDate && log.date <= params.endDate
+      const dateFilteredWorkLogs = params.workLogs.filter(
+        (log) => log.date >= params.startDate && log.date <= params.endDate
       );
 
       // 2단계: workLogHelpers의 groupWorkLogsByStaff 사용 (성능 최적화)
       const groupedWorkLogs = groupWorkLogsByStaff(dateFilteredWorkLogs);
-      
+
       // 3단계: confirmedStaff와 매칭되는 WorkLog만 추출
       const staffWorkLogsMap = new Map<string, UnifiedWorkLog[]>();
-      
+
       for (const staff of params.confirmedStaff) {
         const staffId = staff.userId;
         const roleKey = `${staffId}_${staff.role?.toLowerCase() || ''}`;
-        
+
         // 그룹화된 데이터에서 해당 스태프 찾기
         const staffWorkLogs = groupedWorkLogs.get(roleKey) || [];
-        
+
         // 추가로 matchStaffIdentifier로 더 정확한 매칭 확인
-        const matchedWorkLogs = dateFilteredWorkLogs.filter(log => 
+        const matchedWorkLogs = dateFilteredWorkLogs.filter((log) =>
           matchStaffIdentifier(log, [staffId])
         );
-        
+
         // 두 결과를 합치고 중복 제거
         const allStaffLogs = [...staffWorkLogs, ...matchedWorkLogs];
         const uniqueStaffLogs = Array.from(
-          new Map(allStaffLogs.map(log => [log.id, log])).values()
+          new Map(allStaffLogs.map((log) => [log.id, log])).values()
         );
-        
+
         if (uniqueStaffLogs.length > 0) {
           staffWorkLogsMap.set(staffId, uniqueStaffLogs);
-          
+
           logger.info('스태프 WorkLog 매칭 완료', {
             component: 'usePayrollWorker',
             data: {
@@ -205,18 +212,17 @@ export const usePayrollWorker = () => {
               role: staff.role,
               groupedCount: staffWorkLogs.length,
               matchedCount: matchedWorkLogs.length,
-              finalCount: uniqueStaffLogs.length
-            }
+              finalCount: uniqueStaffLogs.length,
+            },
           });
         }
       }
-
 
       // 2단계: 각 확정된 스태프별로 역할별 계산
       for (const staff of params.confirmedStaff) {
         const staffId = staff.userId;
         const key = `${staffId}_${staff.role}`;
-        
+
         if (!staffRoleMap.has(key)) {
           const staffData: {
             staffId: string;
@@ -229,7 +235,7 @@ export const usePayrollWorker = () => {
             staffId,
             staffName: staff.name,
             role: staff.role,
-            workLogs: []
+            workLogs: [],
           };
 
           // ✅ phone이 있고 빈 문자열이 아닐 때만 추가
@@ -247,13 +253,15 @@ export const usePayrollWorker = () => {
 
         // 해당 스태프의 WorkLog 가져오기
         const staffWorkLogs = staffWorkLogsMap.get(staffId) || [];
-        
+
         // workLogHelpers의 filterWorkLogsByRole 사용
         const roleWorkLogs = filterWorkLogsByRole(staffWorkLogs, staff.role);
 
         // 날짜별 중복 제거 (같은 날짜에 동일한 역할의 WorkLog가 여러 개인 경우)
         const uniqueWorkLogs = Array.from(
-          new Map(roleWorkLogs.map(log => [`${log.date}_${log.staffId}_${staff.role}`, log])).values()
+          new Map(
+            roleWorkLogs.map((log) => [`${log.date}_${log.staffId}_${staff.role}`, log])
+          ).values()
         );
 
         const entry = staffRoleMap.get(key);
@@ -280,8 +288,8 @@ export const usePayrollWorker = () => {
                 logId: log.id,
                 date: log.date,
                 hasStart: !!log.scheduledStartTime,
-                hasEnd: !!log.scheduledEndTime
-              }
+                hasEnd: !!log.scheduledEndTime,
+              },
             });
           }
         }
@@ -297,10 +305,10 @@ export const usePayrollWorker = () => {
 
         // 기본급 계산
         const basePay = calculateBasePay(salaryType, salaryAmount, totalHours, totalDays);
-        
+
         // 수당 계산
-        const staffAllowanceOverride = params.staffAllowanceOverrides?.[key] ||
-                                      params.staffAllowanceOverrides?.[data.staffId];
+        const staffAllowanceOverride =
+          params.staffAllowanceOverrides?.[key] || params.staffAllowanceOverrides?.[data.staffId];
         const defaultAllowances = calculateAllowances(params.jobPosting, totalDays);
         const allowances = staffAllowanceOverride || defaultAllowances;
 
@@ -338,7 +346,7 @@ export const usePayrollWorker = () => {
           staffId: data.staffId,
           staffName: data.staffName,
           role: data.role,
-          ...(data.phone && { phone: data.phone }),  // ✅ phone이 있을 때만 포함
+          ...(data.phone && { phone: data.phone }), // ✅ phone이 있을 때만 포함
           workLogs: data.workLogs,
           totalHours: Math.round(totalHours * 100) / 100,
           totalDays,
@@ -348,20 +356,20 @@ export const usePayrollWorker = () => {
           basePay,
           allowanceTotal,
           totalAmount,
-          ...(tax > 0 && { tax }),  // 세금이 있을 때만 포함
-          ...(taxRate !== undefined && { taxRate }),  // 세율이 있을 때만 포함
-          ...(tax > 0 && { afterTaxAmount }),  // 세후 급여가 있을 때만 포함
+          ...(tax > 0 && { tax }), // 세금이 있을 때만 포함
+          ...(taxRate !== undefined && { taxRate }), // 세율이 있을 때만 포함
+          ...(tax > 0 && { afterTaxAmount }), // 세후 급여가 있을 때만 포함
           period: {
             start: params.startDate,
-            end: params.endDate
-          }
+            end: params.endDate,
+          },
         };
 
         payrollData.push(payrollCalculation);
       }
 
       // 요약 정보 계산
-      const roleStats: Record<string, { count: number; hours: number; amount: number; }> = {};
+      const roleStats: Record<string, { count: number; hours: number; amount: number }> = {};
       const salaryTypeStats = { hourly: 0, daily: 0, monthly: 0, other: 0 };
 
       for (const data of payrollData) {
@@ -381,7 +389,7 @@ export const usePayrollWorker = () => {
       }
 
       // 유니크한 스태프 수 계산 (같은 사람이 여러 역할을 가져도 1명으로 계산)
-      const uniqueStaffIds = new Set(payrollData.map(data => data.staffId));
+      const uniqueStaffIds = new Set(payrollData.map((data) => data.staffId));
 
       const summary: PayrollSummary = {
         totalStaff: uniqueStaffIds.size,
@@ -392,8 +400,8 @@ export const usePayrollWorker = () => {
         bySalaryType: salaryTypeStats,
         period: {
           start: params.startDate,
-          end: params.endDate
-        }
+          end: params.endDate,
+        },
       };
 
       setState({
@@ -401,23 +409,25 @@ export const usePayrollWorker = () => {
         summary,
         loading: false,
         error: null,
-        calculationTime
+        calculationTime,
       });
-
-
     } catch (error) {
       const requestTime = performance.now() - startTime;
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         loading: false,
-        error: '정산 계산 중 오류가 발생했습니다.'
+        error: '정산 계산 중 오류가 발생했습니다.',
       }));
 
-      logger.error('메인 스레드 정산 계산 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'usePayrollWorker',
-        data: { requestTime }
-      });
+      logger.error(
+        '메인 스레드 정산 계산 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'usePayrollWorker',
+          data: { requestTime },
+        }
+      );
     }
   }, []);
 
@@ -430,7 +440,7 @@ export const usePayrollWorker = () => {
   const cancelCalculation = useCallback(() => {
     if (workerRef.current && state.loading) {
       workerRef.current.terminate();
-      
+
       // 새 Worker 생성
       try {
         workerRef.current = new Worker(
@@ -438,23 +448,27 @@ export const usePayrollWorker = () => {
           { type: 'module' }
         );
 
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           loading: false,
-          error: null
+          error: null,
         }));
 
         // 재시작 로그 제거 (성능 최적화)
       } catch (error) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           loading: false,
-          error: 'Worker 재시작에 실패했습니다.'
+          error: 'Worker 재시작에 실패했습니다.',
         }));
 
-        logger.error('Worker 재시작 실패', error instanceof Error ? error : new Error(String(error)), {
-          component: 'usePayrollWorker'
-        });
+        logger.error(
+          'Worker 재시작 실패',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'usePayrollWorker',
+          }
+        );
       }
     }
   }, [state.loading]);
@@ -464,9 +478,9 @@ export const usePayrollWorker = () => {
     return {
       calculationTime: state.calculationTime,
       isOptimized: state.calculationTime < 1000, // 1초 이하면 최적화됨
-      speedImprovement: state.calculationTime > 0 ? 
-        Math.round((2000 - state.calculationTime) / 2000 * 100) : 0, // 기준 2초 대비 개선율
-      workerStatus: isWorkerReady() ? 'ready' : 'not_ready'
+      speedImprovement:
+        state.calculationTime > 0 ? Math.round(((2000 - state.calculationTime) / 2000) * 100) : 0, // 기준 2초 대비 개선율
+      workerStatus: isWorkerReady() ? 'ready' : 'not_ready',
     };
   }, [state.calculationTime, isWorkerReady]);
 
@@ -474,24 +488,26 @@ export const usePayrollWorker = () => {
     // 계산 결과
     payrollData: state.payrollData,
     summary: state.summary,
-    
+
     // 상태
     loading: state.loading,
     error: state.error,
     calculationTime: state.calculationTime,
-    
+
     // 액션
     calculatePayroll,
     cancelCalculation,
-    
+
     // 유틸리티
     isWorkerReady,
     getPerformanceMetrics,
-    
+
     // 성능 정보
     isOptimized: state.calculationTime > 0 && state.calculationTime < 1000,
-    speedImprovement: state.calculationTime > 0 ? 
-      Math.round(Math.max(0, (2000 - state.calculationTime) / 2000 * 100)) : 0
+    speedImprovement:
+      state.calculationTime > 0
+        ? Math.round(Math.max(0, ((2000 - state.calculationTime) / 2000) * 100))
+        : 0,
   };
 };
 

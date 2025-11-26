@@ -36,10 +36,7 @@ import type {
 /**
  * 동의 생성
  */
-export const createConsent = async (
-  userId: string,
-  input: ConsentCreateInput
-): Promise<void> => {
+export const createConsent = async (userId: string, input: ConsentCreateInput): Promise<void> => {
   try {
     // 검증
     const validation = validateConsentCreate(input);
@@ -193,7 +190,9 @@ export const updateConsent = async (
 
         updateData.marketing = {
           agreed: newValue,
-          agreedAt: newValue ? (serverTimestamp() as Timestamp) : (currentConsent.marketing?.agreedAt || serverTimestamp() as Timestamp),
+          agreedAt: newValue
+            ? (serverTimestamp() as Timestamp)
+            : currentConsent.marketing?.agreedAt || (serverTimestamp() as Timestamp),
           ...(!newValue && { revokedAt: serverTimestamp() as Timestamp }),
         };
       }
@@ -211,7 +210,9 @@ export const updateConsent = async (
 
         updateData.locationService = {
           agreed: newValue,
-          agreedAt: newValue ? (serverTimestamp() as Timestamp) : (currentConsent.locationService?.agreedAt || serverTimestamp() as Timestamp),
+          agreedAt: newValue
+            ? (serverTimestamp() as Timestamp)
+            : currentConsent.locationService?.agreedAt || (serverTimestamp() as Timestamp),
           ...(!newValue && { revokedAt: serverTimestamp() as Timestamp }),
         };
       }
@@ -229,7 +230,9 @@ export const updateConsent = async (
 
         updateData.pushNotification = {
           agreed: newValue,
-          agreedAt: newValue ? (serverTimestamp() as Timestamp) : (currentConsent.pushNotification?.agreedAt || serverTimestamp() as Timestamp),
+          agreedAt: newValue
+            ? (serverTimestamp() as Timestamp)
+            : currentConsent.pushNotification?.agreedAt || (serverTimestamp() as Timestamp),
           ...(!newValue && { revokedAt: serverTimestamp() as Timestamp }),
         };
       }

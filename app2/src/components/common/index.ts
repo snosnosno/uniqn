@@ -8,4 +8,4 @@ export { default as Divider } from './Divider';
 export { default as EmptyState } from './EmptyState';
 export { default as InfoCard } from './InfoCard';
 export { default as Skeleton } from './Skeleton';
-export { default as StatusDot } from './StatusDot'; 
+export { default as StatusDot } from './StatusDot';

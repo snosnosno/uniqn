@@ -1,12 +1,12 @@
 /**
  * 출석 관리 관련 타입 정의
- * 
+ *
  * 이 파일은 T-HOLDEM 프로젝트의 출석 및 근무 관리를 위한 타입들을 정의합니다.
- * 
+ *
  * @version 2.0
  * @since 2025-01-01
  * @author T-HOLDEM Development Team
- * 
+ *
  * 주요 표준 필드:
  * - staffId: 스태프 식별자
  * - actualStartTime/actualEndTime: 실제 출퇴근 시간
@@ -23,7 +23,7 @@ export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 /**
  * 출석 기록 인터페이스
  * @description 개별 스태프의 출석 기록을 저장합니다.
- * 
+ *
  * 표준 필드:
  * - staffId: 스태프 식별자
  * - actualStartTime: 실제 시작 시간
@@ -32,34 +32,34 @@ export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 export interface AttendanceRecord {
   /** 출석 기록 고유 ID */
   id: string;
-  
+
   /** 스태프 ID */
   staffId: string;
-  
+
   /** 출석 날짜 (YYYY-MM-DD 형식) */
   date: string;
-  
+
   /** 출석 상태 */
   status: AttendanceStatus;
-  
+
   /** 실제 출근 시간 */
   actualStartTime?: Timestamp | null;
-  
+
   /** 실제 퇴근 시간 */
   actualEndTime?: Timestamp | null;
-  
+
   /** QR 코드 정보 */
   qrCode?: string;
-  
+
   /** 수동 입력 여부 */
   isManualEntry?: boolean;
-  
+
   /** 비고 */
   notes?: string;
-  
+
   /** 생성 시간 */
   createdAt: Timestamp;
-  
+
   /** 수정 시간 */
   updatedAt: Timestamp;
 }
@@ -67,12 +67,12 @@ export interface AttendanceRecord {
 /**
  * 근무 일지 인터페이스
  * @description 스태프의 개별 근무 기록을 저장합니다.
- * 
+ *
  * 표준 필드:
  * - staffId: 스태프 식별자
  * - scheduledStartTime/EndTime: 예정 근무 시간
  * - actualStartTime/EndTime: 실제 근무 시간
- * 
+ *
  * 통합 사용 가이드:
  * - 이 타입은 types/unified/workLog.ts의 UnifiedWorkLog와 호환됩니다.
  * - 새로운 프로젝트에서는 UnifiedWorkLog 사용을 권장합니다.
@@ -80,43 +80,43 @@ export interface AttendanceRecord {
 export interface WorkLog {
   /** 근무 일지 고유 ID */
   id: string;
-  
+
   /** 스태프 ID */
   staffId: string;
-  
+
   /** 근무 날짜 (YYYY-MM-DD 형식) */
   date: string;
-  
+
   /** 예정 시작 시간 (표준 필드) */
   scheduledStartTime?: Timestamp | null;
-  
+
   /** 예정 종료 시간 (표준 필드) */
   scheduledEndTime?: Timestamp | null;
-  
+
   /** 실제 시작 시간 */
   actualStartTime?: Timestamp | null;
-  
+
   /** 실제 종료 시간 */
   actualEndTime?: Timestamp | null;
-  
+
   /** 휴게시간 (분 단위) */
   breakTime?: number;
-  
+
   /** 실제 근무시간 (시간 단위) */
   workHours?: number;
-  
+
   /** 초과근무시간 (시간 단위) */
   overtime?: number;
-  
+
   /** 출석 상태 */
   status?: AttendanceStatus;
-  
+
   /** 비고 */
   notes?: string;
-  
+
   /** 생성 시간 */
   createdAt?: Timestamp;
-  
+
   /** 수정 시간 */
   updatedAt?: Timestamp;
 }
@@ -162,13 +162,13 @@ export interface BulkTimeEditData {
 export interface QRCodeData {
   /** QR 코드 타입 (현재는 출석만 지원) */
   type: 'attendance';
-  
+
   /** 스태프 ID */
   staffId: string;
-  
+
   /** QR 코드 생성 시점의 타임스탬프 */
   timestamp: number;
-  
+
   /** 출석 액션 타입 */
   action: 'check_in' | 'check_out';
 }
@@ -209,16 +209,16 @@ export interface AttendanceStats {
 export interface AttendanceFilterOptions {
   /** 시작 날짜 (YYYY-MM-DD 형식) */
   startDate?: string;
-  
+
   /** 종료 날짜 (YYYY-MM-DD 형식) */
   endDate?: string;
-  
+
   /** 출석 상태 필터 */
   status?: AttendanceStatus | 'all';
-  
+
   /** 특정 스태프 ID 목록 */
   staffIds?: string[];
-  
+
   /** 검색어 (스태프 이름 등) */
   searchTerm?: string;
 }
@@ -229,38 +229,38 @@ export interface AttendanceFilterOptions {
 
 /**
  * 표준 필드 사용 가이드
- * 
+ *
  * T-HOLDEM 프로젝트의 표준 타입 사용 가이드입니다.
- * 
+ *
  * 표준 필드:
  * 1. staffId: 스태프 식별자
  * 2. actualStartTime/actualEndTime: 실제 출퇴근 시간
  * 3. scheduledStartTime/scheduledEndTime: 예정 근무 시간
- * 
+ *
  * 권장 사용 패턴:
  * ```typescript
  * // ✅ 표준 필드 사용
  * const staffId = record.staffId;
  * const startTime = record.actualStartTime;
  * const endTime = record.actualEndTime;
- * 
+ *
  * // ✅ 안전한 타입 체크
  * if (record.actualStartTime) {
  *   // actualStartTime 사용
  * }
  * ```
- * 
+ *
  * 타입 안전성 체크:
  * ```typescript
  * // 필드 존재 여부 확인
  * const hasStaffId = 'staffId' in record && record.staffId;
  * const hasActualTime = 'actualStartTime' in record && record.actualStartTime;
- * 
+ *
  * // undefined 체크
  * const safeStaffId = record.staffId ?? '';
  * const safeStartTime = record.actualStartTime ?? null;
  * ```
- * 
+ *
  * @version 2.0
  * @since 2025-01-01
  * @author T-HOLDEM Development Team

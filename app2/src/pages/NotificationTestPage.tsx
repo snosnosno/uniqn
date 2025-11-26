@@ -32,7 +32,10 @@ interface TestNotification {
 
 const NotificationTestPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   // 8가지 테스트 알림 데이터
@@ -46,7 +49,7 @@ const NotificationTestPage: React.FC = () => {
       body: '5월 15일 강남점에서 딜러 3명을 모집합니다',
       action: { type: 'navigate', target: '/app/jobs' },
       relatedId: 'test-job-posting-123',
-      data: {}
+      data: {},
     },
     new_job_posting: {
       type: 'new_job_posting',
@@ -56,7 +59,7 @@ const NotificationTestPage: React.FC = () => {
       body: '📍 홍대 토너먼트 딜러 모집 | 홍대\n지금 바로 지원하세요!',
       action: { type: 'navigate', target: '/app/jobs/test-job-posting-456' },
       relatedId: 'test-job-posting-456',
-      data: { location: '홍대' }
+      data: { location: '홍대' },
     },
     system_announcement: {
       type: 'system_announcement',
@@ -66,7 +69,7 @@ const NotificationTestPage: React.FC = () => {
       body: '5월 16일 새벽 2시~4시 시스템 정기 점검이 있습니다',
       action: { type: 'navigate', target: '/app/announcements' },
       relatedId: null,
-      data: {}
+      data: {},
     },
     app_update: {
       type: 'app_update',
@@ -76,7 +79,7 @@ const NotificationTestPage: React.FC = () => {
       body: '새로운 기능이 추가되었습니다. 앱을 업데이트하세요',
       action: { type: 'navigate', target: '/app/announcements' },
       relatedId: null,
-      data: { version: '0.2.3' }
+      data: { version: '0.2.3' },
     },
 
     // 근무 알림 (3개)
@@ -88,7 +91,7 @@ const NotificationTestPage: React.FC = () => {
       body: '귀하의 지원서가 접수되었습니다',
       action: { type: 'navigate', target: '/app/my-schedule' },
       relatedId: 'test-application-456',
-      data: {}
+      data: {},
     },
     staff_approval: {
       type: 'staff_approval',
@@ -98,7 +101,7 @@ const NotificationTestPage: React.FC = () => {
       body: '축하합니다! 스태프로 확정되었습니다',
       action: { type: 'navigate', target: '/app/my-schedule' },
       relatedId: 'test-event-789',
-      data: { eventDate: '2025-05-15' }
+      data: { eventDate: '2025-05-15' },
     },
     staff_rejection: {
       type: 'staff_rejection',
@@ -108,7 +111,7 @@ const NotificationTestPage: React.FC = () => {
       body: '아쉽지만 이번에는 선정되지 못했습니다',
       action: { type: 'navigate', target: '/app/my-schedule' },
       relatedId: 'test-event-790',
-      data: {}
+      data: {},
     },
 
     // 일정 알림 (1개)
@@ -120,8 +123,8 @@ const NotificationTestPage: React.FC = () => {
       body: '근무 시작 시간이 오후 5시로 변경되었습니다',
       action: { type: 'navigate', target: '/app/my-schedule' },
       relatedId: 'test-schedule-222',
-      data: { oldTime: '18:00', newTime: '17:00' }
-    }
+      data: { oldTime: '18:00', newTime: '17:00' },
+    },
   };
 
   /**
@@ -143,11 +146,14 @@ const NotificationTestPage: React.FC = () => {
         userId: currentUser.uid,
         ...data,
         isRead: false,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
       setStatus({ type: 'success', message: `✅ ${data.title} - 알림 생성 완료!` });
     } catch (error) {
-      setStatus({ type: 'error', message: `❌ 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}` });
+      setStatus({
+        type: 'error',
+        message: `❌ 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`,
+      });
     } finally {
       setLoading(false);
       setTimeout(() => setStatus(null), 5000);
@@ -175,7 +181,7 @@ const NotificationTestPage: React.FC = () => {
           userId: currentUser.uid,
           ...data,
           isRead: false,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
         });
         successCount++;
       } catch (error) {
@@ -186,7 +192,10 @@ const NotificationTestPage: React.FC = () => {
 
     setLoading(false);
     if (errorCount === 0) {
-      setStatus({ type: 'success', message: `🎉 성공! ${successCount}개의 알림이 생성되었습니다!` });
+      setStatus({
+        type: 'success',
+        message: `🎉 성공! ${successCount}개의 알림이 생성되었습니다!`,
+      });
     } else {
       setStatus({ type: 'error', message: `⚠️ ${successCount}개 성공, ${errorCount}개 실패` });
     }
@@ -198,11 +207,16 @@ const NotificationTestPage: React.FC = () => {
    */
   const getPriorityColor = (priority: NotificationPriority) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 dark:bg-red-900/30 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+      case 'urgent':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800';
+      case 'high':
+        return 'bg-orange-100 text-orange-800';
+      case 'medium':
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -211,11 +225,16 @@ const NotificationTestPage: React.FC = () => {
    */
   const getPriorityText = (priority: NotificationPriority) => {
     switch (priority) {
-      case 'urgent': return '긴급';
-      case 'high': return '높음';
-      case 'medium': return '보통';
-      case 'low': return '낮음';
-      default: return '';
+      case 'urgent':
+        return '긴급';
+      case 'high':
+        return '높음';
+      case 'medium':
+        return '보통';
+      case 'low':
+        return '낮음';
+      default:
+        return '';
     }
   };
 
@@ -223,7 +242,9 @@ const NotificationTestPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">🔔 알림 테스트</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            🔔 알림 테스트
+          </h1>
           <p className="text-gray-600 dark:text-gray-300">로그인이 필요합니다.</p>
         </div>
       </div>
@@ -235,17 +256,25 @@ const NotificationTestPage: React.FC = () => {
       {/* 헤더 */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-800 dark:to-indigo-800 rounded-lg shadow-lg p-6 mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">🔔 알림 시스템 테스트</h1>
-        <p className="text-purple-100 dark:text-purple-200">8가지 알림 타입을 테스트할 수 있습니다</p>
-        <p className="text-purple-200 dark:text-purple-300 text-sm mt-2">현재 사용자: {currentUser.email || currentUser.uid}</p>
+        <p className="text-purple-100 dark:text-purple-200">
+          8가지 알림 타입을 테스트할 수 있습니다
+        </p>
+        <p className="text-purple-200 dark:text-purple-300 text-sm mt-2">
+          현재 사용자: {currentUser.email || currentUser.uid}
+        </p>
       </div>
 
       {/* 상태 메시지 */}
       {status && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          status.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-          status.type === 'error' ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-          'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-        }`}>
+        <div
+          className={`mb-6 p-4 rounded-lg ${
+            status.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+              : status.type === 'error'
+                ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                : 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+          }`}
+        >
           {status.message}
         </div>
       )}
@@ -263,76 +292,97 @@ const NotificationTestPage: React.FC = () => {
 
       {/* 시스템 알림 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">📢 시스템 알림 (4개)</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">
+          📢 시스템 알림 (4개)
+        </h2>
         <div className="space-y-4">
-          {Object.entries(testNotifications).slice(0, 4).map(([type, data]) => (
-            <div key={type} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
-                <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
-                  {getPriorityText(data.priority)}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
-              <button
-                onClick={() => createNotification(type)}
-                disabled={loading}
-                className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
+          {Object.entries(testNotifications)
+            .slice(0, 4)
+            .map(([type, data]) => (
+              <div
+                key={type}
+                className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400"
               >
-                테스트
-              </button>
-            </div>
-          ))}
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
+                  <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
+                    {getPriorityText(data.priority)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
+                <button
+                  onClick={() => createNotification(type)}
+                  disabled={loading}
+                  className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
+                >
+                  테스트
+                </button>
+              </div>
+            ))}
         </div>
       </div>
 
       {/* 근무 알림 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">💼 근무 알림 (3개)</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">
+          💼 근무 알림 (3개)
+        </h2>
         <div className="space-y-4">
-          {Object.entries(testNotifications).slice(4, 7).map(([type, data]) => (
-            <div key={type} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
-                <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
-                  {getPriorityText(data.priority)}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
-              <button
-                onClick={() => createNotification(type)}
-                disabled={loading}
-                className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
+          {Object.entries(testNotifications)
+            .slice(4, 7)
+            .map(([type, data]) => (
+              <div
+                key={type}
+                className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400"
               >
-                테스트
-              </button>
-            </div>
-          ))}
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
+                  <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
+                    {getPriorityText(data.priority)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
+                <button
+                  onClick={() => createNotification(type)}
+                  disabled={loading}
+                  className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
+                >
+                  테스트
+                </button>
+              </div>
+            ))}
         </div>
       </div>
 
       {/* 일정 알림 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">📅 일정 알림 (1개)</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 pb-3 border-b-2 dark:border-gray-700">
+          📅 일정 알림 (1개)
+        </h2>
         <div className="space-y-4">
-          {Object.entries(testNotifications).slice(7, 8).map(([type, data]) => (
-            <div key={type} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
-                <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
-                  {getPriorityText(data.priority)}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
-              <button
-                onClick={() => createNotification(type)}
-                disabled={loading}
-                className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
+          {Object.entries(testNotifications)
+            .slice(7, 8)
+            .map(([type, data]) => (
+              <div
+                key={type}
+                className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-l-4 border-blue-500 dark:border-blue-400"
               >
-                테스트
-              </button>
-            </div>
-          ))}
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{data.title}</h4>
+                  <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(data.priority)}`}>
+                    {getPriorityText(data.priority)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{data.body}</p>
+                <button
+                  onClick={() => createNotification(type)}
+                  disabled={loading}
+                  className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm px-4 py-2 rounded transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600"
+                >
+                  테스트
+                </button>
+              </div>
+            ))}
         </div>
       </div>
     </div>

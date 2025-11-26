@@ -42,14 +42,15 @@ const FixedJobListTab: React.FC = () => {
       return new Map<string, string>();
     }
 
-    const postIds = postings.map(p => p.id);
+    const postIds = postings.map((p) => p.id);
     const userApplications = applications.filter(
-      app => app.applicantId === currentUser.uid &&
-             (app.recruitmentType === 'fixed' || postIds.includes(app.eventId || app.postId || ''))
+      (app) =>
+        app.applicantId === currentUser.uid &&
+        (app.recruitmentType === 'fixed' || postIds.includes(app.eventId || app.postId || ''))
     );
 
     const appliedMap = new Map<string, string>();
-    userApplications.forEach(app => {
+    userApplications.forEach((app) => {
       const jobId = app.eventId || app.postId;
       if (jobId && postIds.includes(jobId)) {
         appliedMap.set(jobId, app.status);
@@ -80,24 +81,27 @@ const FixedJobListTab: React.FC = () => {
   }, []);
 
   // 상세보기 핸들러 (메모이제이션) - 모달 열기
-  const handleViewDetail = useCallback((postingId: string) => {
-    logger.info('FixedJobListTab: 상세보기 클릭', {
-      postingId,
-      component: 'FixedJobListTab',
-    });
-    const posting = postings.find(p => p.id === postingId);
-    if (posting) {
-      setSelectedPosting(posting);
-      setIsDetailModalOpen(true);
-    }
-  }, [postings]);
+  const handleViewDetail = useCallback(
+    (postingId: string) => {
+      logger.info('FixedJobListTab: 상세보기 클릭', {
+        postingId,
+        component: 'FixedJobListTab',
+      });
+      const posting = postings.find((p) => p.id === postingId);
+      if (posting) {
+        setSelectedPosting(posting);
+        setIsDetailModalOpen(true);
+      }
+    },
+    [postings]
+  );
 
   // 역할 변경 핸들러
   const handleRoleChange = useCallback((role: string, isChecked: boolean) => {
     if (isChecked) {
-      setSelectedRoles(prev => [...prev, role]);
+      setSelectedRoles((prev) => [...prev, role]);
     } else {
-      setSelectedRoles(prev => prev.filter(r => r !== role));
+      setSelectedRoles((prev) => prev.filter((r) => r !== role));
     }
   }, []);
 
@@ -126,26 +130,27 @@ const FixedJobListTab: React.FC = () => {
       // 고정공고용 지원서 데이터 구성
       const applicationData = {
         applicantId: currentUser.uid,
-        applicantName: staffData.name || staffData.displayName || currentUser.displayName || '이름 없음',
+        applicantName:
+          staffData.name || staffData.displayName || currentUser.displayName || '이름 없음',
         applicantEmail: currentUser.email || staffData.email || '',
         applicantPhone: staffData.phone || '',
         eventId: selectedPosting.id,
         postId: selectedPosting.id,
         postTitle: selectedPosting.title,
         selectedRoles: selectedRoles,
-        assignments: [],  // 고정공고는 날짜 기반 assignments가 없음
+        assignments: [], // 고정공고는 날짜 기반 assignments가 없음
         status: 'pending',
         appliedAt: now,
         createdAt: now,
         updatedAt: now,
         recruitmentType: 'fixed',
-        fixedData: selectedPosting.fixedData || null
+        fixedData: selectedPosting.fixedData || null,
       };
 
       await addDoc(collection(db, 'applications'), applicationData);
 
       // 지원 성공 시 로컬 상태 즉시 업데이트
-      setAppliedJobs(prev => new Map(prev).set(selectedPosting.id, 'pending'));
+      setAppliedJobs((prev) => new Map(prev).set(selectedPosting.id, 'pending'));
 
       showSuccess(t('jobBoard.alerts.applicationSubmitted'));
       setIsApplyModalOpen(false);
@@ -224,10 +229,10 @@ const FixedJobListTab: React.FC = () => {
                 {error.message?.includes('index') || error.message?.includes('Index')
                   ? 'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.'
                   : error.message?.includes('permission')
-                  ? '권한이 없습니다. 로그인 상태를 확인해 주세요.'
-                  : error.message?.includes('network')
-                  ? '네트워크 연결을 확인해 주세요.'
-                  : '데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.'}
+                    ? '권한이 없습니다. 로그인 상태를 확인해 주세요.'
+                    : error.message?.includes('network')
+                      ? '네트워크 연결을 확인해 주세요.'
+                      : '데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.'}
               </p>
               <details className="mt-2">
                 <summary className="text-xs cursor-pointer text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
@@ -292,10 +297,7 @@ const FixedJobListTab: React.FC = () => {
 
       {/* 무한 스크롤 트리거 요소 */}
       {hasMore && (
-        <div
-          ref={loadMoreRef}
-          className="h-20 flex items-center justify-center mt-8"
-        >
+        <div ref={loadMoreRef} className="h-20 flex items-center justify-center mt-8">
           {loading ? (
             <span className="text-gray-500 dark:text-gray-400">로딩 중...</span>
           ) : (

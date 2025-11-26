@@ -15,10 +15,7 @@ interface RoleBasedRouteProps {
   };
 }
 
-const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ 
-  allowedRoles, 
-  requiredPermission 
-}) => {
+const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ allowedRoles, requiredPermission }) => {
   const { role, loading } = useAuth();
   const { checkPermission } = usePermissions();
   const { t } = useTranslation();
@@ -29,11 +26,11 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
 
   // 역할 기반 접근 제어 (기존 방식 유지)
   const hasRoleAccess = role && allowedRoles.includes(role);
-  
+
   // 권한 기반 접근 제어 (새로운 방식)
-  const hasPermissionAccess = requiredPermission ? 
-    checkPermission(requiredPermission.resource, requiredPermission.action) : 
-    true;
+  const hasPermissionAccess = requiredPermission
+    ? checkPermission(requiredPermission.resource, requiredPermission.action)
+    : true;
 
   // 역할과 권한 모두 확인
   if (hasRoleAccess && hasPermissionAccess) {
@@ -41,8 +38,11 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   }
 
   // 스태프가 공고 관리 페이지에 접근하려는 경우 특별 처리
-  if (role === 'staff' && allowedRoles.includes('admin') && 
-      checkPermission('jobPostings', 'manageApplicants')) {
+  if (
+    role === 'staff' &&
+    allowedRoles.includes('admin') &&
+    checkPermission('jobPostings', 'manageApplicants')
+  ) {
     return <Outlet />;
   }
 

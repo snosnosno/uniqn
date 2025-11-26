@@ -34,7 +34,7 @@ export const incrementViewCount = async (postingId: string): Promise<void> => {
   try {
     const docRef = doc(db, 'jobPostings', postingId);
     await updateDoc(docRef, {
-      'fixedData.viewCount': increment(1)
+      'fixedData.viewCount': increment(1),
     });
 
     logger.info('조회수 증가 성공', { postingId });
@@ -45,15 +45,15 @@ export const incrementViewCount = async (postingId: string): Promise<void> => {
       type: errorMessage.includes('permission')
         ? 'permission'
         : errorMessage.includes('network')
-        ? 'network'
-        : 'unknown',
-      message: error instanceof Error ? error.message : 'Unknown error'
+          ? 'network'
+          : 'unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
     };
 
     logger.error('조회수 증가 실패', error instanceof Error ? error : undefined, {
       postingId,
       errorCode: viewCountError.type,
-      errorMessage: viewCountError.message
+      errorMessage: viewCountError.message,
     });
 
     // 사용자 경험을 방해하지 않으므로 throw하지 않음
@@ -67,5 +67,5 @@ export const incrementViewCount = async (postingId: string): Promise<void> => {
  * ViewCountService 타입을 준수하는 서비스 객체
  */
 export const viewCountService: ViewCountService = {
-  incrementViewCount
+  incrementViewCount,
 };

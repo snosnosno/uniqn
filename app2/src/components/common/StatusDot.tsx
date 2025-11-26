@@ -21,7 +21,7 @@ const StatusDot: React.FC<StatusDotProps> = ({
   size = 'md',
   pulse = false,
   className = '',
-  label
+  label,
 }) => {
   const getStatusColor = () => {
     switch (status) {

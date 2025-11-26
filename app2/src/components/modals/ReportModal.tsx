@@ -5,26 +5,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import {
-  FaExclamationTriangle,
-  FaPaperPlane,
-  FaInfoCircle
-} from '../Icons/ReactIconsReplacement';
+import { FaExclamationTriangle, FaPaperPlane, FaInfoCircle } from '../Icons/ReactIconsReplacement';
 import Modal from '../ui/Modal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { logger } from '../../utils/logger';
-import {
-  collection,
-  addDoc,
-  Timestamp
-} from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
   ReportType,
   ReporterType,
   EMPLOYEE_REPORT_TYPES,
-  EMPLOYER_REPORT_TYPES
+  EMPLOYER_REPORT_TYPES,
 } from '../../types/report';
 import { InquiryCreateInput } from '../../types/inquiry';
 
@@ -51,7 +43,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
   onClose,
   targetUser,
   event,
-  reporterType
+  reporterType,
 }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
@@ -93,7 +85,6 @@ const ReportModal: React.FC<ReportModalProps> = ({
     }
   };
 
-
   // 신고 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +124,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
         unfair_treatment: '부당한 대우',
         // 공통
         inappropriate_behavior: '부적절한 행동',
-        other: '기타 문제'
+        other: '기타 문제',
       };
 
       const reportTypeName = reportTypeNames[reportType];
@@ -145,7 +136,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
         userName: currentUser.displayName || '사용자',
         category: 'report',
         subject: `[신고] ${reportTypeName} - ${targetUser.name} (${event.title})`,
-        message: `신고 내용: ${actualDescription.trim()}\n\n--- 신고 상세 정보 ---\n신고 유형: ${reportTypeName}\n신고 대상: ${targetUser.name}\n이벤트: ${event.title}\n날짜: ${event.date}\n신고자 유형: ${reporterType === 'employer' ? '관리자' : '직원'}`
+        message: `신고 내용: ${actualDescription.trim()}\n\n--- 신고 상세 정보 ---\n신고 유형: ${reportTypeName}\n신고 대상: ${targetUser.name}\n이벤트: ${event.title}\n날짜: ${event.date}\n신고자 유형: ${reporterType === 'employer' ? '관리자' : '직원'}`,
       };
 
       await addDoc(collection(db, 'inquiries'), {
@@ -158,10 +149,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
           targetName: targetUser.name,
           eventId: event.id,
           eventTitle: event.title,
-          date: event.date
+          date: event.date,
         },
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
 
       showSuccess('신고가 접수되었습니다. 검토 후 처리하겠습니다.');
@@ -172,15 +163,14 @@ const ReportModal: React.FC<ReportModalProps> = ({
           reportType: reportType,
           reporterType,
           targetId: targetUser.id,
-          eventId: event.id
-        }
+          eventId: event.id,
+        },
       });
 
       handleClose();
-
     } catch (error) {
       logger.error('신고 제출 실패:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'ReportModal'
+        component: 'ReportModal',
       });
       showError('신고 제출에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -193,9 +183,9 @@ const ReportModal: React.FC<ReportModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title=""
-      closeOnEsc={false}        // ESC 키 완전 비활성화
-      closeOnBackdrop={false}   // 배경 클릭 비활성화
-      showCloseButton={false}   // 기본 닫기 버튼 비활성화
+      closeOnEsc={false} // ESC 키 완전 비활성화
+      closeOnBackdrop={false} // 배경 클릭 비활성화
+      showCloseButton={false} // 기본 닫기 버튼 비활성화
     >
       <div className="p-6">
         {/* 헤더 */}
@@ -222,13 +212,22 @@ const ReportModal: React.FC<ReportModalProps> = ({
           </h3>
           <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
             <div>
-              <span className="font-medium text-gray-900 dark:text-gray-100">{t('report.targetName', '이름')}:</span> {targetUser.name}
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {t('report.targetName', '이름')}:
+              </span>{' '}
+              {targetUser.name}
             </div>
             <div>
-              <span className="font-medium text-gray-900 dark:text-gray-100">{t('report.eventTitle', '이벤트')}:</span> {event.title}
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {t('report.eventTitle', '이벤트')}:
+              </span>{' '}
+              {event.title}
             </div>
             <div>
-              <span className="font-medium text-gray-900 dark:text-gray-100">{t('report.eventDate', '날짜')}:</span> {event.date}
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {t('report.eventDate', '날짜')}:
+              </span>{' '}
+              {event.date}
             </div>
           </div>
         </div>
@@ -265,12 +264,17 @@ const ReportModal: React.FC<ReportModalProps> = ({
                       {t(typeOption.descriptionKey)}
                     </div>
                     <div className="mt-1">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        typeOption.severity === 'critical' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                        typeOption.severity === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
-                        typeOption.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                      }`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          typeOption.severity === 'critical'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                            : typeOption.severity === 'high'
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                              : typeOption.severity === 'medium'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                        }`}
+                      >
                         {t(`report.severity.${typeOption.severity}`, typeOption.severity)}
                       </span>
                     </div>
@@ -282,7 +286,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
 
           {/* 상세 설명 */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               {t('report.description', '상세 설명')}
               <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
@@ -292,8 +299,14 @@ const ReportModal: React.FC<ReportModalProps> = ({
               defaultValue=""
               placeholder={
                 reportType === 'other'
-                  ? t('report.descriptionPlaceholder.other', '구체적인 상황과 문제점을 자세히 설명해주세요 (최소 10자)')
-                  : t('report.descriptionPlaceholder.default', '발생한 상황을 구체적으로 설명해주세요')
+                  ? t(
+                      'report.descriptionPlaceholder.other',
+                      '구체적인 상황과 문제점을 자세히 설명해주세요 (최소 10자)'
+                    )
+                  : t(
+                      'report.descriptionPlaceholder.default',
+                      '발생한 상황을 구체적으로 설명해주세요'
+                    )
               }
               rows={5}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
@@ -312,13 +325,20 @@ const ReportModal: React.FC<ReportModalProps> = ({
             <div className="flex items-start">
               <FaInfoCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
               <div className="text-sm text-yellow-800 dark:text-yellow-300">
-                <p className="font-medium mb-1">
-                  {t('report.warning.title', '신고 전 확인사항')}
-                </p>
+                <p className="font-medium mb-1">{t('report.warning.title', '신고 전 확인사항')}</p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>{t('report.warning.falseReport', '허위 신고 시 제재를 받을 수 있습니다.')}</li>
-                  <li>{t('report.warning.evidence', '가능한 한 구체적이고 객관적인 사실을 기재해주세요.')}</li>
-                  <li>{t('report.warning.processing', '신고 접수 후 관리자가 검토하여 처리합니다.')}</li>
+                  <li>
+                    {t('report.warning.falseReport', '허위 신고 시 제재를 받을 수 있습니다.')}
+                  </li>
+                  <li>
+                    {t(
+                      'report.warning.evidence',
+                      '가능한 한 구체적이고 객관적인 사실을 기재해주세요.'
+                    )}
+                  </li>
+                  <li>
+                    {t('report.warning.processing', '신고 접수 후 관리자가 검토하여 처리합니다.')}
+                  </li>
                 </ul>
               </div>
             </div>

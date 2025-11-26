@@ -61,11 +61,14 @@ const Modal: React.FC<ModalProps> = ({
     : 'min-h-screen flex items-start justify-center pt-20';
 
   // ESC 키 핸들러
-  const handleEscKey = useCallback((e: KeyboardEvent) => {
-    if (closeOnEsc && e.key === 'Escape') {
-      onClose();
-    }
-  }, [closeOnEsc, onClose]);
+  const handleEscKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (closeOnEsc && e.key === 'Escape') {
+        onClose();
+      }
+    },
+    [closeOnEsc, onClose]
+  );
 
   // 배경 클릭 핸들러
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -74,13 +77,15 @@ const Modal: React.FC<ModalProps> = ({
     }
   };
 
-
   // 키보드 이벤트 핸들러 (ESC 키만 처리)
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (closeOnEsc && e.key === 'Escape') {
-      handleEscKey(e);
-    }
-  }, [handleEscKey, closeOnEsc]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (closeOnEsc && e.key === 'Escape') {
+        handleEscKey(e);
+      }
+    },
+    [handleEscKey, closeOnEsc]
+  );
 
   // 모달 열림/닫힘 처리
   useEffect(() => {
@@ -109,7 +114,7 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div 
+    <div
       className="fixed inset-0 z-50 overflow-y-auto"
       aria-labelledby={title ? 'modal-title' : undefined}
       aria-describedby={ariaDescribedBy}
@@ -117,16 +122,10 @@ const Modal: React.FC<ModalProps> = ({
       role="dialog"
     >
       {/* 배경 오버레이 */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true" />
 
       {/* 모달 컨테이너 */}
-      <div 
-        className={positionClasses}
-        onClick={handleBackdropClick}
-      >
+      <div className={positionClasses} onClick={handleBackdropClick}>
         <div
           ref={modalRef}
           className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all w-full ${sizeClasses[size]} animate-fade-in`}
@@ -136,15 +135,17 @@ const Modal: React.FC<ModalProps> = ({
           {/* 헤더 */}
           {(title || showCloseButton) && (
             <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              {title && (
-                typeof title === 'string' ? (
-                  <h3 id="modal-title" className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+              {title &&
+                (typeof title === 'string' ? (
+                  <h3
+                    id="modal-title"
+                    className="text-lg font-semibold text-gray-900 dark:text-gray-50"
+                  >
                     {title}
                   </h3>
                 ) : (
                   <div id="modal-title">{title}</div>
-                )
-              )}
+                ))}
               {showCloseButton && (
                 <button
                   type="button"
@@ -153,7 +154,12 @@ const Modal: React.FC<ModalProps> = ({
                   aria-label="닫기"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               )}
@@ -161,9 +167,7 @@ const Modal: React.FC<ModalProps> = ({
           )}
 
           {/* 바디 */}
-          <div className="p-4 sm:p-6 max-h-[70vh] overflow-y-auto">
-            {children}
-          </div>
+          <div className="p-4 sm:p-6 max-h-[70vh] overflow-y-auto">{children}</div>
 
           {/* 푸터 */}
           {footer && (
@@ -177,10 +181,7 @@ const Modal: React.FC<ModalProps> = ({
   );
 
   // Portal을 사용하여 body에 직접 렌더링
-  return ReactDOM.createPortal(
-    modalContent,
-    document.body
-  );
+  return ReactDOM.createPortal(modalContent, document.body);
 };
 
 /**
@@ -204,11 +205,7 @@ export const ModalBody: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => {
-  return (
-    <div className={`text-gray-700 dark:text-gray-300 ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`text-gray-700 dark:text-gray-300 ${className}`}>{children}</div>;
 };
 
 /**
@@ -218,11 +215,7 @@ export const ModalFooter: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => {
-  return (
-    <div className={`flex items-center justify-end space-x-2 ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`flex items-center justify-end space-x-2 ${className}`}>{children}</div>;
 };
 
 export default Modal;

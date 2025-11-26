@@ -110,10 +110,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
   };
 
   return (
-    <section
-      data-testid="target-section"
-      className="py-20 bg-white dark:bg-gray-800"
-    >
+    <section data-testid="target-section" className="py-20 bg-white dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 섹션 헤더 */}
         <div className="text-center mb-16">
@@ -144,10 +141,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 aria-describedby={`target-description-${target.id}`}
               >
                 {/* 아이콘 */}
-                <div
-                  data-testid={`target-icon-${target.id}`}
-                  className="mb-6"
-                >
+                <div data-testid={`target-icon-${target.id}`} className="mb-6">
                   <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-all duration-300 group-hover:scale-110">
                     <IconComponent className="w-10 h-10 text-blue-600 dark:text-blue-400" />
                   </div>
@@ -180,10 +174,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 {target.benefits && target.benefits.length > 0 && (
                   <ul className="space-y-3 mb-8">
                     {target.benefits.map((benefit, index) => (
-                      <li
-                        key={index}
-                        className="flex items-start"
-                      >
+                      <li key={index} className="flex items-start">
                         <svg
                           className="w-5 h-5 text-green-500 dark:text-green-400 mr-3 mt-0.5 flex-shrink-0"
                           fill="none"
@@ -274,8 +265,8 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 어떤 분야에서 활동하시나요?
               </h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
-                Experience UNIQN solutions optimized for your work environment.
-                각 분야별 전문가들이 설계한 맞춤형 기능으로 더욱 효율적인 업무가 가능합니다.
+                Experience UNIQN solutions optimized for your work environment. 각 분야별 전문가들이
+                설계한 맞춤형 기능으로 더욱 효율적인 업무가 가능합니다.
               </p>
               <button className="inline-flex items-center px-6 py-3 text-blue-600 dark:text-blue-400 border-2 border-blue-600 dark:border-blue-500 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 hover:text-white dark:hover:text-white transition-colors duration-300 font-semibold">
                 상담 신청하기

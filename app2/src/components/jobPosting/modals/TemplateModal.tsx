@@ -23,11 +23,11 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
   onTemplateNameChange,
   onTemplateDescriptionChange,
   onSave,
-  isSaving = false
+  isSaving = false,
 }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!templateName.trim()) {
       toast.warning('템플릿 이름을 입력해주세요.');
       return;
@@ -86,12 +86,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
         </div>
 
         <div className="flex justify-end space-x-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            disabled={isSaving}
-          >
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSaving}>
             취소
           </Button>
           <Button

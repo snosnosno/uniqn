@@ -18,7 +18,14 @@ import { calculateAllowances } from '../../utils/payrollCalculations';
  */
 const useScheduleData = (): UseScheduleDataReturn => {
   const { currentUser } = useAuth();
-  const { staff: _staff, workLogs, applications, jobPostings, loading: _contextLoading, error: _contextError } = useUnifiedData();
+  const {
+    staff: _staff,
+    workLogs,
+    applications,
+    jobPostings,
+    loading: _contextLoading,
+    error: _contextError,
+  } = useUnifiedData();
   const [filters, setFilters] = useState(createDefaultFilters());
   const [_lastRefresh, _setLastRefresh] = useState(Date.now());
 
@@ -49,28 +56,31 @@ const useScheduleData = (): UseScheduleDataReturn => {
         const processedKeys = new Set<string>();
 
         // 1. WorkLogs 처리 (우선순위 높음) - 병렬 처리
-        const userWorkLogs = Array.from(workLogs.values())
-          .filter((log): log is WorkLog => {
-            const workLog = log as WorkLog;
-            // staffId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
-            return workLog.staffId === currentUser.uid ||
-                   workLog.staffId?.startsWith(currentUser.uid + '_');
-          });
+        const userWorkLogs = Array.from(workLogs.values()).filter((log): log is WorkLog => {
+          const workLog = log as WorkLog;
+          // staffId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
+          return (
+            workLog.staffId === currentUser.uid ||
+            workLog.staffId?.startsWith(currentUser.uid + '_')
+          );
+        });
 
         // WorkLog 비동기 처리를 병렬로 실행
-        const workLogPromises = userWorkLogs.map(workLog =>
+        const workLogPromises = userWorkLogs.map((workLog) =>
           processWorkLogData(workLog.id || '', workLog)
         );
         const workLogEvents = await Promise.all(workLogPromises);
 
         // WorkLog 이벤트 추가
-        workLogEvents.forEach(event => {
+        workLogEvents.forEach((event) => {
           mergedEvents.push(event);
 
           // 중복 방지 키 생성
           if (event.eventId && event.date) {
-            const timeKey = event.startTime && 'seconds' in event.startTime ?
-              new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
+            const timeKey =
+              event.startTime && 'seconds' in event.startTime
+                ? new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5)
+                : 'notime';
             const key = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
             processedKeys.add(key);
@@ -79,25 +89,30 @@ const useScheduleData = (): UseScheduleDataReturn => {
         });
 
         // 2. Applications 처리 (중복 제외) - 병렬 처리
-        const userApplications = Array.from(applications.values())
-          .filter((app): app is Application => {
+        const userApplications = Array.from(applications.values()).filter(
+          (app): app is Application => {
             const application = app as Application;
             // applicantId가 정확히 일치하거나 userId_숫자 패턴으로 시작하는 경우
-            return application.applicantId === currentUser.uid ||
-                   application.applicantId?.startsWith(currentUser.uid + '_');
-          });
+            return (
+              application.applicantId === currentUser.uid ||
+              application.applicantId?.startsWith(currentUser.uid + '_')
+            );
+          }
+        );
 
         // Application 비동기 처리를 병렬로 실행
-        const applicationPromises = userApplications.map(application =>
+        const applicationPromises = userApplications.map((application) =>
           processApplicationData(application.id || '', application)
         );
         const applicationEventArrays = await Promise.all(applicationPromises);
 
         // Application 이벤트 추가 (중복 체크)
-        applicationEventArrays.flat().forEach(event => {
+        applicationEventArrays.flat().forEach((event) => {
           if (event.eventId && event.date) {
-            const timeKey = event.startTime && 'seconds' in event.startTime ?
-              new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5) : 'notime';
+            const timeKey =
+              event.startTime && 'seconds' in event.startTime
+                ? new Date(event.startTime.seconds * 1000).toTimeString().slice(0, 5)
+                : 'notime';
             const preciseKey = `${event.eventId}_${event.date}_${timeKey}`;
             const basicKey = `${event.eventId}_${event.date}`;
 
@@ -123,15 +138,15 @@ const useScheduleData = (): UseScheduleDataReturn => {
           data: {
             totalEvents: mergedEvents.length,
             workLogEvents: workLogEvents.length,
-            applicationEvents: applicationEventArrays.flat().length
-          }
+            applicationEvents: applicationEventArrays.flat().length,
+          },
         });
       } catch (err) {
         const errorMessage = handleError(err, {
           component: 'useScheduleData',
           action: 'loadSchedules',
           userId: currentUser?.uid,
-          fallbackMessage: '스케줄 데이터를 불러오는 중 오류가 발생했습니다.'
+          fallbackMessage: '스케줄 데이터를 불러오는 중 오류가 발생했습니다.',
         });
         setError(errorMessage);
         setLoading(false);
@@ -157,8 +172,11 @@ const useScheduleData = (): UseScheduleDataReturn => {
   }, [schedules, filters]);
 
   // Map 생성 (O(1) 조회를 위해)
-  const workLogsMap = useMemo(() => new Map(workLogs.map(wl => [wl.id, wl])), [workLogs]);
-  const jobPostingsMap = useMemo(() => new Map(jobPostings.map(jp => [jp.id, jp])), [jobPostings]);
+  const workLogsMap = useMemo(() => new Map(workLogs.map((wl) => [wl.id, wl])), [workLogs]);
+  const jobPostingsMap = useMemo(
+    () => new Map(jobPostings.map((jp) => [jp.id, jp])),
+    [jobPostings]
+  );
 
   // 통계 계산 - 완료된 일정만 시간과 수입 계산에 포함
   const stats = useMemo((): ScheduleStats => {
@@ -166,14 +184,11 @@ const useScheduleData = (): UseScheduleDataReturn => {
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
 
-    const completedEvents = filteredSchedules.filter(e =>
-      e.type === 'completed' ||
-      (e.status === 'checked_out' && e.actualEndTime)
+    const completedEvents = filteredSchedules.filter(
+      (e) => e.type === 'completed' || (e.status === 'checked_out' && e.actualEndTime)
     );
 
-    const upcomingEvents = filteredSchedules.filter(e =>
-      new Date(e.date) > now
-    );
+    const upcomingEvents = filteredSchedules.filter((e) => new Date(e.date) > now);
 
     // 🔥 이번달 수입 계산을 위한 월별 필터링 헬퍼 함수
     const isEventInMonth = (event: ScheduleEvent, month: number, year: number): boolean => {
@@ -182,7 +197,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       if (dateParts.length < 2) return false;
 
       const eventYear = parseInt(dateParts[0] || '0', 10);
-      const eventMonth = parseInt(dateParts[1] || '0', 10) - 1;  // 0-based month
+      const eventMonth = parseInt(dateParts[1] || '0', 10) - 1; // 0-based month
 
       const result = eventMonth === month && eventYear === year;
 
@@ -196,8 +211,8 @@ const useScheduleData = (): UseScheduleDataReturn => {
           eventYear: eventYear,
           targetMonth: month,
           targetYear: year,
-          isInMonth: result
-        }
+          isInMonth: result,
+        },
       });
 
       return result;
@@ -205,13 +220,12 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
     // 총 근무 시간 계산 (완료된 일정만, 예정 시간 기준)
     let totalHoursWorked = 0;
-    completedEvents.forEach(event => {
+    completedEvents.forEach((event) => {
       // 예정 시간 기준으로 계산 (startTime, endTime)
       if (event.startTime && event.endTime) {
-        const startDate = event.startTime && 'toDate' in event.startTime ?
-          event.startTime.toDate() : null;
-        const endDate = event.endTime && 'toDate' in event.endTime ?
-          event.endTime.toDate() : null;
+        const startDate =
+          event.startTime && 'toDate' in event.startTime ? event.startTime.toDate() : null;
+        const endDate = event.endTime && 'toDate' in event.endTime ? event.endTime.toDate() : null;
 
         if (startDate && endDate) {
           let hoursWorked = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
@@ -232,8 +246,8 @@ const useScheduleData = (): UseScheduleDataReturn => {
                 eventId: event.id,
                 startTime: startDate.toISOString(),
                 endTime: endDate.toISOString(),
-                hoursWorked: hoursWorked
-              }
+                hoursWorked: hoursWorked,
+              },
             });
           }
         }
@@ -262,35 +276,41 @@ const useScheduleData = (): UseScheduleDataReturn => {
           hasJobPosting: !!jobPosting,
           jobPostingSalaryAmount: jobPosting?.salaryAmount,
           jobPostingRoleSalaries: jobPosting?.roleSalaries,
-          jobPostingRoleSalariesKeys: jobPosting?.roleSalaries ? Object.keys(jobPosting.roleSalaries) : [],
+          jobPostingRoleSalariesKeys: jobPosting?.roleSalaries
+            ? Object.keys(jobPosting.roleSalaries)
+            : [],
           hasSnapshotData: !!event.snapshotData,
-          snapshotSalary: event.snapshotData?.salary
-        }
+          snapshotSalary: event.snapshotData?.salary,
+        },
       });
 
       // 모달과 동일한 로직: JobPosting이 없거나 급여 정보가 없으면 스냅샷 사용
-      const hasJobPostingSalary = jobPosting && (
-        (jobPosting.salaryAmount && jobPosting.salaryAmount !== "0") ||
-        (jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0)
-      );
-      const effectiveJobPosting = hasJobPostingSalary ? jobPosting : (event.snapshotData ? {
-        id: event.eventId,
-        title: event.snapshotData.title || '근무',
-        location: event.snapshotData.location,
-        detailedAddress: event.snapshotData.detailedAddress,
-        district: event.snapshotData.district,
-        salaryType: event.snapshotData.salary.type,
-        salaryAmount: String(event.snapshotData.salary.amount),
-        useRoleSalary: event.snapshotData.salary.useRoleSalary,
-        roleSalaries: event.snapshotData.salary.roleSalaries,
-        benefits: {
-          mealAllowance: event.snapshotData.allowances?.meal || 0,
-          transportation: event.snapshotData.allowances?.transportation || 0,
-          accommodation: event.snapshotData.allowances?.accommodation || 0
-        },
-        taxSettings: event.snapshotData.taxSettings,
-        createdBy: event.snapshotData.createdBy
-      } as any : null);
+      const hasJobPostingSalary =
+        jobPosting &&
+        ((jobPosting.salaryAmount && jobPosting.salaryAmount !== '0') ||
+          (jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0));
+      const effectiveJobPosting = hasJobPostingSalary
+        ? jobPosting
+        : event.snapshotData
+          ? ({
+              id: event.eventId,
+              title: event.snapshotData.title || '근무',
+              location: event.snapshotData.location,
+              detailedAddress: event.snapshotData.detailedAddress,
+              district: event.snapshotData.district,
+              salaryType: event.snapshotData.salary.type,
+              salaryAmount: String(event.snapshotData.salary.amount),
+              useRoleSalary: event.snapshotData.salary.useRoleSalary,
+              roleSalaries: event.snapshotData.salary.roleSalaries,
+              benefits: {
+                mealAllowance: event.snapshotData.allowances?.meal || 0,
+                transportation: event.snapshotData.allowances?.transportation || 0,
+                accommodation: event.snapshotData.allowances?.accommodation || 0,
+              },
+              taxSettings: event.snapshotData.taxSettings,
+              createdBy: event.snapshotData.createdBy,
+            } as any)
+          : null;
 
       logger.info('✅ effectiveJobPosting 결정', {
         component: 'useScheduleData',
@@ -300,8 +320,10 @@ const useScheduleData = (): UseScheduleDataReturn => {
           usedSnapshot: !hasJobPostingSalary && !!event.snapshotData,
           effectiveSalaryAmount: effectiveJobPosting?.salaryAmount,
           effectiveRoleSalaries: effectiveJobPosting?.roleSalaries,
-          effectiveRoleSalariesKeys: effectiveJobPosting?.roleSalaries ? Object.keys(effectiveJobPosting.roleSalaries) : []
-        }
+          effectiveRoleSalariesKeys: effectiveJobPosting?.roleSalaries
+            ? Object.keys(effectiveJobPosting.roleSalaries)
+            : [],
+        },
       });
 
       // 역할 결정
@@ -317,14 +339,21 @@ const useScheduleData = (): UseScheduleDataReturn => {
         scheduledEndTime: effectiveEndTime,
         date: event.date,
         role: effectiveRole,
-        eventId: event.eventId
+        eventId: event.eventId,
       };
 
-      const { calculateSingleWorkLogPayroll, calculateWorkHours } = require('../../utils/payrollCalculations');
+      const {
+        calculateSingleWorkLogPayroll,
+        calculateWorkHours,
+      } = require('../../utils/payrollCalculations');
       const totalHours = calculateWorkHours(workLogData as any);
 
       // 급여 계산 (모달과 동일)
-      const totalPay = calculateSingleWorkLogPayroll(workLogData as any, effectiveRole, effectiveJobPosting);
+      const totalPay = calculateSingleWorkLogPayroll(
+        workLogData as any,
+        effectiveRole,
+        effectiveJobPosting
+      );
 
       // 수당 계산
       const allowancesResult = calculateAllowances(effectiveJobPosting, 1, event.snapshotData);
@@ -355,8 +384,8 @@ const useScheduleData = (): UseScheduleDataReturn => {
           tax,
           afterTaxAmount,
           이전합계: sum,
-          새로운합계: sum + afterTaxAmount
-        }
+          새로운합계: sum + afterTaxAmount,
+        },
       });
 
       return sum + afterTaxAmount;
@@ -377,35 +406,41 @@ const useScheduleData = (): UseScheduleDataReturn => {
           hasJobPosting: !!jobPosting,
           jobPostingSalaryAmount: jobPosting?.salaryAmount,
           jobPostingRoleSalaries: jobPosting?.roleSalaries,
-          jobPostingRoleSalariesKeys: jobPosting?.roleSalaries ? Object.keys(jobPosting.roleSalaries) : [],
+          jobPostingRoleSalariesKeys: jobPosting?.roleSalaries
+            ? Object.keys(jobPosting.roleSalaries)
+            : [],
           hasSnapshotData: !!event.snapshotData,
-          snapshotSalary: event.snapshotData?.salary
-        }
+          snapshotSalary: event.snapshotData?.salary,
+        },
       });
 
       // 모달과 동일한 로직: JobPosting이 없거나 급여 정보가 없으면 스냅샷 사용
-      const hasJobPostingSalary = jobPosting && (
-        (jobPosting.salaryAmount && jobPosting.salaryAmount !== "0") ||
-        (jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0)
-      );
-      const effectiveJobPosting = hasJobPostingSalary ? jobPosting : (event.snapshotData ? {
-        id: event.eventId,
-        title: event.snapshotData.title || '근무',
-        location: event.snapshotData.location,
-        detailedAddress: event.snapshotData.detailedAddress,
-        district: event.snapshotData.district,
-        salaryType: event.snapshotData.salary.type,
-        salaryAmount: String(event.snapshotData.salary.amount),
-        useRoleSalary: event.snapshotData.salary.useRoleSalary,
-        roleSalaries: event.snapshotData.salary.roleSalaries,
-        benefits: {
-          mealAllowance: event.snapshotData.allowances?.meal || 0,
-          transportation: event.snapshotData.allowances?.transportation || 0,
-          accommodation: event.snapshotData.allowances?.accommodation || 0
-        },
-        taxSettings: event.snapshotData.taxSettings,
-        createdBy: event.snapshotData.createdBy
-      } as any : null);
+      const hasJobPostingSalary =
+        jobPosting &&
+        ((jobPosting.salaryAmount && jobPosting.salaryAmount !== '0') ||
+          (jobPosting.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0));
+      const effectiveJobPosting = hasJobPostingSalary
+        ? jobPosting
+        : event.snapshotData
+          ? ({
+              id: event.eventId,
+              title: event.snapshotData.title || '근무',
+              location: event.snapshotData.location,
+              detailedAddress: event.snapshotData.detailedAddress,
+              district: event.snapshotData.district,
+              salaryType: event.snapshotData.salary.type,
+              salaryAmount: String(event.snapshotData.salary.amount),
+              useRoleSalary: event.snapshotData.salary.useRoleSalary,
+              roleSalaries: event.snapshotData.salary.roleSalaries,
+              benefits: {
+                mealAllowance: event.snapshotData.allowances?.meal || 0,
+                transportation: event.snapshotData.allowances?.transportation || 0,
+                accommodation: event.snapshotData.allowances?.accommodation || 0,
+              },
+              taxSettings: event.snapshotData.taxSettings,
+              createdBy: event.snapshotData.createdBy,
+            } as any)
+          : null;
 
       logger.info('✅ effectiveJobPosting 결정', {
         component: 'useScheduleData',
@@ -415,8 +450,10 @@ const useScheduleData = (): UseScheduleDataReturn => {
           usedSnapshot: !hasJobPostingSalary && !!event.snapshotData,
           effectiveSalaryAmount: effectiveJobPosting?.salaryAmount,
           effectiveRoleSalaries: effectiveJobPosting?.roleSalaries,
-          effectiveRoleSalariesKeys: effectiveJobPosting?.roleSalaries ? Object.keys(effectiveJobPosting.roleSalaries) : []
-        }
+          effectiveRoleSalariesKeys: effectiveJobPosting?.roleSalaries
+            ? Object.keys(effectiveJobPosting.roleSalaries)
+            : [],
+        },
       });
 
       // 역할 결정
@@ -432,13 +469,17 @@ const useScheduleData = (): UseScheduleDataReturn => {
         scheduledEndTime: effectiveEndTime,
         date: event.date,
         role: effectiveRole,
-        eventId: event.eventId
+        eventId: event.eventId,
       };
 
       const { calculateSingleWorkLogPayroll } = require('../../utils/payrollCalculations');
 
       // 급여 계산 (모달과 동일)
-      const totalPay = calculateSingleWorkLogPayroll(workLogData as any, effectiveRole, effectiveJobPosting);
+      const totalPay = calculateSingleWorkLogPayroll(
+        workLogData as any,
+        effectiveRole,
+        effectiveJobPosting
+      );
 
       // 세금 계산
       const taxSettings = event.snapshotData?.taxSettings || jobPosting?.taxSettings;
@@ -464,7 +505,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       upcomingSchedules: upcomingEvents.length,
       totalEarnings,
       thisMonthEarnings,
-      hoursWorked: Math.round(totalHoursWorked)
+      hoursWorked: Math.round(totalHoursWorked),
     };
   }, [filteredSchedules, workLogsMap, jobPostingsMap]);
 
@@ -476,9 +517,12 @@ const useScheduleData = (): UseScheduleDataReturn => {
   }, []);
 
   // ID로 스케줄 찾기
-  const getScheduleById = useCallback((id: string) => {
-    return schedules.find(schedule => schedule.id === id);
-  }, [schedules]);
+  const getScheduleById = useCallback(
+    (id: string) => {
+      return schedules.find((schedule) => schedule.id === id);
+    },
+    [schedules]
+  );
 
   return {
     schedules: filteredSchedules,
@@ -488,7 +532,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
     filters,
     setFilters,
     refreshData,
-    getScheduleById
+    getScheduleById,
   };
 };
 

@@ -19,10 +19,7 @@ export interface FirebaseAuthError extends Error {
 /**
  * Firebase Auth Error 생성 헬퍼 함수
  */
-export const createFirebaseAuthError = (
-  code: string,
-  message: string
-): FirebaseAuthError => {
+export const createFirebaseAuthError = (code: string, message: string): FirebaseAuthError => {
   const error = new Error(message) as FirebaseAuthError;
   error.code = code;
   error.name = 'FirebaseError';

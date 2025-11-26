@@ -2,7 +2,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FixedJobPosting } from '../../types/jobPosting/jobPosting';
 import { incrementViewCount } from '../../services/fixedJobPosting';
-import { formatWorkTimeDisplay, formatSalaryDisplay, getBenefitDisplayNames } from '../../utils/jobPosting/jobPostingHelpers';
+import {
+  formatWorkTimeDisplay,
+  formatSalaryDisplay,
+  getBenefitDisplayNames,
+} from '../../utils/jobPosting/jobPostingHelpers';
 import { logger } from '../../utils/logger';
 
 export interface FixedJobCardProps {
@@ -28,7 +32,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
     if (!posting.fixedData) {
       logger.warn('FixedJobCard: fixedData가 없는 공고', {
         component: 'FixedJobCard',
-        data: { postingId: posting.id }
+        data: { postingId: posting.id },
       });
       return null;
     }
@@ -40,7 +44,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
     if (!workSchedule) {
       logger.warn('FixedJobCard: workSchedule이 없는 공고', {
         component: 'FixedJobCard',
-        data: { postingId: posting.id }
+        data: { postingId: posting.id },
       });
       return null;
     }
@@ -79,14 +83,14 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
         aria-label={`고정공고: ${posting.title}`}
       >
         {/* 제목 */}
-        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-          {posting.title}
-        </h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">{posting.title}</h3>
 
         {/* 지역 */}
         {posting.location && (
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg" aria-hidden="true">📍</span>
+            <span className="text-lg" aria-hidden="true">
+              📍
+            </span>
             <span className="text-sm text-gray-600 dark:text-gray-300">
               {posting.location}
               {posting.district && ` (${posting.district})`}
@@ -97,7 +101,9 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
         {/* 급여 */}
         {posting.salaryType && posting.salaryAmount && (
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg" aria-hidden="true">💰</span>
+            <span className="text-lg" aria-hidden="true">
+              💰
+            </span>
             <span className="text-sm text-gray-600 dark:text-gray-300">
               {formatSalaryDisplay(posting.salaryType, posting.salaryAmount)}
             </span>
@@ -105,25 +111,33 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
         )}
 
         {/* 복리후생 */}
-        {posting.benefits && Object.keys(posting.benefits).length > 0 && getBenefitDisplayNames(posting.benefits).length > 0 && (
-          <div className="flex items-start gap-2 mb-3">
-            <span className="text-lg mt-0.5" aria-hidden="true">🎁</span>
-            <div className="text-sm text-gray-600 dark:text-gray-300">
-              {getBenefitDisplayNames(posting.benefits).join(', ')}
+        {posting.benefits &&
+          Object.keys(posting.benefits).length > 0 &&
+          getBenefitDisplayNames(posting.benefits).length > 0 && (
+            <div className="flex items-start gap-2 mb-3">
+              <span className="text-lg mt-0.5" aria-hidden="true">
+                🎁
+              </span>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                {getBenefitDisplayNames(posting.benefits).join(', ')}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* 근무 일정 */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg" aria-hidden="true">📅</span>
+          <span className="text-lg" aria-hidden="true">
+            📅
+          </span>
           <span className="text-sm text-gray-600 dark:text-gray-300">{scheduleText}</span>
         </div>
 
         {/* 모집 역할 목록 */}
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg" aria-hidden="true">👥</span>
+            <span className="text-lg" aria-hidden="true">
+              👥
+            </span>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">모집 역할</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -137,9 +151,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
                 </span>
               ))
             ) : (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                모집 역할 정보 없음
-              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">모집 역할 정보 없음</span>
             )}
           </div>
         </div>

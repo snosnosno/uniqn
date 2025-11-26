@@ -16,10 +16,7 @@ expect.extend(toHaveNoViolations);
  * const { container } = render(<MyComponent />);
  * await testAccessibility(container);
  */
-export const testAccessibility = async (
-  container: Element,
-  options?: any
-): Promise<void> => {
+export const testAccessibility = async (container: Element, options?: any): Promise<void> => {
   const results = await axe(container, options);
   expect(results).toHaveNoViolations();
 };
@@ -35,9 +32,7 @@ export const testAccessibility = async (
  * const button2 = screen.getByRole('button', { name: '두 번째' });
  * await testFocusOrder([button1, button2]);
  */
-export const testFocusOrder = async (
-  elements: HTMLElement[]
-): Promise<void> => {
+export const testFocusOrder = async (elements: HTMLElement[]): Promise<void> => {
   const user = userEvent.setup();
 
   for (const element of elements) {
@@ -57,10 +52,7 @@ export const testFocusOrder = async (
  * const button = screen.getByRole('button');
  * testScreenReaderText(button, '알림');
  */
-export const testScreenReaderText = (
-  element: HTMLElement,
-  expectedText: string
-): void => {
+export const testScreenReaderText = (element: HTMLElement, expectedText: string): void => {
   const accessibleName = element.getAttribute('aria-label') || element.textContent;
   expect(accessibleName).toContain(expectedText);
 };

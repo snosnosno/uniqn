@@ -19,19 +19,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  doc,
-  onSnapshot,
-  updateDoc,
-  DocumentData,
-} from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
-import type {
-  FirestoreDocumentResult,
-  FirestoreDocument,
-  DocumentHookOptions,
-} from './types';
+import type { FirestoreDocumentResult, FirestoreDocument, DocumentHookOptions } from './types';
 import { convertDocument } from './types';
 
 /**
@@ -66,13 +57,7 @@ export function useFirestoreDocument<T>(
   documentPath: string,
   options: DocumentHookOptions = {}
 ): FirestoreDocumentResult<T> {
-  const {
-    enabled = true,
-    errorOnNotFound = false,
-    onError,
-    onSuccess,
-    deps = [],
-  } = options;
+  const { enabled = true, errorOnNotFound = false, onError, onSuccess, deps = [] } = options;
 
   // 상태 관리
   const [data, setData] = useState<FirestoreDocument<T> | null>(null);
@@ -141,10 +126,7 @@ export function useFirestoreDocument<T>(
         docRef,
         (snapshot) => {
           if (snapshot.exists()) {
-            const document = convertDocument<T>(
-              snapshot.id,
-              snapshot.data() as DocumentData
-            );
+            const document = convertDocument<T>(snapshot.id, snapshot.data() as DocumentData);
 
             setData(document);
             setLoading(false);
@@ -159,9 +141,7 @@ export function useFirestoreDocument<T>(
             setLoading(false);
 
             if (errorOnNotFound) {
-              const notFoundError = new Error(
-                `Document not found: ${documentPath}`
-              );
+              const notFoundError = new Error(`Document not found: ${documentPath}`);
               setError(notFoundError);
               logger.error('useFirestoreDocument 문서 없음', notFoundError);
               onErrorRef.current?.(notFoundError);
@@ -203,13 +183,7 @@ export function useFirestoreDocument<T>(
       return undefined;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    documentPath,
-    enabled,
-    errorOnNotFound,
-    refetchCount,
-    ...deps,
-  ]);
+  }, [documentPath, enabled, errorOnNotFound, refetchCount, ...deps]);
 
   return {
     data,

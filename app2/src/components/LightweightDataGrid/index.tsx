@@ -1,11 +1,14 @@
 import React, { useMemo, useState } from 'react';
+import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  ColumnDef,
-} from '@tanstack/react-table';
-import { ClockIcon, CoffeeIcon, TableIcon, UserIcon, ExclamationIcon, CheckCircleIcon, InformationCircleIcon } from '../Icons';
+  ClockIcon,
+  CoffeeIcon,
+  TableIcon,
+  UserIcon,
+  ExclamationIcon,
+  CheckCircleIcon,
+  InformationCircleIcon,
+} from '../Icons';
 import { ValidationResult, ValidationViolation } from '../../utils/shiftValidation';
 
 interface GridRow {
@@ -43,33 +46,38 @@ const getCellStyle = (
   validationResult?: ValidationResult | null
 ): string => {
   let baseStyle = '';
-  
+
   // 기본 스타일
-  if (!value || value === '대기') baseStyle = 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400';
-  else if (value === '휴식') baseStyle = 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
-  else if (value.startsWith('T')) baseStyle = 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium';
+  if (!value || value === '대기')
+    baseStyle = 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400';
+  else if (value === '휴식')
+    baseStyle = 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
+  else if (value.startsWith('T'))
+    baseStyle = 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium';
   else baseStyle = 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
-  
+
   // 검증 오류가 있는 경우 경고 스타일 추가
   if (validationResult?.violations) {
     const hasError = validationResult.violations.some(
-      violation => violation.staffId === staffId && 
-                  violation.timeSlot === timeSlot && 
-                  violation.severity === 'error'
+      (violation) =>
+        violation.staffId === staffId &&
+        violation.timeSlot === timeSlot &&
+        violation.severity === 'error'
     );
     const hasWarning = validationResult.violations.some(
-      violation => violation.staffId === staffId && 
-                  violation.timeSlot === timeSlot && 
-                  violation.severity === 'warning'
+      (violation) =>
+        violation.staffId === staffId &&
+        violation.timeSlot === timeSlot &&
+        violation.severity === 'warning'
     );
-    
+
     if (hasError) {
       baseStyle += ' border-2 border-red-500 ring-1 ring-red-300';
     } else if (hasWarning) {
       baseStyle += ' border border-yellow-500 ring-1 ring-yellow-200';
     }
   }
-  
+
   return baseStyle;
 };
 
@@ -87,7 +95,7 @@ const ValidationTooltip: React.FC<{
   timeSlot: string;
 }> = ({ violations, staffId, timeSlot }) => {
   const relevantViolations = violations.filter(
-    v => v.staffId === staffId && v.timeSlot === timeSlot
+    (v) => v.staffId === staffId && v.timeSlot === timeSlot
   );
 
   if (relevantViolations.length === 0) return null;
@@ -96,14 +104,22 @@ const ValidationTooltip: React.FC<{
     <div className="absolute z-10 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg p-2 text-xs w-64 top-full left-0 mt-1">
       {relevantViolations.map((violation, index) => (
         <div key={index} className="mb-1 last:mb-0">
-          <div className={`flex items-center gap-1 ${
-            violation.severity === 'error' ? 'text-red-600 dark:text-red-400' :
-            violation.severity === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
-            'text-blue-600 dark:text-blue-400'
-          }`}>
-            {violation.severity === 'error' ? <ExclamationIcon className="w-3 h-3" /> :
-             violation.severity === 'warning' ? <InformationCircleIcon className="w-3 h-3" /> :
-             <CheckCircleIcon className="w-3 h-3" />}
+          <div
+            className={`flex items-center gap-1 ${
+              violation.severity === 'error'
+                ? 'text-red-600 dark:text-red-400'
+                : violation.severity === 'warning'
+                  ? 'text-yellow-600 dark:text-yellow-400'
+                  : 'text-blue-600 dark:text-blue-400'
+            }`}
+          >
+            {violation.severity === 'error' ? (
+              <ExclamationIcon className="w-3 h-3" />
+            ) : violation.severity === 'warning' ? (
+              <InformationCircleIcon className="w-3 h-3" />
+            ) : (
+              <CheckCircleIcon className="w-3 h-3" />
+            )}
             <span className="font-medium">{violation.message}</span>
           </div>
           {violation.suggestedFix && (
@@ -121,9 +137,9 @@ const ValidationTooltip: React.FC<{
 const ValidationSummary: React.FC<{
   validationResult: ValidationResult;
 }> = ({ validationResult }) => {
-  const errorCount = validationResult.violations.filter(v => v.severity === 'error').length;
-  const warningCount = validationResult.violations.filter(v => v.severity === 'warning').length;
-  const infoCount = validationResult.violations.filter(v => v.severity === 'info').length;
+  const errorCount = validationResult.violations.filter((v) => v.severity === 'error').length;
+  const warningCount = validationResult.violations.filter((v) => v.severity === 'warning').length;
+  const infoCount = validationResult.violations.filter((v) => v.severity === 'info').length;
 
   if (validationResult.isValid && validationResult.violations.length === 0) {
     return (
@@ -183,20 +199,20 @@ const TableCell: React.FC<{
   onCellClick: () => void;
   onCellChange: (staffId: string, timeSlot: string, value: string) => void;
   setEditingCell: (cell: { rowId: string; columnId: string } | null) => void;
-}> = ({ 
-  value, 
-  rowId, 
-  timeSlot, 
-  icon, 
-  style, 
-  hasViolations, 
-  validationResult, 
-  isEditing, 
+}> = ({
+  value,
+  rowId,
+  timeSlot,
+  icon,
+  style,
+  hasViolations,
+  validationResult,
+  isEditing,
   _readonly,
   tables,
   onCellClick,
   onCellChange,
-  setEditingCell 
+  setEditingCell,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -215,19 +231,17 @@ const TableCell: React.FC<{
   }
 
   return (
-    <div 
+    <div
       className={`relative h-full flex items-center justify-center gap-2 px-2 py-1 cursor-pointer ${style}`}
       onClick={onCellClick}
       onMouseEnter={() => hasViolations && setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       {icon}
-      <span className="text-sm font-medium">
-        {value || '대기'}
-      </span>
+      <span className="text-sm font-medium">{value || '대기'}</span>
       {hasViolations && <ExclamationIcon className="w-3 h-3 text-red-500 dark:text-red-400 ml-1" />}
       {showTooltip && hasViolations && validationResult?.violations && (
-        <ValidationTooltip 
+        <ValidationTooltip
           violations={validationResult.violations}
           staffId={rowId}
           timeSlot={timeSlot}
@@ -251,15 +265,15 @@ const CellEditor: React.FC<{
       { value: '', label: '대기' },
       { value: '휴식', label: '휴식' },
     ];
-    
-    const activeTables = tables.filter(t => t.status === 'open');
-    activeTables.forEach(table => {
+
+    const activeTables = tables.filter((t) => t.status === 'open');
+    activeTables.forEach((table) => {
       options.push({
         value: `T${table.tableNumber}`,
-        label: `${table.name} (T${table.tableNumber})`
+        label: `${table.name} (T${table.tableNumber})`,
       });
     });
-    
+
     return options;
   }, [tables]);
 
@@ -283,7 +297,7 @@ const CellEditor: React.FC<{
       className="w-full h-full px-1 border-none outline-none bg-white dark:bg-gray-700 dark:text-gray-100 text-sm"
       autoFocus
     >
-      {availableOptions.map(option => (
+      {availableOptions.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>
@@ -305,17 +319,17 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
 
   // 데이터 변환
   const data = useMemo<GridRow[]>(() => {
-    return dealers.map(dealer => {
+    return dealers.map((dealer) => {
       const row: GridRow = {
         id: dealer.id,
         staffName: dealer.staffName,
         startTime: dealer.startTime,
       };
-      
-      timeSlots.forEach(timeSlot => {
+
+      timeSlots.forEach((timeSlot) => {
         row[timeSlot] = dealer.assignments[timeSlot] || '';
       });
-      
+
       return row;
     });
   }, [dealers, timeSlots]);
@@ -333,28 +347,33 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
           <div className="flex items-center gap-2 px-2 py-1">
             <UserIcon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
             <div>
-              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{row.original.staffName}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">출근: {row.original.startTime}</div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {row.original.staffName}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                출근: {row.original.startTime}
+              </div>
             </div>
           </div>
         ),
       },
     ];
-    
-    const timeColumns: ColumnDef<GridRow>[] = timeSlots.map(timeSlot => ({
+
+    const timeColumns: ColumnDef<GridRow>[] = timeSlots.map((timeSlot) => ({
       id: timeSlot,
       accessorKey: timeSlot,
       header: timeSlot,
       size: 100,
       cell: ({ row, getValue }) => {
-        const value = getValue() as string || '';
+        const value = (getValue() as string) || '';
         const isEditing = editingCell?.rowId === row.id && editingCell?.columnId === timeSlot;
         const icon = getCellIcon(value);
         const style = getCellStyle(value, row.id, timeSlot, validationResult);
-        
-        const hasViolations = validationResult?.violations?.some(
-          v => v.staffId === row.id && v.timeSlot === timeSlot
-        ) || false;
+
+        const hasViolations =
+          validationResult?.violations?.some(
+            (v) => v.staffId === row.id && v.timeSlot === timeSlot
+          ) || false;
 
         const handleCellClick = () => {
           if (!readonly) {
@@ -381,7 +400,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
         );
       },
     }));
-    
+
     return [...baseColumns, ...timeColumns];
   }, [timeSlots, readonly, tables, validationResult, editingCell, onCellChange]);
 
@@ -398,7 +417,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
     <div className="space-y-4">
       {/* 검증 결과 요약 */}
       {validationResult && <ValidationSummary validationResult={validationResult} />}
-      
+
       {/* 데이터 그리드 */}
       <div
         className="border dark:border-gray-700 rounded-lg overflow-auto bg-white dark:bg-gray-800 shadow-sm"
@@ -406,9 +425,9 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
       >
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-700">
-            {table.getHeaderGroups().map(headerGroup => (
+            {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
+                {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     className="px-2 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 border-r dark:border-gray-700 last:border-r-0"
@@ -416,10 +435,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                     {header.column.getCanResize() && (
                       <div
                         onMouseDown={header.getResizeHandler()}
@@ -443,18 +459,15 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map(row => (
+              table.getRowModel().rows.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  {row.getVisibleCells().map(cell => (
+                  {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
                       className="border-r last:border-r-0 h-[60px]"
                       style={{ width: cell.column.getSize() }}
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>

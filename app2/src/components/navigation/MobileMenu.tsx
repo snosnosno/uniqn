@@ -30,7 +30,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   const { currentUser, signOut, role } = useAuth();
   const menuRef = useRef<HTMLDivElement>(null);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  
+
   const isAdmin = role === 'admin' || role === 'ceo';
 
   // 메뉴 아이템 정의
@@ -40,7 +40,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       label: '홈',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
           />
         </svg>
@@ -64,7 +67,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       label: '테이블 관리',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
             d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
           />
         </svg>
@@ -77,7 +83,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       label: '구인구직',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
             d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
           />
         </svg>
@@ -98,14 +107,22 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       label: '관리자',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
           />
         </svg>
       ),
       adminOnly: true,
       children: [
-        { path: '/app/admin/shift-schedule', label: '교대 관리', adminOnly: true, featureFlag: 'SHIFT_SCHEDULE' },
+        {
+          path: '/app/admin/shift-schedule',
+          label: '교대 관리',
+          adminOnly: true,
+          featureFlag: 'SHIFT_SCHEDULE',
+        },
         { path: '/app/admin/prizes', label: '상금 관리', adminOnly: true, featureFlag: 'PRIZES' },
         { path: '/app/admin/staff', label: '스태프 관리', adminOnly: true },
         { path: '/app/admin/job-postings', label: '구인공고 관리', adminOnly: true },
@@ -115,12 +132,12 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   ];
 
   // 필터링된 메뉴 아이템
-  const filteredMenuItems = menuItems.filter(item => {
+  const filteredMenuItems = menuItems.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
     if (item.requiresAuth && !currentUser) return false;
     if (item.featureFlag && !FEATURE_FLAGS[item.featureFlag]) return false;
     if (item.children) {
-      item.children = item.children.filter(child => {
+      item.children = item.children.filter((child) => {
         if (child.adminOnly && !isAdmin) return false;
         if (child.requiresAuth && !currentUser) return false;
         if (child.featureFlag && !FEATURE_FLAGS[child.featureFlag]) return false;
@@ -144,7 +161,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         onClose();
       }
     };
-    
+
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
   }, [isOpen, onClose]);
@@ -175,10 +192,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   };
 
   const toggleExpanded = (path: string) => {
-    setExpandedItems(prev => 
-      prev.includes(path) 
-        ? prev.filter(p => p !== path)
-        : [...prev, path]
+    setExpandedItems((prev) =>
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
     );
   };
 
@@ -191,14 +206,14 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   return (
     <>
       {/* 배경 오버레이 */}
-      <div 
+      <div
         className={`
           fixed inset-0 bg-black transition-opacity duration-300 z-40
           ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0 pointer-events-none'}
         `}
         onClick={onClose}
       />
-      
+
       {/* 메뉴 패널 */}
       <div
         ref={menuRef}
@@ -219,25 +234,34 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               aria-label="메뉴 닫기"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
-          
+
           {currentUser && (
             <div className="text-base">
-              <p className="font-medium">{getUserDisplayName(currentUser.displayName, currentUser.email)}</p>
+              <p className="font-medium">
+                {getUserDisplayName(currentUser.displayName, currentUser.email)}
+              </p>
               <p className="opacity-90 text-sm">{role}</p>
             </div>
           )}
         </div>
-        
+
         {/* 메뉴 아이템 */}
         <nav className="flex-1 overflow-y-auto py-4">
           {filteredMenuItems.map((item) => (
             <div key={item.path}>
               <button
-                onClick={() => item.children ? toggleExpanded(item.path) : handleMenuClick(item.path)}
+                onClick={() =>
+                  item.children ? toggleExpanded(item.path) : handleMenuClick(item.path)
+                }
                 className={`
                   w-full flex items-center justify-between px-4 py-3
                   hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors
@@ -249,17 +273,22 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                   <span className="font-medium">{item.label}</span>
                 </div>
                 {item.children && (
-                  <svg 
+                  <svg
                     className={`w-4 h-4 transition-transform ${expandedItems.includes(item.path) ? 'rotate-90' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 )}
               </button>
-              
+
               {/* 하위 메뉴 */}
               {item.children && expandedItems.includes(item.path) && (
                 <div className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700">
@@ -281,7 +310,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             </div>
           ))}
         </nav>
-        
+
         {/* 하단 액션 */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           {currentUser ? (
@@ -290,7 +319,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
@@ -305,8 +337,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-600 dark:hover:bg-primary-700 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
               <span>로그인</span>

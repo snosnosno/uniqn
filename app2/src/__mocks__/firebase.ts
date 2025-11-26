@@ -5,17 +5,19 @@ export const mockFirestore: any = {
   where: jest.fn(() => mockFirestore),
   orderBy: jest.fn(() => mockFirestore),
   limit: jest.fn(() => mockFirestore),
-  get: jest.fn(() => Promise.resolve({
-    docs: [],
-    empty: true,
-    size: 0
-  })),
+  get: jest.fn(() =>
+    Promise.resolve({
+      docs: [],
+      empty: true,
+      size: 0,
+    })
+  ),
   onSnapshot: jest.fn((callback: any) => {
     // 즉시 빈 스냅샷 콜백 실행
     callback({
       docs: [],
       empty: true,
-      size: 0
+      size: 0,
     });
     // unsubscribe 함수 반환
     return jest.fn();
@@ -23,7 +25,7 @@ export const mockFirestore: any = {
   set: jest.fn(() => Promise.resolve()),
   update: jest.fn(() => Promise.resolve()),
   delete: jest.fn(() => Promise.resolve()),
-  add: jest.fn(() => Promise.resolve({ id: 'mock-id' }))
+  add: jest.fn(() => Promise.resolve({ id: 'mock-id' })),
 };
 
 export const mockAuth = {
@@ -32,11 +34,13 @@ export const mockAuth = {
     callback(null);
     return jest.fn(); // unsubscribe 함수
   }),
-  signInWithEmailAndPassword: jest.fn(() => Promise.resolve({
-    user: { uid: 'test-user-id', email: 'test@example.com' }
-  })),
+  signInWithEmailAndPassword: jest.fn(() =>
+    Promise.resolve({
+      user: { uid: 'test-user-id', email: 'test@example.com' },
+    })
+  ),
   signOut: jest.fn(() => Promise.resolve()),
-  sendPasswordResetEmail: jest.fn(() => Promise.resolve())
+  sendPasswordResetEmail: jest.fn(() => Promise.resolve()),
 };
 
 export const db = mockFirestore;

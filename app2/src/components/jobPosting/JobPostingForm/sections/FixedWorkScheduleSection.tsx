@@ -31,7 +31,7 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
         const newDays = parseInt(e.target.value, 10);
         handlers.onWorkScheduleChange({
           ...data.workSchedule,
-          daysPerWeek: newDays
+          daysPerWeek: newDays,
         });
       },
       [data.workSchedule, handlers]
@@ -41,7 +41,7 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         handlers.onWorkScheduleChange({
           ...data.workSchedule,
-          startTime: e.target.value
+          startTime: e.target.value,
         });
       },
       [data.workSchedule, handlers]
@@ -51,7 +51,7 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         handlers.onWorkScheduleChange({
           ...data.workSchedule,
-          endTime: e.target.value
+          endTime: e.target.value,
         });
       },
       [data.workSchedule, handlers]
@@ -63,7 +63,7 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
       const newRole: { id: string; role: string; count: number } = {
         id: Date.now().toString(),
         role: '딜러',
-        count: 1
+        count: 1,
       };
       handlers.onRolesChange([...data.requiredRolesWithCount, newRole]);
     }, [data.requiredRolesWithCount, handlers]);
@@ -79,9 +79,7 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
 
     const handleRemoveRole = useCallback(
       (index: number) => {
-        handlers.onRolesChange(
-          data.requiredRolesWithCount.filter((_, i) => i !== index)
-        );
+        handlers.onRolesChange(data.requiredRolesWithCount.filter((_, i) => i !== index));
       },
       [data.requiredRolesWithCount, handlers]
     );
@@ -89,9 +87,7 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
     return (
       <section className="space-y-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
         {/* T014: 섹션 헤더 */}
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          근무 일정
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">근무 일정</h3>
 
         {/* T014: 근무일정 입력 그리드 레이아웃 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -171,10 +167,17 @@ const FixedWorkScheduleSection: React.FC<FixedWorkScheduleSectionProps> = memo(
           <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-800 dark:text-blue-300 flex items-center">
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>
-                익일 근무로 인식됩니다: <strong>{data.workSchedule.startTime} ~ 익일 {data.workSchedule.endTime}</strong>
+                익일 근무로 인식됩니다:{' '}
+                <strong>
+                  {data.workSchedule.startTime} ~ 익일 {data.workSchedule.endTime}
+                </strong>
               </span>
             </p>
           </div>
@@ -229,7 +232,10 @@ FixedWorkScheduleSection.displayName = 'FixedWorkScheduleSection';
 interface RoleInputRowProps {
   role: { id: string; role: string; count: number; customRole?: string };
   index: number;
-  onUpdate: (index: number, updated: { id: string; role: string; count: number; customRole?: string }) => void;
+  onUpdate: (
+    index: number,
+    updated: { id: string; role: string; count: number; customRole?: string }
+  ) => void;
   onRemove: (index: number) => void;
 }
 
@@ -238,93 +244,93 @@ interface RoleInputRowProps {
  *
  * @component
  */
-const RoleInputRow: React.FC<RoleInputRowProps> = memo(
-  ({ role, index, onUpdate, onRemove }) => {
-    const handleRoleChange = useCallback(
-      (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newRole = e.target.value;
-        onUpdate(index, {
-          ...role,
-          role: newRole,
-          customRole: newRole === '기타' ? role.customRole || '' : undefined
-        });
-      },
-      [index, role, onUpdate]
-    );
+const RoleInputRow: React.FC<RoleInputRowProps> = memo(({ role, index, onUpdate, onRemove }) => {
+  const handleRoleChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newRole = e.target.value;
+      onUpdate(index, {
+        ...role,
+        role: newRole,
+        customRole: newRole === '기타' ? role.customRole || '' : undefined,
+      });
+    },
+    [index, role, onUpdate]
+  );
 
-    const handleCustomRoleChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        onUpdate(index, { ...role, customRole: e.target.value });
-      },
-      [index, role, onUpdate]
-    );
+  const handleCustomRoleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(index, { ...role, customRole: e.target.value });
+    },
+    [index, role, onUpdate]
+  );
 
-    const handleCountChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        onUpdate(index, { ...role, count: parseInt(e.target.value, 10) });
-      },
-      [index, role, onUpdate]
-    );
+  const handleCountChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(index, { ...role, count: parseInt(e.target.value, 10) });
+    },
+    [index, role, onUpdate]
+  );
 
-    const isCustomRole = role.role === '기타';
+  const isCustomRole = role.role === '기타';
 
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-4">
-          {/* 역할 선택 드롭다운 */}
-          <select
-            value={role.role}
-            onChange={handleRoleChange}
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-4">
+        {/* 역할 선택 드롭다운 */}
+        <select
+          value={role.role}
+          onChange={handleRoleChange}
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                        bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
                        focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-          >
-            {STAFF_ROLES.map(r => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
+        >
+          {STAFF_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
 
-          {/* 인원수 입력 */}
-          <input
-            type="number"
-            min="1"
-            required
-            value={role.count}
-            onChange={handleCountChange}
-            className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+        {/* 인원수 입력 */}
+        <input
+          type="number"
+          min="1"
+          required
+          value={role.count}
+          onChange={handleCountChange}
+          className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                        bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
                        focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-          />
+        />
 
-          {/* 삭제 버튼 */}
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="px-3 py-2 bg-red-600 dark:bg-red-700 text-white rounded-md
+        {/* 삭제 버튼 */}
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="px-3 py-2 bg-red-600 dark:bg-red-700 text-white rounded-md
                        hover:bg-red-700 dark:hover:bg-red-800
                        focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600"
-          >
-            삭제
-          </button>
-        </div>
+        >
+          삭제
+        </button>
+      </div>
 
-        {/* 기타 선택 시 직접 입력 필드 */}
-        {isCustomRole && (
-          <input
-            type="text"
-            placeholder="역할명을 직접 입력하세요"
-            value={role.customRole || ''}
-            onChange={handleCustomRoleChange}
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+      {/* 기타 선택 시 직접 입력 필드 */}
+      {isCustomRole && (
+        <input
+          type="text"
+          placeholder="역할명을 직접 입력하세요"
+          value={role.customRole || ''}
+          onChange={handleCustomRoleChange}
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                        bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
                        focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
                        ml-0"
-          />
-        )}
-      </div>
-    );
-  }
-);
+        />
+      )}
+    </div>
+  );
+});
 
 RoleInputRow.displayName = 'RoleInputRow';
 

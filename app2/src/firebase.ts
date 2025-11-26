@@ -1,7 +1,7 @@
 // Firebase 초기화 및 인증/DB 인스턴스 export
-import { initializeApp } from "firebase/app";
+import { initializeApp } from 'firebase/app';
 import { logger } from './utils/logger';
-import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import {
   getFirestore,
   doc,
@@ -15,20 +15,23 @@ import {
   startAfter,
   Timestamp,
   Query,
-  connectFirestoreEmulator
-} from "firebase/firestore";
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+  connectFirestoreEmulator,
+} from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 // Storage는 동적 import를 위해 직접 import하지 않음
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
-import type { QueryConstraint as FirestoreQueryConstraint, DocumentSnapshot } from 'firebase/firestore';
+import type {
+  QueryConstraint as FirestoreQueryConstraint,
+  DocumentSnapshot,
+} from 'firebase/firestore';
 // Import centralized config
 import { firebaseConfig, emulatorConfig, validateConfig } from './config/firebase.config';
 
 // Validate configuration on load
 if (!validateConfig()) {
   logger.warn('Firebase configuration validation failed', {
-    component: 'firebase.ts'
+    component: 'firebase.ts',
   });
 }
 
@@ -49,7 +52,7 @@ try {
     db = getFirestore(app);
     logger.info('Firestore initialized for emulator environment', {
       component: 'firebase',
-      environment: 'emulator'
+      environment: 'emulator',
     });
   } else {
     // For production, also use getFirestore for now
@@ -57,7 +60,7 @@ try {
     db = getFirestore(app);
     logger.info('Firestore initialized for production environment', {
       component: 'firebase',
-      environment: 'production'
+      environment: 'production',
     });
   }
 } catch (error) {
@@ -65,7 +68,7 @@ try {
   db = getFirestore(app);
   logger.warn('Fallback to getFirestore due to initialization error', {
     component: 'firebase',
-    errorInfo: String(error)
+    errorInfo: String(error),
   });
 }
 
@@ -94,8 +97,8 @@ if (isEmulator) {
         ...(window.__FIREBASE_DEFAULTS__ || {}),
         emulatorHosts: {
           auth: 'localhost:9099',
-          firestore: 'localhost:8080'
-        }
+          firestore: 'localhost:8080',
+        },
       };
     }
   } catch (error) {
@@ -144,7 +147,11 @@ export const setupTestData = async () => {
     await batch.commit();
     return 'SUCCESS';
   } catch (error) {
-    logger.error('Error writing test data: ', error instanceof Error ? error : new Error(String(error)), { component: 'firebase' });
+    logger.error(
+      'Error writing test data: ',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'firebase' }
+    );
     return 'ERROR';
   }
 };
@@ -166,11 +173,14 @@ export const promoteToStaff = async (
   _actualUserId?: string
 ) => {
   // 🚫 함수 완전 비활성화 - 더 이상 사용하지 않음
-  logger.warn('⚠️ promoteToStaff 함수는 deprecated되었습니다. WorkLog 생성은 useApplicantActions에서 직접 처리됩니다.', {
-    component: 'firebase',
-    data: { documentId, postingId }
-  });
-  
+  logger.warn(
+    '⚠️ promoteToStaff 함수는 deprecated되었습니다. WorkLog 생성은 useApplicantActions에서 직접 처리됩니다.',
+    {
+      component: 'firebase',
+      data: { documentId, postingId },
+    }
+  );
+
   // 더 이상 WorkLog를 생성하지 않고 즉시 반환
   return Promise.resolve();
 };
@@ -182,20 +192,19 @@ interface PaginationOptions {
 
 // Build filtered query for job postings - COMPREHENSIVE INDEX VERSION
 export const buildFilteredQuery = (
-  filters: JobPostingFilters, 
+  filters: JobPostingFilters,
   pagination?: PaginationOptions
 ): Query => {
   const jobPostingsRef = collection(db, 'jobPostings');
   const queryConstraints: FirestoreQueryConstraint[] = [];
-  
-  
+
   // Always filter for open status
   queryConstraints.push(where('status', '==', 'open'));
-  
+
   // Handle search queries with location/type support
   if (filters.searchTerms && filters.searchTerms.length > 0) {
     queryConstraints.push(where('searchIndex', 'array-contains-any', filters.searchTerms));
-    
+
     // Add location filter if specified (has index: status + searchIndex + location + createdAt)
     if (filters.location && filters.location !== 'all') {
       queryConstraints.push(where('location', '==', filters.location));
@@ -204,20 +213,19 @@ export const buildFilteredQuery = (
     else if (filters.type && filters.type !== 'all') {
       queryConstraints.push(where('type', '==', filters.type));
     }
-    
+
     // Always use createdAt ordering for search results
     queryConstraints.push(orderBy('createdAt', 'desc'));
-  } 
+  }
   // Handle date-based queries (prioritized because of range query limitations)
   else if (filters.startDate) {
-    
     // Create date at start of day to match job postings
     const filterDate = new Date(filters.startDate);
     filterDate.setHours(0, 0, 0, 0);
     const startDateTimestamp = Timestamp.fromDate(filterDate);
-    
+
     queryConstraints.push(where('startDate', '>=', startDateTimestamp));
-    
+
     // Priority: Role filter first (if specified), then location/type
     // Note: Firebase doesn't allow inequality + array-contains in same query
     // So we prioritize role filter and do client-side filtering for others
@@ -233,7 +241,7 @@ export const buildFilteredQuery = (
     else if (filters.type && filters.type !== 'all') {
       queryConstraints.push(where('type', '==', filters.type));
     }
-    
+
     // Use startDate ordering for date-filtered queries
     queryConstraints.push(orderBy('startDate', 'asc'));
   }
@@ -243,154 +251,161 @@ export const buildFilteredQuery = (
     if (filters.location && filters.location !== 'all') {
       queryConstraints.push(where('location', '==', filters.location));
     }
-    
+
     // Add type filter
     if (filters.type && filters.type !== 'all') {
       queryConstraints.push(where('type', '==', filters.type));
     }
-    
+
     // Add role filter
     if (filters.role && filters.role !== 'all') {
       queryConstraints.push(where('requiredRoles', 'array-contains', filters.role));
     }
-    
+
     // Use createdAt ordering for non-date queries
     queryConstraints.push(orderBy('createdAt', 'desc'));
   }
-  
+
   // Add startAfter for pagination if provided
   if (pagination?.startAfterDoc) {
     queryConstraints.push(startAfter(pagination.startAfterDoc));
   }
-  
+
   // Add limit (default 20 for regular queries, customizable for infinite scroll)
   queryConstraints.push(limit(pagination?.limit || 20));
-  
-  
+
   return query(jobPostingsRef, ...queryConstraints);
 };
 
 // Migration function to add searchIndex to existing job postings
 export const migrateJobPostingsSearchIndex = async (): Promise<void> => {
-  
   try {
     const jobPostingsRef = collection(db, 'jobPostings');
     const snapshot = await getDocs(jobPostingsRef);
-    
+
     const batch = writeBatch(db);
     let updateCount = 0;
-    
+
     snapshot.forEach((docSnapshot) => {
       const data = docSnapshot.data();
-      
+
       // Skip if searchIndex already exists
       if (data.searchIndex) {
         return;
       }
-      
+
       const title = data.title || '';
       const description = data.description || '';
-      
+
       // Generate search index
       const searchIndex = generateSearchIndexForJobPosting(title, description);
-      
+
       // Update document
       const docRef = doc(db, 'jobPostings', docSnapshot.id);
       batch.update(docRef, { searchIndex });
       updateCount++;
     });
-    
+
     if (updateCount > 0) {
       await batch.commit();
     }
   } catch (error) {
-    logger.error('Error during searchIndex migration:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase' });
+    logger.error(
+      'Error during searchIndex migration:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'firebase' }
+    );
     throw error;
   }
 };
 
 // Migration function to add requiredRoles to existing job postings
 export const migrateJobPostingsRequiredRoles = async (): Promise<void> => {
-  
   try {
     const jobPostingsRef = collection(db, 'jobPostings');
     const snapshot = await getDocs(jobPostingsRef);
-    
+
     const batch = writeBatch(db);
     let updateCount = 0;
-    
+
     snapshot.forEach((docSnapshot) => {
       const data = docSnapshot.data();
-      
+
       // Skip if requiredRoles already exists
       if (data.requiredRoles && Array.isArray(data.requiredRoles)) {
         return;
       }
-      
+
       // Extract roles from dateSpecificRequirements
       const dateSpecificRequirements = data.dateSpecificRequirements || [];
-      const requiredRoles = Array.from(new Set(
-        dateSpecificRequirements.flatMap((dateReq: { timeSlots?: Array<{ roles?: Array<{ name: string }> }> }) => {
-          if (dateReq.timeSlots && Array.isArray(dateReq.timeSlots)) {
-            return dateReq.timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) => {
-              if (ts.roles && Array.isArray(ts.roles)) {
-                return ts.roles.map((r: { name: string }) => r.name);
+      const requiredRoles = Array.from(
+        new Set(
+          dateSpecificRequirements.flatMap(
+            (dateReq: { timeSlots?: Array<{ roles?: Array<{ name: string }> }> }) => {
+              if (dateReq.timeSlots && Array.isArray(dateReq.timeSlots)) {
+                return dateReq.timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) => {
+                  if (ts.roles && Array.isArray(ts.roles)) {
+                    return ts.roles.map((r: { name: string }) => r.name);
+                  }
+                  return [];
+                });
               }
               return [];
-            });
-          }
-          return [];
-        })
-      ));
-      
-      
+            }
+          )
+        )
+      );
+
       // Update document
       const docRef = doc(db, 'jobPostings', docSnapshot.id);
       batch.update(docRef, { requiredRoles });
       updateCount++;
     });
-    
+
     if (updateCount > 0) {
       await batch.commit();
     }
   } catch (error) {
-    logger.error('Error during requiredRoles migration:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase' });
+    logger.error(
+      'Error during requiredRoles migration:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'firebase' }
+    );
     throw error;
   }
 };
 
 // Migration function to convert string dates to Timestamps
 export const migrateJobPostingsDateFormat = async (): Promise<void> => {
-  
   try {
     const jobPostingsRef = collection(db, 'jobPostings');
     const snapshot = await getDocs(jobPostingsRef);
-    
+
     const batch = writeBatch(db);
     let updateCount = 0;
-    
+
     snapshot.forEach((docSnapshot) => {
       const data = docSnapshot.data();
-      
+
       // Check if startDate is a string and needs conversion
       if (data.startDate && typeof data.startDate === 'string') {
         const dateObj = new Date(data.startDate);
         if (!isNaN(dateObj.getTime())) {
           const startDateTimestamp = Timestamp.fromDate(dateObj);
-          
+
           // Update document
           const docRef = doc(db, 'jobPostings', docSnapshot.id);
           batch.update(docRef, { startDate: startDateTimestamp });
           updateCount++;
         }
       }
-      
+
       // Also handle endDate if it exists
       if (data.endDate && typeof data.endDate === 'string') {
         const dateObj = new Date(data.endDate);
         if (!isNaN(dateObj.getTime())) {
           const endDateTimestamp = Timestamp.fromDate(dateObj);
-          
+
           // Update document
           const docRef = doc(db, 'jobPostings', docSnapshot.id);
           batch.update(docRef, { endDate: endDateTimestamp });
@@ -398,12 +413,16 @@ export const migrateJobPostingsDateFormat = async (): Promise<void> => {
         }
       }
     });
-    
+
     if (updateCount > 0) {
       await batch.commit();
     }
   } catch (error) {
-    logger.error('Error during date format migration:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase' });
+    logger.error(
+      'Error during date format migration:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'firebase' }
+    );
     throw error;
   }
 };
@@ -414,20 +433,21 @@ const generateSearchIndexForJobPosting = (title: string, description: string): s
   const words = text
     .replace(/[^\w\s가-힣]/g, ' ')
     .split(/\s+/)
-    .filter(word => word.length > 1);
-  
+    .filter((word) => word.length > 1);
+
   return Array.from(new Set(words));
 };
 
 // Run all migrations for job postings
 export const runJobPostingsMigrations = async (): Promise<void> => {
-  
   try {
     await migrateJobPostingsRequiredRoles();
     await migrateJobPostingsDateFormat();
     await migrateJobPostingsSearchIndex();
   } catch (error) {
-    logger.error('??Migration failed:', error instanceof Error ? error : new Error(String(error)), { component: 'firebase' });
+    logger.error('??Migration failed:', error instanceof Error ? error : new Error(String(error)), {
+      component: 'firebase',
+    });
     throw error;
   }
 };

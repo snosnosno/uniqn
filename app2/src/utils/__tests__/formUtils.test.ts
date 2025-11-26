@@ -42,9 +42,7 @@ describe('FormUtils', () => {
 
       handlers.handleChange(event);
 
-      expect(setState).toHaveBeenCalledWith(
-        expect.any(Function)
-      );
+      expect(setState).toHaveBeenCalledWith(expect.any(Function));
 
       // setState의 updater 함수를 실제로 실행해서 결과 확인
       const updaterFn = setState.mock.calls[0][0];
@@ -96,9 +94,7 @@ describe('FormUtils', () => {
 
       handlers.handleSelectChange(event);
 
-      expect(setState).toHaveBeenCalledWith(
-        expect.any(Function)
-      );
+      expect(setState).toHaveBeenCalledWith(expect.any(Function));
 
       const updaterFn = setState.mock.calls[0][0];
       const prevState = { role: 'user', username: 'john' };
@@ -125,9 +121,7 @@ describe('FormUtils', () => {
 
       handlers.handleCheckboxChange(event);
 
-      expect(setState).toHaveBeenCalledWith(
-        expect.any(Function)
-      );
+      expect(setState).toHaveBeenCalledWith(expect.any(Function));
 
       const updaterFn = setState.mock.calls[0][0];
       const prevState = { isActive: false, username: 'john' };

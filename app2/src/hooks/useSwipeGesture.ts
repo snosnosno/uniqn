@@ -25,7 +25,7 @@ export const useSwipeGesture = (options: SwipeGestureOptions) => {
     onSwipeUp,
     onSwipeDown,
     minDistance = 50,
-    threshold = 10
+    threshold = 10,
   } = options;
 
   const touchStart = useRef<TouchCoordinates | null>(null);
@@ -37,7 +37,7 @@ export const useSwipeGesture = (options: SwipeGestureOptions) => {
     if (firstTouch) {
       touchStart.current = {
         x: firstTouch.clientX,
-        y: firstTouch.clientY
+        y: firstTouch.clientY,
       };
     }
   }, []);
@@ -47,7 +47,7 @@ export const useSwipeGesture = (options: SwipeGestureOptions) => {
     if (firstTouch) {
       touchEnd.current = {
         x: firstTouch.clientX,
-        y: firstTouch.clientY
+        y: firstTouch.clientY,
       };
     }
   }, []);
@@ -84,7 +84,7 @@ export const useSwipeGesture = (options: SwipeGestureOptions) => {
   return {
     onTouchStart,
     onTouchMove,
-    onTouchEnd
+    onTouchEnd,
   };
 };
 
@@ -102,7 +102,7 @@ export const useSwipeGestureReact = (options: SwipeGestureOptions) => {
     onSwipeUp,
     onSwipeDown,
     minDistance = 50,
-    threshold = 10
+    threshold = 10,
   } = options;
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
@@ -111,7 +111,7 @@ export const useSwipeGestureReact = (options: SwipeGestureOptions) => {
     if (firstTouch) {
       touchStart.current = {
         x: firstTouch.clientX,
-        y: firstTouch.clientY
+        y: firstTouch.clientY,
       };
     }
   }, []);
@@ -121,7 +121,7 @@ export const useSwipeGestureReact = (options: SwipeGestureOptions) => {
     if (firstTouch) {
       touchEnd.current = {
         x: firstTouch.clientX,
-        y: firstTouch.clientY
+        y: firstTouch.clientY,
       };
     }
   }, []);
@@ -156,7 +156,7 @@ export const useSwipeGestureReact = (options: SwipeGestureOptions) => {
   return {
     onTouchStart,
     onTouchMove,
-    onTouchEnd
+    onTouchEnd,
   };
 };
 

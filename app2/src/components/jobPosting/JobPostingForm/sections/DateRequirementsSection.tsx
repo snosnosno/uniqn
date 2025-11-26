@@ -56,47 +56,45 @@ import DateSpecificRequirementsNew from '../../DateSpecificRequirementsNew';
  * @param {DateRequirementsValidation} [props.validation] - 검증 상태 (선택)
  * @returns {React.ReactElement} 날짜별 요구사항 입력 섹션
  */
-const DateRequirementsSection: React.FC<DateRequirementsSectionProps> = React.memo(({
-  data,
-  handlers,
-  validation
-}) => {
-  /**
-   * 메모이제이션: 대형 배열 렌더링 최적화 (50개 이상 날짜 지원)
-   */
-  const memoizedRequirements = useMemo(() => {
-    return data.dateSpecificRequirements;
-  }, [data.dateSpecificRequirements]);
+const DateRequirementsSection: React.FC<DateRequirementsSectionProps> = React.memo(
+  ({ data, handlers, validation }) => {
+    /**
+     * 메모이제이션: 대형 배열 렌더링 최적화 (50개 이상 날짜 지원)
+     */
+    const memoizedRequirements = useMemo(() => {
+      return data.dateSpecificRequirements;
+    }, [data.dateSpecificRequirements]);
 
-  return (
-    <div className="space-y-4">
-      <div className="mb-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          날짜별 요구사항 <span className="text-red-500 dark:text-red-400">*</span>
-        </label>
-      </div>
-
-      {/* 기존 DateSpecificRequirementsNew 컴포넌트 활용 */}
-      <DateSpecificRequirementsNew
-        requirements={memoizedRequirements}
-        onRequirementsChange={handlers.onRequirementsChange}
-        onDateSpecificTimeSlotChange={handlers.onTimeSlotChange}
-        onDateSpecificTimeToBeAnnouncedToggle={handlers.onTimeToBeAnnouncedToggle}
-        onDateSpecificTentativeDescriptionChange={handlers.onTentativeDescriptionChange}
-        onDateSpecificRoleChange={handlers.onRoleChange}
-      />
-
-      {/* 검증 에러 표시 */}
-      {validation?.touched && validation.errors.dateSpecificRequirements && (
-        <div className="mt-2">
-          <p className="text-sm text-red-600 dark:text-red-400">
-            {validation.errors.dateSpecificRequirements}
-          </p>
+    return (
+      <div className="space-y-4">
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            날짜별 요구사항 <span className="text-red-500 dark:text-red-400">*</span>
+          </label>
         </div>
-      )}
-    </div>
-  );
-});
+
+        {/* 기존 DateSpecificRequirementsNew 컴포넌트 활용 */}
+        <DateSpecificRequirementsNew
+          requirements={memoizedRequirements}
+          onRequirementsChange={handlers.onRequirementsChange}
+          onDateSpecificTimeSlotChange={handlers.onTimeSlotChange}
+          onDateSpecificTimeToBeAnnouncedToggle={handlers.onTimeToBeAnnouncedToggle}
+          onDateSpecificTentativeDescriptionChange={handlers.onTentativeDescriptionChange}
+          onDateSpecificRoleChange={handlers.onRoleChange}
+        />
+
+        {/* 검증 에러 표시 */}
+        {validation?.touched && validation.errors.dateSpecificRequirements && (
+          <div className="mt-2">
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {validation.errors.dateSpecificRequirements}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+);
 
 DateRequirementsSection.displayName = 'DateRequirementsSection';
 

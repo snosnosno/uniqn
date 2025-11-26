@@ -41,30 +41,30 @@ interface UserFormData {
 
 const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) => {
   const { t } = useTranslation();
-  
+
   const countries = [
-      { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
-      { code: 'US', name: 'United States', flag: '🇺🇸' },
-      { code: 'JP', name: 'Japan', flag: '🇯🇵' },
-      { code: 'CN', name: 'China', flag: '🇨🇳' },
-      { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-      { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-      { code: 'FR', name: 'France', flag: '🇫🇷' },
-      { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-      { code: 'AU', name: 'Australia', flag: '🇦🇺' },
-      { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
-      { code: 'VN', name: 'Vietnam', flag: '🇻🇳' },
-      { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
-      { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
-      { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
-      { code: 'IN', name: 'India', flag: '🇮🇳' },
-      { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
-      { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
-      { code: 'RU', name: 'Russia', flag: '🇷🇺' },
-      { code: 'IT', name: 'Italy', flag: '🇮🇹' },
-      { code: 'ES', name: 'Spain', flag: '🇪🇸' }
-    ];
-  
+    { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
+    { code: 'US', name: 'United States', flag: '🇺🇸' },
+    { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+    { code: 'CN', name: 'China', flag: '🇨🇳' },
+    { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+    { code: 'FR', name: 'France', flag: '🇫🇷' },
+    { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+    { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+    { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
+    { code: 'VN', name: 'Vietnam', flag: '🇻🇳' },
+    { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
+    { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+    { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+    { code: 'IN', name: 'India', flag: '🇮🇳' },
+    { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
+    { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+    { code: 'RU', name: 'Russia', flag: '🇷🇺' },
+    { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+    { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+  ];
+
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
     role: '',
@@ -82,15 +82,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
   // 🎯 FormUtils 사용 (Phase 3-2 Integration)
   const { handleChange, handleSelectChange } = createFormHandler(setFormData);
 
-  const experienceLevels = [
-    "1년 미만",
-    "1년",
-    "2년",
-    "3년",
-    "4년",
-    "5년 이상",
-    "10년 이상"
-  ];
+  const experienceLevels = ['1년 미만', '1년', '2년', '3년', '4년', '5년 이상', '10년 이상'];
 
   useEffect(() => {
     if (user) {
@@ -120,7 +112,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       toast.success(t('editUserModal.updateSuccess'));
       onClose();
     } catch (err: any) {
-      logger.error('Error updating user:', err instanceof Error ? err : new Error(String(err)), { component: 'EditUserModal' });
+      logger.error('Error updating user:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'EditUserModal',
+      });
       setError(err.message || t('editUserModal.updateError'));
     } finally {
       setIsSubmitting(false);
@@ -148,9 +142,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
   );
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title={t('editUserModal.title')}
       size="xl"
       footer={footerButtons}
@@ -159,7 +153,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       <form id="edit-user-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.name')}</label>
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('common.name')}
+            </label>
             <input
               type="text"
               name="name"
@@ -171,7 +170,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.email')}</label>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('common.email')}
+            </label>
             <input
               type="email"
               name="email"
@@ -182,7 +186,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.role')}</label>
+            <label
+              htmlFor="role"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('common.role')}
+            </label>
             <select
               name="role"
               id="role"
@@ -197,7 +206,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             </select>
           </div>
           <div>
-            <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.nationality', '국적')}</label>
+            <label
+              htmlFor="nationality"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('profilePage.nationality', '국적')}
+            </label>
             <select
               name="nationality"
               id="nationality"
@@ -206,7 +220,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
             >
               <option value="">{t('profilePage.selectNationality', '국적을 선택하세요')}</option>
-              {countries.map(country => (
+              {countries.map((country) => (
                 <option key={country.code} value={country.code}>
                   {country.flag} {country.name}
                 </option>
@@ -214,7 +228,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             </select>
           </div>
           <div>
-            <label htmlFor="age" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.age', '나이')}</label>
+            <label
+              htmlFor="age"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('profilePage.age', '나이')}
+            </label>
             <input
               type="number"
               name="age"
@@ -227,7 +246,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.bankName', '은행명')}</label>
+            <label
+              htmlFor="bankName"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('profilePage.bankName', '은행명')}
+            </label>
             <input
               type="text"
               name="bankName"
@@ -238,7 +262,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="bankAccount" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.bankAccount', '계좌번호')}</label>
+            <label
+              htmlFor="bankAccount"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('profilePage.bankAccount', '계좌번호')}
+            </label>
             <input
               type="text"
               name="bankAccount"
@@ -249,22 +278,34 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div>
-            <label htmlFor="experience" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.experience')}</label>
-            <select
-                name="experience"
-                id="experience"
-                value={formData.experience}
-                onChange={handleSelectChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
+            <label
+              htmlFor="experience"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
             >
-                <option value="">{t('profilePage.selectExperience', '경력을 선택하세요')}</option>
-                {experienceLevels.map(level => (
-                    <option key={level} value={level}>{level}</option>
-                ))}
+              {t('profilePage.experience')}
+            </label>
+            <select
+              name="experience"
+              id="experience"
+              value={formData.experience}
+              onChange={handleSelectChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
+            >
+              <option value="">{t('profilePage.selectExperience', '경력을 선택하세요')}</option>
+              {experienceLevels.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
             </select>
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="history" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.history')}</label>
+            <label
+              htmlFor="history"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('profilePage.history')}
+            </label>
             <textarea
               name="history"
               id="history"
@@ -276,7 +317,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('profilePage.notes', '기타 사항')}</label>
+            <label
+              htmlFor="notes"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('profilePage.notes', '기타 사항')}
+            </label>
             <textarea
               name="notes"
               id="notes"

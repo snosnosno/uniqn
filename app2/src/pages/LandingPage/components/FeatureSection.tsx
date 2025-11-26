@@ -128,10 +128,7 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
   };
 
   return (
-    <section
-      data-testid="feature-section"
-      className="py-20 bg-gray-50 dark:bg-gray-900"
-    >
+    <section data-testid="feature-section" className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 섹션 헤더 */}
         <div className="text-center mb-16">
@@ -168,10 +165,7 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
                 aria-describedby={`feature-description-${feature.id}`}
               >
                 {/* 아이콘 */}
-                <div
-                  data-testid={`feature-icon-${feature.id}`}
-                  className="mb-6"
-                >
+                <div data-testid={`feature-icon-${feature.id}`} className="mb-6">
                   <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors duration-300">
                     <IconComponent className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
@@ -243,7 +237,6 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
             );
           })}
         </div>
-
       </div>
     </section>
   );

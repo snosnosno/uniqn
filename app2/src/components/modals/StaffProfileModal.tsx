@@ -37,7 +37,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   onClose,
   staff,
   attendanceRecord,
-  workLogRecord
+  workLogRecord,
 }) => {
   useTranslation();
   const [userProfile, setUserProfile] = useState<ProfileData | null>(null);
@@ -61,13 +61,13 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const applications = querySnapshot.docs.map(doc => {
+        const applications = querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
             ...data,
             createdAt: data.createdAt,
-            preQuestionAnswers: data.preQuestionAnswers
+            preQuestionAnswers: data.preQuestionAnswers,
           };
         });
 
@@ -83,10 +83,14 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         }
       }
     } catch (error) {
-      logger.error('사전질문 답변 로드 오류:', error instanceof Error ? error : new Error(String(error)), { 
-        component: 'StaffProfileModal',
-        data: { eventId: staff?.postingId, userId }
-      });
+      logger.error(
+        '사전질문 답변 로드 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'StaffProfileModal',
+          data: { eventId: staff?.postingId, userId },
+        }
+      );
     }
   };
 
@@ -94,7 +98,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!staff) return;
-      
+
       // staff 데이터에 이미 추가 정보가 있는지 확인
       const hasExtendedInfo = staff.gender || staff.age || staff.experience || staff.nationality;
 
@@ -138,7 +142,7 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             notes: staff.notes || userData.notes,
             // 평점은 users에서만 가져옴 (제외 요청되었지만 기존 코드 호환성)
             rating: userData.rating,
-            ratingCount: userData.ratingCount
+            ratingCount: userData.ratingCount,
           } as ProfileData);
         } else {
           logger.warn('❌ 사용자 프로필 문서 없음:', {
@@ -147,8 +151,8 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
               userId: userId,
               docPath: `users/${userId}`,
               staffId: staff.id,
-              staffName: staff.name
-            }
+              staffName: staff.name,
+            },
           });
           setUserProfile(staff as ProfileData);
         }
@@ -156,7 +160,11 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         // 사전질문 답변 가져오기
         await loadPreQuestionAnswers(staff, userId);
       } catch (error) {
-        logger.error('사용자 프로필 로드 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffProfileModal' });
+        logger.error(
+          '사용자 프로필 로드 오류:',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'StaffProfileModal' }
+        );
         setUserProfile(staff as ProfileData);
       } finally {
         setLoading(false);
@@ -173,20 +181,24 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   // 출근/퇴근 시간 계산
   const getWorkTimes = () => {
     // actualStartTime/actualEndTime 사용
-    const actualStartTime = workLogRecord?.workLog?.actualStartTime || attendanceRecord?.actualStartTime;
+    const actualStartTime =
+      workLogRecord?.workLog?.actualStartTime || attendanceRecord?.actualStartTime;
     const actualEndTime = workLogRecord?.workLog?.actualEndTime || attendanceRecord?.actualEndTime;
-    
+
     // workLogs의 예정 시간
-    const workLogScheduledStart = attendanceRecord?.workLog?.scheduledStartTime || workLogRecord?.workLog?.scheduledStartTime;
-    const workLogScheduledEnd = attendanceRecord?.workLog?.scheduledEndTime || workLogRecord?.workLog?.scheduledEndTime;
-    
+    const workLogScheduledStart =
+      attendanceRecord?.workLog?.scheduledStartTime || workLogRecord?.workLog?.scheduledStartTime;
+    const workLogScheduledEnd =
+      attendanceRecord?.workLog?.scheduledEndTime || workLogRecord?.workLog?.scheduledEndTime;
+
     // formatTime은 이미 utils/dateUtils에서 import됨
-    
+
     return {
-      scheduledStart: formatTime(workLogScheduledStart, { defaultValue: '' }) || staff.assignedTime || '미정',
+      scheduledStart:
+        formatTime(workLogScheduledStart, { defaultValue: '' }) || staff.assignedTime || '미정',
       scheduledEnd: formatTime(workLogScheduledEnd, { defaultValue: '미정' }),
       actualStart: formatTime(actualStartTime, { defaultValue: '' }),
-      actualEnd: formatTime(actualEndTime, { defaultValue: '' })
+      actualEnd: formatTime(actualEndTime, { defaultValue: '' }),
     };
   };
 
@@ -196,9 +208,18 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   const getAttendanceStatus = () => {
     const status = attendanceRecord?.status || workLogRecord?.workLog?.status || 'not_started';
     const statusMap: { [key: string]: { label: string; color: string } } = {
-      'not_started': { label: '출근 전', color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700' },
-      'checked_in': { label: '출근', color: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30' },
-      'checked_out': { label: '퇴근', color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' }
+      not_started: {
+        label: '출근 전',
+        color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700',
+      },
+      checked_in: {
+        label: '출근',
+        color: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30',
+      },
+      checked_out: {
+        label: '퇴근',
+        color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30',
+      },
     };
 
     return statusMap[status] || statusMap['not_started'];
@@ -217,47 +238,46 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
 
   const getNationalityDisplay = (nationality?: string) => {
     if (!nationality) return '제공되지 않음';
-    const country = countries.find(c => c.code === nationality);
+    const country = countries.find((c) => c.code === nationality);
     return country ? `${country.flag} ${country.name}` : nationality;
   };
 
   // 지역 표시
   const getRegionDisplay = (region?: string) => {
     const regionMap: { [key: string]: string } = {
-      'seoul': '서울',
-      'gyeonggi': '경기',
-      'incheon': '인천',
-      'gangwon': '강원',
-      'daejeon': '대전',
-      'sejong': '세종',
-      'chungnam': '충남',
-      'chungbuk': '충북',
-      'gwangju': '광주',
-      'jeonnam': '전남',
-      'jeonbuk': '전북',
-      'daegu': '대구',
-      'gyeongbuk': '경북',
-      'busan': '부산',
-      'ulsan': '울산',
-      'gyeongnam': '경남',
-      'jeju': '제주',
+      seoul: '서울',
+      gyeonggi: '경기',
+      incheon: '인천',
+      gangwon: '강원',
+      daejeon: '대전',
+      sejong: '세종',
+      chungnam: '충남',
+      chungbuk: '충북',
+      gwangju: '광주',
+      jeonnam: '전남',
+      jeonbuk: '전북',
+      daegu: '대구',
+      gyeongbuk: '경북',
+      busan: '부산',
+      ulsan: '울산',
+      gyeongnam: '경남',
+      jeju: '제주',
     };
-    return region ? (regionMap[region] || region) : '제공되지 않음';
+    return region ? regionMap[region] || region : '제공되지 않음';
   };
 
   const genderDisplay = (genderKey: string | undefined) => {
     if (!genderKey) return '제공되지 않음';
     const genderMap: { [key: string]: string } = {
-      'male': '남성',
-      'female': '여성',
-      'other': '기타'
+      male: '남성',
+      female: '여성',
+      other: '기타',
     };
     return genderMap[genderKey.toLowerCase()] || genderKey;
   };
 
   // 로딩 중이면 staff 데이터를 사용하고, 로드 완료되면 userProfile 사용
   const extendedStaff = userProfile || (staff as ProfileData);
-
 
   const footerButtons = (
     <ModalFooter>
@@ -271,9 +291,9 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
   );
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title="스태프 프로필"
       size="lg"
       footer={footerButtons}
@@ -296,8 +316,12 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           {extendedStaff.rating && (
             <div className="flex items-center justify-center mb-2">
               <FaStar className="w-5 h-5 text-yellow-400 mr-1" />
-              <span className="font-medium text-gray-900 dark:text-gray-100">평점 {extendedStaff.rating.toFixed(1)}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">({extendedStaff.ratingCount || 0}개 평점)</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                평점 {extendedStaff.rating.toFixed(1)}
+              </span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">
+                ({extendedStaff.ratingCount || 0}개 평점)
+              </span>
             </div>
           )}
         </div>
@@ -305,10 +329,15 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
         {/* 사전질문 답변 */}
         {preQuestionAnswers && preQuestionAnswers.length > 0 && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">사전질문 답변</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              사전질문 답변
+            </h3>
             <div className="space-y-3">
               {preQuestionAnswers.map((answer, index) => (
-                <div key={answer.questionId || index} className="border-l-2 border-yellow-300 dark:border-yellow-700 pl-3">
+                <div
+                  key={answer.questionId || index}
+                  className="border-l-2 border-yellow-300 dark:border-yellow-700 pl-3"
+                >
                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                     Q{index + 1}. {answer.question}
                   </p>
@@ -365,19 +394,27 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500 dark:text-gray-400 mb-1">성별</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{genderDisplay(extendedStaff.gender)}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
+                {genderDisplay(extendedStaff.gender)}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400 mb-1">나이</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{extendedStaff.age ? `${extendedStaff.age}세` : '제공되지 않음'}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
+                {extendedStaff.age ? `${extendedStaff.age}세` : '제공되지 않음'}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400 mb-1">지역</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{getRegionDisplay(extendedStaff.region)}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
+                {getRegionDisplay(extendedStaff.region)}
+              </p>
             </div>
             <div>
               <p className="text-gray-500 dark:text-gray-400 mb-1">경력</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{extendedStaff.experience || '제공되지 않음'}</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
+                {extendedStaff.experience || '제공되지 않음'}
+              </p>
             </div>
           </div>
         </div>
@@ -397,7 +434,6 @@ const StaffProfileModal: React.FC<StaffProfileModalProps> = ({
             {extendedStaff.notes || staff.notes || '없음'}
           </p>
         </div>
-
       </div>
     </Modal>
   );

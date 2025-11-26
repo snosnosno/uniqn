@@ -1,22 +1,22 @@
 import { useCallback } from 'react';
 import { Timestamp } from 'firebase/firestore';
-import { 
-  formatDate, 
-  convertToDateString, 
-  dateStringToDropdownValue, 
+import {
+  formatDate,
+  convertToDateString,
+  dateStringToDropdownValue,
   dropdownValueToDateString,
   convertToTimestamp,
-  getTodayString
+  getTodayString,
 } from '../utils/jobPosting/dateUtils';
 
 // 날짜 입력 타입 정의
-type DateInput = 
-  | Timestamp 
-  | Date 
-  | string 
+type DateInput =
+  | Timestamp
+  | Date
+  | string
   | number
   | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
-  | null 
+  | null
   | undefined;
 
 export const useDateUtils = () => {
@@ -36,9 +36,12 @@ export const useDateUtils = () => {
   }, []);
 
   // 드롭다운 값을 날짜 문자열로 변환
-  const fromDropdownValue = useCallback((value: { year?: string; month?: string; day?: string }) => {
-    return dropdownValueToDateString(value);
-  }, []);
+  const fromDropdownValue = useCallback(
+    (value: { year?: string; month?: string; day?: string }) => {
+      return dropdownValueToDateString(value);
+    },
+    []
+  );
 
   // Timestamp로 변환
   const toTimestamp = useCallback((dateInput: DateInput) => {
@@ -55,11 +58,11 @@ export const useDateUtils = () => {
     if (!startDate || !endDate) {
       return { isValid: false, error: '시작 날짜와 종료 날짜를 모두 선택해주세요.' };
     }
-    
+
     if (startDate > endDate) {
       return { isValid: false, error: '시작 날짜는 종료 날짜보다 이전이어야 합니다.' };
     }
-    
+
     return { isValid: true, error: null };
   }, []);
 
@@ -76,11 +79,11 @@ export const useDateUtils = () => {
     const dates: string[] = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
       dates.push(convertToDateString(date));
     }
-    
+
     return dates;
   }, []);
 

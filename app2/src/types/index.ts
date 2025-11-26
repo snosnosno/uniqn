@@ -1,18 +1,18 @@
 /**
  * T-HOLDEM 프로젝트 타입 정의 중앙 인덱스
- * 
+ *
  * 이 파일은 프로젝트의 모든 타입들을 중앙에서 관리하고 export합니다.
- * 
+ *
  * @version 2.0
  * @since 2025-01-01
  * @author T-HOLDEM Development Team
- * 
+ *
  * 사용법:
  * ```typescript
  * // 개별 import (권장)
  * import { UnifiedWorkLog } from './types/unified/workLog';
  * import { AttendanceRecord } from './types/attendance';
- * 
+ *
  * // 중앙 index에서 import
  * import { UnifiedWorkLog, AttendanceRecord } from './types';
  * ```
@@ -29,13 +29,13 @@ export type {
   PaginationInfo,
   QueryConstraint,
   FormErrors,
-  User
+  User,
 } from './common';
 
 // 공통 타입에서 WorkLog, AttendanceRecord는 기본 버전
 export type {
   WorkLog as CommonWorkLog,
-  AttendanceRecord as CommonAttendanceRecord
+  AttendanceRecord as CommonAttendanceRecord,
 } from './common';
 
 // 출석 관련 타입 (완전한 기능 버전)
@@ -50,7 +50,7 @@ export type {
   QRScanResult,
   QRScanError,
   AttendanceStats,
-  AttendanceFilterOptions
+  AttendanceFilterOptions,
 } from './attendance';
 
 // 통합 WorkLog 타입 (우선 사용 권장) - 타입과 함수 분리
@@ -61,15 +61,10 @@ export type {
   WorkLogFilter,
   WorkLogSortOption,
   WorkLogStatus,
-  WorkLogType
+  WorkLogType,
 } from './unified/workLog';
 
-export {
-  isUnifiedWorkLog,
-  validateWorkLog,
-  WORKLOG_STATUS,
-  WORKLOG_TYPE
-} from './unified/workLog';
+export { isUnifiedWorkLog, validateWorkLog, WORKLOG_STATUS, WORKLOG_TYPE } from './unified/workLog';
 
 // 스케줄 관련 타입
 export type {
@@ -82,18 +77,13 @@ export type {
   CalendarView,
   ScheduleGroup,
   AttendanceRequest,
-  TimeSlotInfo
+  TimeSlotInfo,
 } from './schedule';
 
-export {
-  SCHEDULE_COLORS,
-  ATTENDANCE_STATUS_COLORS
-} from './schedule';
+export { SCHEDULE_COLORS, ATTENDANCE_STATUS_COLORS } from './schedule';
 
 // 스케줄의 AttendanceStatus는 별칭으로 export
-export type {
-  AttendanceStatus as ScheduleAttendanceStatus
-} from './schedule';
+export type { AttendanceStatus as ScheduleAttendanceStatus } from './schedule';
 
 // 구인공고 관련 타입
 export * from './jobPosting';
@@ -113,12 +103,10 @@ export type {
   CreateAnnouncementInput,
   SendAnnouncementRequest,
   SendAnnouncementResponse,
-  AnnouncementFilterOptions
+  AnnouncementFilterOptions,
 } from './announcement';
 
-export {
-  validateAnnouncement
-} from './announcement';
+export { validateAnnouncement } from './announcement';
 
 // 알림 관련 타입
 export type {
@@ -131,12 +119,10 @@ export type {
   NotificationSettings,
   NotificationFilter,
   NotificationStats,
-  NotificationCreateInput
+  NotificationCreateInput,
 } from './notification';
 
-export {
-  convertTimestamp
-} from './notification';
+export { convertTimestamp } from './notification';
 
 // 시스템 공지사항 타입
 export type {
@@ -147,14 +133,14 @@ export type {
   UpdateSystemAnnouncementInput,
   SendSystemAnnouncementRequest,
   SendSystemAnnouncementResponse,
-  SystemAnnouncementFilter
+  SystemAnnouncementFilter,
 } from './systemAnnouncement';
 
 export {
   validateSystemAnnouncement,
   getPriorityLabel,
   getPriorityColor,
-  getPriorityBadgeStyle
+  getPriorityBadgeStyle,
 } from './systemAnnouncement';
 
 // ============================================================================
@@ -167,7 +153,7 @@ export type {
   Staff as UnifiedStaff,
   Applicant as UnifiedApplicant,
   PersonCreateInput,
-  PersonUpdateInput
+  PersonUpdateInput,
 } from './unified/person';
 
 export {
@@ -176,7 +162,7 @@ export {
   isBoth,
   personToStaff,
   personToApplicant,
-  getPersonId
+  getPersonId,
 } from './unified/person';
 
 // ============================================================================
@@ -185,22 +171,22 @@ export {
 
 /**
  * 권장 타입 사용 우선순위
- * 
+ *
  * 1. **WorkLog 관련**:
  *    - UnifiedWorkLog (types/unified/workLog.ts) - 최우선 권장
  *    - WorkLog (types/attendance.ts) - 출석 관련 확장 기능
  *    - WorkLog (types/common.ts) - 기본 공통 타입
- * 
+ *
  * 2. **AttendanceRecord 관련**:
  *    - AttendanceRecord (types/attendance.ts) - 완전한 기능
  *    - AttendanceRecord (types/common.ts) - 기본 공통 타입
- * 
+ *
  * 3. **Staff 관련**:
  *    - Staff (types/common.ts) - 표준 스태프 타입
- * 
+ *
  * 4. **Schedule 관련**:
  *    - ScheduleEvent (types/schedule.ts) - 통합 스케줄 이벤트
- * 
+ *
  * 5. **JobPosting 관련**:
  *    - JobPosting (types/jobPosting/index.ts) - 완전한 구인공고 타입
  *    - 기타 세부 타입들 (types/jobPosting/base.ts)
@@ -208,27 +194,27 @@ export {
 
 /**
  * 필드 표준화 매핑
- * 
+ *
  * 표준 필드 사용:
  * - staffId (통합 식별자)
  * - eventId (이벤트/공고 식별자)
  * - staffName (이름)
  * - scheduledStartTime/EndTime (예정 시간)
  * - actualStartTime/EndTime (실제 시간)
- * 
+ *
  * 권장 사용 패턴:
  * ```typescript
  * // ✅ 표준 필드 사용
  * const staffId = data.staffId;
  * const startTime = data.actualStartTime;
- * 
+ *
  * // ✅ 타입 가드 사용
  * import { isUnifiedWorkLog, validateWorkLog } from './unified/workLog';
- * 
+ *
  * if (isUnifiedWorkLog(data)) {
  *   // 안전하게 UnifiedWorkLog로 사용
  * }
- * 
+ *
  * const validation = validateWorkLog(data);
  * if (validation.isValid) {
  *   // 유효한 데이터로 처리

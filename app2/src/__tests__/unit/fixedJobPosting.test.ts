@@ -47,10 +47,9 @@ describe('fixedJobPosting 서비스', () => {
 
       expect(doc).toHaveBeenCalledWith({}, 'jobPostings', postingId);
       expect(increment).toHaveBeenCalledWith(1);
-      expect(updateDoc).toHaveBeenCalledWith(
-        mockDocRef,
-        { 'fixedData.viewCount': mockIncrementValue }
-      );
+      expect(updateDoc).toHaveBeenCalledWith(mockDocRef, {
+        'fixedData.viewCount': mockIncrementValue,
+      });
       expect(logger.info).toHaveBeenCalledWith('조회수 증가 성공', { postingId });
     });
 

@@ -69,10 +69,10 @@ export const useToast = () => {
       addToast(toastData);
     },
     showError: (message: string, title?: string, duration?: number) => {
-      const toastData: Omit<Toast, 'id'> = { 
-        type: 'error', 
+      const toastData: Omit<Toast, 'id'> = {
+        type: 'error',
         message,
-        duration: duration || 5000 // Error messages stay longer by default
+        duration: duration || 5000, // Error messages stay longer by default
       };
       if (title !== undefined) toastData.title = title;
       addToast(toastData);

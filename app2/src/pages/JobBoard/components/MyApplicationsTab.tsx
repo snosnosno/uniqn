@@ -61,7 +61,6 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-
 // 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성) - 현재 미사용
 /*
 const MultipleAssignmentsDisplay: React.FC<{
@@ -196,7 +195,8 @@ const ApplicationCard: React.FC<{
 
     {application.jobPosting && (
       <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">
-        <p>📍 주소: {application.jobPosting.location}
+        <p>
+          📍 주소: {application.jobPosting.location}
           {application.jobPosting.district && ` ${application.jobPosting.district}`}
           {application.jobPosting.detailedAddress && ` - ${application.jobPosting.detailedAddress}`}
         </p>
@@ -205,7 +205,7 @@ const ApplicationCard: React.FC<{
 
     <div>
       <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">지원한 시간대</h4>
-      
+
       {/* 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요) */}
       {(() => {
         // 🎯 개발 단계: 마이그레이션 로직 제거
@@ -276,10 +276,9 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
   onCancel,
   isProcessing,
   onTabChange,
-  onViewDetail
+  onViewDetail,
 }) => {
   const { t } = useTranslation();
-
 
   if (loading) {
     return (
@@ -307,7 +306,9 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">내 지원 현황 ({applications.length}건)</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          내 지원 현황 ({applications.length}건)
+        </h2>
         <button
           onClick={onRefresh}
           disabled={loading}
@@ -316,7 +317,7 @@ const MyApplicationsTab: React.FC<MyApplicationsTabProps> = ({
           {loading ? '새로고침 중...' : '🔄 새로고침'}
         </button>
       </div>
-      
+
       {applications.map((application) => (
         <ApplicationCard
           key={application.id}

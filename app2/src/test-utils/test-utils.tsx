@@ -22,7 +22,7 @@ export const mockUser: any = {
   toJSON: jest.fn(),
   phoneNumber: null,
   photoURL: null,
-  providerId: 'firebase'
+  providerId: 'firebase',
 };
 
 // Mock auth context value
@@ -37,7 +37,7 @@ export const mockAuthContextValue = {
   signInWithGoogle: jest.fn(),
   signInWithKakao: jest.fn(),
   sendEmailVerification: jest.fn(),
-  reloadUser: jest.fn()
+  reloadUser: jest.fn(),
 };
 
 // Custom render function with providers
@@ -58,9 +58,7 @@ export function customRender(
     return (
       <MemoryRouter initialEntries={[initialRoute]}>
         <AuthContext.Provider value={authValue}>
-          <TournamentProvider>
-            {children}
-          </TournamentProvider>
+          <TournamentProvider>{children}</TournamentProvider>
         </AuthContext.Provider>
       </MemoryRouter>
     );

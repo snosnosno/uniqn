@@ -87,7 +87,7 @@ const decodeQRFromImage = async (dataUrl: string): Promise<QRScanResult | null> 
         const mockResult: QRScanResult = {
           text: 'https://tholdem-ebc18.web.app/attendance/checkin?token=mock-token',
           format: 'QR_CODE',
-          timestamp: new Date()
+          timestamp: new Date(),
         };
         resolve(mockResult);
       } else {

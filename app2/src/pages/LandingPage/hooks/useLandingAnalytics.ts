@@ -33,7 +33,11 @@ interface UseLandingAnalyticsReturn {
   error: string | null;
   trackPageView: (page: string, properties?: Record<string, any>) => Promise<void>;
   trackInteraction: (eventName: string, properties?: Record<string, any>) => Promise<void>;
-  trackCtaClick: (ctaText: string, ctaLink: string, properties?: Record<string, any>) => Promise<void>;
+  trackCtaClick: (
+    ctaText: string,
+    ctaLink: string,
+    properties?: Record<string, any>
+  ) => Promise<void>;
   trackScroll: (scrollDepth: number, section?: string) => Promise<void>;
   trackPerformance: (metricType: string, metrics: PerformanceMetrics) => Promise<void>;
 }
@@ -113,7 +117,10 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Analytics service error';
       setError(errorMessage);
-      logger.error('Failed to process analytics events', err instanceof Error ? err : new Error(errorMessage));
+      logger.error(
+        'Failed to process analytics events',
+        err instanceof Error ? err : new Error(errorMessage)
+      );
     } finally {
       setIsLoading(false);
     }
@@ -131,115 +138,134 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
   }, [processEventQueue]);
 
   // 이벤트 추가
-  const addEvent = useCallback((eventName: string, parameters: Record<string, any>) => {
-    if (!hasAnalyticsConsent()) {
-      logger.info('Analytics consent not given, skipping event', { operation: eventName });
-      return;
-    }
+  const addEvent = useCallback(
+    (eventName: string, parameters: Record<string, any>) => {
+      if (!hasAnalyticsConsent()) {
+        logger.info('Analytics consent not given, skipping event', { operation: eventName });
+        return;
+      }
 
-    // 입력 검증
-    if (!eventName || eventName.trim() === '') {
-      logger.warn('Invalid event name provided to analytics', { data: { eventName } });
-      return;
-    }
+      // 입력 검증
+      if (!eventName || eventName.trim() === '') {
+        logger.warn('Invalid event name provided to analytics', { data: { eventName } });
+        return;
+      }
 
-    // 중복 이벤트 필터링 (동일한 이벤트가 100ms 내에 중복 발생하는 경우)
-    const eventKey = `${eventName}_${JSON.stringify(parameters)}`;
-    const now = Date.now();
-    const duplicateKey = `${eventKey}_${Math.floor(now / 100)}`;
+      // 중복 이벤트 필터링 (동일한 이벤트가 100ms 내에 중복 발생하는 경우)
+      const eventKey = `${eventName}_${JSON.stringify(parameters)}`;
+      const now = Date.now();
+      const duplicateKey = `${eventKey}_${Math.floor(now / 100)}`;
 
-    if (duplicateFilterRef.current.has(duplicateKey)) {
-      return; // 중복 이벤트 무시
-    }
-    duplicateFilterRef.current.add(duplicateKey);
+      if (duplicateFilterRef.current.has(duplicateKey)) {
+        return; // 중복 이벤트 무시
+      }
+      duplicateFilterRef.current.add(duplicateKey);
 
-    // 중복 필터 정리 (메모리 관리)
-    if (duplicateFilterRef.current.size > 1000) {
-      duplicateFilterRef.current.clear();
-    }
+      // 중복 필터 정리 (메모리 관리)
+      if (duplicateFilterRef.current.size > 1000) {
+        duplicateFilterRef.current.clear();
+      }
 
-    const event: AnalyticsEvent = {
-      eventName,
-      parameters: {
-        ...parameters,
-        sessionId: sessionIdRef.current,
+      const event: AnalyticsEvent = {
+        eventName,
+        parameters: {
+          ...parameters,
+          sessionId: sessionIdRef.current,
+          timestamp: now,
+          page: 'landing-page',
+          userEnvironment: getUserEnvironment(),
+        },
         timestamp: now,
-        page: 'landing-page',
-        userEnvironment: getUserEnvironment(),
-      },
-      timestamp: now,
-      sessionId: sessionIdRef.current,
-    };
+        sessionId: sessionIdRef.current,
+      };
 
-    eventQueueRef.current.push(event);
-    debouncedProcessQueue();
-  }, [hasAnalyticsConsent, debouncedProcessQueue]);
+      eventQueueRef.current.push(event);
+      debouncedProcessQueue();
+    },
+    [hasAnalyticsConsent, debouncedProcessQueue]
+  );
 
   // 페이지뷰 추적
-  const trackPageView = useCallback(async (page: string, properties?: Record<string, any>) => {
-    addEvent('page_view', {
-      page_title: document.title,
-      page_location: window.location.href,
-      page_path: window.location.pathname,
-      page: page,
-      ...properties,
-    });
-  }, [addEvent]);
+  const trackPageView = useCallback(
+    async (page: string, properties?: Record<string, any>) => {
+      addEvent('page_view', {
+        page_title: document.title,
+        page_location: window.location.href,
+        page_path: window.location.pathname,
+        page: page,
+        ...properties,
+      });
+    },
+    [addEvent]
+  );
 
   // 상호작용 추적
-  const trackInteraction = useCallback(async (eventName: string, properties?: Record<string, any>) => {
-    addEvent('interaction', {
-      interaction_type: eventName,
-      ...properties,
-    });
-  }, [addEvent]);
+  const trackInteraction = useCallback(
+    async (eventName: string, properties?: Record<string, any>) => {
+      addEvent('interaction', {
+        interaction_type: eventName,
+        ...properties,
+      });
+    },
+    [addEvent]
+  );
 
   // CTA 클릭 추적 (고도화된 분석 통합)
-  const trackCtaClick = useCallback(async (ctaText: string, ctaLink: string, properties?: Record<string, any>) => {
-    // 기존 분석 시스템
-    addEvent('cta_click', {
-      cta_text: ctaText,
-      cta_link: ctaLink,
-      click_timestamp: Date.now(),
-      ...properties,
-    });
-
-    // 고도화된 분석 통합 시스템
-    analyticsIntegration.trackCTAClick(ctaText, ctaLink, properties || {});
-  }, [addEvent]);
-
-  // 스크롤 추적 (고도화된 분석 통합)
-  const trackScroll = useCallback(async (scrollDepth: number, section?: string) => {
-    // 스크롤 깊이가 이전보다 증가했을 때만 추적
-    if (scrollDepth > lastScrollDepthRef.current && scrollDepth % 25 === 0) {
-      lastScrollDepthRef.current = scrollDepth;
-
+  const trackCtaClick = useCallback(
+    async (ctaText: string, ctaLink: string, properties?: Record<string, any>) => {
       // 기존 분석 시스템
-      addEvent('scroll', {
-        scroll_depth: scrollDepth,
-        section: section,
-        max_scroll_depth: Math.max(scrollDepth, lastScrollDepthRef.current),
+      addEvent('cta_click', {
+        cta_text: ctaText,
+        cta_link: ctaLink,
+        click_timestamp: Date.now(),
+        ...properties,
       });
 
-      // 고도화된 분석 통합 시스템 (시간 정보 포함)
-      const timeOnPage = Date.now() - (performance.timeOrigin + performance.now() - (performance.now()));
-      analyticsIntegration.trackScrollDepth(scrollDepth, section || 'unknown', timeOnPage);
-    }
-  }, [addEvent]);
+      // 고도화된 분석 통합 시스템
+      analyticsIntegration.trackCTAClick(ctaText, ctaLink, properties || {});
+    },
+    [addEvent]
+  );
+
+  // 스크롤 추적 (고도화된 분석 통합)
+  const trackScroll = useCallback(
+    async (scrollDepth: number, section?: string) => {
+      // 스크롤 깊이가 이전보다 증가했을 때만 추적
+      if (scrollDepth > lastScrollDepthRef.current && scrollDepth % 25 === 0) {
+        lastScrollDepthRef.current = scrollDepth;
+
+        // 기존 분석 시스템
+        addEvent('scroll', {
+          scroll_depth: scrollDepth,
+          section: section,
+          max_scroll_depth: Math.max(scrollDepth, lastScrollDepthRef.current),
+        });
+
+        // 고도화된 분석 통합 시스템 (시간 정보 포함)
+        const timeOnPage =
+          Date.now() - (performance.timeOrigin + performance.now() - performance.now());
+        analyticsIntegration.trackScrollDepth(scrollDepth, section || 'unknown', timeOnPage);
+      }
+    },
+    [addEvent]
+  );
 
   // 성능 추적 (고도화된 분석 통합)
-  const trackPerformance = useCallback(async (metricType: string, metrics: PerformanceMetrics) => {
-    // 기존 분석 시스템
-    addEvent('performance', {
-      metric_type: metricType,
-      ...metrics,
-      performance_timestamp: Date.now(),
-    });
+  const trackPerformance = useCallback(
+    async (metricType: string, metrics: PerformanceMetrics) => {
+      // 기존 분석 시스템
+      addEvent('performance', {
+        metric_type: metricType,
+        ...metrics,
+        performance_timestamp: Date.now(),
+      });
 
-    // 고도화된 분석 통합 시스템 (성능 모니터링과 연동)
-    const currentMetrics = performanceMonitor.getMetrics();
-    analyticsIntegration.trackPerformanceMetrics(currentMetrics);
-  }, [addEvent]);
+      // 고도화된 분석 통합 시스템 (성능 모니터링과 연동)
+      const currentMetrics = performanceMonitor.getMetrics();
+      analyticsIntegration.trackPerformanceMetrics(currentMetrics);
+    },
+    [addEvent]
+  );
 
   // 초기화 시 성능 메트릭 수집
   useEffect(() => {
@@ -269,7 +295,9 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
           observer.observe({ entryTypes: ['largest-contentful-paint'] });
         } catch (err) {
-          logger.warn('Performance Observer not supported', { errorMessage: err instanceof Error ? err.message : String(err) });
+          logger.warn('Performance Observer not supported', {
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     };
@@ -286,12 +314,15 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
       if (eventQueueRef.current.length > 0) {
         // 개발 환경에서는 서버 전송 건너뛰기
         if (process.env.NODE_ENV === 'development') {
-          logger.info('📊 Unload analytics events (development mode - server transmission skipped)', {
-            data: {
-              eventsCount: eventQueueRef.current.length,
-              events: eventQueueRef.current
+          logger.info(
+            '📊 Unload analytics events (development mode - server transmission skipped)',
+            {
+              data: {
+                eventsCount: eventQueueRef.current.length,
+                events: eventQueueRef.current,
+              },
             }
-          });
+          );
           return;
         }
 
@@ -317,10 +348,13 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
   // 세션 갱신 (30분마다)
   useEffect(() => {
-    const sessionRenewalInterval = setInterval(() => {
-      sessionIdRef.current = generateSessionId();
-      logger.info('Analytics session renewed', { sessionId: sessionIdRef.current });
-    }, 30 * 60 * 1000); // 30분
+    const sessionRenewalInterval = setInterval(
+      () => {
+        sessionIdRef.current = generateSessionId();
+        logger.info('Analytics session renewed', { sessionId: sessionIdRef.current });
+      },
+      30 * 60 * 1000
+    ); // 30분
 
     return () => {
       clearInterval(sessionRenewalInterval);

@@ -12,7 +12,7 @@ import { z } from 'zod';
  * 급여 타입 열거형
  */
 export const SalaryTypeSchema = z.enum(['hourly', 'daily', 'monthly', 'negotiable', 'other'], {
-  errorMap: () => ({ message: '올바른 급여 타입을 선택해주세요' })
+  errorMap: () => ({ message: '올바른 급여 타입을 선택해주세요' }),
 });
 
 /**
@@ -76,10 +76,7 @@ export const benefitsSchema = z.object({
   /**
    * 일당 기반 계산 여부 (기본값: true)
    */
-  isPerDay: z
-    .boolean()
-    .optional()
-    .default(true)
+  isPerDay: z.boolean().optional().default(true),
 });
 
 /**
@@ -98,7 +95,7 @@ export const roleSalarySchema = z.object({
   salaryAmount: z
     .string({
       required_error: '급여 금액을 입력해주세요',
-      invalid_type_error: '급여 금액은 문자열이어야 합니다'
+      invalid_type_error: '급여 금액은 문자열이어야 합니다',
     })
     .trim()
     .regex(/^\d+$/, { message: '급여 금액은 숫자만 입력 가능합니다' })
@@ -111,7 +108,7 @@ export const roleSalarySchema = z.object({
     .string()
     .trim()
     .max(50, { message: '역할명은 50자를 초과할 수 없습니다' })
-    .optional()
+    .optional(),
 });
 
 /**
@@ -147,10 +144,7 @@ export const salarySchemaBase = z.object({
   /**
    * 역할별 급여 사용 여부 (선택)
    */
-  useRoleSalary: z
-    .boolean()
-    .optional()
-    .default(false),
+  useRoleSalary: z.boolean().optional().default(false),
 
   /**
    * 역할별 급여 정보 (Record 형식)
@@ -186,12 +180,9 @@ export const salarySchemaBase = z.object({
       /**
        * 고정 세금 - 고정 금액 계산
        */
-      taxAmount: z
-        .number()
-        .min(0, { message: '세금은 0원 이상이어야 합니다' })
-        .optional()
+      taxAmount: z.number().min(0, { message: '세금은 0원 이상이어야 합니다' }).optional(),
     })
-    .optional()
+    .optional(),
 });
 
 /**
@@ -208,7 +199,7 @@ export const salarySchema = salarySchemaBase
     },
     {
       message: '급여 금액을 입력해주세요',
-      path: ['salaryAmount']
+      path: ['salaryAmount'],
     }
   )
   .refine(
@@ -221,7 +212,7 @@ export const salarySchema = salarySchemaBase
     },
     {
       message: '역할별 급여를 사용하려면 최소 1개 이상의 역할을 추가해주세요',
-      path: ['roleSalaries']
+      path: ['roleSalaries'],
     }
   );
 

@@ -1,7 +1,7 @@
 /**
  * 통합 데이터 관리 타입 정의
  * UnifiedDataContext에서 사용하는 모든 데이터 타입들을 정의합니다.
- * 
+ *
  * @version 1.0
  * @since 2025-02-01
  * @author T-HOLDEM Development Team
@@ -16,7 +16,7 @@ export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
   STAFF = 'staff',
-  USER = 'user'
+  USER = 'user',
 }
 
 /**
@@ -72,31 +72,31 @@ export interface Staff {
   phone?: string;
   email?: string;
   // 지원자 확정 시 배정 정보
-  assignedRole?: string;    // 지원자에서 확정된 역할
-  assignedTime?: string;    // 지원자에서 확정된 시간 (예: "09:00~18:00")
-  assignedDate?: string;    // 지원자에서 확정된 날짜 (예: "2025-01-06")
+  assignedRole?: string; // 지원자에서 확정된 역할
+  assignedTime?: string; // 지원자에서 확정된 시간 (예: "09:00~18:00")
+  assignedDate?: string; // 지원자에서 확정된 날짜 (예: "2025-01-06")
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
-  
+
   // users 컬렉션 연결용 (필수)
-  userId?: string;          // users 컬렉션과 연결하는 사용자 ID
-  
+  userId?: string; // users 컬렉션과 연결하는 사용자 ID
+
   // 원래 지원 정보
-  postingId?: string;       // 원래 지원한 공고 ID (사전질문 조회용)
-  
+  postingId?: string; // 원래 지원한 공고 ID (사전질문 조회용)
+
   // 추가 개인정보 (users에서 조회한 캐시용)
-  gender?: string;          // 성별 (male/female/other)
-  age?: number;             // 나이
-  experience?: string;      // 경력 (예: "2년")
-  nationality?: string;     // 국적 (KR/US/JP 등)
-  region?: string;          // 지역 (seoul/gyeonggi 등)
-  history?: string;         // 이력
-  notes?: string;           // 기타 메모
-  
+  gender?: string; // 성별 (male/female/other)
+  age?: number; // 나이
+  experience?: string; // 경력 (예: "2년")
+  nationality?: string; // 국적 (KR/US/JP 등)
+  region?: string; // 지역 (seoul/gyeonggi 등)
+  history?: string; // 이력
+  notes?: string; // 기타 메모
+
   // 은행 정보 (users에서 조회한 캐시용)
-  bankName?: string;        // 은행명
-  bankAccount?: string;     // 계좌번호
-  residentId?: string;      // 주민등록번호 뒷자리
+  bankName?: string; // 은행명
+  bankAccount?: string; // 계좌번호
+  residentId?: string; // 주민등록번호 뒷자리
 }
 
 export interface WorkLog {
@@ -105,38 +105,38 @@ export interface WorkLog {
   staffName: string; // 호환성을 위해 유지
   eventId: string;
   date: string;
-  
+
   // 🚀 persons 컬렉션 통합 - 스태프 정보
   staffInfo: {
-    userId: string;      // 실제 사용자 ID (Firebase Auth UID)
-    name: string;        // 사용자 이름
-    email?: string;      // 이메일
-    phone?: string;      // 전화번호
-    userRole?: string;   // 사용자 권한 (staff, manager, admin)
-    jobRole?: string[];  // 직무 역할들 (['dealer', 'manager'])
-    isActive?: boolean;  // 활성 상태
+    userId: string; // 실제 사용자 ID (Firebase Auth UID)
+    name: string; // 사용자 이름
+    email?: string; // 이메일
+    phone?: string; // 전화번호
+    userRole?: string; // 사용자 권한 (staff, manager, admin)
+    jobRole?: string[]; // 직무 역할들 (['dealer', 'manager'])
+    isActive?: boolean; // 활성 상태
     // 은행 정보
-    bankName?: string;   
+    bankName?: string;
     accountNumber?: string;
     // 추가 개인정보
-    gender?: string;     
-    age?: number;        
-    experience?: string; 
+    gender?: string;
+    age?: number;
+    experience?: string;
     nationality?: string;
-    region?: string;     
+    region?: string;
   };
-  
+
   // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
   assignmentInfo: {
-    role: string;           // 할당된 역할
-    assignedRole?: string;  // 지원자에서 확정된 역할
-    assignedTime?: string;  // 지원자에서 확정된 시간
-    assignedDate?: string;  // 지원자에서 확정된 날짜
-    postingId: string;      // 구인공고 ID
-    managerId?: string;     // 관리자 ID
+    role: string; // 할당된 역할
+    assignedRole?: string; // 지원자에서 확정된 역할
+    assignedTime?: string; // 지원자에서 확정된 시간
+    assignedDate?: string; // 지원자에서 확정된 날짜
+    postingId: string; // 구인공고 ID
+    managerId?: string; // 관리자 ID
     type?: 'staff' | 'applicant' | 'both'; // 타입 정보
   };
-  
+
   // 기존 근무 관련 필드
   scheduledStartTime?: Timestamp;
   scheduledEndTime?: Timestamp;
@@ -151,7 +151,7 @@ export interface WorkLog {
   status?: 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
-  createdBy?: string;  // 생성자 ID
+  createdBy?: string; // 생성자 ID
 
   // 🔥 스냅샷 데이터 (공고 삭제 대비)
   snapshotData?: {
@@ -242,7 +242,7 @@ export interface JobPosting {
       salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other';
       salaryAmount: string;
       customRoleName?: string;
-    }
+    };
   };
 
   // 세금 설정
@@ -273,7 +273,7 @@ export interface ApplicationGroup {
   timeSlot: string;
   dates: string[];
   checkMethod?: 'group' | 'individual'; // 추가
-  groupId?: string;                      // 추가
+  groupId?: string; // 추가
   duration?: {
     type: 'single' | 'multi';
     endDate?: string;
@@ -283,19 +283,19 @@ export interface ApplicationGroup {
 // 🆕 개선된 Assignment 구조 - 그룹 중심 설계
 export interface ApplicationAssignment {
   // 🆕 그룹 선택 지원: 단일 역할 또는 다중 역할
-  role?: string;            // 개별 선택 시 사용
-  roles?: string[];         // 그룹 선택 시 다중 역할 (예: ['dealer', 'floor'])
-  
+  role?: string; // 개별 선택 시 사용
+  roles?: string[]; // 그룹 선택 시 다중 역할 (예: ['dealer', 'floor'])
+
   timeSlot: string;
-  dates: string[];  // 항상 배열로 관리 (단일 날짜도 [date] 형태)
+  dates: string[]; // 항상 배열로 관리 (단일 날짜도 [date] 형태)
   duration?: {
     type: 'single' | 'multi' | 'consecutive';
     startDate: string;
     endDate?: string;
   };
   // 그룹 메타데이터
-  isGrouped: boolean;      // 그룹으로 선택되었는지 (연속된 날짜 등)
-  groupId?: string;        // 그룹 식별자 (같은 그룹의 assignments 식별)
+  isGrouped: boolean; // 그룹으로 선택되었는지 (연속된 날짜 등)
+  groupId?: string; // 그룹 식별자 (같은 그룹의 assignments 식별)
   checkMethod?: 'group' | 'individual'; // 추가
 }
 
@@ -306,10 +306,10 @@ export interface DateBasedSelection {
 }
 
 export interface DateBasedAssignment {
-  date: string;                        // "2025-02-09" 형식
-  selections: DateBasedSelection[];    // 해당 날짜의 모든 역할/시간 조합
-  isConsecutive?: boolean;             // 연속된 날짜 그룹의 일부인지
-  groupId?: string;                    // 연속된 날짜 그룹 식별자
+  date: string; // "2025-02-09" 형식
+  selections: DateBasedSelection[]; // 해당 날짜의 모든 역할/시간 조합
+  isConsecutive?: boolean; // 연속된 날짜 그룹의 일부인지
+  groupId?: string; // 연속된 날짜 그룹 식별자
   checkMethod?: 'group' | 'individual'; // 추가
 }
 
@@ -366,7 +366,7 @@ export interface UnifiedDataOptions {
 
   // 컬렉션별 구독 설정
   subscriptions?: {
-    staff?: boolean | 'myData';      // true: 전체, 'myData': 자신만, false: 구독 안함
+    staff?: boolean | 'myData'; // true: 전체, 'myData': 자신만, false: 구독 안함
     workLogs?: boolean | 'myData';
     applications?: boolean | 'myData';
     jobPostings?: boolean;
@@ -379,9 +379,9 @@ export interface UnifiedDataOptions {
 
   // 성능 옵션
   performance?: {
-    maxDocuments?: number;      // 최대 문서 수 제한
-    realtimeUpdates?: boolean;  // 실시간 업데이트 활성화
-    batchSize?: number;         // 배치 크기
+    maxDocuments?: number; // 최대 문서 수 제한
+    realtimeUpdates?: boolean; // 실시간 업데이트 활성화
+    batchSize?: number; // 배치 크기
   };
 
   // 사용자 ID (myData 구독용)
@@ -397,10 +397,10 @@ export interface UnifiedDataState {
   jobPostings: Map<string, JobPosting>;
   applications: Map<string, Application>;
   tournaments: Map<string, Tournament>;
-  
+
   // 계산된 데이터 (메모이제이션)
   scheduleEvents: ScheduleEvent[];
-  
+
   // 로딩 상태
   loading: {
     staff: boolean;
@@ -411,7 +411,7 @@ export interface UnifiedDataState {
     tournaments: boolean;
     initial: boolean;
   };
-  
+
   // 에러 상태
   error: {
     staff: string | null;
@@ -422,13 +422,13 @@ export interface UnifiedDataState {
     tournaments: string | null;
     global: string | null;
   };
-  
+
   // 필터 상태
   filters: UnifiedFilters;
-  
+
   // 캐시 키들 (메모이제이션용)
   cacheKeys: CacheKeys;
-  
+
   // 마지막 업데이트 시간
   lastUpdated: {
     staff: number;
@@ -463,22 +463,22 @@ export type UnifiedDataAction =
 export interface UnifiedDataContextType {
   // 상태
   state: UnifiedDataState;
-  
+
   // 기본 액션들
   dispatch: React.Dispatch<UnifiedDataAction>;
-  
+
   // 편의 메서드들
   getStaffById: (staffId: string) => Staff | undefined;
   getWorkLogsByStaffId: (staffId: string) => WorkLog[];
   getWorkLogsByEventId: (eventId: string) => WorkLog[];
   getAttendanceByStaffId: (staffId: string) => AttendanceRecord[];
   getApplicationsByPostId: (postId: string) => Application[];
-  
+
   // 필터링된 데이터
   getFilteredScheduleEvents: () => ScheduleEvent[];
   getFilteredStaff: () => Staff[];
   getFilteredWorkLogs: () => WorkLog[];
-  
+
   // 통계 데이터
   getStats: () => {
     totalStaff: number;
@@ -486,20 +486,20 @@ export interface UnifiedDataContextType {
     pendingApplications: number;
     upcomingTournaments: number;
   };
-  
+
   // 새로고침 메서드
   refresh: (collection?: keyof CacheKeys) => Promise<void>;
-  
+
   // 필터링 설정 메서드
   setCurrentEventId: (eventId: string | null) => void;
-  
+
   // 성능 메트릭
   getPerformanceMetrics: () => {
     subscriptionCount: number;
     cacheHitRate: number;
     averageQueryTime: number;
   };
-  
+
   // Optimistic Updates
   updateWorkLogOptimistic: (workLog: WorkLog) => void;
   updateAttendanceOptimistic: (record: AttendanceRecord) => void;
@@ -515,7 +515,7 @@ export const initialUnifiedDataState: UnifiedDataState = {
   applications: new Map(),
   tournaments: new Map(),
   scheduleEvents: [],
-  
+
   loading: {
     staff: true,
     workLogs: true,
@@ -525,7 +525,7 @@ export const initialUnifiedDataState: UnifiedDataState = {
     tournaments: true,
     initial: true,
   },
-  
+
   error: {
     staff: null,
     workLogs: null,
@@ -535,14 +535,14 @@ export const initialUnifiedDataState: UnifiedDataState = {
     tournaments: null,
     global: null,
   },
-  
+
   filters: {
     dateRange: {
       start: new Date().toISOString().substring(0, 10),
       end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
     },
   },
-  
+
   cacheKeys: {
     staff: '',
     workLogs: '',
@@ -552,7 +552,7 @@ export const initialUnifiedDataState: UnifiedDataState = {
     tournaments: '',
     scheduleEvents: '',
   },
-  
+
   lastUpdated: {
     staff: 0,
     workLogs: 0,

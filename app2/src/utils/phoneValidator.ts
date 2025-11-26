@@ -31,14 +31,15 @@ export const validatePhone = (phone: string): PhoneValidationResult => {
   }
 
   // 포맷팅
-  const formatted = numbers.length >= 11
-    ? `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`
-    : phone;
+  const formatted =
+    numbers.length >= 11
+      ? `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`
+      : phone;
 
   return {
     isValid: errors.length === 0,
     formatted,
-    errors
+    errors,
   };
 };
 
@@ -73,7 +74,7 @@ export const validatePhoneRealtime = (phone: string): Partial<PhoneValidationRes
     return {
       isValid: false,
       formatted: '',
-      errors: []
+      errors: [],
     };
   }
 
@@ -82,13 +83,13 @@ export const validatePhoneRealtime = (phone: string): Partial<PhoneValidationRes
     return {
       isValid: false,
       formatted: formatPhoneNumber(phone),
-      errors: ['010으로 시작해야 합니다.']
+      errors: ['010으로 시작해야 합니다.'],
     };
   }
 
   return {
     isValid: numbers.length === 11 && numbers.startsWith('010'),
     formatted: formatPhoneNumber(phone),
-    errors: []
+    errors: [],
   };
 };

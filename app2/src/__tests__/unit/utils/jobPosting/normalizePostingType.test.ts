@@ -5,7 +5,7 @@ describe('normalizePostingType', () => {
   describe('새 필드 (postingType) 사용', () => {
     it('postingType이 있으면 그대로 반환', () => {
       const posting: Partial<JobPosting> = {
-        postingType: 'fixed'
+        postingType: 'fixed',
       };
 
       expect(normalizePostingType(posting)).toBe('fixed');
@@ -13,7 +13,7 @@ describe('normalizePostingType', () => {
 
     it('postingType이 regular이면 regular 반환', () => {
       const posting: Partial<JobPosting> = {
-        postingType: 'regular'
+        postingType: 'regular',
       };
 
       expect(normalizePostingType(posting)).toBe('regular');
@@ -21,7 +21,7 @@ describe('normalizePostingType', () => {
 
     it('postingType이 tournament이면 tournament 반환', () => {
       const posting: Partial<JobPosting> = {
-        postingType: 'tournament'
+        postingType: 'tournament',
       };
 
       expect(normalizePostingType(posting)).toBe('tournament');
@@ -29,7 +29,7 @@ describe('normalizePostingType', () => {
 
     it('postingType이 urgent이면 urgent 반환', () => {
       const posting: Partial<JobPosting> = {
-        postingType: 'urgent'
+        postingType: 'urgent',
       };
 
       expect(normalizePostingType(posting)).toBe('urgent');
@@ -39,7 +39,7 @@ describe('normalizePostingType', () => {
   describe('레거시 필드 (type) 변환', () => {
     it('type이 application이면 regular로 변환', () => {
       const posting: Partial<JobPosting> = {
-        type: 'application'
+        type: 'application',
       };
 
       expect(normalizePostingType(posting)).toBe('regular');
@@ -47,7 +47,7 @@ describe('normalizePostingType', () => {
 
     it('type이 fixed이면 fixed로 변환', () => {
       const posting: Partial<JobPosting> = {
-        type: 'fixed'
+        type: 'fixed',
       };
 
       expect(normalizePostingType(posting)).toBe('fixed');
@@ -56,7 +56,7 @@ describe('normalizePostingType', () => {
     it('postingType과 type 둘 다 있으면 postingType 우선', () => {
       const posting: Partial<JobPosting> = {
         postingType: 'tournament',
-        type: 'application'
+        type: 'application',
       };
 
       expect(normalizePostingType(posting)).toBe('tournament');
@@ -66,7 +66,7 @@ describe('normalizePostingType', () => {
   describe('레거시 필드 (recruitmentType) 변환', () => {
     it('recruitmentType이 application이면 regular로 변환', () => {
       const posting: Partial<JobPosting> = {
-        recruitmentType: 'application'
+        recruitmentType: 'application',
       };
 
       expect(normalizePostingType(posting)).toBe('regular');
@@ -74,7 +74,7 @@ describe('normalizePostingType', () => {
 
     it('recruitmentType이 fixed이면 fixed로 변환', () => {
       const posting: Partial<JobPosting> = {
-        recruitmentType: 'fixed'
+        recruitmentType: 'fixed',
       };
 
       expect(normalizePostingType(posting)).toBe('fixed');
@@ -83,7 +83,7 @@ describe('normalizePostingType', () => {
     it('type과 recruitmentType 둘 다 있으면 type 우선', () => {
       const posting: Partial<JobPosting> = {
         type: 'fixed',
-        recruitmentType: 'application'
+        recruitmentType: 'application',
       };
 
       expect(normalizePostingType(posting)).toBe('fixed');
@@ -99,7 +99,7 @@ describe('normalizePostingType', () => {
 
     it('postingType이 잘못된 값이면 regular 기본값 반환', () => {
       const posting: Partial<JobPosting> = {
-        postingType: 'invalid' as any
+        postingType: 'invalid' as any,
       };
 
       expect(normalizePostingType(posting)).toBe('regular');
@@ -107,7 +107,7 @@ describe('normalizePostingType', () => {
 
     it('type이 잘못된 값이면 regular 기본값 반환', () => {
       const posting: Partial<JobPosting> = {
-        type: 'invalid' as any
+        type: 'invalid' as any,
       };
 
       expect(normalizePostingType(posting)).toBe('regular');
@@ -115,7 +115,7 @@ describe('normalizePostingType', () => {
 
     it('recruitmentType이 잘못된 값이면 regular 기본값 반환', () => {
       const posting: Partial<JobPosting> = {
-        recruitmentType: 'invalid' as any
+        recruitmentType: 'invalid' as any,
       };
 
       expect(normalizePostingType(posting)).toBe('regular');
@@ -127,7 +127,7 @@ describe('normalizePostingType', () => {
       const posting: Partial<JobPosting> = {
         postingType: 'urgent',
         type: 'fixed',
-        recruitmentType: 'application'
+        recruitmentType: 'application',
       };
 
       expect(normalizePostingType(posting)).toBe('urgent');
@@ -136,7 +136,7 @@ describe('normalizePostingType', () => {
     it('postingType 없고 type만 있으면 type 사용', () => {
       const posting: Partial<JobPosting> = {
         type: 'fixed',
-        recruitmentType: 'application'
+        recruitmentType: 'application',
       };
 
       expect(normalizePostingType(posting)).toBe('fixed');
@@ -144,7 +144,7 @@ describe('normalizePostingType', () => {
 
     it('postingType과 type 없고 recruitmentType만 있으면 recruitmentType 사용', () => {
       const posting: Partial<JobPosting> = {
-        recruitmentType: 'fixed'
+        recruitmentType: 'fixed',
       };
 
       expect(normalizePostingType(posting)).toBe('fixed');

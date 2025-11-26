@@ -30,7 +30,7 @@ export const toast = {
     const toastData: ToastData = {
       type: 'success',
       message,
-      duration: duration || 3000
+      duration: duration || 3000,
     };
     if (title) toastData.title = title;
     addToast(toastData);
@@ -44,7 +44,7 @@ export const toast = {
     const toastData: ToastData = {
       type: 'error',
       message,
-      duration: duration || 5000 // 에러는 더 오래 표시
+      duration: duration || 5000, // 에러는 더 오래 표시
     };
     if (title) toastData.title = title;
     addToast(toastData);
@@ -58,7 +58,7 @@ export const toast = {
     const toastData: ToastData = {
       type: 'warning',
       message,
-      duration: duration || 4000
+      duration: duration || 4000,
     };
     if (title) toastData.title = title;
     addToast(toastData);
@@ -72,7 +72,7 @@ export const toast = {
     const toastData: ToastData = {
       type: 'info',
       message,
-      duration: duration || 3000
+      duration: duration || 3000,
     };
     if (title) toastData.title = title;
     addToast(toastData);
@@ -84,19 +84,22 @@ export const toast = {
   clear: () => {
     const { clearAllToasts } = useToastStore.getState();
     clearAllToasts();
-  }
+  },
 };
 
 /**
  * alert() 대체 함수
  * 기존 alert() 코드를 최소한으로 수정하여 사용 가능
- * 
+ *
  * @deprecated alert() 사용을 지양하고 toast.success/error/warning/info 사용 권장
  * @example
  * // 기존: alert('메시지');
  * // 변경: alertToast('메시지');
  */
-export const alertToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+export const alertToast = (
+  message: string,
+  type: 'success' | 'error' | 'warning' | 'info' = 'info'
+) => {
   toast[type](message);
 };
 

@@ -16,13 +16,9 @@ import { logger } from '../../utils/logger';
 import type {
   SystemAnnouncement,
   UpdateSystemAnnouncementInput,
-  AnnouncementPriority
+  AnnouncementPriority,
 } from '../../types';
-import {
-  validateSystemAnnouncement,
-  getPriorityLabel,
-  getPriorityBadgeStyle
-} from '../../types';
+import { validateSystemAnnouncement, getPriorityLabel, getPriorityBadgeStyle } from '../../types';
 
 interface EditAnnouncementModalProps {
   isOpen: boolean;
@@ -35,7 +31,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  announcement
+  announcement,
 }) => {
   const { showSuccess, showError } = useToast();
   const { updateAnnouncement } = useSystemAnnouncements();
@@ -64,16 +60,18 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
       setPriority(announcement.priority);
 
       // startDate 처리
-      const start = announcement.startDate instanceof Date
-        ? announcement.startDate
-        : announcement.startDate?.toDate();
+      const start =
+        announcement.startDate instanceof Date
+          ? announcement.startDate
+          : announcement.startDate?.toDate();
       setStartDate(start ? new Date(start).toISOString().slice(0, 16) : '');
 
       // endDate 처리
       if (announcement.endDate) {
-        const end = announcement.endDate instanceof Date
-          ? announcement.endDate
-          : announcement.endDate.toDate();
+        const end =
+          announcement.endDate instanceof Date
+            ? announcement.endDate
+            : announcement.endDate.toDate();
         setEndDate(new Date(end).toISOString().slice(0, 16));
         setHasEndDate(true);
       } else {
@@ -92,7 +90,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
       content: content.trim(),
       priority,
       startDate: new Date(startDate),
-      endDate: hasEndDate && endDate ? new Date(endDate) : null
+      endDate: hasEndDate && endDate ? new Date(endDate) : null,
     };
 
     const validation = validateSystemAnnouncement(input);
@@ -119,7 +117,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
         content: content.trim(),
         priority,
         startDate: new Date(startDate),
-        endDate: hasEndDate && endDate ? new Date(endDate) : null
+        endDate: hasEndDate && endDate ? new Date(endDate) : null,
       };
 
       // 유효성 검증
@@ -135,7 +133,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
         content: content.trim(),
         priority,
         startDate: new Date(startDate),
-        endDate: hasEndDate && endDate ? new Date(endDate) : null
+        endDate: hasEndDate && endDate ? new Date(endDate) : null,
       };
 
       // 공지사항 수정
@@ -143,21 +141,38 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
 
       logger.info('시스템 공지사항 수정 완료', {
         component: 'EditAnnouncementModal',
-        data: { id: announcement.id, title: updateInput.title }
+        data: { id: announcement.id, title: updateInput.title },
       });
 
       showSuccess('공지사항이 수정되었습니다.');
       onSuccess();
       onClose();
     } catch (error) {
-      logger.error('공지사항 수정 실패:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'EditAnnouncementModal'
-      });
+      logger.error(
+        '공지사항 수정 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'EditAnnouncementModal',
+        }
+      );
       showError('공지사항 수정에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [announcement.id, title, content, priority, startDate, endDate, hasEndDate, updateAnnouncement, showSuccess, showError, onSuccess, onClose]);
+  }, [
+    announcement.id,
+    title,
+    content,
+    priority,
+    startDate,
+    endDate,
+    hasEndDate,
+    updateAnnouncement,
+    showSuccess,
+    showError,
+    onSuccess,
+    onClose,
+  ]);
 
   /**
    * 우선순위 옵션
@@ -165,16 +180,11 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
   const priorityOptions: Array<{ value: AnnouncementPriority; label: string }> = [
     { value: 'normal', label: getPriorityLabel('normal') },
     { value: 'important', label: getPriorityLabel('important') },
-    { value: 'urgent', label: getPriorityLabel('urgent') }
+    { value: 'urgent', label: getPriorityLabel('urgent') },
   ];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      size="lg"
-      title="✏️ 시스템 공지사항 수정"
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg" title="✏️ 시스템 공지사항 수정">
       <div className="space-y-6">
         {/* 미리보기 모드 토글 */}
         <div className="flex justify-end">
@@ -190,8 +200,12 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
           /* 미리보기 */
           <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-700">
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{title || '(제목 없음)'}</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityBadgeStyle(priority)}`}>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {title || '(제목 없음)'}
+              </h3>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityBadgeStyle(priority)}`}
+              >
                 {getPriorityLabel(priority)}
               </span>
             </div>
@@ -310,7 +324,9 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
             {/* 유효성 검증 에러 */}
             {validationErrors.length > 0 && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">⚠️ 입력 오류</p>
+                <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+                  ⚠️ 입력 오류
+                </p>
                 <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-400 space-y-1">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error}</li>

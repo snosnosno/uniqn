@@ -8,21 +8,21 @@ import { Timestamp } from 'firebase/firestore';
  * 신고 유형 (구직자 → 구인자 신고)
  */
 export type EmployerReportType =
-  | 'false_posting'          // 허위공고
-  | 'employer_negligence'    // 근무태만
-  | 'unfair_treatment'       // 부당한 대우
+  | 'false_posting' // 허위공고
+  | 'employer_negligence' // 근무태만
+  | 'unfair_treatment' // 부당한 대우
   | 'inappropriate_behavior' // 부적절한 행동
-  | 'other';                 // 기타
+  | 'other'; // 기타
 
 /**
  * 신고 유형 (구인자 → 구직자 신고)
  */
 export type EmployeeReportType =
-  | 'tardiness'              // 지각
-  | 'negligence'             // 근무태만
-  | 'no_show'               // 노쇼
+  | 'tardiness' // 지각
+  | 'negligence' // 근무태만
+  | 'no_show' // 노쇼
   | 'inappropriate_behavior' // 부적절한 행동
-  | 'other';                // 기타
+  | 'other'; // 기타
 
 /**
  * 신고 유형 (통합)
@@ -33,16 +33,16 @@ export type ReportType = EmployerReportType | EmployeeReportType;
  * 신고자 유형
  */
 export type ReporterType =
-  | 'employer'  // 구인자 (관리자, 매니저, 스태프)
+  | 'employer' // 구인자 (관리자, 매니저, 스태프)
   | 'employee'; // 구직자 (일반 사용자)
 
 /**
  * 신고 상태
  */
 export type ReportStatus =
-  | 'pending'    // 대기중
-  | 'reviewed'   // 검토중
-  | 'resolved'   // 해결됨
+  | 'pending' // 대기중
+  | 'reviewed' // 검토중
+  | 'resolved' // 해결됨
   | 'dismissed'; // 기각됨
 
 /**
@@ -141,32 +141,32 @@ export const EMPLOYEE_REPORT_TYPES: ReportTypeInfo[] = [
     key: 'tardiness',
     labelKey: 'report.types.tardiness.label',
     descriptionKey: 'report.types.tardiness.description',
-    severity: 'low'
+    severity: 'low',
   },
   {
     key: 'negligence',
     labelKey: 'report.types.negligence.label',
     descriptionKey: 'report.types.negligence.description',
-    severity: 'medium'
+    severity: 'medium',
   },
   {
     key: 'no_show',
     labelKey: 'report.types.no_show.label',
     descriptionKey: 'report.types.no_show.description',
-    severity: 'high'
+    severity: 'high',
   },
   {
     key: 'inappropriate_behavior',
     labelKey: 'report.types.inappropriate_behavior.label',
     descriptionKey: 'report.types.inappropriate_behavior.description',
-    severity: 'critical'
+    severity: 'critical',
   },
   {
     key: 'other',
     labelKey: 'report.types.other.label',
     descriptionKey: 'report.types.other.description',
-    severity: 'medium'
-  }
+    severity: 'medium',
+  },
 ];
 
 /**
@@ -177,65 +177,71 @@ export const EMPLOYER_REPORT_TYPES: ReportTypeInfo[] = [
     key: 'false_posting',
     labelKey: 'report.types.false_posting.label',
     descriptionKey: 'report.types.false_posting.description',
-    severity: 'high'
+    severity: 'high',
   },
   {
     key: 'employer_negligence',
     labelKey: 'report.types.employer_negligence.label',
     descriptionKey: 'report.types.employer_negligence.description',
-    severity: 'medium'
+    severity: 'medium',
   },
   {
     key: 'unfair_treatment',
     labelKey: 'report.types.unfair_treatment.label',
     descriptionKey: 'report.types.unfair_treatment.description',
-    severity: 'high'
+    severity: 'high',
   },
   {
     key: 'inappropriate_behavior',
     labelKey: 'report.types.inappropriate_behavior.label',
     descriptionKey: 'report.types.inappropriate_behavior.description',
-    severity: 'critical'
+    severity: 'critical',
   },
   {
     key: 'other',
     labelKey: 'report.types.other.label',
     descriptionKey: 'report.types.other.description',
-    severity: 'medium'
-  }
+    severity: 'medium',
+  },
 ];
 
 /**
  * 신고 유형별 정보 상수 (통합 - 모든 유형 포함)
  */
-export const REPORT_TYPES: ReportTypeInfo[] = [...EMPLOYEE_REPORT_TYPES, ...EMPLOYER_REPORT_TYPES.filter(t => !EMPLOYEE_REPORT_TYPES.find(e => e.key === t.key))];
+export const REPORT_TYPES: ReportTypeInfo[] = [
+  ...EMPLOYEE_REPORT_TYPES,
+  ...EMPLOYER_REPORT_TYPES.filter((t) => !EMPLOYEE_REPORT_TYPES.find((e) => e.key === t.key)),
+];
 
 /**
  * 신고 상태별 스타일 정보
  */
-export const REPORT_STATUS_STYLES: Record<ReportStatus, {
-  color: string;
-  bgColor: string;
-  labelKey: string;
-}> = {
+export const REPORT_STATUS_STYLES: Record<
+  ReportStatus,
+  {
+    color: string;
+    bgColor: string;
+    labelKey: string;
+  }
+> = {
   pending: {
     color: 'text-yellow-700 dark:text-yellow-300',
     bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    labelKey: 'report.status.pending'
+    labelKey: 'report.status.pending',
   },
   reviewed: {
     color: 'text-blue-700 dark:text-blue-300',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    labelKey: 'report.status.reviewed'
+    labelKey: 'report.status.reviewed',
   },
   resolved: {
     color: 'text-green-700 dark:text-green-300',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
-    labelKey: 'report.status.resolved'
+    labelKey: 'report.status.resolved',
   },
   dismissed: {
     color: 'text-gray-700 dark:text-gray-300',
     bgColor: 'bg-gray-100 dark:bg-gray-700',
-    labelKey: 'report.status.dismissed'
-  }
+    labelKey: 'report.status.dismissed',
+  },
 };

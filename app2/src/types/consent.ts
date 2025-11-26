@@ -136,9 +136,7 @@ export const CURRENT_PRIVACY_VERSION = '1.0';
 /**
  * Firestore 타임스탬프를 Date로 변환
  */
-export const convertConsentTimestamp = (
-  timestamp: Date | FirebaseTimestamp
-): Date => {
+export const convertConsentTimestamp = (timestamp: Date | FirebaseTimestamp): Date => {
   if (timestamp instanceof Date) {
     return timestamp;
   }

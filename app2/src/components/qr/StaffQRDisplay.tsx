@@ -30,17 +30,10 @@ interface StaffQRDisplayProps {
 export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   userId,
   userName,
-  autoRefresh = true
+  autoRefresh = true,
 }) => {
-  const {
-    qrMetadata,
-    qrString,
-    loading,
-    error,
-    regenerate,
-    refresh,
-    remainingSeconds
-  } = useStaffQR({ userId, userName, autoRefresh });
+  const { qrMetadata, qrString, loading, error, regenerate, refresh, remainingSeconds } =
+    useStaffQR({ userId, userName, autoRefresh });
 
   /**
    * QR 재생성 핸들러
@@ -82,11 +75,14 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
    */
   const handleCopyQRString = useCallback(() => {
     if (!qrString) return;
-    navigator.clipboard.writeText(qrString).then(() => {
-      toast.success('QR 주소가 복사되었습니다.');
-    }).catch(() => {
-      toast.error('복사에 실패했습니다.');
-    });
+    navigator.clipboard
+      .writeText(qrString)
+      .then(() => {
+        toast.success('QR 주소가 복사되었습니다.');
+      })
+      .catch(() => {
+        toast.error('복사에 실패했습니다.');
+      });
   }, [qrString]);
 
   /**
@@ -155,24 +151,26 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
     <div className="flex flex-col items-center space-y-6 py-6 px-4">
       {/* QR 코드 */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-        <QRCodeCanvas
-          value={qrString}
-          size={280}
-          level="H"
-          includeMargin
-        />
+        <QRCodeCanvas value={qrString} size={280} level="H" includeMargin />
       </div>
 
       {/* QR 주소 표시 (수동 입력용) */}
       <div className="w-full max-w-md bg-gray-50 dark:bg-gray-700 dark:bg-gray-800 rounded-xl p-4 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">QR 주소 (수동 입력용)</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+            QR 주소 (수동 입력용)
+          </span>
           <button
             onClick={handleCopyQRString}
             className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
             </svg>
             복사
           </button>
@@ -194,16 +192,14 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
             remainingSeconds <= 30
               ? 'text-red-600 dark:text-red-400 animate-pulse'
               : remainingSeconds <= 60
-              ? 'text-orange-600 dark:text-orange-400'
-              : 'text-blue-600 dark:text-blue-400'
+                ? 'text-orange-600 dark:text-orange-400'
+                : 'text-blue-600 dark:text-blue-400'
           }`}
         >
           {formatCountdown(remainingSeconds)}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {remainingSeconds <= 30
-            ? '곧 QR이 자동으로 갱신됩니다'
-            : 'QR 유효 시간'}
+          {remainingSeconds <= 30 ? '곧 QR이 자동으로 갱신됩니다' : 'QR 유효 시간'}
         </p>
       </div>
 
@@ -225,13 +221,17 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
 
         <div className="flex justify-between items-center">
           <span className="text-gray-600 dark:text-gray-400 text-sm">총 스캔 횟수</span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{qrMetadata.totalScanCount}회</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {qrMetadata.totalScanCount}회
+          </span>
         </div>
 
         {qrMetadata.regenerationCount > 0 && (
           <div className="flex justify-between items-center">
             <span className="text-gray-600 dark:text-gray-400 text-sm">재생성 횟수</span>
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{qrMetadata.regenerationCount}회</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              {qrMetadata.regenerationCount}회
+            </span>
           </div>
         )}
       </div>

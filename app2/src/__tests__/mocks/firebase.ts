@@ -26,11 +26,13 @@ export const mockUnsubscribe = jest.fn();
  * Usage: Stores callback and triggers it with mock data
  * ALWAYS returns a valid unsubscribe function
  */
-export const mockOnSnapshot = jest.fn((query: any, callback: (snapshot: QuerySnapshot<DocumentData>) => void) => {
-  onSnapshotCallback = callback;
-  // Always return a function, even if mockUnsubscribe is not defined
-  return typeof mockUnsubscribe === 'function' ? mockUnsubscribe : jest.fn();
-});
+export const mockOnSnapshot = jest.fn(
+  (query: any, callback: (snapshot: QuerySnapshot<DocumentData>) => void) => {
+    onSnapshotCallback = callback;
+    // Always return a function, even if mockUnsubscribe is not defined
+    return typeof mockUnsubscribe === 'function' ? mockUnsubscribe : jest.fn();
+  }
+);
 
 /**
  * Mock updateDoc - Firestore document update
@@ -58,7 +60,7 @@ export const mockAddDoc = jest.fn().mockResolvedValue({
  */
 export const mockCollection = jest.fn((db: any, path: string) => ({
   _path: path,
-  type: 'collection'
+  type: 'collection',
 }));
 
 /**
@@ -68,7 +70,7 @@ export const mockCollection = jest.fn((db: any, path: string) => ({
 export const mockQuery = jest.fn((collectionRef: any, ...constraints: any[]) => ({
   ...collectionRef,
   _constraints: constraints,
-  type: 'query'
+  type: 'query',
 }));
 
 /**
@@ -78,7 +80,7 @@ export const mockWhere = jest.fn((field: string, operator: string, value: any) =
   type: 'where',
   field,
   operator,
-  value
+  value,
 }));
 
 /**
@@ -87,7 +89,7 @@ export const mockWhere = jest.fn((field: string, operator: string, value: any) =
 export const mockOrderBy = jest.fn((field: string, direction?: 'asc' | 'desc') => ({
   type: 'orderBy',
   field,
-  direction: direction || 'asc'
+  direction: direction || 'asc',
 }));
 
 /**
@@ -95,7 +97,7 @@ export const mockOrderBy = jest.fn((field: string, direction?: 'asc' | 'desc') =
  */
 export const mockLimit = jest.fn((count: number) => ({
   type: 'limit',
-  count
+  count,
 }));
 
 /**
@@ -104,7 +106,7 @@ export const mockLimit = jest.fn((count: number) => ({
 export const mockDoc = jest.fn((db: any, collection: string, id: string) => ({
   id,
   path: `${collection}/${id}`,
-  type: 'document'
+  type: 'document',
 }));
 
 /**

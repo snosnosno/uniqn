@@ -21,7 +21,7 @@ export const filterWorkLogsByRole = (
 
   const normalizedTargetRole = normalizeRole(targetRole);
 
-  const filteredLogs = workLogs.filter(log => {
+  const filteredLogs = workLogs.filter((log) => {
     if (!log.role) {
       return true;
     }
@@ -55,14 +55,14 @@ export const findTargetWorkLog = (
 
   // 1. workLogId가 있으면 직접 찾기
   if (criteria.workLogId) {
-    const found = workLogs.find(log => log.id === criteria.workLogId);
+    const found = workLogs.find((log) => log.id === criteria.workLogId);
     if (found) {
       return found;
     }
   }
 
   // 2. 복합 조건으로 찾기
-  const found = workLogs.find(log => {
+  const found = workLogs.find((log) => {
     const conditions: boolean[] = [];
 
     if (criteria.staffId) {
@@ -87,7 +87,7 @@ export const findTargetWorkLog = (
       conditions.push(log.type === criteria.type);
     }
 
-    return conditions.length > 0 && conditions.every(condition => condition);
+    return conditions.length > 0 && conditions.every((condition) => condition);
   });
 
   if (!found) {
@@ -95,15 +95,15 @@ export const findTargetWorkLog = (
       component: 'workLogHelpers',
       data: {
         criteria,
-        availableWorkLogs: workLogs.map(log => ({
+        availableWorkLogs: workLogs.map((log) => ({
           id: log.id,
           staffId: log.staffId,
           date: log.date,
           role: log.role,
           eventId: log.eventId,
-          type: log.type
-        }))
-      }
+          type: log.type,
+        })),
+      },
     });
   }
 
@@ -113,12 +113,10 @@ export const findTargetWorkLog = (
 /**
  * Staff별로 WorkLog 그룹핑 (성능 최적화용)
  */
-export const groupWorkLogsByStaff = (
-  workLogs: UnifiedWorkLog[]
-): Map<string, UnifiedWorkLog[]> => {
+export const groupWorkLogsByStaff = (workLogs: UnifiedWorkLog[]): Map<string, UnifiedWorkLog[]> => {
   const grouped = new Map<string, UnifiedWorkLog[]>();
 
-  workLogs.forEach(log => {
+  workLogs.forEach((log) => {
     const key = `${log.staffId}_${normalizeRole(log.role)}`;
 
     if (!grouped.has(key)) {
@@ -136,12 +134,12 @@ export const groupWorkLogsByStaff = (
  */
 export const validateWorkLog = (workLog: Partial<UnifiedWorkLog>): boolean => {
   const requiredFields = ['id', 'staffId', 'date', 'eventId'];
-  
+
   for (const field of requiredFields) {
     if (!workLog[field as keyof UnifiedWorkLog]) {
       logger.warn('WorkLog 필수 필드 누락', {
         component: 'workLogHelpers',
-        data: { workLogId: workLog.id, missingField: field }
+        data: { workLogId: workLog.id, missingField: field },
       });
       return false;
     }

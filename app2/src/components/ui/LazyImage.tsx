@@ -60,14 +60,14 @@ const LazyImage: React.FC<LazyImageProps> = ({
             // 이미지 프리로드
             const tempImg = new Image();
             tempImg.src = src;
-            
+
             tempImg.onload = () => {
               setImageSrc(src);
               setImageLoaded(true);
               onLoad?.();
               observer.disconnect();
             };
-            
+
             tempImg.onerror = () => {
               setHasError(true);
               onError?.();
@@ -133,12 +133,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   return (
     <div className={`relative ${className}`} style={{ width, height }}>
       {!imageLoaded && (
-        <Skeleton
-          className="absolute inset-0"
-          variant="rectangular"
-          width="100%"
-          height="100%"
-        />
+        <Skeleton className="absolute inset-0" variant="rectangular" width="100%" height="100%" />
       )}
       <img
         ref={imgRef}
@@ -204,67 +199,83 @@ export const ImageGallery: React.FC<{
       </div>
 
       {/* 라이트박스 */}
-      {selectedIndex !== null && (() => {
-        const selectedImage = images[selectedIndex];
-        if (!selectedImage) return null;
-        
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
-            onClick={() => setSelectedIndex(null)}
-            role="dialog"
-            aria-label="이미지 확대 보기"
-          >
-            <button
-              className="absolute top-4 right-4 text-white hover:text-gray-300 dark:hover:text-gray-400 z-10"
-              onClick={() => setSelectedIndex(null)}
-              aria-label="닫기"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            
-            <img
-              src={selectedImage.src}
-              alt={selectedImage.alt}
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+      {selectedIndex !== null &&
+        (() => {
+          const selectedImage = images[selectedIndex];
+          if (!selectedImage) return null;
 
-          {/* 이전/다음 버튼 */}
-          {selectedIndex > 0 && (
-            <button
-              className="absolute left-4 text-white hover:text-gray-300 dark:hover:text-gray-400"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedIndex(selectedIndex - 1);
-              }}
-              aria-label="이전 이미지"
+          return (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
+              onClick={() => setSelectedIndex(null)}
+              role="dialog"
+              aria-label="이미지 확대 보기"
             >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          
-          {selectedIndex < images.length - 1 && (
-            <button
-              className="absolute right-4 text-white hover:text-gray-300 dark:hover:text-gray-400"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedIndex(selectedIndex + 1);
-              }}
-              aria-label="다음 이미지"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          )}
-        </div>
-        );
-      })()}
+              <button
+                className="absolute top-4 right-4 text-white hover:text-gray-300 dark:hover:text-gray-400 z-10"
+                onClick={() => setSelectedIndex(null)}
+                aria-label="닫기"
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+
+              <img
+                src={selectedImage.src}
+                alt={selectedImage.alt}
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              {/* 이전/다음 버튼 */}
+              {selectedIndex > 0 && (
+                <button
+                  className="absolute left-4 text-white hover:text-gray-300 dark:hover:text-gray-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedIndex(selectedIndex - 1);
+                  }}
+                  aria-label="이전 이미지"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+              )}
+
+              {selectedIndex < images.length - 1 && (
+                <button
+                  className="absolute right-4 text-white hover:text-gray-300 dark:hover:text-gray-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedIndex(selectedIndex + 1);
+                  }}
+                  aria-label="다음 이미지"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          );
+        })()}
     </>
   );
 };

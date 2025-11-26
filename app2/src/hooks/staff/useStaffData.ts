@@ -48,11 +48,7 @@ export function useStaffData({
 }: UseStaffDataParams): UseStaffDataReturn {
   // 🚀 WorkLog → StaffData 변환 및 메모이제이션
   const staffData = useMemo(() => {
-    return transformWorkLogsToStaffData(
-      workLogs,
-      jobPostings,
-      currentJobPosting?.id
-    );
+    return transformWorkLogsToStaffData(workLogs, jobPostings, currentJobPosting?.id);
   }, [workLogs, jobPostings, currentJobPosting?.id]);
 
   // 🎯 고유한 스태프 수 계산 (중복 제거)

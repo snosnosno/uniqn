@@ -24,21 +24,27 @@ const ResponsiveNav: React.FC = () => {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const { currentUser, role } = useAuth();
   const location = useLocation();
-  
+
   const isAdmin = role === 'admin' || role === 'ceo';
 
   // 데스크톱 네비게이션 아이템
   const desktopNavItems: NavItem[] = [
     { path: '/', label: '홈' },
     { path: '/app/tournaments', label: '토너먼트', requiresAuth: true, featureFlag: 'TOURNAMENTS' },
-    { path: '/app/participants', label: '참가자', requiresAuth: true, adminOnly: true, featureFlag: 'PARTICIPANTS' },
+    {
+      path: '/app/participants',
+      label: '참가자',
+      requiresAuth: true,
+      adminOnly: true,
+      featureFlag: 'PARTICIPANTS',
+    },
     { path: '/app/tables', label: '테이블', requiresAuth: true, featureFlag: 'TABLES' },
     { path: '/app/jobs', label: '구인구직' },
     { path: '/app/schedule', label: '스케줄', requiresAuth: true },
     { path: '/app/admin', label: '관리자', adminOnly: true },
   ];
 
-  const filteredNavItems = desktopNavItems.filter(item => {
+  const filteredNavItems = desktopNavItems.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
     if (item.requiresAuth && !currentUser) return false;
     if (item.featureFlag && !FEATURE_FLAGS[item.featureFlag]) return false;
@@ -60,13 +66,20 @@ const ResponsiveNav: React.FC = () => {
                   aria-label="메뉴 열기"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
                   </svg>
                 </button>
               )}
-              
+
               <Link to="/" className="flex items-center space-x-2">
-                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">UNIQN</span>
+                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
+                  UNIQN
+                </span>
               </Link>
             </div>
 
@@ -74,18 +87,20 @@ const ResponsiveNav: React.FC = () => {
             {isDesktop && (
               <nav className="hidden lg:flex space-x-1">
                 {filteredNavItems.map((item) => {
-                  const isActive = location.pathname === item.path || 
-                                  (item.path !== '/' && location.pathname.startsWith(item.path));
-                  
+                  const isActive =
+                    location.pathname === item.path ||
+                    (item.path !== '/' && location.pathname.startsWith(item.path));
+
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
                       className={`
                         px-3 py-2 rounded-md text-base font-medium transition-colors
-                        ${isActive
-                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+                        ${
+                          isActive
+                            ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                         }
                       `}
                     >
@@ -108,15 +123,14 @@ const ResponsiveNav: React.FC = () => {
                       {getUserInitial(currentUser.displayName, currentUser.email)}
                     </div>
                     {isDesktop && (
-                      <span className="font-medium">{getUserDisplayName(currentUser.displayName, currentUser.email)}</span>
+                      <span className="font-medium">
+                        {getUserDisplayName(currentUser.displayName, currentUser.email)}
+                      </span>
                     )}
                   </Link>
                 </div>
               ) : (
-                <Link
-                  to="/login"
-                  className="btn btn-primary btn-sm"
-                >
+                <Link to="/login" className="btn btn-primary btn-sm">
                   로그인
                 </Link>
               )}
@@ -127,10 +141,7 @@ const ResponsiveNav: React.FC = () => {
 
       {/* 모바일 슬라이드 메뉴 */}
       {(isMobile || isTablet) && (
-        <MobileMenu 
-          isOpen={isMobileMenuOpen} 
-          onClose={() => setIsMobileMenuOpen(false)} 
-        />
+        <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       )}
 
       {/* 모바일 하단 탭바 */}

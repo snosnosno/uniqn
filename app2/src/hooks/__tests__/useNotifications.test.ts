@@ -22,10 +22,7 @@ import {
   triggerSnapshot,
 } from '../../__tests__/mocks/firebase';
 import { createMockSnapshot } from '../../__tests__/setup/mockFactories';
-import {
-  createMockNotification,
-  notificationFactories,
-} from '../../__tests__/mocks/testData';
+import { createMockNotification, notificationFactories } from '../../__tests__/mocks/testData';
 
 // ========================================
 // Mock Setup
@@ -105,7 +102,7 @@ describe('useNotifications', () => {
     mockDoc.mockImplementation((db: any, collection: string, id: string) => ({
       id,
       path: `${collection}/${id}`,
-      type: 'document'
+      type: 'document',
     }));
   });
 
@@ -132,10 +129,9 @@ describe('useNotifications', () => {
 
     test('currentUser가 없으면 빈 알림을 반환한다', async () => {
       // AuthContext Mock 재정의 - spyOn 사용 후 즉시 restore
-      const spy = jest.spyOn(require('../../contexts/AuthContext'), 'useAuth')
-        .mockReturnValueOnce({
-          currentUser: null,
-        });
+      const spy = jest.spyOn(require('../../contexts/AuthContext'), 'useAuth').mockReturnValueOnce({
+        currentUser: null,
+      });
 
       const { result, unmount } = renderHook(() => useNotifications());
 

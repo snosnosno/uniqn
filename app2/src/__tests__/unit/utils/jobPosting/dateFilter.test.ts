@@ -2,7 +2,7 @@ import {
   generateDateRange,
   filterPostingsByDate,
   isToday,
-  isYesterday
+  isYesterday,
 } from '@/utils/jobPosting/dateFilter';
 import { JobPosting } from '@/types/jobPosting/jobPosting';
 import { Timestamp } from 'firebase/firestore';
@@ -60,9 +60,7 @@ describe('dateFilter 유틸리티', () => {
         isChipDeducted: false,
         status: 'open',
         postingType: 'regular',
-        dateSpecificRequirements: [
-          { date: '2025-01-01', timeSlots: [] }
-        ]
+        dateSpecificRequirements: [{ date: '2025-01-01', timeSlots: [] }],
       },
       {
         id: '2',
@@ -74,9 +72,7 @@ describe('dateFilter 유틸리티', () => {
         isChipDeducted: false,
         status: 'open',
         postingType: 'regular',
-        dateSpecificRequirements: [
-          { date: '2025-01-05', timeSlots: [] }
-        ]
+        dateSpecificRequirements: [{ date: '2025-01-05', timeSlots: [] }],
       },
       {
         id: '3',
@@ -88,10 +84,8 @@ describe('dateFilter 유틸리티', () => {
         isChipDeducted: false,
         status: 'open',
         postingType: 'regular',
-        dateSpecificRequirements: [
-          { date: '2025-01-10', timeSlots: [] }
-        ]
-      }
+        dateSpecificRequirements: [{ date: '2025-01-10', timeSlots: [] }],
+      },
     ];
 
     it('특정 날짜로 공고 필터링', () => {
@@ -131,9 +125,9 @@ describe('dateFilter 유틸리티', () => {
         dateSpecificRequirements: [
           {
             date: Timestamp.fromDate(new Date('2025-01-05')),
-            timeSlots: []
-          }
-        ]
+            timeSlots: [],
+          },
+        ],
       };
 
       const result = filterPostingsByDate([postingWithTimestamp], new Date('2025-01-05'));
@@ -190,7 +184,7 @@ describe('dateFilter 유틸리티', () => {
         isChipDeducted: false,
         status: 'open',
         postingType: 'regular',
-        dateSpecificRequirements: []
+        dateSpecificRequirements: [],
       };
 
       const result = filterPostingsByDate([postingWithoutDates], new Date('2025-01-01'));

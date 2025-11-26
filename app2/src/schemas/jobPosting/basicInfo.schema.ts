@@ -13,7 +13,7 @@ import { xssValidation } from '../../utils/validation/xssProtection';
  * 공고 타입 열거형
  */
 export const PostingTypeSchema = z.enum(['regular', 'fixed', 'tournament', 'urgent'], {
-  errorMap: () => ({ message: '올바른 공고 타입을 선택해주세요' })
+  errorMap: () => ({ message: '올바른 공고 타입을 선택해주세요' }),
 });
 
 /**
@@ -35,13 +35,13 @@ export const basicInfoSchema = z.object({
   title: z
     .string({
       required_error: '공고 제목을 입력해주세요',
-      invalid_type_error: '공고 제목은 문자열이어야 합니다'
+      invalid_type_error: '공고 제목은 문자열이어야 합니다',
     })
     .min(2, { message: '공고 제목은 최소 2자 이상이어야 합니다' })
     .max(25, { message: '공고 제목은 25자를 초과할 수 없습니다' })
     .trim()
     .refine(xssValidation, {
-      message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)'
+      message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)',
     }),
 
   /**
@@ -51,7 +51,7 @@ export const basicInfoSchema = z.object({
   location: z
     .string({
       required_error: '근무 장소를 선택해주세요',
-      invalid_type_error: '근무 장소는 문자열이어야 합니다'
+      invalid_type_error: '근무 장소는 문자열이어야 합니다',
     })
     .min(1, { message: '근무 장소를 선택해주세요' })
     .trim(),
@@ -59,10 +59,7 @@ export const basicInfoSchema = z.object({
   /**
    * 시/군/구 (선택)
    */
-  district: z
-    .string()
-    .trim()
-    .optional(),
+  district: z.string().trim().optional(),
 
   /**
    * 상세 주소 (선택)
@@ -81,12 +78,12 @@ export const basicInfoSchema = z.object({
    */
   description: z
     .string({
-      invalid_type_error: '공고 설명은 문자열이어야 합니다'
+      invalid_type_error: '공고 설명은 문자열이어야 합니다',
     })
     .trim()
     .max(500, { message: '공고 설명은 500자를 초과할 수 없습니다' })
     .refine(xssValidation, {
-      message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)'
+      message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)',
     })
     .optional(),
 
@@ -106,7 +103,7 @@ export const basicInfoSchema = z.object({
     .string()
     .trim()
     .regex(/^[0-9-+()]*$/, { message: '올바른 전화번호 형식이 아닙니다' })
-    .optional()
+    .optional(),
 });
 
 /**

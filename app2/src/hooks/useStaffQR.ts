@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getOrCreateStaffQR,
   regenerateStaffQR,
-  generateDynamicQRPayload
+  generateDynamicQRPayload,
 } from '../services/StaffQRService';
 import { StaffQRMetadata, StaffQRPayload } from '../types/staffQR';
 import { logger } from '../utils/logger';
@@ -43,7 +43,7 @@ interface UseStaffQRReturn {
 export function useStaffQR({
   userId,
   userName,
-  autoRefresh = true
+  autoRefresh = true,
 }: UseStaffQROptions): UseStaffQRReturn {
   const [qrMetadata, setQrMetadata] = useState<StaffQRMetadata | null>(null);
   const [qrPayload, setQrPayload] = useState<StaffQRPayload | null>(null);
@@ -58,31 +58,34 @@ export function useStaffQR({
   /**
    * QR 페이로드 생성 및 JSON 문자열 변환
    */
-  const generateQRString = useCallback((metadata: StaffQRMetadata): string => {
-    try {
-      const payload = generateDynamicQRPayload(userId, metadata.securityCode);
-      setQrPayload(payload);
+  const generateQRString = useCallback(
+    (metadata: StaffQRMetadata): string => {
+      try {
+        const payload = generateDynamicQRPayload(userId, metadata.securityCode);
+        setQrPayload(payload);
 
-      const qrJson = JSON.stringify(payload);
-      setQrString(qrJson);
+        const qrJson = JSON.stringify(payload);
+        setQrString(qrJson);
 
-      // 카운트다운 초기화
-      setRemainingSeconds(180);
+        // 카운트다운 초기화
+        setRemainingSeconds(180);
 
-      logger.info('QR 페이로드 생성 완료', {
-        data: {
-          userId,
-          userName,
-          generatedAt: new Date(payload.generatedAt).toISOString()
-        }
-      });
+        logger.info('QR 페이로드 생성 완료', {
+          data: {
+            userId,
+            userName,
+            generatedAt: new Date(payload.generatedAt).toISOString(),
+          },
+        });
 
-      return qrJson;
-    } catch (err) {
-      logger.error('QR 페이로드 생성 실패', err as Error, { data: { userId } });
-      throw err;
-    }
-  }, [userId, userName]);
+        return qrJson;
+      } catch (err) {
+        logger.error('QR 페이로드 생성 실패', err as Error, { data: { userId } });
+        throw err;
+      }
+    },
+    [userId, userName]
+  );
 
   /**
    * QR 메타데이터 로드 및 페이로드 생성
@@ -105,12 +108,11 @@ export function useStaffQR({
         data: {
           userId,
           userName,
-          regenerationCount: metadata.regenerationCount
-        }
+          regenerationCount: metadata.regenerationCount,
+        },
       });
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'QR 생성 중 오류가 발생했습니다.';
+      const errorMessage = err instanceof Error ? err.message : 'QR 생성 중 오류가 발생했습니다.';
 
       setError(errorMessage);
       setLoading(false);
@@ -140,12 +142,11 @@ export function useStaffQR({
         data: {
           userId,
           userName,
-          regenerationCount: newMetadata.regenerationCount
-        }
+          regenerationCount: newMetadata.regenerationCount,
+        },
       });
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'QR 재생성 중 오류가 발생했습니다.';
+      const errorMessage = err instanceof Error ? err.message : 'QR 재생성 중 오류가 발생했습니다.';
 
       setError(errorMessage);
       setLoading(false);
@@ -236,6 +237,6 @@ export function useStaffQR({
     error,
     regenerate,
     refresh,
-    remainingSeconds
+    remainingSeconds,
   };
 }

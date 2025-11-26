@@ -22,23 +22,23 @@ export interface PayrollCalculation {
   staffId: string;
   staffName: string;
   role: string;
-  
+
   // 근무 정보
   workLogs: WorkLog[];
   totalHours: number;
   totalDays: number;
-  
+
   // 급여 정보
   salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
   baseRate: number;
-  
+
   // 계산 결과
-  regularPay: number;      // 정규 급여
-  overtimePay?: number;    // 초과 근무 수당
-  bonuses?: number;        // 보너스
-  deductions?: number;     // 공제
-  totalAmount: number;     // 총 지급액
-  
+  regularPay: number; // 정규 급여
+  overtimePay?: number; // 초과 근무 수당
+  bonuses?: number; // 보너스
+  deductions?: number; // 공제
+  totalAmount: number; // 총 지급액
+
   // 메타 정보
   period: {
     start: string;
@@ -54,60 +54,61 @@ export interface EnhancedPayrollCalculation {
   // 기본 정보
   staffId: string;
   staffName: string;
-  role: string;  // 기존 호환성 유지 (주요 역할)
-  roles?: string[];  // 모든 역할 배열
+  role: string; // 기존 호환성 유지 (주요 역할)
+  roles?: string[]; // 모든 역할 배열
   phone?: string;
 
   // 근무 정보 (자동 계산) - UnifiedWorkLog 타입 사용
   workLogs: UnifiedWorkLog[];
-  totalHours: number;       // 총 근무시간
-  totalDays: number;        // 총 근무일수
-  overtimeHours?: number;   // 초과 근무시간
+  totalHours: number; // 총 근무시간
+  totalDays: number; // 총 근무일수
+  overtimeHours?: number; // 초과 근무시간
 
   // 급여 정보 (공고에서 자동 로드)
   salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
-  baseSalary: number;       // 기본 급여 (시급/일급/월급)
+  baseSalary: number; // 기본 급여 (시급/일급/월급)
 
   // 수당 정보 (개별 편집 가능)
   allowances: {
-    meal: number;           // 식비 (계산된 총액)
+    meal: number; // 식비 (계산된 총액)
     transportation: number; // 교통비 (계산된 총액)
-    accommodation: number;  // 숙소비 (계산된 총액)
-    bonus: number;         // 보너스
-    other: number;         // 기타
+    accommodation: number; // 숙소비 (계산된 총액)
+    bonus: number; // 보너스
+    other: number; // 기타
     otherDescription?: string;
 
     // 일당 기반 계산을 위한 추가 필드
-    dailyRates?: {          // 일당 정보
+    dailyRates?: {
+      // 일당 정보
       meal?: number;
       transportation?: number;
       accommodation?: number;
     };
-    workDays?: number;      // 적용된 근무일수
+    workDays?: number; // 적용된 근무일수
     isManualEdit?: boolean; // 수동 편집 여부
   };
 
   // 계산 결과
-  basePay: number;         // 기본급 (시간/일수 × 기본급여)
-  allowanceTotal: number;  // 수당 합계
-  totalAmount: number;     // 총 지급액 (세전)
+  basePay: number; // 기본급 (시간/일수 × 기본급여)
+  allowanceTotal: number; // 수당 합계
+  totalAmount: number; // 총 지급액 (세전)
 
   // 세금 정보
-  tax?: number;            // 세금 금액
-  taxRate?: number;        // 세율 (%)
+  tax?: number; // 세금 금액
+  taxRate?: number; // 세율 (%)
   afterTaxAmount?: number; // 세후 급여
 
   // 역할별 급여 정보 (다중 역할 지원)
   rolePayrollInfo?: Map<string, RolePayrollInfo>;
-  totalBasePay?: number;   // 모든 역할 기본급 합계
+  totalBasePay?: number; // 모든 역할 기본급 합계
 
   // 메타 정보
   period: {
     start: string;
     end: string;
   };
-  notes?: string;          // 특이사항
-  isConfirmed?: boolean;   // 정산 확정 여부
+  notes?: string; // 특이사항
+  isConfirmed?: boolean; // 정산 확정 여부
   calculatedAt?: Timestamp;
 }
 
@@ -119,26 +120,26 @@ export interface BulkAllowanceSettings {
   targetRoles?: string[];
   targetStaffIds?: string[];
   allowances: {
-    meal?: { 
-      enabled: boolean; 
-      amount: number; 
+    meal?: {
+      enabled: boolean;
+      amount: number;
     };
-    transportation?: { 
-      enabled: boolean; 
-      amount: number; 
+    transportation?: {
+      enabled: boolean;
+      amount: number;
     };
-    accommodation?: { 
-      enabled: boolean; 
-      amount: number; 
+    accommodation?: {
+      enabled: boolean;
+      amount: number;
     };
-    bonus?: { 
-      enabled: boolean; 
-      amount: number; 
+    bonus?: {
+      enabled: boolean;
+      amount: number;
     };
-    other?: { 
-      enabled: boolean; 
-      amount: number; 
-      description?: string; 
+    other?: {
+      enabled: boolean;
+      amount: number;
+      description?: string;
     };
   };
 }
@@ -167,7 +168,7 @@ export interface PayrollSummary {
   totalHours: number;
   totalDays: number;
   totalAmount: number;
-  
+
   // 역할별 집계
   byRole: {
     [role: string]: {
@@ -176,7 +177,7 @@ export interface PayrollSummary {
       amount: number;
     };
   };
-  
+
   // 급여 유형별 집계
   bySalaryType: {
     hourly: number;
@@ -184,7 +185,7 @@ export interface PayrollSummary {
     monthly: number;
     other: number;
   };
-  
+
   // 기간 정보
   period: {
     start: string;
@@ -212,7 +213,7 @@ export interface ExtendedHourlyRates {
     hourly?: number;
     daily?: number;
     monthly?: number;
-    overtime?: number;  // 초과 근무 시급 (선택)
+    overtime?: number; // 초과 근무 시급 (선택)
   };
 }
 

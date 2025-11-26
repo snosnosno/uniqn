@@ -4,7 +4,7 @@ import {
   validatePasswordRealtime,
   getPasswordStrengthColor,
   getPasswordStrengthText,
-  PasswordValidationResult
+  PasswordValidationResult,
 } from '../../utils/passwordValidator';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -17,7 +17,7 @@ interface PasswordStrengthProps {
 const PasswordStrength: React.FC<PasswordStrengthProps> = ({
   password,
   className = '',
-  showRequirements = true
+  showRequirements = true,
 }) => {
   const { t } = useTranslation();
   const { isDark } = useTheme();
@@ -51,7 +51,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             className="h-2 rounded-full transition-all duration-300 ease-in-out"
             style={{
               width: `${score || 0}%`,
-              backgroundColor: getPasswordStrengthColor(strength || 'weak', isDark)
+              backgroundColor: getPasswordStrengthColor(strength || 'weak', isDark),
             }}
           />
         </div>
@@ -67,48 +67,102 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
           <div className="space-y-1">
             {/* 길이 체크 */}
             <div className="flex items-center text-sm">
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                checks.length ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-              }`}>
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
+                  checks.length ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
                 {checks.length && (
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </div>
-              <span className={checks.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+              <span
+                className={
+                  checks.length
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }
+              >
                 {t('passwordStrength.length', '8자 이상')}
               </span>
             </div>
 
             {/* 영문자 체크 */}
             <div className="flex items-center text-sm">
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                checks.hasEnglish ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-              }`}>
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
+                  checks.hasEnglish ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
                 {checks.hasEnglish && (
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </div>
-              <span className={checks.hasEnglish ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+              <span
+                className={
+                  checks.hasEnglish
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }
+              >
                 {t('passwordStrength.english', '영문자 포함')}
               </span>
             </div>
 
             {/* 숫자 체크 */}
             <div className="flex items-center text-sm">
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                checks.hasNumbers ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-              }`}>
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
+                  checks.hasNumbers ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
                 {checks.hasNumbers && (
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </div>
-              <span className={checks.hasNumbers ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+              <span
+                className={
+                  checks.hasNumbers
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }
+              >
                 {t('passwordStrength.numbers', '숫자 포함')}
               </span>
             </div>
@@ -117,8 +171,18 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({
             {checks.hasSpecialChars && (
               <div className="flex items-center text-sm">
                 <div className="w-4 h-4 rounded-full flex items-center justify-center mr-2 bg-blue-500 dark:bg-blue-600">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                 </div>
                 <span className="text-blue-600 dark:text-blue-400">

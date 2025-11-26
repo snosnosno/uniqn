@@ -6,7 +6,11 @@ import { useLogger } from '../../hooks/useLogger';
 import { useToast } from '../../hooks/useToast';
 import type { TossPaymentSuccessQuery } from '../../types/payment';
 import PaymentStepIndicator from '../../components/payment/PaymentStepIndicator';
-import { trackPaymentPerformance, trackApiCall, trackPageLoad } from '../../utils/performanceMetrics';
+import {
+  trackPaymentPerformance,
+  trackApiCall,
+  trackPageLoad,
+} from '../../utils/performanceMetrics';
 
 /**
  * 결제 성공 페이지
@@ -41,7 +45,10 @@ const PaymentSuccessPage: React.FC = () => {
         const amount = searchParams.get('amount');
 
         if (!paymentKey || !orderId || !amount) {
-          logger.error('결제 정보가 누락되었습니다', undefined, { operation: 'processPayment', additionalData: { paymentKey, orderId, amount } });
+          logger.error('결제 정보가 누락되었습니다', undefined, {
+            operation: 'processPayment',
+            additionalData: { paymentKey, orderId, amount },
+          });
           toast.showError('결제 정보가 올바르지 않습니다', 'error');
           navigate('/');
           return;
@@ -54,7 +61,10 @@ const PaymentSuccessPage: React.FC = () => {
         };
 
         setPaymentInfo(paymentData);
-        logger.info('결제 성공 정보 수신', { operation: 'processPayment', additionalData: paymentData as unknown as Record<string, unknown> });
+        logger.info('결제 성공 정보 수신', {
+          operation: 'processPayment',
+          additionalData: paymentData as unknown as Record<string, unknown>,
+        });
 
         // Firebase Functions를 통한 결제 승인 API 호출 (성능 측정 포함)
         const result = await trackApiCall('confirmPayment', async () => {
@@ -75,7 +85,10 @@ const PaymentSuccessPage: React.FC = () => {
           throw new Error('결제 승인 실패');
         }
 
-        logger.info('결제 승인 완료', { operation: 'processPayment', additionalData: resultData.data as Record<string, unknown> });
+        logger.info('결제 승인 완료', {
+          operation: 'processPayment',
+          additionalData: resultData.data as Record<string, unknown>,
+        });
 
         // 성능 측정 종료 (성공)
         perfTracker.end({
@@ -91,7 +104,6 @@ const PaymentSuccessPage: React.FC = () => {
         setTimeout(() => {
           navigate('/app/profile');
         }, 3000);
-
       } catch (error) {
         // 성능 측정 종료 (실패)
         perfTracker.end({
@@ -99,7 +111,10 @@ const PaymentSuccessPage: React.FC = () => {
           error: error instanceof Error ? error.message : String(error),
         });
 
-        logger.error('결제 처리 실패', undefined, { operation: 'processPayment', additionalData: { error } });
+        logger.error('결제 처리 실패', undefined, {
+          operation: 'processPayment',
+          additionalData: { error },
+        });
         toast.showError('결제 처리 중 오류가 발생했습니다', 'error');
         navigate('/');
       }
@@ -122,9 +137,7 @@ const PaymentSuccessPage: React.FC = () => {
               <h2 className="mt-6 text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {t('common.loading')}
               </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                {t('paymentSuccess.message')}
-              </p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">{t('paymentSuccess.message')}</p>
             </div>
           </>
         ) : (
@@ -135,9 +148,7 @@ const PaymentSuccessPage: React.FC = () => {
               <h2 className="mt-6 text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {t('paymentSuccess.title')}
               </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                {t('paymentSuccess.message')}
-              </p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">{t('paymentSuccess.message')}</p>
 
               {paymentInfo && (
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 w-full">
@@ -146,15 +157,20 @@ const PaymentSuccessPage: React.FC = () => {
                   </h3>
                   <div className="space-y-2 text-left">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">{t('paymentSuccess.orderInfo.orderId')}:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t('paymentSuccess.orderInfo.orderId')}:
+                      </span>
                       <span className="text-gray-900 dark:text-gray-100 font-mono text-sm">
                         {paymentInfo.orderId}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">{t('paymentSuccess.orderInfo.amount')}:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t('paymentSuccess.orderInfo.amount')}:
+                      </span>
                       <span className="text-gray-900 dark:text-gray-100 font-semibold">
-                        {parseInt(paymentInfo.amount, 10).toLocaleString()}{t('common.currency.krw')}
+                        {parseInt(paymentInfo.amount, 10).toLocaleString()}
+                        {t('common.currency.krw')}
                       </span>
                     </div>
                   </div>

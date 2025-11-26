@@ -36,7 +36,11 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
           return;
         }
       } catch (error) {
-        logger.error('이메일 인증 상태 확인 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'EmailVerification' });
+        logger.error(
+          '이메일 인증 상태 확인 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'EmailVerification' }
+        );
       }
     }, 3000); // 3초마다 확인
 
@@ -55,7 +59,11 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       toast.error(t('emailVerification.resendError', `인증 메일 발송 실패: ${errorMessage}`));
-      logger.error('인증 메일 재발송 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'EmailVerification' });
+      logger.error(
+        '인증 메일 재발송 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'EmailVerification' }
+      );
     } finally {
       setIsResending(false);
     }
@@ -72,7 +80,11 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
       }
     } catch (error) {
       toast.error(t('emailVerification.checkError', '인증 상태 확인 중 오류가 발생했습니다.'));
-      logger.error('이메일 인증 상태 확인 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'EmailVerification' });
+      logger.error(
+        '이메일 인증 상태 확인 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'EmailVerification' }
+      );
     }
   };
 
@@ -81,8 +93,18 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto h-16 w-16 flex items-center justify-center bg-yellow-100 dark:bg-yellow-900 rounded-full mb-4">
-            <svg className="h-8 w-8 text-yellow-600 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <svg
+              className="h-8 w-8 text-yellow-600 dark:text-yellow-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
@@ -91,9 +113,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
           <p className="text-gray-600 dark:text-gray-300 mb-1">
             {t('emailVerification.subtitle', '계정을 활성화하려면 이메일 인증이 필요합니다.')}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {currentUser?.email}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{currentUser?.email}</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -101,13 +121,26 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
             <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 dark:border-blue-600 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="h-5 w-5 text-blue-400 dark:text-blue-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-blue-700 dark:text-blue-200">
-                    {t('emailVerification.instructions', '인증 메일을 확인하고 링크를 클릭하세요. 메일이 오지 않으면 스팸함도 확인해보세요.')}
+                    {t(
+                      'emailVerification.instructions',
+                      '인증 메일을 확인하고 링크를 클릭하세요. 메일이 오지 않으면 스팸함도 확인해보세요.'
+                    )}
                   </p>
                 </div>
               </div>
@@ -129,9 +162,11 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ onVerified }) => 
                 {isResending
                   ? t('emailVerification.resending', '발송 중...')
                   : !canResend
-                  ? t('emailVerification.resendCountdown', `재발송 (${countdown}초 후)`).replace('({countdown}초 후)', `(${countdown}초 후)`)
-                  : t('emailVerification.resendButton', '인증 메일 재발송')
-                }
+                    ? t('emailVerification.resendCountdown', `재발송 (${countdown}초 후)`).replace(
+                        '({countdown}초 후)',
+                        `(${countdown}초 후)`
+                      )
+                    : t('emailVerification.resendButton', '인증 메일 재발송')}
               </button>
             </div>
           </div>

@@ -81,26 +81,18 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="text-center max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
         {/* 아이콘 */}
-        <div className="text-7xl mb-4 animate-bounce">
-          {icon}
-        </div>
+        <div className="text-7xl mb-4 animate-bounce">{icon}</div>
 
         {/* 제목 */}
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-          준비 중입니다
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">준비 중입니다</h2>
 
         {/* 기능 이름 */}
         <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg inline-block">
-          <p className="text-lg font-semibold">
-            {feature}
-          </p>
+          <p className="text-lg font-semibold">{feature}</p>
         </div>
 
         {/* 설명 */}
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          {description}
-        </p>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{description}</p>
 
         {/* 예상 출시 시기 */}
         {estimatedRelease && (
@@ -134,8 +126,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
             <div className="ml-3">
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 현재 업데이트 작업이 진행 중입니다.
-                <br />
-                더 나은 서비스를 위해 최선을 다하고 있습니다.
+                <br />더 나은 서비스를 위해 최선을 다하고 있습니다.
               </p>
             </div>
           </div>

@@ -36,7 +36,7 @@ export const createMockNotification = (overrides: Partial<Notification> = {}): N
   message: '테스트 메시지입니다.',
   isRead: false,
   createdAt: Timestamp.now(),
-  ...overrides
+  ...overrides,
 });
 
 // 사전 정의된 Notification Fixtures
@@ -49,7 +49,7 @@ export const mockNotifications = {
     message: '2025-11-15 저녁 근무에 배정되었습니다.',
     isRead: false,
     relatedId: 'event-1',
-    actionUrl: '/app/work-logs'
+    actionUrl: '/app/work-logs',
   }),
 
   // 읽은 알림
@@ -60,7 +60,7 @@ export const mockNotifications = {
     message: '10월 급여가 지급되었습니다.',
     isRead: true,
     relatedId: 'payment-1',
-    actionUrl: '/app/salary'
+    actionUrl: '/app/salary',
   }),
 
   // 시스템 알림 (긴급)
@@ -69,7 +69,7 @@ export const mockNotifications = {
     type: 'system',
     title: '🚨 시스템 점검 공지',
     message: '오늘 밤 11시부터 시스템 점검이 예정되어 있습니다.',
-    isRead: false
+    isRead: false,
   }),
 
   // 일정 변경 알림
@@ -80,7 +80,7 @@ export const mockNotifications = {
     message: '2025-11-20 근무 일정이 변경되었습니다.',
     isRead: false,
     relatedId: 'event-2',
-    actionUrl: '/app/schedule'
+    actionUrl: '/app/schedule',
   }),
 
   // 업무 관련 안읽은 알림
@@ -91,7 +91,7 @@ export const mockNotifications = {
     message: '2025-11-25 근무 요청이 있습니다.',
     isRead: false,
     relatedId: 'event-3',
-    actionUrl: '/app/work-logs'
+    actionUrl: '/app/work-logs',
   }),
 
   // 재정 관련 안읽은 알림
@@ -102,7 +102,7 @@ export const mockNotifications = {
     message: '11월 급여 명세서를 확인해주세요.',
     isRead: false,
     relatedId: 'payment-2',
-    actionUrl: '/app/salary'
+    actionUrl: '/app/salary',
   }),
 
   // 읽은 일정 알림
@@ -113,7 +113,7 @@ export const mockNotifications = {
     message: '다음 주 근무 일정이 확정되었습니다.',
     isRead: true,
     relatedId: 'event-4',
-    actionUrl: '/app/schedule'
+    actionUrl: '/app/schedule',
   }),
 
   // 읽은 시스템 알림
@@ -122,8 +122,8 @@ export const mockNotifications = {
     type: 'system',
     title: '시스템 업데이트 완료',
     message: '최신 버전으로 업데이트되었습니다.',
-    isRead: true
-  })
+    isRead: true,
+  }),
 };
 
 /**
@@ -137,7 +137,7 @@ export const createMockNotifications = (count: number): Notification[] => {
       id: `notif-${index + 1}`,
       title: `알림 ${index + 1}`,
       message: `테스트 메시지 ${index + 1}`,
-      isRead: index % 3 === 0 // 1/3은 읽음 상태
+      isRead: index % 3 === 0, // 1/3은 읽음 상태
     })
   );
 };
@@ -156,5 +156,5 @@ export const createMockUseNotifications = (
   error: null,
   markAsRead: jest.fn().mockResolvedValue(undefined),
   markAllAsRead: jest.fn().mockResolvedValue(undefined),
-  ...overrides
+  ...overrides,
 });

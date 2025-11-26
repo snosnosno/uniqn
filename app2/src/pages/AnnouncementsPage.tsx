@@ -23,10 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSystemAnnouncements } from '../hooks/useSystemAnnouncements';
 import { logger } from '../utils/logger';
 import type { SystemAnnouncement } from '../types';
-import {
-  getPriorityLabel,
-  getPriorityBadgeStyle
-} from '../types';
+import { getPriorityLabel, getPriorityBadgeStyle } from '../types';
 
 const AnnouncementsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +34,7 @@ const AnnouncementsPage: React.FC = () => {
     loading,
     error,
     incrementViewCount,
-    deleteAnnouncement
+    deleteAnnouncement,
   } = useSystemAnnouncements();
 
   // 모달 상태
@@ -49,11 +46,14 @@ const AnnouncementsPage: React.FC = () => {
   /**
    * 공지사항 카드 클릭 (상세 보기)
    */
-  const handleAnnouncementClick = useCallback((announcement: SystemAnnouncement) => {
-    setSelectedAnnouncement(announcement);
-    setIsDetailModalOpen(true);
-    incrementViewCount(announcement.id);
-  }, [incrementViewCount]);
+  const handleAnnouncementClick = useCallback(
+    (announcement: SystemAnnouncement) => {
+      setSelectedAnnouncement(announcement);
+      setIsDetailModalOpen(true);
+      incrementViewCount(announcement.id);
+    },
+    [incrementViewCount]
+  );
 
   /**
    * 등록 성공
@@ -82,16 +82,19 @@ const AnnouncementsPage: React.FC = () => {
   /**
    * 삭제 핸들러
    */
-  const handleDelete = useCallback(async (announcementId: string) => {
-    try {
-      await deleteAnnouncement(announcementId);
-    } catch (err) {
-      logger.error('공지사항 삭제 실패', err instanceof Error ? err : new Error(String(err)), {
-        component: 'AnnouncementsPage',
-        data: { announcementId }
-      });
-    }
-  }, [deleteAnnouncement]);
+  const handleDelete = useCallback(
+    async (announcementId: string) => {
+      try {
+        await deleteAnnouncement(announcementId);
+      } catch (err) {
+        logger.error('공지사항 삭제 실패', err instanceof Error ? err : new Error(String(err)), {
+          component: 'AnnouncementsPage',
+          data: { announcementId },
+        });
+      }
+    },
+    [deleteAnnouncement]
+  );
 
   /**
    * 우선순위별 정렬 (긴급 > 중요 > 일반)
@@ -145,7 +148,9 @@ const AnnouncementsPage: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">🔔 공지사항</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              🔔 공지사항
+            </h1>
             <p className="text-gray-600 dark:text-gray-300">시스템 공지 및 업데이트 정보</p>
           </div>
 
@@ -203,7 +208,9 @@ const AnnouncementsPage: React.FC = () => {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex-1 pr-4 line-clamp-2">
                   {announcement.title}
                 </h3>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getPriorityBadgeStyle(announcement.priority)}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getPriorityBadgeStyle(announcement.priority)}`}
+                >
                   {getPriorityLabel(announcement.priority)}
                 </span>
               </div>

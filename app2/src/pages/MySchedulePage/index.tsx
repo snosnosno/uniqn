@@ -2,8 +2,8 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { logger } from '../../utils/logger';
 import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
-import { 
-  FaCalendarAlt, 
+import {
+  FaCalendarAlt,
   FaSync,
   FaList,
   FaClock,
@@ -11,7 +11,7 @@ import {
   FaInfoCircle,
   FaCheckCircle,
   FaHourglassHalf,
-  FaTimesCircle
+  FaTimesCircle,
 } from '../../components/Icons/ReactIconsReplacement';
 import { useToast } from '../../hooks/useToast';
 import { formatTime } from '../../utils/dateUtils';
@@ -39,7 +39,6 @@ const MySchedulePage: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-
   // 상태 아이콘 렌더링
   const renderStatusIcon = (event: ScheduleEvent) => {
     switch (event.type) {
@@ -58,10 +57,10 @@ const MySchedulePage: React.FC = () => {
 
   // 캘린더 뷰 상태
   const [calendarView, setCalendarView] = useState<CalendarView>('dayGridMonth');
-  
+
   // 뷰 모드 상태 (모바일에서 사용)
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
-  
+
   // 모달 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -80,23 +79,15 @@ const MySchedulePage: React.FC = () => {
     onConfirm: () => {},
     confirmText: '확인',
     cancelText: '취소',
-    isDangerous: false
+    isDangerous: false,
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // 데이터 가져오기 (현재 사용자의 스케줄만)
-  const {
-    schedules,
-    loading,
-    error,
-    stats,
-    filters,
-    setFilters,
-    refreshData
-  } = useScheduleData();
+  const { schedules, loading, error, stats, filters, setFilters, refreshData } = useScheduleData();
 
   // VirtualListItem은 핸들러들이 정의된 후에 정의됩니다
-  
+
   // 개발 완료 후 디버깅 코드 제거됨
 
   // 이벤트 클릭 핸들러 (메모이제이션)
@@ -105,35 +96,39 @@ const MySchedulePage: React.FC = () => {
     setIsDetailModalOpen(true);
   }, []);
 
-
-
   // 퇴근 처리 (메모이제이션)
-  const handleCheckOut = useCallback(async (scheduleId: string) => {
-    try {
-      const schedule = schedules.find(s => s.id === scheduleId);
-      if (!schedule || !schedule.workLogId) {
-        throw new Error('스케줄 정보를 찾을 수 없습니다.');
+  const handleCheckOut = useCallback(
+    async (scheduleId: string) => {
+      try {
+        const schedule = schedules.find((s) => s.id === scheduleId);
+        if (!schedule || !schedule.workLogId) {
+          throw new Error('스케줄 정보를 찾을 수 없습니다.');
+        }
+
+        // workLogs 업데이트 - 통합 시스템 사용
+        const updateData = prepareWorkLogForUpdate({
+          actualEndTime: Timestamp.now(),
+          status: 'checked_out', // AttendanceStatus 타입과 일치
+        });
+        await updateDoc(doc(db, 'workLogs', schedule.workLogId), updateData);
+
+        showSuccess('퇴근 처리되었습니다.');
+      } catch (error) {
+        logger.error(
+          '❌ 퇴근 처리 오류:',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'index' }
+        );
+        showError('퇴근 처리 중 오류가 발생했습니다.');
       }
-
-      // workLogs 업데이트 - 통합 시스템 사용
-      const updateData = prepareWorkLogForUpdate({
-        actualEndTime: Timestamp.now(),
-        status: 'checked_out' // AttendanceStatus 타입과 일치
-      });
-      await updateDoc(doc(db, 'workLogs', schedule.workLogId), updateData);
-
-      showSuccess('퇴근 처리되었습니다.');
-    } catch (error) {
-      logger.error('❌ 퇴근 처리 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
-      showError('퇴근 처리 중 오류가 발생했습니다.');
-    }
-  }, [schedules, showSuccess, showError]);
-
+    },
+    [schedules, showSuccess, showError]
+  );
 
   // 지원 취소 (ApplicationHistory 서비스 연동)
   const handleCancelApplication = async (scheduleId: string) => {
     try {
-      const schedule = schedules.find(s => s.id === scheduleId);
+      const schedule = schedules.find((s) => s.id === scheduleId);
       if (!schedule || !schedule.applicationId) {
         throw new Error('지원 정보를 찾을 수 없습니다.');
       }
@@ -142,16 +137,16 @@ const MySchedulePage: React.FC = () => {
       await ApplicationHistoryService.cancelApplication(schedule.applicationId);
 
       showSuccess('지원이 취소되었습니다.');
-      
+
       // 🔄 자동 새로고침으로 즉시 UI 업데이트
       refreshData();
-      
     } catch (error) {
-      logger.error('❌ MySchedulePage 지원 취소 오류:', 
-        error instanceof Error ? error : new Error(String(error)), 
-        { 
+      logger.error(
+        '❌ MySchedulePage 지원 취소 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
           component: 'MySchedulePage',
-          data: { scheduleId }
+          data: { scheduleId },
         }
       );
       showError('지원 취소 중 오류가 발생했습니다.');
@@ -161,11 +156,10 @@ const MySchedulePage: React.FC = () => {
   // 일정 삭제 (미완료 일정만)
   const handleDeleteSchedule = async (scheduleId: string) => {
     try {
-      const schedule = schedules.find(s => s.id === scheduleId);
+      const schedule = schedules.find((s) => s.id === scheduleId);
       if (!schedule) {
         throw new Error('스케줄 정보를 찾을 수 없습니다.');
       }
-
 
       // 삭제 가능한 일정인지 확인 (완료된 일정은 삭제 불가)
       if (schedule.type === 'completed') {
@@ -189,11 +183,14 @@ const MySchedulePage: React.FC = () => {
         title: '일정 삭제',
         message: `"${schedule.eventName}" 일정을 삭제하시겠습니까?\n\n삭제된 일정은 복구할 수 없습니다.`,
         onConfirm: confirmDeletion,
-        isDangerous: true
+        isDangerous: true,
       });
-
     } catch (error) {
-      logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
+      logger.error(
+        '❌ 일정 삭제 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'index' }
+      );
       showError('일정 삭제 중 오류가 발생했습니다.');
     }
   };
@@ -202,35 +199,34 @@ const MySchedulePage: React.FC = () => {
   const performDelete = async (schedule: ScheduleEvent) => {
     setIsProcessing(true);
     try {
-
       // 소스 컬렉션에 따른 삭제 처리
       if (schedule.sourceCollection === 'applications' && schedule.applicationId) {
         // applications: 완전 삭제
         await deleteDoc(doc(db, 'applications', schedule.applicationId));
-
       } else if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
         // workLogs: 이력 보존을 위해 상태만 변경
         await updateDoc(doc(db, 'workLogs', schedule.workLogId), {
           status: 'cancelled',
           cancelledAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
+          updatedAt: Timestamp.now(),
         });
-
       } else if (schedule.sourceCollection === 'staff' && schedule.sourceId) {
         // staff: 해당 일정 정보만 제거 (전체 문서는 보존)
         // 실제 구현은 staff 문서 구조에 따라 달라질 수 있음
         showError('직원 일정 삭제는 관리자에게 문의하세요.');
         return;
-
       } else {
         throw new Error('지원되지 않는 일정 타입입니다.');
       }
 
       showSuccess('일정이 삭제되었습니다.');
-      setConfirmModal(prev => ({ ...prev, isOpen: false }));
-
+      setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     } catch (error) {
-      logger.error('❌ 일정 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'index' });
+      logger.error(
+        '❌ 일정 삭제 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'index' }
+      );
       showError('일정 삭제 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
@@ -245,96 +241,101 @@ const MySchedulePage: React.FC = () => {
   }, [schedules.length]);
 
   // 가상화된 리스트 아이템 컴포넌트 (최적화된 의존성)
-  const VirtualListItem = useMemo(() => 
-    React.memo(({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const schedule = schedules[index];
-      if (!schedule) return null;
-      
-      const todayString = getTodayString();
-      const isToday = schedule.date === todayString;
-      const statusColorClass = ATTENDANCE_STATUS_COLORS[schedule.status];
-      
-      return (
-        <div style={style}>
-          <div
-            key={schedule.id}
-            onClick={() => handleEventClick(schedule)}
-            className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 ${
-              isToday ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400' : ''
-            }`}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2 flex-1">
-                {renderStatusIcon(schedule)}
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {schedule.eventName}
-                </h4>
-                {isToday && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium rounded-full">
-                    오늘
+  const VirtualListItem = useMemo(
+    () =>
+      React.memo(({ index, style }: { index: number; style: React.CSSProperties }) => {
+        const schedule = schedules[index];
+        if (!schedule) return null;
+
+        const todayString = getTodayString();
+        const isToday = schedule.date === todayString;
+        const statusColorClass = ATTENDANCE_STATUS_COLORS[schedule.status];
+
+        return (
+          <div style={style}>
+            <div
+              key={schedule.id}
+              onClick={() => handleEventClick(schedule)}
+              className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 ${
+                isToday
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400'
+                  : ''
+              }`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2 flex-1">
+                  {renderStatusIcon(schedule)}
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    {schedule.eventName}
+                  </h4>
+                  {isToday && (
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs font-medium rounded-full">
+                      오늘
+                    </span>
+                  )}
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
+                  {schedule.status === 'not_started' && '예정'}
+                  {schedule.status === 'checked_in' && '출근'}
+                  {schedule.status === 'checked_out' && '퇴근'}
+                </span>
+              </div>
+
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center gap-2">
+                  <FaCalendarAlt className="text-gray-400 dark:text-gray-500 w-3 h-3" />
+                  <span>
+                    {new Date(schedule.date).toLocaleDateString('ko-KR', {
+                      month: 'long',
+                      day: 'numeric',
+                      weekday: 'short',
+                    })}
                   </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <FaClock className="text-gray-400 dark:text-gray-500 w-3 h-3" />
+                  <span>
+                    {formatTime(schedule.startTime, { defaultValue: '미정' })} -{' '}
+                    {formatTime(schedule.endTime, { defaultValue: '미정' })}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <FaInfoCircle className="text-gray-400 dark:text-gray-500 w-3 h-3" />
+                  <span>{schedule.role}</span>
+                </div>
+
+                {schedule.location && (
+                  <div className="flex items-center gap-2">
+                    <FaMapMarkerAlt className="text-gray-400 dark:text-gray-500 w-3 h-3" />
+                    <span className="truncate">{schedule.location}</span>
+                  </div>
                 )}
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
-                {schedule.status === 'not_started' && '예정'}
-                {schedule.status === 'checked_in' && '출근'}
-                {schedule.status === 'checked_out' && '퇴근'}
-              </span>
-            </div>
 
-            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-              <div className="flex items-center gap-2">
-                <FaCalendarAlt className="text-gray-400 dark:text-gray-500 w-3 h-3" />
-                <span>
-                  {new Date(schedule.date).toLocaleDateString('ko-KR', {
-                    month: 'long',
-                    day: 'numeric',
-                    weekday: 'short'
-                  })}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <FaClock className="text-gray-400 dark:text-gray-500 w-3 h-3" />
-                <span>
-                  {formatTime(schedule.startTime, { defaultValue: '미정' })} - {formatTime(schedule.endTime, { defaultValue: '미정' })}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <FaInfoCircle className="text-gray-400 dark:text-gray-500 w-3 h-3" />
-                <span>{schedule.role}</span>
-              </div>
-
-              {schedule.location && (
-                <div className="flex items-center gap-2">
-                  <FaMapMarkerAlt className="text-gray-400 dark:text-gray-500 w-3 h-3" />
-                  <span className="truncate">{schedule.location}</span>
+              {/* 오늘 일정인 경우 출퇴근 버튼 */}
+              {isToday && schedule.type === 'confirmed' && (
+                <div className="flex gap-2 mt-3">
+                  {schedule.status === 'checked_in' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCheckOut(schedule.id);
+                      }}
+                      className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
+                    >
+                      퇴근하기
+                    </button>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* 오늘 일정인 경우 출퇴근 버튼 */}
-            {isToday && schedule.type === 'confirmed' && (
-              <div className="flex gap-2 mt-3">
-                {schedule.status === 'checked_in' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCheckOut(schedule.id);
-                    }}
-                    className="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded text-sm hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
-                  >
-                    퇴근하기
-                  </button>
-                )}
-              </div>
-            )}
           </div>
-        </div>
-      );
-    }), 
-  [handleEventClick, handleCheckOut]);
+        );
+      }),
+    [handleEventClick, handleCheckOut]
+  );
 
   if (loading) {
     return <LoadingSpinner />;
@@ -355,7 +356,6 @@ const MySchedulePage: React.FC = () => {
       </div>
     );
   }
-
 
   return (
     <div className="container mx-auto px-2 sm:px-4 max-w-full">
@@ -396,7 +396,6 @@ const MySchedulePage: React.FC = () => {
               </div>
             )}
 
-
             {/* 새로고침 버튼 */}
             <button
               onClick={refreshData}
@@ -414,11 +413,7 @@ const MySchedulePage: React.FC = () => {
 
       {/* 필터 */}
       <div className="mb-4">
-        <ScheduleFilters 
-          filters={filters} 
-          onFiltersChange={setFilters}
-          isMobile={isMobile}
-        />
+        <ScheduleFilters filters={filters} onFiltersChange={setFilters} isMobile={isMobile} />
       </div>
 
       {/* 메인 콘텐츠 */}
@@ -470,7 +465,7 @@ const MySchedulePage: React.FC = () => {
       {/* 확인 모달 */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
-        onClose={() => !isProcessing && setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => !isProcessing && setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
         onConfirm={confirmModal.onConfirm}
         title={confirmModal.title}
         message={confirmModal.message}
@@ -479,7 +474,6 @@ const MySchedulePage: React.FC = () => {
         isDangerous={confirmModal.isDangerous || false}
         isLoading={isProcessing}
       />
-
     </div>
   );
 };

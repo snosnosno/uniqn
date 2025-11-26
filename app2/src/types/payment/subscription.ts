@@ -9,10 +9,10 @@ export type SubscriptionPlanType = 'free' | 'standard' | 'pro';
  * 구독 상태
  */
 export type SubscriptionStatus =
-  | 'active'          // 활성
-  | 'cancelled'       // 취소됨
-  | 'expired'         // 만료됨
-  | 'pending';        // 결제 대기
+  | 'active' // 활성
+  | 'cancelled' // 취소됨
+  | 'expired' // 만료됨
+  | 'pending'; // 결제 대기
 
 /**
  * 구독 플랜 정보
@@ -22,12 +22,12 @@ export interface SubscriptionPlan {
   name: string;
   nameEn: string;
   description: string;
-  price: number;              // 월 가격 (원)
-  monthlyChips: number;       // 매월 지급 칩 개수
-  features: string[];         // 기능 목록
+  price: number; // 월 가격 (원)
+  monthlyChips: number; // 매월 지급 칩 개수
+  features: string[]; // 기능 목록
   accessRights: {
-    mySchedule: boolean;      // 내 스케줄 접근
-    tournamentManagement: boolean;  // 토너먼트 관리
+    mySchedule: boolean; // 내 스케줄 접근
+    tournamentManagement: boolean; // 토너먼트 관리
   };
 }
 
@@ -46,8 +46,8 @@ export interface UserSubscription {
   currentPeriodEnd: Timestamp;
 
   // 결제 정보
-  billingCycleAnchor: Timestamp;  // 결제 주기 기준일
-  nextBillingDate?: Timestamp;    // 다음 결제일
+  billingCycleAnchor: Timestamp; // 결제 주기 기준일
+  nextBillingDate?: Timestamp; // 다음 결제일
 
   // 취소 정보
   cancelledAt?: Timestamp;

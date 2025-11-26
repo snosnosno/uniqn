@@ -24,8 +24,8 @@ import { toISODateString } from '../utils/dateUtils';
  * DateFilterStore State
  */
 interface DateFilterState {
-  selectedDate: string;      // YYYY-MM-DD 형식, 빈 문자열 가능
-  availableDates: string[];  // YYYY-MM-DD 목록, 정렬되어야 함
+  selectedDate: string; // YYYY-MM-DD 형식, 빈 문자열 가능
+  availableDates: string[]; // YYYY-MM-DD 목록, 정렬되어야 함
 }
 
 /**
@@ -163,7 +163,7 @@ export const useDateFilterStore = create<DateFilterStore>()(
             });
           } else {
             // 오늘 날짜가 없으면 가장 가까운 미래 날짜 선택
-            const futureDates = availableDates.filter(date => date >= today);
+            const futureDates = availableDates.filter((date) => date >= today);
             const nearestDate = futureDates[0] || availableDates[availableDates.length - 1];
 
             if (nearestDate) {
@@ -177,10 +177,10 @@ export const useDateFilterStore = create<DateFilterStore>()(
         },
       })),
       {
-        name: 'date-filter-storage',        // localStorage 키
+        name: 'date-filter-storage', // localStorage 키
         storage: createJSONStorage(() => localStorage),
         partialize: (state) => ({
-          selectedDate: state.selectedDate  // selectedDate만 localStorage에 저장
+          selectedDate: state.selectedDate, // selectedDate만 localStorage에 저장
         }),
       }
     ),

@@ -42,12 +42,12 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   onShowProfile,
   eventId,
   getStaffWorkLog,
-  onReport
+  onReport,
 }) => {
   const staffCount = staffList.length;
-  const selectedCount = multiSelectMode ? Array.from(selectedStaff).filter(id => 
-    staffList.some(staff => staff.id === id)
-  ).length : 0;
+  const selectedCount = multiSelectMode
+    ? Array.from(selectedStaff).filter((id) => staffList.some((staff) => staff.id === id)).length
+    : 0;
 
   const handleHeaderClick = () => {
     onToggleExpansion(date);
@@ -56,7 +56,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   const handleGroupSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onStaffSelect) {
-      staffList.forEach(staff => {
+      staffList.forEach((staff) => {
         if (selectedCount === staffList.length) {
           // 모두 선택된 경우 해제
           if (selectedStaff.has(staff.id)) {
@@ -72,11 +72,10 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
     }
   };
 
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-4">
       {/* 날짜 헤더 */}
-      <div 
+      <div
         className="bg-blue-600 dark:bg-blue-700 px-4 py-3 cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-900 transition-colors duration-150"
         onClick={handleHeaderClick}
       >
@@ -111,7 +110,11 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                           }
                           return date;
                         } catch (error) {
-                          logger.error('날짜 형식 변환 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'StaffDateGroupMobile' });
+                          logger.error(
+                            '날짜 형식 변환 오류:',
+                            error instanceof Error ? error : new Error(String(error)),
+                            { component: 'StaffDateGroupMobile' }
+                          );
                           return date;
                         }
                       })()}
@@ -120,14 +123,12 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <div className="bg-white dark:bg-gray-800 bg-opacity-25 dark:bg-opacity-50 rounded-full px-3 py-1.5">
-                <span className="text-white text-sm font-semibold">
-                  {staffCount}명
-                </span>
+                <span className="text-white text-sm font-semibold">{staffCount}명</span>
               </div>
-              
+
               {multiSelectMode && (
                 <>
                   {selectedCount > 0 && (
@@ -149,16 +150,26 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               )}
             </div>
           </div>
-          
+
           {/* 확장/축소 아이콘 */}
           <div className="text-white">
-            <svg className={`w-6 h-6 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className={`w-6 h-6 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>
       </div>
-      
+
       {/* 스태프 카드 리스트 */}
       {isExpanded && (
         <div className="p-4 space-y-3 bg-white dark:bg-gray-800">
@@ -182,11 +193,13 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
               {...(onReport && { onReport })}
             />
           ))}
-          
+
           {staffList.length === 0 && (
             <div className="text-center py-8">
               <div className="text-gray-400 dark:text-gray-500 text-4xl mb-2">👥</div>
-              <div className="text-gray-600 dark:text-gray-300 text-sm font-medium">이 날짜에 할당된 스태프가 없습니다</div>
+              <div className="text-gray-600 dark:text-gray-300 text-sm font-medium">
+                이 날짜에 할당된 스태프가 없습니다
+              </div>
             </div>
           )}
         </div>

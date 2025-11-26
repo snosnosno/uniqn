@@ -62,49 +62,51 @@ import PreQuestionManager from '../../PreQuestionManager';
  * @param {PreQuestionsValidation} [props.validation] - 검증 상태 (선택)
  * @returns {React.ReactElement} 사전 질문 섹션
  */
-const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(({
-  data,
-  handlers,
-  validation: _validation
-}) => {
-  return (
-    <div className="space-y-4">
-      {/* 사전질문 사용 여부 토글 */}
-      <div className="flex items-center justify-between">
-        <Toggle
-          id="usesPreQuestions"
-          checked={data.usesPreQuestions}
-          onChange={handlers.onToggle}
-          label="사전질문 사용하기"
-          description="지원자에게 추가 정보를 요청할 수 있습니다"
-        />
+const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(
+  ({ data, handlers, validation: _validation }) => {
+    return (
+      <div className="space-y-4">
+        {/* 사전질문 사용 여부 토글 */}
+        <div className="flex items-center justify-between">
+          <Toggle
+            id="usesPreQuestions"
+            checked={data.usesPreQuestions}
+            onChange={handlers.onToggle}
+            label="사전질문 사용하기"
+            description="지원자에게 추가 정보를 요청할 수 있습니다"
+          />
+          {data.usesPreQuestions && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+              {data.preQuestions.length}개 질문
+            </span>
+          )}
+        </div>
+
+        {/* 조건부 렌더링: usesPreQuestions가 true일 때만 표시 */}
         {data.usesPreQuestions && (
-          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-            {data.preQuestions.length}개 질문
-          </span>
+          <div className="mt-4">
+            {/* 기존 PreQuestionManager 컴포넌트 활용 */}
+            <PreQuestionManager
+              preQuestions={data.preQuestions}
+              onPreQuestionChange={(questionIndex: number, field: string, value: any) =>
+                handlers.onQuestionChange(
+                  questionIndex,
+                  field as keyof (typeof data.preQuestions)[0],
+                  value
+                )
+              }
+              onPreQuestionOptionChange={handlers.onOptionChange}
+              onAddPreQuestion={handlers.onAddQuestion}
+              onRemovePreQuestion={handlers.onRemoveQuestion}
+              onAddPreQuestionOption={handlers.onAddOption}
+              onRemovePreQuestionOption={handlers.onRemoveOption}
+            />
+          </div>
         )}
       </div>
-
-      {/* 조건부 렌더링: usesPreQuestions가 true일 때만 표시 */}
-      {data.usesPreQuestions && (
-        <div className="mt-4">
-          {/* 기존 PreQuestionManager 컴포넌트 활용 */}
-          <PreQuestionManager
-            preQuestions={data.preQuestions}
-            onPreQuestionChange={(questionIndex: number, field: string, value: any) =>
-              handlers.onQuestionChange(questionIndex, field as keyof typeof data.preQuestions[0], value)
-            }
-            onPreQuestionOptionChange={handlers.onOptionChange}
-            onAddPreQuestion={handlers.onAddQuestion}
-            onRemovePreQuestion={handlers.onRemoveQuestion}
-            onAddPreQuestionOption={handlers.onAddOption}
-            onRemovePreQuestionOption={handlers.onRemoveOption}
-          />
-        </div>
-      )}
-    </div>
-  );
-});
+    );
+  }
+);
 
 PreQuestionsSection.displayName = 'PreQuestionsSection';
 

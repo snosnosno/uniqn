@@ -181,9 +181,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified, onSki
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-        전화번호 인증
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">전화번호 인증</h2>
 
       {step === 'phone' ? (
         // 전화번호 입력 단계

@@ -22,7 +22,10 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
       if (jobPosting.taxSettings.taxRate !== undefined && jobPosting.taxSettings.taxRate > 0) {
         setTaxType('rate');
         setTaxRate(jobPosting.taxSettings.taxRate);
-      } else if (jobPosting.taxSettings.taxAmount !== undefined && jobPosting.taxSettings.taxAmount > 0) {
+      } else if (
+        jobPosting.taxSettings.taxAmount !== undefined &&
+        jobPosting.taxSettings.taxAmount > 0
+      ) {
         setTaxType('amount');
         setTaxAmount(jobPosting.taxSettings.taxAmount);
       }
@@ -33,7 +36,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
     if (!enabled) {
       // 세금 비활성화
       await onUpdate({
-        enabled: false
+        enabled: false,
       });
       return;
     }
@@ -42,7 +45,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
     try {
       const taxSettings: NonNullable<JobPosting['taxSettings']> = {
         enabled: true,
-        ...(taxType === 'rate' ? { taxRate } : { taxAmount })
+        ...(taxType === 'rate' ? { taxRate } : { taxAmount }),
       };
 
       await onUpdate(taxSettings);
@@ -54,9 +57,7 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
   // 요약 정보 생성
   const getSummary = useCallback(() => {
     if (!enabled) return '비활성화';
-    return taxType === 'rate'
-      ? `세율: ${taxRate}%`
-      : `고정 세금: ${taxAmount.toLocaleString()}원`;
+    return taxType === 'rate' ? `세율: ${taxRate}%` : `고정 세금: ${taxAmount.toLocaleString()}원`;
   }, [enabled, taxType, taxRate, taxAmount]);
 
   return (
@@ -77,19 +78,20 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
           </div>
           <div className="flex items-center gap-2">
             {!isExpanded && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {getSummary()}
-              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{getSummary()}</span>
             )}
             <svg
-              className={`w-5 h-5 transform transition-transform ${
-                isExpanded ? 'rotate-180' : ''
-              }`}
+              className={`w-5 h-5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="m19 9-7 7-7-7"
+              />
             </svg>
           </div>
         </button>
@@ -101,7 +103,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
           <div className="space-y-4">
             {/* 세금 적용 토글 */}
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">세금 적용</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                세금 적용
+              </span>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -109,7 +113,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                   onChange={(e) => setEnabled(e.target.checked)}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-200">{enabled ? '활성화' : '비활성화'}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">
+                  {enabled ? '활성화' : '비활성화'}
+                </span>
               </label>
             </div>
 
@@ -142,7 +148,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                 {/* 세율 입력 */}
                 {taxType === 'rate' && (
                   <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">세율:</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">
+                      세율:
+                    </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -164,7 +172,9 @@ const TaxSettingsPanel: React.FC<TaxSettingsPanelProps> = ({ jobPosting, onUpdat
                 {/* 고정 세금 입력 */}
                 {taxType === 'amount' && (
                   <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">고정 세금:</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 w-24">
+                      고정 세금:
+                    </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"

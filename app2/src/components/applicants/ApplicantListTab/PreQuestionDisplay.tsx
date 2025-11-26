@@ -20,10 +20,15 @@ const PreQuestionDisplay: React.FC<PreQuestionDisplayProps> = ({ applicant }) =>
           <div key={index} className="text-sm text-gray-900 dark:text-gray-100">
             <p className="font-medium text-gray-700 dark:text-gray-200">
               Q{index + 1}. {answer.question}
-              {answer.required ? <span className="text-red-500 dark:text-red-400 ml-1">*</span> : null}
+              {answer.required ? (
+                <span className="text-red-500 dark:text-red-400 ml-1">*</span>
+              ) : null}
             </p>
             <p className="text-gray-600 dark:text-gray-300 ml-4 mt-1">
-              ▶ {answer.answer || <span className="text-gray-400 dark:text-gray-500">(답변 없음)</span>}
+              ▶{' '}
+              {answer.answer || (
+                <span className="text-gray-400 dark:text-gray-500">(답변 없음)</span>
+              )}
             </p>
           </div>
         ))}

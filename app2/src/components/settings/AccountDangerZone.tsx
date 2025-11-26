@@ -13,10 +13,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useAccountDeletion } from '../../hooks/useAccountDeletion';
 import { AccountDeletionModal } from './AccountDeletionModal';
 import { toast } from '../../utils/toast';
@@ -30,13 +27,8 @@ import { Timestamp } from 'firebase/firestore';
  */
 export const AccountDangerZone: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const {
-    deletionRequest,
-    isPending,
-    remainingDays,
-    scheduledDate,
-    cancelDeletion,
-  } = useAccountDeletion();
+  const { deletionRequest, isPending, remainingDays, scheduledDate, cancelDeletion } =
+    useAccountDeletion();
 
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -97,9 +89,7 @@ export const AccountDangerZone: React.FC = () => {
         <div className="flex items-start space-x-3">
           <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-red-900 dark:text-red-300">
-            <p className="font-medium mb-1">
-              {t('settings.account.dangerZoneWarning')}
-            </p>
+            <p className="font-medium mb-1">{t('settings.account.dangerZoneWarning')}</p>
             <p>{t('settings.account.dangerZoneDescription')}</p>
           </div>
         </div>
@@ -155,9 +145,7 @@ export const AccountDangerZone: React.FC = () => {
             disabled={isCancelling}
             className="mt-6 w-full px-4 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isCancelling
-              ? t('common.processing')
-              : t('settings.account.cancelDeletion')}
+            {isCancelling ? t('common.processing') : t('settings.account.cancelDeletion')}
           </button>
 
           <p className="mt-3 text-xs text-amber-700 dark:text-amber-400 text-center">
@@ -211,9 +199,7 @@ export const AccountDangerZone: React.FC = () => {
             <div className="flex items-start space-x-2">
               <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-900 dark:text-blue-300">
-                <p className="font-medium mb-1">
-                  {t('settings.account.gracePeriodTitle')}
-                </p>
+                <p className="font-medium mb-1">{t('settings.account.gracePeriodTitle')}</p>
                 <p>{t('settings.account.gracePeriodDescription')}</p>
               </div>
             </div>
@@ -234,10 +220,7 @@ export const AccountDangerZone: React.FC = () => {
       )}
 
       {/* 계정 삭제 모달 */}
-      <AccountDeletionModal
-        isOpen={isDeletionModalOpen}
-        onClose={handleCloseDeletionModal}
-      />
+      <AccountDeletionModal isOpen={isDeletionModalOpen} onClose={handleCloseDeletionModal} />
     </div>
   );
 };

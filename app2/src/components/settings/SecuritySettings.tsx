@@ -13,11 +13,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  KeyIcon,
-  BellIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+import { KeyIcon, BellIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useSecuritySettings } from '../../hooks/useSecuritySettings';
 import { PasswordChangeModal } from './PasswordChangeModal';
 import { toast } from '../../utils/toast';
@@ -28,12 +24,8 @@ import { logger } from '../../utils/logger';
  */
 export const SecuritySettings: React.FC = () => {
   const { t } = useTranslation();
-  const {
-    loginNotificationSettings,
-    loading,
-    error,
-    updateLoginNotifications,
-  } = useSecuritySettings();
+  const { loginNotificationSettings, loading, error, updateLoginNotifications } =
+    useSecuritySettings();
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -100,9 +92,7 @@ export const SecuritySettings: React.FC = () => {
         notifyOnNewDevice: newValue,
       });
 
-      toast.success(
-        t('settings.security.newDeviceNotificationUpdated')
-      );
+      toast.success(t('settings.security.newDeviceNotificationUpdated'));
 
       logger.info('새 기기 알림 변경', {
         component: 'SecuritySettings',
@@ -132,9 +122,7 @@ export const SecuritySettings: React.FC = () => {
         notifyOnNewLocation: newValue,
       });
 
-      toast.success(
-        t('settings.security.newLocationNotificationUpdated')
-      );
+      toast.success(t('settings.security.newLocationNotificationUpdated'));
 
       logger.info('새 위치 알림 변경', {
         component: 'SecuritySettings',
@@ -164,9 +152,7 @@ export const SecuritySettings: React.FC = () => {
         notifyOnSuspiciousActivity: newValue,
       });
 
-      toast.success(
-        t('settings.security.suspiciousActivityNotificationUpdated')
-      );
+      toast.success(t('settings.security.suspiciousActivityNotificationUpdated'));
 
       logger.info('의심스러운 활동 알림 변경', {
         component: 'SecuritySettings',
@@ -395,19 +381,14 @@ export const SecuritySettings: React.FC = () => {
         <div className="flex items-start space-x-3">
           <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-900 dark:text-blue-300">
-            <p className="font-medium mb-1">
-              {t('settings.security.infoTitle')}
-            </p>
+            <p className="font-medium mb-1">{t('settings.security.infoTitle')}</p>
             <p>{t('settings.security.infoMessage')}</p>
           </div>
         </div>
       </div>
 
       {/* 비밀번호 변경 모달 */}
-      <PasswordChangeModal
-        isOpen={isPasswordModalOpen}
-        onClose={handleClosePasswordModal}
-      />
+      <PasswordChangeModal isOpen={isPasswordModalOpen} onClose={handleClosePasswordModal} />
     </div>
   );
 };

@@ -14,7 +14,7 @@ interface BulkAddParticipantsModalProps {
 const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
   isOpen,
   onClose,
-  onConfirm
+  onConfirm,
 }) => {
   const [inputText, setInputText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedParticipant[]>([]);
@@ -30,7 +30,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
   }, [inputText]);
 
   const handleConfirm = async () => {
-    const validParticipants = parsedData.filter(p => p.isValid);
+    const validParticipants = parsedData.filter((p) => p.isValid);
     if (validParticipants.length === 0) {
       toast.warning('추가할 유효한 참가자가 없습니다.');
       return;
@@ -45,7 +45,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
     } catch (error) {
       logger.error('대량 추가 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'BulkAddParticipantsModal',
-        data: { count: validParticipants.length }
+        data: { count: validParticipants.length },
       });
       toast.error('참가자 추가 중 오류가 발생했습니다.');
     } finally {
@@ -53,8 +53,8 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
     }
   };
 
-  const validCount = parsedData.filter(p => p.isValid).length;
-  const invalidCount = parsedData.filter(p => !p.isValid).length;
+  const validCount = parsedData.filter((p) => p.isValid).length;
+  const invalidCount = parsedData.filter((p) => !p.isValid).length;
 
   const sampleText = `홍길동,10000
 김철수,010-1234-5678,15000
@@ -68,11 +68,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
           {validCount > 0 && `${validCount}명을 추가합니다`}
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="btn btn-secondary"
-            disabled={isProcessing}
-          >
+          <button onClick={onClose} className="btn btn-secondary" disabled={isProcessing}>
             취소
           </button>
           <button
@@ -103,7 +99,9 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
           </label>
           <div className="bg-background-secondary dark:bg-gray-700 p-3 rounded text-sm">
             <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">형식 1: 이름,칩</p>
-            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">형식 2: 이름,전화번호,칩</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              형식 2: 이름,전화번호,칩
+            </p>
             <p className="text-text-secondary dark:text-gray-400 mt-2">
               * 엑셀에서 복사한 데이터를 직접 붙여넣을 수 있습니다
             </p>
@@ -129,7 +127,9 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
         {parsedData.length > 0 && (
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-medium text-gray-900 dark:text-gray-100">미리보기</label>
+              <label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                미리보기
+              </label>
               <div className="flex gap-4 text-sm">
                 <span className="flex items-center gap-1 text-success dark:text-green-400">
                   <FaCheckCircle className="w-4 h-4" />
@@ -143,14 +143,16 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
                 )}
               </div>
             </div>
-            
+
             <div className="max-h-64 overflow-y-auto border dark:border-gray-700 rounded-lg">
               <table className="w-full text-sm">
                 <thead className="bg-background-secondary dark:bg-gray-700 sticky top-0">
                   <tr>
                     <th className="px-3 py-2 text-left text-gray-900 dark:text-gray-100">상태</th>
                     <th className="px-3 py-2 text-left text-gray-900 dark:text-gray-100">이름</th>
-                    <th className="px-3 py-2 text-left text-gray-900 dark:text-gray-100">전화번호</th>
+                    <th className="px-3 py-2 text-left text-gray-900 dark:text-gray-100">
+                      전화번호
+                    </th>
                     <th className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">칩</th>
                     <th className="px-3 py-2 text-left text-gray-900 dark:text-gray-100">오류</th>
                   </tr>
@@ -168,8 +170,12 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
                           <FaExclamationTriangle className="w-4 h-4 text-error dark:text-red-400" />
                         )}
                       </td>
-                      <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{participant.name}</td>
-                      <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{participant.phone || '-'}</td>
+                      <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
+                        {participant.name}
+                      </td>
+                      <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
+                        {participant.phone || '-'}
+                      </td>
                       <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
                         {participant.chips.toLocaleString()}
                       </td>
@@ -183,7 +189,6 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
             </div>
           </div>
         )}
-
       </div>
     </Modal>
   );

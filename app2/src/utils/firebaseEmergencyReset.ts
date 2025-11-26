@@ -23,18 +23,21 @@ export class FirebaseEmergencyReset {
     try {
       // 1. 모든 Firebase 리스너 정리
       this.clearAllListeners();
-      
+
       // 2. 브라우저 캐시 클리어
       this.clearBrowserCache();
-      
+
       // 3. Firebase 연결 재설정
       await this.resetFirebaseConnection();
-      
+
       // 4. 페이지 완전 새로고침
       this.forcePageReload();
-      
     } catch (error) {
-      logger.error('❌ Emergency reset failed:', error instanceof Error ? error : new Error(String(error)), { component: 'firebaseEmergencyReset' });
+      logger.error(
+        '❌ Emergency reset failed:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'firebaseEmergencyReset' }
+      );
       // 실패 시에도 페이지 새로고침
       this.forcePageReload();
     }
@@ -42,10 +45,9 @@ export class FirebaseEmergencyReset {
 
   // 모든 리스너 정리
   private clearAllListeners(): void {
-    
     // 전역 이벤트 리스너 정리
     const events = ['beforeunload', 'unload', 'pagehide'];
-    events.forEach(event => {
+    events.forEach((event) => {
       window.removeEventListener(event, () => {});
     });
 
@@ -55,19 +57,21 @@ export class FirebaseEmergencyReset {
         // Firebase 인스턴스 정리
         delete (window as any).firebase;
       } catch (error) {
-        logger.warn('Could not clear Firebase instance:', { component: 'firebaseEmergencyReset', data: error });
+        logger.warn('Could not clear Firebase instance:', {
+          component: 'firebaseEmergencyReset',
+          data: error,
+        });
       }
     }
   }
 
   // 브라우저 캐시 클리어
   private clearBrowserCache(): void {
-    
     try {
       // IndexedDB 클리어
       if ('indexedDB' in window) {
-        indexedDB.databases().then(databases => {
-          databases.forEach(db => {
+        indexedDB.databases().then((databases) => {
+          databases.forEach((db) => {
             if (db.name && db.name.includes('firebase')) {
               indexedDB.deleteDatabase(db.name);
             }
@@ -83,7 +87,7 @@ export class FirebaseEmergencyReset {
           keysToRemove.push(key);
         }
       }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
 
       // SessionStorage 클리어
       const sessionKeysToRemove = [];
@@ -93,35 +97,37 @@ export class FirebaseEmergencyReset {
           sessionKeysToRemove.push(key);
         }
       }
-      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
-
+      sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
     } catch (error) {
-      logger.warn('Could not clear browser cache:', { component: 'firebaseEmergencyReset', data: error });
+      logger.warn('Could not clear browser cache:', {
+        component: 'firebaseEmergencyReset',
+        data: error,
+      });
     }
   }
 
   // Firebase 연결 재설정
   private async resetFirebaseConnection(): Promise<void> {
-    
     try {
       // Firebase 앱 재초기화를 위한 지연
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Firebase 관련 스크립트 재로드
       this.reloadFirebaseScripts();
-      
     } catch (error) {
-      logger.warn('Firebase connection reset failed:', { component: 'firebaseEmergencyReset', data: error });
+      logger.warn('Firebase connection reset failed:', {
+        component: 'firebaseEmergencyReset',
+        data: error,
+      });
     }
   }
 
   // Firebase 스크립트 재로드
   private reloadFirebaseScripts(): void {
-    
     try {
       // Firebase 관련 스크립트 태그 찾기 및 재로드
       const scripts = document.querySelectorAll('script[src*="firebase"]');
-      scripts.forEach(script => {
+      scripts.forEach((script) => {
         const src = script.getAttribute('src');
         if (src) {
           script.remove();
@@ -132,13 +138,15 @@ export class FirebaseEmergencyReset {
         }
       });
     } catch (error) {
-      logger.warn('Could not reload Firebase scripts:', { component: 'firebaseEmergencyReset', data: error });
+      logger.warn('Could not reload Firebase scripts:', {
+        component: 'firebaseEmergencyReset',
+        data: error,
+      });
     }
   }
 
   // 페이지 강제 새로고침
   private forcePageReload(): void {
-    
     // 모든 상태 정리 후 새로고침
     setTimeout(() => {
       window.location.reload();
@@ -157,4 +165,4 @@ export const firebaseEmergencyReset = FirebaseEmergencyReset.getInstance();
 // 긴급 재설정 함수
 export const emergencyFirebaseReset = async (): Promise<void> => {
   return firebaseEmergencyReset.emergencyReset();
-}; 
+};

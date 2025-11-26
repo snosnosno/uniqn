@@ -92,12 +92,12 @@ const saveFCMToken = async (userId: string, token: string, platform: 'ios' | 'an
     const tokenData: PushNotificationToken = {
       token,
       platform,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     await updateDoc(userRef, {
       fcmToken: tokenData,
-      [`fcmTokens.${platform}`]: tokenData // 플랫폼별로도 저장
+      [`fcmTokens.${platform}`]: tokenData, // 플랫폼별로도 저장
     });
 
     logger.info(`FCM 토큰이 ${platform} 플랫폼으로 저장되었습니다`);

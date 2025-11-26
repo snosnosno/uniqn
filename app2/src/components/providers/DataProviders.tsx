@@ -28,9 +28,7 @@ export const DataProviders: React.FC<DataProvidersProps> = ({ children }) => {
     <UnifiedDataInitializer>
       <TournamentProvider>
         <TournamentDataProvider>
-          <Suspense fallback={<LoadingSpinner />}>
-            {children}
-          </Suspense>
+          <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
         </TournamentDataProvider>
       </TournamentProvider>
     </UnifiedDataInitializer>

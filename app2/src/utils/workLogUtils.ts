@@ -8,13 +8,13 @@ import { toISODateString } from './dateUtils';
  */
 
 // 날짜 입력 타입 정의
-type DateInput = 
-  | Timestamp 
-  | Date 
-  | string 
+type DateInput =
+  | Timestamp
+  | Date
+  | string
   | number
   | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
-  | null 
+  | null
   | undefined;
 
 /**
@@ -23,7 +23,7 @@ type DateInput =
  */
 export const normalizeStaffDate = (date: DateInput): string => {
   if (!date) return getTodayString();
-  
+
   try {
     // Firebase Timestamp 객체 처리
     if (typeof date === 'object' && 'seconds' in date) {
@@ -32,7 +32,7 @@ export const normalizeStaffDate = (date: DateInput): string => {
       const datePart = isoString.split('T')[0];
       return datePart || getTodayString();
     }
-    
+
     // Timestamp 문자열 처리 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
     if (typeof date === 'string' && date.startsWith('Timestamp(')) {
       const match = date.match(/seconds=(\d+)/);
@@ -43,12 +43,12 @@ export const normalizeStaffDate = (date: DateInput): string => {
         return datePart || getTodayString();
       }
     }
-    
+
     // 이미 YYYY-MM-DD 형식인 경우
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return date;
     }
-    
+
     // toDate 메서드가 있는 객체 (Firebase Timestamp)
     if (typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
       const dateObj = date.toDate();
@@ -58,7 +58,7 @@ export const normalizeStaffDate = (date: DateInput): string => {
         return datePart || getTodayString();
       }
     }
-    
+
     // Date 객체 또는 문자열/숫자를 Date로 변환
     const dateObj = date instanceof Date ? date : new Date(date as string | number);
     if (!isNaN(dateObj.getTime())) {
@@ -69,7 +69,7 @@ export const normalizeStaffDate = (date: DateInput): string => {
   } catch (error) {
     // 변환 실패 시 오늘 날짜 반환
   }
-  
+
   return getTodayString();
 };
 
@@ -78,17 +78,17 @@ export const normalizeStaffDate = (date: DateInput): string => {
  * StaffCard와 StaffRow에서 사용하는 패턴과 완벽히 호환
  */
 export const generateVirtualWorkLogId = (
-  staffId: string, 
-  date: DateInput, 
+  staffId: string,
+  date: DateInput,
   eventId?: string
 ): string => {
   const normalizedDate = normalizeStaffDate(date);
-  
+
   if (eventId) {
     // ✅ createWorkLogId 함수 사용으로 통일된 ID 생성
     return createWorkLogId(eventId, staffId, normalizedDate);
   }
-  
+
   // eventId가 없으면 virtual_ prefix 추가 (staffId에서 _숫자 패턴 제거)
   const actualStaffId = staffId.replace(/_\d+$/, '');
   return `virtual_${actualStaffId}_${normalizedDate}`;
@@ -98,7 +98,7 @@ interface CreateWorkLogParams {
   eventId: string;
   staffId: string;
   staffName: string;
-  role?: string;  // 역할 추가
+  role?: string; // 역할 추가
   date: string;
   assignedTime?: string | null;
   scheduledStartTime?: Timestamp | null;
@@ -122,7 +122,9 @@ export const generateWorkLogId = (eventId: string, staffId: string, date: string
  * @param assignedTime "HH:mm" 또는 "HH:mm-HH:mm" 형식의 문자열
  * @returns {startTime, endTime} 객체
  */
-export const parseAssignedTime = (assignedTime: string): { startTime: string | null; endTime: string | null } => {
+export const parseAssignedTime = (
+  assignedTime: string
+): { startTime: string | null; endTime: string | null } => {
   if (!assignedTime || assignedTime === '미정') {
     return { startTime: null, endTime: null };
   }
@@ -130,10 +132,10 @@ export const parseAssignedTime = (assignedTime: string): { startTime: string | n
   try {
     // "HH:mm-HH:mm" 형식 처리 (시간 범위)
     if (assignedTime.includes('-')) {
-      const timeParts = assignedTime.split('-').map(t => t.trim());
+      const timeParts = assignedTime.split('-').map((t) => t.trim());
       const startTime = timeParts[0];
       const endTime = timeParts[1];
-      
+
       // 시간 형식 검증
       const timeRegex = /^\d{1,2}:\d{2}$/;
       if (startTime && endTime && timeRegex.test(startTime) && timeRegex.test(endTime)) {
@@ -159,24 +161,33 @@ export const parseAssignedTime = (assignedTime: string): { startTime: string | n
  */
 export const convertTimeToTimestamp = (timeString: string, baseDate: string): Timestamp | null => {
   if (!timeString || timeString === '미정') return null;
-  
+
   try {
     const timeParts = timeString.split(':');
     if (timeParts.length !== 2) return null;
-    
+
     const [hoursStr, minutesStr] = timeParts;
     const hours = Number(hoursStr);
     const minutes = Number(minutesStr);
-    
-    if (!hoursStr || !minutesStr || isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+
+    if (
+      !hoursStr ||
+      !minutesStr ||
+      isNaN(hours) ||
+      isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
       return null;
     }
-    
+
     const date = parseToDate(baseDate) || new Date();
     date.setHours(hours, minutes, 0, 0);
-    
+
     if (isNaN(date.getTime())) return null;
-    
+
     return Timestamp.fromDate(date);
   } catch {
     return null;
@@ -190,10 +201,9 @@ export const convertTimeToTimestamp = (timeString: string, baseDate: string): Ti
  * @returns {scheduledStartTime, scheduledEndTime} Timestamp 객체들
  */
 export const convertAssignedTimeToScheduled = (
-  assignedTime: string | null | undefined, 
+  assignedTime: string | null | undefined,
   baseDate: string | null | undefined
 ): { scheduledStartTime: Timestamp | null; scheduledEndTime: Timestamp | null } => {
-  
   // 입력값 검증
   if (!assignedTime || assignedTime === '미정') {
     return { scheduledStartTime: null, scheduledEndTime: null };
@@ -204,13 +214,20 @@ export const convertAssignedTimeToScheduled = (
 
   const { startTime, endTime } = parseAssignedTime(assignedTime);
 
-  const scheduledStartTime = startTime && validBaseDate ? convertTimeToTimestamp(startTime, validBaseDate) : null;
-  let scheduledEndTime = endTime && validBaseDate ? convertTimeToTimestamp(endTime, validBaseDate) : null;
-
+  const scheduledStartTime =
+    startTime && validBaseDate ? convertTimeToTimestamp(startTime, validBaseDate) : null;
+  let scheduledEndTime =
+    endTime && validBaseDate ? convertTimeToTimestamp(endTime, validBaseDate) : null;
 
   // 종료 시간이 시작 시간보다 이른 경우 다음날로 조정
-  if (scheduledStartTime && scheduledEndTime && startTime && endTime &&
-      typeof startTime === 'string' && typeof endTime === 'string') {
+  if (
+    scheduledStartTime &&
+    scheduledEndTime &&
+    startTime &&
+    endTime &&
+    typeof startTime === 'string' &&
+    typeof endTime === 'string'
+  ) {
     try {
       const startTimeParts = startTime.split(':');
       const endTimeParts = endTime.split(':');
@@ -226,9 +243,18 @@ export const convertAssignedTimeToScheduled = (
 
       // 종료 시간이 시작 시간보다 이른 경우만 다음날로 조정
       // 시간과 분을 모두 고려하여 비교
-      if (!isNaN(startHour) && !isNaN(startMinute) && !isNaN(endHour) && !isNaN(endMinute) &&
-          (endHour < startHour || (endHour === startHour && endMinute <= startMinute))) {
-        const adjustedEndTime = adjustEndTimeForNextDay(endTime, startTime, parseToDate(validBaseDate) || new Date());
+      if (
+        !isNaN(startHour) &&
+        !isNaN(startMinute) &&
+        !isNaN(endHour) &&
+        !isNaN(endMinute) &&
+        (endHour < startHour || (endHour === startHour && endMinute <= startMinute))
+      ) {
+        const adjustedEndTime = adjustEndTimeForNextDay(
+          endTime,
+          startTime,
+          parseToDate(validBaseDate) || new Date()
+        );
         if (adjustedEndTime) {
           scheduledEndTime = adjustedEndTime;
         }
@@ -237,7 +263,7 @@ export const convertAssignedTimeToScheduled = (
       // 시간 파싱 오류 시 무시
     }
   }
-  
+
   return { scheduledStartTime, scheduledEndTime };
 };
 
@@ -260,21 +286,21 @@ export const convertAssignedTimeToScheduled = (
 //     actualEndTime,
 //     status = 'not_started'
 //   } = params;
-//   
+//
 //   const workLogId = generateWorkLogId(eventId, staffId, date);
-//   
+//
 //   let startTime = scheduledStartTime;
 //   let endTime = scheduledEndTime;
-//   
+//
 //   if (!startTime && assignedTime && assignedTime !== '미정') {
-//     const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } = 
+//     const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } =
 //       convertAssignedTimeToScheduled(assignedTime, date);
 //     startTime = convertedStart;
 //     if (!endTime) {
 //       endTime = convertedEnd;
 //     }
 //   }
-// 
+//
 //   return {
 //     id: `virtual_${workLogId}`,
 //     eventId,
@@ -307,14 +333,14 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
     scheduledEndTime,
     actualStartTime,
     actualEndTime,
-    status = 'not_started'
+    status = 'not_started',
   } = params;
 
   return {
     eventId,
     staffId,
     staffName: staffName,
-    ...(role && { role }),  // 역할이 있는 경우만 포함
+    ...(role && { role }), // 역할이 있는 경우만 포함
     date,
     scheduledStartTime: scheduledStartTime || null,
     scheduledEndTime: scheduledEndTime || null,
@@ -322,7 +348,7 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
     actualEndTime: actualEndTime || null,
     status,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
 };
 
@@ -332,11 +358,11 @@ export const createWorkLogData = (params: CreateWorkLogParams) => {
 export const isStaffIdMatch = (recordStaffId: string, targetStaffId: string): boolean => {
   // 정확한 매치
   if (recordStaffId === targetStaffId) return true;
-  
+
   // staffId 패턴 매치 (staffId_숫자 패턴 제거)
   const cleanRecordId = recordStaffId.replace(/_\d+$/, '');
   const cleanTargetId = targetStaffId.replace(/_\d+$/, '');
-  
+
   return cleanRecordId === cleanTargetId;
 };
 
@@ -348,13 +374,14 @@ export const findStaffWorkLog = (
   staffId: string,
   date: string
 ): any | undefined => {
-  return attendanceRecords.find(record => {
-    const staffMatch = isStaffIdMatch(record.staffId, staffId) ||
-                      record.workLog?.staffId === staffId ||
-                      isStaffIdMatch(record.workLog?.staffId || '', staffId);
-    
+  return attendanceRecords.find((record) => {
+    const staffMatch =
+      isStaffIdMatch(record.staffId, staffId) ||
+      record.workLog?.staffId === staffId ||
+      isStaffIdMatch(record.workLog?.staffId || '', staffId);
+
     const dateMatch = record.workLog?.date === date;
-    
+
     return staffMatch && dateMatch;
   });
 };

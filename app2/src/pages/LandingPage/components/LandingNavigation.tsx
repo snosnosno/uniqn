@@ -30,14 +30,17 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
   }, []);
 
   // 섹션으로 스크롤
-  const scrollToSection = useCallback((sectionId: string) => {
-    const element = document.querySelector(`[data-testid="${sectionId}-section"]`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      onSectionClick?.(sectionId);
-    }
-    setIsMobileMenuOpen(false);
-  }, [onSectionClick]);
+  const scrollToSection = useCallback(
+    (sectionId: string) => {
+      const element = document.querySelector(`[data-testid="${sectionId}-section"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        onSectionClick?.(sectionId);
+      }
+      setIsMobileMenuOpen(false);
+    },
+    [onSectionClick]
+  );
 
   // 버튼 클릭 핸들러
   const handleLoginClick = () => {
@@ -77,9 +80,7 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg'
-          : 'bg-transparent'
+        isScrolled ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -90,12 +91,16 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
               onClick={() => scrollToSection('hero')}
               className="flex items-center space-x-2 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
             >
-              <div className={`w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-700 flex items-center justify-center text-white font-bold text-sm transition-colors duration-300`}>
+              <div
+                className={`w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-700 flex items-center justify-center text-white font-bold text-sm transition-colors duration-300`}
+              >
                 T
               </div>
-              <span className={`transition-colors duration-300 ${
-                isScrolled ? 'text-gray-900 dark:text-gray-100' : 'text-white'
-              }`}>
+              <span
+                className={`transition-colors duration-300 ${
+                  isScrolled ? 'text-gray-900 dark:text-gray-100' : 'text-white'
+                }`}
+              >
                 UNIQN
               </span>
             </button>
@@ -108,7 +113,9 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 <button
                   onClick={handleJobBoardClick}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg ${
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white hover:text-blue-200'
+                    isScrolled
+                      ? 'text-gray-700 dark:text-gray-200'
+                      : 'text-white hover:text-blue-200'
                   }`}
                 >
                   구인 정보
@@ -116,7 +123,9 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 <button
                   onClick={handleJobPostingsClick}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg ${
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white hover:text-blue-200'
+                    isScrolled
+                      ? 'text-gray-700 dark:text-gray-200'
+                      : 'text-white hover:text-blue-200'
                   }`}
                 >
                   관리
@@ -124,7 +133,9 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 <button
                   onClick={handleAdminDashboardClick}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg ${
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white hover:text-blue-200'
+                    isScrolled
+                      ? 'text-gray-700 dark:text-gray-200'
+                      : 'text-white hover:text-blue-200'
                   }`}
                 >
                   대시보드
@@ -135,7 +146,9 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 <button
                   onClick={() => scrollToSection('features')}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg ${
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white hover:text-blue-200'
+                    isScrolled
+                      ? 'text-gray-700 dark:text-gray-200'
+                      : 'text-white hover:text-blue-200'
                   }`}
                 >
                   주요 기능
@@ -143,7 +156,9 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 <button
                   onClick={() => scrollToSection('targets')}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg ${
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white hover:text-blue-200'
+                    isScrolled
+                      ? 'text-gray-700 dark:text-gray-200'
+                      : 'text-white hover:text-blue-200'
                   }`}
                 >
                   솔루션
@@ -151,7 +166,9 @@ const LandingNavigation: React.FC<LandingNavigationProps> = ({ onSectionClick })
                 <a
                   href="mailto:contact@tholdem.com"
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg ${
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white hover:text-blue-200'
+                    isScrolled
+                      ? 'text-gray-700 dark:text-gray-200'
+                      : 'text-white hover:text-blue-200'
                   }`}
                 >
                   문의하기

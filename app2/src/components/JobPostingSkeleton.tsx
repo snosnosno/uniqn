@@ -17,7 +17,7 @@ const JobPostingSkeleton: React.FC<JobPostingSkeletonProps> = ({ count = 3 }) =>
                   <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 sm:w-64 mr-2"></div>
                   <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-full w-12"></div>
                 </div>
-                
+
                 {/* Date */}
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-1"></div>
 

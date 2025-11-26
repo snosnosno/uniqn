@@ -24,7 +24,7 @@ export const DEFAULT_PASSWORD_REQUIREMENTS: PasswordRequirements = {
   minLength: 8,
   requireEnglish: true,
   requireNumbers: true,
-  allowedCharsOnly: true
+  allowedCharsOnly: true,
 };
 
 /**
@@ -42,7 +42,7 @@ export const validatePassword = (
     hasEnglish: requirements.requireEnglish ? /[a-zA-Z]/.test(password) : true,
     hasNumbers: requirements.requireNumbers ? /[0-9]/.test(password) : true,
     validChars: /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/.test(password), // 특수문자 허용
-    hasSpecialChars: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+    hasSpecialChars: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
   };
 
   const errors: string[] = [];
@@ -73,20 +73,23 @@ export const validatePassword = (
     strength,
     score,
     checks,
-    errors
+    errors,
   };
 };
 
 /**
  * 비밀번호 점수 계산 (0-100)
  */
-const calculatePasswordScore = (password: string, checks: PasswordValidationResult['checks']): number => {
+const calculatePasswordScore = (
+  password: string,
+  checks: PasswordValidationResult['checks']
+): number => {
   let score = 0;
 
   // 기본 요구사항 충족 시 기본 점수 (총 75점)
-  if (checks.length) score += 25;         // 길이 요구사항
-  if (checks.hasEnglish) score += 25;     // 영문자 포함
-  if (checks.hasNumbers) score += 25;     // 숫자 포함
+  if (checks.length) score += 25; // 길이 요구사항
+  if (checks.hasEnglish) score += 25; // 영문자 포함
+  if (checks.hasNumbers) score += 25; // 숫자 포함
 
   // 추가 보너스 점수 (총 25점)
   if (password.length >= 12) score += 10; // 긴 비밀번호 보너스
@@ -108,20 +111,23 @@ const getPasswordStrength = (score: number): 'weak' | 'medium' | 'strong' => {
 /**
  * 비밀번호 강도에 따른 색상 반환
  */
-export const getPasswordStrengthColor = (strength: 'weak' | 'medium' | 'strong', isDark = false): string => {
+export const getPasswordStrengthColor = (
+  strength: 'weak' | 'medium' | 'strong',
+  isDark = false
+): string => {
   if (isDark) {
     const colorsDark = {
-      weak: '#fca5a5',    // 빨간색 (다크)
-      medium: '#fcd34d',  // 노란색 (다크)
-      strong: '#6ee7b7'   // 초록색 (다크)
+      weak: '#fca5a5', // 빨간색 (다크)
+      medium: '#fcd34d', // 노란색 (다크)
+      strong: '#6ee7b7', // 초록색 (다크)
     };
     return colorsDark[strength];
   }
 
   const colors = {
-    weak: '#dc3545',    // 빨간색
-    medium: '#ffc107',  // 노란색
-    strong: '#28a745'   // 초록색
+    weak: '#dc3545', // 빨간색
+    medium: '#ffc107', // 노란색
+    strong: '#28a745', // 초록색
   };
   return colors[strength];
 };
@@ -133,7 +139,7 @@ export const getPasswordStrengthText = (strength: 'weak' | 'medium' | 'strong'):
   const texts = {
     weak: '약함',
     medium: '보통',
-    strong: '강함'
+    strong: '강함',
   };
   return texts[strength];
 };
@@ -152,8 +158,8 @@ export const validatePasswordRealtime = (password: string): Partial<PasswordVali
         hasEnglish: false,
         hasNumbers: false,
         validChars: true,
-        hasSpecialChars: false
-      }
+        hasSpecialChars: false,
+      },
     };
   }
 

@@ -37,12 +37,17 @@ const SECRET_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'uniqn-default-encryp
 // 프로덕션 환경에서는 반드시 환경 변수로 키를 설정해야 함 (강제)
 if (!process.env.REACT_APP_ENCRYPTION_KEY) {
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('[CRITICAL] REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 프로덕션 환경에서 필수입니다.');
+    throw new Error(
+      '[CRITICAL] REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 프로덕션 환경에서 필수입니다.'
+    );
   }
 
-  logger.warn('REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 개발 환경에서 기본 키를 사용합니다.', {
-    component: 'secureStorage'
-  });
+  logger.warn(
+    'REACT_APP_ENCRYPTION_KEY가 설정되지 않았습니다. 개발 환경에서 기본 키를 사용합니다.',
+    {
+      component: 'secureStorage',
+    }
+  );
 }
 
 /**
@@ -55,7 +60,7 @@ const encrypt = (value: string): string => {
     return AES.encrypt(value, SECRET_KEY).toString();
   } catch (error) {
     logger.error('암호화 실패', error instanceof Error ? error : new Error(String(error)), {
-      component: 'secureStorage'
+      component: 'secureStorage',
     });
     throw new Error('데이터 암호화에 실패했습니다.');
   }
@@ -78,7 +83,7 @@ const decrypt = (encryptedValue: string): string => {
     return decrypted;
   } catch (error) {
     logger.error('복호화 실패', error instanceof Error ? error : new Error(String(error)), {
-      component: 'secureStorage'
+      component: 'secureStorage',
     });
     throw new Error('데이터 복호화에 실패했습니다.');
   }
@@ -135,13 +140,17 @@ export const secureStorage: SecureStorageInterface = {
 
       logger.debug('SecureStorage 저장 성공', {
         component: 'secureStorage',
-        data: { key, valueLength: value.length }
+        data: { key, valueLength: value.length },
       });
     } catch (error) {
-      logger.error('SecureStorage 저장 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'secureStorage',
-        data: { key }
-      });
+      logger.error(
+        'SecureStorage 저장 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'secureStorage',
+          data: { key },
+        }
+      );
       throw error;
     }
   },
@@ -161,15 +170,19 @@ export const secureStorage: SecureStorageInterface = {
 
       logger.debug('SecureStorage 읽기 성공', {
         component: 'secureStorage',
-        data: { key, valueLength: decrypted.length }
+        data: { key, valueLength: decrypted.length },
       });
 
       return decrypted;
     } catch (error) {
-      logger.error('SecureStorage 읽기 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'secureStorage',
-        data: { key }
-      });
+      logger.error(
+        'SecureStorage 읽기 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'secureStorage',
+          data: { key },
+        }
+      );
 
       // 복호화 실패 시 손상된 데이터 제거
       localStorage.removeItem(key);
@@ -186,13 +199,17 @@ export const secureStorage: SecureStorageInterface = {
 
       logger.debug('SecureStorage 삭제 성공', {
         component: 'secureStorage',
-        data: { key }
+        data: { key },
       });
     } catch (error) {
-      logger.error('SecureStorage 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'secureStorage',
-        data: { key }
-      });
+      logger.error(
+        'SecureStorage 삭제 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'secureStorage',
+          data: { key },
+        }
+      );
     }
   },
 
@@ -204,12 +221,16 @@ export const secureStorage: SecureStorageInterface = {
       localStorage.clear();
 
       logger.info('SecureStorage 전체 삭제', {
-        component: 'secureStorage'
+        component: 'secureStorage',
       });
     } catch (error) {
-      logger.error('SecureStorage 전체 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'secureStorage'
-      });
+      logger.error(
+        'SecureStorage 전체 삭제 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'secureStorage',
+        }
+      );
     }
   },
 
@@ -218,7 +239,7 @@ export const secureStorage: SecureStorageInterface = {
    */
   hasItem(key: string): boolean {
     return localStorage.getItem(key) !== null;
-  }
+  },
 };
 
 // 기본 export

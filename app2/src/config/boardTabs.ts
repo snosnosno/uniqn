@@ -16,7 +16,7 @@ export const BOARD_TABS: BoardTab[] = [
     icon: '🚨',
     postingType: 'urgent',
     order: 1,
-    enabled: true  // 긴급 공고
+    enabled: true, // 긴급 공고
   },
   {
     id: 'regular',
@@ -24,7 +24,7 @@ export const BOARD_TABS: BoardTab[] = [
     icon: '📋',
     postingType: 'regular',
     order: 2,
-    enabled: true  // 지원 공고 (항상 활성화)
+    enabled: true, // 지원 공고 (항상 활성화)
   },
   {
     id: 'tournament',
@@ -32,7 +32,7 @@ export const BOARD_TABS: BoardTab[] = [
     icon: '🏆',
     postingType: 'tournament',
     order: 3,
-    enabled: true  // 대회 공고
+    enabled: true, // 대회 공고
   },
   {
     id: 'fixed',
@@ -40,7 +40,7 @@ export const BOARD_TABS: BoardTab[] = [
     icon: '📌',
     postingType: 'fixed',
     order: 4,
-    enabled: true  // 고정 공고 (항상 활성화)
+    enabled: true, // 고정 공고 (항상 활성화)
   },
   {
     id: 'myApplications',
@@ -48,8 +48,8 @@ export const BOARD_TABS: BoardTab[] = [
     icon: '📝',
     // postingType 생략 - 타입 필터링 없음 (내가 지원한 공고 전체)
     order: 5,
-    enabled: true  // 내지원 탭 (항상 활성화)
-  }
+    enabled: true, // 내지원 탭 (항상 활성화)
+  },
 ];
 
 /**
@@ -57,5 +57,5 @@ export const BOARD_TABS: BoardTab[] = [
  * Feature Flag나 enabled 설정에 따라 필터링
  */
 export const getEnabledTabs = (): BoardTab[] => {
-  return BOARD_TABS.filter(tab => tab.enabled).sort((a, b) => a.order - b.order);
+  return BOARD_TABS.filter((tab) => tab.enabled).sort((a, b) => a.order - b.order);
 };

@@ -13,58 +13,62 @@ describe('Firestore 타입별 쿼리 통합 테스트', () => {
       {
         id: '1',
         title: '새 공고 (postingType)',
-        postingType: 'regular'
+        postingType: 'regular',
       },
       {
         id: '2',
         title: '레거시 공고 (type)',
-        type: 'fixed'
+        type: 'fixed',
       },
       {
         id: '3',
         title: '레거시 공고 (recruitmentType)',
-        recruitmentType: 'application'
+        recruitmentType: 'application',
       },
       {
         id: '4',
         title: '대회 공고',
-        postingType: 'tournament'
+        postingType: 'tournament',
       },
       {
         id: '5',
         title: '긴급 공고',
-        postingType: 'urgent'
-      }
+        postingType: 'urgent',
+      },
     ];
 
     it('regular 타입 공고 필터링', () => {
-      const regularPostings = mockFirestoreData
-        .filter(posting => normalizePostingType(posting) === 'regular');
+      const regularPostings = mockFirestoreData.filter(
+        (posting) => normalizePostingType(posting) === 'regular'
+      );
 
       expect(regularPostings).toHaveLength(2); // id 1, 3
-      expect(regularPostings.map(p => p.id)).toContain('1');
-      expect(regularPostings.map(p => p.id)).toContain('3');
+      expect(regularPostings.map((p) => p.id)).toContain('1');
+      expect(regularPostings.map((p) => p.id)).toContain('3');
     });
 
     it('fixed 타입 공고 필터링', () => {
-      const fixedPostings = mockFirestoreData
-        .filter(posting => normalizePostingType(posting) === 'fixed');
+      const fixedPostings = mockFirestoreData.filter(
+        (posting) => normalizePostingType(posting) === 'fixed'
+      );
 
       expect(fixedPostings).toHaveLength(1); // id 2
       expect(fixedPostings[0]?.id).toBe('2');
     });
 
     it('tournament 타입 공고 필터링', () => {
-      const tournamentPostings = mockFirestoreData
-        .filter(posting => normalizePostingType(posting) === 'tournament');
+      const tournamentPostings = mockFirestoreData.filter(
+        (posting) => normalizePostingType(posting) === 'tournament'
+      );
 
       expect(tournamentPostings).toHaveLength(1); // id 4
       expect(tournamentPostings[0]?.id).toBe('4');
     });
 
     it('urgent 타입 공고 필터링', () => {
-      const urgentPostings = mockFirestoreData
-        .filter(posting => normalizePostingType(posting) === 'urgent');
+      const urgentPostings = mockFirestoreData.filter(
+        (posting) => normalizePostingType(posting) === 'urgent'
+      );
 
       expect(urgentPostings).toHaveLength(1); // id 5
       expect(urgentPostings[0]?.id).toBe('5');
@@ -77,13 +81,13 @@ describe('Firestore 타입별 쿼리 통합 테스트', () => {
       const rawData: Partial<JobPosting>[] = [
         { id: '1', type: 'application' },
         { id: '2', postingType: 'fixed' },
-        { id: '3', recruitmentType: 'fixed' }
+        { id: '3', recruitmentType: 'fixed' },
       ];
 
       // 클라이언트에서 정규화
-      const normalized = rawData.map(data => ({
+      const normalized = rawData.map((data) => ({
         ...data,
-        normalizedType: normalizePostingType(data)
+        normalizedType: normalizePostingType(data),
       }));
 
       expect(normalized[0]?.normalizedType).toBe('regular');
@@ -96,15 +100,15 @@ describe('Firestore 타입별 쿼리 통합 테스트', () => {
         {
           postingType: 'urgent',
           type: 'fixed',
-          recruitmentType: 'application'
+          recruitmentType: 'application',
         },
         {
           type: 'fixed',
-          recruitmentType: 'application'
+          recruitmentType: 'application',
         },
         {
-          recruitmentType: 'fixed'
-        }
+          recruitmentType: 'fixed',
+        },
       ];
 
       expect(normalizePostingType(mixedData[0] ?? {})).toBe('urgent');
@@ -121,16 +125,19 @@ describe('Firestore 타입별 쿼리 통합 테스트', () => {
         { id: '3', postingType: 'regular' },
         { id: '4', postingType: 'tournament' },
         { id: '5', postingType: 'urgent' },
-        { id: '6', type: 'fixed' }
+        { id: '6', type: 'fixed' },
       ];
 
       // 타입별 그룹화
-      const grouped = mockData.reduce((acc, posting) => {
-        const type = normalizePostingType(posting);
-        if (!acc[type]) acc[type] = [];
-        acc[type]?.push(posting);
-        return acc;
-      }, {} as Record<string, Partial<JobPosting>[]>);
+      const grouped = mockData.reduce(
+        (acc, posting) => {
+          const type = normalizePostingType(posting);
+          if (!acc[type]) acc[type] = [];
+          acc[type]?.push(posting);
+          return acc;
+        },
+        {} as Record<string, Partial<JobPosting>[]>
+      );
 
       expect(grouped.regular).toHaveLength(2);
       expect(grouped.fixed).toHaveLength(2);
@@ -145,11 +152,11 @@ describe('Firestore 타입별 쿼리 통합 테스트', () => {
         { id: '1', postingType: 'regular', status: 'open' },
         { id: '2', postingType: 'fixed', status: 'open' },
         { id: '3', postingType: 'regular', status: 'closed' },
-        { id: '4', postingType: 'tournament', status: 'open' }
+        { id: '4', postingType: 'tournament', status: 'open' },
       ];
 
       const openRegular = mockData.filter(
-        p => normalizePostingType(p) === 'regular' && p.status === 'open'
+        (p) => normalizePostingType(p) === 'regular' && p.status === 'open'
       );
 
       expect(openRegular).toHaveLength(1);
@@ -160,11 +167,11 @@ describe('Firestore 타입별 쿼리 통합 테스트', () => {
       const mockData: Partial<JobPosting>[] = [
         { id: '1', postingType: 'tournament', createdBy: 'user1' },
         { id: '2', postingType: 'tournament', createdBy: 'user2' },
-        { id: '3', postingType: 'regular', createdBy: 'user1' }
+        { id: '3', postingType: 'regular', createdBy: 'user1' },
       ];
 
       const user1Tournaments = mockData.filter(
-        p => normalizePostingType(p) === 'tournament' && p.createdBy === 'user1'
+        (p) => normalizePostingType(p) === 'tournament' && p.createdBy === 'user1'
       );
 
       expect(user1Tournaments).toHaveLength(1);

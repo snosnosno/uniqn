@@ -17,13 +17,15 @@ export interface ProfileValidationResult {
  * - age (나이)
  * - experience (경력)
  */
-export const validateRequiredProfileFields = (profileData: Record<string, unknown>): ProfileValidationResult => {
+export const validateRequiredProfileFields = (
+  profileData: Record<string, unknown>
+): ProfileValidationResult => {
   const requiredFields = [
     { field: 'nationality', label: '국적' },
     { field: 'region', label: '지역' },
     { field: 'phone', label: '연락처' },
     { field: 'age', label: '나이' },
-    { field: 'experience', label: '경력' }
+    { field: 'experience', label: '경력' },
   ];
 
   const missingFields: string[] = [];
@@ -41,6 +43,6 @@ export const validateRequiredProfileFields = (profileData: Record<string, unknow
   return {
     isValid: missingFields.length === 0,
     missingFields,
-    missingFieldLabels
+    missingFieldLabels,
   };
 };

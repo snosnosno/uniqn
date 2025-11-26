@@ -22,9 +22,16 @@ export const Layout = memo(() => {
         <div className="flex items-center justify-between px-2 sm:px-4 md:px-6 py-3 h-16">
           {/* 로고 및 제목 */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-50">{t('layout.title', 'UNIQN')}</h1>
-              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">{t('layout.subtitle', 'Tournament Management System')}</span>
+            <Link
+              to="/"
+              className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-50">
+                {t('layout.title', 'UNIQN')}
+              </h1>
+              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
+                {t('layout.subtitle', 'Tournament Management System')}
+              </span>
             </Link>
           </div>
 
@@ -38,7 +45,10 @@ export const Layout = memo(() => {
               }`}
               aria-label={t('nav.attendance', 'Attendance')}
               title={t('nav.attendance', 'Attendance')}
-              style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
+              style={{
+                minWidth: isMobile ? '48px' : '40px',
+                minHeight: isMobile ? '48px' : '40px',
+              }}
             >
               <FaQrcode className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
             </button>
@@ -51,7 +61,11 @@ export const Layout = memo(() => {
 
       {/* 메인 콘텐츠 */}
       <main className="content-safe px-1 sm:px-4 md:px-6 lg:px-8 pt-18 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100 dark:bg-gray-900">
-        <React.Suspense fallback={<div className="text-gray-700 dark:text-gray-300">{t('common.messages.loading')}</div>}>
+        <React.Suspense
+          fallback={
+            <div className="text-gray-700 dark:text-gray-300">{t('common.messages.loading')}</div>
+          }
+        >
           <Outlet />
         </React.Suspense>
       </main>

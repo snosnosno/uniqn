@@ -1,8 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils, PostingType } from '../../types/jobPosting';
-import { formatDate as formatDateUtil, formatDateRangeDisplay, generateDateRange, convertToDateString } from '../../utils/jobPosting/dateUtils';
-import { formatSalaryDisplay, getBenefitDisplayNames, getStatusDisplayName, formatRoleSalaryDisplay, normalizePostingType } from '../../utils/jobPosting/jobPostingHelpers';
+import {
+  JobPosting,
+  TimeSlot,
+  RoleRequirement,
+  DateSpecificRequirement,
+  JobPostingUtils,
+  PostingType,
+} from '../../types/jobPosting';
+import {
+  formatDate as formatDateUtil,
+  formatDateRangeDisplay,
+  generateDateRange,
+  convertToDateString,
+} from '../../utils/jobPosting/dateUtils';
+import {
+  formatSalaryDisplay,
+  getBenefitDisplayNames,
+  getStatusDisplayName,
+  formatRoleSalaryDisplay,
+  normalizePostingType,
+} from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import { doc, getDoc } from 'firebase/firestore';
@@ -22,31 +40,34 @@ export interface JobPostingCardProps {
 }
 
 // 타입별 스타일 맵
-const POSTING_STYLES: Record<PostingType, {
-  border: string;
-  icon: string;
-  bg: string;
-}> = {
+const POSTING_STYLES: Record<
+  PostingType,
+  {
+    border: string;
+    icon: string;
+    bg: string;
+  }
+> = {
   regular: {
     border: 'border-gray-300 dark:border-gray-600',
     icon: '📋',
-    bg: 'bg-white dark:bg-gray-800'
+    bg: 'bg-white dark:bg-gray-800',
   },
   fixed: {
     border: 'border-l-4 border-l-blue-500 dark:border-l-blue-400',
     icon: '📌',
-    bg: 'bg-white dark:bg-gray-800'
+    bg: 'bg-white dark:bg-gray-800',
   },
   tournament: {
     border: 'border-l-4 border-l-purple-500 dark:border-l-purple-400',
     icon: '🏆',
-    bg: 'bg-white dark:bg-gray-800'
+    bg: 'bg-white dark:bg-gray-800',
   },
   urgent: {
     border: 'border-2 border-red-500 dark:border-red-400',
     icon: '🚨',
-    bg: 'bg-white dark:bg-gray-800'
-  }
+    bg: 'bg-white dark:bg-gray-800',
+  },
 };
 
 /**
@@ -60,7 +81,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   renderExtra,
   showStatus = true,
   showApplicationCount = false,
-  className = ''
+  className = '',
 }) => {
   const { t } = useTranslation();
   const { formatDateDisplay } = useDateUtils();
@@ -72,7 +93,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       if (!post.createdBy) {
         logger.warn('구인자 정보 없음: createdBy 필드가 없습니다', {
           component: 'JobPostingCard',
-          data: { postId: post.id, title: post.title }
+          data: { postId: post.id, title: post.title },
         });
         return;
       }
@@ -80,7 +101,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       try {
         logger.info('구인자 정보 조회 시작', {
           component: 'JobPostingCard',
-          data: { postId: post.id, createdBy: post.createdBy }
+          data: { postId: post.id, createdBy: post.createdBy },
         });
 
         // 1. 프로필의 name, nickname 확인
@@ -95,7 +116,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           if (profileName) {
             logger.info('프로필에서 구인자 이름 발견', {
               component: 'JobPostingCard',
-              data: { name: profileName, nickname: profileNickname }
+              data: { name: profileName, nickname: profileNickname },
             });
 
             // exactOptionalPropertyTypes를 위해 조건부로 객체 생성
@@ -122,7 +143,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
             logger.info('users 문서의 displayName에서 구인자 정보 발견', {
               component: 'JobPostingCard',
-              data: { displayName: userData.displayName, extractedName: name, extractedNickname: nickname }
+              data: {
+                displayName: userData.displayName,
+                extractedName: name,
+                extractedNickname: nickname,
+              },
             });
 
             // exactOptionalPropertyTypes를 위해 조건부로 객체 생성
@@ -138,7 +163,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           if (userData?.name) {
             logger.info('users 문서의 name 필드에서 구인자 이름 발견', {
               component: 'JobPostingCard',
-              data: { name: userData.name, nickname: userData.nickname }
+              data: { name: userData.name, nickname: userData.nickname },
             });
 
             // exactOptionalPropertyTypes를 위해 조건부로 객체 생성
@@ -154,7 +179,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           if (userData?.email) {
             logger.info('users 문서의 email을 fallback으로 사용', {
               component: 'JobPostingCard',
-              data: { email: userData.email }
+              data: { email: userData.email },
             });
             setCreatorInfo({ name: userData.email });
             return;
@@ -162,19 +187,23 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
           logger.warn('users 문서에 이름 정보가 없습니다', {
             component: 'JobPostingCard',
-            data: { userId: post.createdBy, availableFields: Object.keys(userData) }
+            data: { userId: post.createdBy, availableFields: Object.keys(userData) },
           });
         } else {
           logger.warn('users 문서가 존재하지 않습니다', {
             component: 'JobPostingCard',
-            data: { userId: post.createdBy }
+            data: { userId: post.createdBy },
           });
         }
       } catch (error) {
-        logger.error('구인자 정보 조회 오류', error instanceof Error ? error : new Error(String(error)), {
-          component: 'JobPostingCard',
-          data: { postId: post.id, createdBy: post.createdBy }
-        });
+        logger.error(
+          '구인자 정보 조회 오류',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'JobPostingCard',
+            data: { postId: post.id, createdBy: post.createdBy },
+          }
+        );
       }
     };
 
@@ -194,19 +223,21 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   };
 
   // 날짜 변환 처리
-  const formatDate = (date: string | Date | { toDate: () => Date } | { seconds: number } | null | undefined): string => {
+  const formatDate = (
+    date: string | Date | { toDate: () => Date } | { seconds: number } | null | undefined
+  ): string => {
     if (!date) return '미정';
-    
+
     // Firebase Timestamp
     if (date && typeof date === 'object' && 'toDate' in date) {
       return formatDateUtil(date.toDate());
     }
-    
+
     // seconds 형식 (Firebase에서 가져온 데이터)
     if (date && typeof date === 'object' && 'seconds' in date) {
       return formatDateUtil(new Date(date.seconds * 1000));
     }
-    
+
     // 일반 Date 객체나 문자열
     return formatDateUtil(date);
   };
@@ -225,18 +256,18 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     const dates: string[] = [];
 
     // 모든 날짜 수집
-    post.dateSpecificRequirements?.forEach(req => {
+    post.dateSpecificRequirements?.forEach((req) => {
       dates.push(convertToDateString(req.date));
 
       // multi duration 처리
-      req.timeSlots?.forEach(slot => {
+      req.timeSlots?.forEach((slot) => {
         if (slot.duration?.type === 'multi' && slot.duration.endDate) {
           const rangeDates = generateDateRange(
             convertToDateString(req.date),
             slot.duration.endDate
           );
           // 시작일 제외하고 추가 (중복 방지)
-          rangeDates.slice(1).forEach(d => dates.push(d));
+          rangeDates.slice(1).forEach((d) => dates.push(d));
         }
       });
     });
@@ -252,12 +283,12 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   // 전체 진행률 계산 (관리자용)
   const getProgressInfo = () => {
     if (variant !== 'admin-list') return null;
-    
+
     const progressMap = JobPostingUtils.getRequirementProgress(post);
     let totalConfirmed = 0;
     let totalRequired = 0;
-    
-    progressMap.forEach(progress => {
+
+    progressMap.forEach((progress) => {
       totalConfirmed += progress.confirmed;
       totalRequired += progress.required;
     });
@@ -331,7 +362,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   // 시간대 및 역할 렌더링
   const renderTimeSlots = () => {
     // ✅ 고정공고: 근무조건 및 모집역할 표시
-    if (normalizePostingType(post) === 'fixed' && post.workSchedule && post.requiredRolesWithCount) {
+    if (
+      normalizePostingType(post) === 'fixed' &&
+      post.workSchedule &&
+      post.requiredRolesWithCount
+    ) {
       return (
         <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
           {/* 근무조건 */}
@@ -341,8 +376,12 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             </div>
             <div className="ml-4 space-y-1">
               <div className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium text-gray-700 dark:text-gray-200">주 {post.workSchedule.daysPerWeek}일</span>
-                <span className="ml-3">{post.workSchedule.startTime} ~ {post.workSchedule.endTime}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">
+                  주 {post.workSchedule.daysPerWeek}일
+                </span>
+                <span className="ml-3">
+                  {post.workSchedule.startTime} ~ {post.workSchedule.endTime}
+                </span>
               </div>
             </div>
           </div>
@@ -378,105 +417,124 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           {displayReqs.map((req: DateSpecificRequirement, index: number) => {
             // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
             const firstTimeSlot = req.timeSlots?.[0];
-            const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
-            
+            const hasMultiDuration =
+              firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
+
             let dateDisplay = formatDate(req.date);
             if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
               dateDisplay = `${formatDate(req.date)} ~ ${formatDate(firstTimeSlot.duration.endDate)}`;
             }
-            
+
             return (
               <div key={index} className="mb-3">
                 <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
                   📅 {dateDisplay} 일정
                 </div>
-              <div className="ml-4 space-y-1">
-                {(req.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
-                  <div key={tsIndex} className="mb-2">
-                    {ts.isTimeToBeAnnounced ? (
-                      <>
+                <div className="ml-4 space-y-1">
+                  {(req.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
+                    <div key={tsIndex} className="mb-2">
+                      {ts.isTimeToBeAnnounced ? (
                         <>
-                          {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
-                            const dateString = timestampToLocalDateString(req.date);
-                            const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                              post,
-                              dateString,
-                              ts.time,
-                              role.name
-                            );
-                            const isFull = confirmedCount >= role.count;
-                            return (
-                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
-                                {roleIndex === 0 ? (
-                                  <>
-                                    <span className="font-medium text-orange-600 dark:text-orange-400">
-                                      미정
-                                      {ts.tentativeDescription && (
-                                        <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">({ts.tentativeDescription})</span>
-                                      )}
-                                    </span>
-                                    <span className="ml-3">
+                          <>
+                            {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
+                              const dateString = timestampToLocalDateString(req.date);
+                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                post,
+                                dateString,
+                                ts.time,
+                                role.name
+                              );
+                              const isFull = confirmedCount >= role.count;
+                              return (
+                                <div
+                                  key={roleIndex}
+                                  className="text-sm text-gray-600 dark:text-gray-300"
+                                >
+                                  {roleIndex === 0 ? (
+                                    <>
+                                      <span className="font-medium text-orange-600 dark:text-orange-400">
+                                        미정
+                                        {ts.tentativeDescription && (
+                                          <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
+                                            ({ts.tentativeDescription})
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span className="ml-3">
+                                        {t(`roles.${role.name}`, role.name)}: {role.count}명
+                                        <span
+                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                        >
+                                          ({confirmedCount}/{role.count})
+                                        </span>
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <div className="pl-[50px]">
                                       {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                      <span
+                                        className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                      >
                                         ({confirmedCount}/{role.count})
                                       </span>
-                                    </span>
-                                  </>
-                                ) : (
-                                  <div className="pl-[50px]">
-                                    {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                      ({confirmedCount}/{role.count})
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </>
                         </>
-                      </>
-                    ) : (
-                      <>
+                      ) : (
                         <>
-                          {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
-                            const dateString = timestampToLocalDateString(req.date);
-                            const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                              post,
-                              dateString,
-                              ts.time,
-                              role.name
-                            );
-                            const isFull = confirmedCount >= role.count;
-                            return (
-                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
-                                {roleIndex === 0 ? (
-                                  <>
-                                    <span className="font-medium text-gray-700 dark:text-gray-200">{ts.time}</span>
-                                    <span className="ml-3">
+                          <>
+                            {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
+                              const dateString = timestampToLocalDateString(req.date);
+                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                post,
+                                dateString,
+                                ts.time,
+                                role.name
+                              );
+                              const isFull = confirmedCount >= role.count;
+                              return (
+                                <div
+                                  key={roleIndex}
+                                  className="text-sm text-gray-600 dark:text-gray-300"
+                                >
+                                  {roleIndex === 0 ? (
+                                    <>
+                                      <span className="font-medium text-gray-700 dark:text-gray-200">
+                                        {ts.time}
+                                      </span>
+                                      <span className="ml-3">
+                                        {t(`roles.${role.name}`, role.name)}: {role.count}명
+                                        <span
+                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                        >
+                                          ({confirmedCount}/{role.count})
+                                        </span>
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <div className="pl-[50px]">
                                       {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                      <span
+                                        className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                      >
                                         ({confirmedCount}/{role.count})
                                       </span>
-                                    </span>
-                                  </>
-                                ) : (
-                                  <div className="pl-[50px]">
-                                    {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                      ({confirmedCount}/{role.count})
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </>
                         </>
-                      </>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
             );
           })}
         </div>
@@ -484,9 +542,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     } else {
       // 날짜별 요구사항이 없는 경우
       return (
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          시간대 정보가 없습니다.
-        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">시간대 정보가 없습니다.</div>
       );
     }
   };
@@ -496,7 +552,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     if (variant !== 'user-card') return null;
 
     // ✅ 고정공고: 근무조건 및 모집역할 표시
-    if (normalizePostingType(post) === 'fixed' && post.workSchedule && post.requiredRolesWithCount) {
+    if (
+      normalizePostingType(post) === 'fixed' &&
+      post.workSchedule &&
+      post.requiredRolesWithCount
+    ) {
       return (
         <div className="mb-2">
           <div className="space-y-2">
@@ -506,8 +566,12 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 🕐 근무조건
               </div>
               <div className="ml-2 text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-medium text-gray-700 dark:text-gray-200">주 {post.workSchedule.daysPerWeek}일</span>
-                <span className="ml-3">{post.workSchedule.startTime} ~ {post.workSchedule.endTime}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">
+                  주 {post.workSchedule.daysPerWeek}일
+                </span>
+                <span className="ml-3">
+                  {post.workSchedule.startTime} ~ {post.workSchedule.endTime}
+                </span>
               </div>
             </div>
 
@@ -536,168 +600,199 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       return (
         <div className="mb-2">
           <div className="space-y-2">
-            {post.dateSpecificRequirements?.map((dateReq: DateSpecificRequirement, dateIndex: number) => {
-              // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
-              const firstTimeSlot = dateReq.timeSlots?.[0];
-              const hasMultiDuration = firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
-              
-              let dateDisplay = formatDateUtil(dateReq.date);
-              let expandedDates: string[] = [];
-              
-              if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
-                const startDate = convertToDateString(dateReq.date);
-                const endDate = convertToDateString(firstTimeSlot.duration.endDate);
-                expandedDates = generateDateRange(startDate, endDate);
-                dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
-              }
-              
-              return (
-                <div key={dateIndex} className="">
-                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                    📅 {dateDisplay}
-                    {expandedDates.length > 0 && (
-                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                        {expandedDates.length}일
-                      </span>
-                    )}
-                  </div>
-                <div className="space-y-2">
-                  {(dateReq.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
-                    <div key={`${dateIndex}-${tsIndex}`} className="ml-2 mb-2">
-                      {ts.isTimeToBeAnnounced ? (
-                        <>
-                          {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
-                            // 다중일인 경우 모든 날짜의 확정 인원 합산
-                            let confirmedCount = 0;
-                            let confirmedCountPerDay = 0;
+            {post.dateSpecificRequirements?.map(
+              (dateReq: DateSpecificRequirement, dateIndex: number) => {
+                // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
+                const firstTimeSlot = dateReq.timeSlots?.[0];
+                const hasMultiDuration =
+                  firstTimeSlot?.duration?.type === 'multi' && firstTimeSlot?.duration?.endDate;
 
-                            if (expandedDates.length > 0) {
-                              // 다중일 근무는 첫 날 기준으로만 확정 인원 계산
-                              // (같은 사람이 여러 날 근무하는 개념)
-                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                expandedDates[0] || '', // 첫 날짜만 사용
-                                ts.time,
-                                r.name
-                              );
-                              confirmedCountPerDay = confirmedCount;
-                            } else {
-                              // 단일 날짜
-                              const dateString = timestampToLocalDateString(dateReq.date);
-                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                dateString,
-                                ts.time,
-                                r.name
-                              );
-                              confirmedCountPerDay = confirmedCount;
-                            }
-                            
-                            const displayCount = expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
-                            const isFull = displayCount >= r.count;
-                            return (
-                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
-                                {roleIndex === 0 ? (
-                                  <>
-                                    <span className="font-medium text-orange-600 dark:text-orange-400">
-                                      미정
-                                      {ts.tentativeDescription && (
-                                        <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">({ts.tentativeDescription})</span>
-                                      )}
-                                    </span>
-                                    <span className="ml-3">
-                                      {t(`roles.${r.name}`, r.name)}: {r.count}명
-                                      {expandedDates.length > 0 && (
-                                        <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
-                                      )}
-                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                        {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
-                                      </span>
-                                    </span>
-                                  </>
-                                ) : (
-                                  <div className="pl-[50px]">
-                                    {t(`roles.${r.name}`, r.name)}: {r.count}명
-                                    {expandedDates.length > 0 && (
-                                      <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
-                                    )}
-                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                      {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </>
-                      ) : (
-                        <>
-                          {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
-                            // 다중일인 경우 모든 날짜의 확정 인원 합산
-                            let confirmedCount = 0;
-                            let confirmedCountPerDay = 0;
+                let dateDisplay = formatDateUtil(dateReq.date);
+                let expandedDates: string[] = [];
 
-                            if (expandedDates.length > 0) {
-                              // 다중일 근무는 첫 날 기준으로만 확정 인원 계산
-                              // (같은 사람이 여러 날 근무하는 개념)
-                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                expandedDates[0] || '', // 첫 날짜만 사용
-                                ts.time,
-                                r.name
-                              );
-                              confirmedCountPerDay = confirmedCount;
-                            } else {
-                              // 단일 날짜
-                              const dateString = timestampToLocalDateString(dateReq.date);
-                              confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                dateString,
-                                ts.time,
-                                r.name
-                              );
-                              confirmedCountPerDay = confirmedCount;
-                            }
-                            
-                            const displayCount = expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
-                            const isFull = displayCount >= r.count;
-                            return (
-                              <div key={roleIndex} className="text-sm text-gray-600 dark:text-gray-300">
-                                {roleIndex === 0 ? (
-                                  <>
-                                    <span className="font-medium text-gray-700 dark:text-gray-200">{ts.time}</span>
-                                    <span className="ml-3">
-                                      {t(`roles.${r.name}`, r.name)}: {r.count}명
-                                      {expandedDates.length > 0 && (
-                                        <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
-                                      )}
-                                      <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                        {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
-                                      </span>
-                                    </span>
-                                  </>
-                                ) : (
-                                  <div className="pl-[50px]">
-                                    {t(`roles.${r.name}`, r.name)}: {r.count}명
-                                    {expandedDates.length > 0 && (
-                                      <span className="text-blue-600 dark:text-blue-400 ml-1">({expandedDates.length}일)</span>
-                                    )}
-                                    <span className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                      {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </>
+                if (hasMultiDuration && firstTimeSlot?.duration?.endDate) {
+                  const startDate = convertToDateString(dateReq.date);
+                  const endDate = convertToDateString(firstTimeSlot.duration.endDate);
+                  expandedDates = generateDateRange(startDate, endDate);
+                  dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(firstTimeSlot.duration.endDate)}`;
+                }
+
+                return (
+                  <div key={dateIndex} className="">
+                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      📅 {dateDisplay}
+                      {expandedDates.length > 0 && (
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                          {expandedDates.length}일
+                        </span>
                       )}
                     </div>
-                  ))}
-                </div>
-                </div>
-              );
-            })}
+                    <div className="space-y-2">
+                      {(dateReq.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
+                        <div key={`${dateIndex}-${tsIndex}`} className="ml-2 mb-2">
+                          {ts.isTimeToBeAnnounced ? (
+                            <>
+                              {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
+                                // 다중일인 경우 모든 날짜의 확정 인원 합산
+                                let confirmedCount = 0;
+                                let confirmedCountPerDay = 0;
+
+                                if (expandedDates.length > 0) {
+                                  // 다중일 근무는 첫 날 기준으로만 확정 인원 계산
+                                  // (같은 사람이 여러 날 근무하는 개념)
+                                  confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                    post,
+                                    expandedDates[0] || '', // 첫 날짜만 사용
+                                    ts.time,
+                                    r.name
+                                  );
+                                  confirmedCountPerDay = confirmedCount;
+                                } else {
+                                  // 단일 날짜
+                                  const dateString = timestampToLocalDateString(dateReq.date);
+                                  confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                    post,
+                                    dateString,
+                                    ts.time,
+                                    r.name
+                                  );
+                                  confirmedCountPerDay = confirmedCount;
+                                }
+
+                                const displayCount =
+                                  expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
+                                const isFull = displayCount >= r.count;
+                                return (
+                                  <div
+                                    key={roleIndex}
+                                    className="text-sm text-gray-600 dark:text-gray-300"
+                                  >
+                                    {roleIndex === 0 ? (
+                                      <>
+                                        <span className="font-medium text-orange-600 dark:text-orange-400">
+                                          미정
+                                          {ts.tentativeDescription && (
+                                            <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
+                                              ({ts.tentativeDescription})
+                                            </span>
+                                          )}
+                                        </span>
+                                        <span className="ml-3">
+                                          {t(`roles.${r.name}`, r.name)}: {r.count}명
+                                          {expandedDates.length > 0 && (
+                                            <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                              ({expandedDates.length}일)
+                                            </span>
+                                          )}
+                                          <span
+                                            className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                          >
+                                            {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                          </span>
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <div className="pl-[50px]">
+                                        {t(`roles.${r.name}`, r.name)}: {r.count}명
+                                        {expandedDates.length > 0 && (
+                                          <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                            ({expandedDates.length}일)
+                                          </span>
+                                        )}
+                                        <span
+                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                        >
+                                          {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </>
+                          ) : (
+                            <>
+                              {(ts.roles || []).map((r: RoleRequirement, roleIndex: number) => {
+                                // 다중일인 경우 모든 날짜의 확정 인원 합산
+                                let confirmedCount = 0;
+                                let confirmedCountPerDay = 0;
+
+                                if (expandedDates.length > 0) {
+                                  // 다중일 근무는 첫 날 기준으로만 확정 인원 계산
+                                  // (같은 사람이 여러 날 근무하는 개념)
+                                  confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                    post,
+                                    expandedDates[0] || '', // 첫 날짜만 사용
+                                    ts.time,
+                                    r.name
+                                  );
+                                  confirmedCountPerDay = confirmedCount;
+                                } else {
+                                  // 단일 날짜
+                                  const dateString = timestampToLocalDateString(dateReq.date);
+                                  confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                                    post,
+                                    dateString,
+                                    ts.time,
+                                    r.name
+                                  );
+                                  confirmedCountPerDay = confirmedCount;
+                                }
+
+                                const displayCount =
+                                  expandedDates.length > 0 ? confirmedCountPerDay : confirmedCount;
+                                const isFull = displayCount >= r.count;
+                                return (
+                                  <div
+                                    key={roleIndex}
+                                    className="text-sm text-gray-600 dark:text-gray-300"
+                                  >
+                                    {roleIndex === 0 ? (
+                                      <>
+                                        <span className="font-medium text-gray-700 dark:text-gray-200">
+                                          {ts.time}
+                                        </span>
+                                        <span className="ml-3">
+                                          {t(`roles.${r.name}`, r.name)}: {r.count}명
+                                          {expandedDates.length > 0 && (
+                                            <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                              ({expandedDates.length}일)
+                                            </span>
+                                          )}
+                                          <span
+                                            className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                          >
+                                            {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                          </span>
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <div className="pl-[50px]">
+                                        {t(`roles.${r.name}`, r.name)}: {r.count}명
+                                        {expandedDates.length > 0 && (
+                                          <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                            ({expandedDates.length}일)
+                                          </span>
+                                        )}
+                                        <span
+                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                                        >
+                                          {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            )}
           </div>
         </div>
       );
@@ -708,9 +803,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             <span className="mr-2">⏰</span>
             <span>모집 시간대</span>
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            시간대 정보가 없습니다.
-          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">시간대 정보가 없습니다.</div>
         </div>
       );
     }
@@ -719,7 +812,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   return (
     <div className={`${getContainerClasses()} ${className}`}>
       <div className={getContentClasses()}>
-        <div className={variant === 'user-card' ? 'flex flex-col lg:flex-row lg:items-start lg:justify-between' : 'flex justify-between items-start'}>
+        <div
+          className={
+            variant === 'user-card'
+              ? 'flex flex-col lg:flex-row lg:items-start lg:justify-between'
+              : 'flex justify-between items-start'
+          }
+        >
           <div className={variant === 'user-card' ? 'flex-1 mb-4 lg:mb-0' : 'flex-1 min-w-0'}>
             {/* 제목과 상태/타입 배지 */}
             <div className="flex items-center space-x-2 mb-2">
@@ -728,9 +827,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 {POSTING_STYLES[normalizePostingType(post)].icon}
               </span>
 
-              <h3 className={`font-medium text-gray-900 dark:text-gray-100 truncate ${
-                variant === 'user-card' ? 'text-base sm:text-lg font-semibold break-words max-w-full' : 'text-lg'
-              }`}>
+              <h3
+                className={`font-medium text-gray-900 dark:text-gray-100 truncate ${
+                  variant === 'user-card'
+                    ? 'text-base sm:text-lg font-semibold break-words max-w-full'
+                    : 'text-lg'
+                }`}
+              >
                 {post.title}
               </h3>
 
@@ -750,13 +853,15 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
               {/* 상태 배지 (모집중/마감) */}
               {showStatus && post.status && (
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  post.status === 'open'
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                    : post.status === 'closed'
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                }`}>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    post.status === 'open'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      : post.status === 'closed'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                  }`}
+                >
                   {getStatusDisplayName(post.status)}
                 </span>
               )}
@@ -771,7 +876,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   <span className="break-words whitespace-pre-line">{dateRangeDisplay}</span>
                 </span>
               </div>
-              
+
               {/* 위치 */}
               <div className={getInfoItemClasses()}>
                 <span className="flex items-center">
@@ -787,20 +892,23 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
               {/* 문의 연락처는 하단으로 이동 */}
 
-
               {/* 급여 */}
               {post.useRoleSalary && post.roleSalaries ? (
                 <div className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}>
                   <span className="flex items-start">
                     <span className="mr-2 mt-0.5">💰</span>
                     <div className="break-words">
-                      <span className="font-medium text-gray-700 dark:text-gray-200">역할별 급여</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">
+                        역할별 급여
+                      </span>
                       <div className="mt-1 space-y-0.5">
-                        {Object.entries(post.roleSalaries).slice(0, 3).map(([role, salary]) => (
-                          <div key={role} className="text-xs text-gray-600 dark:text-gray-300">
-                            • {formatRoleSalaryDisplay(role, salary)}
-                          </div>
-                        ))}
+                        {Object.entries(post.roleSalaries)
+                          .slice(0, 3)
+                          .map(([role, salary]) => (
+                            <div key={role} className="text-xs text-gray-600 dark:text-gray-300">
+                              • {formatRoleSalaryDisplay(role, salary)}
+                            </div>
+                          ))}
                         {Object.keys(post.roleSalaries).length > 3 && (
                           <div className="text-xs text-gray-400 dark:text-gray-500">
                             외 {Object.keys(post.roleSalaries).length - 3}개 역할
@@ -811,48 +919,48 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   </span>
                 </div>
               ) : (
-                post.salaryType && post.salaryAmount && (
+                post.salaryType &&
+                post.salaryAmount && (
                   <div className={getInfoItemClasses()}>
                     <span className="flex items-center">
                       <span className="mr-2">💰</span>
-                      <span className="break-words">{formatSalaryDisplay(post.salaryType, post.salaryAmount)}</span>
+                      <span className="break-words">
+                        {formatSalaryDisplay(post.salaryType, post.salaryAmount)}
+                      </span>
                     </span>
                   </div>
                 )
               )}
-              
-              {/* 복리후생 */}
-              {post.benefits && (() => {
-                const benefits = getBenefitDisplayNames(post.benefits || {});
-                return benefits.length > 0;
-              })() && (
-                <div className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}>
-                  <span className="flex items-start">
-                    <span className="mr-2 mt-0.5">🎁</span>
-                    <div className="break-words leading-relaxed">
-                      {(() => {
-                        const benefits = getBenefitDisplayNames(post.benefits || {});
-                        const midPoint = Math.ceil(benefits.length / 2);
-                        const firstLine = benefits.slice(0, midPoint);
-                        const secondLine = benefits.slice(midPoint);
 
-                        return (
-                          <>
-                            <div className="mb-0.5">
-                              {firstLine.join(', ')}
-                            </div>
-                            {secondLine.length > 0 && (
-                              <div>
-                                {secondLine.join(', ')}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </span>
-                </div>
-              )}
+              {/* 복리후생 */}
+              {post.benefits &&
+                (() => {
+                  const benefits = getBenefitDisplayNames(post.benefits || {});
+                  return benefits.length > 0;
+                })() && (
+                  <div
+                    className={variant === 'admin-list' ? 'col-span-full' : getInfoItemClasses()}
+                  >
+                    <span className="flex items-start">
+                      <span className="mr-2 mt-0.5">🎁</span>
+                      <div className="break-words leading-relaxed">
+                        {(() => {
+                          const benefits = getBenefitDisplayNames(post.benefits || {});
+                          const midPoint = Math.ceil(benefits.length / 2);
+                          const firstLine = benefits.slice(0, midPoint);
+                          const secondLine = benefits.slice(midPoint);
+
+                          return (
+                            <>
+                              <div className="mb-0.5">{firstLine.join(', ')}</div>
+                              {secondLine.length > 0 && <div>{secondLine.join(', ')}</div>}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </span>
+                  </div>
+                )}
             </div>
 
             {/* 시간대 정보 */}
@@ -871,9 +979,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
           {/* 액션 버튼 영역 - admin-list가 아닌 경우만 여기에 표시 */}
           {renderActions && variant !== 'admin-list' && (
-            <div className="">
-              {renderActions(post)}
-            </div>
+            <div className="">{renderActions(post)}</div>
           )}
         </div>
 
@@ -900,9 +1006,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
         {variant === 'admin-list' && (
           <div className="mt-3 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
             <span>생성: {formatDateDisplay(post.createdAt)}</span>
-            {post.updatedAt && (
-              <span>수정: {formatDateDisplay(post.updatedAt)}</span>
-            )}
+            {post.updatedAt && <span>수정: {formatDateDisplay(post.updatedAt)}</span>}
           </div>
         )}
 

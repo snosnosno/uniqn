@@ -106,48 +106,47 @@ export const useChipBalance = () => {
   /**
    * 최근 거래 내역 조회
    */
-  const fetchRecentTransactions = useCallback(async (limitCount: number = 10) => {
-    if (!currentUser) {
-      return;
-    }
+  const fetchRecentTransactions = useCallback(
+    async (limitCount: number = 10) => {
+      if (!currentUser) {
+        return;
+      }
 
-    try {
-      const transactionsRef = collection(db, 'users', currentUser.uid, 'chipTransactions');
-      const q = query(
-        transactionsRef,
-        orderBy('createdAt', 'desc'),
-        limit(limitCount)
-      );
+      try {
+        const transactionsRef = collection(db, 'users', currentUser.uid, 'chipTransactions');
+        const q = query(transactionsRef, orderBy('createdAt', 'desc'), limit(limitCount));
 
-      const snapshot = await getDocs(q);
-      const transactions: ChipTransactionView[] = snapshot.docs.map((docSnapshot) => {
-        const data = docSnapshot.data();
-        return {
-          id: docSnapshot.id,
-          userId: data.userId,
-          type: data.type,
-          chipType: data.chipType,
-          amount: data.amount,
-          balanceBefore: data.balanceBefore || 0,
-          balanceAfter: data.balanceAfter || 0,
-          description: data.description || `${data.type} 거래`,
-          metadata: {
-            packageId: data.packageId,
-            transactionId: data.orderId || data.paymentKey,
-            postingId: data.postingId,
-            refundId: data.refundId,
-          },
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-        };
-      });
+        const snapshot = await getDocs(q);
+        const transactions: ChipTransactionView[] = snapshot.docs.map((docSnapshot) => {
+          const data = docSnapshot.data();
+          return {
+            id: docSnapshot.id,
+            userId: data.userId,
+            type: data.type,
+            chipType: data.chipType,
+            amount: data.amount,
+            balanceBefore: data.balanceBefore || 0,
+            balanceAfter: data.balanceAfter || 0,
+            description: data.description || `${data.type} 거래`,
+            metadata: {
+              packageId: data.packageId,
+              transactionId: data.orderId || data.paymentKey,
+              postingId: data.postingId,
+              refundId: data.refundId,
+            },
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          };
+        });
 
-      setRecentTransactions(transactions);
-    } catch (err) {
-      logger.error('거래 내역 조회 실패', err instanceof Error ? err : undefined, {
-        operation: 'fetchRecentTransactions',
-      });
-    }
-  }, [currentUser]);
+        setRecentTransactions(transactions);
+      } catch (err) {
+        logger.error('거래 내역 조회 실패', err instanceof Error ? err : undefined, {
+          operation: 'fetchRecentTransactions',
+        });
+      }
+    },
+    [currentUser]
+  );
 
   /**
    * 초기 거래 내역 로드
@@ -161,49 +160,55 @@ export const useChipBalance = () => {
   /**
    * 칩 사용 가능 여부 확인
    */
-  const canUseChips = useCallback((requiredChips: number): boolean => {
-    if (!chipBalance) return false;
-    return chipBalance.totalChips >= requiredChips;
-  }, [chipBalance]);
+  const canUseChips = useCallback(
+    (requiredChips: number): boolean => {
+      if (!chipBalance) return false;
+      return chipBalance.totalChips >= requiredChips;
+    },
+    [chipBalance]
+  );
 
   /**
    * 칩 사용 시뮬레이션 (실제 차감 없이 계산만)
    *
    * 우선순위: 파란칩 → 빨간칩
    */
-  const simulateChipUsage = useCallback((amount: number) => {
-    if (!chipBalance) {
+  const simulateChipUsage = useCallback(
+    (amount: number) => {
+      if (!chipBalance) {
+        return {
+          canUse: false,
+          blueChipsUsed: 0,
+          redChipsUsed: 0,
+          remaining: 0,
+        };
+      }
+
+      let remainingAmount = amount;
+      let blueChipsUsed = 0;
+      let redChipsUsed = 0;
+
+      // 1. 파란칩 사용
+      if (chipBalance.blueChips > 0 && remainingAmount > 0) {
+        blueChipsUsed = Math.min(chipBalance.blueChips, remainingAmount);
+        remainingAmount -= blueChipsUsed;
+      }
+
+      // 2. 빨간칩 사용
+      if (chipBalance.redChips > 0 && remainingAmount > 0) {
+        redChipsUsed = Math.min(chipBalance.redChips, remainingAmount);
+        remainingAmount -= redChipsUsed;
+      }
+
       return {
-        canUse: false,
-        blueChipsUsed: 0,
-        redChipsUsed: 0,
-        remaining: 0,
+        canUse: remainingAmount === 0,
+        blueChipsUsed,
+        redChipsUsed,
+        remaining: remainingAmount,
       };
-    }
-
-    let remainingAmount = amount;
-    let blueChipsUsed = 0;
-    let redChipsUsed = 0;
-
-    // 1. 파란칩 사용
-    if (chipBalance.blueChips > 0 && remainingAmount > 0) {
-      blueChipsUsed = Math.min(chipBalance.blueChips, remainingAmount);
-      remainingAmount -= blueChipsUsed;
-    }
-
-    // 2. 빨간칩 사용
-    if (chipBalance.redChips > 0 && remainingAmount > 0) {
-      redChipsUsed = Math.min(chipBalance.redChips, remainingAmount);
-      remainingAmount -= redChipsUsed;
-    }
-
-    return {
-      canUse: remainingAmount === 0,
-      blueChipsUsed,
-      redChipsUsed,
-      remaining: remainingAmount,
-    };
-  }, [chipBalance]);
+    },
+    [chipBalance]
+  );
 
   return {
     chipBalance,

@@ -8,6 +8,7 @@
 **After**: 6개 파일 (메인 컨테이너 + 4개 섹션 + 1개 서브컴포넌트)
 
 **주요 개선사항**:
+
 - ✅ 테스트 가능성 향상 (Props Grouping 패턴)
 - ✅ 재사용성 향상 (섹션별 독립 컴포넌트)
 - ✅ 유지보수성 향상 (파일당 평균 ~200줄)
@@ -47,12 +48,7 @@ function MyPage() {
     await saveJobPosting(formData);
   };
 
-  return (
-    <JobPostingForm
-      onSubmit={handleSubmit}
-      isSubmitting={false}
-    />
-  );
+  return <JobPostingForm onSubmit={handleSubmit} isSubmitting={false} />;
 }
 ```
 
@@ -79,11 +75,13 @@ function CustomSalaryForm() {
 ### Container/Presenter 패턴
 
 **Container** (`index.tsx`):
+
 - 상태 관리 (`useJobPostingForm`, `useState`)
 - 비즈니스 로직 (템플릿 관리, 검증)
 - Props 준비 (`useMemo`)
 
 **Presenter** (섹션 컴포넌트):
+
 - UI 렌더링
 - Props Grouping (data, handlers, validation)
 - React.memo 최적화
@@ -115,6 +113,7 @@ interface SectionProps {
 ### Zod 스키마 기반 검증
 
 **통합 스키마** (`schemas/jobPosting/index.ts`):
+
 ```tsx
 import { jobPostingFormSchema } from '../../../schemas/jobPosting';
 
@@ -128,6 +127,7 @@ try {
 ```
 
 **섹션별 스키마**:
+
 - `basicInfo.schema.ts` - 기본 정보
 - `salary.schema.ts` - 급여 정보
 - `dateRequirements.schema.ts` - 날짜별 요구사항
@@ -140,15 +140,15 @@ try {
 ```tsx
 import { xssValidation } from '../../../utils/validation/xssProtection';
 
-z.string()
-  .refine(xssValidation, {
-    message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)'
-  })
+z.string().refine(xssValidation, {
+  message: '위험한 문자열이 포함되어 있습니다 (XSS 차단)',
+});
 ```
 
 ## ⚡ 성능 최적화
 
 ### 1. React.memo
+
 모든 섹션 컴포넌트에 적용:
 
 ```tsx
@@ -158,24 +158,27 @@ const BasicInfoSection = React.memo(({ data, handlers, validation }) => {
 ```
 
 ### 2. useMemo
+
 Props 객체 메모이제이션:
 
 ```tsx
-const basicInfoData = React.useMemo(() => ({
-  title: formData.title,
-  location: formData.location
-}), [formData.title, formData.location]);
+const basicInfoData = React.useMemo(
+  () => ({
+    title: formData.title,
+    location: formData.location,
+  }),
+  [formData.title, formData.location]
+);
 ```
 
 ### 3. 조건부 렌더링
+
 필요한 UI만 렌더링:
 
 ```tsx
-{data.useRoleSalary ? (
-  <RoleSalaryManager />
-) : (
-  <BasicSalaryInput />
-)}
+{
+  data.useRoleSalary ? <RoleSalaryManager /> : <BasicSalaryInput />;
+}
 ```
 
 ## 🎨 다크모드
@@ -200,7 +203,7 @@ describe('BasicInfoSection', () => {
   it('renders correctly with data', () => {
     const props = {
       data: { title: 'Test', location: '강남' },
-      handlers: { onFormChange: jest.fn() }
+      handlers: { onFormChange: jest.fn() },
     };
 
     render(<BasicInfoSection {...props} />);
@@ -223,9 +226,11 @@ describe('JobPostingForm', () => {
     await userEvent.click(screen.getByText('공고 등록'));
 
     // 검증
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-      title: '강남 토너먼트'
-    }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '강남 토너먼트',
+      })
+    );
   });
 });
 ```
@@ -244,16 +249,19 @@ interface JobPostingFormProps {
 ## 🔗 관련 문서
 
 ### 코드
+
 - [섹션 컴포넌트 가이드](./sections/README.md)
 - [SalarySection 재사용 가이드](./sections/SalarySection/README.md)
 
 ### 타입 정의
+
 - [basicInfoProps.ts](../../../types/jobPosting/basicInfoProps.ts)
 - [salaryProps.ts](../../../types/jobPosting/salaryProps.ts)
 - [dateRequirementsProps.ts](../../../types/jobPosting/dateRequirementsProps.ts)
 - [preQuestionsProps.ts](../../../types/jobPosting/preQuestionsProps.ts)
 
 ### Zod 스키마
+
 - [통합 스키마](../../../schemas/jobPosting/index.ts)
 - [XSS 방지](../../../utils/validation/xssProtection.ts)
 
@@ -262,10 +270,11 @@ interface JobPostingFormProps {
 **현재 상태**: 비활성화 (`USE_REFACTORED_JOB_FORM: false`)
 
 **활성화 방법**:
+
 ```tsx
 // app2/src/config/features.ts
 export const FEATURE_FLAGS = {
-  USE_REFACTORED_JOB_FORM: true,  // false → true로 변경
+  USE_REFACTORED_JOB_FORM: true, // false → true로 변경
 };
 ```
 
@@ -275,13 +284,13 @@ export const FEATURE_FLAGS = {
 
 ### Before vs After
 
-| 지표 | Before | After | 개선율 |
-|------|--------|-------|--------|
-| 파일 크기 | 988줄 | 평균 200줄 | -80% |
-| 테스트 가능성 | 낮음 | 높음 | +300% |
-| 재사용성 | 0% | 100% | +∞ |
-| TypeScript 에러 | N/A | 0개 | 100% |
-| ESLint 에러 | N/A | 0개 | 100% |
+| 지표            | Before | After      | 개선율 |
+| --------------- | ------ | ---------- | ------ |
+| 파일 크기       | 988줄  | 평균 200줄 | -80%   |
+| 테스트 가능성   | 낮음   | 높음       | +300%  |
+| 재사용성        | 0%     | 100%       | +∞     |
+| TypeScript 에러 | N/A    | 0개        | 100%   |
+| ESLint 에러     | N/A    | 0개        | 100%   |
 
 ### 품질 지표
 

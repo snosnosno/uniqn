@@ -32,16 +32,8 @@ interface UseGroupByDateReturn<T> {
   getExpandedCount: () => number;
 }
 
-export const useGroupByDate = <T>(
-  options: GroupByDateOptions<T>
-): UseGroupByDateReturn<T> => {
-  const {
-    data,
-    getDateKey,
-    sortItems,
-    storageKey,
-    defaultExpanded = false
-  } = options;
+export const useGroupByDate = <T>(options: GroupByDateOptions<T>): UseGroupByDateReturn<T> => {
+  const { data, getDateKey, sortItems, storageKey, defaultExpanded = false } = options;
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const isInitializedRef = useRef(false);
@@ -58,7 +50,11 @@ export const useGroupByDate = <T>(
           setExpandedKeys(new Set(expandedArray));
           isInitializedRef.current = true;
         } catch (error) {
-          logger.error('확장 상태 복원 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useGroupByDate' });
+          logger.error(
+            '확장 상태 복원 오류:',
+            error instanceof Error ? error : new Error(String(error)),
+            { component: 'useGroupByDate' }
+          );
           // 기본값 설정
           if (defaultExpanded && data.length > 0) {
             const allKeys = Array.from(new Set(data.map(getDateKey)));
@@ -87,21 +83,24 @@ export const useGroupByDate = <T>(
   // 그룹화된 데이터 생성
   const groupedData = useMemo((): GroupedData<T> => {
     // 데이터를 키별로 그룹화
-    const grouped = data.reduce((acc, item) => {
-      const key = getDateKey(item);
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      const items = acc[key];
-      if (items) {
-        items.push(item);
-      }
-      return acc;
-    }, {} as Record<string, T[]>);
+    const grouped = data.reduce(
+      (acc, item) => {
+        const key = getDateKey(item);
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        const items = acc[key];
+        if (items) {
+          items.push(item);
+        }
+        return acc;
+      },
+      {} as Record<string, T[]>
+    );
 
     // 각 그룹 내에서 정렬 (제공된 정렬 함수 사용)
     if (sortItems) {
-      Object.keys(grouped).forEach(key => {
+      Object.keys(grouped).forEach((key) => {
         const items = grouped[key];
         if (items) {
           items.sort(sortItems);
@@ -114,7 +113,7 @@ export const useGroupByDate = <T>(
       // "날짜 미정" 또는 비슷한 특수 값을 맨 뒤로
       if (a.includes('미정') || a.includes('없음')) return 1;
       if (b.includes('미정') || b.includes('없음')) return -1;
-      
+
       // 날짜 형식 문자열 비교
       return a.localeCompare(b);
     });
@@ -133,7 +132,7 @@ export const useGroupByDate = <T>(
       newExpandedKeys.add(key);
     }
     setExpandedKeys(newExpandedKeys);
-    
+
     // localStorage에 상태 저장
     if (storageKey) {
       localStorage.setItem(storageKey, JSON.stringify(Array.from(newExpandedKeys)));
@@ -144,7 +143,7 @@ export const useGroupByDate = <T>(
   const expandAll = () => {
     const allKeys = new Set(groupedData.sortedKeys);
     setExpandedKeys(allKeys);
-    
+
     if (storageKey) {
       localStorage.setItem(storageKey, JSON.stringify(Array.from(allKeys)));
     }
@@ -153,7 +152,7 @@ export const useGroupByDate = <T>(
   // 모든 그룹 축소
   const collapseAll = () => {
     setExpandedKeys(new Set());
-    
+
     if (storageKey) {
       localStorage.setItem(storageKey, JSON.stringify([]));
     }
@@ -182,18 +181,18 @@ export const useGroupByDate = <T>(
   return {
     // 그룹화된 데이터
     groupedData,
-    
+
     // 확장 상태
     expandedKeys,
     isExpanded,
     toggleExpansion,
     expandAll,
     collapseAll,
-    
+
     // 유틸리티
     getItemCount,
     getTotalItems,
-    getExpandedCount
+    getExpandedCount,
   };
 };
 

@@ -32,7 +32,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
   multiSelectMode = false,
   onMultiSelectToggle,
   selectedCount = 0,
-  onBulkActions
+  onBulkActions,
 }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
@@ -58,13 +58,14 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       searchTerm: '',
       selectedDate: 'all',
       selectedRole: 'all',
-      selectedStatus: 'all'
+      selectedStatus: 'all',
     });
   };
 
-  const hasActiveFilters = filters.searchTerm || 
-    filters.selectedDate !== 'all' || 
-    filters.selectedRole !== 'all' || 
+  const hasActiveFilters =
+    filters.searchTerm ||
+    filters.selectedDate !== 'all' ||
+    filters.selectedRole !== 'all' ||
     filters.selectedStatus !== 'all';
 
   return (
@@ -72,9 +73,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {/* 상단 통계 및 모드 전환 */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600 dark:text-gray-300">
-          <div className="font-medium">
-            총 {totalStaffCount}명의 스태프
-          </div>
+          <div className="font-medium">총 {totalStaffCount}명의 스태프</div>
           {hasActiveFilters && filteredStaffCount !== totalStaffCount && (
             <div className="text-blue-600 dark:text-blue-400">
               필터링된 결과: {filteredStaffCount}명
@@ -86,7 +85,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {/* 다중 선택 모드 토글 */}
           {onMultiSelectToggle && (
@@ -101,16 +100,23 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
               {multiSelectMode ? '선택 모드' : '선택 모드'}
             </button>
           )}
-          
+
           {/* 필터 토글 버튼 */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2 rounded-lg transition-colors ${
-              showFilters ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              showFilters
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"
+              />
             </svg>
           </button>
         </div>
@@ -119,8 +125,18 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {/* 검색바 */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            className="h-5 w-5 text-gray-400 dark:text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
         </div>
         <input
@@ -135,8 +151,18 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             onClick={() => handleSearchChange('')}
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
           >
-            <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-5 w-5 text-gray-400 dark:text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         )}
@@ -161,14 +187,16 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           <div className="grid grid-cols-1 gap-4">
             {/* 날짜 필터 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">날짜</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                날짜
+              </label>
               <select
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedDate}
                 onChange={(e) => handleDateChange(e.target.value)}
               >
                 <option value="all">모든 날짜</option>
-                {availableDates.map(date => (
+                {availableDates.map((date) => (
                   <option key={date} value={date}>
                     {date === '날짜 미정' ? '날짜 미정' : date}
                   </option>
@@ -178,14 +206,16 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
 
             {/* 역할 필터 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">역할</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                역할
+              </label>
               <select
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedRole}
                 onChange={(e) => handleRoleChange(e.target.value)}
               >
                 <option value="all">모든 역할</option>
-                {availableRoles.map(role => (
+                {availableRoles.map((role) => (
                   <option key={role} value={role}>
                     {role}
                   </option>
@@ -195,7 +225,9 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
 
             {/* 상태 필터 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">출석 상태</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                출석 상태
+              </label>
               <select
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedStatus}
@@ -240,13 +272,18 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             선택된 {selectedCount}명 일괄 작업
           </button>
         )}
-        
+
         <button
           onClick={onQRCodeClick}
           className="w-full py-3 bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 rounded-xl font-medium transition-colors flex items-center justify-center space-x-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h-4.01M12 12V8H8v4h4z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h-4.01M12 12V8H8v4h4z"
+            />
           </svg>
           <span>{t('attendance.actions.generateQR')}</span>
         </button>

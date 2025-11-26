@@ -20,11 +20,7 @@ describe('staffDataTransformer', () => {
       const workLogs = new Map<string, WorkLog>();
       const jobPostings = new Map<string, JobPosting>();
 
-      const result = transformWorkLogsToStaffData(
-        workLogs,
-        jobPostings,
-        'event-1'
-      );
+      const result = transformWorkLogsToStaffData(workLogs, jobPostings, 'event-1');
 
       expect(result).toEqual([]);
     });
@@ -80,11 +76,7 @@ describe('staffDataTransformer', () => {
         updatedAt: Timestamp.now(),
       } as WorkLog);
 
-      const result = transformWorkLogsToStaffData(
-        workLogs,
-        jobPostings,
-        'event-1'
-      );
+      const result = transformWorkLogsToStaffData(workLogs, jobPostings, 'event-1');
 
       expect(result).toHaveLength(1);
       expect(result[0]?.staffId).toBe('user-1');
@@ -110,11 +102,7 @@ describe('staffDataTransformer', () => {
         updatedAt: Timestamp.now(),
       } as any);
 
-      const result = transformWorkLogsToStaffData(
-        workLogs,
-        jobPostings,
-        'event-1'
-      );
+      const result = transformWorkLogsToStaffData(workLogs, jobPostings, 'event-1');
 
       expect(result).toHaveLength(0);
     });
@@ -143,11 +131,7 @@ describe('staffDataTransformer', () => {
         updatedAt: Timestamp.now(),
       } as WorkLog);
 
-      const result = transformWorkLogsToStaffData(
-        workLogs,
-        jobPostings,
-        'event-1'
-      );
+      const result = transformWorkLogsToStaffData(workLogs, jobPostings, 'event-1');
 
       expect(result[0]?.userId).toBe('user-123');
       expect(result[0]?.staffId).toBe('user-123_1');
@@ -179,11 +163,7 @@ describe('staffDataTransformer', () => {
         updatedAt: Timestamp.now(),
       } as WorkLog);
 
-      const result = transformWorkLogsToStaffData(
-        workLogs,
-        jobPostings,
-        'event-1'
-      );
+      const result = transformWorkLogsToStaffData(workLogs, jobPostings, 'event-1');
 
       expect(result[0]?.phone).toBe('010-1234-5678');
       expect(result[0]).not.toHaveProperty('email');
@@ -254,9 +234,7 @@ describe('staffDataTransformer', () => {
 
     it('날짜가 포함된 staffId는 처리하지 않음', () => {
       // 이 함수는 날짜 접미사를 제거하지 않음
-      expect(extractUserIdFromStaffId('user-123_2025-02-04')).toBe(
-        'user-123_2025-02-04'
-      );
+      expect(extractUserIdFromStaffId('user-123_2025-02-04')).toBe('user-123_2025-02-04');
     });
   });
 

@@ -10,15 +10,11 @@ import {
   addMonths,
   subMonths,
   startOfWeek,
-  endOfWeek
+  endOfWeek,
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import {
-  ScheduleEvent,
-  CalendarView,
-  getScheduleColors,
-} from '../../types/schedule';
+import { ScheduleEvent, CalendarView, getScheduleColors } from '../../types/schedule';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface LightweightCalendarProps {
@@ -33,7 +29,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
   schedules,
   currentView,
   onEventClick,
-  onDateClick
+  onDateClick,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const { isDark } = useTheme();
@@ -45,31 +41,31 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
     const monthEnd = endOfMonth(currentDate);
     const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // 일요일 시작
     const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    
+
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentDate]);
 
   // 날짜별 이벤트 그룹화
   const eventsByDate = useMemo(() => {
     const map = new Map<string, ScheduleEvent[]>();
-    
-    schedules.forEach(schedule => {
+
+    schedules.forEach((schedule) => {
       const dateKey = schedule.date; // YYYY-MM-DD 형식
       const events = map.get(dateKey) || [];
       events.push(schedule);
       map.set(dateKey, events);
     });
-    
+
     return map;
   }, [schedules]);
 
   // 이전/다음 월 이동
   const handlePrevMonth = () => {
-    setCurrentDate(prev => subMonths(prev, 1));
+    setCurrentDate((prev) => subMonths(prev, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(prev => addMonths(prev, 1));
+    setCurrentDate((prev) => addMonths(prev, 1));
   };
 
   // 오늘 날짜로 이동 (제거됨)
@@ -97,17 +93,20 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
       const date = event.startTime.toDate();
       return format(date, 'HH:mm');
     }
-    
+
     // 2. assignedTime이 문자열로 있는 경우 (applications 데이터)
     const eventWithAssignedTime = event as ScheduleEvent & { assignedTime?: string };
-    if (eventWithAssignedTime.assignedTime && typeof eventWithAssignedTime.assignedTime === 'string') {
+    if (
+      eventWithAssignedTime.assignedTime &&
+      typeof eventWithAssignedTime.assignedTime === 'string'
+    ) {
       // "09:00-16:00" 형식에서 시작 시간만 추출
       const timeMatch = eventWithAssignedTime.assignedTime.match(/(\d{2}:\d{2})/);
       if (timeMatch && timeMatch[1]) {
         return timeMatch[1];
       }
     }
-    
+
     // 3. 역할 정보가 있으면 역할 표시 (시간이 없는 경우)
     if (event.role) {
       // 역할이 시간 형식인 경우 (예: "09:00-16:00")
@@ -116,13 +115,13 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
         return roleTimeMatch[1];
       }
     }
-    
+
     // actualStartTime 체크 제거 - QR 기능 강화 시 재활성화 예정
     // if (event.actualStartTime && 'toDate' in event.actualStartTime) {
     //   const date = event.actualStartTime.toDate();
     //   return format(date, 'HH:mm');
     // }
-    
+
     return '미정';
   };
 
@@ -162,14 +161,16 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
                 ${isSelectedDay ? 'bg-blue-50 dark:bg-blue-900/30' : ''}
               `}
             >
-              <div className={`
+              <div
+                className={`
                 text-sm font-semibold mb-1
                 ${dayOfWeek === 0 ? 'text-red-500 dark:text-red-400' : dayOfWeek === 6 ? 'text-blue-500 dark:text-blue-400' : ''}
                 ${isSelectedDay ? 'text-white bg-blue-600 dark:bg-blue-700 rounded-full w-6 h-6 flex items-center justify-center' : ''}
-              `}>
+              `}
+              >
                 {format(day, 'd')}
               </div>
-              
+
               {/* 이벤트 목록 */}
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event, _eventIdx) => {
@@ -182,7 +183,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
                       style={{
                         backgroundColor: colors.backgroundColor,
                         borderLeft: `3px solid ${colors.borderColor}`,
-                        color: colors.textColor
+                        color: colors.textColor,
                       }}
                       title={`${event.eventName} ${formatEventTime(event)}`}
                     >
@@ -191,7 +192,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
                     </div>
                   );
                 })}
-                
+
                 {dayEvents.length > 3 && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
                     +{dayEvents.length - 3} 더보기
@@ -210,7 +211,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
     const _weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
     const _weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
     // const weekDays = eachDayOfInterval({ start: _weekStart, end: _weekEnd });
-    
+
     return (
       <div className="text-center py-20 text-gray-500 dark:text-gray-400 dark:text-gray-500">
         주간 뷰는 준비 중입니다.
@@ -266,11 +267,9 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
           </button>
           */}
         </div>
-        
-        <h2 className="text-xl font-bold">
-          {format(currentDate, 'yyyy년 M월', { locale: ko })}
-        </h2>
-        
+
+        <h2 className="text-xl font-bold">{format(currentDate, 'yyyy년 M월', { locale: ko })}</h2>
+
         {/* 월간 뷰만 사용 - 주간/일간 뷰 제거됨
         <div className="flex space-x-2">
           <button
@@ -289,51 +288,49 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
         </div>
         */}
       </div>
-      
+
       {/* 캘린더 콘텐츠 */}
-      <div className="p-4">
-        {renderCalendarContent()}
-      </div>
-      
+      <div className="p-4">{renderCalendarContent()}</div>
+
       {/* 범례 */}
       <div className="p-4 border-t">
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded" 
-              style={{ 
-                backgroundColor: SCHEDULE_COLORS.applied.backgroundColor, 
-                border: `1px solid ${SCHEDULE_COLORS.applied.borderColor}` 
+            <div
+              className="w-4 h-4 rounded"
+              style={{
+                backgroundColor: SCHEDULE_COLORS.applied.backgroundColor,
+                border: `1px solid ${SCHEDULE_COLORS.applied.borderColor}`,
               }}
             />
             <span>지원중</span>
           </div>
           <div className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded" 
-              style={{ 
-                backgroundColor: SCHEDULE_COLORS.confirmed.backgroundColor, 
-                border: `1px solid ${SCHEDULE_COLORS.confirmed.borderColor}` 
+            <div
+              className="w-4 h-4 rounded"
+              style={{
+                backgroundColor: SCHEDULE_COLORS.confirmed.backgroundColor,
+                border: `1px solid ${SCHEDULE_COLORS.confirmed.borderColor}`,
               }}
             />
             <span>확정</span>
           </div>
           <div className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded" 
-              style={{ 
-                backgroundColor: SCHEDULE_COLORS.completed.backgroundColor, 
-                border: `1px solid ${SCHEDULE_COLORS.completed.borderColor}` 
+            <div
+              className="w-4 h-4 rounded"
+              style={{
+                backgroundColor: SCHEDULE_COLORS.completed.backgroundColor,
+                border: `1px solid ${SCHEDULE_COLORS.completed.borderColor}`,
               }}
             />
             <span>완료</span>
           </div>
           <div className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded" 
-              style={{ 
-                backgroundColor: SCHEDULE_COLORS.cancelled.backgroundColor, 
-                border: `1px solid ${SCHEDULE_COLORS.cancelled.borderColor}` 
+            <div
+              className="w-4 h-4 rounded"
+              style={{
+                backgroundColor: SCHEDULE_COLORS.cancelled.backgroundColor,
+                border: `1px solid ${SCHEDULE_COLORS.cancelled.borderColor}`,
               }}
             />
             <span>취소</span>

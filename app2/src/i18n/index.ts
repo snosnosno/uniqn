@@ -7,12 +7,12 @@ const resources = {
       // 기본 번역 키들
       qrScannerModal: {
         title: 'QR 스캐너',
-        scanMessage: 'QR 코드를 스캔해주세요'
+        scanMessage: 'QR 코드를 스캔해주세요',
       },
       announcements: {
         title: '공지사항',
         placeholder: '공지사항을 입력하세요',
-        buttonPost: '게시'
+        buttonPost: '게시',
       },
       // 공고 공지 기능
       jobPosting: {
@@ -32,13 +32,13 @@ const resources = {
           sending: '전송 중...',
           success: '공지가 {{count}}명에게 전송되었습니다.',
           error: '공지 전송에 실패했습니다.',
-          noStaff: '확정된 스태프가 없습니다.'
+          noStaff: '확정된 스태프가 없습니다.',
         },
         info: {
           expand: '정보 펼치기',
           collapse: '정보 접기',
-          section: '공고 상세 정보'
-        }
+          section: '공고 상세 정보',
+        },
       },
       notifications: {
         filters: {
@@ -47,29 +47,27 @@ const resources = {
           system: '시스템',
           work: '근무',
           schedule: '일정',
-          finance: '급여'
-        }
+          finance: '급여',
+        },
       },
       common: {
         status: {
           confirmed: '확정됨',
           pending: '대기 중',
-          rejected: '거절됨'
-        }
-      }
-    }
-  }
+          rejected: '거절됨',
+        },
+      },
+    },
+  },
 };
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: 'ko',
-    fallbackLng: 'ko',
-    interpolation: {
-      escapeValue: false
-    }
-  });
+i18n.use(initReactI18next).init({
+  resources,
+  lng: 'ko',
+  fallbackLng: 'ko',
+  interpolation: {
+    escapeValue: false,
+  },
+});
 
 export default i18n;

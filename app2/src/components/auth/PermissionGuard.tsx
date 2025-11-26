@@ -8,17 +8,17 @@ import { useAuth } from '../../contexts/AuthContext';
  * 권한 기반 접근 제어 컴포넌트
  * 사용자의 권한을 확인하여 접근을 허용하거나 차단합니다
  */
-const PermissionGuard: React.FC<PermissionGuardProps> = ({ 
-  resource, 
-  action, 
+const PermissionGuard: React.FC<PermissionGuardProps> = ({
+  resource,
+  action,
   targetUserId,
   fallback,
-  children 
+  children,
 }) => {
   const { checkPermission } = usePermissions();
   const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
-  
+
   // 로딩 중인 경우
   if (loading) {
     return (
@@ -27,27 +27,29 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
       </div>
     );
   }
-  
+
   // 로그인하지 않은 경우
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
-  
+
   // 권한 확인
   const hasPermission = checkPermission(resource, action, targetUserId);
-  
+
   if (!hasPermission) {
     // 사용자 지정 fallback이 있는 경우 사용
     if (fallback) {
       return <>{fallback}</>;
     }
-    
+
     // 기본 접근 거부 페이지
     return (
       <div className="container mx-auto p-4">
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6 text-center">
           <div className="text-red-600 dark:text-red-400 text-6xl mb-4">🚫</div>
-          <h2 className="text-2xl font-bold text-red-800 dark:text-red-300 mb-2">접근 권한이 없습니다</h2>
+          <h2 className="text-2xl font-bold text-red-800 dark:text-red-300 mb-2">
+            접근 권한이 없습니다
+          </h2>
           <p className="text-red-600 dark:text-red-400 mb-4">
             이 페이지에 접근할 권한이 없습니다. 관리자에게 문의하세요.
           </p>
@@ -67,7 +69,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
       </div>
     );
   }
-  
+
   return <>{children}</>;
 };
 
@@ -79,12 +81,12 @@ export const ConditionalRender: React.FC<PermissionGuardProps> = ({
   resource,
   action,
   targetUserId,
-  children
+  children,
 }) => {
   const { checkPermission } = usePermissions();
-  
+
   const hasPermission = checkPermission(resource, action, targetUserId);
-  
+
   return hasPermission ? <>{children}</> : null;
 };
 
@@ -100,14 +102,14 @@ interface RoleGuardProps {
 export const RoleGuard: React.FC<RoleGuardProps> = ({
   allowedRoles,
   children,
-  fallback = null
+  fallback = null,
 }) => {
   const { permissions } = usePermissions();
-  
+
   if (!permissions || !allowedRoles.includes(permissions.role)) {
     return <>{fallback}</>;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -123,35 +125,32 @@ interface JobPostingAccessGuardProps {
 export const JobPostingAccessGuard: React.FC<JobPostingAccessGuardProps> = ({
   requireManagement = false,
   children,
-  fallback
+  fallback,
 }) => {
   const { checkPermission } = usePermissions();
-  
+
   const canView = checkPermission('jobPostings', 'view');
   const canManage = checkPermission('jobPostings', 'manageApplicants');
-  
-  const hasAccess = requireManagement ? (canView && canManage) : canView;
-  
+
+  const hasAccess = requireManagement ? canView && canManage : canView;
+
   if (!hasAccess) {
     if (fallback) {
       return <>{fallback}</>;
     }
-    
+
     return (
       <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
         <div className="text-yellow-800 dark:text-yellow-300">
           <p className="font-medium text-yellow-900 dark:text-yellow-200">접근 제한</p>
           <p className="text-sm text-yellow-800 dark:text-yellow-300">
-            {requireManagement
-              ? '공고 관리 권한이 필요합니다.'
-              : '공고 조회 권한이 필요합니다.'
-            }
+            {requireManagement ? '공고 관리 권한이 필요합니다.' : '공고 조회 권한이 필요합니다.'}
           </p>
         </div>
       </div>
     );
   }
-  
+
   return <>{children}</>;
 };
 

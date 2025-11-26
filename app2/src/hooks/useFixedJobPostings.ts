@@ -115,11 +115,9 @@ export function useFixedJobPostings(): UseFixedJobPostingsReturn {
         }
       },
       (err) => {
-        logger.error(
-          'useFixedJobPostings: Firestore 구독 에러',
-          err,
-          { component: 'useFixedJobPostings' }
-        );
+        logger.error('useFixedJobPostings: Firestore 구독 에러', err, {
+          component: 'useFixedJobPostings',
+        });
         setError(err);
         setLoading(false);
       }

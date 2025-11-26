@@ -12,7 +12,7 @@ import {
   getFirebaseErrorMessage,
   isPermissionDenied,
   handleFirebaseError,
-  FirebaseError
+  FirebaseError,
 } from '../firebaseErrors';
 import { logger } from '../logger';
 
@@ -123,18 +123,14 @@ describe('Firebase Error Utils', () => {
 
       const message = handleFirebaseError(error, context, 'ko');
 
-      expect(logger.error).toHaveBeenCalledWith(
-        'Firebase Error',
-        expect.any(Error),
-        {
-          component: 'firebaseErrors',
-          data: {
-            code: 'permission-denied',
-            message: 'Permission denied',
-            context,
-          },
-        }
-      );
+      expect(logger.error).toHaveBeenCalledWith('Firebase Error', expect.any(Error), {
+        component: 'firebaseErrors',
+        data: {
+          code: 'permission-denied',
+          message: 'Permission denied',
+          context,
+        },
+      });
       expect(message).toBe('권한이 없습니다. 관리자에게 문의하세요.');
     });
 
@@ -148,18 +144,14 @@ describe('Firebase Error Utils', () => {
 
       const message = handleFirebaseError(error, context, 'en');
 
-      expect(logger.error).toHaveBeenCalledWith(
-        'Firebase Error',
-        expect.any(Error),
-        {
-          component: 'firebaseErrors',
-          data: {
-            code: 'not-found',
-            message: 'Document not found',
-            context,
-          },
-        }
-      );
+      expect(logger.error).toHaveBeenCalledWith('Firebase Error', expect.any(Error), {
+        component: 'firebaseErrors',
+        data: {
+          code: 'not-found',
+          message: 'Document not found',
+          context,
+        },
+      });
       expect(message).toBe('Document not found.');
     });
 
@@ -183,7 +175,10 @@ describe('Firebase Error Utils', () => {
         { code: 'not-found', expectedMessage: '요청한 데이터를 찾을 수 없습니다.' },
         { code: 'unauthenticated', expectedMessage: '로그인이 필요합니다.' },
         { code: 'already-exists', expectedMessage: '이미 존재하는 데이터입니다.' },
-        { code: 'resource-exhausted', expectedMessage: '요청 한도를 초과했습니다. 잠시 후 다시 시도하세요.' },
+        {
+          code: 'resource-exhausted',
+          expectedMessage: '요청 한도를 초과했습니다. 잠시 후 다시 시도하세요.',
+        },
         { code: 'cancelled', expectedMessage: '작업이 취소되었습니다.' },
         { code: 'unknown', expectedMessage: '알 수 없는 오류가 발생했습니다.' },
       ];
@@ -203,7 +198,10 @@ describe('Firebase Error Utils', () => {
         { code: 'not-found', expectedMessage: 'Document not found.' },
         { code: 'unauthenticated', expectedMessage: 'Authentication required.' },
         { code: 'already-exists', expectedMessage: 'Document already exists.' },
-        { code: 'resource-exhausted', expectedMessage: 'Request quota exceeded. Please try again later.' },
+        {
+          code: 'resource-exhausted',
+          expectedMessage: 'Request quota exceeded. Please try again later.',
+        },
         { code: 'cancelled', expectedMessage: 'Operation cancelled.' },
         { code: 'unknown', expectedMessage: 'An unknown error occurred.' },
       ];

@@ -8,7 +8,7 @@ expect.extend(toHaveNoViolations);
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
-  disconnect: jest.fn()
+  disconnect: jest.fn(),
 }));
 
 // IntersectionObserver Mock (드롭다운 가시성 테스트용)
@@ -18,5 +18,5 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
   root: null,
   rootMargin: '',
-  thresholds: []
+  thresholds: [],
 }));

@@ -15,17 +15,17 @@ export interface ChipPackage {
   id: ChipPackageId;
   name: string;
   nameEn: string;
-  price: number;              // 가격 (원)
-  chipCount: number;          // 칩 개수
-  pricePerChip: number;       // 칩당 가격 (원)
-  discountRate: number;       // 할인율 (%)
-  savings: number;            // 절약 금액 (원)
-  badge?: string;             // 배지 (⭐, 🏆, 🔥)
-  targetCustomer: string;     // 타겟 고객
-  usageDuration: string;      // 사용 기간 예상
-  isPopular: boolean;         // 인기 여부
-  isRecommended: boolean;     // 추천 여부
-  isBestValue: boolean;       // 최대 할인 여부
+  price: number; // 가격 (원)
+  chipCount: number; // 칩 개수
+  pricePerChip: number; // 칩당 가격 (원)
+  discountRate: number; // 할인율 (%)
+  savings: number; // 절약 금액 (원)
+  badge?: string; // 배지 (⭐, 🏆, 🔥)
+  targetCustomer: string; // 타겟 고객
+  usageDuration: string; // 사용 기간 예상
+  isPopular: boolean; // 인기 여부
+  isRecommended: boolean; // 추천 여부
+  isBestValue: boolean; // 최대 할인 여부
 }
 
 /**
@@ -102,12 +102,7 @@ export const CHIP_PACKAGES: Record<ChipPackageId, ChipPackage> = {
 /**
  * 패키지 ID 배열 (UI 렌더링 순서)
  */
-export const CHIP_PACKAGE_IDS: ChipPackageId[] = [
-  'basic',
-  'popular',
-  'recommended',
-  'best_value',
-];
+export const CHIP_PACKAGE_IDS: ChipPackageId[] = ['basic', 'popular', 'recommended', 'best_value'];
 
 /**
  * 패키지 ID로 패키지 정보 조회
@@ -120,5 +115,5 @@ export const getChipPackage = (id: ChipPackageId): ChipPackage => {
  * 모든 패키지 목록 조회
  */
 export const getAllChipPackages = (): ChipPackage[] => {
-  return CHIP_PACKAGE_IDS.map(id => CHIP_PACKAGES[id]);
+  return CHIP_PACKAGE_IDS.map((id) => CHIP_PACKAGES[id]);
 };

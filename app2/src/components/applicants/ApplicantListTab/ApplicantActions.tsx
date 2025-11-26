@@ -1,6 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { TimeSlot, RoleRequirement, DateSpecificRequirement, JobPostingUtils } from '@/types/jobPosting';
+import {
+  TimeSlot,
+  RoleRequirement,
+  DateSpecificRequirement,
+  JobPostingUtils,
+} from '@/types/jobPosting';
 import { timestampToLocalDateString } from '@/utils/dateUtils';
 import { logger } from '@/utils/logger';
 import { Applicant, Assignment } from './types';
@@ -26,10 +31,9 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
   onAssignmentChange,
   onConfirm,
   onCancelConfirmation,
-  canEdit
+  canEdit,
 }) => {
   const { t } = useTranslation();
-  
 
   // 지원 중인 상태 - 단일 선택 드롭다운
   if (applicant.status === 'applied') {
@@ -40,24 +44,32 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
           onChange={(e) => onAssignmentChange(e.target.value)}
           className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
-          <option value="" disabled>{t('jobPostingAdmin.applicants.selectRole')}</option>
-          
+          <option value="" disabled>
+            {t('jobPostingAdmin.applicants.selectRole')}
+          </option>
+
           {/* 날짜별 요구사항 */}
           {jobPosting?.dateSpecificRequirements?.flatMap((dateReq: DateSpecificRequirement) =>
             dateReq.timeSlots.flatMap((ts: TimeSlot) =>
               ts.roles.map((r: RoleRequirement) => {
                 const dateString = timestampToLocalDateString(dateReq.date);
                 const isFull = JobPostingUtils.isRoleFull(jobPosting, ts.time, r.name, dateString);
-                const confirmedCount = JobPostingUtils.getConfirmedStaffCount(jobPosting, dateString, ts.time, r.name);
-                
+                const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+                  jobPosting,
+                  dateString,
+                  ts.time,
+                  r.name
+                );
+
                 return (
-                  <option 
-                    key={`${dateString}-${ts.time}-${r.name}`} 
+                  <option
+                    key={`${dateString}-${ts.time}-${r.name}`}
                     value={`${dateString}__${ts.time}__${r.name}`}
                     disabled={isFull}
                   >
-                    {formatDateDisplay(dateString)} | {t(`jobPostingAdmin.create.${r.name}`, r.name)} 
-                    ({confirmedCount}/{r.count}{isFull ? ' - 마감' : ''})
+                    {formatDateDisplay(dateString)} |{' '}
+                    {t(`jobPostingAdmin.create.${r.name}`, r.name)}({confirmedCount}/{r.count}
+                    {isFull ? ' - 마감' : ''})
                   </option>
                 );
               })
@@ -83,14 +95,14 @@ const ApplicantActions: React.FC<ApplicantActionsProps> = ({
         applicantName: applicant.applicantName,
         applicantStatus: applicant.status,
         canEdit: canEdit,
-        willShowButton: true
-      }
+        willShowButton: true,
+      },
     });
-    
+
     return (
       <div className="ml-4 text-sm space-y-2">
         <div className="flex space-x-2">
-          <button 
+          <button
             onClick={onCancelConfirmation}
             className={`px-3 py-1 text-white rounded text-sm font-medium ${
               canEdit

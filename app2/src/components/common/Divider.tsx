@@ -18,11 +18,13 @@ const Divider: React.FC<DividerProps> = ({
   orientation = 'horizontal',
   className = '',
   children,
-  textAlign = 'center'
+  textAlign = 'center',
 }) => {
   if (orientation === 'vertical') {
     return (
-      <div className={`inline-block min-h-[1em] w-0.5 self-stretch bg-gray-200 dark:bg-gray-700 ${className}`} />
+      <div
+        className={`inline-block min-h-[1em] w-0.5 self-stretch bg-gray-200 dark:bg-gray-700 ${className}`}
+      />
     );
   }
 
@@ -30,16 +32,16 @@ const Divider: React.FC<DividerProps> = ({
     const alignClasses = {
       left: 'before:mr-4 after:flex-1',
       center: 'before:flex-1 after:flex-1 before:mr-4 after:ml-4',
-      right: 'before:flex-1 after:ml-4'
+      right: 'before:flex-1 after:ml-4',
     };
 
     return (
-      <div
-        className={`relative flex items-center ${className}`}
-      >
+      <div className={`relative flex items-center ${className}`}>
         <div className={`flex items-center w-full ${alignClasses[textAlign]}`}>
           <div className="before:content-[''] before:h-px before:bg-gray-200 dark:before:bg-gray-700" />
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{children}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {children}
+          </span>
           <div className="after:content-[''] after:h-px after:bg-gray-200 dark:after:bg-gray-700" />
         </div>
       </div>

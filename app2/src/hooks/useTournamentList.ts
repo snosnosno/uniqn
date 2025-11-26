@@ -126,9 +126,13 @@ export const useTournamentList = (userId: string | null) => {
           data: { tournamentId },
         });
       } catch (err) {
-        logger.error('토너먼트 업데이트 실패:', err instanceof Error ? err : new Error(String(err)), {
-          component: 'useTournamentList',
-        });
+        logger.error(
+          '토너먼트 업데이트 실패:',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            component: 'useTournamentList',
+          }
+        );
         throw err;
       }
     },

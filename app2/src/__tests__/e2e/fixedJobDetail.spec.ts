@@ -36,10 +36,7 @@ test.describe('고정공고 상세보기 E2E', () => {
     await expect(firstCard).toBeVisible();
 
     // 카드 클릭 전 조회수 확인
-    const viewCountBefore = await page
-      .locator('[data-testid="view-count"]')
-      .first()
-      .textContent();
+    const viewCountBefore = await page.locator('[data-testid="view-count"]').first().textContent();
 
     // 카드 클릭
     await firstCard.click();
@@ -50,10 +47,7 @@ test.describe('고정공고 상세보기 E2E', () => {
 
     // 조회수가 1 증가했는지 확인 (약간의 지연 후)
     await page.waitForTimeout(1000);
-    const viewCountAfter = await page
-      .locator('[data-testid="view-count"]')
-      .first()
-      .textContent();
+    const viewCountAfter = await page.locator('[data-testid="view-count"]').first().textContent();
 
     // 조회수 증가 검증 (문자열 → 숫자 변환)
     const countBefore = parseInt(viewCountBefore || '0', 10);
@@ -101,7 +95,7 @@ test.describe('고정공고 상세보기 E2E', () => {
     const emptyMessage = modal.locator('text="모집 역할이 없습니다"');
 
     // 둘 중 하나는 반드시 보여야 함
-    const hasRoles = await roleList.count() > 0;
+    const hasRoles = (await roleList.count()) > 0;
     const hasEmptyMessage = await emptyMessage.isVisible();
 
     expect(hasRoles || hasEmptyMessage).toBeTruthy();
@@ -165,10 +159,7 @@ test.describe('고정공고 상세보기 E2E', () => {
     const firstCard = page.locator('[data-testid="fixed-job-card"]').first();
 
     // 초기 조회수 확인
-    const initialViewCount = await page
-      .locator('[data-testid="view-count"]')
-      .first()
-      .textContent();
+    const initialViewCount = await page.locator('[data-testid="view-count"]').first().textContent();
     const initialCount = parseInt(initialViewCount || '0', 10);
 
     // 카드를 3번 클릭 (모달 열고 닫기 반복)
@@ -182,19 +173,14 @@ test.describe('고정공고 상세보기 E2E', () => {
     }
 
     // 최종 조회수 확인
-    const finalViewCount = await page
-      .locator('[data-testid="view-count"]')
-      .first()
-      .textContent();
+    const finalViewCount = await page.locator('[data-testid="view-count"]').first().textContent();
     const finalCount = parseInt(finalViewCount || '0', 10);
 
     // 조회수가 3 증가했는지 확인
     expect(finalCount).toBe(initialCount + 3);
   });
 
-  test('네트워크 오류 시에도 모달은 정상적으로 열린다 (fire-and-forget)', async ({
-    page,
-  }) => {
+  test('네트워크 오류 시에도 모달은 정상적으로 열린다 (fire-and-forget)', async ({ page }) => {
     // Firestore 요청 차단 (네트워크 오류 시뮬레이션)
     await page.route('**/firestore.googleapis.com/**', (route) => {
       route.abort('failed');

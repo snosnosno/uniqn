@@ -62,9 +62,7 @@ export const ChipDashboard: React.FC = () => {
         <div className="text-5xl font-bold text-gray-900 dark:text-gray-100 mb-1">
           {totalChips}칩
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          ═══════════
-        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">═══════════</div>
       </div>
 
       {/* 파란칩 */}
@@ -72,17 +70,11 @@ export const ChipDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🔵</span>
-            <span className="font-semibold text-gray-900 dark:text-gray-100">
-              파란칩
-            </span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">파란칩</span>
           </div>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            {blueChips}개
-          </div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{blueChips}개</div>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          매월 지급 구독 칩
-        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">매월 지급 구독 칩</div>
         <div className="text-xs text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1">
           <span>⏰</span>
           {blueChips > 0 ? `${blueChipExpiry} 소멸` : '소진됨'}
@@ -94,17 +86,11 @@ export const ChipDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🔴</span>
-            <span className="font-semibold text-gray-900 dark:text-gray-100">
-              빨간칩
-            </span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">빨간칩</span>
           </div>
-          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-            {redChips}개
-          </div>
+          <div className="text-2xl font-bold text-red-600 dark:text-red-400">{redChips}개</div>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          충전 구매 칩
-        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">충전 구매 칩</div>
         <div className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
           <span>♾️</span>
           {redChips > 0 ? `${redChipExpiry}까지` : '충전 필요'}
@@ -118,9 +104,7 @@ export const ChipDashboard: React.FC = () => {
             💡 사용 순서
           </span>
         </div>
-        <div className="text-sm text-blue-800 dark:text-blue-200">
-          파란칩 먼저 → 빨간칩 나중에
-        </div>
+        <div className="text-sm text-blue-800 dark:text-blue-200">파란칩 먼저 → 빨간칩 나중에</div>
       </div>
 
       {/* 칩 부족 경고 */}

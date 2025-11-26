@@ -1,5 +1,18 @@
 import { useState, useCallback } from 'react';
-import { doc, updateDoc, arrayUnion, runTransaction, getDoc, deleteDoc, collection, query, where, getDocs, setDoc, Timestamp } from 'firebase/firestore';
+import {
+  doc,
+  updateDoc,
+  arrayUnion,
+  runTransaction,
+  getDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  setDoc,
+  Timestamp,
+} from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
 import { toast } from '@/utils/toast';
@@ -50,9 +63,9 @@ const createWorkLogsForConfirmedStaff = async (
           assignmentRole: assignment.role,
           assignmentRoleLowerCase: assignment.role?.toLowerCase(),
           hasValidRole: !!(jobRole && jobRole !== ''),
-          willUseFallback: !jobRole || jobRole === ''
-        }
-      }
+          willUseFallback: !jobRole || jobRole === '',
+        },
+      },
     });
 
     // WorkLog ID 생성 패턴: ${postingId}_${staffId}_${date}
@@ -60,7 +73,7 @@ const createWorkLogsForConfirmedStaff = async (
 
     logger.info('생성할 WorkLog ID:', {
       component: 'createWorkLogsForConfirmedStaff',
-      workLogId
+      workLogId,
     });
 
     // 🔥 시간 정보 처리 - assignment.timeSlot 우선, 없으면 공고 기본 시간 사용
@@ -73,24 +86,28 @@ const createWorkLogsForConfirmedStaff = async (
       if (jobPostingAny.timeSlots && jobPostingAny.timeSlots.length > 0) {
         const firstTimeSlot = jobPostingAny.timeSlots[0];
         // TimeSlot이 객체면 .time 속성 사용, 문자열이면 그대로 사용
-        timeSlot = typeof firstTimeSlot === 'string' ? firstTimeSlot : (firstTimeSlot?.time || '');
+        timeSlot = typeof firstTimeSlot === 'string' ? firstTimeSlot : firstTimeSlot?.time || '';
       }
       // 2. dateSpecificRequirements에서 해당 날짜의 시간대 찾기
       else if (jobPosting.dateSpecificRequirements && assignedDate) {
         const dateReq = jobPosting.dateSpecificRequirements.find(
-          req => timestampToLocalDateString(req.date) === assignedDate
+          (req) => timestampToLocalDateString(req.date) === assignedDate
         );
         if (dateReq && dateReq.timeSlots && dateReq.timeSlots.length > 0) {
           const firstTimeSlot = dateReq.timeSlots[0];
-          timeSlot = typeof firstTimeSlot === 'string' ? firstTimeSlot : (firstTimeSlot?.time || '');
+          timeSlot = typeof firstTimeSlot === 'string' ? firstTimeSlot : firstTimeSlot?.time || '';
         }
       }
     }
 
     // 🔥 timeSlot을 Timestamp로 변환 (scheduledStartTime, scheduledEndTime 생성)
-    const { parseAssignedTime, convertTimeToTimestamp } = await import('../../../../utils/workLogUtils');
+    const { parseAssignedTime, convertTimeToTimestamp } = await import(
+      '../../../../utils/workLogUtils'
+    );
     const { startTime, endTime } = parseAssignedTime(timeSlot);
-    const scheduledStartTime = startTime ? convertTimeToTimestamp(startTime, assignedDate) : undefined;
+    const scheduledStartTime = startTime
+      ? convertTimeToTimestamp(startTime, assignedDate)
+      : undefined;
     const scheduledEndTime = endTime ? convertTimeToTimestamp(endTime, assignedDate) : undefined;
 
     // WorkLog 문서 생성 (persons 데이터를 모두 embedded)
@@ -100,7 +117,7 @@ const createWorkLogsForConfirmedStaff = async (
       staffName: applicantName, // 호환성을 위해 유지
       eventId: postingId,
       date: assignedDate,
-      
+
       // 🚀 persons 컬렉션 통합 - 스태프 정보를 WorkLog에 embedded
       staffInfo: {
         userId: applicantUserId,
@@ -109,15 +126,15 @@ const createWorkLogsForConfirmedStaff = async (
         phone: phone || '',
         userRole: 'staff',
         jobRole: [jobRole],
-        isActive: true
+        isActive: true,
         // undefined 필드 제거 - 필요시 나중에 업데이트로 추가
       },
-      
+
       // 🚀 할당 정보 (persons 컬렉션의 할당 관련 정보)
       assignmentInfo: {
-        role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
+        role: jobRole || 'staff', // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
         assignedRole: assignment.role?.toLowerCase() || '',
-        assignedTime: timeSlot,  // 🔥 공고 시간 fallback 적용된 timeSlot 사용
+        assignedTime: timeSlot, // 🔥 공고 시간 fallback 적용된 timeSlot 사용
         assignedDate: assignedDate,
         postingId: postingId,
         managerId: managerId,
@@ -125,7 +142,7 @@ const createWorkLogsForConfirmedStaff = async (
       },
 
       // 기존 근무 관련 필드 (호환성 유지)
-      role: jobRole || 'staff',  // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
+      role: jobRole || 'staff', // 🔥 fallback 추가: role이 빈 문자열이면 'staff' 사용
       assignedTime: timeSlot,
 
       // 🔥 예정 시간 추가 (Timestamp 형태)
@@ -143,44 +160,45 @@ const createWorkLogsForConfirmedStaff = async (
       component: 'createWorkLogsForConfirmedStaff',
       hasRequiredFields: {
         staffId: !!workLogData.staffId,
-        eventId: !!workLogData.eventId, 
+        eventId: !!workLogData.eventId,
         date: !!workLogData.date,
         staffInfo: !!workLogData.staffInfo,
-        assignmentInfo: !!workLogData.assignmentInfo
+        assignmentInfo: !!workLogData.assignmentInfo,
       },
       staffInfoKeys: workLogData.staffInfo ? Object.keys(workLogData.staffInfo) : [],
-      assignmentInfoKeys: workLogData.assignmentInfo ? Object.keys(workLogData.assignmentInfo) : []
+      assignmentInfoKeys: workLogData.assignmentInfo ? Object.keys(workLogData.assignmentInfo) : [],
     });
 
     // WorkLog 문서 생성
     await setDoc(doc(db, 'workLogs', workLogId), workLogData);
-    
+
     logger.info('✅ WorkLog 직접 생성 완료', {
       component: 'createWorkLogsForConfirmedStaff',
       workLogId,
       staffInfo_userId: workLogData.staffInfo?.userId,
       assignmentInfo_role: workLogData.assignmentInfo?.role,
-      assignmentInfo_postingId: workLogData.assignmentInfo?.postingId
+      assignmentInfo_postingId: workLogData.assignmentInfo?.postingId,
     });
-
   } catch (error) {
     // 🔍 더 자세한 에러 정보 로깅
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const isFirebaseError = errorMessage.includes('PERMISSION_DENIED') || 
-                          errorMessage.includes('permission-denied') ||
-                          errorMessage.includes('Missing or insufficient permissions');
-    
-    logger.error('❌ WorkLog 직접 생성 실패:', 
-      error instanceof Error ? error : new Error(String(error)), 
-      { 
+    const isFirebaseError =
+      errorMessage.includes('PERMISSION_DENIED') ||
+      errorMessage.includes('permission-denied') ||
+      errorMessage.includes('Missing or insufficient permissions');
+
+    logger.error(
+      '❌ WorkLog 직접 생성 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
         component: 'createWorkLogsForConfirmedStaff',
         isFirebasePermissionError: isFirebaseError,
         errorDetails: {
           workLogId: `${postingId}_${staffId}_${assignedDate}`,
           attemptedStaffId: staffId,
           attemptedPostingId: postingId,
-          attemptedDate: assignedDate
-        }
+          attemptedDate: assignedDate,
+        },
       }
     );
 
@@ -188,10 +206,10 @@ const createWorkLogsForConfirmedStaff = async (
     if (isFirebaseError) {
       logger.warn('🚨 Firebase Security Rules 위반 의심', {
         component: 'createWorkLogsForConfirmedStaff',
-        suggestion: 'hasValidRole() 함수 또는 필수 필드 검증 실패 가능성'
+        suggestion: 'hasValidRole() 함수 또는 필수 필드 검증 실패 가능성',
       });
     }
-    
+
     throw error;
   }
 };
@@ -207,15 +225,15 @@ const checkIfIndependentDates = (assignments: Assignment[], jobPosting: JobPosti
 
   // 모든 날짜 수집
   const allDates = assignments
-    .flatMap(assignment => assignment.dates)
-    .filter(date => date && date.trim() !== '')
+    .flatMap((assignment) => assignment.dates)
+    .filter((date) => date && date.trim() !== '')
     .sort();
 
   if (allDates.length <= 1) return true;
 
   // 각 날짜가 독립적인 dateSpecificRequirement를 가지고 있는지 확인
-  const independentDates = allDates.every(date => {
-    const dateReq = jobPosting.dateSpecificRequirements?.find(req => {
+  const independentDates = allDates.every((date) => {
+    const dateReq = jobPosting.dateSpecificRequirements?.find((req) => {
       const reqDateStr = timestampToLocalDateString(req.date);
       return reqDateStr === date;
     });
@@ -223,16 +241,17 @@ const checkIfIndependentDates = (assignments: Assignment[], jobPosting: JobPosti
     if (!dateReq) return false;
 
     // 해당 날짜의 timeSlots이 multi duration을 가지지 않는지 확인
-    const hasMultiDuration = dateReq.timeSlots.some(ts =>
-      ts.duration?.type === 'multi'
-    );
+    const hasMultiDuration = dateReq.timeSlots.some((ts) => ts.duration?.type === 'multi');
 
     return !hasMultiDuration; // multi duration이 없으면 독립적인 단일일
   });
 
-  logger.info(`🔍 단일일 여러 개 판별 결과: ${independentDates ? '독립적 단일일' : '멀티데이'} (날짜: ${allDates.join(', ')})`, {
-    component: 'useApplicantActions'
-  });
+  logger.info(
+    `🔍 단일일 여러 개 판별 결과: ${independentDates ? '독립적 단일일' : '멀티데이'} (날짜: ${allDates.join(', ')})`,
+    {
+      component: 'useApplicantActions',
+    }
+  );
 
   return independentDates;
 };
@@ -240,7 +259,11 @@ const checkIfIndependentDates = (assignments: Assignment[], jobPosting: JobPosti
 /**
  * 지원자 확정/취소 액션을 관리하는 Custom Hook
  */
-export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseApplicantActionsProps) => {
+export const useApplicantActions = ({
+  jobPosting,
+  currentUser,
+  onRefresh,
+}: UseApplicantActionsProps) => {
   const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [cancelConfirmModal, setCancelConfirmModal] = useState<{
@@ -248,257 +271,280 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     applicant: Applicant | null;
   }>({
     isOpen: false,
-    applicant: null
+    applicant: null,
   });
 
   // 권한 체크 - 공고 작성자 또는 관리자만 수정 가능
-  const canEdit = currentUser?.uid && (
-    currentUser.uid === jobPosting?.createdBy ||
-    currentUser.role === 'admin'
-  );
+  const canEdit =
+    currentUser?.uid && (currentUser.uid === jobPosting?.createdBy || currentUser.role === 'admin');
 
   // canEdit 값 확인
-
 
   /**
    * 지원자를 확정하는 함수
    */
-  const handleConfirmApplicant = useCallback(async (applicant: Applicant, assignments: Assignment[]) => {
-    // 권한 체크
-    if (!canEdit) {
-      toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
-      return;
-    }
-    
-    
-    if (!assignments || assignments.length === 0) {
-      toast.warning(t('jobPostingAdmin.alerts.selectRoleToAssign'));
-      return;
-    }
-    if (!jobPosting) return;
-    
-    setIsProcessing(true);
-    
-    try {
-      const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
-      
-      // 🔍 같은 날짜 중복 확정 방지 검사 (개선된 버전)
-      const targetDates = assignments
-        .flatMap(a => a.dates)
-        .filter(date => date && date.trim() !== '');
-      
-      if (targetDates.length > 0) {
-        // jobPosting의 최신 상태를 다시 확인
-        const jobPostingDoc = await getDoc(jobPostingRef);
-        const latestData = jobPostingDoc.data();
-        const latestConfirmedStaff = latestData?.confirmedStaff || [];
-        
-        const existingConfirmations = latestConfirmedStaff.filter((staff: any) => 
-          (staff.userId || staff.staffId) === applicant.applicantId && 
-          targetDates.includes(staff.date)
-        );
-
-        if (existingConfirmations.length > 0) {
-          const duplicateDates = existingConfirmations.map((s: any) => s.date).join(', ');
-          toast.warning(`같은 날짜에 중복 확정할 수 없습니다.\n중복 날짜: ${duplicateDates}`);
-          return;
-        }
-      }
-
-      // 선택된 역할들이 마감되었는지 확인
-      const fullRoles = assignments.filter(assignment => {
-        // dates 배열에서 첫 번째 날짜 사용
-        const assignmentDate = assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
-        if (!assignmentDate) return false;
-        
-        return JobPostingUtils.isRoleFull(
-          jobPosting,
-          assignment.timeSlot,
-          assignment.role || '',
-          assignmentDate
-        );
-      });
-      
-      if (fullRoles.length > 0) {
-        const fullRoleMessages = fullRoles.map(assignment => {
-          const assignmentDate = assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
-          return `${assignmentDate ? `${assignmentDate} ` : ''}${assignment.timeSlot} - ${assignment.role || ''}`;
-        }).join(', ');
-        toast.warning(`다음 역할은 이미 마감되어 확정할 수 없습니다:\n${fullRoleMessages}`);
+  const handleConfirmApplicant = useCallback(
+    async (applicant: Applicant, assignments: Assignment[]) => {
+      // 권한 체크
+      if (!canEdit) {
+        toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
         return;
       }
 
-      const _applicationRef = doc(db, "applications", applicant.id);
+      if (!assignments || assignments.length === 0) {
+        toast.warning(t('jobPostingAdmin.alerts.selectRoleToAssign'));
+        return;
+      }
+      if (!jobPosting) return;
 
-      // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
-      await ApplicationHistoryService.confirmApplication(applicant.id, assignments);
-      
-      // 🔄 jobPosting의 confirmedStaff 배열 업데이트 (v2.1: 지원서 메타데이터 추가)
-      await runTransaction(db, async (transaction) => {
-        // 🆕 지원 타입 판별 개선 (단일일 여러 개 vs 멀티데이 구분)
-        const totalDates = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
+      setIsProcessing(true);
 
-        // 🛠️ 임시 해결책: 단일일 여러 개는 항상 'single'로 처리
-        const isIndependentDates = checkIfIndependentDates(assignments, jobPosting);
-        const applicationType: 'single' | 'multi' = isIndependentDates ? 'single' :
-          (totalDates > 1 ? 'multi' : 'single');
+      try {
+        const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
 
-        const applicationGroupId = applicationType === 'multi' ? `${applicant.id}_group_${Date.now()}` : null;
+        // 🔍 같은 날짜 중복 확정 방지 검사 (개선된 버전)
+        const targetDates = assignments
+          .flatMap((a) => a.dates)
+          .filter((date) => date && date.trim() !== '');
 
-        logger.info(`🎯 지원 타입 판별 결과: ${applicationType} (총 ${totalDates}개 날짜, 독립적: ${isIndependentDates})`, {
-          component: 'useApplicantActions'
+        if (targetDates.length > 0) {
+          // jobPosting의 최신 상태를 다시 확인
+          const jobPostingDoc = await getDoc(jobPostingRef);
+          const latestData = jobPostingDoc.data();
+          const latestConfirmedStaff = latestData?.confirmedStaff || [];
+
+          const existingConfirmations = latestConfirmedStaff.filter(
+            (staff: any) =>
+              (staff.userId || staff.staffId) === applicant.applicantId &&
+              targetDates.includes(staff.date)
+          );
+
+          if (existingConfirmations.length > 0) {
+            const duplicateDates = existingConfirmations.map((s: any) => s.date).join(', ');
+            toast.warning(`같은 날짜에 중복 확정할 수 없습니다.\n중복 날짜: ${duplicateDates}`);
+            return;
+          }
+        }
+
+        // 선택된 역할들이 마감되었는지 확인
+        const fullRoles = assignments.filter((assignment) => {
+          // dates 배열에서 첫 번째 날짜 사용
+          const assignmentDate =
+            assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
+          if (!assignmentDate) return false;
+
+          return JobPostingUtils.isRoleFull(
+            jobPosting,
+            assignment.timeSlot,
+            assignment.role || '',
+            assignmentDate
+          );
         });
 
-        assignments.forEach(assignment => {
-          const { timeSlot, role, dates } = assignment;
-          // dates 배열의 각 날짜에 대해 staffEntry 생성
-          dates.forEach(date => {
-            const staffEntry: any = {
-              userId: applicant.applicantId,  // ✅ 타입 정의와 일치하는 필드명 사용
-              name: applicant.applicantName,
-              role,
-              timeSlot,
-              phone: applicant.phone || '',  // ✅ 연락처 정보 추가
-              email: applicant.email || '',  // ✅ 이메일 정보 추가
-              confirmedAt: new Date(),
+        if (fullRoles.length > 0) {
+          const fullRoleMessages = fullRoles
+            .map((assignment) => {
+              const assignmentDate =
+                assignment.dates && assignment.dates.length > 0 ? assignment.dates[0] : '';
+              return `${assignmentDate ? `${assignmentDate} ` : ''}${assignment.timeSlot} - ${assignment.role || ''}`;
+            })
+            .join(', ');
+          toast.warning(`다음 역할은 이미 마감되어 확정할 수 없습니다:\n${fullRoleMessages}`);
+          return;
+        }
 
-              // 🆕 v2.1: 지원서 구분 메타데이터
-              applicationId: applicant.id,
-              applicationType
-            };
+        const _applicationRef = doc(db, 'applications', applicant.id);
 
-            // 🔧 멀티데이일 때만 applicationGroupId 추가 (undefined 방지)
-            if (applicationType === 'multi' && applicationGroupId) {
-              staffEntry.applicationGroupId = applicationGroupId;
+        // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
+        await ApplicationHistoryService.confirmApplication(applicant.id, assignments);
+
+        // 🔄 jobPosting의 confirmedStaff 배열 업데이트 (v2.1: 지원서 메타데이터 추가)
+        await runTransaction(db, async (transaction) => {
+          // 🆕 지원 타입 판별 개선 (단일일 여러 개 vs 멀티데이 구분)
+          const totalDates = assignments.reduce(
+            (total, assignment) => total + assignment.dates.length,
+            0
+          );
+
+          // 🛠️ 임시 해결책: 단일일 여러 개는 항상 'single'로 처리
+          const isIndependentDates = checkIfIndependentDates(assignments, jobPosting);
+          const applicationType: 'single' | 'multi' = isIndependentDates
+            ? 'single'
+            : totalDates > 1
+              ? 'multi'
+              : 'single';
+
+          const applicationGroupId =
+            applicationType === 'multi' ? `${applicant.id}_group_${Date.now()}` : null;
+
+          logger.info(
+            `🎯 지원 타입 판별 결과: ${applicationType} (총 ${totalDates}개 날짜, 독립적: ${isIndependentDates})`,
+            {
+              component: 'useApplicantActions',
             }
+          );
 
-            // date가 존재하고 유효한 값일 때만 추가
-            if (date && date.trim() !== '') {
-              staffEntry.date = date;
-            }
+          assignments.forEach((assignment) => {
+            const { timeSlot, role, dates } = assignment;
+            // dates 배열의 각 날짜에 대해 staffEntry 생성
+            dates.forEach((date) => {
+              const staffEntry: any = {
+                userId: applicant.applicantId, // ✅ 타입 정의와 일치하는 필드명 사용
+                name: applicant.applicantName,
+                role,
+                timeSlot,
+                phone: applicant.phone || '', // ✅ 연락처 정보 추가
+                email: applicant.email || '', // ✅ 이메일 정보 추가
+                confirmedAt: new Date(),
 
-            transaction.update(jobPostingRef, {
-              confirmedStaff: arrayUnion(staffEntry)
+                // 🆕 v2.1: 지원서 구분 메타데이터
+                applicationId: applicant.id,
+                applicationType,
+              };
+
+              // 🔧 멀티데이일 때만 applicationGroupId 추가 (undefined 방지)
+              if (applicationType === 'multi' && applicationGroupId) {
+                staffEntry.applicationGroupId = applicationGroupId;
+              }
+
+              // date가 존재하고 유효한 값일 때만 추가
+              if (date && date.trim() !== '') {
+                staffEntry.date = date;
+              }
+
+              transaction.update(jobPostingRef, {
+                confirmedStaff: arrayUnion(staffEntry),
+              });
             });
           });
         });
-      });
 
-      // 각 assignment마다 별도의 스태프 문서 생성 (다중 날짜/시간대 지원)
-      const assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[] = []; // ✅ staffDocId 수집용 배열
-      
-      if (assignments.length > 0) {
-        logger.info('🚀 [확정] WorkLog 생성 시작', {
-          component: 'useApplicantActions'
-        });
-        
-        // 각 assignment의 각 날짜에 대해 개별적으로 WorkLog 생성
-        let assignmentIndex = 0;
-        for (let i = 0; i < assignments.length; i++) {
-          const assignment = assignments[i];
-          if (!assignment) continue;
-          const assignmentDates = assignment.dates || [];
-          
-          for (let dateIndex = 0; dateIndex < assignmentDates.length; dateIndex++) {
-            const assignedDate = assignmentDates[dateIndex] || '';
-            
-            // 날짜가 빈 문자열이면 기본값 설정 (오늘 날짜 또는 공고의 기본 날짜)
-            let finalAssignedDate = assignedDate;
-            if (!finalAssignedDate || finalAssignedDate.trim() === '') {
-              // 공고에 날짜 정보가 있으면 사용, 없으면 오늘 날짜
-              if (jobPosting.eventDate) {
-                finalAssignedDate = jobPosting.eventDate;
-              } else {
-                const isoString = new Date().toISOString();
-                const datePart = isoString.split('T')[0];
-                finalAssignedDate = datePart || ''; // yyyy-MM-dd 형식
+        // 각 assignment마다 별도의 스태프 문서 생성 (다중 날짜/시간대 지원)
+        const assignmentsWithStaffIds: { assignment: Assignment; staffDocId: string }[] = []; // ✅ staffDocId 수집용 배열
+
+        if (assignments.length > 0) {
+          logger.info('🚀 [확정] WorkLog 생성 시작', {
+            component: 'useApplicantActions',
+          });
+
+          // 각 assignment의 각 날짜에 대해 개별적으로 WorkLog 생성
+          let assignmentIndex = 0;
+          for (let i = 0; i < assignments.length; i++) {
+            const assignment = assignments[i];
+            if (!assignment) continue;
+            const assignmentDates = assignment.dates || [];
+
+            for (let dateIndex = 0; dateIndex < assignmentDates.length; dateIndex++) {
+              const assignedDate = assignmentDates[dateIndex] || '';
+
+              // 날짜가 빈 문자열이면 기본값 설정 (오늘 날짜 또는 공고의 기본 날짜)
+              let finalAssignedDate = assignedDate;
+              if (!finalAssignedDate || finalAssignedDate.trim() === '') {
+                // 공고에 날짜 정보가 있으면 사용, 없으면 오늘 날짜
+                if (jobPosting.eventDate) {
+                  finalAssignedDate = jobPosting.eventDate;
+                } else {
+                  const isoString = new Date().toISOString();
+                  const datePart = isoString.split('T')[0];
+                  finalAssignedDate = datePart || ''; // yyyy-MM-dd 형식
+                }
               }
+
+              const jobRole = jobRoleMap[assignment?.role || ''] || 'Other';
+
+              // 고유한 문서 ID 생성 (userId + assignment index + date index)
+              const staffDocId = `${applicant.applicantId}_${assignmentIndex}`;
+
+              try {
+                // 🚀 WorkLog 직접 생성 (promoteToStaff 대신)
+                await createWorkLogsForConfirmedStaff(
+                  staffDocId,
+                  applicant.applicantName,
+                  applicant.applicantId,
+                  jobRole,
+                  assignment,
+                  finalAssignedDate,
+                  jobPosting.id,
+                  currentUser?.uid || 'system',
+                  jobPosting, // 🔥 jobPosting 전체 객체 전달
+                  applicant.email || '',
+                  applicant.phone || ''
+                );
+
+                // ✅ WorkLog 생성용으로 assignment와 staffDocId 저장
+                assignmentsWithStaffIds.push({ assignment, staffDocId });
+
+                logger.info(`✅ WorkLog 생성 성공: ${staffDocId} for date ${finalAssignedDate}`, {
+                  component: 'useApplicantActions',
+                });
+              } catch (workLogError) {
+                logger.error(
+                  `❌ WorkLog 생성 오류 ${assignmentIndex + 1}:`,
+                  workLogError instanceof Error ? workLogError : new Error(String(workLogError)),
+                  { component: 'useApplicantActions' }
+                );
+                // 개별 WorkLog 생성 실패해도 전체 프로세스는 계속 진행
+              }
+
+              // 🔧 각 날짜마다 assignmentIndex 증가 (중복 ID 방지)
+              assignmentIndex++;
             }
-          
-            const jobRole = jobRoleMap[assignment?.role || ''] || 'Other';
-            
-            // 고유한 문서 ID 생성 (userId + assignment index + date index)
-            const staffDocId = `${applicant.applicantId}_${assignmentIndex}`;
-            
-          
-            try {
-              // 🚀 WorkLog 직접 생성 (promoteToStaff 대신)
-              await createWorkLogsForConfirmedStaff(
-                staffDocId,
-                applicant.applicantName,
-                applicant.applicantId,
-                jobRole,
-                assignment,
-                finalAssignedDate,
-                jobPosting.id,
-                currentUser?.uid || 'system',
-                jobPosting,  // 🔥 jobPosting 전체 객체 전달
-                applicant.email || '',
-                applicant.phone || ''
-              );
-              
-              // ✅ WorkLog 생성용으로 assignment와 staffDocId 저장
-              assignmentsWithStaffIds.push({ assignment, staffDocId });
-              
-              logger.info(`✅ WorkLog 생성 성공: ${staffDocId} for date ${finalAssignedDate}`, {
-                component: 'useApplicantActions'
-              });
-              
-            } catch (workLogError) {
-              logger.error(`❌ WorkLog 생성 오류 ${assignmentIndex + 1}:`, 
-                workLogError instanceof Error ? workLogError : new Error(String(workLogError)), 
-                { component: 'useApplicantActions' }
-              );
-              // 개별 WorkLog 생성 실패해도 전체 프로세스는 계속 진행
-            }
-            
-            // 🔧 각 날짜마다 assignmentIndex 증가 (중복 ID 방지)
-            assignmentIndex++;
           }
         }
-        
-      }
 
-      // 🚀 WorkLog 직접 생성 완료
-      // assignmentsWithStaffIds는 이미 createWorkLogsForConfirmedStaff 호출 시 WorkLog가 생성됨
-      
-      const totalAssignments = assignments.reduce((total, assignment) => total + assignment.dates.length, 0);
-      toast.success(`${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 자동 생성 완료)`);
-      
-      // 자동 마감 로직 체크
-      await checkAutoCloseJobPosting(jobPostingRef);
-      
-      // 지원자 목록 새로고침
-      onRefresh();
-      
-    } catch (error) {
-      logger.error('Error confirming applicant: ', error instanceof Error ? error : new Error(String(error)), { 
-        component: 'useApplicantActions' 
-      });
-      toast.error(t('jobPostingAdmin.alerts.applicantConfirmFailed'));
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [canEdit, jobPosting, currentUser, t, onRefresh]);
+        // 🚀 WorkLog 직접 생성 완료
+        // assignmentsWithStaffIds는 이미 createWorkLogsForConfirmedStaff 호출 시 WorkLog가 생성됨
+
+        const totalAssignments = assignments.reduce(
+          (total, assignment) => total + assignment.dates.length,
+          0
+        );
+        toast.success(
+          `${t('jobPostingAdmin.alerts.applicantConfirmSuccess')} (${totalAssignments}개 시간대 확정, WorkLog 자동 생성 완료)`
+        );
+
+        // 자동 마감 로직 체크
+        await checkAutoCloseJobPosting(jobPostingRef);
+
+        // 지원자 목록 새로고침
+        onRefresh();
+      } catch (error) {
+        logger.error(
+          'Error confirming applicant: ',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useApplicantActions',
+          }
+        );
+        toast.error(t('jobPostingAdmin.alerts.applicantConfirmFailed'));
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [canEdit, jobPosting, currentUser, t, onRefresh]
+  );
 
   /**
    * 확정 취소 확인 모달을 여는 함수
    */
-  const handleCancelConfirmation = useCallback((applicant: Applicant) => {
-    if (!jobPosting) return;
+  const handleCancelConfirmation = useCallback(
+    (applicant: Applicant) => {
+      if (!jobPosting) return;
 
-    // 권한 체크
-    if (!canEdit) {
-      toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
-      return;
-    }
+      // 권한 체크
+      if (!canEdit) {
+        toast.error('이 공고를 수정할 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        return;
+      }
 
-    // 확인 모달 열기
-    setCancelConfirmModal({
-      isOpen: true,
-      applicant
-    });
-  }, [canEdit, jobPosting]);
+      // 확인 모달 열기
+      setCancelConfirmModal({
+        isOpen: true,
+        applicant,
+      });
+    },
+    [canEdit, jobPosting]
+  );
 
   /**
    * 지원자 확정을 실제로 취소하는 함수
@@ -511,11 +557,11 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     setIsProcessing(true);
 
     try {
-      const jobPostingRef = doc(db, "jobPostings", jobPosting.id);
+      const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
 
       // 🏗️ ApplicationHistory 서비스를 통한 확정 취소 (완전한 원본 데이터 복원)
       await ApplicationHistoryService.cancelConfirmation(applicant.id);
-      
+
       // 🔄 jobPostings 컬렉션의 confirmedStaff 배열에서 해당 지원자 항목들 제거 (필터링 방식)
       await runTransaction(db, async (transaction) => {
         // 최신 jobPosting 데이터를 transaction 내에서 가져오기
@@ -526,7 +572,7 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
         const currentData = jobPostingDoc.data();
         const confirmedStaffArray = currentData?.confirmedStaff ?? [];
-        
+
         if (confirmedStaffArray.length > 0) {
           // userId 기준으로 해당 지원자의 모든 항목 필터링 (완전 제거)
           const filteredConfirmedStaff = confirmedStaffArray.filter(
@@ -535,10 +581,9 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
 
           const removedCount = confirmedStaffArray.length - filteredConfirmedStaff.length;
 
-
           // 전체 confirmedStaff 배열을 필터링된 배열로 교체
           transaction.update(jobPostingRef, {
-            confirmedStaff: filteredConfirmedStaff
+            confirmedStaff: filteredConfirmedStaff,
           });
 
           // 제거 검증
@@ -560,21 +605,26 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
       // 🔍 취소 후 데이터 정합성 검증
       await verifyDataIntegrityAfterCancel(jobPostingRef, applicant.applicantId);
 
-      toast.success(`${applicant.applicantName}님의 확정이 취소되었습니다. (WorkLog도 함께 삭제됨)`);
+      toast.success(
+        `${applicant.applicantName}님의 확정이 취소되었습니다. (WorkLog도 함께 삭제됨)`
+      );
 
       // 모달 닫기
       setCancelConfirmModal({
         isOpen: false,
-        applicant: null
+        applicant: null,
       });
 
       // 지원자 목록 새로고침
       onRefresh();
-
     } catch (error) {
-      logger.error('Error cancelling confirmation:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'useApplicantActions'
-      });
+      logger.error(
+        'Error cancelling confirmation:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useApplicantActions',
+        }
+      );
       toast.error('확정 취소 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
@@ -591,17 +641,21 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         const data = jobPostingDoc.data();
         if (!data) return;
         const updatedPost = { ...data, id: jobPostingDoc.id } as JobPosting;
-        
+
         // 모든 요구사항이 충족되었는지 확인
         let shouldClose = false;
         let closeMessage = '';
-        
+
         // 날짜별 요구사항 확인
-        if (updatedPost.dateSpecificRequirements && updatedPost.dateSpecificRequirements.length > 0) {
+        if (
+          updatedPost.dateSpecificRequirements &&
+          updatedPost.dateSpecificRequirements.length > 0
+        ) {
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           let allFulfilled = true;
           Array.from(progressMap.entries()).forEach(([_date, progress]) => {
-            const percentage = progress.required > 0 ? (progress.confirmed / progress.required) * 100 : 0;
+            const percentage =
+              progress.required > 0 ? (progress.confirmed / progress.required) * 100 : 0;
             if (percentage < 100) {
               allFulfilled = false;
             }
@@ -615,14 +669,15 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           const allProgress = progressMap.get('all');
           if (allProgress) {
-            const percentage = allProgress.required > 0 ? (allProgress.confirmed / allProgress.required) * 100 : 0;
+            const percentage =
+              allProgress.required > 0 ? (allProgress.confirmed / allProgress.required) * 100 : 0;
             if (percentage >= 100) {
               shouldClose = true;
               closeMessage = '필요 인원이 모두 충족되어 공고가 마감되었습니다.';
             }
           }
         }
-        
+
         // 공고 상태 업데이트
         if (shouldClose && updatedPost.status === 'open') {
           await updateDoc(jobPostingRef, { status: 'closed' });
@@ -630,8 +685,8 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         }
       }
     } catch (err) {
-      logger.error('자동 마감 처리 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
-        component: 'useApplicantActions' 
+      logger.error('자동 마감 처리 중 오류:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'useApplicantActions',
       });
     }
   };
@@ -646,16 +701,20 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         const data = jobPostingDoc.data();
         if (!data) return;
         const updatedPost = { ...data, id: jobPostingDoc.id } as JobPosting;
-        
+
         // JobPostingUtils를 사용하여 모든 요구사항이 충족되었는지 확인
         let shouldReopen = false;
         let reopenMessage = '';
-        
+
         // 날짜별 요구사항 확인
-        if (updatedPost.dateSpecificRequirements && updatedPost.dateSpecificRequirements.length > 0) {
+        if (
+          updatedPost.dateSpecificRequirements &&
+          updatedPost.dateSpecificRequirements.length > 0
+        ) {
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           Array.from(progressMap.entries()).some(([date, progress]) => {
-            const percentage = progress.required > 0 ? (progress.confirmed / progress.required) * 100 : 0;
+            const percentage =
+              progress.required > 0 ? (progress.confirmed / progress.required) * 100 : 0;
             if (percentage < 100) {
               shouldReopen = true;
               reopenMessage = `${date} 날짜의 인원이 부족하여 공고가 다시 열렸습니다.`;
@@ -668,14 +727,15 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
           const progressMap = JobPostingUtils.getRequirementProgress(updatedPost);
           const allProgress = progressMap.get('all');
           if (allProgress) {
-            const percentage = allProgress.required > 0 ? (allProgress.confirmed / allProgress.required) * 100 : 0;
+            const percentage =
+              allProgress.required > 0 ? (allProgress.confirmed / allProgress.required) * 100 : 0;
             if (percentage < 100) {
               shouldReopen = true;
               reopenMessage = '필요 인원이 부족하여 공고가 다시 열렸습니다.';
             }
           }
         }
-        
+
         // 공고 상태 업데이트
         if (shouldReopen && updatedPost.status === 'closed') {
           await updateDoc(jobPostingRef, { status: 'open' });
@@ -683,9 +743,13 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
         }
       }
     } catch (err) {
-      logger.error('자동 마감 해제 처리 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
-        component: 'useApplicantActions' 
-      });
+      logger.error(
+        '자동 마감 해제 처리 중 오류:',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          component: 'useApplicantActions',
+        }
+      );
       toast.error('자동 마감 해제 처리 중 오류가 발생했습니다.');
     }
   };
@@ -695,56 +759,60 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
    */
   const verifyDataIntegrityAfterCancel = async (jobPostingRef: any, applicantId: string) => {
     try {
-      
       // jobPosting의 최종 상태 확인
       const finalDoc = await getDoc(jobPostingRef);
       if (!finalDoc.exists()) {
-        logger.error('❌ 검증: jobPosting 문서가 존재하지 않음', undefined, { 
-          component: 'useApplicantActions' 
+        logger.error('❌ 검증: jobPosting 문서가 존재하지 않음', undefined, {
+          component: 'useApplicantActions',
         });
         return;
       }
 
       const finalData = finalDoc.data() as any;
       const remainingConfirmedStaff = finalData?.confirmedStaff || [];
-      
+
       // 해당 지원자의 잔여 데이터 확인
       const remainingApplicantEntries = remainingConfirmedStaff.filter(
         (staff: any) => (staff.userId || staff.staffId) === applicantId
       );
 
       if (remainingApplicantEntries.length > 0) {
-        logger.error('❌ 데이터 정합성 오류: confirmedStaff에 잔여 데이터 발견:', 
-          new Error('Data integrity violation'), {
-          component: 'useApplicantActions',
-          data: {
-            applicantId,
-            remainingEntries: remainingApplicantEntries.map((s: any) => ({
-              userId: s.userId || s.staffId,
-              role: s.role,
-              timeSlot: s.timeSlot,
-              date: s.date
-            }))
+        logger.error(
+          '❌ 데이터 정합성 오류: confirmedStaff에 잔여 데이터 발견:',
+          new Error('Data integrity violation'),
+          {
+            component: 'useApplicantActions',
+            data: {
+              applicantId,
+              remainingEntries: remainingApplicantEntries.map((s: any) => ({
+                userId: s.userId || s.staffId,
+                role: s.role,
+                timeSlot: s.timeSlot,
+                date: s.date,
+              })),
+            },
           }
-        });
-        
+        );
+
         // 강제로 다시 한번 정리 시도
         await runTransaction(db, async (transaction) => {
           const cleanedArray = remainingConfirmedStaff.filter(
             (staff: any) => (staff.userId || staff.staffId) !== applicantId
           );
           transaction.update(jobPostingRef, {
-            confirmedStaff: cleanedArray
+            confirmedStaff: cleanedArray,
           });
         });
-        
       } else {
       }
-      
     } catch (err) {
-      logger.error('데이터 정합성 검증 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
-        component: 'useApplicantActions' 
-      });
+      logger.error(
+        '데이터 정합성 검증 중 오류:',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          component: 'useApplicantActions',
+        }
+      );
     }
   };
 
@@ -753,60 +821,57 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
    */
   const deleteWorkLogsForCancelledStaff = async (applicantId: string, postingId: string) => {
     try {
-
       let deletedCount = 0;
 
       // 🎯 방법 1: eventId로 모든 WorkLog를 가져온 후 클라이언트에서 필터링
-      const allWorkLogsQuery = query(
-        collection(db, 'workLogs'),
-        where('eventId', '==', postingId)
-      );
+      const allWorkLogsQuery = query(collection(db, 'workLogs'), where('eventId', '==', postingId));
 
       const allWorkLogsSnapshot = await getDocs(allWorkLogsQuery);
 
       // 클라이언트에서 staffId 필터링 (더 정확함)
-      const targetWorkLogs = allWorkLogsSnapshot.docs.filter(workLogDoc => {
+      const targetWorkLogs = allWorkLogsSnapshot.docs.filter((workLogDoc) => {
         const data = workLogDoc.data();
         const staffId = data?.staffId || '';
-        
+
         // staffId가 applicantId로 시작하거나 정확히 일치하는 경우
         const isMatch = staffId === applicantId || staffId.startsWith(applicantId + '_');
-        
-        
+
         return isMatch;
       });
-
 
       // 🗑️ 각 WorkLog 문서 삭제
       for (const workLogDoc of targetWorkLogs) {
         try {
-          
           await deleteDoc(doc(db, 'workLogs', workLogDoc.id));
           deletedCount++;
-          
         } catch (deleteError) {
-          logger.error('❌ 개별 WorkLog 삭제 실패:', 
-            deleteError instanceof Error ? deleteError : new Error(String(deleteError)), {
-            component: 'useApplicantActions',
-            data: { 
-              workLogId: workLogDoc.id,
-              staffId: workLogDoc.data()?.staffId
+          logger.error(
+            '❌ 개별 WorkLog 삭제 실패:',
+            deleteError instanceof Error ? deleteError : new Error(String(deleteError)),
+            {
+              component: 'useApplicantActions',
+              data: {
+                workLogId: workLogDoc.id,
+                staffId: workLogDoc.data()?.staffId,
+              },
             }
-          });
+          );
         }
       }
-
 
       // 삭제 결과 검증
       if (deletedCount === 0 && targetWorkLogs.length === 0) {
       } else if (deletedCount !== targetWorkLogs.length) {
       }
-
     } catch (err) {
-      logger.error('WorkLog 삭제 중 심각한 오류:', err instanceof Error ? err : new Error(String(err)), {
-        component: 'useApplicantActions',
-        data: { applicantId, postingId }
-      });
+      logger.error(
+        'WorkLog 삭제 중 심각한 오류:',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          component: 'useApplicantActions',
+          data: { applicantId, postingId },
+        }
+      );
       // 에러가 발생해도 전체 프로세스는 계속 진행 (확정 취소는 성공)
     }
   };
@@ -816,15 +881,21 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
    */
   const deleteStaffDocuments = async (applicantId: string, postingId: string) => {
     try {
-      
       // 🚫 persons 컬렉션 삭제 로직 제거 (WorkLog 통합으로 인해 불필요)
-      logger.info(`persons 삭제 스킵 (WorkLog 통합): applicantId=${applicantId}, postingId=${postingId}`, { 
-        component: 'useApplicantActions'
-      });
+      logger.info(
+        `persons 삭제 스킵 (WorkLog 통합): applicantId=${applicantId}, postingId=${postingId}`,
+        {
+          component: 'useApplicantActions',
+        }
+      );
     } catch (err) {
-      logger.error('staff 컬렉션 자동 삭제 중 오류:', err instanceof Error ? err : new Error(String(err)), { 
-        component: 'useApplicantActions' 
-      });
+      logger.error(
+        'staff 컬렉션 자동 삭제 중 오류:',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          component: 'useApplicantActions',
+        }
+      );
       toast.error('staff 컬렉션 자동 삭제 중 오류가 발생했습니다.');
     }
   };
@@ -836,6 +907,6 @@ export const useApplicantActions = ({ jobPosting, currentUser, onRefresh }: UseA
     handleCancelConfirmation,
     cancelConfirmModal,
     setCancelConfirmModal,
-    performCancelConfirmation
+    performCancelConfirmation,
   };
 };

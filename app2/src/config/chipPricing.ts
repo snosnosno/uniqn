@@ -15,7 +15,7 @@ export const CHIP_PRICING: ChipPricing[] = [
   { postingType: 'fixed', durationDays: 7, chipCost: 3 },
   { postingType: 'fixed', durationDays: 30, chipCost: 5 },
   { postingType: 'fixed', durationDays: 90, chipCost: 10 },
-  { postingType: 'urgent', chipCost: 5 }
+  { postingType: 'urgent', chipCost: 5 },
 ];
 
 /**
@@ -26,10 +26,7 @@ export const CHIP_PRICING: ChipPricing[] = [
  * @returns 칩 비용
  * @throws Error - 잘못된 타입 또는 기간
  */
-export const getChipCost = (
-  postingType: PostingType,
-  durationDays?: 7 | 30 | 90
-): number => {
+export const getChipCost = (postingType: PostingType, durationDays?: 7 | 30 | 90): number => {
   // regular, tournament는 무료
   if (postingType === 'regular' || postingType === 'tournament') {
     return 0;
@@ -47,7 +44,7 @@ export const getChipCost = (
     }
 
     const pricing = CHIP_PRICING.find(
-      p => p.postingType === 'fixed' && p.durationDays === durationDays
+      (p) => p.postingType === 'fixed' && p.durationDays === durationDays
     );
 
     if (!pricing) {
@@ -67,7 +64,12 @@ export const getChipCost = (
  * 충전 패키지 정보 (재export)
  * src/types/payment/package.ts에서 관리
  */
-export { CHIP_PACKAGES, CHIP_PACKAGE_IDS, getAllChipPackages, getChipPackage } from '../types/payment/package';
+export {
+  CHIP_PACKAGES,
+  CHIP_PACKAGE_IDS,
+  getAllChipPackages,
+  getChipPackage,
+} from '../types/payment/package';
 
 /**
  * 구독 플랜 정보 (재export)

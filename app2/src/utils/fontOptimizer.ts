@@ -62,7 +62,9 @@ export const checkFontLoad = async (fontFamily: string): Promise<boolean> => {
     await document.fonts.load(`16px "${fontFamily}"`);
     return document.fonts.check(`16px "${fontFamily}"`);
   } catch (error) {
-    logger.warn(`폰트 로드 확인 실패: ${fontFamily}`, { error: error instanceof Error ? error.message : String(error) });
+    logger.warn(`폰트 로드 확인 실패: ${fontFamily}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 };
@@ -101,7 +103,7 @@ export const createOptimizedFontStack = async (): Promise<string> => {
  */
 export const getFontMetrics = (fontFamily: string) => {
   const metrics: Record<string, any> = {
-    'Pretendard': {
+    Pretendard: {
       ascent: 0.8,
       descent: 0.2,
       lineGap: 0.1,
@@ -113,7 +115,7 @@ export const getFontMetrics = (fontFamily: string) => {
       lineGap: 0.1,
       unitsPerEm: 1000,
     },
-    'Roboto': {
+    Roboto: {
       ascent: 0.8,
       descent: 0.2,
       lineGap: 0.1,
@@ -157,7 +159,7 @@ export const analyzeUsedFontWeights = (): number[] => {
 
   // DOM에서 실제 사용 중인 font-weight 수집
   const elements = document.querySelectorAll('*');
-  elements.forEach(element => {
+  elements.forEach((element) => {
     const styles = window.getComputedStyle(element);
     const weight = parseInt(styles.fontWeight);
     if (!isNaN(weight)) {
@@ -177,13 +179,18 @@ export const initializeFontOptimization = (): void => {
     applyFontDisplay();
 
     // 폰트 프리로딩은 지연 실행 (성능 경고 방지)
-    requestIdleCallback(() => {
-      try {
-        preloadCriticalFonts();
-      } catch (error) {
-        logger.warn('폰트 프리로딩 실패:', { error: error instanceof Error ? error.message : String(error) });
-      }
-    }, { timeout: 5000 });
+    requestIdleCallback(
+      () => {
+        try {
+          preloadCriticalFonts();
+        } catch (error) {
+          logger.warn('폰트 프리로딩 실패:', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      },
+      { timeout: 5000 }
+    );
 
     // 폰트 로드 완료 후 성능 분석 (에러 처리 포함)
     if (document.fonts) {
@@ -192,7 +199,9 @@ export const initializeFontOptimization = (): void => {
           analyzeUsedFontWeights();
         })
         .catch((error) => {
-          logger.warn('폰트 로드 상태 확인 실패:', { error: error instanceof Error ? error.message : String(error) });
+          logger.warn('폰트 로드 상태 확인 실패:', {
+            error: error instanceof Error ? error.message : String(error),
+          });
         });
     }
   } catch (error) {

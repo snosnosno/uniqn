@@ -99,9 +99,7 @@ export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) =
 
   return (
     <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-md">
-      <h3 className="mb-6 text-xl font-bold text-gray-900 dark:text-gray-100">
-        수동 칩 지급
-      </h3>
+      <h3 className="mb-6 text-xl font-bold text-gray-900 dark:text-gray-100">수동 칩 지급</h3>
 
       <form onSubmit={handleGrant} className="space-y-6">
         {/* 사용자 ID */}
@@ -116,7 +114,7 @@ export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) =
             type="text"
             id="userId"
             value={userId}
-            onChange={e => setUserId(e.target.value)}
+            onChange={(e) => setUserId(e.target.value)}
             placeholder="예: abc123def456"
             className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
             disabled={isProcessing}
@@ -180,7 +178,7 @@ export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) =
               type="number"
               id="amount"
               value={amount}
-              onChange={e => setAmount(parseInt(e.target.value, 10) || 0)}
+              onChange={(e) => setAmount(parseInt(e.target.value, 10) || 0)}
               min="1"
               max="1000"
               className="block w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
@@ -226,7 +224,7 @@ export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) =
           <textarea
             id="reason"
             value={reason}
-            onChange={e => setReason(e.target.value)}
+            onChange={(e) => setReason(e.target.value)}
             rows={3}
             placeholder="예: 이벤트 보상, 고객 보상, 오류 보상 등"
             className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
@@ -268,9 +266,7 @@ export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) =
 
       {/* 안내 메시지 */}
       <div className="mt-6 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-4">
-        <h4 className="font-semibold text-yellow-900 dark:text-yellow-200">
-          ⚠️ 주의사항
-        </h4>
+        <h4 className="font-semibold text-yellow-900 dark:text-yellow-200">⚠️ 주의사항</h4>
         <ul className="mt-2 space-y-1 text-sm text-yellow-800 dark:text-yellow-300">
           <li>• 관리자 권한이 필요합니다</li>
           <li>• 빨간칩은 1년 후 만료됩니다</li>

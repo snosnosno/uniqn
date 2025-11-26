@@ -19,7 +19,7 @@ const AvailableTimesPage = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [availability, setAvailability] = useState<Availability>({});
-  
+
   const availabilityRef = currentUser ? doc(db, 'staffAvailability', currentUser.uid) : null;
   const [availabilitySnap, loading, error] = useDocument(availabilityRef);
 
@@ -32,8 +32,10 @@ const AvailableTimesPage = () => {
         const dayKey = day.toLowerCase();
         if (dayKeys.includes(dayKey)) {
           translatedData[dayKey] = data[day].map((time: string) => {
-             // Find the key for the stored English time
-            const timeKeyEntry = Object.entries(t('availableTimes.times', { returnObjects: true })).find(([_key, value]) => value === time);
+            // Find the key for the stored English time
+            const timeKeyEntry = Object.entries(
+              t('availableTimes.times', { returnObjects: true })
+            ).find(([_key, value]) => value === time);
             return timeKeyEntry ? timeKeyEntry[0] : time;
           });
         }
@@ -43,10 +45,10 @@ const AvailableTimesPage = () => {
   }, [availabilitySnap, t]);
 
   const handleCheckboxChange = (dayKey: string, timeKey: string) => {
-    setAvailability(prev => {
+    setAvailability((prev) => {
       const daySchedule = prev[dayKey] || [];
       const newSchedule = daySchedule.includes(timeKey)
-        ? daySchedule.filter(t => t !== timeKey)
+        ? daySchedule.filter((t) => t !== timeKey)
         : [...daySchedule, timeKey];
       return { ...prev, [dayKey]: newSchedule };
     });
@@ -63,25 +65,43 @@ const AvailableTimesPage = () => {
       await setDoc(availabilityRef, availability);
       toast.success(t('availableTimes.alerts.updateSuccess'));
     } catch (err) {
-      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'AvailableTimesPage' });
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), {
+        component: 'AvailableTimesPage',
+      });
       toast.error(t('availableTimes.alerts.updateFailed'));
     }
   };
 
-  if (loading) return <p className="text-gray-900 dark:text-gray-100">{t('availableTimes.status.loading')}</p>;
-  if (error) return <p className="text-red-600 dark:text-red-400">{t('availableTimes.status.error', { message: error.message })}</p>;
-  if (!currentUser) return <p className="text-gray-600 dark:text-gray-400">{t('availableTimes.status.loginRequired')}</p>;
+  if (loading)
+    return <p className="text-gray-900 dark:text-gray-100">{t('availableTimes.status.loading')}</p>;
+  if (error)
+    return (
+      <p className="text-red-600 dark:text-red-400">
+        {t('availableTimes.status.error', { message: error.message })}
+      </p>
+    );
+  if (!currentUser)
+    return (
+      <p className="text-gray-600 dark:text-gray-400">{t('availableTimes.status.loginRequired')}</p>
+    );
 
   return (
     <div className="container">
-      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('availableTimes.title')}</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+        {t('availableTimes.title')}
+      </h1>
       <div className="space-y-4">
-        {dayKeys.map(dayKey => (
+        {dayKeys.map((dayKey) => (
           <div key={dayKey}>
-            <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">{t(`availableTimes.days.${dayKey}`)}</h3>
+            <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">
+              {t(`availableTimes.days.${dayKey}`)}
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {timeKeys.map(timeKey => (
-                <label key={timeKey} className="flex items-center space-x-2 text-gray-900 dark:text-gray-100">
+              {timeKeys.map((timeKey) => (
+                <label
+                  key={timeKey}
+                  className="flex items-center space-x-2 text-gray-900 dark:text-gray-100"
+                >
                   <input
                     type="checkbox"
                     checked={availability[dayKey]?.includes(timeKey) || false}

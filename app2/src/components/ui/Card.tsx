@@ -3,23 +3,23 @@ import React from 'react';
 export interface CardProps {
   children: React.ReactNode;
   className?: string;
-  
+
   // 구조적 props
   header?: React.ReactNode;
   footer?: React.ReactNode;
-  
+
   // 스타일 props
   variant?: 'default' | 'elevated' | 'outlined' | 'filled';
   size?: 'sm' | 'md' | 'lg';
   padding?: 'none' | 'sm' | 'md' | 'lg';
-  
+
   // 상호작용 props
   hoverable?: boolean;
   clickable?: boolean;
   selected?: boolean;
   disabled?: boolean;
   onClick?: () => void;
-  
+
   // 접근성 props
   role?: string;
   'aria-label'?: string;
@@ -48,11 +48,7 @@ const Card: React.FC<CardProps> = ({
   'aria-selected': ariaSelected,
 }) => {
   // 기본 클래스
-  const baseClasses = [
-    'bg-white dark:bg-gray-800',
-    'rounded-lg',
-    'transition-all duration-200',
-  ];
+  const baseClasses = ['bg-white dark:bg-gray-800', 'rounded-lg', 'transition-all duration-200'];
 
   // Variant 스타일
   const variantClasses = {
@@ -81,7 +77,8 @@ const Card: React.FC<CardProps> = ({
   const interactionClasses = [
     hoverable && 'hover:shadow-lg dark:hover:shadow-gray-900/70 hover:scale-[1.02]',
     clickable && 'cursor-pointer',
-    selected && 'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:ring-primary-400',
+    selected &&
+      'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:ring-primary-400',
     disabled && 'opacity-50 cursor-not-allowed',
   ].filter(Boolean);
 
@@ -112,17 +109,19 @@ const Card: React.FC<CardProps> = ({
   const cardContent = (
     <>
       {header && (
-        <div className={`card-header ${padding !== 'none' ? 'border-b border-gray-200 dark:border-gray-700 pb-4 mb-4' : ''}`}>
+        <div
+          className={`card-header ${padding !== 'none' ? 'border-b border-gray-200 dark:border-gray-700 pb-4 mb-4' : ''}`}
+        >
           {header}
         </div>
       )}
 
-      <div className="card-body">
-        {children}
-      </div>
+      <div className="card-body">{children}</div>
 
       {footer && (
-        <div className={`card-footer ${padding !== 'none' ? 'border-t border-gray-200 dark:border-gray-700 pt-4 mt-4' : ''}`}>
+        <div
+          className={`card-footer ${padding !== 'none' ? 'border-t border-gray-200 dark:border-gray-700 pt-4 mt-4' : ''}`}
+        >
           {footer}
         </div>
       )}
@@ -163,8 +162,8 @@ const Card: React.FC<CardProps> = ({
 /**
  * 카드 헤더 컴포넌트
  */
-export const CardHeader: React.FC<{ 
-  children: React.ReactNode; 
+export const CardHeader: React.FC<{
+  children: React.ReactNode;
   className?: string;
   title?: string;
   subtitle?: string;
@@ -174,7 +173,9 @@ export const CardHeader: React.FC<{
     return (
       <div className={`flex items-start justify-between ${className}`}>
         <div>
-          {title && <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{title}</h3>}
+          {title && (
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{title}</h3>
+          )}
           {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
         </div>
         {action && <div className="ml-4 flex-shrink-0">{action}</div>}
@@ -188,8 +189,8 @@ export const CardHeader: React.FC<{
 /**
  * 카드 바디 컴포넌트
  */
-export const CardBody: React.FC<{ 
-  children: React.ReactNode; 
+export const CardBody: React.FC<{
+  children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => {
   return <div className={`card-body ${className}`}>{children}</div>;
@@ -198,8 +199,8 @@ export const CardBody: React.FC<{
 /**
  * 카드 푸터 컴포넌트
  */
-export const CardFooter: React.FC<{ 
-  children: React.ReactNode; 
+export const CardFooter: React.FC<{
+  children: React.ReactNode;
   className?: string;
   align?: 'left' | 'center' | 'right' | 'between';
 }> = ({ children, className = '', align = 'right' }) => {
@@ -209,12 +210,8 @@ export const CardFooter: React.FC<{
     right: 'justify-end',
     between: 'justify-between',
   };
-  
-  return (
-    <div className={`flex items-center ${alignClasses[align]} ${className}`}>
-      {children}
-    </div>
-  );
+
+  return <div className={`flex items-center ${alignClasses[align]} ${className}`}>{children}</div>;
 };
 
 export default Card;

@@ -15,14 +15,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { QRScanContext, StaffQRPayload, QRScanResult } from '../../types/staffQR';
-import {
-  validateQRPayload,
-  getOrCreateStaffQR
-} from '../../services/StaffQRService';
-import {
-  handleCheckIn,
-  handleCheckOut
-} from '../../services/StaffQRAttendanceService';
+import { validateQRPayload, getOrCreateStaffQR } from '../../services/StaffQRService';
+import { handleCheckIn, handleCheckOut } from '../../services/StaffQRAttendanceService';
 import { Timestamp } from 'firebase/firestore';
 import { getKoreanDate } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
@@ -45,7 +39,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
   eventId,
   eventTitle,
   managerId,
-  initialMode = 'check-in'
+  initialMode = 'check-in',
 }) => {
   const [scanContext, setScanContext] = useState<QRScanContext>({
     eventId,
@@ -54,7 +48,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
     mode: initialMode,
     roundUpInterval: 15,
     activatedAt: Timestamp.now(),
-    activatedBy: managerId
+    activatedBy: managerId,
   });
 
   const [scanMode, setScanMode] = useState<'camera' | 'manual'>('camera');
@@ -81,7 +75,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         mode: initialMode,
         roundUpInterval: 15,
         activatedAt: Timestamp.now(),
-        activatedBy: managerId
+        activatedBy: managerId,
       });
       setManualInput('');
       setScanResult(null);
@@ -100,11 +94,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         scannerRef.current = null;
         setCameraActive(false);
 
-        currentScanner
-          .clear()
-          .catch(() => {
-            // 이미 정리 중이거나 정리 완료된 경우 에러 무시
-          });
+        currentScanner.clear().catch(() => {
+          // 이미 정리 중이거나 정리 완료된 경우 에러 무시
+        });
       }
       return;
     }
@@ -115,7 +107,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
       {
         fps: 10,
         qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
+        aspectRatio: 1.0,
       },
       false
     );
@@ -140,7 +132,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     {
                       fps: 10,
                       qrbox: { width: 250, height: 250 },
-                      aspectRatio: 1.0
+                      aspectRatio: 1.0,
                     },
                     false
                   );
@@ -175,11 +167,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
       if (currentScanner) {
         scannerRef.current = null;
         setCameraActive(false);
-        currentScanner
-          .clear()
-          .catch(() => {
-            // 이미 정리 중이거나 정리 완료된 경우 에러 무시
-          });
+        currentScanner.clear().catch(() => {
+          // 이미 정리 중이거나 정리 완료된 경우 에러 무시
+        });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,8 +188,8 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           data: {
             eventId,
             mode: scanContext.mode,
-            managerId
-          }
+            managerId,
+          },
         });
 
         // 1. JSON 파싱
@@ -209,7 +199,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         } catch {
           setScanResult({
             success: false,
-            message: '유효하지 않은 QR 형식입니다.'
+            message: '유효하지 않은 QR 형식입니다.',
           });
           return;
         }
@@ -222,7 +212,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         if (!validation.isValid) {
           setScanResult({
             success: false,
-            message: validation.error || '유효하지 않은 QR 코드입니다.'
+            message: validation.error || '유효하지 않은 QR 코드입니다.',
           });
           return;
         }
@@ -247,13 +237,13 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
 
         // 5. 성공 시 이력 추가
         if (result.success && result.staffName) {
-          setScanHistory(prev => [
+          setScanHistory((prev) => [
             {
               staffName: result.staffName || 'Unknown',
               time: new Date().toLocaleTimeString('ko-KR'),
-              mode: scanContext.mode
+              mode: scanContext.mode,
             },
-            ...prev.slice(0, 9) // 최대 10개 유지
+            ...prev.slice(0, 9), // 최대 10개 유지
           ]);
         }
 
@@ -266,20 +256,20 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
             eventId,
             mode: scanContext.mode,
             success: result.success,
-            staffName: result.staffName
-          }
+            staffName: result.staffName,
+          },
         });
       } catch (error) {
         logger.error('QR 스캔 실패', error as Error, {
           data: {
             eventId,
-            mode: scanContext.mode
-          }
+            mode: scanContext.mode,
+          },
         });
 
         setScanResult({
           success: false,
-          message: '스캔 처리 중 오류가 발생했습니다.'
+          message: '스캔 처리 중 오류가 발생했습니다.',
         });
       } finally {
         setScanning(false);
@@ -324,12 +314,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
             onClick={onClose}
             className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -350,9 +335,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
               </label>
               <div className="flex gap-2">
                 <button
-                  onClick={() =>
-                    setScanContext(prev => ({ ...prev, mode: 'check-in' }))
-                  }
+                  onClick={() => setScanContext((prev) => ({ ...prev, mode: 'check-in' }))}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     scanContext.mode === 'check-in'
                       ? 'bg-green-600 dark:bg-green-700 text-white'
@@ -362,9 +345,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                   출근
                 </button>
                 <button
-                  onClick={() =>
-                    setScanContext(prev => ({ ...prev, mode: 'check-out' }))
-                  }
+                  onClick={() => setScanContext((prev) => ({ ...prev, mode: 'check-out' }))}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     scanContext.mode === 'check-out'
                       ? 'bg-blue-600 dark:bg-blue-700 text-white'
@@ -383,9 +364,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                 </label>
                 <div className="flex gap-2">
                   <button
-                    onClick={() =>
-                      setScanContext(prev => ({ ...prev, roundUpInterval: 15 }))
-                    }
+                    onClick={() => setScanContext((prev) => ({ ...prev, roundUpInterval: 15 }))}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                       scanContext.roundUpInterval === 15
                         ? 'bg-blue-600 dark:bg-blue-700 text-white'
@@ -395,9 +374,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     15분
                   </button>
                   <button
-                    onClick={() =>
-                      setScanContext(prev => ({ ...prev, roundUpInterval: 30 }))
-                    }
+                    onClick={() => setScanContext((prev) => ({ ...prev, roundUpInterval: 30 }))}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                       scanContext.roundUpInterval === 30
                         ? 'bg-blue-600 dark:bg-blue-700 text-white'
@@ -426,12 +403,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -456,12 +428,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -477,10 +444,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           {/* 카메라 스캔 영역 */}
           {scanMode === 'camera' && (
             <div className="space-y-3">
-              <div
-                id="qr-reader"
-                className="w-full rounded-lg overflow-hidden bg-black"
-              />
+              <div id="qr-reader" className="w-full rounded-lg overflow-hidden bg-black" />
               {cameraActive && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <p className="text-sm text-blue-800 dark:text-blue-300 text-center font-medium">
@@ -511,10 +475,10 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                 QR 코드 수동 입력
               </label>
               <textarea
-              ref={inputRef}
-              value={manualInput}
-              onChange={e => setManualInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+                ref={inputRef}
+                value={manualInput}
+                onChange={(e) => setManualInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="스태프의 QR 코드를 붙여넣기 하세요..."
                 className="w-full h-24 px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
                 disabled={scanning}
@@ -531,12 +495,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -593,7 +552,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                 <div className="flex-1">
                   <p
                     className={`font-semibold ${
-                      scanResult.success ? 'text-green-900 dark:text-green-300' : 'text-red-900 dark:text-red-300'
+                      scanResult.success
+                        ? 'text-green-900 dark:text-green-300'
+                        : 'text-red-900 dark:text-red-300'
                     }`}
                   >
                     {scanResult.message}
@@ -628,7 +589,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     <div className="flex items-center space-x-3">
                       <div
                         className={`w-2 h-2 rounded-full ${
-                          item.mode === 'check-in' ? 'bg-green-500 dark:bg-green-400' : 'bg-blue-500 dark:bg-blue-400'
+                          item.mode === 'check-in'
+                            ? 'bg-green-500 dark:bg-green-400'
+                            : 'bg-blue-500 dark:bg-blue-400'
                         }`}
                       />
                       <span className="font-medium text-gray-900 dark:text-gray-100">

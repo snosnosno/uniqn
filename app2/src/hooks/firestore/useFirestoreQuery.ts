@@ -19,17 +19,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  onSnapshot,
-  Query,
-  DocumentData,
-} from 'firebase/firestore';
+import { onSnapshot, Query, DocumentData } from 'firebase/firestore';
 import { logger } from '../../utils/logger';
-import type {
-  FirestoreQueryResult,
-  FirestoreDocument,
-  QueryHookOptions,
-} from './types';
+import type { FirestoreQueryResult, FirestoreDocument, QueryHookOptions } from './types';
 import { convertDocument } from './types';
 
 /**
@@ -72,12 +64,7 @@ export function useFirestoreQuery<T>(
   firestoreQuery: Query<DocumentData> | null,
   options: Omit<QueryHookOptions, 'query'> = {}
 ): FirestoreQueryResult<T> {
-  const {
-    enabled = true,
-    onError,
-    onSuccess,
-    deps = [],
-  } = options;
+  const { enabled = true, onError, onSuccess, deps = [] } = options;
 
   // 상태 관리
   const [data, setData] = useState<FirestoreDocument<T>[]>([]);
@@ -168,12 +155,7 @@ export function useFirestoreQuery<T>(
       return undefined;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    firestoreQuery,
-    enabled,
-    refetchCount,
-    ...deps,
-  ]);
+  }, [firestoreQuery, enabled, refetchCount, ...deps]);
 
   return {
     data,

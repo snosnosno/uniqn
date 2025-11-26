@@ -23,7 +23,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
   templates,
   templatesLoading,
   onLoadTemplate,
-  onDeleteTemplate
+  onDeleteTemplate,
 }) => {
   const { formatDateDisplay } = useDateUtils();
 
@@ -31,7 +31,9 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
     try {
       await onLoadTemplate(template);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '템플릿 불러오기 중 오류가 발생했습니다.');
+      toast.error(
+        error instanceof Error ? error.message : '템플릿 불러오기 중 오류가 발생했습니다.'
+      );
     }
   };
 
@@ -61,10 +63,15 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           <div className="max-h-96 overflow-y-auto">
             <div className="grid gap-3">
               {templates.map((template) => (
-                <div key={template.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div
+                  key={template.id}
+                  className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 dark:text-gray-100">{template.name}</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                        {template.name}
+                      </h4>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="info" size="sm" icon="📍">
                           {template.templateData.location}
@@ -75,20 +82,26 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                         </Badge>
                         {template.templateData.salaryType && template.templateData.salaryAmount && (
                           <Badge variant="warning" size="sm" icon="💰">
-                            {formatSalaryDisplay(template.templateData.salaryType, template.templateData.salaryAmount)}
+                            {formatSalaryDisplay(
+                              template.templateData.salaryType,
+                              template.templateData.salaryAmount
+                            )}
                           </Badge>
                         )}
                       </div>
-                      {template.templateData.benefits && Object.keys(template.templateData.benefits).length > 0 && (
-                        <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                          <span className="text-green-700 dark:text-green-400">✅ {getBenefitDisplayNames(template.templateData.benefits).join(', ')}</span>
-                        </div>
-                      )}
+                      {template.templateData.benefits &&
+                        Object.keys(template.templateData.benefits).length > 0 && (
+                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                            <span className="text-green-700 dark:text-green-400">
+                              ✅ {getBenefitDisplayNames(template.templateData.benefits).join(', ')}
+                            </span>
+                          </div>
+                        )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         생성: {formatDateDisplay(template.createdAt)}
                       </p>
                     </div>
-                    
+
                     <div className="flex space-x-2 ml-4">
                       <Button
                         type="button"
@@ -113,20 +126,16 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
             </div>
           </div>
         )}
-        
+
         <InfoCard
           type="info"
           title="※ 안내:"
           message="템플릿 불러오기 후 날짜를 설정해주세요."
           className="mt-4"
         />
-        
+
         <div className="flex justify-end mt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-          >
+          <Button type="button" variant="secondary" onClick={onClose}>
             닫기
           </Button>
         </div>

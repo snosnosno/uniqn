@@ -50,32 +50,29 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
       bordered: 'bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600',
       ghost: 'bg-transparent',
     };
-    
+
     const paddingStyles = {
       none: '',
       sm: 'p-2 sm:p-3',
       md: 'p-3 sm:p-4',
       lg: 'p-3 sm:p-4 md:p-6',
     };
-    
+
     const interactiveStyles = onClick ? 'cursor-pointer' : '';
-    
-    const hoverStyles = hover && !disabled
-      ? 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5'
-      : '';
-    
-    const activeStyles = active
-      ? 'ring-2 ring-primary-500 ring-offset-2'
-      : '';
-    
-    const disabledStyles = disabled
-      ? 'opacity-50 cursor-not-allowed pointer-events-none'
-      : '';
-    
+
+    const hoverStyles =
+      hover && !disabled
+        ? 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5'
+        : '';
+
+    const activeStyles = active ? 'ring-2 ring-primary-500 ring-offset-2' : '';
+
+    const disabledStyles = disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+
     const focusStyles = onClick
       ? 'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
       : '';
-    
+
     const combinedClassName = `
       ${baseStyles}
       ${variantStyles[variant]}
@@ -86,18 +83,21 @@ const BaseCard = React.forwardRef<HTMLDivElement, BaseCardProps>(
       ${disabledStyles}
       ${focusStyles}
       ${className}
-    `.trim().replace(/\s+/g, ' ');
-    
+    `
+      .trim()
+      .replace(/\s+/g, ' ');
+
     // 키보드 접근성
-    const handleKeyDown = onClick && !disabled 
-      ? (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
+    const handleKeyDown =
+      onClick && !disabled
+        ? (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClick();
+            }
           }
-        }
-      : undefined;
-    
+        : undefined;
+
     return (
       <div
         ref={ref}
@@ -127,7 +127,11 @@ export const CardHeader: React.FC<{
   id?: string;
   'data-testid'?: string;
 }> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
-  <div id={id} className={`border-b border-gray-200 dark:border-gray-700 pb-3 mb-3 ${className}`} data-testid={dataTestId}>
+  <div
+    id={id}
+    className={`border-b border-gray-200 dark:border-gray-700 pb-3 mb-3 ${className}`}
+    data-testid={dataTestId}
+  >
     {children}
   </div>
 );
@@ -151,7 +155,11 @@ export const CardFooter: React.FC<{
   id?: string;
   'data-testid'?: string;
 }> = ({ children, className = '', id, 'data-testid': dataTestId }) => (
-  <div id={id} className={`border-t border-gray-200 dark:border-gray-700 pt-3 mt-3 ${className}`} data-testid={dataTestId}>
+  <div
+    id={id}
+    className={`border-t border-gray-200 dark:border-gray-700 pt-3 mt-3 ${className}`}
+    data-testid={dataTestId}
+  >
     {children}
   </div>
 );

@@ -12,12 +12,7 @@
  * @feature 002-phase3-integration
  */
 
-import {
-  toISODateString,
-  formatDate,
-  parseDate,
-  isValidDate,
-} from '../dateUtils';
+import { toISODateString, formatDate, parseDate, isValidDate } from '../dateUtils';
 import { logger } from '../logger';
 
 // logger mock
@@ -86,10 +81,9 @@ describe('DateUtils: Phase 3 Functions', () => {
 
       // Then: null 반환 및 경고 로그
       expect(result).toBeNull();
-      expect(logger.warn).toHaveBeenCalledWith(
-        'toISODateString: Invalid date',
-        { date: invalidDate }
-      );
+      expect(logger.warn).toHaveBeenCalledWith('toISODateString: Invalid date', {
+        date: invalidDate,
+      });
     });
 
     it('오늘 날짜를 올바르게 변환해야 함', () => {
@@ -221,12 +215,7 @@ describe('DateUtils: Phase 3 Functions', () => {
 
     it('다양한 날짜 형식을 파싱해야 함', () => {
       // Given: 다양한 형식의 날짜 문자열
-      const formats = [
-        '2025-11-20',
-        '2025/11/20',
-        'November 20, 2025',
-        '2025-11-20T00:00:00Z',
-      ];
+      const formats = ['2025-11-20', '2025/11/20', 'November 20, 2025', '2025-11-20T00:00:00Z'];
 
       // When & Then: 모두 Date 객체로 변환
       formats.forEach((format) => {
@@ -331,12 +320,12 @@ describe('DateUtils: Phase 3 Functions', () => {
       expect(isValidDate(parsedDate)).toBe(true);
 
       // And: formatDate로 포맷팅
-      
-        const formatted = formatDate(parsedDate, 'date');
-        expect(formatted).toBe('2025-11-20');
 
-        const formattedDateTime = formatDate(parsedDate, 'datetime');
-        expect(formattedDateTime).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+      const formatted = formatDate(parsedDate, 'date');
+      expect(formatted).toBe('2025-11-20');
+
+      const formattedDateTime = formatDate(parsedDate, 'datetime');
+      expect(formattedDateTime).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     });
 
     it('toISODateString과 parseDate가 역변환을 수행해야 함', () => {
@@ -351,8 +340,8 @@ describe('DateUtils: Phase 3 Functions', () => {
       expect(parsedBack).not.toBeNull();
 
       // Then: 날짜 부분이 동일해야 함
-      
-        expect(toISODateString(parsedBack)).toBe(dateString);
+
+      expect(toISODateString(parsedBack)).toBe(dateString);
     });
 
     it('에러 케이스에서도 일관된 null 반환', () => {

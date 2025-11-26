@@ -1,11 +1,11 @@
 import { Timestamp, doc, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
-import { 
-  Application, 
-  Assignment, 
+import {
+  Application,
+  Assignment,
   ApplicationHistoryEntry,
-  LegacyApplication 
+  LegacyApplication,
 } from '../types/application';
 // Application history management service
 
@@ -24,33 +24,29 @@ export interface ApplicationStateInfo {
 
 /**
  * 🎯 지원자 상태 전환 히스토리를 관리하는 서비스 클래스 (v2.0)
- * 
+ *
  * 🚀 v2.0 개선사항:
  * - 통합된 assignments 배열 사용 (Single Source of Truth)
  * - 레거시 필드 제거 (assignedRoles, assignedTimes, assignedDates 등)
  * - 자동 마이그레이션 지원
  * - 타입 안전성 강화
- * 
+ *
  * 핵심 기능:
- * 1. 상태 전환 시 원본 데이터 완전 보존 
+ * 1. 상태 전환 시 원본 데이터 완전 보존
  * 2. 확정/취소 히스토리 추적
  * 3. 데이터 무결성 보장
  * 4. 레거시 데이터 자동 마이그레이션
  */
 export class ApplicationHistoryService {
-  
   /**
    * 지원자 확정 처리 (히스토리 기반)
    */
-  static async confirmApplication(
-    applicationId: string,
-    assignments: Assignment[]
-  ): Promise<void> {
+  static async confirmApplication(applicationId: string, assignments: Assignment[]): Promise<void> {
     try {
       // 지원자 확정 시작
 
       const applicationRef = doc(db, 'applications', applicationId);
-      
+
       await runTransaction(db, async (transaction) => {
         // 현재 지원서 데이터 가져오기
         const applicationDoc = await transaction.get(applicationRef);
@@ -59,20 +55,20 @@ export class ApplicationHistoryService {
         }
 
         const currentData = applicationDoc.data();
-        
+
         // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
         const processedData: Application = currentData as Application;
-        
+
         // 원본 지원 데이터 보존 (최초 확정 시에만)
         const originalApplication = processedData.originalApplication || {
           assignments: processedData.assignments || [],
-          appliedAt: processedData.appliedAt || Timestamp.now()
+          appliedAt: processedData.appliedAt || Timestamp.now(),
         };
 
         // 새로운 확정 히스토리 항목
         const newHistoryEntry: ApplicationHistoryEntry = {
           confirmedAt: Timestamp.now(),
-          assignments: assignments
+          assignments: assignments,
         };
 
         // 기존 히스토리에 추가
@@ -83,27 +79,27 @@ export class ApplicationHistoryService {
         const updatedData: Partial<Application> = {
           status: 'confirmed',
           confirmedAt: Timestamp.now(),
-          
+
           // 핵심 배정 정보 (Single Source of Truth)
           assignments,
-          
+
           // 히스토리 정보
           originalApplication,
           confirmationHistory,
-          
+
           // 메타데이터
           lastModified: Timestamp.now(),
-          updatedAt: Timestamp.now()
+          updatedAt: Timestamp.now(),
         };
 
         transaction.update(applicationRef, updatedData);
       });
 
       // 지원자 확정 히스토리 저장 완료
-
     } catch (error) {
-      logger.error('❌ 지원자 확정 히스토리 저장 오류:', 
-        error instanceof Error ? error : new Error(String(error)), 
+      logger.error(
+        '❌ 지원자 확정 히스토리 저장 오류:',
+        error instanceof Error ? error : new Error(String(error)),
         { component: 'ApplicationHistoryService' }
       );
       throw error;
@@ -118,7 +114,7 @@ export class ApplicationHistoryService {
       // 확정 취소 시작
 
       const applicationRef = doc(db, 'applications', applicationId);
-      
+
       await runTransaction(db, async (transaction) => {
         // 현재 지원서 데이터 가져오기
         const applicationDoc = await transaction.get(applicationRef);
@@ -127,10 +123,10 @@ export class ApplicationHistoryService {
         }
 
         const currentData = applicationDoc.data();
-        
+
         // 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요)
         const processedData: Application = currentData as Application;
-        
+
         // 원본 지원 데이터 확인
         const originalApplication = processedData.originalApplication;
         if (!originalApplication) {
@@ -148,31 +144,31 @@ export class ApplicationHistoryService {
 
         // 🎯 새 구조로 지원서 상태를 'applied'로 복원 (v2.0)
         const restoredData: Partial<Application> = {
-          status: 'applied',  // 확정 취소 시 지원 상태로 복원
-          
+          status: 'applied', // 확정 취소 시 지원 상태로 복원
+
           // 원본 assignments 완전 복원
           assignments: originalApplication.assignments,
-          
+
           // 확정 관련 필드 제거 (타입 호환성 위해 제거)
           // confirmedAt: null,
           cancelledAt: Timestamp.now(),
-          
+
           // 히스토리 업데이트
           confirmationHistory,
-          
+
           // 메타데이터
           lastModified: Timestamp.now(),
-          updatedAt: Timestamp.now()
+          updatedAt: Timestamp.now(),
         };
 
         transaction.update(applicationRef, restoredData);
       });
 
       // 확정 취소 및 원본 데이터 복원 완료
-
     } catch (error) {
-      logger.error('❌ 확정 취소 처리 오류:', 
-        error instanceof Error ? error : new Error(String(error)), 
+      logger.error(
+        '❌ 확정 취소 처리 오류:',
+        error instanceof Error ? error : new Error(String(error)),
         { component: 'ApplicationHistoryService' }
       );
       throw error;
@@ -187,19 +183,19 @@ export class ApplicationHistoryService {
       // 지원 취소 시작
 
       const applicationRef = doc(db, 'applications', applicationId);
-      
+
       await updateDoc(applicationRef, {
         status: 'cancelled',
         cancelledAt: Timestamp.now(),
         lastModified: Timestamp.now(),
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
 
       // 지원 취소 처리 완료
-
     } catch (error) {
-      logger.error('❌ 지원 취소 처리 오류:', 
-        error instanceof Error ? error : new Error(String(error)), 
+      logger.error(
+        '❌ 지원 취소 처리 오류:',
+        error instanceof Error ? error : new Error(String(error)),
         { component: 'ApplicationHistoryService' }
       );
       throw error;
@@ -208,7 +204,7 @@ export class ApplicationHistoryService {
 
   /**
    * 🎯 지원자의 원본 지원 데이터 가져오기 (v2.0)
-   * 
+   *
    * @param applicantData 지원자 데이터 (레거시 또는 새 구조)
    * @returns 원본 assignments 배열
    */
@@ -232,16 +228,20 @@ export class ApplicationHistoryService {
   /**
    * 지원자의 확정 히스토리 가져오기
    */
-  static getConfirmationHistory(applicantData: Application | LegacyApplication): ApplicationHistoryEntry[] {
+  static getConfirmationHistory(
+    applicantData: Application | LegacyApplication
+  ): ApplicationHistoryEntry[] {
     return (applicantData as Application).confirmationHistory || [];
   }
 
   /**
    * 지원자의 현재 활성 확정 정보 가져오기 (취소되지 않은 최신 확정)
    */
-  static getCurrentConfirmation(applicantData: Application | LegacyApplication): ApplicationHistoryEntry | null {
+  static getCurrentConfirmation(
+    applicantData: Application | LegacyApplication
+  ): ApplicationHistoryEntry | null {
     const history = this.getConfirmationHistory(applicantData);
-    
+
     // 취소되지 않은 가장 최근 확정 찾기
     for (let i = history.length - 1; i >= 0; i--) {
       const entry = history[i];
@@ -249,13 +249,13 @@ export class ApplicationHistoryService {
         return entry;
       }
     }
-    
+
     return null;
   }
 
   /**
    * 🎯 확정된 지원자의 실제 선택사항 가져오기 (v2.0)
-   * 
+   *
    * @param applicantData 지원자 데이터 (레거시 또는 새 구조)
    * @returns 확정된 assignments 배열
    */
@@ -269,7 +269,7 @@ export class ApplicationHistoryService {
 
     // 현재 활성 확정 정보 가져오기
     const currentConfirmation = this.getCurrentConfirmation(processedData);
-    
+
     if (currentConfirmation && currentConfirmation.assignments) {
       // 확정 히스토리에서 실제 선택된 assignments 반환
       return currentConfirmation.assignments;
@@ -279,7 +279,7 @@ export class ApplicationHistoryService {
     if (processedData.assignments && Array.isArray(processedData.assignments)) {
       return processedData.assignments;
     }
-    
+
     return [];
   }
 
@@ -300,7 +300,10 @@ export class ApplicationHistoryService {
       errors.push('applicantId가 없습니다.');
     }
 
-    if (!dataToValidate.status || !['applied', 'confirmed', 'cancelled'].includes(dataToValidate.status)) {
+    if (
+      !dataToValidate.status ||
+      !['applied', 'confirmed', 'cancelled'].includes(dataToValidate.status)
+    ) {
       errors.push('유효하지 않은 status입니다.');
     }
 
@@ -314,7 +317,11 @@ export class ApplicationHistoryService {
       dataToValidate.assignments.forEach((assignment: any, index: number) => {
         if (!assignment.role) errors.push(`assignments[${index}]: role 누락`);
         if (!assignment.timeSlot) errors.push(`assignments[${index}]: timeSlot 누락`);
-        if (!assignment.dates || !Array.isArray(assignment.dates) || assignment.dates.length === 0) {
+        if (
+          !assignment.dates ||
+          !Array.isArray(assignment.dates) ||
+          assignment.dates.length === 0
+        ) {
           errors.push(`assignments[${index}]: dates 배열이 비어있음`);
         }
       });
@@ -334,7 +341,7 @@ export class ApplicationHistoryService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

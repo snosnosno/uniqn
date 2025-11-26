@@ -200,11 +200,7 @@ describe('Integration: DateFilter 마이그레이션', () => {
     it('오늘 날짜가 목록에 있으면 오늘 날짜를 선택해야 함', () => {
       // Given: 오늘 날짜를 포함한 날짜 목록
       const today = new Date().toISOString().split('T')[0] || '2025-01-15';
-      const dates: string[] = [
-        '2025-01-10',
-        today,
-        '2025-12-31',
-      ];
+      const dates: string[] = ['2025-01-10', today, '2025-12-31'];
       act(() => {
         useDateFilterStore.getState().setAvailableDates(dates);
         useDateFilterStore.getState().setSelectedDate('2025-01-10');

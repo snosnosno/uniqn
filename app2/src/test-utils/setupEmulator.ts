@@ -3,20 +3,9 @@
  * 멀티유저 테스트를 위한 초기 데이터 생성
  */
 
-import {
-  collection,
-  doc,
-  writeBatch,
-  Timestamp,
-  getDocs,
-  query
-} from 'firebase/firestore';
+import { collection, doc, writeBatch, Timestamp, getDocs, query } from 'firebase/firestore';
 import { toISODateString } from '../utils/dateUtils';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut
-} from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { logger } from '../utils/logger';
 
@@ -53,7 +42,7 @@ export const TEST_USERS: TestUser[] = [
     password: 'testpass123',
     role: 'admin',
     name: '관리자',
-    phone: '010-1234-5678'
+    phone: '010-1234-5678',
   },
   ...Array.from({ length: 10 }, (_, i) => ({
     uid: `staff-test-${i + 1}`,
@@ -61,7 +50,7 @@ export const TEST_USERS: TestUser[] = [
     password: 'testpass123',
     role: 'staff' as const,
     name: `스태프${i + 1}`,
-    phone: `010-1111-${String(i + 1).padStart(4, '0')}`
+    phone: `010-1111-${String(i + 1).padStart(4, '0')}`,
   })),
   ...Array.from({ length: 5 }, (_, i) => ({
     uid: `applicant-test-${i + 1}`,
@@ -69,8 +58,8 @@ export const TEST_USERS: TestUser[] = [
     password: 'testpass123',
     role: 'applicant' as const,
     name: `지원자${i + 1}`,
-    phone: `010-2222-${String(i + 1).padStart(4, '0')}`
-  }))
+    phone: `010-2222-${String(i + 1).padStart(4, '0')}`,
+  })),
 ];
 
 // 테스트 구인공고 데이터
@@ -86,7 +75,7 @@ export const TEST_JOB_POSTINGS: Omit<TestJobPosting, 'id' | 'createdAt'>[] = [
     hourlyWage: 30000,
     description: '강남 지역 홀덤 토너먼트 운영 스태프를 모집합니다.',
     status: 'active',
-    creatorId: 'admin-test-1'
+    creatorId: 'admin-test-1',
   },
   {
     title: '홍대 포커 대회 스태프 모집',
@@ -99,7 +88,7 @@ export const TEST_JOB_POSTINGS: Omit<TestJobPosting, 'id' | 'createdAt'>[] = [
     hourlyWage: 28000,
     description: '홍대 지역 포커 대회 운영진을 모집합니다.',
     status: 'active',
-    creatorId: 'admin-test-1'
+    creatorId: 'admin-test-1',
   },
   {
     title: '부산 홀덤 클럽 정규 스태프',
@@ -112,7 +101,7 @@ export const TEST_JOB_POSTINGS: Omit<TestJobPosting, 'id' | 'createdAt'>[] = [
     hourlyWage: 25000,
     description: '부산 지역 홀덤 클럽 정규 스태프 모집',
     status: 'active',
-    creatorId: 'admin-test-1'
+    creatorId: 'admin-test-1',
   },
   {
     title: '대구 포커 토너먼트 운영진',
@@ -125,7 +114,7 @@ export const TEST_JOB_POSTINGS: Omit<TestJobPosting, 'id' | 'createdAt'>[] = [
     hourlyWage: 32000,
     description: '대구 지역 대형 포커 토너먼트 운영진 모집',
     status: 'active',
-    creatorId: 'admin-test-1'
+    creatorId: 'admin-test-1',
   },
   {
     title: '인천 홀덤 클럽 주말 스태프',
@@ -138,8 +127,8 @@ export const TEST_JOB_POSTINGS: Omit<TestJobPosting, 'id' | 'createdAt'>[] = [
     hourlyWage: 27000,
     description: '인천 지역 홀덤 클럽 주말 스태프 모집',
     status: 'active',
-    creatorId: 'admin-test-1'
-  }
+    creatorId: 'admin-test-1',
+  },
 ];
 
 /**
@@ -154,7 +143,9 @@ export const checkEmulatorConnection = async (): Promise<boolean> => {
     logger.info('Emulator 연결 성공', { component: 'TestSetup' });
     return true;
   } catch (error) {
-    logger.error('Emulator 연결 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error('Emulator 연결 실패', error instanceof Error ? error : new Error(String(error)), {
+      component: 'TestSetup',
+    });
     return false;
   }
 };
@@ -171,7 +162,7 @@ export const clearTestData = async (): Promise<void> => {
 
     for (const collectionName of collections) {
       const snapshot = await getDocs(collection(db, collectionName));
-      snapshot.docs.forEach(document => {
+      snapshot.docs.forEach((document) => {
         batch.delete(document.ref);
       });
     }
@@ -179,7 +170,11 @@ export const clearTestData = async (): Promise<void> => {
     await batch.commit();
     logger.info('테스트 데이터 초기화 완료', { component: 'TestSetup' });
   } catch (error) {
-    logger.error('테스트 데이터 초기화 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 데이터 초기화 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     throw error;
   }
 };
@@ -213,27 +208,32 @@ export const createTestUsers = async (): Promise<void> => {
           region: 'seoul',
           createdAt: Timestamp.now(),
           rating: user.role === 'staff' ? 4.5 : undefined,
-          ratingCount: user.role === 'staff' ? 10 : undefined
+          ratingCount: user.role === 'staff' ? 10 : undefined,
         });
 
         await batch.commit();
 
         // 로그아웃
         await signOut(auth);
-
-
       } catch (error: any) {
         if (error?.code === 'auth/email-already-in-use') {
-
         } else {
-          logger.error(`사용자 생성 실패: ${user.email}`, error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+          logger.error(
+            `사용자 생성 실패: ${user.email}`,
+            error instanceof Error ? error : new Error(String(error)),
+            { component: 'TestSetup' }
+          );
         }
       }
     }
 
     logger.info('테스트 사용자 생성 완료', { component: 'TestSetup' });
   } catch (error) {
-    logger.error('테스트 사용자 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 사용자 생성 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     throw error;
   }
 };
@@ -256,7 +256,7 @@ export const createTestJobPostings = async (): Promise<string[]> => {
         ...jobData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-        eventId: docRef.id
+        eventId: docRef.id,
       });
 
       eventIds.push(docRef.id);
@@ -267,7 +267,11 @@ export const createTestJobPostings = async (): Promise<string[]> => {
     logger.info(`테스트 구인공고 ${eventIds.length}개 생성 완료`, { component: 'TestSetup' });
     return eventIds;
   } catch (error) {
-    logger.error('테스트 구인공고 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 구인공고 생성 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     throw error;
   }
 };
@@ -280,7 +284,7 @@ export const createTestApplications = async (eventIds: string[]): Promise<void> 
     logger.info('테스트 지원서 생성 시작', { component: 'TestSetup' });
 
     const batch = writeBatch(db);
-    const applicantUsers = TEST_USERS.filter(user => user.role === 'applicant');
+    const applicantUsers = TEST_USERS.filter((user) => user.role === 'applicant');
 
     // 각 구인공고에 무작위로 지원자들이 지원
     for (const eventId of eventIds) {
@@ -299,7 +303,7 @@ export const createTestApplications = async (eventIds: string[]): Promise<void> 
           applicantName: applicant.name,
           status: 'pending',
           appliedAt: Timestamp.now(),
-          coverLetter: `안녕하세요. ${applicant.name}입니다. 성실히 근무하겠습니다.`
+          coverLetter: `안녕하세요. ${applicant.name}입니다. 성실히 근무하겠습니다.`,
         });
       }
     }
@@ -308,7 +312,11 @@ export const createTestApplications = async (eventIds: string[]): Promise<void> 
 
     logger.info('테스트 지원서 생성 완료', { component: 'TestSetup' });
   } catch (error) {
-    logger.error('테스트 지원서 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 지원서 생성 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     throw error;
   }
 };
@@ -321,7 +329,7 @@ export const createTestAttendanceRecords = async (): Promise<void> => {
     logger.info('테스트 출석 기록 생성 시작', { component: 'TestSetup' });
 
     const batch = writeBatch(db);
-    const staffUsers = TEST_USERS.filter(user => user.role === 'staff');
+    const staffUsers = TEST_USERS.filter((user) => user.role === 'staff');
 
     // 최근 7일간의 출석 기록 생성
     for (let day = 0; day < 7; day++) {
@@ -329,7 +337,8 @@ export const createTestAttendanceRecords = async (): Promise<void> => {
       date.setDate(date.getDate() - day);
       const dateString = toISODateString(date) || '';
 
-      for (const staff of staffUsers.slice(0, 5)) { // 5명의 스태프만
+      for (const staff of staffUsers.slice(0, 5)) {
+        // 5명의 스태프만
         const attendanceRef = doc(collection(db, 'attendanceRecords'));
 
         const statuses = ['present', 'absent', 'late'];
@@ -342,7 +351,7 @@ export const createTestAttendanceRecords = async (): Promise<void> => {
           checkInTime: status !== 'absent' ? '18:00' : null,
           checkOutTime: status !== 'absent' ? '23:00' : null,
           notes: status === 'late' ? '교통 지연' : '',
-          createdAt: Timestamp.now()
+          createdAt: Timestamp.now(),
         });
       }
     }
@@ -351,7 +360,11 @@ export const createTestAttendanceRecords = async (): Promise<void> => {
 
     logger.info('테스트 출석 기록 생성 완료', { component: 'TestSetup' });
   } catch (error) {
-    logger.error('테스트 출석 기록 생성 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 출석 기록 생성 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     throw error;
   }
 };
@@ -391,20 +404,24 @@ export const setupTestData = async (): Promise<{
     logger.info('테스트 데이터 설정 완료', {
       component: 'TestSetup',
       userCount: TEST_USERS.length,
-      jobPostingCount: eventIds.length
+      jobPostingCount: eventIds.length,
     });
 
     return {
       success: true,
       eventIds,
-      userCount: TEST_USERS.length
+      userCount: TEST_USERS.length,
     };
   } catch (error) {
-    logger.error('테스트 데이터 설정 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 데이터 설정 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     return {
       success: false,
       eventIds: [],
-      userCount: 0
+      userCount: 0,
     };
   }
 };
@@ -412,18 +429,23 @@ export const setupTestData = async (): Promise<{
 /**
  * 테스트 사용자로 로그인
  */
-export const loginAsTestUser = async (userType: 'admin' | 'staff' | 'applicant', index = 1): Promise<string | null> => {
+export const loginAsTestUser = async (
+  userType: 'admin' | 'staff' | 'applicant',
+  index = 1
+): Promise<string | null> => {
   try {
-    const email = userType === 'admin'
-      ? 'admin@test.com'
-      : `${userType}${index}@test.com`;
+    const email = userType === 'admin' ? 'admin@test.com' : `${userType}${index}@test.com`;
 
     const userCredential = await signInWithEmailAndPassword(auth, email, 'testpass123');
 
     logger.info(`테스트 사용자 로그인: ${email}`, { component: 'TestSetup' });
     return userCredential.user.uid;
   } catch (error) {
-    logger.error(`테스트 사용자 로그인 실패: ${userType}${index}`, error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      `테스트 사용자 로그인 실패: ${userType}${index}`,
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
     return null;
   }
 };
@@ -437,6 +459,10 @@ export const cleanupTestData = async (): Promise<void> => {
     await clearTestData();
     logger.info('테스트 데이터 정리 완료', { component: 'TestSetup' });
   } catch (error) {
-    logger.error('테스트 데이터 정리 실패', error instanceof Error ? error : new Error(String(error)), { component: 'TestSetup' });
+    logger.error(
+      '테스트 데이터 정리 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'TestSetup' }
+    );
   }
 };

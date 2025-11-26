@@ -54,11 +54,7 @@ export const usePaymentHistory = (
 
       // Firestore 쿼리 구성
       const transactionsRef = collection(db, 'paymentTransactions');
-      let q = query(
-        transactionsRef,
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
+      let q = query(transactionsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
 
       // 상태 필터링
       if (currentOptions?.status) {
@@ -98,9 +94,7 @@ export const usePaymentHistory = (
           if (currentOptions?.endDate) {
             const endOfDay = new Date(currentOptions.endDate);
             endOfDay.setHours(23, 59, 59, 999);
-            filteredData = filteredData.filter(
-              (tx) => tx.createdAt.toDate() <= endOfDay
-            );
+            filteredData = filteredData.filter((tx) => tx.createdAt.toDate() <= endOfDay);
           }
 
           setTransactions(filteredData);
@@ -144,10 +138,7 @@ export const usePaymentHistory = (
   const statistics = useMemo(() => {
     const completed = transactions.filter((tx) => tx.status === 'completed');
     const totalAmount = completed.reduce((sum, tx) => sum + tx.amount, 0);
-    const totalChips = completed.reduce(
-      (sum, tx) => sum + (tx.chipAmount || 0),
-      0
-    );
+    const totalChips = completed.reduce((sum, tx) => sum + (tx.chipAmount || 0), 0);
 
     return {
       totalTransactions: transactions.length,

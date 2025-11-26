@@ -112,7 +112,9 @@ const SettingsPage: React.FC = () => {
             >
               <ArrowLeftIcon className="h-6 w-6 text-gray-900 dark:text-gray-100" />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('settings.title')}</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {t('settings.title')}
+            </h1>
           </div>
         </div>
       </div>
@@ -165,9 +167,7 @@ const SettingsPage: React.FC = () => {
               {/* 동의 설정 */}
               {activeTab === 'consent' && (
                 <div>
-                  <h2 className="text-2xl font-semibold mb-6">
-                    {t('settings.consent.title')}
-                  </h2>
+                  <h2 className="text-2xl font-semibold mb-6">{t('settings.consent.title')}</h2>
                   <ConsentSettings />
                 </div>
               )}
@@ -175,9 +175,7 @@ const SettingsPage: React.FC = () => {
               {/* 보안 설정 */}
               {activeTab === 'security' && (
                 <div>
-                  <h2 className="text-2xl font-semibold mb-6">
-                    {t('settings.security.title')}
-                  </h2>
+                  <h2 className="text-2xl font-semibold mb-6">{t('settings.security.title')}</h2>
                   <SecuritySettings />
                 </div>
               )}
@@ -185,9 +183,7 @@ const SettingsPage: React.FC = () => {
               {/* 언어 설정 */}
               {activeTab === 'language' && (
                 <div>
-                  <h2 className="text-2xl font-semibold mb-6">
-                    {t('settings.language.title')}
-                  </h2>
+                  <h2 className="text-2xl font-semibold mb-6">{t('settings.language.title')}</h2>
                   <p className="text-gray-600 dark:text-gray-300 mb-6">
                     {t('settings.language.description')}
                   </p>
@@ -203,7 +199,9 @@ const SettingsPage: React.FC = () => {
                       />
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 dark:text-gray-100">한국어</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Korean</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                          Korean
+                        </div>
                       </div>
                     </label>
                     <label className="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
@@ -217,7 +215,9 @@ const SettingsPage: React.FC = () => {
                       />
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 dark:text-gray-100">English</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">영어</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                          영어
+                        </div>
                       </div>
                     </label>
                   </div>
@@ -227,9 +227,7 @@ const SettingsPage: React.FC = () => {
               {/* 계정 관리 (위험 영역) */}
               {activeTab === 'account' && (
                 <div>
-                  <h2 className="text-2xl font-semibold mb-6">
-                    {t('settings.account.title')}
-                  </h2>
+                  <h2 className="text-2xl font-semibold mb-6">{t('settings.account.title')}</h2>
                   <AccountDangerZone />
                 </div>
               )}

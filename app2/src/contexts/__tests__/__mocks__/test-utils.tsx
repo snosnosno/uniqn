@@ -223,12 +223,6 @@ export const testId = (id: string): string => `test-${id}`;
 /**
  * Re-export commonly used testing library functions
  */
-export {
-  render,
-  screen,
-  waitFor,
-  within,
-  fireEvent,
-} from '@testing-library/react';
+export { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 
 export { renderHook, waitFor as waitForHook } from '@testing-library/react';

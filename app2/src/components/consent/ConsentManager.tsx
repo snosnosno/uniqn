@@ -101,24 +101,30 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
         agreedAt: now,
         version: privacyVersion,
       },
-      ...(currentConsents?.marketing !== undefined ? {
-        marketing: {
-          agreed: currentConsents.marketing,
-          ...(currentConsents.marketing && { agreedAt: now }),
-        },
-      } : {}),
-      ...(currentConsents?.locationService !== undefined ? {
-        locationService: {
-          agreed: currentConsents.locationService,
-          ...(currentConsents.locationService && { agreedAt: now }),
-        },
-      } : {}),
-      ...(currentConsents?.pushNotification !== undefined ? {
-        pushNotification: {
-          agreed: currentConsents.pushNotification,
-          ...(currentConsents.pushNotification && { agreedAt: now }),
-        },
-      } : {}),
+      ...(currentConsents?.marketing !== undefined
+        ? {
+            marketing: {
+              agreed: currentConsents.marketing,
+              ...(currentConsents.marketing && { agreedAt: now }),
+            },
+          }
+        : {}),
+      ...(currentConsents?.locationService !== undefined
+        ? {
+            locationService: {
+              agreed: currentConsents.locationService,
+              ...(currentConsents.locationService && { agreedAt: now }),
+            },
+          }
+        : {}),
+      ...(currentConsents?.pushNotification !== undefined
+        ? {
+            pushNotification: {
+              agreed: currentConsents.pushNotification,
+              ...(currentConsents.pushNotification && { agreedAt: now }),
+            },
+          }
+        : {}),
     };
   });
 
@@ -148,21 +154,19 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
    * 동의 항목 변경 핸들러
    */
   const handleConsentChange = useCallback(
-    (
-      field: keyof Omit<ConsentCreateInput, 'userId'>,
-      agreed: boolean
-    ) => {
+    (field: keyof Omit<ConsentCreateInput, 'userId'>, agreed: boolean) => {
       const updatedConsents: ConsentCreateInput = {
         ...consents,
         [field]: {
-          agreed: field === 'termsOfService' || field === 'privacyPolicy' ? (agreed as true) : agreed,
+          agreed:
+            field === 'termsOfService' || field === 'privacyPolicy' ? (agreed as true) : agreed,
           agreedAt: agreed ? new Date() : undefined,
           version:
             field === 'termsOfService'
               ? termsVersion
               : field === 'privacyPolicy'
-              ? privacyVersion
-              : undefined,
+                ? privacyVersion
+                : undefined,
         },
       };
 
@@ -199,15 +203,17 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
         ...(newAgreed && { agreedAt: now }),
         version: privacyVersion,
       },
-      ...(newAgreed ? {
-        marketing: { agreed: newAgreed, agreedAt: now },
-        locationService: { agreed: newAgreed, agreedAt: now },
-        pushNotification: { agreed: newAgreed, agreedAt: now },
-      } : {
-        marketing: { agreed: newAgreed },
-        locationService: { agreed: newAgreed },
-        pushNotification: { agreed: newAgreed },
-      }),
+      ...(newAgreed
+        ? {
+            marketing: { agreed: newAgreed, agreedAt: now },
+            locationService: { agreed: newAgreed, agreedAt: now },
+            pushNotification: { agreed: newAgreed, agreedAt: now },
+          }
+        : {
+            marketing: { agreed: newAgreed },
+            locationService: { agreed: newAgreed },
+            pushNotification: { agreed: newAgreed },
+          }),
     };
 
     setConsents(updatedConsents);
@@ -316,9 +322,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             <input
               type="checkbox"
               checked={consents.termsOfService.agreed}
-              onChange={(e) =>
-                handleConsentChange('termsOfService', e.target.checked)
-              }
+              onChange={(e) => handleConsentChange('termsOfService', e.target.checked)}
               className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.termsOfService')}
               required
@@ -351,9 +355,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             <input
               type="checkbox"
               checked={consents.privacyPolicy.agreed}
-              onChange={(e) =>
-                handleConsentChange('privacyPolicy', e.target.checked)
-              }
+              onChange={(e) => handleConsentChange('privacyPolicy', e.target.checked)}
               className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.privacyPolicy')}
               required
@@ -414,9 +416,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             <input
               type="checkbox"
               checked={consents.locationService?.agreed ?? false}
-              onChange={(e) =>
-                handleConsentChange('locationService', e.target.checked)
-              }
+              onChange={(e) => handleConsentChange('locationService', e.target.checked)}
               className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.locationService')}
             />
@@ -437,9 +437,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
             <input
               type="checkbox"
               checked={consents.pushNotification?.agreed ?? false}
-              onChange={(e) =>
-                handleConsentChange('pushNotification', e.target.checked)
-              }
+              onChange={(e) => handleConsentChange('pushNotification', e.target.checked)}
               className="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 mt-0.5"
               aria-label={t('consent.pushNotification')}
             />
@@ -515,11 +513,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
       )}
 
       {/* 법적 문서 모달 */}
-      <LegalDocumentModal
-        isOpen={legalModalOpen}
-        onClose={closeLegalModal}
-        type={legalModalType}
-      />
+      <LegalDocumentModal isOpen={legalModalOpen} onClose={closeLegalModal} type={legalModalType} />
     </div>
   );
 };

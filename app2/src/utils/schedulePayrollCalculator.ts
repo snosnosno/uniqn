@@ -54,9 +54,9 @@ export function calculateSchedulePayroll(
       jobPostingTitle: jobPosting?.title,
       jobPostingUseRoleSalary: jobPosting?.useRoleSalary,
       jobPostingRoleSalaries: jobPosting?.roleSalaries,
-      jobPostingData: jobPosting,  // 🔍 전체 JobPosting 데이터 확인
-      snapshotSalary: schedule.snapshotData?.salary
-    }
+      jobPostingData: jobPosting, // 🔍 전체 JobPosting 데이터 확인
+      snapshotSalary: schedule.snapshotData?.salary,
+    },
   });
 
   const { salaryAmount: baseSalary } = getRoleSalaryInfo(
@@ -71,8 +71,8 @@ export function calculateSchedulePayroll(
     data: {
       eventId: schedule.eventId,
       role: effectiveRole,
-      baseSalary: baseSalary
-    }
+      baseSalary: baseSalary,
+    },
   });
 
   // 2. 근무 시간 계산 (심야 근무 자동 처리)
@@ -88,7 +88,7 @@ export function calculateSchedulePayroll(
   const allowances = {
     meal: allowancesResult.meal,
     transportation: allowancesResult.transportation,
-    accommodation: allowancesResult.accommodation
+    accommodation: allowancesResult.accommodation,
   };
 
   const totalAllowances = allowances.meal + allowances.transportation + allowances.accommodation;
@@ -118,7 +118,7 @@ export function calculateSchedulePayroll(
     totalAllowances,
     totalPay,
     tax,
-    afterTaxAmount
+    afterTaxAmount,
   };
 
   if (taxRate !== undefined) {

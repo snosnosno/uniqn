@@ -11,7 +11,11 @@
 
 import type { Selection, DateGroupedSelections } from '../../types/applicants/selection';
 import { convertDateToString, formatDateDisplay } from './applicantTransform';
-import { isConsecutiveDates, findConsecutiveDateGroups, generateDateRange } from './applicantFormat';
+import {
+  isConsecutiveDates,
+  findConsecutiveDateGroups,
+  generateDateRange,
+} from './applicantFormat';
 
 /**
  * 연속된 날짜들을 그룹화하는 인터페이스
@@ -56,13 +60,18 @@ export interface ConsecutiveDateGroupForUnconfirmed {
  * 지원자의 선택사항을 연속된 날짜별로 그룹화하는 함수
  * checkMethod에 따라 그룹화/개별 표시 구분
  */
-export const groupApplicationsByConsecutiveDates = (selections: Selection[]): ConsecutiveDateGroup[] => {
+export const groupApplicationsByConsecutiveDates = (
+  selections: Selection[]
+): ConsecutiveDateGroup[] => {
   // checkMethod 기반 그룹화
   if (selections.length > 0 && selections[0]?.dates) {
-    const actualGroups = new Map<string, { dates: string[], time: string, roles: string[], checkMethod?: string }>();
+    const actualGroups = new Map<
+      string,
+      { dates: string[]; time: string; roles: string[]; checkMethod?: string }
+    >();
     const individualSelections: Selection[] = [];
 
-    selections.forEach(selection => {
+    selections.forEach((selection) => {
       // checkMethod가 'group'이고 이미 그룹화된 경우
       if (selection.checkMethod === 'group' && selection.dates && selection.dates.length > 1) {
         const key = `${selection.groupId || 'group'}|${selection.time || '시간 미정'}`;
@@ -72,7 +81,7 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
             dates: selection.dates.sort(),
             time: selection.time || '시간 미정',
             roles: [],
-            checkMethod: selection.checkMethod
+            checkMethod: selection.checkMethod,
           });
         }
 
@@ -101,10 +110,10 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
           const lastFormatted = formatDateDisplay(lastDate);
           displayRange = `${firstFormatted}~${lastFormatted}`;
         } else {
-          displayRange = dates.map(d => formatDateDisplay(d)).join(', ');
+          displayRange = dates.map((d) => formatDateDisplay(d)).join(', ');
         }
       } else {
-        displayRange = dates.map(d => formatDateDisplay(d)).join(', ');
+        displayRange = dates.map((d) => formatDateDisplay(d)).join(', ');
       }
 
       finalGroups.push({
@@ -114,21 +123,21 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
         isConsecutive,
         displayDateRange: displayRange,
         confirmedCount: 0,
-        requiredCount: 0
+        requiredCount: 0,
       });
     });
 
     // 개별 선택들을 각각 별도 그룹으로 처리
-    individualSelections.forEach(selection => {
+    individualSelections.forEach((selection) => {
       const dates = selection.dates || [selection.date || ''];
       finalGroups.push({
         time: selection.time || '시간 미정',
         roles: [selection.role || '역할 미정'],
         dates,
         isConsecutive: false,
-        displayDateRange: dates.map(d => formatDateDisplay(d)).join(', '),
+        displayDateRange: dates.map((d) => formatDateDisplay(d)).join(', '),
         confirmedCount: 0,
-        requiredCount: 0
+        requiredCount: 0,
       });
     });
 
@@ -136,9 +145,9 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
   }
 
   // 기존 그룹화 로직 (하위 호환성)
-  const dateTimeGroups = new Map<string, { time: string, roles: string[], dates: string[] }>();
+  const dateTimeGroups = new Map<string, { time: string; roles: string[]; dates: string[] }>();
 
-  selections.forEach(selection => {
+  selections.forEach((selection) => {
     const time = selection.time || '시간 미정';
     const role = selection.role || '역할 미정';
     const date = selection.date && selection.date !== 'no-date' ? selection.date : 'no-date';
@@ -149,7 +158,7 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
       dateTimeGroups.set(key, {
         time,
         roles: [],
-        dates: date === 'no-date' ? ['no-date'] : [date]
+        dates: date === 'no-date' ? ['no-date'] : [date],
       });
     }
 
@@ -178,10 +187,10 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
           const lastFormatted = formatDateDisplay(lastDate);
           displayRange = `${firstFormatted}~${lastFormatted}`;
         } else {
-          displayRange = sortedDates.map(d => formatDateDisplay(d)).join(', ');
+          displayRange = sortedDates.map((d) => formatDateDisplay(d)).join(', ');
         }
       } else {
-        displayRange = sortedDates.map(d => formatDateDisplay(d)).join(', ');
+        displayRange = sortedDates.map((d) => formatDateDisplay(d)).join(', ');
       }
     }
 
@@ -189,10 +198,11 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
       time,
       roles,
       dates: dates[0] === 'no-date' ? ['no-date'] : dates.sort(),
-      isConsecutive: dates.length > 1 && dates[0] !== 'no-date' ? isConsecutiveDates(dates.sort()) : false,
+      isConsecutive:
+        dates.length > 1 && dates[0] !== 'no-date' ? isConsecutiveDates(dates.sort()) : false,
       displayDateRange: displayRange,
       confirmedCount: 0,
-      requiredCount: 0
+      requiredCount: 0,
     });
   });
 
@@ -203,10 +213,12 @@ export const groupApplicationsByConsecutiveDates = (selections: Selection[]): Co
  * 지원자의 선택사항을 시간대-역할별로 그룹화하는 함수
  * @deprecated 새로운 groupApplicationsByConsecutiveDates 함수 사용 권장
  */
-export const groupApplicationsByTimeAndRole = (selections: Selection[]): LegacyApplicationGroup[] => {
+export const groupApplicationsByTimeAndRole = (
+  selections: Selection[]
+): LegacyApplicationGroup[] => {
   const groups = new Map<string, LegacyApplicationGroup>();
 
-  selections.forEach(selection => {
+  selections.forEach((selection) => {
     const key = `${selection.time}|${selection.role}`;
 
     if (!groups.has(key)) {
@@ -215,7 +227,7 @@ export const groupApplicationsByTimeAndRole = (selections: Selection[]): LegacyA
         role: selection.role || '',
         dates: [],
         confirmedCount: 0,
-        requiredCount: 0
+        requiredCount: 0,
       });
     }
 
@@ -227,7 +239,7 @@ export const groupApplicationsByTimeAndRole = (selections: Selection[]): LegacyA
     }
   });
 
-  groups.forEach(group => {
+  groups.forEach((group) => {
     group.dates.sort();
   });
 
@@ -241,7 +253,7 @@ export const groupApplicationsByTimeAndRole = (selections: Selection[]): LegacyA
 export const groupMultiDaySelections = (selections: Selection[]) => {
   const dateRangeGroups = new Map<string, any>();
 
-  selections.forEach(selection => {
+  selections.forEach((selection) => {
     if (selection.duration?.type === 'multi' && selection.duration?.endDate && selection.date) {
       const endDate = convertDateToString(selection.duration.endDate);
       const dateRangeKey = `${selection.date}_${endDate}`;
@@ -253,23 +265,24 @@ export const groupMultiDaySelections = (selections: Selection[]) => {
           endDate: endDate,
           dates: dates,
           dayCount: dates.length,
-          displayDateRange: dates.length === 1
-            ? formatDateDisplay(selection.date)
-            : `${formatDateDisplay(selection.date)} ~ ${formatDateDisplay(endDate)}`,
-          timeSlotRoles: []
+          displayDateRange:
+            dates.length === 1
+              ? formatDateDisplay(selection.date)
+              : `${formatDateDisplay(selection.date)} ~ ${formatDateDisplay(endDate)}`,
+          timeSlotRoles: [],
         });
       }
 
       const group = dateRangeGroups.get(dateRangeKey);
-      const existingRole = group.timeSlotRoles.find((tr: any) =>
-        tr.timeSlot === selection.time && tr.role === selection.role
+      const existingRole = group.timeSlotRoles.find(
+        (tr: any) => tr.timeSlot === selection.time && tr.role === selection.role
       );
 
       if (!existingRole) {
         group.timeSlotRoles.push({
           timeSlot: selection.time,
           role: selection.role,
-          selection: selection
+          selection: selection,
         });
       }
     }
@@ -284,14 +297,14 @@ export const groupMultiDaySelections = (selections: Selection[]) => {
 export const groupSingleDaySelections = (selections: Selection[]) => {
   const groups = new Map<string, any>();
 
-  selections.forEach(selection => {
+  selections.forEach((selection) => {
     const dateKey = selection.date || 'no-date';
 
     if (!groups.has(dateKey)) {
       groups.set(dateKey, {
         date: dateKey,
         displayDate: dateKey === 'no-date' ? '날짜 미정' : formatDateDisplay(dateKey),
-        selections: []
+        selections: [],
       });
     }
 
@@ -308,7 +321,9 @@ export const groupSingleDaySelections = (selections: Selection[]) => {
 /**
  * 미확정 지원자의 연속된 날짜들을 그룹화하는 함수
  */
-export const groupConsecutiveDatesForUnconfirmed = (selections: Selection[]): {
+export const groupConsecutiveDatesForUnconfirmed = (
+  selections: Selection[]
+): {
   consecutiveGroups: ConsecutiveDateGroupForUnconfirmed[];
   singleDateGroups: DateGroupedSelections[];
 } => {
@@ -317,11 +332,13 @@ export const groupConsecutiveDatesForUnconfirmed = (selections: Selection[]): {
   }
 
   // 모든 고유 날짜 추출 및 정렬
-  const allDates: string[] = Array.from(new Set(
-    selections
-      .map(s => s.date)
-      .filter((date): date is string => date !== undefined && date !== null && date !== 'no-date')
-  )).sort();
+  const allDates: string[] = Array.from(
+    new Set(
+      selections
+        .map((s) => s.date)
+        .filter((date): date is string => date !== undefined && date !== null && date !== 'no-date')
+    )
+  ).sort();
 
   if (allDates.length === 0) {
     const singleDateGroups = groupSingleDaySelections(selections);
@@ -335,25 +352,28 @@ export const groupConsecutiveDatesForUnconfirmed = (selections: Selection[]): {
   const processedSelections = new Set<string>();
 
   // 연속된 날짜 구간별로 처리
-  consecutiveRanges.forEach(range => {
+  consecutiveRanges.forEach((range) => {
     if (range.length > 1) {
       const firstDate = range[0];
       const lastDate = range[range.length - 1];
 
       if (!firstDate || !lastDate) return;
 
-      const rangeSelections = selections.filter(s => s.date && range.includes(s.date));
+      const rangeSelections = selections.filter((s) => s.date && range.includes(s.date));
 
       // 시간-역할 조합별로 그룹화
-      const timeRoleMap = new Map<string, {time: string, role: string, originalSelections: Selection[]}>();
+      const timeRoleMap = new Map<
+        string,
+        { time: string; role: string; originalSelections: Selection[] }
+      >();
 
-      rangeSelections.forEach(selection => {
+      rangeSelections.forEach((selection) => {
         const key = `${selection.time}_${selection.role}`;
         if (!timeRoleMap.has(key)) {
           timeRoleMap.set(key, {
             time: selection.time || '',
             role: selection.role || '',
-            originalSelections: []
+            originalSelections: [],
           });
         }
         timeRoleMap.get(key)!.originalSelections.push(selection);
@@ -361,25 +381,24 @@ export const groupConsecutiveDatesForUnconfirmed = (selections: Selection[]): {
 
       const group: ConsecutiveDateGroupForUnconfirmed = {
         dates: range,
-        displayDateRange: range.length === 1
-          ? formatDateDisplay(firstDate)
-          : `${formatDateDisplay(firstDate)} ~ ${formatDateDisplay(lastDate)}`,
+        displayDateRange:
+          range.length === 1
+            ? formatDateDisplay(firstDate)
+            : `${formatDateDisplay(firstDate)} ~ ${formatDateDisplay(lastDate)}`,
         dayCount: range.length,
         isConsecutive: true,
-        timeRoleSelections: Array.from(timeRoleMap.values())
+        timeRoleSelections: Array.from(timeRoleMap.values()),
       };
 
       consecutiveGroups.push(group);
 
-      rangeSelections.forEach(s =>
-        processedSelections.add(`${s.date}_${s.time}_${s.role}`)
-      );
+      rangeSelections.forEach((s) => processedSelections.add(`${s.date}_${s.time}_${s.role}`));
     }
   });
 
   // 처리되지 않은 selection들을 단일 날짜 그룹으로 분류
-  const remainingSelections = selections.filter(s =>
-    !processedSelections.has(`${s.date}_${s.time}_${s.role}`)
+  const remainingSelections = selections.filter(
+    (s) => !processedSelections.has(`${s.date}_${s.time}_${s.role}`)
   );
 
   const singleDateGroups = groupSingleDaySelections(remainingSelections);

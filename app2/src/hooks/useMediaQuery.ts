@@ -27,7 +27,7 @@ export function useMediaQuery(query: string): boolean {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => setMatches(media.matches), 150);
     };
-    
+
     // Set the initial state directly without triggering listener
     setMatches(media.matches);
 

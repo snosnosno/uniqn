@@ -35,52 +35,51 @@ const TIME_FORMAT_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
  * - startTime: HH:mm 형식, 24시간제
  * - endTime: HH:mm 형식, 24시간제 (startTime보다 늦으면 익일로 자동 계산)
  */
-export const workScheduleSchema = z
-  .object({
-    /**
-     * 주 출근일수
-     * - 최소: 1일
-     * - 최대: 7일
-     * - 정수만 허용
-     */
-    daysPerWeek: z
-      .number({
-        required_error: '주 출근일수를 입력해주세요',
-        invalid_type_error: '주 출근일수는 숫자여야 합니다'
-      })
-      .int({ message: '주 출근일수는 정수여야 합니다' })
-      .min(1, { message: '주 출근일수는 최소 1일 이상이어야 합니다' })
-      .max(7, { message: '주 출근일수는 최대 7일을 초과할 수 없습니다' }),
+export const workScheduleSchema = z.object({
+  /**
+   * 주 출근일수
+   * - 최소: 1일
+   * - 최대: 7일
+   * - 정수만 허용
+   */
+  daysPerWeek: z
+    .number({
+      required_error: '주 출근일수를 입력해주세요',
+      invalid_type_error: '주 출근일수는 숫자여야 합니다',
+    })
+    .int({ message: '주 출근일수는 정수여야 합니다' })
+    .min(1, { message: '주 출근일수는 최소 1일 이상이어야 합니다' })
+    .max(7, { message: '주 출근일수는 최대 7일을 초과할 수 없습니다' }),
 
-    /**
-     * 근무 시작 시간
-     * - HH:mm 형식 (24시간제)
-     * - 예: "09:00", "14:30"
-     */
-    startTime: z
-      .string({
-        required_error: '근무 시작 시간을 입력해주세요',
-        invalid_type_error: '근무 시작 시간은 문자열이어야 합니다'
-      })
-      .regex(TIME_FORMAT_REGEX, {
-        message: '근무 시작 시간은 HH:mm 형식이어야 합니다 (예: 09:00)'
-      }),
+  /**
+   * 근무 시작 시간
+   * - HH:mm 형식 (24시간제)
+   * - 예: "09:00", "14:30"
+   */
+  startTime: z
+    .string({
+      required_error: '근무 시작 시간을 입력해주세요',
+      invalid_type_error: '근무 시작 시간은 문자열이어야 합니다',
+    })
+    .regex(TIME_FORMAT_REGEX, {
+      message: '근무 시작 시간은 HH:mm 형식이어야 합니다 (예: 09:00)',
+    }),
 
-    /**
-     * 근무 종료 시간
-     * - HH:mm 형식 (24시간제)
-     * - 예: "18:00", "22:30"
-     * - 시작시간보다 늦으면 익일로 자동 계산됨
-     */
-    endTime: z
-      .string({
-        required_error: '근무 종료 시간을 입력해주세요',
-        invalid_type_error: '근무 종료 시간은 문자열이어야 합니다'
-      })
-      .regex(TIME_FORMAT_REGEX, {
-        message: '근무 종료 시간은 HH:mm 형식이어야 합니다 (예: 18:00)'
-      })
-  });
+  /**
+   * 근무 종료 시간
+   * - HH:mm 형식 (24시간제)
+   * - 예: "18:00", "22:30"
+   * - 시작시간보다 늦으면 익일로 자동 계산됨
+   */
+  endTime: z
+    .string({
+      required_error: '근무 종료 시간을 입력해주세요',
+      invalid_type_error: '근무 종료 시간은 문자열이어야 합니다',
+    })
+    .regex(TIME_FORMAT_REGEX, {
+      message: '근무 종료 시간은 HH:mm 형식이어야 합니다 (예: 18:00)',
+    }),
+});
 
 /**
  * RoleWithCount 검증 스키마
@@ -101,7 +100,7 @@ export const roleWithCountSchema = z.object({
   name: z
     .string({
       required_error: '역할명을 입력해주세요',
-      invalid_type_error: '역할명은 문자열이어야 합니다'
+      invalid_type_error: '역할명은 문자열이어야 합니다',
     })
     .min(1, { message: '역할명을 입력해주세요' })
     .max(50, { message: '역할명은 50자를 초과할 수 없습니다' })
@@ -116,11 +115,11 @@ export const roleWithCountSchema = z.object({
   count: z
     .number({
       required_error: '모집 인원을 입력해주세요',
-      invalid_type_error: '모집 인원은 숫자여야 합니다'
+      invalid_type_error: '모집 인원은 숫자여야 합니다',
     })
     .int({ message: '모집 인원은 정수여야 합니다' })
     .min(1, { message: '모집 인원은 최소 1명 이상이어야 합니다' })
-    .max(100, { message: '모집 인원은 최대 100명을 초과할 수 없습니다' })
+    .max(100, { message: '모집 인원은 최대 100명을 초과할 수 없습니다' }),
 });
 
 /**
@@ -147,7 +146,7 @@ export const fixedJobPostingDataSchema = z.object({
   requiredRolesWithCount: z
     .array(roleWithCountSchema, {
       required_error: '최소 1개 이상의 역할을 추가해주세요',
-      invalid_type_error: '역할별 모집 인원은 배열이어야 합니다'
+      invalid_type_error: '역할별 모집 인원은 배열이어야 합니다',
     })
     .min(1, { message: '최소 1개 이상의 역할을 추가해주세요' })
     .max(20, { message: '역할은 최대 20개까지 추가할 수 있습니다' }),
@@ -159,11 +158,11 @@ export const fixedJobPostingDataSchema = z.object({
    */
   viewCount: z
     .number({
-      invalid_type_error: '조회수는 숫자여야 합니다'
+      invalid_type_error: '조회수는 숫자여야 합니다',
     })
     .int({ message: '조회수는 정수여야 합니다' })
     .min(0, { message: '조회수는 0 이상이어야 합니다' })
-    .default(0)
+    .default(0),
 });
 
 /**

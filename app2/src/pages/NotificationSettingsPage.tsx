@@ -15,12 +15,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import {
-  ArrowLeftIcon,
-  BellIcon,
-  BellSlashIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, BellIcon, BellSlashIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useNotificationSettings } from '../hooks/useNotificationSettings';
 import { NotificationCategory } from '../types/notification';
 import { toast } from '../utils/toast';
@@ -90,12 +85,7 @@ const NotificationSettingsPage: React.FC = () => {
    */
   const getTypesByCategory = (category: NotificationCategory): string[] => {
     const typeMap: Record<NotificationCategory, string[]> = {
-      system: [
-        'job_posting_announcement',
-        'new_job_posting',
-        'system_announcement',
-        'app_update',
-      ],
+      system: ['job_posting_announcement', 'new_job_posting', 'system_announcement', 'app_update'],
       work: ['job_application', 'staff_approval', 'staff_rejection'],
       schedule: ['schedule_change'],
     };
@@ -180,10 +170,7 @@ const NotificationSettingsPage: React.FC = () => {
   /**
    * 조용한 시간대 시간 변경 핸들러
    */
-  const handleQuietHoursTimeChange = async (
-    field: 'start' | 'end',
-    value: string
-  ) => {
+  const handleQuietHoursTimeChange = async (field: 'start' | 'end', value: string) => {
     if (!settings?.quietHours) return;
 
     try {
@@ -213,7 +200,9 @@ const NotificationSettingsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 mb-4">{t('notifications.settings.loadFailed')}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">
+            {t('notifications.settings.loadFailed')}
+          </p>
           <button
             onClick={() => navigate(-1)}
             className="text-blue-600 dark:text-blue-400 hover:underline"
@@ -237,9 +226,7 @@ const NotificationSettingsPage: React.FC = () => {
             >
               <ArrowLeftIcon className="h-6 w-6" />
             </button>
-            <h1 className="text-xl font-semibold">
-              {t('notifications.settings.title')}
-            </h1>
+            <h1 className="text-xl font-semibold">{t('notifications.settings.title')}</h1>
           </div>
         </div>
       </div>
@@ -318,14 +305,16 @@ const NotificationSettingsPage: React.FC = () => {
               <div className="space-y-3 mt-4 pt-4 border-t">
                 {getTypesByCategory(category).map((type) => (
                   <div key={type} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700 dark:text-gray-200">{getTypeName(type)}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200">
+                      {getTypeName(type)}
+                    </span>
                     <button
                       onClick={() => handleToggleType(type)}
                       disabled={saving || !settings.enabled}
                       className={`
                         relative inline-flex h-5 w-9 items-center rounded-full
                         transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                        ${settings.types?.[type] ?? true ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
+                        ${(settings.types?.[type] ?? true) ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-200 dark:bg-gray-600'}
                         ${saving || !settings.enabled ? 'opacity-50 cursor-not-allowed' : ''}
                       `}
                     >
@@ -349,9 +338,7 @@ const NotificationSettingsPage: React.FC = () => {
             <div className="flex items-center space-x-3">
               <ClockIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               <div>
-                <h3 className="text-lg font-semibold">
-                  {t('notifications.settings.quietHours')}
-                </h3>
+                <h3 className="text-lg font-semibold">{t('notifications.settings.quietHours')}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   {t('notifications.settings.quietHoursDescription')}
                 </p>

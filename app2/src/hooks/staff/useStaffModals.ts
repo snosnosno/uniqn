@@ -79,17 +79,15 @@ export function useStaffModals(): UseStaffModalsReturn {
 
   // 스태프 프로필 모달
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [selectedStaffForProfile, setSelectedStaffForProfile] =
-    useState<StaffData | null>(null);
+  const [selectedStaffForProfile, setSelectedStaffForProfile] = useState<StaffData | null>(null);
 
   // 삭제 확인 모달
-  const [deleteConfirmModal, setDeleteConfirmModal] =
-    useState<DeleteConfirmData>({
-      isOpen: false,
-      staffId: '',
-      staffName: '',
-      date: '',
-    });
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<DeleteConfirmData>({
+    isOpen: false,
+    staffId: '',
+    staffName: '',
+    date: '',
+  });
 
   // 일괄 시간 수정 모달
   const [isBulkTimeEditOpen, setIsBulkTimeEditOpen] = useState(false);

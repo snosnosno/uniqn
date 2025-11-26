@@ -118,9 +118,7 @@ const VerificationSettingsPage: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            계정 인증 설정
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">계정 인증 설정</h1>
           <p className="text-gray-600 dark:text-gray-400">
             이메일과 전화번호 인증을 통해 계정을 보호하세요.
           </p>
@@ -128,17 +126,13 @@ const VerificationSettingsPage: React.FC = () => {
 
         {/* 인증 상태 카드 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            인증 상태
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">인증 상태</h2>
 
           <div className="space-y-4">
             {/* 이메일 인증 */}
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  이메일 인증
-                </p>
+                <p className="font-medium text-gray-900 dark:text-white">이메일 인증</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {currentUser?.email || '이메일 없음'}
                 </p>
@@ -169,9 +163,7 @@ const VerificationSettingsPage: React.FC = () => {
             {/* 전화번호 인증 */}
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  전화번호 인증
-                </p>
+                <p className="font-medium text-gray-900 dark:text-white">전화번호 인증</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {verificationStatus.phoneNumber || '전화번호 미등록'}
                 </p>

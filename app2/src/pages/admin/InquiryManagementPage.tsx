@@ -28,7 +28,7 @@ import {
   orderBy,
   // where, // 미래 필터링용
   onSnapshot,
-  Timestamp
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
@@ -37,7 +37,7 @@ import {
   InquiryCategory,
   INQUIRY_CATEGORIES,
   INQUIRY_STATUS_STYLES,
-  InquiryUpdateInput
+  InquiryUpdateInput,
 } from '../../types/inquiry';
 import { REPORT_TYPES, ReportType } from '../../types/report';
 
@@ -70,7 +70,7 @@ const InquiryManagementPage: React.FC = () => {
     status: 'all',
     category: 'all',
     dateRange: 'all',
-    search: ''
+    search: '',
   });
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
@@ -79,32 +79,39 @@ const InquiryManagementPage: React.FC = () => {
   useEffect(() => {
     if (!currentUser) return;
 
-    logger.info('문의 관리 페이지 초기화', { userId: currentUser.uid, component: 'InquiryManagementPage' });
+    logger.info('문의 관리 페이지 초기화', {
+      userId: currentUser.uid,
+      component: 'InquiryManagementPage',
+    });
 
-    const inquiriesQuery = query(
-      collection(db, 'inquiries'),
-      orderBy('createdAt', 'desc')
-    );
+    const inquiriesQuery = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(
       inquiriesQuery,
       (snapshot) => {
-        const inquiryList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Inquiry));
+        const inquiryList = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            }) as Inquiry
+        );
 
         logger.info(`문의 목록 조회 성공 - ${inquiryList.length}개`, {
-          component: 'InquiryManagementPage'
+          component: 'InquiryManagementPage',
         });
 
         setInquiries(inquiryList);
         setLoading(false);
       },
       (error) => {
-        logger.error('문의 목록 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
-          component: 'InquiryManagementPage'
-        });
+        logger.error(
+          '문의 목록 조회 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'InquiryManagementPage',
+          }
+        );
         showError('문의 목록을 불러오는데 실패했습니다.');
         setLoading(false);
       }
@@ -119,12 +126,12 @@ const InquiryManagementPage: React.FC = () => {
 
     // 상태 필터
     if (filters.status !== 'all') {
-      filtered = filtered.filter(inquiry => inquiry.status === filters.status);
+      filtered = filtered.filter((inquiry) => inquiry.status === filters.status);
     }
 
     // 카테고리 필터
     if (filters.category !== 'all') {
-      filtered = filtered.filter(inquiry => inquiry.category === filters.category);
+      filtered = filtered.filter((inquiry) => inquiry.category === filters.category);
     }
 
     // 날짜 필터
@@ -144,19 +151,18 @@ const InquiryManagementPage: React.FC = () => {
           break;
       }
 
-      filtered = filtered.filter(inquiry =>
-        inquiry.createdAt.toDate() >= filterDate
-      );
+      filtered = filtered.filter((inquiry) => inquiry.createdAt.toDate() >= filterDate);
     }
 
     // 검색 필터
     if (filters.search.trim()) {
       const searchTerm = filters.search.toLowerCase();
-      filtered = filtered.filter(inquiry =>
-        inquiry.subject.toLowerCase().includes(searchTerm) ||
-        inquiry.message.toLowerCase().includes(searchTerm) ||
-        inquiry.userName.toLowerCase().includes(searchTerm) ||
-        inquiry.userEmail.toLowerCase().includes(searchTerm)
+      filtered = filtered.filter(
+        (inquiry) =>
+          inquiry.subject.toLowerCase().includes(searchTerm) ||
+          inquiry.message.toLowerCase().includes(searchTerm) ||
+          inquiry.userName.toLowerCase().includes(searchTerm) ||
+          inquiry.userEmail.toLowerCase().includes(searchTerm)
       );
     }
 
@@ -169,7 +175,7 @@ const InquiryManagementPage: React.FC = () => {
         filtered.sort((a, b) => a.createdAt.toDate().getTime() - b.createdAt.toDate().getTime());
         break;
       case 'status':
-        const statusOrder = { 'open': 0, 'in_progress': 1, 'closed': 2 };
+        const statusOrder = { open: 0, in_progress: 1, closed: 2 };
         filtered.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
         break;
     }
@@ -178,12 +184,15 @@ const InquiryManagementPage: React.FC = () => {
   }, [inquiries, filters, sortBy]);
 
   // 통계 계산
-  const stats = useMemo(() => ({
-    total: inquiries.length,
-    open: inquiries.filter(i => i.status === 'open').length,
-    inProgress: inquiries.filter(i => i.status === 'in_progress').length,
-    closed: inquiries.filter(i => i.status === 'closed').length
-  }), [inquiries]);
+  const stats = useMemo(
+    () => ({
+      total: inquiries.length,
+      open: inquiries.filter((i) => i.status === 'open').length,
+      inProgress: inquiries.filter((i) => i.status === 'in_progress').length,
+      closed: inquiries.filter((i) => i.status === 'closed').length,
+    }),
+    [inquiries]
+  );
 
   // 상태 변경
   const handleStatusChange = async (inquiryId: string, newStatus: InquiryStatus) => {
@@ -195,13 +204,13 @@ const InquiryManagementPage: React.FC = () => {
         status: newStatus,
         ...(newStatus === 'in_progress' && {
           responderId: currentUser.uid,
-          responderName: currentUser.displayName || '관리자'
-        })
+          responderName: currentUser.displayName || '관리자',
+        }),
       };
 
       await updateDoc(doc(db, 'inquiries', inquiryId), {
         ...updateData,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
 
       showSuccess('문의 상태가 변경되었습니다.');
@@ -209,14 +218,18 @@ const InquiryManagementPage: React.FC = () => {
         inquiryId,
         newStatus,
         userId: currentUser.uid,
-        component: 'InquiryManagementPage'
+        component: 'InquiryManagementPage',
       });
     } catch (error) {
-      logger.error('문의 상태 변경 실패:', error instanceof Error ? error : new Error(String(error)), {
-        inquiryId,
-        newStatus,
-        component: 'InquiryManagementPage'
-      });
+      logger.error(
+        '문의 상태 변경 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          inquiryId,
+          newStatus,
+          component: 'InquiryManagementPage',
+        }
+      );
       showError('문의 상태 변경에 실패했습니다.');
     } finally {
       setUpdatingStatus(false);
@@ -235,7 +248,7 @@ const InquiryManagementPage: React.FC = () => {
         responderName: currentUser.displayName || '관리자',
         respondedAt: Timestamp.now(),
         status: 'closed',
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
 
       showSuccess('답변이 저장되었습니다.');
@@ -246,13 +259,17 @@ const InquiryManagementPage: React.FC = () => {
       logger.info('문의 답변 저장 성공', {
         inquiryId: selectedInquiry.id,
         userId: currentUser.uid,
-        component: 'InquiryManagementPage'
+        component: 'InquiryManagementPage',
       });
     } catch (error) {
-      logger.error('문의 답변 저장 실패:', error instanceof Error ? error : new Error(String(error)), {
-        inquiryId: selectedInquiry.id,
-        component: 'InquiryManagementPage'
-      });
+      logger.error(
+        '문의 답변 저장 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          inquiryId: selectedInquiry.id,
+          component: 'InquiryManagementPage',
+        }
+      );
       showError('답변 저장에 실패했습니다.');
     } finally {
       setUpdatingStatus(false);
@@ -306,22 +323,22 @@ const InquiryManagementPage: React.FC = () => {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   // 카테고리 아이콘 및 이름 가져오기
   const getCategoryInfo = (category: InquiryCategory) => {
-    const categoryInfo = INQUIRY_CATEGORIES.find(cat => cat.key === category);
+    const categoryInfo = INQUIRY_CATEGORIES.find((cat) => cat.key === category);
     return {
       icon: categoryInfo?.icon || '❓',
-      name: t(categoryInfo?.labelKey || 'inquiry.categories.other.label')
+      name: t(categoryInfo?.labelKey || 'inquiry.categories.other.label'),
     };
   };
 
   // 신고 유형 번역
   const getReportTypeName = (type: string): string => {
-    const reportType = REPORT_TYPES.find(rt => rt.key === type as ReportType);
+    const reportType = REPORT_TYPES.find((rt) => rt.key === (type as ReportType));
     return reportType ? t(reportType.labelKey) : type;
   };
 
@@ -337,9 +354,7 @@ const InquiryManagementPage: React.FC = () => {
     <div className="container mx-auto px-4 py-6">
       {/* 헤더 */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          문의 관리
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">문의 관리</h1>
         <p className="text-gray-600 dark:text-gray-300">고객 문의를 관리하고 답변할 수 있습니다.</p>
       </div>
 
@@ -368,7 +383,9 @@ const InquiryManagementPage: React.FC = () => {
             <FaReply className="h-8 w-8 text-yellow-500 dark:text-yellow-400" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">처리중</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.inProgress}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats.inProgress}
+              </p>
             </div>
           </div>
         </div>
@@ -394,7 +411,7 @@ const InquiryManagementPage: React.FC = () => {
               placeholder="제목, 내용, 작성자 검색..."
               className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
             />
           </div>
 
@@ -402,7 +419,9 @@ const InquiryManagementPage: React.FC = () => {
           <select
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={filters.status}
-            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as InquiryStatus | 'all' }))}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, status: e.target.value as InquiryStatus | 'all' }))
+            }
           >
             <option value="all">모든 상태</option>
             <option value="open">대기중</option>
@@ -414,11 +433,16 @@ const InquiryManagementPage: React.FC = () => {
           <select
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={filters.category}
-            onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value as InquiryCategory | 'all' }))}
+            onChange={(e) =>
+              setFilters((prev) => ({
+                ...prev,
+                category: e.target.value as InquiryCategory | 'all',
+              }))
+            }
           >
             <option value="all">모든 카테고리</option>
             <option value="report">🚨 신고</option>
-            {INQUIRY_CATEGORIES.filter(cat => cat.key !== 'report').map((category) => (
+            {INQUIRY_CATEGORIES.filter((cat) => cat.key !== 'report').map((category) => (
               <option key={category.key} value={category.key}>
                 {category.icon} {t(category.labelKey)}
               </option>
@@ -429,7 +453,12 @@ const InquiryManagementPage: React.FC = () => {
           <select
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={filters.dateRange}
-            onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value as InquiryFilters['dateRange'] }))}
+            onChange={(e) =>
+              setFilters((prev) => ({
+                ...prev,
+                dateRange: e.target.value as InquiryFilters['dateRange'],
+              }))
+            }
           >
             <option value="all">전체 기간</option>
             <option value="today">오늘</option>
@@ -479,7 +508,10 @@ const InquiryManagementPage: React.FC = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredInquiries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
+                  >
                     조건에 맞는 문의가 없습니다.
                   </td>
                 </tr>
@@ -524,7 +556,9 @@ const InquiryManagementPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.color}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bgColor} ${statusStyle.color}`}
+                        >
                           {t(statusStyle.labelKey)}
                         </span>
                       </td>
@@ -544,7 +578,9 @@ const InquiryManagementPage: React.FC = () => {
                             <select
                               className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               value={inquiry.status}
-                              onChange={(e) => handleStatusChange(inquiry.id, e.target.value as InquiryStatus)}
+                              onChange={(e) =>
+                                handleStatusChange(inquiry.id, e.target.value as InquiryStatus)
+                              }
                               disabled={updatingStatus}
                             >
                               <option value="open">대기중</option>
@@ -568,7 +604,10 @@ const InquiryManagementPage: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75" onClick={() => setShowModal(false)}></div>
+              <div
+                className="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"
+                onClick={() => setShowModal(false)}
+              ></div>
             </div>
 
             <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
@@ -580,20 +619,34 @@ const InquiryManagementPage: React.FC = () => {
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="font-medium text-gray-500 dark:text-gray-400">작성자:</span>
-                        <span className="ml-2 dark:text-gray-300">{extractUserName(selectedInquiry.userName)}</span>
+                        <span className="font-medium text-gray-500 dark:text-gray-400">
+                          작성자:
+                        </span>
+                        <span className="ml-2 dark:text-gray-300">
+                          {extractUserName(selectedInquiry.userName)}
+                        </span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-500 dark:text-gray-400">이메일:</span>
+                        <span className="font-medium text-gray-500 dark:text-gray-400">
+                          이메일:
+                        </span>
                         <span className="ml-2 dark:text-gray-300">{selectedInquiry.userEmail}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-500 dark:text-gray-400">카테고리:</span>
-                        <span className="ml-2 dark:text-gray-300">{getCategoryInfo(selectedInquiry.category).name}</span>
+                        <span className="font-medium text-gray-500 dark:text-gray-400">
+                          카테고리:
+                        </span>
+                        <span className="ml-2 dark:text-gray-300">
+                          {getCategoryInfo(selectedInquiry.category).name}
+                        </span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-500 dark:text-gray-400">작성일:</span>
-                        <span className="ml-2 dark:text-gray-300">{formatDate(selectedInquiry.createdAt)}</span>
+                        <span className="font-medium text-gray-500 dark:text-gray-400">
+                          작성일:
+                        </span>
+                        <span className="ml-2 dark:text-gray-300">
+                          {formatDate(selectedInquiry.createdAt)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -607,37 +660,59 @@ const InquiryManagementPage: React.FC = () => {
                 <div className="mb-6">
                   <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">내용</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{extractMessage(selectedInquiry.message)}</p>
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      {extractMessage(selectedInquiry.message)}
+                    </p>
                   </div>
                 </div>
 
                 {/* 신고 메타데이터 표시 */}
                 {selectedInquiry.category === 'report' && selectedInquiry.reportMetadata && (
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">신고 상세 정보</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      신고 상세 정보
+                    </h4>
                     <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg border border-red-200 dark:border-red-700">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="font-medium text-red-700 dark:text-red-300">신고 유형:</span>
-                          <span className="ml-2 text-red-800 dark:text-red-200">{getReportTypeName(selectedInquiry.reportMetadata.type)}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-red-700 dark:text-red-300">신고자 유형:</span>
+                          <span className="font-medium text-red-700 dark:text-red-300">
+                            신고 유형:
+                          </span>
                           <span className="ml-2 text-red-800 dark:text-red-200">
-                            {selectedInquiry.reportMetadata.reporterType === 'employer' ? '관리자' : '직원'}
+                            {getReportTypeName(selectedInquiry.reportMetadata.type)}
                           </span>
                         </div>
                         <div>
-                          <span className="font-medium text-red-700 dark:text-red-300">신고 대상:</span>
-                          <span className="ml-2 text-red-800 dark:text-red-200">{selectedInquiry.reportMetadata.targetName}</span>
+                          <span className="font-medium text-red-700 dark:text-red-300">
+                            신고자 유형:
+                          </span>
+                          <span className="ml-2 text-red-800 dark:text-red-200">
+                            {selectedInquiry.reportMetadata.reporterType === 'employer'
+                              ? '관리자'
+                              : '직원'}
+                          </span>
                         </div>
                         <div>
-                          <span className="font-medium text-red-700 dark:text-red-300">이벤트:</span>
-                          <span className="ml-2 text-red-800 dark:text-red-200">{selectedInquiry.reportMetadata.eventTitle}</span>
+                          <span className="font-medium text-red-700 dark:text-red-300">
+                            신고 대상:
+                          </span>
+                          <span className="ml-2 text-red-800 dark:text-red-200">
+                            {selectedInquiry.reportMetadata.targetName}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-red-700 dark:text-red-300">
+                            이벤트:
+                          </span>
+                          <span className="ml-2 text-red-800 dark:text-red-200">
+                            {selectedInquiry.reportMetadata.eventTitle}
+                          </span>
                         </div>
                         <div className="col-span-2">
                           <span className="font-medium text-red-700 dark:text-red-300">날짜:</span>
-                          <span className="ml-2 text-red-800 dark:text-red-200">{selectedInquiry.reportMetadata.date}</span>
+                          <span className="ml-2 text-red-800 dark:text-red-200">
+                            {selectedInquiry.reportMetadata.date}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -646,9 +721,13 @@ const InquiryManagementPage: React.FC = () => {
 
                 {selectedInquiry.response && (
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">관리자 답변</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      관리자 답변
+                    </h4>
                     <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedInquiry.response}</p>
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {selectedInquiry.response}
+                      </p>
                       {selectedInquiry.respondedAt && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                           답변일: {formatDate(selectedInquiry.respondedAt)}

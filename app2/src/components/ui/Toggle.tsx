@@ -53,25 +53,25 @@ const Toggle: React.FC<ToggleProps> = ({
   description,
   disabled = false,
   size = 'md',
-  className = ''
+  className = '',
 }) => {
   // 크기별 스타일
   const sizeStyles = {
     sm: {
       switch: 'w-9 h-5',
       circle: 'w-4 h-4',
-      translate: 'translate-x-4'
+      translate: 'translate-x-4',
     },
     md: {
       switch: 'w-11 h-6',
       circle: 'w-5 h-5',
-      translate: 'translate-x-5'
+      translate: 'translate-x-5',
     },
     lg: {
       switch: 'w-14 h-7',
       circle: 'w-6 h-6',
-      translate: 'translate-x-7'
-    }
+      translate: 'translate-x-7',
+    },
   };
 
   const styles = sizeStyles[size];
@@ -101,14 +101,8 @@ const Toggle: React.FC<ToggleProps> = ({
             className={`
               ${styles.switch}
               rounded-full transition-colors duration-200 ease-in-out
-              ${
-                checked
-                  ? 'bg-indigo-600 dark:bg-indigo-500'
-                  : 'bg-gray-200 dark:bg-gray-700'
-              }
-              ${
-                !disabled && 'hover:opacity-80'
-              }
+              ${checked ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-gray-200 dark:bg-gray-700'}
+              ${!disabled && 'hover:opacity-80'}
             `}
           >
             <span
@@ -146,9 +140,7 @@ const Toggle: React.FC<ToggleProps> = ({
               className={`
                 mt-0.5 text-xs
                 ${
-                  disabled
-                    ? 'text-gray-400 dark:text-gray-600'
-                    : 'text-gray-500 dark:text-gray-400'
+                  disabled ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'
                 }
               `}
             >

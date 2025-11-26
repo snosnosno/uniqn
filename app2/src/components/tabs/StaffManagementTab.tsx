@@ -78,7 +78,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, [expandedDates, getStorageKey]);
 
   const toggleDateExpansion = useCallback((date: string) => {
-    setExpandedDates(prev => {
+    setExpandedDates((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(date)) {
         newSet.delete(date);
@@ -90,13 +90,12 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
 
   // 🚀 커스텀 훅 사용
-  const { staffData, groupedStaffData, uniqueStaffCount, filteredStaffCount } =
-    useStaffData({
-      workLogs: state.workLogs,
-      jobPostings: state.jobPostings as any,
-      currentJobPosting: jobPosting,
-      filters,
-    });
+  const { staffData, groupedStaffData, uniqueStaffCount, filteredStaffCount } = useStaffData({
+    workLogs: state.workLogs,
+    jobPostings: state.jobPostings as any,
+    currentJobPosting: jobPosting,
+    filters,
+  });
 
   // 🔍 디버깅: state.workLogs 확인
   useEffect(() => {
@@ -155,9 +154,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   const applyOptimisticUpdate = useCallback(
     (workLogId: string, status: string) => {
-      const existingWorkLog = Array.from(state.workLogs.values()).find(
-        wl => wl.id === workLogId
-      );
+      const existingWorkLog = Array.from(state.workLogs.values()).find((wl) => wl.id === workLogId);
 
       if (existingWorkLog) {
         const optimisticWorkLog: Partial<WorkLog> = {
@@ -197,7 +194,10 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       '18:00~24:00': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
       '24:00~06:00': 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
     };
-    return colors[timeSlot as keyof typeof colors] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
+    return (
+      colors[timeSlot as keyof typeof colors] ||
+      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+    );
   }, []);
 
   const getStaffWorkLog = useCallback(
@@ -258,7 +258,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   const deleteStaffWrapper = useCallback(
     async (staffId: string) => {
-      const staff = staffData.find(s => s.id === staffId);
+      const staff = staffData.find((s) => s.id === staffId);
       if (staff) {
         const staffName = staff.name || '이름 미정';
         const date = staff.assignedDate || getTodayString();
@@ -297,7 +297,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   );
 
   const handleShowProfile = (staffId: string) => {
-    const staff = staffData.find(s => s.id === staffId);
+    const staff = staffData.find((s) => s.id === staffId);
     if (staff) {
       modals.profileModal.open(staff);
     }
@@ -313,7 +313,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-1 sm:p-4">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg text-gray-500 dark:text-gray-400 dark:text-gray-500">공고 정보를 불러올 수 없습니다.</div>
+          <div className="text-lg text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            공고 정보를 불러올 수 없습니다.
+          </div>
         </div>
       </div>
     );
@@ -335,22 +337,23 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       <div className="p-1 sm:p-4">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{jobPosting.title} - 스태프 관리</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            {jobPosting.title} - 스태프 관리
+          </h3>
 
           {/* 데스크톱 컨트롤 */}
           {!isMobile && !isTablet && (
             <div className="flex items-center space-x-3">
               <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                 총 {uniqueStaffCount}명
-                {filteredStaffCount !== uniqueStaffCount &&
-                  ` (${filteredStaffCount}명 필터됨)`}
+                {filteredStaffCount !== uniqueStaffCount && ` (${filteredStaffCount}명 필터됨)`}
               </span>
               <div className="relative">
                 <input
                   type="text"
                   placeholder="스태프 검색..."
                   value={filters.searchTerm}
-                  onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, searchTerm: e.target.value }))}
                   className="w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -363,7 +366,9 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                         ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
-                    title={selection.multiSelectMode ? '선택 모드 종료' : '스태프를 선택하여 일괄 수정'}
+                    title={
+                      selection.multiSelectMode ? '선택 모드 종료' : '스태프를 선택하여 일괄 수정'
+                    }
                   >
                     <span>{selection.multiSelectMode ? '선택 완료' : '선택 모드'}</span>
                     {selection.multiSelectMode && (
@@ -396,7 +401,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       </button>
                       <button
                         onClick={() => {
-                          selection.selectAll(staffData.map(s => s.id));
+                          selection.selectAll(staffData.map((s) => s.id));
                           modals.bulkTimeEditModal.open();
                         }}
                         className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
@@ -431,8 +436,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-300">
                   총 {uniqueStaffCount}명
-                  {filteredStaffCount !== uniqueStaffCount &&
-                    ` (${filteredStaffCount}명 필터됨)`}
+                  {filteredStaffCount !== uniqueStaffCount && ` (${filteredStaffCount}명 필터됨)`}
                 </span>
                 <div className="flex space-x-2">
                   {canEdit && (
@@ -459,7 +463,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                 type="text"
                 placeholder="스태프 검색..."
                 value={filters.searchTerm}
-                onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                onChange={(e) => setFilters((prev) => ({ ...prev, searchTerm: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -494,78 +498,78 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         {/* 스태프 목록 */}
         {uniqueStaffCount === 0 ? (
           <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
-            <p className="text-gray-600 dark:text-gray-300 mb-4">이 공고에 할당된 스태프가 없습니다.</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              이 공고에 할당된 스태프가 없습니다.
+            </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               지원자 목록에서 지원자를 확정하면 자동으로 스태프로 등록됩니다.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {(isMobile || isTablet) ? (
-              // 모바일 카드 레이아웃
-              groupedStaffData.sortedDates.map(date => {
-                const staffForDate = groupedStaffData.grouped[date];
-                const isExpanded = expandedDates.has(date);
+            {isMobile || isTablet
+              ? // 모바일 카드 레이아웃
+                groupedStaffData.sortedDates.map((date) => {
+                  const staffForDate = groupedStaffData.grouped[date];
+                  const isExpanded = expandedDates.has(date);
 
-                if (!staffForDate) return null;
+                  if (!staffForDate) return null;
 
-                return (
-                  <StaffDateGroupMobile
-                    key={date}
-                    date={date}
-                    staffList={staffForDate as any}
-                    isExpanded={isExpanded}
-                    onToggleExpansion={toggleDateExpansion}
-                    onEditWorkTime={handleEditWorkTime}
-                    onDeleteStaff={deleteStaffWrapper}
-                    getStaffAttendanceStatus={getStaffAttendanceStatus}
-                    attendanceRecords={attendanceRecords}
-                    formatTimeDisplay={formatTimeDisplay}
-                    getTimeSlotColor={getTimeSlotColor}
-                    selectedStaff={selection.selectedStaff}
-                    onStaffSelect={handleStaffSelect}
-                    multiSelectMode={selection.multiSelectMode}
-                    onShowProfile={handleShowProfile}
-                    eventId={jobPosting?.id}
-                    getStaffWorkLog={getStaffWorkLog as any}
-                    onReport={handleReport}
-                  />
-                );
-              })
-            ) : (
-              // 데스크톱 테이블 레이아웃
-              groupedStaffData.sortedDates.map(date => {
-                const staffForDate = groupedStaffData.grouped[date];
-                const isExpanded = expandedDates.has(date);
+                  return (
+                    <StaffDateGroupMobile
+                      key={date}
+                      date={date}
+                      staffList={staffForDate as any}
+                      isExpanded={isExpanded}
+                      onToggleExpansion={toggleDateExpansion}
+                      onEditWorkTime={handleEditWorkTime}
+                      onDeleteStaff={deleteStaffWrapper}
+                      getStaffAttendanceStatus={getStaffAttendanceStatus}
+                      attendanceRecords={attendanceRecords}
+                      formatTimeDisplay={formatTimeDisplay}
+                      getTimeSlotColor={getTimeSlotColor}
+                      selectedStaff={selection.selectedStaff}
+                      onStaffSelect={handleStaffSelect}
+                      multiSelectMode={selection.multiSelectMode}
+                      onShowProfile={handleShowProfile}
+                      eventId={jobPosting?.id}
+                      getStaffWorkLog={getStaffWorkLog as any}
+                      onReport={handleReport}
+                    />
+                  );
+                })
+              : // 데스크톱 테이블 레이아웃
+                groupedStaffData.sortedDates.map((date) => {
+                  const staffForDate = groupedStaffData.grouped[date];
+                  const isExpanded = expandedDates.has(date);
 
-                if (!staffForDate) return null;
+                  if (!staffForDate) return null;
 
-                return (
-                  <StaffDateGroup
-                    key={date}
-                    date={date}
-                    staffList={staffForDate as any}
-                    isExpanded={isExpanded}
-                    onToggleExpansion={toggleDateExpansion}
-                    onEditWorkTime={handleEditWorkTime}
-                    onDeleteStaff={deleteStaffWrapper}
-                    getStaffAttendanceStatus={getStaffAttendanceStatus}
-                    attendanceRecords={attendanceRecords}
-                    formatTimeDisplay={formatTimeDisplay}
-                    getTimeSlotColor={getTimeSlotColor}
-                    onShowProfile={handleShowProfile}
-                    eventId={jobPosting?.id}
-                    canEdit={!!canEdit}
-                    getStaffWorkLog={getStaffWorkLog as any}
-                    applyOptimisticUpdate={applyOptimisticUpdate}
-                    multiSelectMode={selection.multiSelectMode}
-                    selectedStaff={selection.selectedStaff}
-                    onStaffSelect={handleStaffSelect}
-                    onReport={handleReport}
-                  />
-                );
-              })
-            )}
+                  return (
+                    <StaffDateGroup
+                      key={date}
+                      date={date}
+                      staffList={staffForDate as any}
+                      isExpanded={isExpanded}
+                      onToggleExpansion={toggleDateExpansion}
+                      onEditWorkTime={handleEditWorkTime}
+                      onDeleteStaff={deleteStaffWrapper}
+                      getStaffAttendanceStatus={getStaffAttendanceStatus}
+                      attendanceRecords={attendanceRecords}
+                      formatTimeDisplay={formatTimeDisplay}
+                      getTimeSlotColor={getTimeSlotColor}
+                      onShowProfile={handleShowProfile}
+                      eventId={jobPosting?.id}
+                      canEdit={!!canEdit}
+                      getStaffWorkLog={getStaffWorkLog as any}
+                      applyOptimisticUpdate={applyOptimisticUpdate}
+                      multiSelectMode={selection.multiSelectMode}
+                      selectedStaff={selection.selectedStaff}
+                      onStaffSelect={handleStaffSelect}
+                      onReport={handleReport}
+                    />
+                  );
+                })}
           </div>
         )}
       </div>
@@ -604,7 +608,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
         }
         workLogRecord={
           modals.profileModal.staff
-            ? attendanceRecords.find(r => r.staffId === modals.profileModal.staff?.id)
+            ? attendanceRecords.find((r) => r.staffId === modals.profileModal.staff?.id)
             : undefined
         }
       />
@@ -617,8 +621,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           selection.resetSelection();
         }}
         selectedStaff={staffData
-          .filter(staff => selection.selectedStaff.has(staff.id))
-          .map(staff => {
+          .filter((staff) => selection.selectedStaff.has(staff.id))
+          .map((staff) => {
             const dateString = staff.assignedDate || getTodayString();
             const workLog = getStaffWorkLog(staff.id, dateString);
 
@@ -672,7 +676,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
           <MobileSelectionBar
             selectedCount={selection.selectedStaff.size}
             totalCount={uniqueStaffCount}
-            onSelectAll={() => selection.selectAll(staffData.map(s => s.id))}
+            onSelectAll={() => selection.selectAll(staffData.map((s) => s.id))}
             onDeselectAll={selection.deselectAll}
             onBulkEdit={() => modals.bulkTimeEditModal.open()}
             onBulkDelete={() => {
@@ -683,7 +687,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
               selection.deselectAll();
               selection.toggleMultiSelectMode();
             }}
-            isAllSelected={selection.isAllSelected(staffData.map(s => s.id))}
+            isAllSelected={selection.isAllSelected(staffData.map((s) => s.id))}
           />
         )}
 

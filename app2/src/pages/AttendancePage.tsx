@@ -26,15 +26,17 @@ const AttendancePage: React.FC = () => {
     logger.info('AttendancePage 마운트 (Staff QR 시스템)', {
       component: 'AttendancePage',
       data: {
-        userId: currentUser?.uid
-      }
+        userId: currentUser?.uid,
+      },
     });
   }, [currentUser?.uid]);
 
   if (!currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <p className="text-gray-600 dark:text-gray-300">{t('common.pleaseLogin', '로그인이 필요합니다.')}</p>
+        <p className="text-gray-600 dark:text-gray-300">
+          {t('common.pleaseLogin', '로그인이 필요합니다.')}
+        </p>
       </div>
     );
   }

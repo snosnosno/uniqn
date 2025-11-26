@@ -68,9 +68,7 @@ describe('DateSlider', () => {
 
       // M/D 형식 패턴 확인 (예: 1/15, 12/31)
       const buttons = screen.getAllByRole('button');
-      const dateButtons = buttons.filter(btn =>
-        /^\d{1,2}\/\d{1,2}$/.test(btn.textContent || '')
-      );
+      const dateButtons = buttons.filter((btn) => /^\d{1,2}\/\d{1,2}$/.test(btn.textContent || ''));
 
       expect(dateButtons.length).toBeGreaterThan(0);
     });
@@ -161,13 +159,13 @@ describe('DateSlider', () => {
       render(<DateSlider selectedDate={null} onDateSelect={mockOnDateSelect} />);
 
       const buttons = screen.getAllByRole('button');
-      const dateButtons = buttons.filter(btn => {
+      const dateButtons = buttons.filter((btn) => {
         const text = btn.textContent || '';
         return text !== '전체' && text !== '오늘' && text !== '어제';
       });
 
       // M/D 형식 검증
-      dateButtons.forEach(btn => {
+      dateButtons.forEach((btn) => {
         const text = btn.textContent || '';
         expect(text).toMatch(/^\d{1,2}\/\d{1,2}$/);
       });

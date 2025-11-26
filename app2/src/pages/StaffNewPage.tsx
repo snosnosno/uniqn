@@ -11,7 +11,7 @@ const StaffNewPage: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'staff' // Default role
+    role: 'staff', // Default role
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,15 +21,15 @@ const StaffNewPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-        setError(t('staffNew.accessDeniedAction'));
-        return;
+      setError(t('staffNew.accessDeniedAction'));
+      return;
     }
 
     setIsSubmitting(true);
@@ -40,24 +40,35 @@ const StaffNewPage: React.FC = () => {
       toast.success(t('staffNew.alertSuccess'));
       navigate('/app/admin/staff'); // Redirect to staff list after creation
     } catch (err) {
-      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'StaffNewPage' });
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), {
+        component: 'StaffNewPage',
+      });
       setError(err instanceof Error ? err.message : t('staffNew.errorUnknown'));
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   if (!isAdmin) {
-    return <div className="p-6 text-red-500 dark:text-red-400">{t('staffNew.accessDeniedView')}</div>
+    return (
+      <div className="p-6 text-red-500 dark:text-red-400">{t('staffNew.accessDeniedView')}</div>
+    );
   }
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-       <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-xl">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4 sm:mb-6">{t('staffNew.title')}</h1>
+      <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-xl">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4 sm:mb-6">
+          {t('staffNew.title')}
+        </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.name')}</label>
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('common.name')}
+            </label>
             <input
               type="text"
               name="name"
@@ -69,7 +80,12 @@ const StaffNewPage: React.FC = () => {
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.emailAddress')}</label>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('common.emailAddress')}
+            </label>
             <input
               type="email"
               name="email"
@@ -81,7 +97,12 @@ const StaffNewPage: React.FC = () => {
             />
           </div>
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('common.role')}</label>
+            <label
+              htmlFor="role"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
+              {t('common.role')}
+            </label>
             <select
               name="role"
               id="role"
@@ -104,7 +125,7 @@ const StaffNewPage: React.FC = () => {
             </button>
           </div>
         </form>
-       </div>
+      </div>
     </div>
   );
 };

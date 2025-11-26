@@ -25,11 +25,7 @@ export const useSubscriptionPlans = () => {
     try {
       // Firestore 쿼리: 활성화된 플랜만 조회
       const plansRef = collection(db, 'subscriptionPlans');
-      const q = query(
-        plansRef,
-        where('isActive', '==', true),
-        orderBy('price', 'asc')
-      );
+      const q = query(plansRef, where('isActive', '==', true), orderBy('price', 'asc'));
 
       // 실시간 구독
       const unsubscribe = onSnapshot(

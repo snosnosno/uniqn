@@ -18,7 +18,7 @@ const TOKEN_LIFETIME_MS = 60 * 60 * 1000;
 export function generateCsrfToken(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -30,14 +30,14 @@ export function storeCsrfToken(token: string): void {
     const expiry = Date.now() + TOKEN_LIFETIME_MS;
     sessionStorage.setItem(CSRF_TOKEN_KEY, token);
     sessionStorage.setItem(CSRF_TOKEN_EXPIRY_KEY, expiry.toString());
-    
-    logger.debug('CSRF 토큰이 저장되었습니다', { 
+
+    logger.debug('CSRF 토큰이 저장되었습니다', {
       component: 'csrf',
-      data: { tokenLength: token.length, expiryTime: new Date(expiry).toISOString() }
+      data: { tokenLength: token.length, expiryTime: new Date(expiry).toISOString() },
     });
   } catch (error) {
-    logger.error('CSRF 토큰 저장 오류', error instanceof Error ? error : new Error(String(error)), { 
-      component: 'csrf' 
+    logger.error('CSRF 토큰 저장 오류', error instanceof Error ? error : new Error(String(error)), {
+      component: 'csrf',
     });
   }
 }
@@ -50,11 +50,11 @@ export function getCsrfToken(): string | null {
   try {
     const token = sessionStorage.getItem(CSRF_TOKEN_KEY);
     const expiry = sessionStorage.getItem(CSRF_TOKEN_EXPIRY_KEY);
-    
+
     if (!token || !expiry) {
       return null;
     }
-    
+
     // 토큰 만료 확인
     const expiryTime = parseInt(expiry, 10);
     if (Date.now() > expiryTime) {
@@ -62,12 +62,16 @@ export function getCsrfToken(): string | null {
       clearCsrfToken();
       return null;
     }
-    
+
     return token;
   } catch (error) {
-    logger.error('CSRF 토큰 가져오기 오류', error instanceof Error ? error : new Error(String(error)), { 
-      component: 'csrf' 
-    });
+    logger.error(
+      'CSRF 토큰 가져오기 오류',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'csrf',
+      }
+    );
     return null;
   }
 }
@@ -79,10 +83,9 @@ export function clearCsrfToken(): void {
   try {
     sessionStorage.removeItem(CSRF_TOKEN_KEY);
     sessionStorage.removeItem(CSRF_TOKEN_EXPIRY_KEY);
-
   } catch (error) {
-    logger.error('CSRF 토큰 삭제 오류', error instanceof Error ? error : new Error(String(error)), { 
-      component: 'csrf' 
+    logger.error('CSRF 토큰 삭제 오류', error instanceof Error ? error : new Error(String(error)), {
+      component: 'csrf',
     });
   }
 }
@@ -106,7 +109,7 @@ export function ensureCsrfToken(): string {
   if (existingToken) {
     return existingToken;
   }
-  
+
   return refreshCsrfToken();
 }
 
@@ -120,24 +123,24 @@ export function validateCsrfToken(token: string | null | undefined): boolean {
     logger.warn('CSRF 토큰이 제공되지 않았습니다', { component: 'csrf' });
     return false;
   }
-  
+
   const storedToken = getCsrfToken();
   if (!storedToken) {
     logger.warn('저장된 CSRF 토큰이 없습니다', { component: 'csrf' });
     return false;
   }
-  
+
   const isValid = token === storedToken;
   if (!isValid) {
-    logger.warn('유효하지 않은 CSRF 토큰', { 
+    logger.warn('유효하지 않은 CSRF 토큰', {
       component: 'csrf',
-      data: { 
+      data: {
         providedLength: token.length,
-        storedLength: storedToken.length
-      }
+        storedLength: storedToken.length,
+      },
     });
   }
-  
+
   return isValid;
 }
 
@@ -148,15 +151,15 @@ export function validateCsrfToken(token: string | null | undefined): boolean {
  */
 export function addCsrfHeader(headers: HeadersInit = {}): HeadersInit {
   const token = ensureCsrfToken();
-  
+
   if (headers instanceof Headers) {
     headers.set('X-CSRF-Token', token);
     return headers;
   }
-  
+
   return {
     ...headers,
-    'X-CSRF-Token': token
+    'X-CSRF-Token': token,
   };
 }
 
@@ -167,13 +170,13 @@ export function addCsrfHeader(headers: HeadersInit = {}): HeadersInit {
  */
 export function addCsrfToAxiosConfig(config: any): any {
   const token = ensureCsrfToken();
-  
+
   return {
     ...config,
     headers: {
       ...config.headers,
-      'X-CSRF-Token': token
-    }
+      'X-CSRF-Token': token,
+    },
   };
 }
 
@@ -183,7 +186,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     ensureCsrfToken();
   });
-  
+
   // 인증 상태 변경 시 토큰 갱신
   window.addEventListener('storage', (e) => {
     if (e.key === 'auth-state-changed') {
@@ -202,7 +205,7 @@ const csrfUtils = {
   ensureCsrfToken,
   validateCsrfToken,
   addCsrfHeader,
-  addCsrfToAxiosConfig
+  addCsrfToAxiosConfig,
 };
 
 export default csrfUtils;

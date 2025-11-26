@@ -19,22 +19,22 @@ import { createMockUseNotifications, mockNotifications } from '../../testUtils/m
 // Mock useNotifications hook
 const mockUseNotifications = createMockUseNotifications();
 jest.mock('../../../../hooks/useNotifications', () => ({
-  useNotifications: jest.fn(() => mockUseNotifications)
+  useNotifications: jest.fn(() => mockUseNotifications),
 }));
 
 // Mock React Router
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate
+  useNavigate: () => mockNavigate,
 }));
 
 // Mock i18n
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback || key,
-    i18n: { language: 'ko' }
-  })
+    i18n: { language: 'ko' },
+  }),
 }));
 
 // Mock NotificationItem 컴포넌트 (date-fns 의존성 제거)
@@ -45,15 +45,14 @@ jest.mock('../../../../components/notifications/NotificationItem', () => ({
       <div>{notification.title}</div>
       <div>{notification.message}</div>
     </div>
-  )
+  ),
 }));
 
 // Mock NotificationBadge 컴포넌트
 jest.mock('../../../../components/notifications/NotificationBadge', () => ({
   __esModule: true,
-  default: ({ count }: any) => (
-    count > 0 ? <span data-testid="notification-badge">{count}</span> : null
-  )
+  default: ({ count }: any) =>
+    count > 0 ? <span data-testid="notification-badge">{count}</span> : null,
 }));
 
 describe('NotificationDropdown', () => {
@@ -81,8 +80,8 @@ describe('NotificationDropdown', () => {
             mockNotifications.unread,
             mockNotifications.workUnread,
             mockNotifications.financeUnread,
-            mockNotifications.read
-          ]
+            mockNotifications.read,
+          ],
         })
       );
 
@@ -161,9 +160,9 @@ describe('NotificationDropdown', () => {
             mockNotifications.read,
             mockNotifications.systemUrgent,
             mockNotifications.scheduleChange,
-            mockNotifications.workUnread
+            mockNotifications.workUnread,
           ],
-          unreadCount: 3
+          unreadCount: 3,
         })
       );
 
@@ -192,9 +191,9 @@ describe('NotificationDropdown', () => {
             mockNotifications.systemUrgent,
             mockNotifications.scheduleChange,
             mockNotifications.workUnread,
-            mockNotifications.financeUnread // 6번째 알림 (표시되지 않아야 함)
+            mockNotifications.financeUnread, // 6번째 알림 (표시되지 않아야 함)
           ],
-          unreadCount: 4
+          unreadCount: 4,
         })
       );
 
@@ -223,7 +222,7 @@ describe('NotificationDropdown', () => {
         createMockUseNotifications({
           notifications: [],
           unreadCount: 0,
-          loading: false
+          loading: false,
         })
       );
 
@@ -242,7 +241,7 @@ describe('NotificationDropdown', () => {
         createMockUseNotifications({
           notifications: [],
           unreadCount: 0,
-          loading: true
+          loading: true,
         })
       );
 
@@ -261,7 +260,7 @@ describe('NotificationDropdown', () => {
         createMockUseNotifications({
           notifications: [mockNotifications.read, mockNotifications.systemRead],
           unreadCount: 0,
-          loading: false
+          loading: false,
         })
       );
 
@@ -350,7 +349,7 @@ describe('NotificationDropdown', () => {
       useNotifications.mockReturnValue(
         createMockUseNotifications({
           unreadCount: 3,
-          markAllAsRead: mockMarkAllAsRead
+          markAllAsRead: mockMarkAllAsRead,
         })
       );
 

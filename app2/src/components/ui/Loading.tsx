@@ -46,7 +46,9 @@ const Loading: React.FC<LoadingProps> = ({
         aria-label={text || '로딩 중'}
       />
       {text && (
-        <p className={`text-${size === 'sm' ? 'sm' : 'base'} ${color === 'white' ? 'text-white' : 'text-gray-700 dark:text-gray-200'} font-medium`}>
+        <p
+          className={`text-${size === 'sm' ? 'sm' : 'base'} ${color === 'white' ? 'text-white' : 'text-gray-700 dark:text-gray-200'} font-medium`}
+        >
           {text}
         </p>
       )}
@@ -64,9 +66,7 @@ const Loading: React.FC<LoadingProps> = ({
   if (overlay) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
-          {spinner}
-        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">{spinner}</div>
       </div>
     );
   }
@@ -84,13 +84,7 @@ export const Skeleton: React.FC<{
   width?: string | number;
   height?: string | number;
   animation?: 'pulse' | 'wave' | 'none';
-}> = ({
-  className = '',
-  variant = 'text',
-  width,
-  height,
-  animation = 'pulse',
-}) => {
+}> = ({ className = '', variant = 'text', width, height, animation = 'pulse' }) => {
   const variantClasses = {
     text: 'rounded',
     circular: 'rounded-full',

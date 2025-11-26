@@ -27,7 +27,7 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
   roleSalaries,
   onAddRole,
   onRemoveRole,
-  onRoleSalaryChange
+  onRoleSalaryChange,
 }) => {
   return (
     <div className="space-y-3 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
@@ -49,18 +49,14 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
                 onChange={(_value) => {
                   // 역할 변경 로직 (간단히 처리)
                 }}
-                options={PREDEFINED_ROLES.map(r => ({
+                options={PREDEFINED_ROLES.map((r) => ({
                   value: r,
-                  label: getRoleDisplayName(r)
+                  label: getRoleDisplayName(r),
                 }))}
               />
             </div>
             <div className="pt-5">
-              <Button
-                onClick={() => onRemoveRole(role)}
-                variant="danger"
-                size="sm"
-              >
+              <Button onClick={() => onRemoveRole(role)} variant="danger" size="sm">
                 삭제
               </Button>
             </div>
@@ -83,7 +79,7 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
                   { value: 'hourly', label: '시급' },
                   { value: 'daily', label: '일급' },
                   { value: 'monthly', label: '월급' },
-                  { value: 'negotiable', label: '협의' }
+                  { value: 'negotiable', label: '협의' },
                 ]}
               />
             </div>
@@ -94,9 +90,7 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
                 금액
               </label>
               {salary.salaryType === 'negotiable' ? (
-                <div className="text-gray-500 dark:text-gray-400 text-sm py-2">
-                  급여 협의
-                </div>
+                <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>
               ) : (
                 <Input
                   type="text"
@@ -114,12 +108,7 @@ const RoleSalaryManager: React.FC<RoleSalaryManagerProps> = ({
       ))}
 
       {/* 역할 추가 버튼 */}
-      <Button
-        onClick={() => onAddRole('dealer')}
-        variant="secondary"
-        size="sm"
-        className="mt-2"
-      >
+      <Button onClick={() => onAddRole('dealer')} variant="secondary" size="sm" className="mt-2">
         + 역할 추가
       </Button>
     </div>

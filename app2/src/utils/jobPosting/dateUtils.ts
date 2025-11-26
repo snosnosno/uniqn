@@ -3,13 +3,13 @@ import { Timestamp } from 'firebase/firestore';
 import { logger } from '../../utils/logger';
 
 // 날짜 입력 타입 정의
-type DateInput = 
-  | Timestamp 
-  | Date 
-  | string 
+type DateInput =
+  | Timestamp
+  | Date
+  | string
   | number
   | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
-  | null 
+  | null
   | undefined;
 
 // 전역 캐시 맵 - formatDate 함수 성능 최적화
@@ -45,21 +45,29 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
     }
 
     // 2. Firebase Timestamp 객체인 경우
-    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
+    if (
+      dateInput &&
+      typeof dateInput === 'object' &&
+      'seconds' in dateInput &&
+      'nanoseconds' in dateInput
+    ) {
       const seconds = dateInput.seconds;
       const nanoseconds = dateInput.nanoseconds || 0;
-      
+
       // 유효성 검증 (1970~2038년 범위)
       if (typeof seconds !== 'number' || seconds < 0 || seconds > 2147483647) {
         logger.warn('Invalid Timestamp seconds:', { component: 'dateUtils', data: seconds });
         return null;
       }
-      
+
       if (typeof nanoseconds !== 'number' || nanoseconds < 0 || nanoseconds >= 1000000000) {
-        logger.warn('Invalid Timestamp nanoseconds:', { component: 'dateUtils', data: nanoseconds });
+        logger.warn('Invalid Timestamp nanoseconds:', {
+          component: 'dateUtils',
+          data: nanoseconds,
+        });
         return null;
       }
-      
+
       // Timestamp 변환
       if (typeof dateInput.toDate === 'function') {
         const date = dateInput.toDate();
@@ -75,12 +83,12 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
     // 3. Legacy Timestamp 객체인 경우 (nanoseconds 없음)
     if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
       const seconds = dateInput.seconds;
-      
+
       if (typeof seconds !== 'number' || seconds < 0 || seconds > 2147483647) {
         logger.warn('Invalid legacy Timestamp seconds:', { component: 'dateUtils', data: seconds });
         return null;
       }
-      
+
       // 타임존 보정을 적용한 변환
       const utcDate = new Date(seconds * 1000);
       // 로컬 타임존을 고려하여 날짜가 변경되지 않도록 함
@@ -105,7 +113,7 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
         const date = new Date(currentYear, month, day);
         return isNaN(date.getTime()) ? null : date;
       }
-      
+
       // 기존 yy-MM-dd(요일) 형식 체크 (하위 호환성)
       const oldFormattedPattern = /^\d{2}-\d{2}-\d{2}\([일월화수목금토]\)$/;
       if (oldFormattedPattern.test(trimmed)) {
@@ -117,7 +125,7 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
             const yearPart = parts[0];
             const monthPart = parts[1];
             const dayPart = parts[2];
-            
+
             if (yearPart && monthPart && dayPart) {
               const year = 2000 + parseInt(yearPart); // yy -> yyyy
               const month = parseInt(monthPart) - 1; // 0-based month
@@ -132,15 +140,15 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
       // 4-2. Timestamp 문자열 형태 체크
       const timestampPatterns = [
         /Timestamp\(seconds=(\d+),?\s*nanoseconds=(\d+)\)/i,
-        /seconds=(\d+),?\s*nanoseconds=(\d+)/i
+        /seconds=(\d+),?\s*nanoseconds=(\d+)/i,
       ];
-      
+
       for (const pattern of timestampPatterns) {
         const match = trimmed.match(pattern);
         if (match && match[1] && match[2]) {
           const seconds = parseInt(match[1]);
           const nanoseconds = parseInt(match[2]);
-          
+
           if (!isNaN(seconds) && seconds >= 0 && seconds <= 2147483647) {
             const date = new Date(seconds * 1000 + nanoseconds / 1000000);
             if (!isNaN(date.getTime())) {
@@ -163,7 +171,10 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
 
     return null;
   } catch (error) {
-    logger.error('Error parsing date:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
+    logger.error('Error parsing date:', error instanceof Error ? error : new Error(String(error)), {
+      component: 'dateUtils',
+      data: { dateInput },
+    });
     return null;
   }
 };
@@ -174,10 +185,8 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
  */
 export const formatDate = (dateInput: DateInput): string => {
   // 캐시 키 생성
-  const cacheKey = typeof dateInput === 'object' 
-    ? JSON.stringify(dateInput) 
-    : String(dateInput);
-  
+  const cacheKey = typeof dateInput === 'object' ? JSON.stringify(dateInput) : String(dateInput);
+
   // 캐시에서 결과 확인
   if (formatDateCache.has(cacheKey)) {
     return formatDateCache.get(cacheKey)!;
@@ -191,7 +200,7 @@ export const formatDate = (dateInput: DateInput): string => {
   try {
     // 통합된 변환 함수 사용
     const date = parseToDate(dateInput);
-    
+
     if (!date) {
       const errorResult = '날짜 처리 오류';
       addToCache(cacheKey, errorResult);
@@ -201,16 +210,20 @@ export const formatDate = (dateInput: DateInput): string => {
     // "8월 25일 (월)" 형식으로 포맷팅
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    
+
     const dayOfWeekIndex = date.getDay();
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const dayOfWeek = dayNames[dayOfWeekIndex] || '?';
-    
+
     const formattedResult = `${month}월 ${day}일 (${dayOfWeek})`;
     addToCache(cacheKey, formattedResult);
     return formattedResult;
   } catch (error) {
-    logger.error('Error formatting date:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
+    logger.error(
+      'Error formatting date:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'dateUtils', data: { dateInput } }
+    );
     const errorResult = '날짜 처리 오류';
     addToCache(cacheKey, errorResult);
     return errorResult;
@@ -225,29 +238,36 @@ export const convertToDateString = (dateInput: DateInput): string => {
   if (!dateInput) {
     return '';
   }
-  
+
   try {
     // 이미 yyyy-MM-dd 형식인지 확인
     if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
       return dateInput.trim();
     }
-    
+
     // 통합된 변환 함수 사용
     const date = parseToDate(dateInput);
-    
+
     if (!date) {
-      logger.warn('Invalid date for convertToDateString:', { component: 'dateUtils', data: dateInput });
+      logger.warn('Invalid date for convertToDateString:', {
+        component: 'dateUtils',
+        data: dateInput,
+      });
       return '';
     }
-    
+
     // 로컬 날짜로 변환하여 타임존 차이로 인한 날짜 변경 방지
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    
+
     return `${year}-${month}-${day}`;
   } catch (error) {
-    logger.error('Error converting date to string:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
+    logger.error(
+      'Error converting date to string:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'dateUtils', data: { dateInput } }
+    );
     return '';
   }
 };
@@ -260,11 +280,11 @@ export const generateDateRange = (startDate: string, endDate: string): string[] 
   const dates: string[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
     dates.push(convertToDateString(date));
   }
-  
+
   return dates;
 };
 
@@ -274,20 +294,20 @@ export const generateDateRange = (startDate: string, endDate: string): string[] 
  */
 export const formatDateRangeDisplay = (dates: string[]): string => {
   if (!dates || dates.length === 0) return '';
-  
+
   const sortedDates = [...dates].sort();
   const totalDays = sortedDates.length;
-  
+
   // 단일 날짜
   if (sortedDates.length === 1) {
     return formatDate(sortedDates[0]);
   }
-  
+
   // 연속된 날짜 그룹으로 분류
   const groups = groupConsecutiveDates(sortedDates);
-  
+
   // 각 그룹을 포맷팅
-  const formattedGroups = groups.map(group => {
+  const formattedGroups = groups.map((group) => {
     if (group.length === 1) {
       // 단일 날짜
       return formatDate(group[0]);
@@ -298,15 +318,15 @@ export const formatDateRangeDisplay = (dates: string[]): string => {
       return `${first} ~ ${last}`;
     }
   });
-  
+
   // 그룹들을 연결 - 콤마 뒤에 줄바꿈 추가
   let result = formattedGroups.join(',\n');
-  
+
   // 전체 일수 표시 (2일 이상일 때만)
   if (totalDays > 1) {
     result += ` (${totalDays}일)`;
   }
-  
+
   return result;
 };
 
@@ -316,24 +336,24 @@ export const formatDateRangeDisplay = (dates: string[]): string => {
  */
 export const groupConsecutiveDates = (dates: string[]): string[][] => {
   if (!dates || dates.length === 0) return [];
-  
+
   const sortedDates = [...dates].sort();
   const groups: string[][] = [];
   const firstDate = sortedDates[0];
   if (!firstDate) return [];
-  
+
   let currentGroup: string[] = [firstDate];
-  
+
   for (let i = 1; i < sortedDates.length; i++) {
     const prevDateStr = sortedDates[i - 1];
     const currDateStr = sortedDates[i];
-    
+
     if (!prevDateStr || !currDateStr) continue;
-    
+
     const prevDate = new Date(prevDateStr);
     const currDate = new Date(currDateStr);
     const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 3600 * 24);
-    
+
     if (diffDays === 1) {
       // 연속된 날짜면 현재 그룹에 추가
       currentGroup.push(currDateStr);
@@ -343,12 +363,12 @@ export const groupConsecutiveDates = (dates: string[]): string[][] => {
       currentGroup = [currDateStr];
     }
   }
-  
+
   // 마지막 그룹 추가
   if (currentGroup.length > 0) {
     groups.push(currentGroup);
   }
-  
+
   return groups;
 };
 
@@ -358,17 +378,17 @@ export const groupConsecutiveDates = (dates: string[]): string[][] => {
  */
 export const formatDateGroup = (dates: string[]): string => {
   if (!dates || dates.length === 0) return '';
-  
+
   const firstDate = dates[0];
   if (!firstDate) return '';
-  
+
   if (dates.length === 1) {
     return formatDate(firstDate);
   }
-  
+
   const lastDate = dates[dates.length - 1];
   if (!lastDate) return formatDate(firstDate);
-  
+
   const first = formatDate(firstDate);
   const last = formatDate(lastDate);
   return `${first} ~ ${last}`;
@@ -377,18 +397,24 @@ export const formatDateGroup = (dates: string[]): string => {
 /**
  * DateDropdownSelector용 날짜 문자열을 드롭다운 값으로 변환
  */
-export const dateStringToDropdownValue = (dateString: string): { year?: string; month?: string; day?: string } => {
+export const dateStringToDropdownValue = (
+  dateString: string
+): { year?: string; month?: string; day?: string } => {
   if (!dateString) return {};
-  
+
   try {
     const [year, month, day] = dateString.split('-');
     return {
       year: year || '',
       month: month || '',
-      day: day || ''
+      day: day || '',
     };
   } catch (error) {
-    logger.error('Error converting date string to dropdown value:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateString } });
+    logger.error(
+      'Error converting date string to dropdown value:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'dateUtils', data: { dateString } }
+    );
     return {};
   }
 };
@@ -396,17 +422,21 @@ export const dateStringToDropdownValue = (dateString: string): { year?: string; 
 /**
  * 드롭다운 값을 날짜 문자열로 변환
  */
-export const dropdownValueToDateString = (value: { year?: string; month?: string; day?: string }): string => {
+export const dropdownValueToDateString = (value: {
+  year?: string;
+  month?: string;
+  day?: string;
+}): string => {
   const { year, month, day } = value;
-  
+
   if (!year || !month || !day) {
     return '';
   }
-  
+
   // Ensure proper formatting with leading zeros
   const formattedMonth = month.padStart(2, '0');
   const formattedDay = day.padStart(2, '0');
-  
+
   return `${year}-${formattedMonth}-${formattedDay}`;
 };
 
@@ -417,28 +447,40 @@ export const convertToTimestamp = (dateInput: DateInput): Timestamp | null => {
   if (!dateInput) {
     return null;
   }
-  
+
   try {
     // 이미 Timestamp 객체인 경우 그대로 반환
-    if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && 'nanoseconds' in dateInput) {
+    if (
+      dateInput &&
+      typeof dateInput === 'object' &&
+      'seconds' in dateInput &&
+      'nanoseconds' in dateInput
+    ) {
       return dateInput as Timestamp; // 이미 Timestamp 객체
     }
-    
+
     if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
       return dateInput as Timestamp; // 이미 Timestamp 객체 (legacy)
     }
-    
+
     // 통합된 변환 함수 사용
     const date = parseToDate(dateInput);
-    
+
     if (!date) {
-      logger.warn('Invalid date for Timestamp conversion:', { component: 'dateUtils', data: dateInput });
+      logger.warn('Invalid date for Timestamp conversion:', {
+        component: 'dateUtils',
+        data: dateInput,
+      });
       return null;
     }
-    
+
     return Timestamp.fromDate(date);
   } catch (error) {
-    logger.error('Error converting to Timestamp:', error instanceof Error ? error : new Error(String(error)), { component: 'dateUtils', data: { dateInput } });
+    logger.error(
+      'Error converting to Timestamp:',
+      error instanceof Error ? error : new Error(String(error)),
+      { component: 'dateUtils', data: { dateInput } }
+    );
     return null;
   }
 };
@@ -469,6 +511,5 @@ export const getFormatDateCacheSize = (): number => {
 export const getFormatDateCacheStats = () => ({
   size: formatDateCache.size,
   maxSize: maxCacheSize,
-  usage: `${((formatDateCache.size / maxCacheSize) * 100).toFixed(1)}%`
+  usage: `${((formatDateCache.size / maxCacheSize) * 100).toFixed(1)}%`,
 });
-

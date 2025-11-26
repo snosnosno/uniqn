@@ -45,17 +45,23 @@ export const useSettings = (userId: string | null, tournamentId: string | null) 
   const settings = useMemo(() => {
     return settingsData || DEFAULT_SETTINGS;
   }, [settingsData]);
-  
+
   const updateSettings = async (newSettings: Partial<TournamentSettings>) => {
     if (!userId || !tournamentId) {
       throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
     }
-    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'tournament');
+    const settingsDocRef = doc(
+      db,
+      `users/${userId}/tournaments/${tournamentId}/settings`,
+      'tournament'
+    );
     try {
       await setDoc(settingsDocRef, newSettings, { merge: true });
       logAction('settings_updated', { ...newSettings });
     } catch (e) {
-      logger.error('Error updating settings:', e instanceof Error ? e : new Error(String(e)), { component: 'useSettings' });
+      logger.error('Error updating settings:', e instanceof Error ? e : new Error(String(e)), {
+        component: 'useSettings',
+      });
       throw e;
     }
   };

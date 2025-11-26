@@ -27,12 +27,9 @@ export interface GroupedStaffData {
  * @param filters 검색 조건
  * @returns 필터링된 스태프 데이터
  */
-export function filterStaffData(
-  staffData: StaffData[],
-  filters: StaffFilters
-): StaffData[] {
+export function filterStaffData(staffData: StaffData[], filters: StaffFilters): StaffData[] {
   return staffData.filter(
-    staff =>
+    (staff) =>
       !filters.searchTerm ||
       staff.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       staff.role?.toLowerCase().includes(filters.searchTerm.toLowerCase())
@@ -49,7 +46,7 @@ export function groupStaffByDate(staffData: StaffData[]): GroupedStaffData {
   const grouped: Record<string, StaffData[]> = {};
   const sortedDates: string[] = [];
 
-  staffData.forEach(staff => {
+  staffData.forEach((staff) => {
     const date = staff.assignedDate || getTodayString();
     if (!grouped[date]) {
       grouped[date] = [];
@@ -59,7 +56,7 @@ export function groupStaffByDate(staffData: StaffData[]): GroupedStaffData {
   });
 
   // 필터링된 고유 스태프 수 계산 (이름 기준)
-  const uniqueFilteredNames = new Set(staffData.map(staff => staff.name));
+  const uniqueFilteredNames = new Set(staffData.map((staff) => staff.name));
 
   return {
     grouped,

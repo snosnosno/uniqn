@@ -23,10 +23,10 @@ export interface PhoneVerification {
   phoneNumber: string;
   verificationCode: string;
   status: VerificationStatus;
-  attempts: number;          // 시도 횟수
-  maxAttempts: number;        // 최대 시도 횟수 (기본 3회)
-  expiresAt: Timestamp;       // 만료 시간 (기본 5분)
-  verifiedAt?: Timestamp;     // 인증 완료 시간
+  attempts: number; // 시도 횟수
+  maxAttempts: number; // 최대 시도 횟수 (기본 3회)
+  expiresAt: Timestamp; // 만료 시간 (기본 5분)
+  verifiedAt?: Timestamp; // 인증 완료 시간
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

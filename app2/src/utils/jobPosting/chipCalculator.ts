@@ -10,10 +10,7 @@ import { logError } from '../logger';
  * @returns 칩 비용
  * @throws Error - 잘못된 타입 또는 기간
  */
-export const calculateChipCost = (
-  postingType: PostingType,
-  durationDays?: 7 | 30 | 90
-): number => {
+export const calculateChipCost = (postingType: PostingType, durationDays?: 7 | 30 | 90): number => {
   // regular, tournament는 무료
   if (postingType === 'regular' || postingType === 'tournament') {
     return 0;
@@ -30,7 +27,7 @@ export const calculateChipCost = (
       const error = new Error('고정 공고는 노출 기간(durationDays)이 필요합니다');
       logError('고정 공고는 노출 기간(durationDays)이 필요합니다', error, {
         component: 'chipCalculator',
-        operation: 'calculateChipCost'
+        operation: 'calculateChipCost',
       });
       throw error;
     }
@@ -40,20 +37,20 @@ export const calculateChipCost = (
       const error = new Error(`지원하지 않는 노출 기간입니다: ${durationDays}일`);
       logError('지원하지 않는 노출 기간입니다', error, {
         component: 'chipCalculator',
-        operation: 'calculateChipCost'
+        operation: 'calculateChipCost',
       });
       throw error;
     }
 
     const pricing = CHIP_PRICING.find(
-      p => p.postingType === 'fixed' && p.durationDays === durationDays
+      (p) => p.postingType === 'fixed' && p.durationDays === durationDays
     );
 
     if (!pricing) {
       const error = new Error(`지원하지 않는 노출 기간입니다: ${durationDays}일`);
       logError('칩 가격 설정을 찾을 수 없습니다', error, {
         component: 'chipCalculator',
-        operation: 'calculateChipCost'
+        operation: 'calculateChipCost',
       });
       throw error;
     }
@@ -65,7 +62,7 @@ export const calculateChipCost = (
   const error = new Error(`지원하지 않는 공고 타입입니다: ${postingType}`);
   logError('지원하지 않는 공고 타입입니다', error, {
     component: 'chipCalculator',
-    operation: 'calculateChipCost'
+    operation: 'calculateChipCost',
   });
   throw error;
 };

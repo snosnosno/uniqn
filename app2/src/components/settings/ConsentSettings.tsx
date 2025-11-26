@@ -14,11 +14,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useConsent } from '../../hooks/useConsent';
 import { toast } from '../../utils/toast';
 import { logger } from '../../utils/logger';
@@ -58,9 +54,7 @@ export const ConsentSettings: React.FC = () => {
       await updateMarketing(newValue);
 
       toast.success(
-        newValue
-          ? t('settings.consent.marketingEnabled')
-          : t('settings.consent.marketingDisabled')
+        newValue ? t('settings.consent.marketingEnabled') : t('settings.consent.marketingDisabled')
       );
 
       logger.info('마케팅 동의 변경', {
@@ -203,8 +197,7 @@ export const ConsentSettings: React.FC = () => {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  {t('settings.consent.agreedAt')}:{' '}
-                  {formatDate(consent.termsOfService.agreedAt)}
+                  {t('settings.consent.agreedAt')}: {formatDate(consent.termsOfService.agreedAt)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {t('settings.consent.version')}: {consent.termsOfService.version}
@@ -224,8 +217,7 @@ export const ConsentSettings: React.FC = () => {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  {t('settings.consent.agreedAt')}:{' '}
-                  {formatDate(consent.privacyPolicy.agreedAt)}
+                  {t('settings.consent.agreedAt')}: {formatDate(consent.privacyPolicy.agreedAt)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {t('settings.consent.version')}: {consent.privacyPolicy.version}
@@ -257,8 +249,7 @@ export const ConsentSettings: React.FC = () => {
                 </p>
                 {isMarketingAgreed && consent.marketing && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('settings.consent.agreedAt')}:{' '}
-                    {formatDate(consent.marketing.agreedAt)}
+                    {t('settings.consent.agreedAt')}: {formatDate(consent.marketing.agreedAt)}
                   </p>
                 )}
               </div>
@@ -301,8 +292,7 @@ export const ConsentSettings: React.FC = () => {
                 </p>
                 {isLocationServiceAgreed && consent.locationService && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('settings.consent.agreedAt')}:{' '}
-                    {formatDate(consent.locationService.agreedAt)}
+                    {t('settings.consent.agreedAt')}: {formatDate(consent.locationService.agreedAt)}
                   </p>
                 )}
               </div>
@@ -387,9 +377,7 @@ export const ConsentSettings: React.FC = () => {
         <div className="flex items-start space-x-3">
           <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-900 dark:text-blue-300">
-            <p className="font-medium mb-1">
-              {t('settings.consent.infoTitle')}
-            </p>
+            <p className="font-medium mb-1">{t('settings.consent.infoTitle')}</p>
             <p>{t('settings.consent.infoMessage')}</p>
           </div>
         </div>

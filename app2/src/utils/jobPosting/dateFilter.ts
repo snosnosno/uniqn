@@ -40,14 +40,14 @@ export const filterPostingsByDate = (
   }
 
   // dateSpecificRequirements 배열에서 선택된 날짜와 일치하는 공고만 필터링
-  return postings.filter(posting => {
+  return postings.filter((posting) => {
     // dateSpecificRequirements가 없으면 제외
     if (!posting.dateSpecificRequirements || posting.dateSpecificRequirements.length === 0) {
       return false;
     }
 
     // 하나라도 일치하는 날짜가 있으면 포함
-    return posting.dateSpecificRequirements.some(req => {
+    return posting.dateSpecificRequirements.some((req) => {
       try {
         // req.date가 Timestamp 객체일 수도 있으므로 처리
         let reqDate: Date;

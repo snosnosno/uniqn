@@ -45,7 +45,7 @@ class PerformanceMonitor {
   constructor() {
     this.metrics = {
       timestamp: Date.now(),
-      url: window.location.href
+      url: window.location.href,
     };
   }
 
@@ -89,7 +89,7 @@ class PerformanceMonitor {
 
     // Paint Timing
     const paintEntries = performance.getEntriesByType('paint');
-    paintEntries.forEach(entry => {
+    paintEntries.forEach((entry) => {
       if (entry.name === 'first-paint') {
         this.metrics.firstPaint = entry.startTime;
       } else if (entry.name === 'first-contentful-paint') {
@@ -165,7 +165,7 @@ class PerformanceMonitor {
     // 뷰포트 크기
     this.metrics.viewport = {
       width: window.innerWidth,
-      height: window.innerHeight
+      height: window.innerHeight,
     };
 
     // 네트워크 정보 (가능한 경우)
@@ -173,7 +173,7 @@ class PerformanceMonitor {
       const connection = (navigator as any).connection;
       this.metrics.connection = {
         effectiveType: connection?.effectiveType,
-        downlink: connection?.downlink
+        downlink: connection?.downlink,
       };
     }
 
@@ -248,8 +248,8 @@ class PerformanceMonitor {
           fid: metrics.fid,
           cls: metrics.cls,
           dom_content_loaded: metrics.domContentLoaded,
-          bundle_size: metrics.bundleSize
-        }
+          bundle_size: metrics.bundleSize,
+        },
       });
     }
 
@@ -262,9 +262,9 @@ class PerformanceMonitor {
           method: 'POST',
           body: JSON.stringify(metrics),
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          keepalive: true
+          keepalive: true,
         }).catch(() => {
           // 실패해도 조용히 처리
         });
@@ -282,23 +282,37 @@ class PerformanceMonitor {
       '🎯 Core Web Vitals': {
         'LCP (ms)': this.metrics.lcp ? `${this.metrics.lcp.toFixed(2)}ms` : 'N/A',
         'FID (ms)': this.metrics.fid ? `${this.metrics.fid.toFixed(2)}ms` : 'N/A',
-        'CLS': this.metrics.cls ? this.metrics.cls.toFixed(4) : 'N/A'
+        CLS: this.metrics.cls ? this.metrics.cls.toFixed(4) : 'N/A',
       },
       '⚡ Loading Performance': {
-        'DOM Content Loaded': this.metrics.domContentLoaded ? `${this.metrics.domContentLoaded.toFixed(2)}ms` : 'N/A',
-        'Load Complete': this.metrics.loadComplete ? `${this.metrics.loadComplete.toFixed(2)}ms` : 'N/A',
+        'DOM Content Loaded': this.metrics.domContentLoaded
+          ? `${this.metrics.domContentLoaded.toFixed(2)}ms`
+          : 'N/A',
+        'Load Complete': this.metrics.loadComplete
+          ? `${this.metrics.loadComplete.toFixed(2)}ms`
+          : 'N/A',
         'First Paint': this.metrics.firstPaint ? `${this.metrics.firstPaint.toFixed(2)}ms` : 'N/A',
-        'First Contentful Paint': this.metrics.firstContentfulPaint ? `${this.metrics.firstContentfulPaint.toFixed(2)}ms` : 'N/A'
+        'First Contentful Paint': this.metrics.firstContentfulPaint
+          ? `${this.metrics.firstContentfulPaint.toFixed(2)}ms`
+          : 'N/A',
       },
       '📦 Resource Info': {
-        'Bundle Size': this.metrics.bundleSize ? `${(this.metrics.bundleSize / 1024).toFixed(2)} KB` : 'N/A',
-        'Resource Load Time': this.metrics.resourceLoadTime ? `${this.metrics.resourceLoadTime.toFixed(2)}ms` : 'N/A'
+        'Bundle Size': this.metrics.bundleSize
+          ? `${(this.metrics.bundleSize / 1024).toFixed(2)} KB`
+          : 'N/A',
+        'Resource Load Time': this.metrics.resourceLoadTime
+          ? `${this.metrics.resourceLoadTime.toFixed(2)}ms`
+          : 'N/A',
       },
       '📱 User Context': {
-        'Viewport': this.metrics.viewport ? `${this.metrics.viewport.width}x${this.metrics.viewport.height}` : 'N/A',
+        Viewport: this.metrics.viewport
+          ? `${this.metrics.viewport.width}x${this.metrics.viewport.height}`
+          : 'N/A',
         'Connection Type': this.metrics.connection?.effectiveType || 'N/A',
-        'Connection Speed': this.metrics.connection?.downlink ? `${this.metrics.connection.downlink} Mbps` : 'N/A'
-      }
+        'Connection Speed': this.metrics.connection?.downlink
+          ? `${this.metrics.connection.downlink} Mbps`
+          : 'N/A',
+      },
     };
 
     return report;
@@ -327,7 +341,9 @@ class PerformanceMonitor {
 
     // 번들 크기 체크 (500KB)
     if (this.metrics.bundleSize && this.metrics.bundleSize > 500 * 1024) {
-      alerts.push(`⚠️ 번들 크기가 큽니다: ${(this.metrics.bundleSize / 1024).toFixed(2)}KB (권장: <500KB)`);
+      alerts.push(
+        `⚠️ 번들 크기가 큽니다: ${(this.metrics.bundleSize / 1024).toFixed(2)}KB (권장: <500KB)`
+      );
     }
 
     return alerts;
@@ -337,7 +353,7 @@ class PerformanceMonitor {
    * 리소스 정리
    */
   public cleanup(): void {
-    this.observers.forEach(observer => {
+    this.observers.forEach((observer) => {
       observer.disconnect();
     });
     this.observers = [];

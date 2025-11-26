@@ -22,8 +22,8 @@ export interface StaffQRPayload {
   type: 'staff-attendance';
   version: '2.0';
   staffId: string;
-  securityCode: string;  // UUID 기반 고유 코드
-  generatedAt: number;   // timestamp
+  securityCode: string; // UUID 기반 고유 코드
+  generatedAt: number; // timestamp
 }
 
 /**
@@ -46,19 +46,19 @@ export interface StaffQRMetadata {
 export interface QRScanContext {
   eventId: string;
   eventTitle: string;
-  date: string;  // YYYY-MM-DD (getKoreanDate())
+  date: string; // YYYY-MM-DD (getKoreanDate())
   mode: 'check-in' | 'check-out';
   roundUpInterval: 15 | 30;
   location?: { lat: number; lng: number };
   activatedAt: Timestamp;
-  activatedBy: string;  // managerId
+  activatedBy: string; // managerId
 }
 
 /**
  * 스캔 이력 (scanHistory 컬렉션)
  */
 export interface ScanHistory {
-  id: string;  // auto-generated
+  id: string; // auto-generated
   staffId: string;
   staffName: string;
   eventId: string;
@@ -66,7 +66,7 @@ export interface ScanHistory {
   mode: 'check-in' | 'check-out';
   scannedAt: Timestamp;
   workLogId: string;
-  scannedBy: string;  // managerId
+  scannedBy: string; // managerId
   deviceInfo?: string;
   location?: { lat: number; lng: number };
 }
@@ -75,13 +75,13 @@ export interface ScanHistory {
  * 중복 스캔 방지 (scanCooldowns 컬렉션)
  */
 export interface ScanCooldown {
-  key: string;  // `${staffId}_${eventId}_${date}_${mode}`
+  key: string; // `${staffId}_${eventId}_${date}_${mode}`
   staffId: string;
   eventId: string;
   date: string;
   mode: 'check-in' | 'check-out';
   lastScanAt: Timestamp;
-  expiresAt: Timestamp;  // lastScanAt + 5분
+  expiresAt: Timestamp; // lastScanAt + 5분
 }
 
 /**
@@ -94,5 +94,5 @@ export interface QRScanResult {
   actualTime?: Timestamp;
   adjustedScheduledTime?: Timestamp;
   staffName?: string;
-  remainingCooldown?: number;  // 초 단위
+  remainingCooldown?: number; // 초 단위
 }

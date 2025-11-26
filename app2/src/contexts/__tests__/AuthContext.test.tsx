@@ -10,9 +10,24 @@ import { useAuth, AuthProvider } from '../AuthContext';
 import * as firebaseAuth from 'firebase/auth';
 
 // Mock 데이터는 직접 정의 (jest/no-mocks-import 에러 방지)
-const mockAdminUser = { uid: 'admin-123', email: 'admin@test.com', emailVerified: true, displayName: 'Admin User' };
-const mockManagerUser = { uid: 'manager-123', email: 'manager@test.com', emailVerified: true, displayName: 'Manager User' };
-const mockRegularUser = { uid: 'user-123', email: 'user@test.com', emailVerified: true, displayName: 'Regular User' };
+const mockAdminUser = {
+  uid: 'admin-123',
+  email: 'admin@test.com',
+  emailVerified: true,
+  displayName: 'Admin User',
+};
+const mockManagerUser = {
+  uid: 'manager-123',
+  email: 'manager@test.com',
+  emailVerified: true,
+  displayName: 'Manager User',
+};
+const mockRegularUser = {
+  uid: 'user-123',
+  email: 'user@test.com',
+  emailVerified: true,
+  displayName: 'Regular User',
+};
 const mockAdminToken = { claims: { role: 'admin' } };
 const mockManagerToken = { claims: { role: 'manager' } };
 const mockNoRoleToken = { claims: {} };
@@ -44,9 +59,13 @@ const mockStorage: Record<string, string> = {};
 jest.mock('../../utils/secureStorage', () => ({
   secureStorage: {
     getItem: jest.fn((key: string) => mockStorage[key] || null),
-    setItem: jest.fn((key: string, value: string) => { mockStorage[key] = value; }),
-    removeItem: jest.fn((key: string) => { delete mockStorage[key]; }),
-    clear: jest.fn(() => Object.keys(mockStorage).forEach(k => delete mockStorage[k])),
+    setItem: jest.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: jest.fn((key: string) => {
+      delete mockStorage[key];
+    }),
+    clear: jest.fn(() => Object.keys(mockStorage).forEach((k) => delete mockStorage[k])),
   },
 }));
 
@@ -62,10 +81,18 @@ describe('AuthContext - User Story 1', () => {
     Object.defineProperty(window, 'localStorage', {
       value: {
         getItem: (key: string) => store[key] || null,
-        setItem: (key: string, value: string) => { store[key] = value; },
-        removeItem: (key: string) => { delete store[key]; },
-        clear: () => { Object.keys(store).forEach(k => delete store[k]); },
-        get length() { return Object.keys(store).length; },
+        setItem: (key: string, value: string) => {
+          store[key] = value;
+        },
+        removeItem: (key: string) => {
+          delete store[key];
+        },
+        clear: () => {
+          Object.keys(store).forEach((k) => delete store[k]);
+        },
+        get length() {
+          return Object.keys(store).length;
+        },
         key: (index: number) => Object.keys(store)[index] || null,
       },
       writable: true,
@@ -207,10 +234,18 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
     Object.defineProperty(window, 'localStorage', {
       value: {
         getItem: (key: string) => store[key] || null,
-        setItem: (key: string, value: string) => { store[key] = value; },
-        removeItem: (key: string) => { delete store[key]; },
-        clear: () => { Object.keys(store).forEach(k => delete store[k]); },
-        get length() { return Object.keys(store).length; },
+        setItem: (key: string, value: string) => {
+          store[key] = value;
+        },
+        removeItem: (key: string) => {
+          delete store[key];
+        },
+        clear: () => {
+          Object.keys(store).forEach((k) => delete store[k]);
+        },
+        get length() {
+          return Object.keys(store).length;
+        },
         key: (index: number) => Object.keys(store)[index] || null,
       },
       writable: true,
@@ -409,10 +444,18 @@ describe('AuthContext - User Story 3: 에러 및 엣지 케이스', () => {
     Object.defineProperty(window, 'localStorage', {
       value: {
         getItem: (key: string) => store[key] || null,
-        setItem: (key: string, value: string) => { store[key] = value; },
-        removeItem: (key: string) => { delete store[key]; },
-        clear: () => { Object.keys(store).forEach(k => delete store[k]); },
-        get length() { return Object.keys(store).length; },
+        setItem: (key: string, value: string) => {
+          store[key] = value;
+        },
+        removeItem: (key: string) => {
+          delete store[key];
+        },
+        clear: () => {
+          Object.keys(store).forEach((k) => delete store[k]);
+        },
+        get length() {
+          return Object.keys(store).length;
+        },
         key: (index: number) => Object.keys(store)[index] || null,
       },
       writable: true,
@@ -589,10 +632,7 @@ describe('AuthContext - User Story 3: 에러 및 엣지 케이스', () => {
       await result.current.signIn('admin@test.com', 'password', true);
     });
 
-    expect(mockSetPersistence).toHaveBeenCalledWith(
-      expect.anything(),
-      { type: 'LOCAL' }
-    );
+    expect(mockSetPersistence).toHaveBeenCalledWith(expect.anything(), { type: 'LOCAL' });
   });
 
   test('persistence setting with rememberMe=false', async () => {
@@ -609,9 +649,6 @@ describe('AuthContext - User Story 3: 에러 및 엣지 케이스', () => {
       await result.current.signIn('admin@test.com', 'password', false);
     });
 
-    expect(mockSetPersistence).toHaveBeenCalledWith(
-      expect.anything(),
-      { type: 'SESSION' }
-    );
+    expect(mockSetPersistence).toHaveBeenCalledWith(expect.anything(), { type: 'SESSION' });
   });
 });

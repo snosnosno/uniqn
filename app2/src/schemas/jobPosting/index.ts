@@ -14,7 +14,7 @@ import { salarySchema, salarySchemaBase } from './salary.schema';
 import {
   workScheduleSchema,
   roleWithCountSchema,
-  fixedJobPostingDataSchema
+  fixedJobPostingDataSchema,
 } from './fixedPosting.schema';
 import { toISODateString } from '../../utils/dateUtils';
 
@@ -37,10 +37,7 @@ export const jobPostingFormSchema = basicInfoSchema
   .merge(
     z.object({
       // 고정공고일 때는 선택, 아닐 때는 필수
-      dateSpecificRequirements: z
-        .array(dateSpecificRequirementSchema)
-        .optional()
-        .default([]),
+      dateSpecificRequirements: z.array(dateSpecificRequirementSchema).optional().default([]),
       // 고정공고 근무일정 필드
       workSchedule: workScheduleSchema.optional(),
       requiredRolesWithCount: z
@@ -48,11 +45,11 @@ export const jobPostingFormSchema = basicInfoSchema
           z.object({
             id: z.string(),
             role: z.string(),
-            count: z.number()
+            count: z.number(),
           })
         )
         .optional()
-        .default([])
+        .default([]),
     })
   )
   .refine(
@@ -65,20 +62,25 @@ export const jobPostingFormSchema = basicInfoSchema
     },
     {
       message: '최소 1개 이상의 날짜를 추가해주세요',
-      path: ['dateSpecificRequirements']
+      path: ['dateSpecificRequirements'],
     }
   )
   .refine(
     (data) => {
       // Cross-field 검증: 긴급 공고는 오늘부터 최대 7일 후까지만 가능
-      if (data.postingType === 'urgent' && data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0) {
+      if (
+        data.postingType === 'urgent' &&
+        data.dateSpecificRequirements &&
+        data.dateSpecificRequirements.length > 0
+      ) {
         const firstRequirement = data.dateSpecificRequirements[0];
         if (!firstRequirement || !firstRequirement.date) return true; // 안전한 체크
 
         const firstDate = firstRequirement.date;
-        const dateStr = typeof firstDate === 'string'
-          ? firstDate
-          : toISODateString(new Date(firstDate.seconds * 1000)) || '';
+        const dateStr =
+          typeof firstDate === 'string'
+            ? firstDate
+            : toISODateString(new Date(firstDate.seconds * 1000)) || '';
 
         if (!dateStr) return true; // 날짜 문자열이 없으면 통과
 
@@ -86,7 +88,9 @@ export const jobPostingFormSchema = basicInfoSchema
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const diffDays = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor(
+          (targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
 
         // 오늘부터 7일 후까지만 허용 (0 <= diffDays <= 7)
         return diffDays >= 0 && diffDays <= 7;
@@ -95,7 +99,7 @@ export const jobPostingFormSchema = basicInfoSchema
     },
     {
       message: '긴급 공고는 오늘부터 최대 7일 이내의 날짜만 가능합니다',
-      path: ['dateSpecificRequirements']
+      path: ['dateSpecificRequirements'],
     }
   )
   .refine(
@@ -108,7 +112,7 @@ export const jobPostingFormSchema = basicInfoSchema
     },
     {
       message: '최소 1개 이상의 역할을 추가해주세요',
-      path: ['requiredRolesWithCount']
+      path: ['requiredRolesWithCount'],
     }
   );
 
@@ -127,14 +131,23 @@ export {
   salarySchema,
   workScheduleSchema,
   roleWithCountSchema,
-  fixedJobPostingDataSchema
+  fixedJobPostingDataSchema,
 };
 
 /**
  * 개별 타입 재export
  */
 export type { BasicInfoData } from './basicInfo.schema';
-export type { DateRequirementsData, DateSpecificRequirementData, TimeSlotData, RoleRequirementData } from './dateRequirements.schema';
+export type {
+  DateRequirementsData,
+  DateSpecificRequirementData,
+  TimeSlotData,
+  RoleRequirementData,
+} from './dateRequirements.schema';
 export type { PreQuestionsData, PreQuestionData, QuestionType } from './preQuestions.schema';
 export type { SalaryData, BenefitsData, RoleSalaryData, SalaryType } from './salary.schema';
-export type { WorkScheduleData, RoleWithCountData, FixedJobPostingDataValidated } from './fixedPosting.schema';
+export type {
+  WorkScheduleData,
+  RoleWithCountData,
+  FixedJobPostingDataValidated,
+} from './fixedPosting.schema';

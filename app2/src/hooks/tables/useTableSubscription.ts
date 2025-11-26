@@ -95,10 +95,12 @@ export const useTableSubscription = (
           if (dateKeyForFilter) {
             // 해당 날짜의 토너먼트를 찾기 위해 tournaments 컬렉션 조회 필요
             // 각 테이블의 tournamentId로 tournament 정보를 조회하여 dateKey 확인
-            const tournamentsSnapshot = await getDocs(collection(db, `users/${userId}/tournaments`));
+            const tournamentsSnapshot = await getDocs(
+              collection(db, `users/${userId}/tournaments`)
+            );
             const tournamentDateMap = new Map<string, string>();
 
-            tournamentsSnapshot.docs.forEach(doc => {
+            tournamentsSnapshot.docs.forEach((doc) => {
               const data = doc.data();
               if (data.dateKey) {
                 tournamentDateMap.set(doc.id, data.dateKey);
@@ -106,7 +108,7 @@ export const useTableSubscription = (
             });
 
             // 해당 날짜의 토너먼트에 속한 테이블만 필터링
-            filteredTables = tablesData.filter(table => {
+            filteredTables = tablesData.filter((table) => {
               if (!table.tournamentId) return false;
               const tableDateKey = tournamentDateMap.get(table.tournamentId);
               return tableDateKey === dateKeyForFilter;
@@ -142,27 +144,37 @@ export const useTableSubscription = (
     }
 
     // 일반 모드 (특정 토너먼트)
-    const settingsDocRef = doc(db, `users/${userId}/tournaments/${tournamentId}/settings`, 'config');
-    const unsubscribeSettings = onSnapshot(settingsDocRef, docSnap => {
+    const settingsDocRef = doc(
+      db,
+      `users/${userId}/tournaments/${tournamentId}/settings`,
+      'config'
+    );
+    const unsubscribeSettings = onSnapshot(settingsDocRef, (docSnap) => {
       if (docSnap.exists() && docSnap.data().maxSeatsPerTable) {
         setMaxSeatsSetting(docSnap.data().maxSeatsPerTable);
       }
     });
 
-    const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+    const tablesCollectionRef = collection(
+      db,
+      `users/${userId}/tournaments/${tournamentId}/tables`
+    );
     const unsubscribeTables = onSnapshot(
       tablesCollectionRef,
-      snapshot => {
+      (snapshot) => {
         const tablesData = snapshot.docs
-          .map((doc: QueryDocumentSnapshot<DocumentData>) => ({
-            id: doc.id,
-            ...doc.data(),
-          } as Table))
+          .map(
+            (doc: QueryDocumentSnapshot<DocumentData>) =>
+              ({
+                id: doc.id,
+                ...doc.data(),
+              }) as Table
+          )
           .sort((a, b) => a.tableNumber - b.tableNumber);
         setTables(tablesData);
         setLoading(false);
       },
-      err => {
+      (err) => {
         setError(err);
         setLoading(false);
         logger.error('테이블 구독 실패:', err, {

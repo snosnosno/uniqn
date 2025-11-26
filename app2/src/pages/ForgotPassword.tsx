@@ -26,7 +26,9 @@ const ForgotPassword = () => {
       setMessage(t('forgotPassword.successMessage'));
     } catch (err: any) {
       setError(t('forgotPassword.errorMessage'));
-      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), { component: 'ForgotPassword' });
+      logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), {
+        component: 'ForgotPassword',
+      });
     } finally {
       setLoading(false);
     }
@@ -49,17 +51,32 @@ const ForgotPassword = () => {
           autoComplete="email"
         />
 
-        {message ? <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 p-3 rounded-md">{message}</p> : null}
-        {error ? <p className="text-red-600 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-md">{error}</p> : null}
+        {message ? (
+          <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+            {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="text-red-600 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+            {error}
+          </p>
+        ) : null}
 
         <div>
-          <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:bg-indigo-400 dark:disabled:bg-indigo-600" disabled={loading}>
+          <button
+            type="submit"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:bg-indigo-400 dark:disabled:bg-indigo-600"
+            disabled={loading}
+          >
             {loading ? t('forgotPassword.sendingButton') : t('forgotPassword.sendButton')}
           </button>
         </div>
       </form>
       <div className="mt-4 text-center">
-        <Link to="/login" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
+        <Link
+          to="/login"
+          className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+        >
           {t('forgotPassword.backToLogin')}
         </Link>
       </div>

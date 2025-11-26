@@ -23,12 +23,12 @@ import { useUnifiedData } from '@/hooks/useUnifiedData';
 const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   schedule,
   jobPosting,
-  isReadOnly: _isReadOnly
+  isReadOnly: _isReadOnly,
 }) => {
   const { workLogs: workLogsArray } = useUnifiedData();
 
   // workLogs 배열을 Map으로 변환 (O(1) 조회)
-  const workLogs = useMemo(() => new Map(workLogsArray.map(wl => [wl.id, wl])), [workLogsArray]);
+  const workLogs = useMemo(() => new Map(workLogsArray.map((wl) => [wl.id, wl])), [workLogsArray]);
 
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
@@ -37,7 +37,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      weekday: 'long'
+      weekday: 'long',
     });
   };
 
@@ -47,7 +47,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       dealer: '딜러',
       floor: '플로어',
       manager: '매니저',
-      staff: '스태프'
+      staff: '스태프',
     };
     return labels[role] || role;
   };
@@ -58,7 +58,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       hourly: '시급',
       daily: '일급',
       monthly: '월급',
-      other: '기타'
+      other: '기타',
     };
     return labels[type] || type;
   };
@@ -69,27 +69,27 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       case 'applied':
         return {
           text: '지원중',
-          color: 'text-yellow-600 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30'
+          color: 'text-yellow-600 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30',
         };
       case 'confirmed':
         return {
           text: '확정',
-          color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20'
+          color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20',
         };
       case 'completed':
         return {
           text: '완료',
-          color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/20'
+          color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/20',
         };
       case 'cancelled':
         return {
           text: '취소',
-          color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20'
+          color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20',
         };
       default:
         return {
           text: schedule.type,
-          color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'
+          color: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700',
         };
     }
   };
@@ -142,15 +142,19 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       return {
         meal: snapshotAllowances.meal || 0,
         transportation: snapshotAllowances.transportation || 0,
-        accommodation: snapshotAllowances.accommodation || 0
+        accommodation: snapshotAllowances.accommodation || 0,
       };
     }
 
     // JobPosting의 benefits 사용
     const benefits = jobPosting?.benefits;
     const meal = benefits?.mealAllowance ? parseInt(String(benefits.mealAllowance)) || 0 : 0;
-    const transportation = benefits?.transportation ? parseInt(String(benefits.transportation)) || 0 : 0;
-    const accommodation = benefits?.accommodation ? parseInt(String(benefits.accommodation)) || 0 : 0;
+    const transportation = benefits?.transportation
+      ? parseInt(String(benefits.transportation)) || 0
+      : 0;
+    const accommodation = benefits?.accommodation
+      ? parseInt(String(benefits.accommodation)) || 0
+      : 0;
 
     return { meal, transportation, accommodation };
   };
@@ -195,7 +199,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-500 dark:text-gray-400">날짜:</span>
-              <span className="text-sm text-gray-900 dark:text-gray-100">{formatDate(schedule.date)}</span>
+              <span className="text-sm text-gray-900 dark:text-gray-100">
+                {formatDate(schedule.date)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-500 dark:text-gray-400">장소:</span>
@@ -205,13 +211,15 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             </div>
             {(() => {
               const detailedAddress = getSnapshotOrFallback(schedule, jobPosting).detailedAddress();
-              return detailedAddress && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">상세주소:</span>
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {detailedAddress}
-                  </span>
-                </div>
+              return (
+                detailedAddress && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">상세주소:</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {detailedAddress}
+                    </span>
+                  </div>
+                )
               );
             })()}
             <div className="flex justify-between">
@@ -249,34 +257,46 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                 return (
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">역할별 급여</span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                      역할별 급여
+                    </span>
                   </div>
                 );
               } else if (salaryType) {
                 return (
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                    <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">공고 기본급여</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                      공고 기본급여
+                    </span>
                   </div>
                 );
               } else {
                 return (
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500 dark:text-gray-400">설정:</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">시스템 기본값</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
+                      시스템 기본값
+                    </span>
                   </div>
                 );
               }
             })()}
             <div className="flex justify-between">
               <span className="text-sm text-gray-500 dark:text-gray-400">급여 유형:</span>
-              <span className="text-sm text-gray-900 dark:text-gray-100">{getSalaryTypeLabel(salaryType)}</span>
+              <span className="text-sm text-gray-900 dark:text-gray-100">
+                {getSalaryTypeLabel(salaryType)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {salaryType === 'hourly' ? '시급:' :
-                 salaryType === 'daily' ? '일급:' :
-                 salaryType === 'monthly' ? '월급:' : '급여:'}
+                {salaryType === 'hourly'
+                  ? '시급:'
+                  : salaryType === 'daily'
+                    ? '일급:'
+                    : salaryType === 'monthly'
+                      ? '월급:'
+                      : '급여:'}
               </span>
               <span className="text-sm text-gray-900 dark:text-gray-100">
                 {baseSalary.toLocaleString('ko-KR')}원
@@ -300,21 +320,21 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
               <div className="flex justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">세금:</span>
                 <span className="text-sm text-gray-900 dark:text-gray-100">
-                  {taxRate !== undefined && taxRate > 0
-                    ? `${taxRate}%`
-                    : '고정 세금'}
+                  {taxRate !== undefined && taxRate > 0 ? `${taxRate}%` : '고정 세금'}
                 </span>
               </div>
             )}
             {/* 정산 금액은 스냅샷 사용 시 표시하지 않음 */}
-            {!schedule.snapshotData && schedule.payrollAmount && schedule.payrollAmount !== basePay && (
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">정산 금액:</span>
-                <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                  {schedule.payrollAmount.toLocaleString('ko-KR')}원
-                </span>
-              </div>
-            )}
+            {!schedule.snapshotData &&
+              schedule.payrollAmount &&
+              schedule.payrollAmount !== basePay && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">정산 금액:</span>
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                    {schedule.payrollAmount.toLocaleString('ko-KR')}원
+                  </span>
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -327,7 +347,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             <div className="text-xs text-gray-500 dark:text-gray-400">근무일수</div>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
-            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{totalHours.toFixed(1)}</div>
+            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              {totalHours.toFixed(1)}
+            </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">근무시간</div>
           </div>
           <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-center">

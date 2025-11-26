@@ -7,6 +7,7 @@
 `SalarySection`은 급여 정보 (급여 타입, 금액, 복리후생, 역할별 차등 급여)를 입력받는 재사용 가능한 섹션 컴포넌트입니다.
 
 **주요 특징**:
+
 - Props Grouping 패턴으로 명확한 인터페이스 제공
 - React.memo 최적화로 불필요한 재렌더링 방지
 - 다크모드 완전 지원
@@ -43,65 +44,62 @@ function MyCustomForm() {
     benefits: {
       meal: false,
       transportation: false,
-      accommodation: false
+      accommodation: false,
     },
     useRoleSalary: false,
-    roleSalaries: {}
+    roleSalaries: {},
   });
 
   const salaryHandlers = {
     onSalaryTypeChange: (type) => {
-      setSalaryData(prev => ({ ...prev, salaryType: type }));
+      setSalaryData((prev) => ({ ...prev, salaryType: type }));
     },
     onSalaryAmountChange: (amount) => {
-      setSalaryData(prev => ({ ...prev, salaryAmount: amount.toString() }));
+      setSalaryData((prev) => ({ ...prev, salaryAmount: amount.toString() }));
     },
     onBenefitToggle: (benefitType, enabled) => {
-      setSalaryData(prev => ({
+      setSalaryData((prev) => ({
         ...prev,
-        benefits: { ...prev.benefits, [benefitType]: enabled }
+        benefits: { ...prev.benefits, [benefitType]: enabled },
       }));
     },
     onBenefitChange: (benefitType, amount) => {
       // 복리후생 금액 변경 로직
     },
     onRoleSalaryToggle: (enabled) => {
-      setSalaryData(prev => ({ ...prev, useRoleSalary: enabled }));
+      setSalaryData((prev) => ({ ...prev, useRoleSalary: enabled }));
     },
     onAddRole: (role) => {
-      setSalaryData(prev => ({
+      setSalaryData((prev) => ({
         ...prev,
         roleSalaries: {
           ...prev.roleSalaries,
-          [role]: { salaryType: 'hourly', salaryAmount: '0' }
-        }
+          [role]: { salaryType: 'hourly', salaryAmount: '0' },
+        },
       }));
     },
     onRemoveRole: (roleIndex) => {
       const newRoleSalaries = { ...salaryData.roleSalaries };
       delete newRoleSalaries[roleIndex];
-      setSalaryData(prev => ({ ...prev, roleSalaries: newRoleSalaries }));
+      setSalaryData((prev) => ({ ...prev, roleSalaries: newRoleSalaries }));
     },
     onRoleSalaryChange: (roleIndex, type, amount) => {
-      setSalaryData(prev => ({
+      setSalaryData((prev) => ({
         ...prev,
         roleSalaries: {
           ...prev.roleSalaries,
           [roleIndex]: {
             salaryType: type,
-            salaryAmount: amount.toString()
-          }
-        }
+            salaryAmount: amount.toString(),
+          },
+        },
       }));
-    }
+    },
   };
 
   return (
     <form>
-      <SalarySection
-        data={salaryData}
-        handlers={salaryHandlers}
-      />
+      <SalarySection data={salaryData} handlers={salaryHandlers} />
     </form>
   );
 }
@@ -133,7 +131,7 @@ function ValidatedSalaryForm() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors = {};
-        error.errors.forEach(err => {
+        error.errors.forEach((err) => {
           errors[err.path.join('.')] = err.message;
         });
         setValidationErrors(errors);
@@ -144,21 +142,17 @@ function ValidatedSalaryForm() {
   const salaryValidation = {
     errors: {
       salaryType: validationErrors['salaryType'],
-      salaryAmount: validationErrors['salaryAmount']
+      salaryAmount: validationErrors['salaryAmount'],
     },
     touched: {
       salaryType: touchedFields['salaryType'],
-      salaryAmount: touchedFields['salaryAmount']
-    }
+      salaryAmount: touchedFields['salaryAmount'],
+    },
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <SalarySection
-        data={salaryData}
-        handlers={salaryHandlers}
-        validation={salaryValidation}
-      />
+      <SalarySection data={salaryData} handlers={salaryHandlers} validation={salaryValidation} />
       <button type="submit">제출</button>
     </form>
   );
@@ -174,24 +168,24 @@ const [salaryData, setSalaryData] = useState({
   benefits: {
     meal: false,
     transportation: false,
-    accommodation: false
+    accommodation: false,
   },
   useRoleSalary: true, // 역할별 급여 활성화
   roleSalaries: {
     dealer: {
       salaryType: 'hourly',
-      salaryAmount: '20000'
+      salaryAmount: '20000',
     },
     floorman: {
       salaryType: 'hourly',
-      salaryAmount: '18000'
+      salaryAmount: '18000',
     },
     chipcounter: {
       salaryType: 'hourly',
       salaryAmount: '16000',
-      customRoleName: '칩카운터'
-    }
-  }
+      customRoleName: '칩카운터',
+    },
+  },
 });
 ```
 
@@ -235,8 +229,14 @@ interface SalaryData {
 interface SalaryHandlers {
   onSalaryTypeChange: (type: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other') => void;
   onSalaryAmountChange: (amount: number) => void;
-  onBenefitToggle: (benefitType: 'meal' | 'transportation' | 'accommodation', enabled: boolean) => void;
-  onBenefitChange: (benefitType: 'meal' | 'transportation' | 'accommodation', amount: number) => void;
+  onBenefitToggle: (
+    benefitType: 'meal' | 'transportation' | 'accommodation',
+    enabled: boolean
+  ) => void;
+  onBenefitChange: (
+    benefitType: 'meal' | 'transportation' | 'accommodation',
+    amount: number
+  ) => void;
   onRoleSalaryToggle: (enabled: boolean) => void;
   onAddRole: (role: string) => void;
   onRemoveRole: (roleIndex: string | number) => void;
@@ -255,9 +255,7 @@ interface SalaryHandlers {
 모든 UI 요소에 `dark:` Tailwind 클래스가 적용되어 자동으로 다크모드를 지원합니다.
 
 ```tsx
-<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-  {/* ... */}
-</div>
+<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{/* ... */}</div>
 ```
 
 ## 주의사항

@@ -13,16 +13,19 @@ interface DetailEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   staff: EnhancedPayrollCalculation | null;
-  workLogs: UnifiedWorkLog[];  // props로 workLogs 받기
-  onSave: (staff: EnhancedPayrollCalculation, allowances: EnhancedPayrollCalculation['allowances']) => void;
+  workLogs: UnifiedWorkLog[]; // props로 workLogs 받기
+  onSave: (
+    staff: EnhancedPayrollCalculation,
+    allowances: EnhancedPayrollCalculation['allowances']
+  ) => void;
 }
 
 const DetailEditModal: React.FC<DetailEditModalProps> = ({
   isOpen,
   onClose,
   staff,
-  workLogs,  // props로 받은 workLogs 사용
-  onSave: _onSave
+  workLogs, // props로 받은 workLogs 사용
+  onSave: _onSave,
 }) => {
   const [allowances, setAllowances] = useState<EnhancedPayrollCalculation['allowances']>({
     meal: 0,
@@ -30,7 +33,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     accommodation: 0,
     bonus: 0,
     other: 0,
-    isManualEdit: false
+    isManualEdit: false,
   });
 
   // 탭 상태 관리
@@ -43,7 +46,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   const tabs = [
     { id: 'basic' as const, name: '정보', icon: '👤' },
     { id: 'work' as const, name: '근무', icon: '🕐' },
-    { id: 'calculation' as const, name: '급여', icon: '💰' }
+    { id: 'calculation' as const, name: '급여', icon: '💰' },
   ];
 
   // staff 데이터가 변경될 때 allowances 초기화
@@ -61,8 +64,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           meal: staff.allowances.meal,
           transportation: staff.allowances.transportation,
           dailyRates: staff.allowances.dailyRates,
-          workDays: staff.allowances.workDays
-        }
+          workDays: staff.allowances.workDays,
+        },
       });
 
       // 총액(일당×일수)으로 계산되어 온 값을 그대로 사용
@@ -75,7 +78,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
         isManualEdit: staff.allowances.isManualEdit || false,
         // 일당 계산 정보를 조건부로 보존 (일당 계산 과정 표시용)
         ...(staff.allowances.dailyRates && { dailyRates: staff.allowances.dailyRates }),
-        ...(staff.allowances.workDays !== undefined && { workDays: staff.allowances.workDays })
+        ...(staff.allowances.workDays !== undefined && { workDays: staff.allowances.workDays }),
       };
 
       // 선택적 필드들은 조건부로 추가
@@ -90,8 +93,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           calculatedMeal: newAllowances.meal,
           originalTransportation: staff.allowances.transportation,
           calculatedTransportation: newAllowances.transportation,
-          newAllowances
-        }
+          newAllowances,
+        },
       });
 
       setAllowances(newAllowances);
@@ -101,50 +104,53 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
   // 역할 추론 함수 제거 - 정확한 역할 정보만 사용
 
   // getTargetWorkLog 패턴 적용 - ScheduleDetailModal 참고
-  const _getTargetWorkLog = useCallback((date: string) => {
-    if (!staff) return null;
-    
-    const staffId = getStaffIdentifier(staff);
-    
-    // 1. 우선 정확한 조건으로 WorkLog 찾기
-    let targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
-      staffId,
-      date,
-      role: staff.role
-    });
-    
-    // 2. 못찾으면 role 없이 찾기
-    if (!targetWorkLog) {
-      targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
+  const _getTargetWorkLog = useCallback(
+    (date: string) => {
+      if (!staff) return null;
+
+      const staffId = getStaffIdentifier(staff);
+
+      // 1. 우선 정확한 조건으로 WorkLog 찾기
+      let targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
         staffId,
-        date
+        date,
+        role: staff.role,
       });
-    }
-    
-    return targetWorkLog;
-  }, [staff, realTimeWorkLogs]);
+
+      // 2. 못찾으면 role 없이 찾기
+      if (!targetWorkLog) {
+        targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
+          staffId,
+          date,
+        });
+      }
+
+      return targetWorkLog;
+    },
+    [staff, realTimeWorkLogs]
+  );
 
   // 날짜별 근무 내역 계산 - getTargetWorkLog 패턴 사용
   const workHistory = useMemo(() => {
     if (!staff) return [];
-    
+
     const staffId = getStaffIdentifier(staff);
-    
+
     // 1. 스태프의 모든 WorkLog 가져오기
-    const allStaffWorkLogs = realTimeWorkLogs.filter(log => {
+    const allStaffWorkLogs = realTimeWorkLogs.filter((log) => {
       const matches = matchStaffIdentifier(log, [staffId]);
       return matches;
     });
-    
+
     // 2. filterWorkLogsByRole 유틸리티 사용
     const staffRoleWorkLogs = filterWorkLogsByRole(allStaffWorkLogs, staff.role);
 
     // 3. 날짜별로 그룹화하여 중복 제거 (기존 로직 유지)
     const mergedLogsMap = new Map<string, any>();
-    
-    staffRoleWorkLogs.forEach(log => {
+
+    staffRoleWorkLogs.forEach((log) => {
       const key = `${log.date}`;
-      
+
       if (!mergedLogsMap.has(key)) {
         // 새로운 날짜인 경우 추가
         mergedLogsMap.set(key, { ...log, role: log.role || staff.role });
@@ -163,15 +169,15 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           status: log.status || existingLog.status,
           // 기타 정보 병합 (타입 안전성을 위해 any로 캐스팅)
           timeSlot: (log as any).timeSlot || (existingLog as any).timeSlot,
-          assignedTime: (log as any).assignedTime || (existingLog as any).assignedTime
+          assignedTime: (log as any).assignedTime || (existingLog as any).assignedTime,
         });
       }
     });
-    
+
     const uniqueWorkLogs = Array.from(mergedLogsMap.values());
-    
+
     if (uniqueWorkLogs.length === 0) return [];
-    
+
     try {
       // 실시간 WorkLogs를 날짜별로 정렬
       const sortedLogs = [...uniqueWorkLogs].sort((a, b) => {
@@ -192,17 +198,17 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
         };
         return getDateValue(a.date) - getDateValue(b.date);
       });
-      
-      return sortedLogs.map(log => {
+
+      return sortedLogs.map((log) => {
         try {
           // 날짜 파싱
           let dateStr = '날짜 없음';
           let dayName = '';
-          
+
           if (log.date) {
             let dateValue: Date | null = null;
             const logDate = log.date as any;
-            
+
             if (typeof logDate === 'object' && 'seconds' in logDate) {
               dateValue = new Date(logDate.seconds * 1000);
             } else if (typeof logDate === 'string') {
@@ -210,22 +216,24 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             } else if (logDate instanceof Date) {
               dateValue = logDate;
             }
-            
+
             if (dateValue && !isNaN(dateValue.getTime())) {
               const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
               dayName = dayNames[dateValue.getDay()] || '';
               dateStr = `${String(dateValue.getMonth() + 1).padStart(2, '0')}-${String(dateValue.getDate()).padStart(2, '0')}`;
             }
           }
-          
+
           // 시간 데이터 파싱 - workLogMapper의 함수 사용
-          const parseTime = (timeValue: string | Date | { seconds: number } | null | undefined): string => {
+          const parseTime = (
+            timeValue: string | Date | { seconds: number } | null | undefined
+          ): string => {
             const result = parseTimeToString(timeValue);
-            
+
             if (result) {
               return result;
             }
-            
+
             return '미정';
           };
 
@@ -233,7 +241,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           // 실제 시간으로 폴백하지 않음 - 정산은 스케줄된 시간 기준
           let startTime = '미정';
           let endTime = '미정';
-          
+
           // scheduledTime이 있으면 사용
           if (log.scheduledStartTime) {
             startTime = parseTime(log.scheduledStartTime);
@@ -241,7 +249,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           if (log.scheduledEndTime) {
             endTime = parseTime(log.scheduledEndTime);
           }
-          
+
           // timeSlot 필드에서 직접 파싱 (백업)
           if ((startTime === '미정' || endTime === '미정') && (log as any).timeSlot) {
             const timeSlot = (log as any).timeSlot;
@@ -255,7 +263,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               }
             }
           }
-          
+
           // assignedTime이 있으면 변환해서 사용 (최종 백업)
           if ((startTime === '미정' || endTime === '미정') && (log as any).assignedTime) {
             const assignedTime = (log as any).assignedTime;
@@ -265,16 +273,20 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               if (parts[1] && endTime === '미정') endTime = parts[1];
             }
           }
-          
+
           // 근무 시간 계산 - calculateWorkHours 함수 사용
           let workHours = 0;
           try {
             workHours = calculateWorkHours(log);
           } catch (error) {
-            logger.error('근무 시간 계산 오류', error instanceof Error ? error : new Error(String(error)), { 
-              component: 'DetailEditModal',
-              data: { logId: log.id }
-            });
+            logger.error(
+              '근무 시간 계산 오류',
+              error instanceof Error ? error : new Error(String(error)),
+              {
+                component: 'DetailEditModal',
+                data: { logId: log.id },
+              }
+            );
             // 백업 계산 로직
             if (startTime !== '미정' && endTime !== '미정') {
               const parseTimeToMinutes = (timeStr: string): number => {
@@ -283,36 +295,45 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                 const minutes = parts[1] || 0;
                 return hours * 60 + minutes;
               };
-              
+
               const startMinutes = parseTimeToMinutes(startTime);
               const endMinutes = parseTimeToMinutes(endTime);
-              
+
               let totalMinutes = endMinutes - startMinutes;
               if (totalMinutes < 0) {
                 totalMinutes += 24 * 60;
               }
-              
+
               workHours = totalMinutes / 60;
             }
           }
-          
+
           // 상태 결정 로직 개선
           let displayStatus = log.status || 'scheduled';
-          
+
           // 시간정보가 없는 경우의 상태 처리
-          if ((startTime === '미정' || endTime === '미정') && !log.actualStartTime && !log.actualEndTime) {
+          if (
+            (startTime === '미정' || endTime === '미정') &&
+            !log.actualStartTime &&
+            !log.actualEndTime
+          ) {
             displayStatus = 'scheduled'; // 예정 상태
           }
-          
+
           // 실제 출퇴근 데이터가 있는 경우 상태 우선
-          if (log.actualStartTime || log.actualEndTime || log.status === 'checked_out' || log.status === 'checked_in') {
+          if (
+            log.actualStartTime ||
+            log.actualEndTime ||
+            log.status === 'checked_out' ||
+            log.status === 'checked_in'
+          ) {
             displayStatus = log.status || 'checked_in';
           }
-          
+
           return {
             date: dateStr,
             dayName,
-            role: log.role || staff.role,  // 역할 정보 (정확한 역할 사용)
+            role: log.role || staff.role, // 역할 정보 (정확한 역할 사용)
             startTime,
             endTime,
             workHours: workHours.toFixed(1),
@@ -320,10 +341,14 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             rawLog: log,
             // 추가 정보
             hasTimeInfo: startTime !== '미정' && endTime !== '미정',
-            hasActualTime: !!(log.actualStartTime || log.actualEndTime)
+            hasActualTime: !!(log.actualStartTime || log.actualEndTime),
           };
         } catch (error) {
-          logger.error('근무 내역 파싱 오류', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
+          logger.error(
+            '근무 내역 파싱 오류',
+            error instanceof Error ? error : new Error(String(error)),
+            { component: 'DetailEditModal' }
+          );
           return {
             date: '파싱 오류',
             dayName: '',
@@ -331,23 +356,28 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             endTime: '오류',
             workHours: '0.0',
             status: '오류',
-            rawLog: log
+            rawLog: log,
           };
         }
       });
     } catch (error) {
-      logger.error('근무 내역 전체 파싱 오류', error instanceof Error ? error : new Error(String(error)), { component: 'DetailEditModal' });
+      logger.error(
+        '근무 내역 전체 파싱 오류',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'DetailEditModal' }
+      );
       return [];
     }
   }, [staff, realTimeWorkLogs]);
 
-
   const getTotalAllowances = useCallback(() => {
-    return allowances.meal + 
-           allowances.transportation + 
-           allowances.accommodation + 
-           allowances.bonus + 
-           allowances.other;
+    return (
+      allowances.meal +
+      allowances.transportation +
+      allowances.accommodation +
+      allowances.bonus +
+      allowances.other
+    );
   }, [allowances]);
 
   const getTotalAmount = useCallback(() => {
@@ -361,7 +391,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
       hourly: '시급',
       daily: '일급',
       monthly: '월급',
-      other: '기타'
+      other: '기타',
     };
     return labels[type] || type;
   }, []);
@@ -419,11 +449,15 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">기본 정보</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                    기본 정보
+                  </h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500 dark:text-gray-400">이름:</span>
-                      <span className="text-sm text-gray-900 dark:text-gray-100">{staff.staffName}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
+                        {staff.staffName}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500 dark:text-gray-400">역할:</span>
@@ -431,16 +465,22 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500 dark:text-gray-400">연락처:</span>
-                      <span className="text-sm text-gray-900 dark:text-gray-100">{staff.phone || '미등록'}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
+                        {staff.phone || '미등록'}
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">급여 정보</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                    급여 정보
+                  </h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500 dark:text-gray-400">급여 유형:</span>
-                      <span className="text-sm text-gray-900 dark:text-gray-100">{getSalaryTypeLabel(staff.salaryType)}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
+                        {getSalaryTypeLabel(staff.salaryType)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500 dark:text-gray-400">기본 급여:</span>
@@ -469,14 +509,20 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">근무 요약</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                  근무 요약
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{staff.totalDays}</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {staff.totalDays}
+                    </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">근무일수</div>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{staff.totalHours.toFixed(1)}</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {staff.totalHours.toFixed(1)}
+                    </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">근무시간</div>
                   </div>
                   <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-3 text-center">
@@ -506,7 +552,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           {/* 근무내역 탭 */}
           {activeTab === 'work' && (
             <div>
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">📅 근무 내역</h4>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">
+                📅 근무 내역
+              </h4>
               {workHistory.length > 0 ? (
                 <div className="space-y-4">
                   <div className="border dark:border-gray-600 rounded-lg overflow-x-auto">
@@ -539,20 +587,30 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                               <div className="flex items-center gap-2">
                                 <span>{history.date}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">({history.dayName})</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  ({history.dayName})
+                                </span>
                               </div>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                history.role === 'floor' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
-                                history.role === 'dealer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                                history.role === 'manager' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                              }`}>
-                                {history.role === 'floor' ? 'floor' :
-                                 history.role === 'dealer' ? 'dealer' :
-                                 history.role === 'manager' ? 'manager' :
-                                 history.role}
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  history.role === 'floor'
+                                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                                    : history.role === 'dealer'
+                                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                                      : history.role === 'manager'
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                }`}
+                              >
+                                {history.role === 'floor'
+                                  ? 'floor'
+                                  : history.role === 'dealer'
+                                    ? 'dealer'
+                                    : history.role === 'manager'
+                                      ? 'manager'
+                                      : history.role}
                               </span>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
@@ -565,19 +623,30 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                               {history.workHours}시간
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-center">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                history.status === 'checked_out' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                                history.status === 'checked_in' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                                history.status === 'scheduled' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                                history.status === 'absent' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                              }`}>
-                                {history.status === 'checked_out' ? '퇴근' :
-                                 history.status === 'checked_in' ? '출근' :
-                                 history.status === 'scheduled' ? '예정' :
-                                 history.status === 'absent' ? '결석' :
-                                 history.status === 'not_started' ? '출근전' :
-                                 history.status}
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  history.status === 'checked_out'
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                                    : history.status === 'checked_in'
+                                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                                      : history.status === 'scheduled'
+                                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                        : history.status === 'absent'
+                                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                }`}
+                              >
+                                {history.status === 'checked_out'
+                                  ? '퇴근'
+                                  : history.status === 'checked_in'
+                                    ? '출근'
+                                    : history.status === 'scheduled'
+                                      ? '예정'
+                                      : history.status === 'absent'
+                                        ? '결석'
+                                        : history.status === 'not_started'
+                                          ? '출근전'
+                                          : history.status}
                               </span>
                             </td>
                           </tr>
@@ -585,13 +654,18 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                       </tbody>
                     </table>
                   </div>
-                  
+
                   {/* 총 근무시간 합계 */}
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">총 근무시간</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        총 근무시간
+                      </span>
                       <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                        {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
+                        {workHistory
+                          .reduce((sum, h) => sum + parseFloat(h.workHours), 0)
+                          .toFixed(1)}
+                        시간
                       </span>
                     </div>
                     <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -605,7 +679,6 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                   <p className="text-sm">근무 내역이 없습니다.</p>
                 </div>
               )}
-              
             </div>
           )}
 
@@ -614,19 +687,29 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
             <div className="space-y-6">
               {/* 기본급 계산 */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">💰 기본급 계산</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                  💰 기본급 계산
+                </h4>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-300">
-                        {getSalaryTypeLabel(staff.salaryType)} × {staff.salaryType === 'hourly' ? `${staff.totalHours.toFixed(1)}시간` : `${staff.totalDays}일`}
+                        {getSalaryTypeLabel(staff.salaryType)} ×{' '}
+                        {staff.salaryType === 'hourly'
+                          ? `${staff.totalHours.toFixed(1)}시간`
+                          : `${staff.totalDays}일`}
                       </span>
                       <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {staff.baseSalary.toLocaleString('ko-KR')} × {staff.salaryType === 'hourly' ? staff.totalHours.toFixed(1) : staff.totalDays}
+                        {staff.baseSalary.toLocaleString('ko-KR')} ×{' '}
+                        {staff.salaryType === 'hourly'
+                          ? staff.totalHours.toFixed(1)
+                          : staff.totalDays}
                       </span>
                     </div>
                     <div className="border-t dark:border-gray-600 pt-2 flex justify-between">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">기본급 합계</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        기본급 합계
+                      </span>
                       <span className="text-base font-bold text-gray-900 dark:text-gray-100">
                         {staff.basePay.toLocaleString('ko-KR')}
                       </span>
@@ -637,32 +720,55 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
               {/* 수당 설정 */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">🎁 수당 정보</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                  🎁 수당 정보
+                </h4>
 
                 {/* 일당 계산 정보 표시 */}
                 {allowances.dailyRates && allowances.workDays ? (
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-blue-800">일당 기반 계산</span>
-                      <span className="text-sm text-blue-600 dark:text-blue-400">{allowances.workDays}일 근무</span>
+                      <span className="text-sm text-blue-600 dark:text-blue-400">
+                        {allowances.workDays}일 근무
+                      </span>
                     </div>
                     <div className="space-y-1 text-sm text-blue-700">
                       {allowances.dailyRates.meal && (
                         <div className="flex justify-between">
                           <span>식비: {allowances.dailyRates.meal.toLocaleString()}원/일</span>
-                          <span>= {(allowances.dailyRates.meal * allowances.workDays).toLocaleString()}원</span>
+                          <span>
+                            = {(allowances.dailyRates.meal * allowances.workDays).toLocaleString()}
+                            원
+                          </span>
                         </div>
                       )}
                       {allowances.dailyRates.transportation && (
                         <div className="flex justify-between">
-                          <span>교통비: {allowances.dailyRates.transportation.toLocaleString()}원/일</span>
-                          <span>= {(allowances.dailyRates.transportation * allowances.workDays).toLocaleString()}원</span>
+                          <span>
+                            교통비: {allowances.dailyRates.transportation.toLocaleString()}원/일
+                          </span>
+                          <span>
+                            ={' '}
+                            {(
+                              allowances.dailyRates.transportation * allowances.workDays
+                            ).toLocaleString()}
+                            원
+                          </span>
                         </div>
                       )}
                       {allowances.dailyRates.accommodation && (
                         <div className="flex justify-between">
-                          <span>숙소비: {allowances.dailyRates.accommodation.toLocaleString()}원/일</span>
-                          <span>= {(allowances.dailyRates.accommodation * allowances.workDays).toLocaleString()}원</span>
+                          <span>
+                            숙소비: {allowances.dailyRates.accommodation.toLocaleString()}원/일
+                          </span>
+                          <span>
+                            ={' '}
+                            {(
+                              allowances.dailyRates.accommodation * allowances.workDays
+                            ).toLocaleString()}
+                            원
+                          </span>
                         </div>
                       )}
                       {allowances.bonus > 0 && (
@@ -673,7 +779,11 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                       )}
                       {allowances.other > 0 && (
                         <div className="flex justify-between">
-                          <span>기타{allowances.otherDescription ? ` (${allowances.otherDescription})` : ''}:</span>
+                          <span>
+                            기타
+                            {allowances.otherDescription ? ` (${allowances.otherDescription})` : ''}
+                            :
+                          </span>
                           <span>{allowances.other.toLocaleString()}원</span>
                         </div>
                       )}
@@ -698,7 +808,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
               {/* 세금 설정 */}
               {staff.tax !== undefined && staff.tax > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">💸 세금 설정</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                    💸 세금 설정
+                  </h4>
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
@@ -740,7 +852,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
                     </div>
                   )}
                   <div className="border-t border-indigo-200 dark:border-indigo-700 pt-2 flex justify-between">
-                    <span className="text-base font-medium text-gray-800 dark:text-gray-200">총 지급액</span>
+                    <span className="text-base font-medium text-gray-800 dark:text-gray-200">
+                      총 지급액
+                    </span>
                     <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                       {getTotalAmount().toLocaleString('ko-KR')}
                     </span>

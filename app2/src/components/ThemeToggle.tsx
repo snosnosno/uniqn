@@ -15,8 +15,16 @@ export const ThemeToggle: React.FC = memo(() => {
     <button
       onClick={toggleTheme}
       className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
-      aria-label={isDark ? t('theme.switchToLight', '라이트 모드로 전환') : t('theme.switchToDark', '다크 모드로 전환')}
-      title={isDark ? t('theme.switchToLight', '라이트 모드로 전환') : t('theme.switchToDark', '다크 모드로 전환')}
+      aria-label={
+        isDark
+          ? t('theme.switchToLight', '라이트 모드로 전환')
+          : t('theme.switchToDark', '다크 모드로 전환')
+      }
+      title={
+        isDark
+          ? t('theme.switchToLight', '라이트 모드로 전환')
+          : t('theme.switchToDark', '다크 모드로 전환')
+      }
     >
       {isDark ? (
         // 라이트 모드 아이콘 (태양)

@@ -15,42 +15,51 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
   roles,
   jobPosting,
   onUpdate,
-  className = ''
+  className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // 초기 급여 설정 로드
   const initialSalaryConfig = useMemo((): RoleSalaryConfig => {
     const config: RoleSalaryConfig = {};
-    
-    roles.forEach(role => {
+
+    roles.forEach((role) => {
       if (jobPosting?.useRoleSalary && jobPosting.roleSalaries?.[role]) {
         // 공고에서 역할별 급여가 설정된 경우
         const roleSalary = jobPosting.roleSalaries[role];
         if (roleSalary) {
           config[role] = {
-            salaryType: roleSalary.salaryType === 'negotiable' ? 'other' : roleSalary.salaryType as 'hourly' | 'daily' | 'monthly' | 'other',
+            salaryType:
+              roleSalary.salaryType === 'negotiable'
+                ? 'other'
+                : (roleSalary.salaryType as 'hourly' | 'daily' | 'monthly' | 'other'),
             salaryAmount: parseFloat(roleSalary.salaryAmount) || 0,
-            ...(roleSalary.customRoleName && { customRoleName: roleSalary.customRoleName })
+            ...(roleSalary.customRoleName && { customRoleName: roleSalary.customRoleName }),
           };
         } else {
           // roleSalary가 undefined인 경우 기본값으로 처리
           const baseSalaryType = jobPosting?.salaryType || 'hourly';
           config[role] = {
-            salaryType: baseSalaryType === 'negotiable' ? 'other' : baseSalaryType as 'hourly' | 'daily' | 'monthly' | 'other',
-            salaryAmount: parseFloat(jobPosting?.salaryAmount || '0') || 15000
+            salaryType:
+              baseSalaryType === 'negotiable'
+                ? 'other'
+                : (baseSalaryType as 'hourly' | 'daily' | 'monthly' | 'other'),
+            salaryAmount: parseFloat(jobPosting?.salaryAmount || '0') || 15000,
           };
         }
       } else {
         // 기본 급여 설정 사용
         const baseSalaryType = jobPosting?.salaryType || 'hourly';
         config[role] = {
-          salaryType: baseSalaryType === 'negotiable' ? 'other' : baseSalaryType as 'hourly' | 'daily' | 'monthly' | 'other',
-          salaryAmount: parseFloat(jobPosting?.salaryAmount || '0') || 15000
+          salaryType:
+            baseSalaryType === 'negotiable'
+              ? 'other'
+              : (baseSalaryType as 'hourly' | 'daily' | 'monthly' | 'other'),
+          salaryAmount: parseFloat(jobPosting?.salaryAmount || '0') || 15000,
         };
       }
     });
-    
+
     return config;
   }, [roles, jobPosting]);
 
@@ -77,51 +86,56 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
   // }, []);
 
   // 역할별 급여 변경 핸들러 (임시 상태만 변경)
-  const handleSalaryChange = useCallback((
-    role: string,
-    field: 'salaryType' | 'salaryAmount',
-    value: string | number
-  ) => {
-    const currentConfig = tempSalaryConfig[role] || { salaryType: 'hourly' as const, salaryAmount: 15000 };
+  const handleSalaryChange = useCallback(
+    (role: string, field: 'salaryType' | 'salaryAmount', value: string | number) => {
+      const currentConfig = tempSalaryConfig[role] || {
+        salaryType: 'hourly' as const,
+        salaryAmount: 15000,
+      };
 
-    const newConfig: RoleSalaryConfig = {
-      ...tempSalaryConfig,
-      [role]: {
-        ...currentConfig,
-        [field]: field === 'salaryAmount' ? parseFloat(value.toString()) || 0 : value
-      } as RoleSalaryConfig[string]
-    };
+      const newConfig: RoleSalaryConfig = {
+        ...tempSalaryConfig,
+        [role]: {
+          ...currentConfig,
+          [field]: field === 'salaryAmount' ? parseFloat(value.toString()) || 0 : value,
+        } as RoleSalaryConfig[string],
+      };
 
-    setTempSalaryConfig(newConfig);
-    setHasChanges(true);
+      setTempSalaryConfig(newConfig);
+      setHasChanges(true);
 
-    logger.info(`역할별 급여 변경 (임시): ${role} - ${field} = ${value}`, {
-      component: 'RoleSalarySettings',
-      operation: 'updateSalary'
-    });
-  }, [tempSalaryConfig]);
+      logger.info(`역할별 급여 변경 (임시): ${role} - ${field} = ${value}`, {
+        component: 'RoleSalarySettings',
+        operation: 'updateSalary',
+      });
+    },
+    [tempSalaryConfig]
+  );
 
   // 모든 역할에 같은 설정 적용 (임시 상태만 변경)
-  const handleApplyToAll = useCallback((templateRole: string) => {
-    const template = tempSalaryConfig[templateRole];
-    if (!template) return;
+  const handleApplyToAll = useCallback(
+    (templateRole: string) => {
+      const template = tempSalaryConfig[templateRole];
+      if (!template) return;
 
-    const newConfig: RoleSalaryConfig = {};
-    roles.forEach(role => {
-      newConfig[role] = {
-        salaryType: template.salaryType,
-        salaryAmount: template.salaryAmount
-      };
-    });
+      const newConfig: RoleSalaryConfig = {};
+      roles.forEach((role) => {
+        newConfig[role] = {
+          salaryType: template.salaryType,
+          salaryAmount: template.salaryAmount,
+        };
+      });
 
-    setTempSalaryConfig(newConfig);
-    setHasChanges(true);
+      setTempSalaryConfig(newConfig);
+      setHasChanges(true);
 
-    logger.info(`모든 역할에 급여 설정 적용 (임시): ${templateRole}`, {
-      component: 'RoleSalarySettings',
-      operation: 'applyToAll'
-    });
-  }, [tempSalaryConfig, roles]);
+      logger.info(`모든 역할에 급여 설정 적용 (임시): ${templateRole}`, {
+        component: 'RoleSalarySettings',
+        operation: 'applyToAll',
+      });
+    },
+    [tempSalaryConfig, roles]
+  );
 
   // 적용 버튼 핸들러
   const handleApply = useCallback(async () => {
@@ -134,12 +148,16 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
       logger.info('급여 설정 적용', {
         component: 'RoleSalarySettings',
         operation: 'apply',
-        data: tempSalaryConfig
+        data: tempSalaryConfig,
       });
     } catch (error) {
-      logger.error('급여 설정 적용 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'RoleSalarySettings'
-      });
+      logger.error(
+        '급여 설정 적용 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'RoleSalarySettings',
+        }
+      );
     } finally {
       setIsSaving(false);
     }
@@ -156,17 +174,14 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
           <div className="flex items-center gap-2">
             <Cog6ToothIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">급여 설정</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              ({roles.length}개)
-            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">({roles.length}개)</span>
           </div>
           <div className="flex items-center gap-2">
             {!isExpanded && (
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {Object.values(salaryConfig).some(config => config.salaryType !== 'hourly')
+                {Object.values(salaryConfig).some((config) => config.salaryType !== 'hourly')
                   ? '개별 설정됨'
-                  : '기본 설정'
-                }
+                  : '기본 설정'}
               </span>
             )}
             <svg
@@ -177,7 +192,12 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="m19 9-7 7-7-7"
+              />
             </svg>
           </div>
         </button>
@@ -187,8 +207,11 @@ const RoleSalarySettings: React.FC<RoleSalarySettingsProps> = ({
       {isExpanded && (
         <div className="p-6">
           <div className="space-y-6">
-            {roles.map(role => (
-              <div key={role} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+            {roles.map((role) => (
+              <div
+                key={role}
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
+              >
                 <div className="flex justify-between items-start mb-4">
                   <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">{role}</h4>
                   <button

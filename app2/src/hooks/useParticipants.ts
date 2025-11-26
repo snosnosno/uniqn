@@ -22,7 +22,6 @@ import { useFirestoreCollection } from './firestore';
 import { logAction } from './useLogger';
 import { isDefaultTournament } from './useTournaments';
 
-
 export interface Participant {
   id: string;
   name: string;
@@ -45,7 +44,7 @@ export interface Participant {
 /**
  * useParticipants Hook (멀티 테넌트 버전)
  * 특정 사용자의 특정 토너먼트 참가자 데이터를 관리합니다.
- * 
+ *
  * @param userId - 현재 사용자 ID
  * @param tournamentId - 현재 토너먼트 ID
  * @returns 참가자 목록, 로딩 상태, 에러, CRUD 작업 함수들
@@ -72,24 +71,21 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
     data: participantsFromHook,
     loading: loadingFromHook,
     error: errorFromHook,
-  } = useFirestoreCollection<Omit<Participant, 'id'>>(
-    participantsPath || '',
-    {
-      enabled: participantsPath !== null,
-      onSuccess: () => {
-        // 로그 제거 - 불필요한 재구독 방지
-      },
-      onError: (err) => {
-        logger.error('참가자 목록 구독 실패:', err, { component: 'useParticipants' });
-      },
-    }
-  );
+  } = useFirestoreCollection<Omit<Participant, 'id'>>(participantsPath || '', {
+    enabled: participantsPath !== null,
+    onSuccess: () => {
+      // 로그 제거 - 불필요한 재구독 방지
+    },
+    onError: (err) => {
+      logger.error('참가자 목록 구독 실패:', err, { component: 'useParticipants' });
+    },
+  });
 
   // 일반 모드: useFirestoreCollection 결과를 participants로 동기화
   useEffect(() => {
     if (isGroupMode || !participantsPath) return;
 
-    const converted = participantsFromHook.map(p => p as unknown as Participant);
+    const converted = participantsFromHook.map((p) => p as unknown as Participant);
     setParticipants(converted);
     setError(errorFromHook);
   }, [participantsFromHook, errorFromHook, isGroupMode, participantsPath]);
@@ -137,7 +133,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
           const tournamentsSnapshot = await getDocs(collection(db, `users/${userId}/tournaments`));
           const tournamentDateMap = new Map<string, string>();
 
-          tournamentsSnapshot.docs.forEach(doc => {
+          tournamentsSnapshot.docs.forEach((doc) => {
             const data = doc.data();
             if (data.dateKey) {
               tournamentDateMap.set(doc.id, data.dateKey);
@@ -145,7 +141,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
           });
 
           // 해당 날짜의 토너먼트에 속한 참가자만 필터링
-          filteredParticipants = participantsData.filter(participant => {
+          filteredParticipants = participantsData.filter((participant) => {
             if (!participant.tournamentId) return false;
             const participantDateKey = tournamentDateMap.get(participant.tournamentId);
             return participantDateKey === dateKeyForFilter;
@@ -156,8 +152,8 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
             data: {
               dateKey: dateKeyForFilter,
               totalParticipants: participantsData.length,
-              filteredParticipants: filteredParticipants.length
-            }
+              filteredParticipants: filteredParticipants.length,
+            },
           });
         }
 
@@ -193,14 +189,18 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
       return docRef;
     }, 'addParticipant');
   };
-  
+
   const updateParticipant = async (id: string, data: Partial<Participant>) => {
     if (!userId || !tournamentId) {
       throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
     }
 
     return withFirebaseErrorHandling(async () => {
-      const participantDoc = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, id);
+      const participantDoc = doc(
+        db,
+        `users/${userId}/tournaments/${tournamentId}/participants`,
+        id
+      );
       await updateDoc(participantDoc, data);
       logAction('participant_updated', { participantId: id, ...data });
     }, 'updateParticipant');
@@ -217,7 +217,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
         const tablesPath = `users/${userId}/tournaments/${tournamentId}/tables`;
         const tablesCollectionRef = collection(db, tablesPath);
         const tablesSnapshot = await getDocs(tablesCollectionRef);
-        
+
         let foundTableRef = null;
         let newSeats: (string | null)[] = [];
 
@@ -225,64 +225,88 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
           const tableData = tableDoc.data();
           const seats = tableData.seats as (string | null)[];
           if (seats && seats.includes(id)) {
-            newSeats = seats.map(seatId => (seatId === id ? null : seatId));
+            newSeats = seats.map((seatId) => (seatId === id ? null : seatId));
             foundTableRef = tableDoc.ref;
-            break; 
+            break;
           }
         }
-        
+
         // 2. If participant is seated, update the table
         if (foundTableRef) {
           transaction.update(foundTableRef, { seats: newSeats });
         }
-        
+
         // 3. Delete the participant
-        const participantDoc = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, id);
+        const participantDoc = doc(
+          db,
+          `users/${userId}/tournaments/${tournamentId}/participants`,
+          id
+        );
         transaction.delete(participantDoc);
       });
 
       logAction('participant_deleted', { participantId: id });
     }, 'deleteParticipant');
   };
-  
-  const addParticipantAndAssignToSeat = async (participantData: Omit<Participant, 'id'>, tableId: string, seatIndex: number) => {
+
+  const addParticipantAndAssignToSeat = async (
+    participantData: Omit<Participant, 'id'>,
+    tableId: string,
+    seatIndex: number
+  ) => {
     if (!userId || !tournamentId) {
       throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
     }
 
     try {
-        const participantsPath = `users/${userId}/tournaments/${tournamentId}/participants`;
-        const newParticipantRef = doc(collection(db, participantsPath));
+      const participantsPath = `users/${userId}/tournaments/${tournamentId}/participants`;
+      const newParticipantRef = doc(collection(db, participantsPath));
 
-        await runTransaction(db, async (transaction) => {
-            const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
-            const tableDoc = await transaction.get(tableRef);
+      await runTransaction(db, async (transaction) => {
+        const tableRef = doc(db, `users/${userId}/tournaments/${tournamentId}/tables`, tableId);
+        const tableDoc = await transaction.get(tableRef);
 
-            if (!tableDoc.exists()) {
-                throw new Error("Table does not exist!");
-            }
+        if (!tableDoc.exists()) {
+          throw new Error('Table does not exist!');
+        }
 
-            const tableData = tableDoc.data();
-            const seats = tableData.seats || [];
+        const tableData = tableDoc.data();
+        const seats = tableData.seats || [];
 
-            if (seats[seatIndex] !== null) {
-                throw new Error("Seat is already taken!");
-            }
+        if (seats[seatIndex] !== null) {
+          throw new Error('Seat is already taken!');
+        }
 
-            seats[seatIndex] = newParticipantRef.id;
+        seats[seatIndex] = newParticipantRef.id;
 
-            transaction.set(newParticipantRef, participantData);
-            transaction.update(tableRef, { seats });
-        });
-        logAction('participant_added_and_seated', { participantId: newParticipantRef.id, tableId, seatIndex });
+        transaction.set(newParticipantRef, participantData);
+        transaction.update(tableRef, { seats });
+      });
+      logAction('participant_added_and_seated', {
+        participantId: newParticipantRef.id,
+        tableId,
+        seatIndex,
+      });
     } catch (e) {
-        logger.error('Error adding participant and assigning to seat:', e instanceof Error ? e : new Error(String(e)), { component: 'useParticipants' });
-        setError(e as Error);
-        throw e;
+      logger.error(
+        'Error adding participant and assigning to seat:',
+        e instanceof Error ? e : new Error(String(e)),
+        { component: 'useParticipants' }
+      );
+      setError(e as Error);
+      throw e;
     }
   };
 
-  return { participants, loading, error, addParticipant, updateParticipant, deleteParticipant, addParticipantAndAssignToSeat };
+  return {
+    participants,
+    loading,
+    error,
+    addParticipant,
+    updateParticipant,
+    deleteParticipant,
+    addParticipantAndAssignToSeat,
+  };
 };
 
 export default useParticipants;

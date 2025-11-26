@@ -108,7 +108,7 @@ const FocusTrap: React.FC<FocusTrapProps> = ({
     // 클린업
     return () => {
       container.removeEventListener('keydown', handleKeyDown);
-      
+
       // 이전 포커스로 복귀
       if (returnFocus && previousActiveElement.current) {
         previousActiveElement.current.focus();

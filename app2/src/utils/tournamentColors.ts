@@ -51,7 +51,7 @@ export const getTournamentColorById = (
 ): string | undefined => {
   if (!tournamentId) return undefined;
 
-  const tournament = tournaments.find(t => t.id === tournamentId);
+  const tournament = tournaments.find((t) => t.id === tournamentId);
   return tournament?.color;
 };
 

@@ -35,9 +35,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children }) => {
             {title}
           </h2>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
-          {children}
-        </div>
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">{children}</div>
       </div>
     </div>
   );

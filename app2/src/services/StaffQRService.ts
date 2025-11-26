@@ -38,7 +38,7 @@ export async function getOrCreateStaffQR(
       securityCode: uuidv4(),
       createdAt: Timestamp.now(),
       regenerationCount: 0,
-      totalScanCount: 0
+      totalScanCount: 0,
     };
 
     await setDoc(qrRef, newMetadata);
@@ -55,9 +55,7 @@ export async function getOrCreateStaffQR(
 /**
  * 스태프 QR 재생성
  */
-export async function regenerateStaffQR(
-  userId: string
-): Promise<StaffQRMetadata> {
+export async function regenerateStaffQR(userId: string): Promise<StaffQRMetadata> {
   try {
     const qrRef = doc(db, 'users', userId, 'qrMetadata', 'primary');
     const currentDoc = await getDoc(qrRef);
@@ -69,7 +67,7 @@ export async function regenerateStaffQR(
     const newMetadata: Partial<StaffQRMetadata> = {
       securityCode: uuidv4(),
       lastRegeneratedAt: Timestamp.now(),
-      regenerationCount: currentCount + 1
+      regenerationCount: currentCount + 1,
     };
 
     await updateDoc(qrRef, newMetadata);
@@ -87,16 +85,13 @@ export async function regenerateStaffQR(
 /**
  * 동적 QR 페이로드 생성 (3분 만료)
  */
-export function generateDynamicQRPayload(
-  staffId: string,
-  securityCode: string
-): StaffQRPayload {
+export function generateDynamicQRPayload(staffId: string, securityCode: string): StaffQRPayload {
   return {
     type: 'staff-attendance',
     version: '2.0',
     staffId,
     securityCode,
-    generatedAt: Date.now()
+    generatedAt: Date.now(),
   };
 }
 

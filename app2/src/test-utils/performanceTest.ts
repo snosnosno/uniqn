@@ -49,9 +49,7 @@ export const PERFORMANCE_THRESHOLDS = {
 /**
  * 페이지 로드 시간 측정
  */
-export const measurePageLoadTime = async (
-  navigateFn: () => Promise<void>
-): Promise<number> => {
+export const measurePageLoadTime = async (navigateFn: () => Promise<void>): Promise<number> => {
   const startTime = performance.now();
   await navigateFn();
   const endTime = performance.now();
@@ -81,9 +79,7 @@ export const measureMemoryUsage = (): MemoryInfo | null => {
 /**
  * API 응답 시간 측정
  */
-export const measureApiResponseTime = async (
-  apiCall: () => Promise<any>
-): Promise<number> => {
+export const measureApiResponseTime = async (apiCall: () => Promise<any>): Promise<number> => {
   const startTime = performance.now();
   await apiCall();
   const endTime = performance.now();
@@ -131,11 +127,14 @@ export const runLoadTest = async (
   const rampUpStep = rampUp > 0 ? maxConcurrent / (rampUp * 10) : maxConcurrent;
   let currentConcurrent = rampUp > 0 ? 1 : maxConcurrent;
 
-  const rampUpInterval = rampUp > 0 ? setInterval(() => {
-    if (currentConcurrent < maxConcurrent) {
-      currentConcurrent = Math.min(maxConcurrent, currentConcurrent + rampUpStep);
-    }
-  }, 100) : null;
+  const rampUpInterval =
+    rampUp > 0
+      ? setInterval(() => {
+          if (currentConcurrent < maxConcurrent) {
+            currentConcurrent = Math.min(maxConcurrent, currentConcurrent + rampUpStep);
+          }
+        }, 100)
+      : null;
 
   // 로드 테스트 실행
   const testInterval = setInterval(async () => {
@@ -164,9 +163,9 @@ export const runLoadTest = async (
   });
 
   // 결과 계산
-  const successfulResults = results.filter(r => r.success);
-  const failedResults = results.filter(r => !r.success);
-  const responseTimes = results.map(r => r.responseTime);
+  const successfulResults = results.filter((r) => r.success);
+  const failedResults = results.filter((r) => !r.success);
+  const responseTimes = results.map((r) => r.responseTime);
 
   const totalDuration = (Date.now() - startTime) / 1000;
   const requestsPerSecond = results.length / totalDuration;
@@ -220,9 +219,10 @@ export const testMemoryLeak = async (
 
   const finalMemory = measureMemoryUsage();
 
-  const leaked = finalMemory && initialMemory
-    ? finalMemory.usedJSHeapSize > initialMemory.usedJSHeapSize * 1.5
-    : false;
+  const leaked =
+    finalMemory && initialMemory
+      ? finalMemory.usedJSHeapSize > initialMemory.usedJSHeapSize * 1.5
+      : false;
 
   return {
     initialMemory: initialMemory?.usedJSHeapSize || 0,
@@ -300,7 +300,7 @@ export const testDatabaseQueryPerformance = async (
  * 네트워크 지연 시뮬레이션
  */
 export const simulateNetworkDelay = (delayMs: number) => {
-  return new Promise(resolve => setTimeout(resolve, delayMs));
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 };
 
 /**
@@ -329,13 +329,21 @@ export const generatePerformanceReport = (
   }
 
   // 메모리 사용량 검사
-  if (metrics.memoryUsage && metrics.memoryUsage.usedJSHeapSize > PERFORMANCE_THRESHOLDS.MEMORY_USAGE_MAX) {
-    failedChecks.push(`메모리 사용량 초과: ${Math.round(metrics.memoryUsage.usedJSHeapSize / 1024 / 1024)}MB`);
+  if (
+    metrics.memoryUsage &&
+    metrics.memoryUsage.usedJSHeapSize > PERFORMANCE_THRESHOLDS.MEMORY_USAGE_MAX
+  ) {
+    failedChecks.push(
+      `메모리 사용량 초과: ${Math.round(metrics.memoryUsage.usedJSHeapSize / 1024 / 1024)}MB`
+    );
     recommendations.push('메모리 누수 검사, 불필요한 객체 참조 제거');
   }
 
   // API 응답 시간 검사
-  if (metrics.apiResponseTime && metrics.apiResponseTime > PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME_MAX) {
+  if (
+    metrics.apiResponseTime &&
+    metrics.apiResponseTime > PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME_MAX
+  ) {
     failedChecks.push(`API 응답 시간 초과: ${metrics.apiResponseTime}ms`);
     recommendations.push('데이터베이스 인덱스 최적화, 캐싱 전략 개선');
   }
@@ -387,15 +395,18 @@ export class PerformanceMonitor {
     if (this.metrics.length === 0) return {};
 
     const memoryUsages = this.metrics
-      .map(m => m.memoryUsage?.usedJSHeapSize)
+      .map((m) => m.memoryUsage?.usedJSHeapSize)
       .filter(Boolean) as number[];
 
     return {
-      memoryUsage: memoryUsages.length > 0 ? {
-        usedJSHeapSize: memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length,
-        totalJSHeapSize: 0,
-        jsHeapSizeLimit: 0,
-      } : undefined,
+      memoryUsage:
+        memoryUsages.length > 0
+          ? {
+              usedJSHeapSize: memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length,
+              totalJSHeapSize: 0,
+              jsHeapSizeLimit: 0,
+            }
+          : undefined,
     };
   }
 
@@ -439,7 +450,7 @@ export const measureCoreWebVitals = (): Promise<{
       new PerformanceObserver((list) => {
         const entries = list.getEntries();
         const entry = entries[0] as any; // PerformanceEventTiming 타입 캐스팅
-        vitals.FID = (entry?.processingStart - entry?.startTime) || 0;
+        vitals.FID = entry?.processingStart - entry?.startTime || 0;
       }).observe({ entryTypes: ['first-input'] });
 
       // Cumulative Layout Shift

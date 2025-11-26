@@ -11,20 +11,20 @@ import { testAccessibility } from '../../testUtils/accessibilityHelpers';
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback || key,
-    i18n: { language: 'ko' }
-  })
+    i18n: { language: 'ko' },
+  }),
 }));
 
 // Firebase 모킹
 jest.mock('../../../../firebase', () => ({
-  db: {}
+  db: {},
 }));
 
 // Firestore 함수 모킹
 jest.mock('firebase/firestore', () => ({
   ...jest.requireActual('firebase/firestore'),
   getDoc: jest.fn(),
-  doc: jest.fn()
+  doc: jest.fn(),
 }));
 
 /**
@@ -49,7 +49,7 @@ describe('JobPostingCard', () => {
     dateSpecificRequirements: [],
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
-    isChipDeducted: false
+    isChipDeducted: false,
   };
 
   describe('기본 렌더링', () => {
@@ -367,11 +367,7 @@ describe('JobPostingCard', () => {
       const user = userEvent.setup();
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       const applyButton = screen.getByTestId('apply-button');
@@ -385,11 +381,7 @@ describe('JobPostingCard', () => {
       const user = userEvent.setup();
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       const bookmarkButton = screen.getByTestId('bookmark-button');
@@ -434,11 +426,7 @@ describe('JobPostingCard', () => {
       const user = userEvent.setup();
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       const shareButton = screen.getByTestId('share-button');
@@ -450,11 +438,7 @@ describe('JobPostingCard', () => {
 
     it('renderActions에서 제공된 모든 액션 버튼이 렌더링되어야 함', () => {
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       expect(screen.getByTestId('apply-button')).toBeInTheDocument();
@@ -465,9 +449,7 @@ describe('JobPostingCard', () => {
 
   describe('접근성', () => {
     it('axe-core 접근성 위반 사항이 없어야 함', async () => {
-      const { container } = render(
-        <JobPostingCard post={basePosting} variant="user-card" />
-      );
+      const { container } = render(<JobPostingCard post={basePosting} variant="user-card" />);
 
       await testAccessibility(container);
     });
@@ -491,11 +473,7 @@ describe('JobPostingCard', () => {
       );
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       // Tab 키로 버튼에 포커스 이동
@@ -517,11 +495,7 @@ describe('JobPostingCard', () => {
       );
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       const applyButton = screen.getByTestId('apply-button');
@@ -544,11 +518,7 @@ describe('JobPostingCard', () => {
       );
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       const applyButton = screen.getByTestId('apply-button');
@@ -571,16 +541,14 @@ describe('JobPostingCard', () => {
     it('role 속성이 적절하게 설정되어야 함', () => {
       const mockRenderActions = (post: JobPosting) => (
         <div>
-          <button role="button" data-testid="apply-button">지원하기</button>
+          <button role="button" data-testid="apply-button">
+            지원하기
+          </button>
         </div>
       );
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       const button = screen.getByTestId('apply-button');
@@ -600,11 +568,7 @@ describe('JobPostingCard', () => {
       );
 
       render(
-        <JobPostingCard
-          post={basePosting}
-          variant="user-card"
-          renderActions={mockRenderActions}
-        />
+        <JobPostingCard post={basePosting} variant="user-card" renderActions={mockRenderActions} />
       );
 
       expect(screen.getByLabelText('지원하기 버튼')).toBeInTheDocument();

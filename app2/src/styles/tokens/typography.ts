@@ -20,14 +20,7 @@ export const fontFamily = {
     'Helvetica Neue',
     'sans-serif',
   ].join(', '),
-  mono: [
-    'source-code-pro',
-    'Menlo',
-    'Monaco',
-    'Consolas',
-    'Courier New',
-    'monospace',
-  ].join(', '),
+  mono: ['source-code-pro', 'Menlo', 'Monaco', 'Consolas', 'Courier New', 'monospace'].join(', '),
 };
 
 // 폰트 크기 - rem 기반 (1rem = 16px)

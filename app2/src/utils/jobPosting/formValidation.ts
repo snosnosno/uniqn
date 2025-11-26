@@ -5,15 +5,15 @@ import { RoleRequirement, TimeSlot, DateSpecificRequirement } from '../../types/
  */
 export const validateTimeSlot = (timeSlot: TimeSlot): string[] => {
   const errors: string[] = [];
-  
+
   if (!timeSlot.isTimeToBeAnnounced && !timeSlot.time) {
     errors.push('시간을 입력해주세요.');
   }
-  
+
   if (timeSlot.roles.length === 0) {
     errors.push('최소 하나의 역할을 추가해주세요.');
   }
-  
+
   timeSlot.roles.forEach((role, index) => {
     if (!role.name) {
       errors.push(`역할 ${index + 1}의 이름을 선택해주세요.`);
@@ -22,7 +22,7 @@ export const validateTimeSlot = (timeSlot: TimeSlot): string[] => {
       errors.push(`역할 ${index + 1}의 인원은 최소 1명이어야 합니다.`);
     }
   });
-  
+
   return errors;
 };
 
@@ -31,12 +31,12 @@ export const validateTimeSlot = (timeSlot: TimeSlot): string[] => {
  */
 export const validateDateSpecificRequirement = (requirement: DateSpecificRequirement): string[] => {
   const errors: string[] = [];
-  
+
   if (!requirement.date) {
     errors.push('날짜를 선택해주세요.');
   } else {
     const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
-    
+
     // 날짜 형식 검증
     if (!validateDateFormat(dateStr)) {
       errors.push(`올바른 날짜 형식이 아닙니다. (${dateStr})`);
@@ -45,23 +45,23 @@ export const validateDateSpecificRequirement = (requirement: DateSpecificRequire
       if (!validateNotPastDate(dateStr)) {
         errors.push(`과거 날짜는 선택할 수 없습니다. (${dateStr})`);
       }
-      
+
       // 1년 이후 날짜 검증
       if (!validateNotFutureDate(dateStr)) {
         errors.push(`1년 이후의 날짜는 선택할 수 없습니다. (${dateStr})`);
       }
     }
   }
-  
+
   if (requirement.timeSlots.length === 0) {
     errors.push('최소 하나의 시간대를 추가해주세요.');
   }
-  
+
   requirement.timeSlots.forEach((timeSlot, index) => {
     const timeSlotErrors = validateTimeSlot(timeSlot);
-    errors.push(...timeSlotErrors.map(error => `시간대 ${index + 1}: ${error}`));
+    errors.push(...timeSlotErrors.map((error) => `시간대 ${index + 1}: ${error}`));
   });
-  
+
   return errors;
 };
 
@@ -70,15 +70,15 @@ export const validateDateSpecificRequirement = (requirement: DateSpecificRequire
  */
 export const validatePreQuestion = (question: any): string[] => {
   const errors: string[] = [];
-  
+
   if (!question.question?.trim()) {
     errors.push('질문 내용을 입력해주세요.');
   }
-  
+
   if (question.type === 'select' && (!question.options || question.options.length === 0)) {
     errors.push('선택형 질문은 최소 하나의 옵션이 필요합니다.');
   }
-  
+
   return errors;
 };
 
@@ -87,7 +87,7 @@ export const validatePreQuestion = (question: any): string[] => {
  */
 export const validateJobPostingForm = (formData: any): string[] => {
   const errors: string[] = [];
-  
+
   // 기본 정보 검증
   if (!formData.title?.trim()) {
     errors.push('제목을 입력해주세요.');
@@ -100,36 +100,38 @@ export const validateJobPostingForm = (formData: any): string[] => {
   if (!formData.contactPhone?.trim()) {
     errors.push('문의 연락처를 입력해주세요.');
   }
-  
+
   // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
-  
+
   // 시간대 검증 - 날짜별 요구사항만 사용
   if (!formData.dateSpecificRequirements || formData.dateSpecificRequirements.length === 0) {
     errors.push('최소 하나의 날짜별 요구사항을 추가해주세요.');
   }
-  
+
   // 일자별 요구사항 검증
   const dates = new Set<string>();
-  formData.dateSpecificRequirements?.forEach((requirement: DateSpecificRequirement, index: number) => {
-    // 중복 날짜 검사
-    const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
-    if (dates.has(dateStr)) {
-      errors.push(`일자 ${index + 1}: 중복된 날짜입니다 (${dateStr})`);
+  formData.dateSpecificRequirements?.forEach(
+    (requirement: DateSpecificRequirement, index: number) => {
+      // 중복 날짜 검사
+      const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
+      if (dates.has(dateStr)) {
+        errors.push(`일자 ${index + 1}: 중복된 날짜입니다 (${dateStr})`);
+      }
+      dates.add(dateStr);
+
+      const requirementErrors = validateDateSpecificRequirement(requirement);
+      errors.push(...requirementErrors.map((error) => `일자 ${index + 1}: ${error}`));
     }
-    dates.add(dateStr);
-    
-    const requirementErrors = validateDateSpecificRequirement(requirement);
-    errors.push(...requirementErrors.map(error => `일자 ${index + 1}: ${error}`));
-  });
-  
+  );
+
   // 사전질문 검증
   if (formData.usesPreQuestions) {
     formData.preQuestions.forEach((question: any, index: number) => {
       const questionErrors = validatePreQuestion(question);
-      errors.push(...questionErrors.map(error => `사전질문 ${index + 1}: ${error}`));
+      errors.push(...questionErrors.map((error) => `사전질문 ${index + 1}: ${error}`));
     });
   }
-  
+
   return errors;
 };
 
@@ -138,14 +140,14 @@ export const validateJobPostingForm = (formData: any): string[] => {
  */
 export const checkDuplicateRoles = (roles: RoleRequirement[]): string[] => {
   const errors: string[] = [];
-  const roleNames = roles.map(role => role.name);
+  const roleNames = roles.map((role) => role.name);
   const duplicates = roleNames.filter((name, index) => roleNames.indexOf(name) !== index);
-  
+
   if (duplicates.length > 0) {
     const uniqueDuplicates = Array.from(new Set(duplicates));
     errors.push(`중복된 역할이 있습니다: ${uniqueDuplicates.join(', ')}`);
   }
-  
+
   return errors;
 };
 
@@ -171,10 +173,14 @@ export const validateDateFormat = (date: string): boolean => {
 export const validateNotPastDate = (date: string): boolean => {
   const today = new Date();
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  
+
   const inputDate = new Date(date);
-  const inputMidnight = new Date(inputDate.getFullYear(), inputDate.getMonth(), inputDate.getDate());
-  
+  const inputMidnight = new Date(
+    inputDate.getFullYear(),
+    inputDate.getMonth(),
+    inputDate.getDate()
+  );
+
   return inputMidnight >= todayMidnight;
 };
 
@@ -184,9 +190,13 @@ export const validateNotPastDate = (date: string): boolean => {
 export const validateNotFutureDate = (date: string): boolean => {
   const today = new Date();
   const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-  
+
   const inputDate = new Date(date);
-  const inputMidnight = new Date(inputDate.getFullYear(), inputDate.getMonth(), inputDate.getDate());
-  
+  const inputMidnight = new Date(
+    inputDate.getFullYear(),
+    inputDate.getMonth(),
+    inputDate.getDate()
+  );
+
   return inputMidnight <= oneYearLater;
 };

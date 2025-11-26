@@ -1,6 +1,17 @@
 import { useState, useCallback, useMemo } from 'react';
 import { logger } from '../utils/logger';
-import { collection, addDoc, query, updateDoc, deleteDoc, doc, getDoc, getDocs, where, writeBatch } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  query,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
@@ -19,7 +30,9 @@ export const useJobPostingOperations = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<JobPosting | null>(null);
   const [isMatching, setIsMatching] = useState<string | null>(null);
-  const [deleteConfirmPost, setDeleteConfirmPost] = useState<{ id: string; title: string } | null>(null);
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState<{ id: string; title: string } | null>(
+    null
+  );
 
   // Memoized query for better performance
   const jobPostingsQuery = useMemo(() => query(collection(db, 'jobPostings')), []);
@@ -28,115 +41,124 @@ export const useJobPostingOperations = () => {
   // Memoized filtered job postings with permission-based filtering
   const jobPostings = useMemo(() => {
     if (!jobPostingsSnap || !currentUser || !permissions) return [];
-    
-    const allJobPostings = jobPostingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as JobPosting));
-    
+
+    const allJobPostings = jobPostingsSnap.docs.map(
+      (d) => ({ id: d.id, ...d.data() }) as JobPosting
+    );
+
     // Admin은 모든 공고를 볼 수 있음
     if (permissions.role === 'admin') {
       return allJobPostings;
     }
-    
+
     // Manager와 Staff는 자신이 작성한 공고만 볼 수 있음
     if (permissions.role === 'manager' || permissions.role === 'staff') {
-      return allJobPostings.filter(posting => 
+      return allJobPostings.filter((posting) =>
         checkJobPostingPermission('view', posting.createdBy)
       );
     }
-    
+
     return allJobPostings;
   }, [jobPostingsSnap, currentUser, permissions, checkJobPostingPermission]);
 
   // 공고 생성
-  const handleCreateJobPosting = useCallback(async (formData: JobPostingFormData) => {
-    if (!currentUser) {
-      throw new Error('로그인이 필요합니다.');
-    }
+  const handleCreateJobPosting = useCallback(
+    async (formData: JobPostingFormData) => {
+      if (!currentUser) {
+        throw new Error('로그인이 필요합니다.');
+      }
 
-    // 폼 유효성 검증
-    const validationErrors = validateJobPostingForm(formData);
-    if (validationErrors.length > 0) {
-      throw new Error(validationErrors.join('\n'));
-    }
+      // 폼 유효성 검증
+      const validationErrors = validateJobPostingForm(formData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join('\n'));
+      }
 
-    try {
-      // postingType 기본값 설정 (undefined 방지)
-      const postingType = formData.postingType || 'regular';
+      try {
+        // postingType 기본값 설정 (undefined 방지)
+        const postingType = formData.postingType || 'regular';
 
-      // 칩 비용 계산
-      const chipCost = calculateChipCost(
-        postingType,
-        formData.fixedConfig?.durationDays
-      );
+        // 칩 비용 계산
+        const chipCost = calculateChipCost(postingType, formData.fixedConfig?.durationDays);
 
-      const dataToSave = {
-        ...prepareFormDataForFirebase(formData),
-        postingType, // postingType 명시적 추가 (기본값 보장)
-        createdBy: currentUser.uid,
-        applicants: [],
-        chipCost, // 칩 비용 추가
-        isChipDeducted: chipCost > 0 // 칩 차감 여부
-      };
+        const dataToSave = {
+          ...prepareFormDataForFirebase(formData),
+          postingType, // postingType 명시적 추가 (기본값 보장)
+          createdBy: currentUser.uid,
+          applicants: [],
+          chipCost, // 칩 비용 추가
+          isChipDeducted: chipCost > 0, // 칩 차감 여부
+        };
 
-      // ✅ DEBUG: 실제 전송 데이터 로깅
-      logger.info('🚀 Firestore에 전송할 데이터:', {
-        component: 'useJobPostingOperations',
-        operation: 'handleCreateJobPosting',
-        data: {
-          keys: Object.keys(dataToSave),
-          dataToSave
-        }
-      });
+        // ✅ DEBUG: 실제 전송 데이터 로깅
+        logger.info('🚀 Firestore에 전송할 데이터:', {
+          component: 'useJobPostingOperations',
+          operation: 'handleCreateJobPosting',
+          data: {
+            keys: Object.keys(dataToSave),
+            dataToSave,
+          },
+        });
 
-      const docRef = await addDoc(collection(db, 'jobPostings'), dataToSave);
+        const docRef = await addDoc(collection(db, 'jobPostings'), dataToSave);
 
-      // ✅ Firebase Functions (broadcastNewJobPosting)가 자동으로 알림 생성
-      // - 트리거: jobPostings onCreate
-      // - 조건: status === 'open'
-      // - 수신자: 모든 staff 사용자
-      logger.info('공고 생성 완료 - Firebase Functions가 알림 전송 예정', {
-        component: 'useJobPostingOperations',
-        operation: 'handleCreateJobPosting',
-        data: { eventId: docRef.id, postingType: formData.postingType, chipCost }
-      });
+        // ✅ Firebase Functions (broadcastNewJobPosting)가 자동으로 알림 생성
+        // - 트리거: jobPostings onCreate
+        // - 조건: status === 'open'
+        // - 수신자: 모든 staff 사용자
+        logger.info('공고 생성 완료 - Firebase Functions가 알림 전송 예정', {
+          component: 'useJobPostingOperations',
+          operation: 'handleCreateJobPosting',
+          data: { eventId: docRef.id, postingType: formData.postingType, chipCost },
+        });
 
-      return docRef.id;
-    } catch (error) {
-      logger.error('공고 생성 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useJobPostingOperations' });
-      throw error;
-    }
-  }, [currentUser]);
+        return docRef.id;
+      } catch (error) {
+        logger.error('공고 생성 오류:', error instanceof Error ? error : new Error(String(error)), {
+          component: 'useJobPostingOperations',
+        });
+        throw error;
+      }
+    },
+    [currentUser]
+  );
 
   // 공고 수정
-  const handleUpdateJobPosting = useCallback(async (postId: string, formData: JobPostingFormData) => {
-    if (!currentUser) {
-      throw new Error('로그인이 필요합니다.');
-    }
+  const handleUpdateJobPosting = useCallback(
+    async (postId: string, formData: JobPostingFormData) => {
+      if (!currentUser) {
+        throw new Error('로그인이 필요합니다.');
+      }
 
-    // 폼 유효성 검증
-    const validationErrors = validateJobPostingForm(formData);
-    if (validationErrors.length > 0) {
-      throw new Error(validationErrors.join('\n'));
-    }
+      // 폼 유효성 검증
+      const validationErrors = validateJobPostingForm(formData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join('\n'));
+      }
 
-    try {
-      const dataToUpdate = {
-        ...prepareFormDataForFirebase(formData),
-        updatedBy: currentUser.uid,
-        updatedAt: new Date()
-      };
+      try {
+        const dataToUpdate = {
+          ...prepareFormDataForFirebase(formData),
+          updatedBy: currentUser.uid,
+          updatedAt: new Date(),
+        };
 
-      const postRef = doc(db, 'jobPostings', postId);
-      await updateDoc(postRef, dataToUpdate);
-      
-      setIsEditModalOpen(false);
-      setCurrentPost(null);
-      
-      return true;
-    } catch (error) {
-      logger.error('공고 수정 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useJobPostingOperations' });
-      throw error;
-    }
-  }, [currentUser]);
+        const postRef = doc(db, 'jobPostings', postId);
+        await updateDoc(postRef, dataToUpdate);
+
+        setIsEditModalOpen(false);
+        setCurrentPost(null);
+
+        return true;
+      } catch (error) {
+        logger.error('공고 수정 오류:', error instanceof Error ? error : new Error(String(error)), {
+          component: 'useJobPostingOperations',
+        });
+        throw error;
+      }
+    },
+    [currentUser]
+  );
 
   // 공고 삭제 요청
   const handleDeleteJobPostingClick = useCallback((postId: string, title: string) => {
@@ -155,7 +177,7 @@ export const useJobPostingOperations = () => {
       if (!jobPostingDoc.exists()) {
         logger.warn('삭제할 공고를 찾을 수 없습니다', {
           component: 'useJobPostingOperations',
-          data: { postId }
+          data: { postId },
         });
         setDeleteConfirmPost(null);
         return false;
@@ -188,17 +210,14 @@ export const useJobPostingOperations = () => {
           );
 
           batch.update(doc(db, 'applications', appDoc.id), {
-            snapshotData: snapshot
+            snapshotData: snapshot,
           });
           snapshotCount++;
         }
       });
 
       // 2-2. WorkLogs에 스냅샷 추가
-      const workLogsQuery = query(
-        collection(db, 'workLogs'),
-        where('eventId', '==', postId)
-      );
+      const workLogsQuery = query(collection(db, 'workLogs'), where('eventId', '==', postId));
       const workLogsSnap = await getDocs(workLogsQuery);
 
       workLogsSnap.forEach((workLogDoc) => {
@@ -212,7 +231,7 @@ export const useJobPostingOperations = () => {
           );
 
           batch.update(doc(db, 'workLogs', workLogDoc.id), {
-            snapshotData: snapshot
+            snapshotData: snapshot,
           });
           snapshotCount++;
         }
@@ -227,8 +246,8 @@ export const useJobPostingOperations = () => {
             postId,
             snapshotCount,
             applications: applicationsSnap.size,
-            workLogs: workLogsSnap.size
-          }
+            workLogs: workLogsSnap.size,
+          },
         });
       }
 
@@ -237,21 +256,26 @@ export const useJobPostingOperations = () => {
 
       logger.info('공고 삭제 완료', {
         component: 'useJobPostingOperations',
-        data: { postId, snapshotCount }
+        data: { postId, snapshotCount },
       });
 
       setDeleteConfirmPost(null);
       return true;
     } catch (error) {
-      logger.error('공고 삭제 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'useJobPostingOperations' });
+      logger.error('공고 삭제 오류:', error instanceof Error ? error : new Error(String(error)), {
+        component: 'useJobPostingOperations',
+      });
       throw error;
     }
   }, [deleteConfirmPost]);
 
   // 상세 페이지로 이동
-  const handleNavigateToDetail = useCallback((postId: string) => {
-    navigate(`/app/admin/job-posting/${postId}`);
-  }, [navigate]);
+  const handleNavigateToDetail = useCallback(
+    (postId: string) => {
+      navigate(`/app/admin/job-posting/${postId}`);
+    },
+    [navigate]
+  );
 
   // 수정 모달 열기
   const openEditModal = useCallback((post: JobPosting) => {
@@ -275,7 +299,7 @@ export const useJobPostingOperations = () => {
     jobPostings,
     loading,
     error,
-    
+
     // 상태
     isEditModalOpen,
     currentPost,

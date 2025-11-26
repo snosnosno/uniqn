@@ -54,7 +54,9 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
       {/* 배지 */}
       {getBadgeLabel() && (
         <div className="absolute -top-3 -right-3">
-          <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${getBadgeColor()}`}>
+          <div
+            className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${getBadgeColor()}`}
+          >
             {getBadgeIcon()}
             {getBadgeLabel()}
           </div>
@@ -64,12 +66,8 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
       {/* 패키지 정보 */}
       <div className="text-center">
         <div className="text-4xl mb-2">{pkg.badge}</div>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          {pkg.name}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          {pkg.targetCustomer}
-        </p>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{pkg.name}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{pkg.targetCustomer}</p>
 
         {/* 칩 개수 */}
         <div className="mb-4">
@@ -79,9 +77,7 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
               {t('chipRecharge.package.chips', { amount: pkg.chipCount })}
             </span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {pkg.usageDuration}
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{pkg.usageDuration}</p>
         </div>
 
         {/* 가격 */}
@@ -90,7 +86,8 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
             {t('chipRecharge.package.price', { price: pkg.price.toLocaleString() })}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            ({pkg.pricePerChip.toLocaleString()}{t('common.currency.krw')}/칩)
+            ({pkg.pricePerChip.toLocaleString()}
+            {t('common.currency.krw')}/칩)
           </div>
         </div>
 
@@ -101,7 +98,8 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
               💰 {t('chipRecharge.package.bonus', { bonus: pkg.discountRate })}
             </div>
             <div className="text-xs text-green-600 dark:text-green-500">
-              {pkg.savings.toLocaleString()}{t('common.currency.krw')} 절약
+              {pkg.savings.toLocaleString()}
+              {t('common.currency.krw')} 절약
             </div>
           </div>
         )}
@@ -112,9 +110,10 @@ const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
           disabled={isLoading}
           className={`
             w-full py-3 px-4 rounded-md font-semibold transition-colors
-            ${pkg.isRecommended
-              ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white'
-              : 'bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white'
+            ${
+              pkg.isRecommended
+                ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white'
+                : 'bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white'
             }
             disabled:opacity-50 disabled:cursor-not-allowed
           `}
@@ -167,9 +166,7 @@ export const ChipRechargePackages: React.FC = () => {
 
       {/* 안내사항 */}
       <div className="mt-12 max-w-4xl mx-auto bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">
-          💡 안내사항
-        </h3>
+        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">💡 안내사항</h3>
         <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
           <li>• 빨간칩은 구매일로부터 1년 후 자동 소멸됩니다.</li>
           <li>• 파란칩을 먼저 사용하고, 빨간칩을 나중에 사용합니다.</li>

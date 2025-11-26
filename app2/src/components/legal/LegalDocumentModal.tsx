@@ -37,11 +37,7 @@ interface LegalDocumentModalProps {
 /**
  * 법적 문서 모달 컴포넌트
  */
-const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
-  isOpen,
-  onClose,
-  type,
-}) => {
+const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({ isOpen, onClose, type }) => {
   const { t } = useTranslation();
 
   /**
@@ -89,13 +85,15 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
 
     let listenerCleanup: (() => void) | undefined;
 
-    handleBackButton().then((listener) => {
-      if (listener) {
-        listenerCleanup = () => listener.remove();
-      }
-    }).catch(() => {
-      // 에러 무시 (웹 환경)
-    });
+    handleBackButton()
+      .then((listener) => {
+        if (listener) {
+          listenerCleanup = () => listener.remove();
+        }
+      })
+      .catch(() => {
+        // 에러 무시 (웹 환경)
+      });
 
     return () => {
       if (listenerCleanup) {
@@ -128,9 +126,10 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const title = type === 'terms'
-    ? t('legal.termsOfService.title', '이용약관')
-    : t('legal.privacyPolicy.title', '개인정보 처리방침');
+  const title =
+    type === 'terms'
+      ? t('legal.termsOfService.title', '이용약관')
+      : t('legal.privacyPolicy.title', '개인정보 처리방침');
 
   return (
     <>
@@ -178,11 +177,7 @@ const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
           {/* 스크롤 가능한 컨텐츠 */}
           <div className="flex-1 overflow-y-auto">
             <div className="px-4 sm:px-6 lg:px-8 py-6">
-              {type === 'terms' ? (
-                <TermsOfServiceContent />
-              ) : (
-                <PrivacyPolicyContent />
-              )}
+              {type === 'terms' ? <TermsOfServiceContent /> : <PrivacyPolicyContent />}
             </div>
           </div>
 
@@ -225,8 +220,9 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제1조 (목적)</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              이 약관은 UNIQN(이하 "회사"라 함)이 제공하는 토너먼트 관리 서비스(이하 "서비스"라 함)의 이용과 관련하여
-              회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+              이 약관은 UNIQN(이하 "회사"라 함)이 제공하는 토너먼트 관리 서비스(이하 "서비스"라
+              함)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을
+              규정함을 목적으로 합니다.
             </p>
           </section>
 
@@ -236,9 +232,15 @@ const TermsOfServiceContent: React.FC = () => {
               이 약관에서 사용하는 용어의 정의는 다음과 같습니다:
             </p>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>"서비스"란 회사가 제공하는 토너먼트 관리, 스태프 관리, 구인구직 등의 온라인 서비스를 말합니다.</li>
+              <li>
+                "서비스"란 회사가 제공하는 토너먼트 관리, 스태프 관리, 구인구직 등의 온라인 서비스를
+                말합니다.
+              </li>
               <li>"이용자"란 본 약관에 동의하고 서비스를 이용하는 회원 및 비회원을 말합니다.</li>
-              <li>"회원"이란 서비스에 회원등록을 한 자로서, 계속적으로 서비스를 이용할 수 있는 자를 말합니다.</li>
+              <li>
+                "회원"이란 서비스에 회원등록을 한 자로서, 계속적으로 서비스를 이용할 수 있는 자를
+                말합니다.
+              </li>
               <li>"비회원"이란 회원에 가입하지 않고 서비스를 이용하는 자를 말합니다.</li>
             </ol>
           </section>
@@ -246,17 +248,29 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제3조 (약관의 명시와 개정)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>회사는 이 약관의 내용을 이용자가 쉽게 알 수 있도록 서비스 초기 화면에 게시합니다.</li>
-              <li>회사는 필요한 경우 관련 법령을 위배하지 않는 범위에서 이 약관을 개정할 수 있습니다.</li>
-              <li>약관이 개정되는 경우 개정내용과 적용일자를 명시하여 적용일자 7일 전부터 공지합니다.</li>
+              <li>
+                회사는 이 약관의 내용을 이용자가 쉽게 알 수 있도록 서비스 초기 화면에 게시합니다.
+              </li>
+              <li>
+                회사는 필요한 경우 관련 법령을 위배하지 않는 범위에서 이 약관을 개정할 수 있습니다.
+              </li>
+              <li>
+                약관이 개정되는 경우 개정내용과 적용일자를 명시하여 적용일자 7일 전부터 공지합니다.
+              </li>
             </ol>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제4조 (회원가입)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>이용자는 회사가 정한 가입 양식에 따라 회원정보를 기입한 후 이 약관에 동의한다는 의사표시를 함으로써 회원가입을 신청합니다.</li>
-              <li>회사는 제1항과 같이 회원으로 가입할 것을 신청한 이용자 중 다음 각 호에 해당하지 않는 한 회원으로 등록합니다.</li>
+              <li>
+                이용자는 회사가 정한 가입 양식에 따라 회원정보를 기입한 후 이 약관에 동의한다는
+                의사표시를 함으로써 회원가입을 신청합니다.
+              </li>
+              <li>
+                회사는 제1항과 같이 회원으로 가입할 것을 신청한 이용자 중 다음 각 호에 해당하지 않는
+                한 회원으로 등록합니다.
+              </li>
             </ol>
           </section>
 
@@ -277,16 +291,27 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제6조 (서비스의 중단)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>회사는 컴퓨터 등 정보통신설비의 보수점검, 교체 및 고장, 통신의 두절 등의 사유가 발생한 경우 서비스의 제공을 일시적으로 중단할 수 있습니다.</li>
-              <li>사업종목의 전환, 사업의 포기, 업체 간의 통합 등의 이유로 서비스를 제공할 수 없게 되는 경우 회사는 이용자에게 통지합니다.</li>
+              <li>
+                회사는 컴퓨터 등 정보통신설비의 보수점검, 교체 및 고장, 통신의 두절 등의 사유가
+                발생한 경우 서비스의 제공을 일시적으로 중단할 수 있습니다.
+              </li>
+              <li>
+                사업종목의 전환, 사업의 포기, 업체 간의 통합 등의 이유로 서비스를 제공할 수 없게
+                되는 경우 회사는 이용자에게 통지합니다.
+              </li>
             </ol>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제7조 (회원탈퇴 및 자격 상실)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>회원은 언제든지 회사에 탈퇴를 요청할 수 있으며, 회사는 즉시 회원탈퇴를 처리합니다.</li>
-              <li>회원이 다음 각 호의 사유에 해당하는 경우, 회사는 회원자격을 제한 및 정지시킬 수 있습니다.</li>
+              <li>
+                회원은 언제든지 회사에 탈퇴를 요청할 수 있으며, 회사는 즉시 회원탈퇴를 처리합니다.
+              </li>
+              <li>
+                회원이 다음 각 호의 사유에 해당하는 경우, 회사는 회원자격을 제한 및 정지시킬 수
+                있습니다.
+              </li>
             </ol>
           </section>
 
@@ -301,15 +326,22 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제9조 (회사의 의무)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>회사는 관련 법령과 이 약관이 금지하거나 공서양속에 반하는 행위를 하지 않으며 이 약관이 정하는 바에 따라 지속적이고 안정적으로 서비스를 제공하는데 최선을 다합니다.</li>
-              <li>회사는 이용자가 안전하게 서비스를 이용할 수 있도록 개인정보(신용정보 포함) 보호를 위한 보안시스템을 구축합니다.</li>
+              <li>
+                회사는 관련 법령과 이 약관이 금지하거나 공서양속에 반하는 행위를 하지 않으며 이
+                약관이 정하는 바에 따라 지속적이고 안정적으로 서비스를 제공하는데 최선을 다합니다.
+              </li>
+              <li>
+                회사는 이용자가 안전하게 서비스를 이용할 수 있도록 개인정보(신용정보 포함) 보호를
+                위한 보안시스템을 구축합니다.
+              </li>
             </ol>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제10조 (이용자의 의무)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>이용자는 다음 행위를 하여서는 안 됩니다:
+              <li>
+                이용자는 다음 행위를 하여서는 안 됩니다:
                 <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
                   <li>신청 또는 변경 시 허위내용의 등록</li>
                   <li>타인의 정보 도용</li>
@@ -324,8 +356,14 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제11조 (분쟁해결)</h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>회사는 이용자가 제기하는 정당한 의견이나 불만을 반영하고 그 피해를 보상처리하기 위해 노력합니다.</li>
-              <li>서비스 이용과 관련하여 회사와 이용자 사이에 분쟁이 발생한 경우, 쌍방 간에 분쟁의 해결을 위해 성실히 협의합니다.</li>
+              <li>
+                회사는 이용자가 제기하는 정당한 의견이나 불만을 반영하고 그 피해를 보상처리하기 위해
+                노력합니다.
+              </li>
+              <li>
+                서비스 이용과 관련하여 회사와 이용자 사이에 분쟁이 발생한 경우, 쌍방 간에 분쟁의
+                해결을 위해 성실히 협의합니다.
+              </li>
               <li>본 약관은 대한민국 법률에 따라 규율되고 해석됩니다.</li>
             </ol>
           </section>
@@ -333,7 +371,9 @@ const TermsOfServiceContent: React.FC = () => {
           {/* 부칙 */}
           <section className="mt-12 pt-8 border-t dark:border-gray-700">
             <h2 className="text-xl font-bold mb-4">부칙</h2>
-            <p className="text-gray-700 dark:text-gray-300">본 약관은 2025년 1월 1일부터 시행됩니다.</p>
+            <p className="text-gray-700 dark:text-gray-300">
+              본 약관은 2025년 1월 1일부터 시행됩니다.
+            </p>
           </section>
         </>
       )}
@@ -344,8 +384,9 @@ const TermsOfServiceContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Article 1 (Purpose)</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              These Terms and Conditions govern the rights, obligations, and responsibilities between UNIQN (hereinafter "Company")
-              and users regarding the use of tournament management services (hereinafter "Services").
+              These Terms and Conditions govern the rights, obligations, and responsibilities
+              between UNIQN (hereinafter "Company") and users regarding the use of tournament
+              management services (hereinafter "Services").
             </p>
           </section>
 
@@ -355,26 +396,49 @@ const TermsOfServiceContent: React.FC = () => {
               The definitions of terms used in these Terms are as follows:
             </p>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>"Services" means online services such as tournament management, staff management, and job postings provided by the Company.</li>
-              <li>"User" means a member or non-member who agrees to these Terms and uses the Services.</li>
-              <li>"Member" means a person who has registered as a member and can continuously use the Services.</li>
-              <li>"Non-member" means a person who uses the Services without registering as a member.</li>
+              <li>
+                "Services" means online services such as tournament management, staff management,
+                and job postings provided by the Company.
+              </li>
+              <li>
+                "User" means a member or non-member who agrees to these Terms and uses the Services.
+              </li>
+              <li>
+                "Member" means a person who has registered as a member and can continuously use the
+                Services.
+              </li>
+              <li>
+                "Non-member" means a person who uses the Services without registering as a member.
+              </li>
             </ol>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Article 3 (Publication and Amendment of Terms)</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Article 3 (Publication and Amendment of Terms)
+            </h2>
             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-              <li>The Company shall post the contents of these Terms on the initial screen of the Services for easy access by users.</li>
-              <li>The Company may amend these Terms within the scope that does not violate relevant laws.</li>
-              <li>When amending the Terms, the Company shall notify the amendments and their effective date at least 7 days in advance.</li>
+              <li>
+                The Company shall post the contents of these Terms on the initial screen of the
+                Services for easy access by users.
+              </li>
+              <li>
+                The Company may amend these Terms within the scope that does not violate relevant
+                laws.
+              </li>
+              <li>
+                When amending the Terms, the Company shall notify the amendments and their effective
+                date at least 7 days in advance.
+              </li>
             </ol>
           </section>
 
           {/* 추가 영어 조항들... */}
           <section className="mt-12 pt-8 border-t dark:border-gray-700">
             <h2 className="text-xl font-bold mb-4">Supplementary Provisions</h2>
-            <p className="text-gray-700 dark:text-gray-300">These Terms shall be effective from January 1, 2025.</p>
+            <p className="text-gray-700 dark:text-gray-300">
+              These Terms shall be effective from January 1, 2025.
+            </p>
           </section>
         </>
       )}
@@ -440,8 +504,8 @@ const PrivacyPolicyContent: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">제4조 (개인정보의 파기 절차 및 방법)</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               회사는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는
-              지체 없이 해당 개인정보를 파기합니다. 전자적 파일 형태는 복구 및 재생이 불가능한 방법으로 삭제하며,
-              종이 문서는 분쇄하거나 소각합니다.
+              지체 없이 해당 개인정보를 파기합니다. 전자적 파일 형태는 복구 및 재생이 불가능한
+              방법으로 삭제하며, 종이 문서는 분쇄하거나 소각합니다.
             </p>
           </section>
 
@@ -459,9 +523,15 @@ const PrivacyPolicyContent: React.FC = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제6조 (개인정보 보호책임자)</h2>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <p className="text-gray-700 dark:text-gray-300"><strong>담당자:</strong> 개인정보 관리책임자</p>
-              <p className="text-gray-700 dark:text-gray-300"><strong>이메일:</strong> privacy@tholdem.com</p>
-              <p className="text-gray-700 dark:text-gray-300"><strong>전화:</strong> 02-1234-5678</p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <strong>담당자:</strong> 개인정보 관리책임자
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <strong>이메일:</strong> privacy@tholdem.com
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <strong>전화:</strong> 02-1234-5678
+              </p>
             </div>
           </section>
 
@@ -478,23 +548,24 @@ const PrivacyPolicyContent: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">제8조 (쿠키의 운용)</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               회사는 이용자에게 개별적인 맞춤서비스를 제공하기 위해 쿠키(cookie)를 사용합니다.
-              이용자는 쿠키 설치에 대한 선택권을 가지고 있으며, 웹브라우저 옵션 설정을 통해 쿠키 허용 여부를 결정할 수 있습니다.
+              이용자는 쿠키 설치에 대한 선택권을 가지고 있으며, 웹브라우저 옵션 설정을 통해 쿠키
+              허용 여부를 결정할 수 있습니다.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제9조 (개인정보의 제3자 제공)</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              회사는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다.
-              다만, 법령에 의하거나 이용자가 별도로 동의한 경우에는 예외로 합니다.
+              회사는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다. 다만, 법령에 의하거나
+              이용자가 별도로 동의한 경우에는 예외로 합니다.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold mb-4">제10조 (개인정보처리방침의 변경)</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              이 개인정보처리방침은 법령, 정책 또는 보안기술의 변경에 따라 내용의 추가, 삭제 및 수정이 있을 시에는
-              변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다.
+              이 개인정보처리방침은 법령, 정책 또는 보안기술의 변경에 따라 내용의 추가, 삭제 및
+              수정이 있을 시에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다.
             </p>
           </section>
 
@@ -514,7 +585,9 @@ const PrivacyPolicyContent: React.FC = () => {
           {/* 부칙 */}
           <section className="mt-12 pt-8 border-t dark:border-gray-700">
             <h2 className="text-xl font-bold mb-4">부칙</h2>
-            <p className="text-gray-700 dark:text-gray-300">본 개인정보처리방침은 2025년 1월 1일부터 시행됩니다.</p>
+            <p className="text-gray-700 dark:text-gray-300">
+              본 개인정보처리방침은 2025년 1월 1일부터 시행됩니다.
+            </p>
           </section>
         </>
       )}
@@ -523,7 +596,9 @@ const PrivacyPolicyContent: React.FC = () => {
       {currentLanguage === 'en' && (
         <>
           <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Article 1 (Collection of Personal Information)</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Article 1 (Collection of Personal Information)
+            </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
               The Company collects the following personal information:
             </p>
@@ -537,7 +612,9 @@ const PrivacyPolicyContent: React.FC = () => {
           {/* 추가 영어 조항들... */}
           <section className="mt-12 pt-8 border-t dark:border-gray-700">
             <h2 className="text-xl font-bold mb-4">Supplementary Provisions</h2>
-            <p className="text-gray-700 dark:text-gray-300">This Privacy Policy shall be effective from January 1, 2025.</p>
+            <p className="text-gray-700 dark:text-gray-300">
+              This Privacy Policy shall be effective from January 1, 2025.
+            </p>
           </section>
         </>
       )}

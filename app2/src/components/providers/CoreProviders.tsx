@@ -43,9 +43,7 @@ export const CoreProviders: React.FC<CoreProvidersProps> = ({ children }) => {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AuthProvider>
-              <Suspense fallback={<LoadingSpinner />}>
-                {children}
-              </Suspense>
+              <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
             </AuthProvider>
           </ThemeProvider>
         </QueryClientProvider>

@@ -113,31 +113,31 @@ export const colors = {
 
   // 다크모드 배경 색상
   backgroundDark: {
-    primary: '#111827',    // gray-900
-    secondary: '#1f2937',  // gray-800
-    tertiary: '#374151',   // gray-700
+    primary: '#111827', // gray-900
+    secondary: '#1f2937', // gray-800
+    tertiary: '#374151', // gray-700
     overlay: 'rgba(0, 0, 0, 0.7)',
     hover: '#1f2937',
-    selected: '#1e3a8a',   // primary-900
-    disabled: '#4b5563',   // gray-600
+    selected: '#1e3a8a', // primary-900
+    disabled: '#4b5563', // gray-600
   },
 
   // 다크모드 텍스트 색상
   textDark: {
-    primary: '#f9fafb',    // gray-50
-    secondary: '#d1d5db',  // gray-300
-    tertiary: '#9ca3af',   // gray-400
-    disabled: '#6b7280',   // gray-500
-    inverse: '#111827',    // gray-900
-    link: '#60a5fa',       // primary-400
-    linkHover: '#3b82f6',  // primary-500
+    primary: '#f9fafb', // gray-50
+    secondary: '#d1d5db', // gray-300
+    tertiary: '#9ca3af', // gray-400
+    disabled: '#6b7280', // gray-500
+    inverse: '#111827', // gray-900
+    link: '#60a5fa', // primary-400
+    linkHover: '#3b82f6', // primary-500
   },
 
   // 다크모드 보더 색상
   borderDark: {
-    light: '#374151',      // gray-700
-    DEFAULT: '#4b5563',    // gray-600
-    dark: '#6b7280',       // gray-500
+    light: '#374151', // gray-700
+    DEFAULT: '#4b5563', // gray-600
+    dark: '#6b7280', // gray-500
     focus: '#3b82f6',
     error: '#ef4444',
     success: '#22c55e',
@@ -225,12 +225,16 @@ export const colors = {
 // 색상 유틸리티 함수
 export const getContrastColor = (backgroundColor: string): string => {
   // 간단한 대비 색상 선택 로직
-  
+
   // 어두운 배경에는 밝은 텍스트
-  if (backgroundColor.startsWith('#1') || backgroundColor.startsWith('#2') || backgroundColor.startsWith('#3')) {
+  if (
+    backgroundColor.startsWith('#1') ||
+    backgroundColor.startsWith('#2') ||
+    backgroundColor.startsWith('#3')
+  ) {
     return colors.text.inverse;
   }
-  
+
   // 밝은 배경에는 어두운 텍스트
   return colors.text.primary;
 };

@@ -58,9 +58,11 @@ class KeyboardService {
 
       this.isInitialized = true;
       logger.info('Keyboard: 키보드 서비스 초기화 완료');
-
     } catch (error) {
-      logger.error('Keyboard: 초기화 중 오류 발생', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Keyboard: 초기화 중 오류 발생',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
@@ -102,10 +104,7 @@ class KeyboardService {
    */
   private adjustViewportForKeyboard(keyboardHeight: number): void {
     // CSS 변수로 키보드 높이 설정
-    document.documentElement.style.setProperty(
-      '--keyboard-height',
-      `${keyboardHeight}px`
-    );
+    document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
 
     // body에 키보드 활성 클래스 추가
     document.body.classList.add('keyboard-visible');
@@ -163,7 +162,10 @@ class KeyboardService {
       await Keyboard.hide();
       logger.debug('Keyboard: 키보드 강제 숨김');
     } catch (error) {
-      logger.error('Keyboard: 키보드 숨김 중 오류', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Keyboard: 키보드 숨김 중 오류',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
@@ -199,7 +201,10 @@ export const initializeKeyboard = async (): Promise<boolean> => {
     await keyboardService.initialize();
     return true;
   } catch (error) {
-    logger.error('Keyboard: 키보드 서비스 초기화 실패', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Keyboard: 키보드 서비스 초기화 실패',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return false;
   }
 };

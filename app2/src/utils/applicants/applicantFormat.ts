@@ -16,14 +16,14 @@ import { formatDateDisplay } from './applicantTransform';
  * 역할 이름을 소문자로 통일 변환하는 맵
  */
 export const jobRoleMap: { [key: string]: string } = {
-  'dealer': 'dealer',
-  'floor': 'floor',
-  'serving': 'server',
-  'tournament_director': 'tournament_director',
-  'chip_master': 'chip_master',
-  'registration': 'registration',
-  'security': 'security',
-  'other': 'other'
+  dealer: 'dealer',
+  floor: 'floor',
+  serving: 'server',
+  tournament_director: 'tournament_director',
+  chip_master: 'chip_master',
+  registration: 'registration',
+  security: 'security',
+  other: 'other',
 };
 
 /**
@@ -71,7 +71,7 @@ export const formatDateRange = (dates: string[]): string => {
   }
 
   // 개별 날짜 표시
-  return validDates.map(d => formatDateDisplay(d)).join(', ');
+  return validDates.map((d) => formatDateDisplay(d)).join(', ');
 };
 
 /**

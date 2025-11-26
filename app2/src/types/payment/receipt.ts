@@ -4,9 +4,9 @@ import { Timestamp } from 'firebase/firestore';
  * 영수증 타입
  */
 export type ReceiptType =
-  | 'payment'       // 일반 결제
-  | 'subscription'  // 구독 결제
-  | 'refund';       // 환불
+  | 'payment' // 일반 결제
+  | 'subscription' // 구독 결제
+  | 'refund'; // 환불
 
 /**
  * 영수증 정보
@@ -30,9 +30,9 @@ export interface Receipt {
   blueChips?: number;
 
   // 결제 정보
-  method?: string;          // 결제수단 (카드, 가상계좌 등)
-  cardNumber?: string;      // 카드번호 (마스킹)
-  approvedAt?: Timestamp;   // 승인일시
+  method?: string; // 결제수단 (카드, 가상계좌 등)
+  cardNumber?: string; // 카드번호 (마스킹)
+  approvedAt?: Timestamp; // 승인일시
 
   // 환불 정보 (환불인 경우)
   refundReason?: string;
@@ -64,7 +64,7 @@ export interface ReceiptGenerationRequest {
   type: ReceiptType;
   orderId: string;
   paymentKey?: string;
-  sendEmail?: boolean;  // 이메일 발송 여부 (기본: true)
+  sendEmail?: boolean; // 이메일 발송 여부 (기본: true)
 }
 
 /**
@@ -72,5 +72,5 @@ export interface ReceiptGenerationRequest {
  */
 export interface ReceiptDownloadOptions {
   format: 'pdf' | 'html';
-  includeDetails: boolean;  // 상세 정보 포함 여부
+  includeDetails: boolean; // 상세 정보 포함 여부
 }

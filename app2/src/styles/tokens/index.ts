@@ -4,20 +4,29 @@
  */
 
 import { colors, cssVariables as colorVars } from './colors';
-import { typography, typographyCssVariables, fontFamily, fontSize, fontWeight, lineHeight, letterSpacing, textClasses } from './typography';
-import { 
-  spacing, 
-  padding, 
-  margin, 
-  gap, 
-  borderRadius, 
-  borderWidth, 
-  shadows, 
-  breakpoints, 
-  maxWidth, 
-  touchTarget, 
+import {
+  typography,
+  typographyCssVariables,
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  letterSpacing,
+  textClasses,
+} from './typography';
+import {
+  spacing,
+  padding,
+  margin,
+  gap,
+  borderRadius,
+  borderWidth,
+  shadows,
+  breakpoints,
+  maxWidth,
+  touchTarget,
   zIndex,
-  spacingCssVariables 
+  spacingCssVariables,
 } from './spacing';
 
 export * from './colors';
@@ -139,9 +148,12 @@ export const utils = {
    * 접근성 포커스 스타일
    */
   getFocusStyle: (color: 'primary' | 'error' | 'success' = 'primary'): string => {
-    const focusShadow = color === 'error' ? shadows.focusError : 
-                       color === 'success' ? shadows.focusSuccess : 
-                       shadows.focus;
+    const focusShadow =
+      color === 'error'
+        ? shadows.focusError
+        : color === 'success'
+          ? shadows.focusSuccess
+          : shadows.focus;
     return `
       &:focus {
         outline: none;

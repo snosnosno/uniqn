@@ -11,11 +11,11 @@
  * Hero 섹션 콘텐츠 타입
  */
 export interface HeroContent {
-  title: string;                        // 메인 제목
-  subtitle: string;                     // 부제목
-  description: string;                  // 설명문
-  ctaText: string;                     // CTA 버튼 텍스트
-  ctaLink: string;                     // CTA 버튼 링크
+  title: string; // 메인 제목
+  subtitle: string; // 부제목
+  description: string; // 설명문
+  ctaText: string; // CTA 버튼 텍스트
+  ctaLink: string; // CTA 버튼 링크
   backgroundImage?: string | undefined; // 배경 이미지 (선택적)
 }
 
@@ -24,10 +24,10 @@ export interface HeroContent {
  */
 export interface FeatureItem {
   id: string;
-  title: string;             // 기능 제목
-  description: string;       // 기능 설명
-  icon: string;             // 아이콘 이름 (Heroicons)
-  benefits: string[];       // 혜택 목록
+  title: string; // 기능 제목
+  description: string; // 기능 설명
+  icon: string; // 아이콘 이름 (Heroicons)
+  benefits: string[]; // 혜택 목록
 }
 
 /**
@@ -44,12 +44,12 @@ export interface FeatureSection {
  */
 export interface TargetGroup {
   id: string;
-  name: string;             // 타겟 그룹명 (대회사, 포커룸, 스태프)
-  title: string;            // 타겟별 제목
-  description: string;      // 타겟별 설명
-  benefits: string[];       // 타겟별 혜택
-  icon: string;            // 타겟 아이콘
-  ctaText: string;         // 타겟별 CTA 텍스트
+  name: string; // 타겟 그룹명 (대회사, 포커룸, 스태프)
+  title: string; // 타겟별 제목
+  description: string; // 타겟별 설명
+  benefits: string[]; // 타겟별 혜택
+  icon: string; // 타겟 아이콘
+  ctaText: string; // 타겟별 CTA 텍스트
 }
 
 /**
@@ -68,7 +68,7 @@ export interface CTASection {
   title: string;
   description: string;
   primaryCTA: CTAButton;
-  secondaryCTA?: CTAButton;    // 선택적 보조 CTA
+  secondaryCTA?: CTAButton; // 선택적 보조 CTA
 }
 
 // 2. 동적 상태 타입 정의
@@ -77,20 +77,20 @@ export interface CTASection {
  * 뷰포트 상태 타입
  */
 export interface ViewportState {
-  isMobile: boolean;          // 모바일 뷰포트 여부
-  isTablet: boolean;          // 태블릿 뷰포트 여부
-  scrollY: number;            // 스크롤 위치
-  activeSection: string;      // 현재 활성 섹션
+  isMobile: boolean; // 모바일 뷰포트 여부
+  isTablet: boolean; // 태블릿 뷰포트 여부
+  scrollY: number; // 스크롤 위치
+  activeSection: string; // 현재 활성 섹션
 }
 
 /**
  * 사용자 상호작용 타입
  */
 export interface UserInteraction {
-  section: string;                              // 상호작용한 섹션
-  action: 'click' | 'scroll' | 'hover';        // 상호작용 유형
-  element: string;                              // 상호작용한 요소
-  timestamp: number;                            // 상호작용 시간
+  section: string; // 상호작용한 섹션
+  action: 'click' | 'scroll' | 'hover'; // 상호작용 유형
+  element: string; // 상호작용한 요소
+  timestamp: number; // 상호작용 시간
 }
 
 /**
@@ -100,7 +100,7 @@ export interface NavigationItem {
   id: string;
   label: string;
   href: string;
-  section: string;            // 연결된 섹션 ID
+  section: string; // 연결된 섹션 ID
 }
 
 // 3. 컴포넌트 Props 타입 정의

@@ -40,7 +40,7 @@ export async function createStaffFromApplicant(
   try {
     const now = Timestamp.now();
     const staffId = applicant.applicantId;
-    
+
     // 1. 스태프 문서 데이터 준비
     const staffData = {
       id: staffId,
@@ -56,16 +56,16 @@ export async function createStaffFromApplicant(
       // 추가 필드
       eventIds: [eventId],
       confirmedAt: now,
-      confirmedBy: managerId
+      confirmedBy: managerId,
     };
 
     // 2. WorkLog 데이터 준비 (날짜와 시간이 있는 경우)
     let workLogId: string | undefined;
     let workLogData: any | undefined;
-    
+
     if (applicant.date && applicant.timeSlot && applicant.timeSlot !== '미정') {
       workLogId = createWorkLogId(eventId, staffId, applicant.date);
-      
+
       // 단순화된 WorkLog 생성
       const workLogInput: SimpleWorkLogInput = {
         eventId,
@@ -74,9 +74,9 @@ export async function createStaffFromApplicant(
         role: applicant.role || '',
         date: applicant.date,
         timeSlot: applicant.timeSlot,
-        status: 'not_started'
+        status: 'not_started',
       };
-      
+
       workLogData = createWorkLog(workLogInput);
     }
 
@@ -85,8 +85,8 @@ export async function createStaffFromApplicant(
       data: {
         staffId,
         eventId,
-        hasWorkLog: !!workLogData
-      }
+        hasWorkLog: !!workLogData,
+      },
     });
 
     return {
@@ -94,19 +94,19 @@ export async function createStaffFromApplicant(
       staffData,
       workLogId,
       workLogData,
-      success: true
+      success: true,
     };
   } catch (error) {
     logger.error('스태프 변환 실패', error as Error, {
       component: 'applicantToStaffConverter',
-      data: { applicant, eventId }
+      data: { applicant, eventId },
     });
-    
+
     return {
       staffId: applicant.applicantId,
       staffData: null,
       success: false,
-      error: (error as Error).message
+      error: (error as Error).message,
     };
   }
 }
@@ -127,37 +127,37 @@ export async function batchConvertApplicants(
 ): Promise<StaffCreationResult[]> {
   const results: StaffCreationResult[] = [];
   const total = applicants.length;
-  
+
   for (let i = 0; i < total; i++) {
     const applicant = applicants[i];
     if (!applicant) continue;
-    
+
     const result = await createStaffFromApplicant(applicant, eventId, managerId);
     results.push(result);
-    
+
     // 진행 상황 콜백
     if (onProgress) {
       onProgress(i + 1, total);
     }
-    
+
     // 대량 처리 시 서버 부하 방지를 위한 지연
     if (total > 10 && i % 10 === 0) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-  
-  const successCount = results.filter(r => r.success).length;
-  const failureCount = results.filter(r => !r.success).length;
-  
+
+  const successCount = results.filter((r) => r.success).length;
+  const failureCount = results.filter((r) => !r.success).length;
+
   logger.info('일괄 변환 완료', {
     component: 'applicantToStaffConverter',
     data: {
       total,
       successCount,
-      failureCount
-    }
+      failureCount,
+    },
   });
-  
+
   return results;
 }
 
@@ -173,21 +173,21 @@ export function validateConversion(results: StaffCreationResult[]): {
 } {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
+
   results.forEach((result, index) => {
     if (!result.success) {
       errors.push(`변환 실패 #${index + 1}: ${result.error || '알 수 없는 오류'}`);
     }
-    
+
     if (result.success && !result.workLogData) {
       warnings.push(`WorkLog 미생성 #${index + 1}: 날짜 또는 시간 정보 없음`);
     }
   });
-  
+
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -197,10 +197,7 @@ export function validateConversion(results: StaffCreationResult[]): {
  * @param existingStaffIds 기존 스태프 ID 목록
  * @returns 중복 여부
  */
-export function checkDuplicateStaff(
-  staffId: string,
-  existingStaffIds: string[]
-): boolean {
+export function checkDuplicateStaff(staffId: string, existingStaffIds: string[]): boolean {
   return existingStaffIds.includes(staffId);
 }
 
@@ -216,9 +213,7 @@ export function checkTimeSlotConflict(
   timeSlot: string,
   existingWorkLogs: Array<{ date: string; timeSlot?: string; staffId: string }>
 ): boolean {
-  return existingWorkLogs.some(
-    log => log.date === date && log.timeSlot === timeSlot
-  );
+  return existingWorkLogs.some((log) => log.date === date && log.timeSlot === timeSlot);
 }
 
 /**
@@ -232,8 +227,8 @@ export function prepareRollbackData(results: StaffCreationResult[]): {
 } {
   const staffIds: string[] = [];
   const workLogIds: string[] = [];
-  
-  results.forEach(result => {
+
+  results.forEach((result) => {
     if (result.success) {
       staffIds.push(result.staffId);
       if (result.workLogId) {
@@ -241,9 +236,9 @@ export function prepareRollbackData(results: StaffCreationResult[]): {
       }
     }
   });
-  
+
   return {
     staffIds,
-    workLogIds
+    workLogIds,
   };
 }

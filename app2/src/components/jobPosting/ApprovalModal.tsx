@@ -21,7 +21,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
   mode,
   onConfirm,
   onCancel,
-  processing
+  processing,
 }) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -72,11 +72,11 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
         <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-semibold ${
-              isApprove
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
-            }`}>
+            <h3
+              className={`text-lg font-semibold ${
+                isApprove ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}
+            >
               {isApprove ? '공고 승인' : '공고 거부'}
             </h3>
             <button

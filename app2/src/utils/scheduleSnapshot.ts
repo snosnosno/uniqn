@@ -18,7 +18,8 @@ export function createSnapshotFromJobPosting(
 ): ScheduleEvent['snapshotData'] {
   try {
     // 급여 정보 추출
-    const salaryType = jobPosting.salaryType === 'negotiable' ? 'other' : (jobPosting.salaryType || 'hourly');
+    const salaryType =
+      jobPosting.salaryType === 'negotiable' ? 'other' : jobPosting.salaryType || 'hourly';
     const salaryAmount = jobPosting.salaryAmount ? parseFloat(jobPosting.salaryAmount) : 10000;
 
     // 역할별 급여 정보 변환
@@ -27,7 +28,7 @@ export function createSnapshotFromJobPosting(
       Object.entries(jobPosting.roleSalaries).forEach(([roleKey, roleInfo]) => {
         roleSalaries[roleKey] = {
           type: roleInfo.salaryType === 'negotiable' ? 'other' : roleInfo.salaryType,
-          amount: parseFloat(roleInfo.salaryAmount) || 0
+          amount: parseFloat(roleInfo.salaryAmount) || 0,
         };
       });
     }
@@ -63,7 +64,7 @@ export function createSnapshotFromJobPosting(
         type: salaryType as 'hourly' | 'daily' | 'monthly' | 'other',
         amount: salaryAmount,
         ...(jobPosting.useRoleSalary !== undefined && { useRoleSalary: jobPosting.useRoleSalary }),
-        ...(Object.keys(roleSalaries).length > 0 && { roleSalaries })
+        ...(Object.keys(roleSalaries).length > 0 && { roleSalaries }),
       },
 
       // 수당 정보 (Critical)
@@ -73,9 +74,13 @@ export function createSnapshotFromJobPosting(
       ...(jobPosting.taxSettings?.enabled && {
         taxSettings: {
           enabled: true,
-          ...(jobPosting.taxSettings.taxRate !== undefined && { taxRate: jobPosting.taxSettings.taxRate }),
-          ...(jobPosting.taxSettings.taxAmount !== undefined && { taxAmount: jobPosting.taxSettings.taxAmount })
-        }
+          ...(jobPosting.taxSettings.taxRate !== undefined && {
+            taxRate: jobPosting.taxSettings.taxRate,
+          }),
+          ...(jobPosting.taxSettings.taxAmount !== undefined && {
+            taxAmount: jobPosting.taxSettings.taxAmount,
+          }),
+        },
       }),
 
       // 장소 정보 (High)
@@ -89,7 +94,7 @@ export function createSnapshotFromJobPosting(
 
       // 메타 정보 (Low)
       snapshotAt: Timestamp.now(),
-      snapshotReason: reason
+      snapshotReason: reason,
     };
 
     logger.info('스냅샷 생성 완료', {
@@ -100,27 +105,27 @@ export function createSnapshotFromJobPosting(
         reason,
         hasSalary: !!snapshot.salary,
         hasAllowances: !!snapshot.allowances,
-        hasTaxSettings: !!snapshot.taxSettings
-      }
+        hasTaxSettings: !!snapshot.taxSettings,
+      },
     });
 
     return snapshot;
   } catch (error) {
     logger.error('스냅샷 생성 실패:', error instanceof Error ? error : new Error(String(error)), {
       component: 'scheduleSnapshot',
-      data: { jobPostingId: jobPosting.id, role, reason }
+      data: { jobPostingId: jobPosting.id, role, reason },
     });
 
     // 기본 스냅샷 반환 (최소한의 정보)
     return {
       salary: {
         type: 'hourly',
-        amount: 10000
+        amount: 10000,
       },
       location: jobPosting.location || '',
       createdBy: jobPosting.createdBy || '',
       snapshotAt: Timestamp.now(),
-      snapshotReason: reason
+      snapshotReason: reason,
     };
   }
 }
@@ -139,13 +144,17 @@ export function shouldUpdateSnapshot(
   if (!existingSnapshot) return true;
 
   // 급여 정보 변경 확인
-  const newSalaryAmount = newJobPosting.salaryAmount ? parseFloat(newJobPosting.salaryAmount) : 10000;
+  const newSalaryAmount = newJobPosting.salaryAmount
+    ? parseFloat(newJobPosting.salaryAmount)
+    : 10000;
   if (existingSnapshot.salary.amount !== newSalaryAmount) {
     return true;
   }
 
   // 수당 정보 변경 확인
-  const newMeal = newJobPosting.benefits?.mealAllowance ? parseFloat(String(newJobPosting.benefits.mealAllowance)) : 0;
+  const newMeal = newJobPosting.benefits?.mealAllowance
+    ? parseFloat(String(newJobPosting.benefits.mealAllowance))
+    : 0;
   const existingMeal = existingSnapshot.allowances?.meal || 0;
   if (newMeal !== existingMeal) {
     return true;
@@ -166,17 +175,11 @@ export function shouldUpdateSnapshot(
  * @param jobPosting - 공고 데이터 (선택)
  * @returns 우선순위에 따른 값 추출 헬퍼 객체
  */
-export function getSnapshotOrFallback(
-  schedule: ScheduleEvent,
-  jobPosting?: JobPosting | null
-) {
+export function getSnapshotOrFallback(schedule: ScheduleEvent, jobPosting?: JobPosting | null) {
   return {
     /** 장소 정보 (우선순위: 스냅샷 > 공고 > 스케줄 > 기본값) */
     location: () =>
-      schedule.snapshotData?.location ||
-      jobPosting?.location ||
-      schedule.location ||
-      '미정',
+      schedule.snapshotData?.location || jobPosting?.location || schedule.location || '미정',
 
     /** 상세주소 (우선순위: 스냅샷 > 공고 > 스케줄) */
     detailedAddress: () =>
@@ -185,9 +188,7 @@ export function getSnapshotOrFallback(
       schedule.detailedAddress,
 
     /** 연락처 (우선순위: 스냅샷 > 공고) */
-    contactPhone: () =>
-      schedule.snapshotData?.contactPhone ||
-      jobPosting?.contactPhone,
+    contactPhone: () => schedule.snapshotData?.contactPhone || jobPosting?.contactPhone,
 
     /** 급여 타입 (우선순위: 스냅샷 > 공고 > 기본값) */
     salaryType: () =>
@@ -202,31 +203,29 @@ export function getSnapshotOrFallback(
 
     /** 역할별 급여 사용 여부 (우선순위: 스냅샷 > 공고) */
     useRoleSalary: () =>
-      schedule.snapshotData?.salary.useRoleSalary ??
-      jobPosting?.useRoleSalary ??
-      false,
+      schedule.snapshotData?.salary.useRoleSalary ?? jobPosting?.useRoleSalary ?? false,
 
     /** 역할별 급여 정보 (우선순위: 스냅샷 > 공고) */
-    roleSalaries: () =>
-      schedule.snapshotData?.salary.roleSalaries ||
-      jobPosting?.roleSalaries,
+    roleSalaries: () => schedule.snapshotData?.salary.roleSalaries || jobPosting?.roleSalaries,
 
     /** 수당 정보 (우선순위: 스냅샷 > 공고) */
     allowances: () =>
       schedule.snapshotData?.allowances || {
-        meal: jobPosting?.benefits?.mealAllowance ? parseFloat(String(jobPosting.benefits.mealAllowance)) : 0,
-        transportation: jobPosting?.benefits?.transportation ? parseFloat(String(jobPosting.benefits.transportation)) : 0,
-        accommodation: jobPosting?.benefits?.accommodation ? parseFloat(String(jobPosting.benefits.accommodation)) : 0
+        meal: jobPosting?.benefits?.mealAllowance
+          ? parseFloat(String(jobPosting.benefits.mealAllowance))
+          : 0,
+        transportation: jobPosting?.benefits?.transportation
+          ? parseFloat(String(jobPosting.benefits.transportation))
+          : 0,
+        accommodation: jobPosting?.benefits?.accommodation
+          ? parseFloat(String(jobPosting.benefits.accommodation))
+          : 0,
       },
 
     /** 세금 설정 (우선순위: 스냅샷 > 공고) */
-    taxSettings: () =>
-      schedule.snapshotData?.taxSettings ||
-      jobPosting?.taxSettings,
+    taxSettings: () => schedule.snapshotData?.taxSettings || jobPosting?.taxSettings,
 
     /** 신고 대상 ID (우선순위: 스냅샷 > 공고) */
-    createdBy: () =>
-      schedule.snapshotData?.createdBy ||
-      jobPosting?.createdBy
+    createdBy: () => schedule.snapshotData?.createdBy || jobPosting?.createdBy,
   };
 }

@@ -21,7 +21,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   width = '100%',
   height = '1rem',
   variant = 'rectangular',
-  animation = 'pulse'
+  animation = 'pulse',
 }) => {
   const getVariantClasses = () => {
     switch (variant) {
@@ -50,7 +50,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
       className={`${getVariantClasses()} ${getAnimationClasses()} ${className}`}
       style={{
         width: typeof width === 'number' ? `${width}px` : width,
-        height: typeof height === 'number' ? `${height}px` : height
+        height: typeof height === 'number' ? `${height}px` : height,
       }}
     />
   );

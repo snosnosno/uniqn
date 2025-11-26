@@ -17,17 +17,17 @@ jest.mock('../../utils/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
     info: jest.fn(),
-    debug: jest.fn()
-  }
+    debug: jest.fn(),
+  },
 }));
 
 /**
  * 공고 배열을 정규화하는 헬퍼 함수 (Hook 로직 시뮬레이션)
  */
 const normalizeJobPostings = (jobs: Partial<JobPosting>[]): JobPosting[] => {
-  return jobs.map(job => ({
+  return jobs.map((job) => ({
     ...job,
-    postingType: normalizePostingType(job)
+    postingType: normalizePostingType(job),
   })) as JobPosting[];
 };
 
@@ -41,7 +41,7 @@ const filterByPostingType = (
   if (!postingType || postingType === 'all') {
     return jobs;
   }
-  return jobs.filter(job => job.postingType === postingType);
+  return jobs.filter((job) => job.postingType === postingType);
 };
 
 describe('레거시 공고 조회 로직 테스트', () => {
@@ -60,14 +60,14 @@ describe('레거시 공고 조회 로직 테스트', () => {
           id: 'legacy-001',
           title: '레거시 지원 공고 1',
           type: 'application',
-          status: 'open'
+          status: 'open',
         },
         {
           id: 'legacy-002',
           title: '레거시 지원 공고 2',
           type: 'application',
-          status: 'open'
-        }
+          status: 'open',
+        },
       ];
 
       // When: 정규화 함수 호출 (Hook 로직 시뮬레이션)
@@ -86,8 +86,8 @@ describe('레거시 공고 조회 로직 테스트', () => {
           id: 'legacy-fixed-001',
           title: '레거시 고정 공고',
           recruitmentType: 'fixed',
-          status: 'open'
-        }
+          status: 'open',
+        },
       ];
 
       // When
@@ -104,7 +104,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
         { id: 'post-001', type: 'application', status: 'open' },
         { id: 'post-002', recruitmentType: 'application', status: 'open' },
         { id: 'post-003', type: 'fixed', status: 'open' },
-        { id: 'post-004', recruitmentType: 'fixed', status: 'open' }
+        { id: 'post-004', recruitmentType: 'fixed', status: 'open' },
       ];
 
       // When
@@ -129,7 +129,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
         { id: 'post-001', postingType: 'regular', status: 'open' },
         { id: 'post-002', type: 'application', status: 'open' }, // 레거시
         { id: 'post-003', postingType: 'fixed', status: 'open' },
-        { id: 'post-004', postingType: 'urgent', status: 'open' }
+        { id: 'post-004', postingType: 'urgent', status: 'open' },
       ];
 
       // When: 정규화 후 필터링
@@ -138,8 +138,8 @@ describe('레거시 공고 조회 로직 테스트', () => {
 
       // Then: regular 타입만 반환
       expect(filtered).toHaveLength(2); // 새 regular + 레거시 application
-      expect(filtered.every(job => job.postingType === 'regular')).toBe(true);
-      expect(filtered.map(j => j.id)).toEqual(['post-001', 'post-002']);
+      expect(filtered.every((job) => job.postingType === 'regular')).toBe(true);
+      expect(filtered.map((j) => j.id)).toEqual(['post-001', 'post-002']);
     });
 
     it('postingType="fixed" 필터로 고정 공고만 조회', () => {
@@ -147,7 +147,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
       const mockMixedPostings: Partial<JobPosting>[] = [
         { id: 'post-001', postingType: 'regular', status: 'open' },
         { id: 'post-002', postingType: 'fixed', status: 'open' },
-        { id: 'post-003', recruitmentType: 'fixed', status: 'open' } // 레거시
+        { id: 'post-003', recruitmentType: 'fixed', status: 'open' }, // 레거시
       ];
 
       // When: 정규화 후 필터링
@@ -156,8 +156,8 @@ describe('레거시 공고 조회 로직 테스트', () => {
 
       // Then: fixed 타입만 반환
       expect(filtered).toHaveLength(2); // 새 fixed + 레거시 fixed
-      expect(filtered.every(job => job.postingType === 'fixed')).toBe(true);
-      expect(filtered.map(j => j.id)).toEqual(['post-002', 'post-003']);
+      expect(filtered.every((job) => job.postingType === 'fixed')).toBe(true);
+      expect(filtered.map((j) => j.id)).toEqual(['post-002', 'post-003']);
     });
 
     it('postingType="tournament" 필터로 대회 공고만 조회', () => {
@@ -165,7 +165,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
       const mockPostings: Partial<JobPosting>[] = [
         { id: 'post-001', postingType: 'regular', status: 'open' },
         { id: 'post-002', postingType: 'tournament', status: 'open' },
-        { id: 'post-003', postingType: 'tournament', status: 'open' }
+        { id: 'post-003', postingType: 'tournament', status: 'open' },
       ];
 
       // When
@@ -174,14 +174,14 @@ describe('레거시 공고 조회 로직 테스트', () => {
 
       // Then
       expect(filtered).toHaveLength(2);
-      expect(filtered.every(job => job.postingType === 'tournament')).toBe(true);
+      expect(filtered.every((job) => job.postingType === 'tournament')).toBe(true);
     });
 
     it('postingType="urgent" 필터로 긴급 공고만 조회', () => {
       // Given
       const mockPostings: Partial<JobPosting>[] = [
         { id: 'post-001', postingType: 'regular', status: 'open' },
-        { id: 'post-002', postingType: 'urgent', status: 'open' }
+        { id: 'post-002', postingType: 'urgent', status: 'open' },
       ];
 
       // When
@@ -205,8 +205,8 @@ describe('레거시 공고 조회 로직 테스트', () => {
           id: 'mixed-001',
           postingType: 'urgent', // 새 필드
           type: 'application', // 레거시 필드 (무시됨)
-          status: 'open'
-        }
+          status: 'open',
+        },
       ];
 
       // When
@@ -235,7 +235,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
       const mockAllPostings: Partial<JobPosting>[] = [
         { id: 'post-001', postingType: 'regular', status: 'open' },
         { id: 'post-002', postingType: 'fixed', status: 'open' },
-        { id: 'post-003', postingType: 'tournament', status: 'open' }
+        { id: 'post-003', postingType: 'tournament', status: 'open' },
       ];
 
       // When: 필터 없음
@@ -258,7 +258,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
         { id: 'post-002', postingType: 'fixed', status: 'open' },
         { id: 'post-003', postingType: 'tournament', status: 'open' },
         { id: 'post-004', postingType: 'urgent', status: 'open' },
-        { id: 'post-005', type: 'application', status: 'open' } // 레거시
+        { id: 'post-005', type: 'application', status: 'open' }, // 레거시
       ];
 
       // When: 필터 없음
@@ -283,7 +283,7 @@ describe('레거시 공고 조회 로직 테스트', () => {
         { id: 'legacy-003', type: 'fixed' },
         { id: 'legacy-004', recruitmentType: 'fixed' },
         { id: 'legacy-005' }, // 필드 없음
-        { id: 'modern-001', postingType: 'urgent' } // 신규
+        { id: 'modern-001', postingType: 'urgent' }, // 신규
       ];
 
       // When

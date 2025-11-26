@@ -8,7 +8,17 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs, doc, setDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  doc,
+  setDoc,
+  deleteDoc,
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { logger } from '../../utils/logger';
@@ -57,10 +67,7 @@ const RefundBlacklistPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await Promise.all([
-        loadBlacklist(),
-        loadRefundHistory(),
-      ]);
+      await Promise.all([loadBlacklist(), loadRefundHistory()]);
     } catch (error) {
       logger.error('RefundBlacklistPage: 데이터 로딩 실패', error as Error);
     } finally {
@@ -70,10 +77,7 @@ const RefundBlacklistPage: React.FC = () => {
 
   const loadBlacklist = async () => {
     try {
-      const q = query(
-        collection(db, 'refundBlacklist'),
-        orderBy('blacklistedAt', 'desc')
-      );
+      const q = query(collection(db, 'refundBlacklist'), orderBy('blacklistedAt', 'desc'));
 
       const snapshot = await getDocs(q);
 
@@ -135,8 +139,7 @@ const RefundBlacklistPage: React.FC = () => {
         }
       });
 
-      const history = Array.from(userMap.values())
-        .sort((a, b) => b.refundCount - a.refundCount);
+      const history = Array.from(userMap.values()).sort((a, b) => b.refundCount - a.refundCount);
 
       setRefundHistory(history);
       logger.info('RefundBlacklistPage: 환불 이력 로딩 완료', { count: history.length });
@@ -185,14 +188,16 @@ const RefundBlacklistPage: React.FC = () => {
     }
   };
 
-  const filteredBlacklist = blacklist.filter((entry) =>
-    entry.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.reason.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBlacklist = blacklist.filter(
+    (entry) =>
+      entry.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.reason.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredHistory = refundHistory.filter((user) =>
-    user.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.userName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredHistory = refundHistory.filter(
+    (user) =>
+      user.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.userName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!isAdmin) {
@@ -202,9 +207,7 @@ const RefundBlacklistPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             접근 권한이 없습니다
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            관리자만 접근 가능한 페이지입니다.
-          </p>
+          <p className="text-gray-600 dark:text-gray-300">관리자만 접근 가능한 페이지입니다.</p>
         </div>
       </div>
     );
@@ -215,12 +218,8 @@ const RefundBlacklistPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            환불 블랙리스트 관리
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">
-            환불 남용 사용자를 관리합니다.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">환불 블랙리스트 관리</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">환불 남용 사용자를 관리합니다.</p>
         </div>
 
         {/* 탭 */}
@@ -295,7 +294,10 @@ const RefundBlacklistPage: React.FC = () => {
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredBlacklist.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td
+                          colSpan={6}
+                          className="px-6 py-4 text-center text-gray-500 dark:text-gray-400"
+                        >
                           블랙리스트가 비어있습니다.
                         </td>
                       </tr>
@@ -326,11 +328,13 @@ const RefundBlacklistPage: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              entry.isPermanent
-                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                            }`}>
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                entry.isPermanent
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              }`}
+                            >
                               {entry.isPermanent ? '영구' : '임시'}
                             </span>
                           </td>
@@ -376,16 +380,24 @@ const RefundBlacklistPage: React.FC = () => {
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredHistory.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td
+                          colSpan={5}
+                          className="px-6 py-4 text-center text-gray-500 dark:text-gray-400"
+                        >
                           환불 이력이 없습니다.
                         </td>
                       </tr>
                     ) : (
                       filteredHistory.map((user) => {
-                        const isBlacklisted = blacklist.some((entry) => entry.userId === user.userId);
+                        const isBlacklisted = blacklist.some(
+                          (entry) => entry.userId === user.userId
+                        );
 
                         return (
-                          <tr key={user.userId} className={isBlacklisted ? 'bg-red-50 dark:bg-red-900/10' : ''}>
+                          <tr
+                            key={user.userId}
+                            className={isBlacklisted ? 'bg-red-50 dark:bg-red-900/10' : ''}
+                          >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 {user.userName}
@@ -395,11 +407,13 @@ const RefundBlacklistPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className={`text-sm font-semibold ${
-                                user.refundCount >= 3
-                                  ? 'text-red-600 dark:text-red-400'
-                                  : 'text-gray-900 dark:text-white'
-                              }`}>
+                              <div
+                                className={`text-sm font-semibold ${
+                                  user.refundCount >= 3
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-gray-900 dark:text-white'
+                                }`}
+                              >
                                 {user.refundCount}회
                               </div>
                             </td>

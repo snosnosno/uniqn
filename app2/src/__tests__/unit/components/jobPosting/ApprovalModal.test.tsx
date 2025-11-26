@@ -21,7 +21,7 @@ describe('ApprovalModal', () => {
     mode: 'approve' as const,
     onConfirm: mockOnConfirm,
     onCancel: mockOnCancel,
-    processing: false
+    processing: false,
   };
 
   beforeEach(() => {
@@ -48,7 +48,9 @@ describe('ApprovalModal', () => {
       render(<ApprovalModal {...defaultProps} />);
 
       expect(screen.queryByText('거부 사유')).not.toBeInTheDocument();
-      expect(screen.queryByPlaceholderText(/거부 사유를 10자 이상 입력해주세요/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByPlaceholderText(/거부 사유를 10자 이상 입력해주세요/)
+      ).not.toBeInTheDocument();
     });
 
     it('승인 버튼 클릭 시 onConfirm 호출', async () => {
@@ -66,7 +68,7 @@ describe('ApprovalModal', () => {
   describe('거부 모드 렌더링', () => {
     const rejectProps = {
       ...defaultProps,
-      mode: 'reject' as const
+      mode: 'reject' as const,
     };
 
     it('거부 모달을 정상적으로 렌더링', () => {
@@ -125,7 +127,7 @@ describe('ApprovalModal', () => {
   describe('거부 사유 검증', () => {
     const rejectProps = {
       ...defaultProps,
-      mode: 'reject' as const
+      mode: 'reject' as const,
     };
 
     it('빈 문자열 제출 시 에러 메시지 표시', async () => {
@@ -201,7 +203,7 @@ describe('ApprovalModal', () => {
       render(<ApprovalModal {...defaultProps} />);
 
       const closeButtons = screen.getAllByRole('button');
-      const closeButton = closeButtons.find(btn => btn.querySelector('svg'));
+      const closeButton = closeButtons.find((btn) => btn.querySelector('svg'));
 
       if (closeButton) {
         fireEvent.click(closeButton);
@@ -270,7 +272,7 @@ describe('ApprovalModal', () => {
       const failingOnConfirm = jest.fn().mockRejectedValue(new Error('네트워크 오류'));
       const props = {
         ...defaultProps,
-        onConfirm: failingOnConfirm
+        onConfirm: failingOnConfirm,
       };
 
       render(<ApprovalModal {...props} />);

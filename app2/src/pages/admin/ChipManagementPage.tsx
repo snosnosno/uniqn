@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { ManualChipGrant } from '../../components/admin/ManualChipGrant';
-import {
-  GiftIcon,
-  ChartBarIcon,
-  ClockIcon,
-  CurrencyDollarIcon,
-} from '@heroicons/react/24/outline';
+import { GiftIcon, ChartBarIcon, ClockIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 /**
  * 관리자 칩 관리 페이지
@@ -36,18 +31,14 @@ const ChipManagementPage: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            칩 관리
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            칩 지급, 환불, 통계를 관리합니다
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">칩 관리</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">칩 지급, 환불, 통계를 관리합니다</p>
         </div>
 
         {/* 탭 네비게이션 */}
         <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
-            {tabs.map(tab => {
+            {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button

@@ -47,9 +47,7 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
             {posting.title} 지원하기
           </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            📌 고정공고
-          </p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">📌 고정공고</p>
         </div>
 
         {/* 근무 정보 */}

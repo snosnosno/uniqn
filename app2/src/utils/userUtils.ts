@@ -83,7 +83,9 @@ export function getUserInitial(
  * extractNicknameFromDisplayName("김승호 [{"nickname":"김스노"}]") // "김스노"
  * extractNicknameFromDisplayName("홍길동") // null
  */
-export function extractNicknameFromDisplayName(displayName: string | null | undefined): string | null {
+export function extractNicknameFromDisplayName(
+  displayName: string | null | undefined
+): string | null {
   if (!displayName) return null;
 
   // JSON 배열 형식이 포함된 경우 닉네임 추출

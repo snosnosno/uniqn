@@ -88,14 +88,14 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
             title,
             targetCount: targetStaffIds.length,
             jobPostingTitle,
-          }
+          },
         });
 
         // Firebase Functions 호출
-        const sendAnnouncementFn = httpsCallable<
-          SendAnnouncementRequest,
-          SendAnnouncementResponse
-        >(functions, 'sendJobPostingAnnouncement');
+        const sendAnnouncementFn = httpsCallable<SendAnnouncementRequest, SendAnnouncementResponse>(
+          functions,
+          'sendJobPostingAnnouncement'
+        );
 
         const requestData: SendAnnouncementRequest = {
           eventId,
@@ -121,7 +121,7 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
               announcementId: responseData.announcementId,
               successCount,
               failedCount,
-            }
+            },
           });
 
           // 성공 Toast
@@ -137,14 +137,13 @@ export const useJobPostingAnnouncement = (): UseJobPostingAnnouncementReturn => 
           throw new Error(responseData.error || '공지 전송에 실패했습니다.');
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : '공지 전송에 실패했습니다.';
+        const errorMessage = err instanceof Error ? err.message : '공지 전송에 실패했습니다.';
 
         logger.error('공지 전송 실패', err as Error, {
           data: {
             eventId,
             targetCount: targetStaffIds.length,
-          }
+          },
         });
 
         setError(err as Error);

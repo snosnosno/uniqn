@@ -72,9 +72,7 @@ describe('useFirestoreCollection', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreCollection<Staff>('staff')
-      );
+      const { result } = renderHook(() => useFirestoreCollection<Staff>('staff'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -96,9 +94,7 @@ describe('useFirestoreCollection', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreCollection<Staff>('staff')
-      );
+      const { result } = renderHook(() => useFirestoreCollection<Staff>('staff'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -111,9 +107,7 @@ describe('useFirestoreCollection', () => {
 
   describe('쿼리 제약 조건', () => {
     it('where 절과 함께 동작해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
 
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
@@ -185,19 +179,13 @@ describe('useFirestoreCollection', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _collectionRef: unknown,
-          _onNext: unknown,
-          onError: (error: Error) => void
-        ) => {
+        (_collectionRef: unknown, _onNext: unknown, onError: (error: Error) => void) => {
           onError(mockError);
           return jest.fn();
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreCollection<Staff>('staff')
-      );
+      const { result } = renderHook(() => useFirestoreCollection<Staff>('staff'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -213,11 +201,7 @@ describe('useFirestoreCollection', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _collectionRef: unknown,
-          _onNext: unknown,
-          onError: (error: Error) => void
-        ) => {
+        (_collectionRef: unknown, _onNext: unknown, onError: (error: Error) => void) => {
           onError(mockError);
           return jest.fn();
         }
@@ -251,9 +235,7 @@ describe('useFirestoreCollection', () => {
     });
 
     it('onSuccess 콜백을 호출해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
       const onSuccessCallback = jest.fn();
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
@@ -284,9 +266,7 @@ describe('useFirestoreCollection', () => {
 
   describe('refetch 기능', () => {
     it('refetch를 호출하면 재구독해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
 
@@ -304,9 +284,7 @@ describe('useFirestoreCollection', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreCollection<Staff>('staff')
-      );
+      const { result } = renderHook(() => useFirestoreCollection<Staff>('staff'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -337,9 +315,7 @@ describe('useFirestoreCollection', () => {
         }
       );
 
-      const { unmount } = renderHook(() =>
-        useFirestoreCollection<Staff>('staff')
-      );
+      const { unmount } = renderHook(() => useFirestoreCollection<Staff>('staff'));
 
       await waitFor(() => {
         expect(mockUnsubscribe).not.toHaveBeenCalled();
@@ -353,9 +329,7 @@ describe('useFirestoreCollection', () => {
 
   describe('타입 안전성', () => {
     it('FirestoreDocument 타입을 반환해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
 
@@ -371,9 +345,7 @@ describe('useFirestoreCollection', () => {
         }
       );
 
-      const { result } = renderHook(() =>
-        useFirestoreCollection<Staff>('staff')
-      );
+      const { result } = renderHook(() => useFirestoreCollection<Staff>('staff'));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);

@@ -44,10 +44,7 @@ const calculatePasswordStrength = (password: string): number => {
 /**
  * 비밀번호 변경 모달 컴포넌트
  */
-export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const { changePassword } = useSecuritySettings();
 
@@ -277,7 +274,9 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
                     <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
                       {t('settings.security.passwordStrength')}
                     </span>
-                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100">{strengthText}</span>
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                      {strengthText}
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
@@ -290,15 +289,25 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
 
               {/* 비밀번호 요구사항 */}
               <ul className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                <li className={newPassword.length >= 8 ? 'text-green-600 dark:text-green-400 font-medium' : ''}>
+                <li
+                  className={
+                    newPassword.length >= 8 ? 'text-green-600 dark:text-green-400 font-medium' : ''
+                  }
+                >
                   {newPassword.length >= 8 ? '✓' : '•'} 최소 8자 이상
                 </li>
-                <li className={/\d/.test(newPassword) ? 'text-green-600 dark:text-green-400 font-medium' : ''}>
+                <li
+                  className={
+                    /\d/.test(newPassword) ? 'text-green-600 dark:text-green-400 font-medium' : ''
+                  }
+                >
                   {/\d/.test(newPassword) ? '✓' : '•'} 숫자 포함 (0-9)
                 </li>
                 <li
                   className={
-                    /[@$!%*?&]/.test(newPassword) ? 'text-green-600 dark:text-green-400 font-medium' : ''
+                    /[@$!%*?&]/.test(newPassword)
+                      ? 'text-green-600 dark:text-green-400 font-medium'
+                      : ''
                   }
                 >
                   {/[@$!%*?&]/.test(newPassword) ? '✓' : '•'} 특수문자 포함 (@$!%*?&)

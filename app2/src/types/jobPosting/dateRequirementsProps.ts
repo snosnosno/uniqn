@@ -39,7 +39,11 @@ export interface DateRequirementsHandlers {
    * @param timeSlotIndex - 시간대 인덱스
    * @param isAnnounced - 미정 여부
    */
-  onTimeToBeAnnouncedToggle: (dateIndex: number, timeSlotIndex: number, isAnnounced: boolean) => void;
+  onTimeToBeAnnouncedToggle: (
+    dateIndex: number,
+    timeSlotIndex: number,
+    isAnnounced: boolean
+  ) => void;
 
   /**
    * 미정 설명 변경 핸들러
@@ -97,8 +101,9 @@ export interface DateRequirementsValidation {
 /**
  * DateRequirementsSection Props
  */
-export interface DateRequirementsSectionProps extends SectionProps<
-  DateRequirementsData,
-  DateRequirementsHandlers,
-  DateRequirementsValidation
-> {}
+export interface DateRequirementsSectionProps
+  extends SectionProps<
+    DateRequirementsData,
+    DateRequirementsHandlers,
+    DateRequirementsValidation
+  > {}

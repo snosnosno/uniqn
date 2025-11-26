@@ -30,11 +30,7 @@ import {
   validateBulkDelete,
 } from '../../utils/staff/staffValidation';
 import { removeStaffIdDateSuffix } from '../../utils/staff/staffDataTransformer';
-import {
-  handleFirebaseError,
-  isPermissionDenied,
-  FirebaseError,
-} from '../../utils/firebaseErrors';
+import { handleFirebaseError, isPermissionDenied, FirebaseError } from '../../utils/firebaseErrors';
 
 export interface UseStaffActionsParams {
   jobPosting: JobPosting | null | undefined;
@@ -82,7 +78,7 @@ export function useStaffActions({
         return null;
       }
 
-      const staff = staffData.find(s => s.id === staffId);
+      const staff = staffData.find((s) => s.id === staffId);
       if (!staff) {
         showError('스태프 정보를 찾을 수 없습니다.');
         return null;
@@ -173,11 +169,7 @@ export function useStaffActions({
         }
 
         // 1. 삭제 가능 여부 검증
-        const { canDelete, reason } = await validateCanDeleteStaff(
-          jobPosting.id,
-          staffId,
-          date
-        );
+        const { canDelete, reason } = await validateCanDeleteStaff(jobPosting.id, staffId, date);
         if (!canDelete) {
           showError(reason || '삭제할 수 없습니다.');
           return;
@@ -190,15 +182,14 @@ export function useStaffActions({
 
         if (jobPosting.confirmedStaff) {
           const targetStaff = jobPosting.confirmedStaff.find(
-            (staff: ConfirmedStaff) =>
-              staff.userId === baseStaffId && staff.date === date
+            (staff: ConfirmedStaff) => staff.userId === baseStaffId && staff.date === date
           );
           staffRole = targetStaff?.role || '';
           staffTimeSlot = targetStaff?.timeSlot || '';
         }
 
         // 3. Transaction으로 원자적 처리
-        await runTransaction(db, async transaction => {
+        await runTransaction(db, async (transaction) => {
           const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
           const jobPostingDoc = await transaction.get(jobPostingRef);
 
@@ -210,19 +201,16 @@ export function useStaffActions({
           const confirmedStaffArray = currentData?.confirmedStaff || [];
 
           // 해당 스태프의 해당 날짜 항목만 필터링
-          const filteredConfirmedStaff = confirmedStaffArray.filter(
-            (staff: ConfirmedStaff) => {
-              const staffUserId = staff.userId;
-              return !(staffUserId === baseStaffId && staff.date === date);
-            }
-          );
+          const filteredConfirmedStaff = confirmedStaffArray.filter((staff: ConfirmedStaff) => {
+            const staffUserId = staff.userId;
+            return !(staffUserId === baseStaffId && staff.date === date);
+          });
 
           transaction.update(jobPostingRef, {
             confirmedStaff: filteredConfirmedStaff,
           });
 
-          const removedCount =
-            confirmedStaffArray.length - filteredConfirmedStaff.length;
+          const removedCount = confirmedStaffArray.length - filteredConfirmedStaff.length;
           logger.info(
             `confirmedStaff에서 제거: staffId=${staffId} (base: ${baseStaffId}), date=${date}, removed: ${removedCount}`,
             {
@@ -271,9 +259,7 @@ export function useStaffActions({
           const currentCount =
             jobPosting.confirmedStaff?.filter(
               (staff: ConfirmedStaff) =>
-                staff.role === staffRole &&
-                staff.timeSlot === staffTimeSlot &&
-                staff.date === date
+                staff.role === staffRole && staff.timeSlot === staffTimeSlot && staff.date === date
             ).length || 0;
 
           roleInfo = ` (${staffRole} ${staffTimeSlot}: ${currentCount + 1} → ${currentCount}명)`;
@@ -319,31 +305,25 @@ export function useStaffActions({
         }
 
         // 1. 각 스태프의 삭제 가능 여부 확인
-        const staffList = staffIds.map(staffId => {
-          const staff = staffData.find(s => s.id === staffId);
+        const staffList = staffIds.map((staffId) => {
+          const staff = staffData.find((s) => s.id === staffId);
           const staffName = staff?.name || '이름 미정';
-          const date =
-            staff?.assignedDate || toISODateString(new Date()) || '';
+          const date = staff?.assignedDate || toISODateString(new Date()) || '';
           return { staffId, staffName, date };
         });
 
-        const { deletable, nonDeletable } = await validateBulkDelete(
-          jobPosting.id,
-          staffList
-        );
+        const { deletable, nonDeletable } = await validateBulkDelete(jobPosting.id, staffList);
 
         // 2. 삭제 불가능한 스태프가 있으면 안내
         if (nonDeletable.length > 0) {
           const nonDeletableMessage = nonDeletable
-            .map(s => `• ${s.staffName}: ${s.reason}`)
+            .map((s) => `• ${s.staffName}: ${s.reason}`)
             .join('\n');
 
           const hasDeleteableStaff = deletable.length > 0;
 
           if (!hasDeleteableStaff) {
-            showError(
-              `선택한 모든 스태프를 삭제할 수 없습니다:\n\n${nonDeletableMessage}`
-            );
+            showError(`선택한 모든 스태프를 삭제할 수 없습니다:\n\n${nonDeletableMessage}`);
             return;
           } else {
             showError(
@@ -358,7 +338,7 @@ export function useStaffActions({
 
         for (const { staffId, staffName, date } of deletable) {
           try {
-            await runTransaction(db, async transaction => {
+            await runTransaction(db, async (transaction) => {
               const jobPostingRef = doc(db, 'jobPostings', jobPosting.id);
               const jobPostingDoc = await transaction.get(jobPostingRef);
 
@@ -393,8 +373,8 @@ export function useStaffActions({
               where('status', 'in', ['scheduled', 'not_started'])
             );
             deletionPromises.push(
-              getDocs(workLogQuery).then(snapshot => {
-                return Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
+              getDocs(workLogQuery).then((snapshot) => {
+                return Promise.all(snapshot.docs.map((doc) => deleteDoc(doc.ref)));
               })
             );
 
@@ -407,8 +387,8 @@ export function useStaffActions({
               where('status', '==', 'not_started')
             );
             deletionPromises.push(
-              getDocs(attendanceQuery).then(snapshot => {
-                return Promise.all(snapshot.docs.map(doc => deleteDoc(doc.ref)));
+              getDocs(attendanceQuery).then((snapshot) => {
+                return Promise.all(snapshot.docs.map((doc) => deleteDoc(doc.ref)));
               })
             );
 

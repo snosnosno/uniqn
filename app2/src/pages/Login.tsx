@@ -1,30 +1,29 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from 'react-router-dom';
 import { FirebaseError } from 'firebase/app';
 import { sendEmailVerification } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 import AuthLayout from '../components/auth/AuthLayout';
-import FormField from "../components/FormField";
+import FormField from '../components/FormField';
 import Modal from '../components/ui/Modal';
 // 카카오 로그인 기능 - 나중에 다시 활성화 예정
 // import KakaoLoginButton from '../components/auth/KakaoLoginButton';
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from '../contexts/AuthContext';
 // import { KakaoUserInfo, KakaoAuthResponse } from '../utils/kakaoSdk';
 import { recordLoginAttempt, isLoginBlocked, formatBlockTime } from '../services/authSecurity';
 import { secureStorage } from '../utils/secureStorage';
 import { toast } from '../utils/toast';
 
-
 const Login: React.FC = () => {
   const { t } = useTranslation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [isBlocked, setIsBlocked] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
@@ -39,8 +38,8 @@ const Login: React.FC = () => {
         component: 'Login',
         data: {
           apiKey: process.env.REACT_APP_FIREBASE_API_KEY?.slice(0, 10) + '...',
-          projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID
-        }
+          projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+        },
       });
     }
   }, []);
@@ -52,14 +51,23 @@ const Login: React.FC = () => {
       if (blockStatus.isBlocked && blockStatus.remainingTime) {
         setIsBlocked(true);
         setAttempts(blockStatus.attempts || 0);
-        setError(t('login.blockedMessage', `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`));
+        setError(
+          t(
+            'login.blockedMessage',
+            `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`
+          )
+        );
       } else {
         setIsBlocked(false);
         setAttempts(blockStatus.attempts || 0);
         setError('');
       }
     } catch (error) {
-      logger.error('로그인 차단 상태 확인 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'Login' });
+      logger.error(
+        '로그인 차단 상태 확인 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'Login' }
+      );
     }
   }, [email, t]);
 
@@ -73,7 +81,7 @@ const Login: React.FC = () => {
           setRememberMe(parsed);
           logger.info('로그인 설정 복원 완료', {
             component: 'Login',
-            data: { rememberMe: parsed }
+            data: { rememberMe: parsed },
           });
         } else {
           secureStorage.removeItem('rememberMe');
@@ -98,7 +106,7 @@ const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     // 차단 상태 확인 (이미 메모이제이션된 함수 재사용)
     if (isBlocked) {
@@ -117,12 +125,12 @@ const Login: React.FC = () => {
         setShowEmailVerificationModal(true);
         logger.warn('이메일 미인증 사용자 로그인', {
           component: 'Login',
-          data: { email }
+          data: { email },
         });
         return;
       }
 
-      navigate("/app");
+      navigate('/app');
     } catch (err: unknown) {
       // 로그인 실패 시 시도 기록
       await recordLoginAttempt(email, false);
@@ -131,7 +139,9 @@ const Login: React.FC = () => {
       if (err instanceof FirebaseError) {
         switch (err.code) {
           case 'auth/user-disabled':
-            setError(t('adminLogin.approvalPending', '계정이 비활성화되었습니다. 관리자에게 문의하세요.'));
+            setError(
+              t('adminLogin.approvalPending', '계정이 비활성화되었습니다. 관리자에게 문의하세요.')
+            );
             break;
           case 'auth/invalid-credential':
           case 'auth/wrong-password':
@@ -139,7 +149,9 @@ const Login: React.FC = () => {
             setError(t('adminLogin.errorMessage', '이메일 또는 비밀번호가 올바르지 않습니다.'));
             break;
           case 'auth/too-many-requests':
-            setError(t('login.tooManyRequests', '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.'));
+            setError(
+              t('login.tooManyRequests', '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.')
+            );
             break;
           case 'auth/network-request-failed':
             setError(t('login.networkError', '네트워크 연결을 확인해주세요.'));
@@ -149,11 +161,15 @@ const Login: React.FC = () => {
         }
         logger.error('로그인 실패 (Firebase):', err, {
           component: 'Login',
-          data: { code: err.code, email }
+          data: { code: err.code, email },
         });
       } else {
         setError(t('adminLogin.errorMessage', '로그인에 실패했습니다.'));
-        logger.error('로그인 실패 (Unknown):', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
+        logger.error(
+          '로그인 실패 (Unknown):',
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'Login' }
+        );
       }
 
       // 차단 상태 업데이트 (메모이제이션된 함수 재사용)
@@ -171,7 +187,7 @@ const Login: React.FC = () => {
         setShowEmailVerificationModal(true);
         logger.warn('이메일 미인증 사용자 로그인 (Google)', {
           component: 'Login',
-          data: { email: userCredential.user.email }
+          data: { email: userCredential.user.email },
         });
         return;
       }
@@ -185,7 +201,7 @@ const Login: React.FC = () => {
         // 동의 내역이 없으면 약관 동의 페이지로 이동
         logger.info('동의 내역 없음, 약관 동의 페이지로 이동', {
           component: 'Login',
-          data: { userId: userCredential.user.uid }
+          data: { userId: userCredential.user.uid },
         });
         navigate('/consent', { state: { from: '/app' } });
         return;
@@ -197,7 +213,9 @@ const Login: React.FC = () => {
       if (err instanceof FirebaseError) {
         switch (err.code) {
           case 'auth/popup-blocked':
-            setError(t('googleSignIn.popupBlocked', '팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.'));
+            setError(
+              t('googleSignIn.popupBlocked', '팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.')
+            );
             break;
           case 'auth/popup-closed-by-user':
             setError(t('googleSignIn.popupClosed', '로그인이 취소되었습니다.'));
@@ -213,11 +231,15 @@ const Login: React.FC = () => {
         }
         logger.error('Google Sign-In Error (Firebase):', err, {
           component: 'Login',
-          data: { code: err.code }
+          data: { code: err.code },
         });
       } else {
         setError(t('googleSignIn.error', '구글 로그인에 실패했습니다.'));
-        logger.error('Google Sign-In Error (Unknown):', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
+        logger.error(
+          'Google Sign-In Error (Unknown):',
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'Login' }
+        );
       }
     }
   };
@@ -231,7 +253,7 @@ const Login: React.FC = () => {
       await sendEmailVerification(currentUser);
       logger.info('이메일 인증 재발송 성공', {
         component: 'Login',
-        data: { email: currentUser.email }
+        data: { email: currentUser.email },
       });
       toast.success(t('login.emailVerificationResent', '인증 이메일이 재발송되었습니다.'));
       setShowEmailVerificationModal(false);
@@ -239,11 +261,15 @@ const Login: React.FC = () => {
       if (err instanceof FirebaseError) {
         logger.error('이메일 인증 재발송 실패 (Firebase):', err, {
           component: 'Login',
-          data: { code: err.code }
+          data: { code: err.code },
         });
         toast.error(t('login.emailVerificationResendFailed', '이메일 재발송에 실패했습니다.'));
       } else {
-        logger.error('이메일 인증 재발송 실패 (Unknown):', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
+        logger.error(
+          '이메일 인증 재발송 실패 (Unknown):',
+          err instanceof Error ? err : new Error(String(err)),
+          { component: 'Login' }
+        );
         toast.error(t('login.emailVerificationResendFailed', '이메일 재발송에 실패했습니다.'));
       }
     } finally {
@@ -293,7 +319,7 @@ const Login: React.FC = () => {
           required
           autoComplete="current-password"
         />
-        
+
         {/* 보안 상태 표시 */}
         {attempts > 0 && !isBlocked && (
           <div
@@ -303,13 +329,27 @@ const Login: React.FC = () => {
           >
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400 dark:text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                <svg
+                  className="h-5 w-5 text-yellow-400 dark:text-yellow-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  {t('login.attemptWarning', `로그인 실패: ${attempts}회. 5회 실패 시 15분간 차단됩니다.`)}
+                  {t(
+                    'login.attemptWarning',
+                    `로그인 실패: ${attempts}회. 5회 실패 시 15분간 차단됩니다.`
+                  )}
                 </p>
               </div>
             </div>
@@ -337,12 +377,18 @@ const Login: React.FC = () => {
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
               disabled={isBlocked}
             />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
+            <label
+              htmlFor="remember-me"
+              className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
+            >
               {t('login.rememberMe', '로그인 상태 유지')}
             </label>
           </div>
           <div className="text-sm">
-            <Link to="/forgot-password" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
+            <Link
+              to="/forgot-password"
+              className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+            >
               {t('login.forgotPassword')}
             </Link>
           </div>
@@ -364,14 +410,16 @@ const Login: React.FC = () => {
           </button>
         </div>
       </form>
-      
+
       <div className="mt-6">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300 dark:border-gray-600" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">{t('login.orContinueWith')}</span>
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              {t('login.orContinueWith')}
+            </span>
           </div>
         </div>
 
@@ -401,7 +449,10 @@ const Login: React.FC = () => {
       </div>
 
       <div className="mt-4 text-sm text-center">
-        <Link to="/signup" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
+        <Link
+          to="/signup"
+          className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+        >
           {t('login.noAccount')}
         </Link>
       </div>
@@ -414,10 +465,16 @@ const Login: React.FC = () => {
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            {t('login.emailVerificationMessage', '계정을 사용하기 위해서는 이메일 인증이 필요합니다. 인증 이메일을 확인해주세요.')}
+            {t(
+              'login.emailVerificationMessage',
+              '계정을 사용하기 위해서는 이메일 인증이 필요합니다. 인증 이메일을 확인해주세요.'
+            )}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            {t('login.emailVerificationCheck', '이메일을 받지 못하셨나요? 스팸 폴더를 확인해주세요.')}
+            {t(
+              'login.emailVerificationCheck',
+              '이메일을 받지 못하셨나요? 스팸 폴더를 확인해주세요.'
+            )}
           </p>
           <div className="flex gap-2 justify-end">
             <button

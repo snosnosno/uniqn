@@ -20,31 +20,31 @@ import { testAccessibility } from '../../testUtils/accessibilityHelpers';
 // Mock useNotifications hook
 const mockUseNotifications = createMockUseNotifications();
 jest.mock('../../../../hooks/useNotifications', () => ({
-  useNotifications: jest.fn(() => mockUseNotifications)
+  useNotifications: jest.fn(() => mockUseNotifications),
 }));
 
 // Mock React Router
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate
+  useNavigate: () => mockNavigate,
 }));
 
 // Mock i18n
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback || key,
-    i18n: { language: 'ko' }
-  })
+    i18n: { language: 'ko' },
+  }),
 }));
 
 // Mock date-fns
 jest.mock('date-fns', () => ({
-  formatDistanceToNow: () => '5분 전'
+  formatDistanceToNow: () => '5분 전',
 }));
 
 jest.mock('date-fns/locale', () => ({
-  ko: {}
+  ko: {},
 }));
 
 // Mock notificationConfig
@@ -52,25 +52,24 @@ jest.mock('../../../../config/notificationConfig', () => ({
   getNotificationTypeConfig: (type: string) => ({
     icon: '📢',
     color: 'blue',
-    priority: 'normal'
+    priority: 'normal',
   }),
   getNotificationRoute: (type: string) => {
     const routes: Record<string, string> = {
       work: '/app/work-logs',
       schedule: '/app/schedule',
       finance: '/app/salary',
-      system: '/app/notifications'
+      system: '/app/notifications',
     };
     return routes[type] || '/app/notifications';
-  }
+  },
 }));
 
 // Mock NotificationBadge
 jest.mock('../../../../components/notifications/NotificationBadge', () => ({
   __esModule: true,
-  default: ({ count }: any) => (
-    count > 0 ? <span data-testid="notification-badge">{count}</span> : null
-  )
+  default: ({ count }: any) =>
+    count > 0 ? <span data-testid="notification-badge">{count}</span> : null,
 }));
 
 describe('NotificationDropdown - 접근성', () => {
@@ -117,9 +116,7 @@ describe('NotificationDropdown - 접근성', () => {
 
     it('"모두 읽음" 버튼에 다크모드 클래스가 적용되어야 함', async () => {
       const user = userEvent.setup();
-      useNotifications.mockReturnValue(
-        createMockUseNotifications({ unreadCount: 3 })
-      );
+      useNotifications.mockReturnValue(createMockUseNotifications({ unreadCount: 3 }));
 
       render(<NotificationDropdown />);
 
@@ -241,9 +238,7 @@ describe('NotificationDropdown - 접근성', () => {
 
     it('드롭다운 내부에서 Tab 키로 포커스를 이동할 수 있어야 함', async () => {
       const user = userEvent.setup();
-      useNotifications.mockReturnValue(
-        createMockUseNotifications({ unreadCount: 1 })
-      );
+      useNotifications.mockReturnValue(createMockUseNotifications({ unreadCount: 1 }));
 
       render(<NotificationDropdown />);
 
@@ -261,9 +256,7 @@ describe('NotificationDropdown - 접근성', () => {
       const markAllButton = screen.queryByText('모두 읽음');
       const settingsButton = screen.getByRole('button', { name: /알림 설정/i });
 
-      expect(
-        focusedElement === markAllButton || focusedElement === settingsButton
-      ).toBe(true);
+      expect(focusedElement === markAllButton || focusedElement === settingsButton).toBe(true);
     });
 
     it('ESC 키로 드롭다운을 닫을 수 있어야 함', async () => {
@@ -305,7 +298,7 @@ describe('NotificationDropdown - 접근성', () => {
       useNotifications.mockReturnValue(
         createMockUseNotifications({
           notifications: [],
-          unreadCount: 0
+          unreadCount: 0,
         })
       );
 

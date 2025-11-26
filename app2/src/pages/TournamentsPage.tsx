@@ -7,7 +7,13 @@ import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import Modal from '../components/ui/Modal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import { FaPlus, FaCog, FaTrash, FaCheck, FaChevronDown } from '../components/Icons/ReactIconsReplacement';
+import {
+  FaPlus,
+  FaCog,
+  FaTrash,
+  FaCheck,
+  FaChevronDown,
+} from '../components/Icons/ReactIconsReplacement';
 import { TOURNAMENT_COLORS, COLOR_EMOJIS } from '../utils/tournamentColors';
 import { useGroupByDate } from '../hooks/useGroupByDate';
 import { formatDateDisplay, toISODateString } from '../utils/dateUtils';
@@ -15,7 +21,8 @@ import { formatDateDisplay, toISODateString } from '../utils/dateUtils';
 const TournamentsPage: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useTournament();
-  const { tournaments, loading, error, createTournament, updateTournament, deleteTournament } = useTournamentData();
+  const { tournaments, loading, error, createTournament, updateTournament, deleteTournament } =
+    useTournamentData();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -85,7 +92,9 @@ const TournamentsPage: React.FC = () => {
       setIsCreateModalOpen(false);
       resetForm();
     } catch (err) {
-      logger.error('토너먼트 생성 실패:', err instanceof Error ? err : new Error(String(err)), { component: 'TournamentsPage' });
+      logger.error('토너먼트 생성 실패:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'TournamentsPage',
+      });
       toast.error('토너먼트 생성에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
@@ -114,7 +123,9 @@ const TournamentsPage: React.FC = () => {
       setEditingTournament(null);
       resetForm();
     } catch (err) {
-      logger.error('토너먼트 수정 실패:', err instanceof Error ? err : new Error(String(err)), { component: 'TournamentsPage' });
+      logger.error('토너먼트 수정 실패:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'TournamentsPage',
+      });
       toast.error('토너먼트 수정에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
@@ -143,7 +154,9 @@ const TournamentsPage: React.FC = () => {
       setIsDeleteConfirmOpen(false);
       setDeletingTournamentId(null);
     } catch (err) {
-      logger.error('토너먼트 삭제 실패:', err instanceof Error ? err : new Error(String(err)), { component: 'TournamentsPage' });
+      logger.error('토너먼트 삭제 실패:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'TournamentsPage',
+      });
       toast.error('토너먼트 삭제에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
@@ -186,23 +199,17 @@ const TournamentsPage: React.FC = () => {
   );
 
   // 날짜별 그룹화 (useGroupByDate 훅 사용)
-  const {
-    groupedData,
-    isExpanded,
-    toggleExpansion,
-    expandAll,
-    collapseAll,
-    getItemCount,
-  } = useGroupByDate<Tournament>({
-    data: visibleTournaments,
-    getDateKey: (tournament) => tournament.dateKey || tournament.date,
-    sortItems: (a, b) => {
-      // 같은 날짜 내에서 시간순 정렬
-      return a.name.localeCompare(b.name);
-    },
-    storageKey: 'tournament_sections_expanded',
-    defaultExpanded: true,
-  });
+  const { groupedData, isExpanded, toggleExpansion, expandAll, collapseAll, getItemCount } =
+    useGroupByDate<Tournament>({
+      data: visibleTournaments,
+      getDateKey: (tournament) => tournament.dateKey || tournament.date,
+      sortItems: (a, b) => {
+        // 같은 날짜 내에서 시간순 정렬
+        return a.name.localeCompare(b.name);
+      },
+      storageKey: 'tournament_sections_expanded',
+      defaultExpanded: true,
+    });
 
   // 상대적 날짜 라벨 생성 (오늘, 내일 등)
   const getDateLabel = (dateKey: string): string => {
@@ -229,7 +236,9 @@ const TournamentsPage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
-        <div className="text-red-500 dark:text-red-400">토너먼트 목록을 불러오는데 실패했습니다: {error.message}</div>
+        <div className="text-red-500 dark:text-red-400">
+          토너먼트 목록을 불러오는데 실패했습니다: {error.message}
+        </div>
       </div>
     );
   }
@@ -246,11 +255,7 @@ const TournamentsPage: React.FC = () => {
           >
             전체 접기
           </button>
-          <button
-            onClick={expandAll}
-            className="btn btn-secondary btn-sm"
-            disabled={isSubmitting}
-          >
+          <button onClick={expandAll} className="btn btn-secondary btn-sm" disabled={isSubmitting}>
             전체 펼치기
           </button>
           <button
@@ -258,8 +263,7 @@ const TournamentsPage: React.FC = () => {
             className="btn btn-primary flex items-center gap-2"
             disabled={isSubmitting}
           >
-            <FaPlus className="w-4 h-4" />
-            새 토너먼트
+            <FaPlus className="w-4 h-4" />새 토너먼트
           </button>
         </div>
       </div>
@@ -267,10 +271,7 @@ const TournamentsPage: React.FC = () => {
       {visibleTournaments.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
           <p className="text-gray-500 dark:text-gray-400 mb-4">생성된 토너먼트가 없습니다.</p>
-          <button
-            onClick={handleOpenCreateModal}
-            className="btn btn-primary"
-          >
+          <button onClick={handleOpenCreateModal} className="btn btn-primary">
             첫 번째 토너먼트 만들기
           </button>
         </div>
@@ -283,7 +284,10 @@ const TournamentsPage: React.FC = () => {
             const count = getItemCount(dateKey);
 
             return (
-              <div key={dateKey} className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+              <div
+                key={dateKey}
+                className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden"
+              >
                 {/* 날짜 섹션 헤더 */}
                 <button
                   onClick={() => toggleExpansion(dateKey)}
@@ -302,9 +306,7 @@ const TournamentsPage: React.FC = () => {
                       </span>
                     </h2>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    {dateKey}
-                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">{dateKey}</div>
                 </button>
 
                 {/* 토너먼트 카드 그리드 (확장 시에만 표시) */}
@@ -312,50 +314,58 @@ const TournamentsPage: React.FC = () => {
                   <div className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {tournamentsInDate.map((tournament) => (
-            <div
-              key={tournament.id}
-              className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow border-l-8"
-              style={{ borderLeftColor: tournament.color || TOURNAMENT_COLORS[0] }}
-            >
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{COLOR_EMOJIS[tournament.color || TOURNAMENT_COLORS[0]]}</span>
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tournament.name}</h3>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(tournament.status)}`}>
-                  {getStatusLabel(tournament.status)}
-                </span>
-              </div>
+                        <div
+                          key={tournament.id}
+                          className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow border-l-8"
+                          style={{ borderLeftColor: tournament.color || TOURNAMENT_COLORS[0] }}
+                        >
+                          <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">
+                                {COLOR_EMOJIS[tournament.color || TOURNAMENT_COLORS[0]]}
+                              </span>
+                              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                                {tournament.name}
+                              </h3>
+                            </div>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(tournament.status)}`}
+                            >
+                              {getStatusLabel(tournament.status)}
+                            </span>
+                          </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleSelectTournament(tournament.id)}
-                  className={`btn btn-sm flex-1 flex items-center justify-center gap-1 ${
-                    state.tournamentId === tournament.id
-                      ? 'btn-primary'
-                      : 'btn-secondary'
-                  }`}
-                  disabled={isSubmitting}
-                >
-                  {state.tournamentId === tournament.id && <FaCheck className="w-3 h-3" />}
-                  선택
-                </button>
-                <button
-                  onClick={() => handleOpenEditModal(tournament)}
-                  className="btn btn-secondary btn-sm"
-                  disabled={isSubmitting}
-                >
-                  <FaCog className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => handleDeleteClick(tournament.id)}
-                  className="btn btn-danger btn-sm"
-                  disabled={isSubmitting}
-                >
-                  <FaTrash className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSelectTournament(tournament.id)}
+                              className={`btn btn-sm flex-1 flex items-center justify-center gap-1 ${
+                                state.tournamentId === tournament.id
+                                  ? 'btn-primary'
+                                  : 'btn-secondary'
+                              }`}
+                              disabled={isSubmitting}
+                            >
+                              {state.tournamentId === tournament.id && (
+                                <FaCheck className="w-3 h-3" />
+                              )}
+                              선택
+                            </button>
+                            <button
+                              onClick={() => handleOpenEditModal(tournament)}
+                              className="btn btn-secondary btn-sm"
+                              disabled={isSubmitting}
+                            >
+                              <FaCog className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(tournament.id)}
+                              className="btn btn-danger btn-sm"
+                              disabled={isSubmitting}
+                            >
+                              <FaTrash className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -414,7 +424,9 @@ const TournamentsPage: React.FC = () => {
             <label className="block text-sm font-medium mb-1">상태</label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as Tournament['status'] })}
+              onChange={(e) =>
+                setFormData({ ...formData, status: e.target.value as Tournament['status'] })
+              }
               className="input-field w-full"
               disabled={isSubmitting}
             >
@@ -433,7 +445,9 @@ const TournamentsPage: React.FC = () => {
                   onClick={() => setFormData({ ...formData, color })}
                   disabled={isSubmitting}
                   className={`w-12 h-12 rounded-lg border-4 transition-all flex items-center justify-center ${
-                    formData.color === color ? 'border-gray-800 dark:border-gray-200 scale-110' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
+                    formData.color === color
+                      ? 'border-gray-800 dark:border-gray-200 scale-110'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
                   }`}
                   style={{ backgroundColor: color }}
                   title={color}
@@ -454,11 +468,7 @@ const TournamentsPage: React.FC = () => {
             >
               취소
             </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
               {isSubmitting ? '생성 중...' : '생성'}
             </button>
           </div>
@@ -511,7 +521,9 @@ const TournamentsPage: React.FC = () => {
             <label className="block text-sm font-medium mb-1">상태</label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as Tournament['status'] })}
+              onChange={(e) =>
+                setFormData({ ...formData, status: e.target.value as Tournament['status'] })
+              }
               className="input-field w-full"
               disabled={isSubmitting}
             >
@@ -530,7 +542,9 @@ const TournamentsPage: React.FC = () => {
                   onClick={() => setFormData({ ...formData, color })}
                   disabled={isSubmitting}
                   className={`w-12 h-12 rounded-lg border-4 transition-all flex items-center justify-center ${
-                    formData.color === color ? 'border-gray-800 dark:border-gray-200 scale-110' : 'border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
+                    formData.color === color
+                      ? 'border-gray-800 dark:border-gray-200 scale-110'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
                   }`}
                   style={{ backgroundColor: color }}
                   title={color}
@@ -551,11 +565,7 @@ const TournamentsPage: React.FC = () => {
             >
               취소
             </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
               {isSubmitting ? '수정 중...' : '수정'}
             </button>
           </div>

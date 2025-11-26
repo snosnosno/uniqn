@@ -41,21 +41,24 @@ type ActionType =
   | 'tables_assigned_to_tournament'
   | 'action_failed';
 
-
 export const logAction = async (action: ActionType, details: Record<string, any> = {}) => {
   const context: LogContext = {
     operation: 'logAction',
-    additionalData: { action, details }
+    additionalData: { action, details },
   };
 
   try {
     const functions = getFunctions();
     const logActionCallable = httpsCallable(functions, 'logAction');
     await logActionCallable({ action, details });
-    
+
     logger.info(`Action logged successfully: ${action}`, context);
   } catch (error) {
-    logger.error(`Failed to log action: ${action}`, error instanceof Error ? error : new Error(String(error)), context);
+    logger.error(
+      `Failed to log action: ${action}`,
+      error instanceof Error ? error : new Error(String(error)),
+      context
+    );
   }
 };
 
@@ -90,7 +93,7 @@ export const useStructuredLogger = () => {
       context?: Partial<LogContext>
     ) => {
       return logger.withPerformanceTracking(operation, operationName, context);
-    }
+    },
   };
 };
 

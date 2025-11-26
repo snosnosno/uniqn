@@ -1,4 +1,16 @@
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, collection, getDocs, deleteDoc, Timestamp } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  query,
+  where,
+  collection,
+  getDocs,
+  deleteDoc,
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 
@@ -16,10 +28,10 @@ export interface LoginAttempt {
 
 // 보안 설정
 export const SECURITY_CONFIG = {
-  MAX_LOGIN_ATTEMPTS: 5,          // 최대 로그인 시도 횟수
+  MAX_LOGIN_ATTEMPTS: 5, // 최대 로그인 시도 횟수
   LOCKOUT_DURATION: 15 * 60 * 1000, // 15분 (밀리초)
-  SESSION_TIMEOUT: 30 * 60 * 1000,  // 30분 (밀리초)
-  CLEANUP_INTERVAL: 24 * 60 * 60 * 1000 // 24시간 (밀리초)
+  SESSION_TIMEOUT: 30 * 60 * 1000, // 30분 (밀리초)
+  CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24시간 (밀리초)
 } as const;
 
 // IP 주소 가져오기 (브라우저 환경에서는 제한적)
@@ -30,7 +42,7 @@ const getClientIP = async (): Promise<string> => {
     return 'browser-' + Math.random().toString(36).substr(2, 9);
   } catch (error) {
     logger.error('IP 주소 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'AuthSecurity'
+      component: 'AuthSecurity',
     });
     return 'unknown';
   }
@@ -42,10 +54,7 @@ const getUserAgent = (): string => {
 };
 
 // 로그인 시도 기록
-export const recordLoginAttempt = async (
-  email: string,
-  success: boolean
-): Promise<void> => {
+export const recordLoginAttempt = async (email: string, success: boolean): Promise<void> => {
   try {
     const ip = await getClientIP();
     const userAgent = getUserAgent();
@@ -57,7 +66,7 @@ export const recordLoginAttempt = async (
       timestamp: serverTimestamp() as Timestamp,
       success,
       userAgent,
-      attempts: 1
+      attempts: 1,
     };
 
     // IP 기반으로 기존 시도 기록 확인
@@ -72,7 +81,7 @@ export const recordLoginAttempt = async (
         await deleteDoc(attemptsRef);
         logger.info('로그인 성공으로 시도 기록 초기화', {
           component: 'AuthSecurity',
-          data: { ip, email }
+          data: { ip, email },
         });
       } else {
         // 실패 시 시도 횟수 증가
@@ -82,7 +91,7 @@ export const recordLoginAttempt = async (
         const updateData: Partial<LoginAttempt> = {
           attempts: newAttempts,
           timestamp: serverTimestamp() as Timestamp,
-          email
+          email,
         };
 
         if (shouldBlock) {
@@ -95,8 +104,8 @@ export const recordLoginAttempt = async (
               ip,
               email,
               attempts: newAttempts,
-              blockedUntil: blockedUntil.toISOString()
-            }
+              blockedUntil: blockedUntil.toISOString(),
+            },
           });
         }
 
@@ -108,19 +117,25 @@ export const recordLoginAttempt = async (
         await setDoc(attemptsRef, attemptData);
         logger.info('첫 로그인 시도 기록', {
           component: 'AuthSecurity',
-          data: { ip, email, success }
+          data: { ip, email, success },
         });
       }
     }
   } catch (error) {
-    logger.error('로그인 시도 기록 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'AuthSecurity'
-    });
+    logger.error(
+      '로그인 시도 기록 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'AuthSecurity',
+      }
+    );
   }
 };
 
 // 로그인 차단 여부 확인
-export const isLoginBlocked = async (email?: string): Promise<{
+export const isLoginBlocked = async (
+  email?: string
+): Promise<{
   isBlocked: boolean;
   remainingTime?: number;
   attempts?: number;
@@ -150,21 +165,21 @@ export const isLoginBlocked = async (email?: string): Promise<{
             ip,
             email,
             remainingTime: Math.ceil(remainingTime / 1000),
-            attempts: data.attempts
-          }
+            attempts: data.attempts,
+          },
         });
 
         return {
           isBlocked: true,
           remainingTime,
-          attempts: data.attempts
+          attempts: data.attempts,
         };
       } else {
         // 차단 시간 만료, 기록 삭제
         await deleteDoc(attemptsRef);
         logger.info('차단 시간 만료로 기록 삭제', {
           component: 'AuthSecurity',
-          data: { ip, email }
+          data: { ip, email },
         });
         return { isBlocked: false };
       }
@@ -173,13 +188,16 @@ export const isLoginBlocked = async (email?: string): Promise<{
     // 차단되지 않았지만 시도 기록은 있음
     return {
       isBlocked: false,
-      attempts: data.attempts
+      attempts: data.attempts,
     };
-
   } catch (error) {
-    logger.error('로그인 차단 여부 확인 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'AuthSecurity'
-    });
+    logger.error(
+      '로그인 차단 여부 확인 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'AuthSecurity',
+      }
+    );
     // 에러 시 안전하게 차단되지 않은 것으로 처리
     return { isBlocked: false };
   }
@@ -193,12 +211,16 @@ export const clearLoginAttempts = async (ip: string): Promise<void> => {
 
     logger.info('관리자에 의한 로그인 차단 해제', {
       component: 'AuthSecurity',
-      data: { ip }
+      data: { ip },
     });
   } catch (error) {
-    logger.error('로그인 차단 해제 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'AuthSecurity'
-    });
+    logger.error(
+      '로그인 차단 해제 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'AuthSecurity',
+      }
+    );
     throw error;
   }
 };
@@ -207,10 +229,7 @@ export const clearLoginAttempts = async (ip: string): Promise<void> => {
 export const getSuspiciousAttempts = async (): Promise<LoginAttempt[]> => {
   try {
     const attemptsCollection = collection(db, 'loginAttempts');
-    const suspiciousQuery = query(
-      attemptsCollection,
-      where('attempts', '>=', 3)
-    );
+    const suspiciousQuery = query(attemptsCollection, where('attempts', '>=', 3));
 
     const querySnapshot = await getDocs(suspiciousQuery);
     const attempts: LoginAttempt[] = [];
@@ -218,20 +237,24 @@ export const getSuspiciousAttempts = async (): Promise<LoginAttempt[]> => {
     querySnapshot.forEach((doc) => {
       attempts.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       } as LoginAttempt);
     });
 
     logger.info('의심스러운 로그인 시도 조회', {
       component: 'AuthSecurity',
-      data: { count: attempts.length }
+      data: { count: attempts.length },
     });
 
     return attempts;
   } catch (error) {
-    logger.error('의심스러운 로그인 시도 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'AuthSecurity'
-    });
+    logger.error(
+      '의심스러운 로그인 시도 조회 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'AuthSecurity',
+      }
+    );
     return [];
   }
 };
@@ -242,10 +265,7 @@ export const cleanupOldAttempts = async (): Promise<void> => {
     const attemptsCollection = collection(db, 'loginAttempts');
     const cutoffTime = Timestamp.fromMillis(Date.now() - SECURITY_CONFIG.CLEANUP_INTERVAL);
 
-    const oldAttemptsQuery = query(
-      attemptsCollection,
-      where('timestamp', '<', cutoffTime)
-    );
+    const oldAttemptsQuery = query(attemptsCollection, where('timestamp', '<', cutoffTime));
 
     const querySnapshot = await getDocs(oldAttemptsQuery);
     const deletePromises: Promise<void>[] = [];
@@ -258,12 +278,16 @@ export const cleanupOldAttempts = async (): Promise<void> => {
 
     logger.info('오래된 로그인 시도 기록 정리 완료', {
       component: 'AuthSecurity',
-      data: { cleaned: deletePromises.length }
+      data: { cleaned: deletePromises.length },
     });
   } catch (error) {
-    logger.error('오래된 로그인 시도 기록 정리 실패:', error instanceof Error ? error : new Error(String(error)), {
-      component: 'AuthSecurity'
-    });
+    logger.error(
+      '오래된 로그인 시도 기록 정리 실패:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'AuthSecurity',
+      }
+    );
   }
 };
 

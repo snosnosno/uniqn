@@ -5,7 +5,12 @@
  * including QuerySnapshot, DocumentSnapshot, and DocumentReference.
  */
 
-import { DocumentData, QuerySnapshot, DocumentSnapshot, DocumentReference } from 'firebase/firestore';
+import {
+  DocumentData,
+  QuerySnapshot,
+  DocumentSnapshot,
+  DocumentReference,
+} from 'firebase/firestore';
 
 // ========================================
 // 1. Query Snapshot Factory

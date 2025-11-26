@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Timestamp, collection, query, where, type Query, type DocumentData } from 'firebase/firestore';
+import {
+  Timestamp,
+  collection,
+  query,
+  where,
+  type Query,
+  type DocumentData,
+} from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
 import { AttendanceStatus } from '../components/attendance/AttendanceStatusCard';
@@ -36,7 +43,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
   // Optimistic update 함수
   const applyOptimisticUpdate = (workLogId: string, newStatus: AttendanceStatus) => {
-    setLocalUpdates(prev => {
+    setLocalUpdates((prev) => {
       const newMap = new Map(prev);
       newMap.set(workLogId, newStatus);
       return newMap;
@@ -47,10 +54,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   const workLogsQuery = useMemo((): Query<DocumentData> | null => {
     if (!currentEventId) return null;
 
-    let q = query(
-      collection(db, 'workLogs'),
-      where('eventId', '==', currentEventId)
-    );
+    let q = query(collection(db, 'workLogs'), where('eventId', '==', currentEventId));
 
     // 날짜 필터링 (옵션)
     if (date) {
@@ -72,12 +76,12 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       onSuccess: () => {
         logger.debug('출석 기록 실시간 업데이트', {
           component: 'useAttendanceStatus',
-          data: { count: rawWorkLogs.length, eventId: currentEventId }
+          data: { count: rawWorkLogs.length, eventId: currentEventId },
         });
       },
       onError: (err) => {
         logger.error('출석 기록 구독 오류', err, {
-          component: 'useAttendanceStatus'
+          component: 'useAttendanceStatus',
         });
       },
     }
@@ -108,7 +112,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       return records;
     } catch (err) {
       logger.error('출석 상태 계산 오류', err as Error, {
-        component: 'useAttendanceStatus'
+        component: 'useAttendanceStatus',
       });
       return [];
     }
@@ -120,7 +124,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     const currentTime = _now.toTimeString().substring(0, 5); // HH:MM format
 
     let status: AttendanceStatus = 'not_started';
-    
+
     // workLog의 status 필드가 있으면 우선 사용 (수동 출석 상태 변경을 반영)
     if (workLog.status) {
       if (['not_started', 'checked_in', 'checked_out'].includes(workLog.status)) {
@@ -128,9 +132,9 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       }
     } else {
       // status 필드가 없거나 유효하지 않은 경우 실제 출퇴근 시간으로 계산
-      const hasActualStartTime = !!(workLog.actualStartTime);
-      const hasActualEndTime = !!(workLog.actualEndTime);
-      
+      const hasActualStartTime = !!workLog.actualStartTime;
+      const hasActualEndTime = !!workLog.actualEndTime;
+
       if (hasActualStartTime && hasActualEndTime) {
         status = 'checked_out';
       } else if (hasActualStartTime) {
@@ -139,7 +143,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         // 실제 기록이 없는 경우 - 스케줄 기반으로 상태 판단
         const scheduledStart = workLog.scheduledStartTime;
         const scheduledEnd = workLog.scheduledEndTime;
-        
+
         if (scheduledStart && scheduledEnd) {
           if (currentTime < scheduledStart) {
             status = 'not_started';
@@ -150,18 +154,25 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
           }
         }
       }
-      
     }
 
     // formatTime 함수를 사용하여 시간 문자열 변환 (이미 import됨)
-    const formatTimeFromTimestamp = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | Date | string | null | undefined): string | undefined => {
+    const formatTimeFromTimestamp = (
+      timestamp:
+        | Timestamp
+        | { seconds: number; nanoseconds: number }
+        | Date
+        | string
+        | null
+        | undefined
+    ): string | undefined => {
       if (!timestamp) return undefined;
-      
+
       // 문자열인 경우 이미 HH:MM 형식이면 그대로 반환
       if (typeof timestamp === 'string' && timestamp.includes(':') && timestamp.length <= 8) {
         return timestamp.substring(0, 5);
       }
-      
+
       // 통합된 formatTime 함수 사용
       const formatted = formatTime(timestamp, { defaultValue: '' });
       return formatted || undefined;
@@ -173,11 +184,19 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       staffId: staffId || '',
       ...(workLog.id && { workLogId: workLog.id }), // WorkLog ID 추가 (출석상태 드롭다운에서 사용)
       status,
-      ...(formatTimeFromTimestamp(workLog.actualStartTime) && { actualStartTime: formatTimeFromTimestamp(workLog.actualStartTime) }),
-      ...(formatTimeFromTimestamp(workLog.actualEndTime) && { actualEndTime: formatTimeFromTimestamp(workLog.actualEndTime) }),
-      ...(formatTimeFromTimestamp(workLog.scheduledStartTime) && { scheduledStartTime: formatTimeFromTimestamp(workLog.scheduledStartTime) }),
-      ...(formatTimeFromTimestamp(workLog.scheduledEndTime) && { scheduledEndTime: formatTimeFromTimestamp(workLog.scheduledEndTime) }),
-      workLog
+      ...(formatTimeFromTimestamp(workLog.actualStartTime) && {
+        actualStartTime: formatTimeFromTimestamp(workLog.actualStartTime),
+      }),
+      ...(formatTimeFromTimestamp(workLog.actualEndTime) && {
+        actualEndTime: formatTimeFromTimestamp(workLog.actualEndTime),
+      }),
+      ...(formatTimeFromTimestamp(workLog.scheduledStartTime) && {
+        scheduledStartTime: formatTimeFromTimestamp(workLog.scheduledStartTime),
+      }),
+      ...(formatTimeFromTimestamp(workLog.scheduledEndTime) && {
+        scheduledEndTime: formatTimeFromTimestamp(workLog.scheduledEndTime),
+      }),
+      workLog,
     };
   };
 
@@ -185,7 +204,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   // 3초 후 로컬 업데이트 제거 기능 추가
   const _clearOptimisticUpdate = (workLogId: string) => {
     setTimeout(() => {
-      setLocalUpdates(prev => {
+      setLocalUpdates((prev) => {
         const newMap = new Map(prev);
         newMap.delete(workLogId);
         return newMap;
@@ -195,48 +214,46 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
   // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
   const getStaffAttendanceStatus = (staffIdOrWorkLogId: string): AttendanceRecord | undefined => {
-
     // workLogId로 먼저 검색 시도 (virtual_ 접두사 포함)
     if (staffIdOrWorkLogId.includes('virtual_') || staffIdOrWorkLogId.includes('_')) {
       // workLogId로 검색
-      const record = attendanceRecords.find(record => record.workLogId === staffIdOrWorkLogId);
-      
+      const record = attendanceRecords.find((record) => record.workLogId === staffIdOrWorkLogId);
+
       if (record) {
-          return record;
+        return record;
       }
-      
+
       // virtual_ 형식인 경우 실제 workLogId 매칭 시도
       if (staffIdOrWorkLogId.startsWith('virtual_')) {
         // virtual_tURgdOBmtYfO5Bgzm8NyGKGtbL12_2025-07-29 형식 파싱
         const virtualPattern = /^virtual_(.+?)_(\d{4}-\d{2}-\d{2})$/;
         const match = staffIdOrWorkLogId.match(virtualPattern);
-        
+
         if (match) {
           const staffId = match[1];
           const date = match[2];
-          
-              
-          const matchedRecord = attendanceRecords.find(record => {
+
+          const matchedRecord = attendanceRecords.find((record) => {
             const recordStaffId = record.staffId || record.workLog?.staffId;
             const isStaffMatch = recordStaffId === staffId;
             const isDateMatch = record.workLog?.date === date;
             const isMatch = isStaffMatch && isDateMatch;
-            
-                  return isMatch;
+
+            return isMatch;
           });
-          
+
           if (matchedRecord) {
-                  return matchedRecord;
+            return matchedRecord;
           } else {
-                }
+          }
         } else {
-            }
+        }
       }
     }
-    
+
     // staffId로 fallback 검색 (이전 호환성 유지)
     const baseStaffId = staffIdOrWorkLogId.match(/^(.+?)(_\d+)?$/)?.[1] || staffIdOrWorkLogId;
-    
+
     // virtual ID가 포함된 경우 날짜 정보 추출 시도
     let targetDate: string | null = null;
     if (staffIdOrWorkLogId.includes('virtual_')) {
@@ -245,19 +262,18 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
         targetDate = dateMatch[1];
       }
     }
-    
-    const fallbackRecord = attendanceRecords.find(record => {
+
+    const fallbackRecord = attendanceRecords.find((record) => {
       const isStaffMatch = record.staffId === staffIdOrWorkLogId || record.staffId === baseStaffId;
-      
+
       // 날짜 정보가 있으면 날짜도 매칭
       if (targetDate && record.workLog?.date) {
         return isStaffMatch && record.workLog.date === targetDate;
       }
-      
+
       return isStaffMatch;
     });
 
-    
     return fallbackRecord || undefined;
   };
 
@@ -267,10 +283,10 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
       total: attendanceRecords.length,
       notStarted: 0,
       checkedIn: 0,
-      checkedOut: 0
+      checkedOut: 0,
     };
 
-    attendanceRecords.forEach(record => {
+    attendanceRecords.forEach((record) => {
       switch (record.status) {
         case 'not_started':
           stats.notStarted++;
@@ -295,6 +311,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     getAttendanceStats,
     currentDate,
     currentEventId,
-    applyOptimisticUpdate
+    applyOptimisticUpdate,
   };
 };

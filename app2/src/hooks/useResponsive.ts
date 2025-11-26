@@ -25,12 +25,17 @@ const defaultBreakpoints: ResponsiveBreakpoints = {
   md: 768,
   lg: 1024,
   xl: 1280,
-  '2xl': 1536
+  '2xl': 1536,
 };
 
-export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>): ResponsiveState => {
-  const breakpoints = useMemo(() => ({ ...defaultBreakpoints, ...customBreakpoints }), [customBreakpoints]);
-  
+export const useResponsive = (
+  customBreakpoints?: Partial<ResponsiveBreakpoints>
+): ResponsiveState => {
+  const breakpoints = useMemo(
+    () => ({ ...defaultBreakpoints, ...customBreakpoints }),
+    [customBreakpoints]
+  );
+
   const [state, setState] = useState<ResponsiveState>(() => {
     if (typeof window === 'undefined') {
       return {
@@ -42,13 +47,13 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
         isLargeDesktop: false,
         breakpoint: 'lg' as const,
         orientation: 'landscape' as const,
-        isTouch: false
+        isTouch: false,
       };
     }
 
     const width = window.innerWidth;
     const height = window.innerHeight;
-    
+
     return {
       width,
       height,
@@ -58,7 +63,7 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
       isLargeDesktop: width >= breakpoints.xl,
       breakpoint: getBreakpoint(width, breakpoints),
       orientation: height > width ? 'portrait' : 'landscape',
-      isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+      isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
     };
   });
 
@@ -68,7 +73,7 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
     const handleResize = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      
+
       setState({
         width,
         height,
@@ -78,7 +83,7 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
         isLargeDesktop: width >= breakpoints.xl,
         breakpoint: getBreakpoint(width, breakpoints),
         orientation: height > width ? 'portrait' : 'landscape',
-        isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+        isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
       });
     };
 
@@ -91,7 +96,7 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
 
     window.addEventListener('resize', debouncedHandleResize);
     window.addEventListener('orientationchange', handleResize);
-    
+
     return () => {
       window.removeEventListener('resize', debouncedHandleResize);
       window.removeEventListener('orientationchange', handleResize);
@@ -102,7 +107,10 @@ export const useResponsive = (customBreakpoints?: Partial<ResponsiveBreakpoints>
   return state;
 };
 
-function getBreakpoint(width: number, breakpoints: ResponsiveBreakpoints): 'sm' | 'md' | 'lg' | 'xl' | '2xl' {
+function getBreakpoint(
+  width: number,
+  breakpoints: ResponsiveBreakpoints
+): 'sm' | 'md' | 'lg' | 'xl' | '2xl' {
   if (width >= breakpoints['2xl']) return '2xl';
   if (width >= breakpoints.xl) return 'xl';
   if (width >= breakpoints.lg) return 'lg';

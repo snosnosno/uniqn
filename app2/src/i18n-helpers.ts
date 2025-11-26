@@ -11,4 +11,4 @@ export const formatDate = (date: Date, language: string): string => {
     month: 'long',
     day: 'numeric',
   }).format(date);
-}; 
+};

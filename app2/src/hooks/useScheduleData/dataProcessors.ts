@@ -5,7 +5,7 @@ import { ScheduleEvent, AttendanceStatus } from '../../types/schedule';
 import {
   // safeDateToString, // 현재 사용하지 않음
   // parseTimeString, // 현재 사용하지 않음
-  extractDateFromFields
+  extractDateFromFields,
 } from '../../utils/scheduleUtils';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
 import { parseAssignedTime, convertTimeToTimestamp } from '../../utils/workLogUtils';
@@ -17,45 +17,49 @@ import type { Application, WorkLog } from '../../types/unifiedData';
  * 지원서 데이터를 스케줄 이벤트로 처리
  */
 export const processApplicationData = async (
-  docId: string, 
+  docId: string,
   data: ApplicationData | Application
 ): Promise<ScheduleEvent[]> => {
   const events: ScheduleEvent[] = [];
-  
+
   try {
     // 공고 정보 가져오기
     let jobPostingData: JobPostingData | null = null;
-    const jobId = (data as any).eventId || data.postId;  // eventId 우선 사용
+    const jobId = (data as any).eventId || data.postId; // eventId 우선 사용
     if (jobId) {
       try {
         const jobPostingDoc = await getDoc(doc(db, 'jobPostings', jobId));
         if (jobPostingDoc.exists()) {
-          jobPostingData = { 
-            id: jobPostingDoc.id, 
-            ...jobPostingDoc.data() 
+          jobPostingData = {
+            id: jobPostingDoc.id,
+            ...jobPostingDoc.data(),
           } as JobPostingData;
         }
       } catch (error) {
-        logger.error('공고 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), { 
-          component: 'useScheduleData',
-          data: { jobId }
-        });
+        logger.error(
+          '공고 정보 조회 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useScheduleData',
+            data: { jobId },
+          }
+        );
       }
     }
-    
+
     // 기본 날짜 처리
     let baseDate = '';
-    
+
     // assignments에서 첫 번째 날짜가 있으면 우선 사용 (Application 타입인 경우만)
     if ((data as any).assignments?.[0]?.dates?.[0]) {
       baseDate = (data as any).assignments[0].dates[0];
     }
-    
+
     // 공고 날짜 사용 (fallback)
     if (!baseDate && jobPostingData?.startDate) {
       baseDate = timestampToLocalDateString(jobPostingData.startDate);
     }
-    
+
     // 날짜가 여전히 없으면 추가 처리
     if (!baseDate) {
       const fallbackDate = extractDateFromFields(data, ['createdAt', 'updatedAt', 'appliedAt']);
@@ -68,7 +72,7 @@ export const processApplicationData = async (
         }
       }
     }
-    
+
     // assignedTime 파싱 - assignments에서 가져오기 (Application 타입인 경우만)
     let assignedTime = (data as any).assignments?.[0]?.timeSlot || '';
 
@@ -81,7 +85,7 @@ export const processApplicationData = async (
       // 2. dateSpecificRequirements에서 해당 날짜의 시간대 찾기
       else if (jobPostingData.dateSpecificRequirements && baseDate) {
         const dateReq = jobPostingData.dateSpecificRequirements.find(
-          req => req.date === baseDate
+          (req) => req.date === baseDate
         );
         if (dateReq && dateReq.timeSlots && dateReq.timeSlots.length > 0) {
           assignedTime = dateReq.timeSlots[0] || '';
@@ -92,16 +96,16 @@ export const processApplicationData = async (
     const { startTime, endTime } = parseAssignedTime(assignedTime);
     const startTimestamp = startTime ? convertTimeToTimestamp(startTime, baseDate) : null;
     const endTimestamp = endTime ? convertTimeToTimestamp(endTime, baseDate) : null;
-    
+
     // 상태별 type 매핑 (통일된 상태 사용)
     const typeMap: Record<string, ScheduleEvent['type']> = {
-      'applied': 'applied',
-      'confirmed': 'confirmed',
-      'rejected': 'cancelled',
-      'cancelled': 'cancelled',
-      'completed': 'completed'
+      applied: 'applied',
+      confirmed: 'confirmed',
+      rejected: 'cancelled',
+      cancelled: 'cancelled',
+      completed: 'completed',
     };
-    
+
     // 🔥 이벤트 이름과 위치 결정 (스냅샷 우선)
     let eventName = data.postTitle || '제목 없음';
     let location = jobPostingData?.location || '';
@@ -118,7 +122,7 @@ export const processApplicationData = async (
       date: baseDate,
       startTime: startTimestamp,
       endTime: endTimestamp,
-      eventId: (data as any).eventId || data.postId || '',  // eventId 우선 사용, 없으면 postId 사용 (하위 호환성)
+      eventId: (data as any).eventId || data.postId || '', // eventId 우선 사용, 없으면 postId 사용 (하위 호환성)
       eventName: eventName,
       location: location,
       ...(jobPostingData?.detailedAddress && { detailedAddress: jobPostingData.detailedAddress }),
@@ -132,25 +136,29 @@ export const processApplicationData = async (
       // assignedTime 추가 (formatEventTime에서 사용)
       ...(assignedTime && { assignedTime: assignedTime }),
       // 🔥 스냅샷 데이터 포함 (공고 삭제 대비)
-      ...((data as any).snapshotData && { snapshotData: (data as any).snapshotData })
+      ...((data as any).snapshotData && { snapshotData: (data as any).snapshotData }),
     };
-    
+
     // 🚀 dateAssignments 구조 최우선 처리 (날짜 기반 구조 - 최신 버전)
-    if ((data as any).dateAssignments && Array.isArray((data as any).dateAssignments) && (data as any).dateAssignments.length > 0) {
+    if (
+      (data as any).dateAssignments &&
+      Array.isArray((data as any).dateAssignments) &&
+      (data as any).dateAssignments.length > 0
+    ) {
       const dateAssignments = (data as any).dateAssignments;
-      
+
       dateAssignments.forEach((dateAssignment: any, dateIndex: number) => {
         const dateStr = dateAssignment.date;
-        
+
         dateAssignment.selections.forEach((selection: any, selectionIndex: number) => {
           const timeStr = selection.timeSlot || '';
           const { startTime, endTime } = parseAssignedTime(timeStr);
           const startTimestamp = startTime ? convertTimeToTimestamp(startTime, dateStr) : null;
           const endTimestamp = endTime ? convertTimeToTimestamp(endTime, dateStr) : null;
-          
+
           // 고유한 ID 생성: docId_date인덱스_selection인덱스
           const uniqueId = `${docId}_d${dateIndex}_s${selectionIndex}`;
-          
+
           const event: ScheduleEvent & { assignedTime?: string } = {
             ...baseEvent,
             id: uniqueId,
@@ -158,21 +166,24 @@ export const processApplicationData = async (
             startTime: startTimestamp,
             endTime: endTimestamp,
             role: selection.role,
-            assignedTime: timeStr
+            assignedTime: timeStr,
           };
-
 
           events.push(event);
         });
       });
-      
+
       return events;
     }
-    
+
     // 🆕 assignments 구조 차우선 처리 (기존 그룹 중심 구조)
-    if ((data as any).assignments && Array.isArray((data as any).assignments) && (data as any).assignments.length > 0) {
+    if (
+      (data as any).assignments &&
+      Array.isArray((data as any).assignments) &&
+      (data as any).assignments.length > 0
+    ) {
       const assignments = (data as any).assignments;
-      
+
       assignments.forEach((assignment: any, assignmentIndex: number) => {
         if (assignment.dates && Array.isArray(assignment.dates)) {
           assignment.dates.forEach((dateStr: string, _dateIndex: number) => {
@@ -180,10 +191,10 @@ export const processApplicationData = async (
             const { startTime, endTime } = parseAssignedTime(timeStr);
             const startTimestamp = startTime ? convertTimeToTimestamp(startTime, dateStr) : null;
             const endTimestamp = endTime ? convertTimeToTimestamp(endTime, dateStr) : null;
-            
+
             // 고유한 ID 생성: docId_assignment인덱스_날짜
             const uniqueId = `${docId}_a${assignmentIndex}_${dateStr.replace(/-/g, '')}`;
-            
+
             const event: ScheduleEvent & { assignedTime?: string } = {
               ...baseEvent,
               id: uniqueId,
@@ -191,7 +202,7 @@ export const processApplicationData = async (
               role: assignment.role,
               startTime: startTimestamp,
               endTime: endTimestamp,
-              ...(timeStr && { assignedTime: timeStr })
+              ...(timeStr && { assignedTime: timeStr }),
             };
             events.push(event);
           });
@@ -199,9 +210,13 @@ export const processApplicationData = async (
       });
     }
     // 🔧 Fallback: assignments에서 여러 날짜 이벤트 생성 (Application 타입인 경우만)
-    else if ((data as any).assignments && Array.isArray((data as any).assignments) && (data as any).assignments.length > 0) {
+    else if (
+      (data as any).assignments &&
+      Array.isArray((data as any).assignments) &&
+      (data as any).assignments.length > 0
+    ) {
       const convertedDates: string[] = [];
-      
+
       // assignments 배열에서 모든 날짜 추출
       const allDates: string[] = [];
       (data as any).assignments.forEach((assignment: any) => {
@@ -209,10 +224,10 @@ export const processApplicationData = async (
           allDates.push(...assignment.dates);
         }
       });
-      
+
       allDates.forEach((dateItem: any) => {
         let convertedDate = '';
-        
+
         if (typeof dateItem === 'string') {
           // 문자열로 저장된 Timestamp 처리
           if (dateItem.includes('Timestamp(')) {
@@ -234,24 +249,26 @@ export const processApplicationData = async (
             convertedDate = isoString.substring(0, 10);
           }
         }
-        
+
         if (convertedDate) {
           convertedDates.push(convertedDate);
         }
       });
-      
+
       // 여러 날짜가 있으면 각 날짜마다 이벤트 생성
       if (convertedDates.length > 0) {
         convertedDates.forEach((date, _index) => {
-          const assignment = (data as any).assignments.find((a: any) => a.dates && a.dates.includes(date));
+          const assignment = (data as any).assignments.find(
+            (a: any) => a.dates && a.dates.includes(date)
+          );
           const timeStr = assignment?.timeSlot || '';
           const { startTime, endTime } = parseAssignedTime(timeStr);
           const startTimestamp = startTime ? convertTimeToTimestamp(startTime, date) : null;
           const endTimestamp = endTime ? convertTimeToTimestamp(endTime, date) : null;
-          
+
           // 더 고유한 ID 생성: docId_날짜 형식으로 변경
           const uniqueId = `${docId}_${date.replace(/-/g, '')}`;
-          
+
           const event: ScheduleEvent & { assignedTime?: string } = {
             ...baseEvent,
             id: uniqueId,
@@ -260,7 +277,7 @@ export const processApplicationData = async (
             startTime: startTimestamp,
             endTime: endTimestamp,
             // assignedTime 추가 (formatEventTime에서 사용)
-            ...(timeStr && { assignedTime: timeStr })
+            ...(timeStr && { assignedTime: timeStr }),
           };
           events.push(event);
         });
@@ -270,14 +287,17 @@ export const processApplicationData = async (
     } else {
       events.push(baseEvent);
     }
-    
   } catch (error) {
-    logger.error('Application 데이터 처리 중 오류:', error instanceof Error ? error : new Error(String(error)), { 
-      component: 'useScheduleData',
-      data: { docId }
-    });
+    logger.error(
+      'Application 데이터 처리 중 오류:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'useScheduleData',
+        data: { docId },
+      }
+    );
   }
-  
+
   return events;
 };
 
@@ -307,7 +327,7 @@ export const processWorkLogData = async (
       if (jobPostingDoc.exists()) {
         jobPostingData = {
           id: jobPostingDoc.id,
-          ...jobPostingDoc.data()
+          ...jobPostingDoc.data(),
         } as JobPostingData;
 
         // 스냅샷이 없으면 JobPosting에서 생성
@@ -325,81 +345,95 @@ export const processWorkLogData = async (
               type: jobPostingData.salaryType || 'hourly',
               amount: jobPostingData.salaryAmount ? parseFloat(jobPostingData.salaryAmount) : 0,
               useRoleSalary: jobPostingData.useRoleSalary || false,
-              roleSalaries: jobPostingData.roleSalaries || {}
+              roleSalaries: jobPostingData.roleSalaries || {},
             },
             allowances: {
-              meal: jobPostingData.benefits?.mealAllowance ? parseInt(jobPostingData.benefits.mealAllowance) : 0,
-              transportation: typeof jobPostingData.benefits?.transportation === 'string'
-                ? parseInt(jobPostingData.benefits.transportation)
+              meal: jobPostingData.benefits?.mealAllowance
+                ? parseInt(jobPostingData.benefits.mealAllowance)
                 : 0,
-              accommodation: jobPostingData.benefits?.accommodation ? parseInt(jobPostingData.benefits.accommodation) : 0
+              transportation:
+                typeof jobPostingData.benefits?.transportation === 'string'
+                  ? parseInt(jobPostingData.benefits.transportation)
+                  : 0,
+              accommodation: jobPostingData.benefits?.accommodation
+                ? parseInt(jobPostingData.benefits.accommodation)
+                : 0,
             },
             taxSettings: jobPostingData.taxSettings,
-            createdBy: jobPostingData.createdBy
+            createdBy: jobPostingData.createdBy,
           };
         }
       }
     } catch (error) {
-      logger.error('공고 정보 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'processWorkLogData',
-        data: { eventId: data.eventId }
-      });
+      logger.error(
+        '공고 정보 조회 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'processWorkLogData',
+          data: { eventId: data.eventId },
+        }
+      );
     }
   }
-  
+
   // workLogMapper를 통해 정규화된 데이터 사용
   const { normalizeWorkLog } = await import('../../utils/workLogMapper');
   const normalizedLog = normalizeWorkLog(data);
-  
+
   // 예정 시간과 실제 시간 처리 (Timestamp 타입으로 확정)
   const scheduledStart = normalizedLog.scheduledStartTime as Timestamp | null;
   const scheduledEnd = normalizedLog.scheduledEndTime as Timestamp | null;
   const actualStart = normalizedLog.actualStartTime as Timestamp | null;
   const actualEnd = normalizedLog.actualEndTime as Timestamp | null;
-  
+
   // 이미 Timestamp 형태로 정규화되어 있으므로 직접 사용
   const scheduledTimeData = {
     startTime: scheduledStart,
-    endTime: scheduledEnd
+    endTime: scheduledEnd,
   };
-  
+
   const actualTimeData = {
     startTime: actualStart,
-    endTime: actualEnd
+    endTime: actualEnd,
   };
-  
+
   // workLog status 기반 type 설정 (상태 통일)
   const typeMap: Record<string, ScheduleEvent['type']> = {
-    'scheduled': 'confirmed',
-    'in_progress': 'confirmed',
-    'checked_in': 'confirmed', 
-    'checked_out': 'completed', // checked_out과 completed 통일
-    'completed': 'completed',
-    'absent': 'cancelled',
-    'cancelled': 'cancelled'
+    scheduled: 'confirmed',
+    in_progress: 'confirmed',
+    checked_in: 'confirmed',
+    checked_out: 'completed', // checked_out과 completed 통일
+    completed: 'completed',
+    absent: 'cancelled',
+    cancelled: 'cancelled',
   };
-  
+
   // 출퇴근 완료 여부 확인
-  const isCompleted = normalizedLog.status === 'completed' || 
-                     normalizedLog.status === ('checked_out' as any) ||
-                     (normalizedLog.actualStartTime && normalizedLog.actualEndTime);
-  
+  const isCompleted =
+    normalizedLog.status === 'completed' ||
+    normalizedLog.status === ('checked_out' as any) ||
+    (normalizedLog.actualStartTime && normalizedLog.actualEndTime);
+
   // 근무 시간 계산 (분 단위) - 예정 시간 기준으로 변경
   let totalWorkMinutes = 0;
-  
+
   // 예정 시간 기준으로 계산 (스태프탭에서 수정한 시간)
   if (scheduledTimeData.startTime && scheduledTimeData.endTime) {
     // Timestamp 타입 확인 후 toDate() 호출
-    if (scheduledTimeData.startTime && 'toDate' in scheduledTimeData.startTime && 
-        scheduledTimeData.endTime && 'toDate' in scheduledTimeData.endTime) {
+    if (
+      scheduledTimeData.startTime &&
+      'toDate' in scheduledTimeData.startTime &&
+      scheduledTimeData.endTime &&
+      'toDate' in scheduledTimeData.endTime
+    ) {
       const start = scheduledTimeData.startTime.toDate();
       const end = scheduledTimeData.endTime.toDate();
       totalWorkMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
     }
-  } 
+  }
   // QR 기능 활성화 시 실제 시간 사용 - 현재는 주석 처리
   // else if (actualTimeData.startTime && actualTimeData.endTime) {
-  //   if (actualTimeData.startTime && 'toDate' in actualTimeData.startTime && 
+  //   if (actualTimeData.startTime && 'toDate' in actualTimeData.startTime &&
   //       actualTimeData.endTime && 'toDate' in actualTimeData.endTime) {
   //     const start = actualTimeData.startTime.toDate();
   //     const end = actualTimeData.endTime.toDate();
@@ -411,19 +445,23 @@ export const processWorkLogData = async (
   } else if (normalizedLog.hoursWorked) {
     totalWorkMinutes = normalizedLog.hoursWorked * 60;
   }
-  
+
   // 급여 계산 (통합 유틸리티 사용)
   let payrollAmount = 0;
-  
+
   // 통합 급여 계산 유틸리티 사용
   if (totalWorkMinutes > 0 && normalizedLog.role) {
     const { calculateSingleWorkLogPayroll } = await import('../../utils/payrollCalculations');
-    payrollAmount = calculateSingleWorkLogPayroll(normalizedLog, normalizedLog.role, jobPostingData as any);
+    payrollAmount = calculateSingleWorkLogPayroll(
+      normalizedLog,
+      normalizedLog.role,
+      jobPostingData as any
+    );
   }
-  
+
   return {
     id: docId,
-    type: isCompleted ? 'completed' : (typeMap[normalizedLog.status || ''] || 'confirmed'),
+    type: isCompleted ? 'completed' : typeMap[normalizedLog.status || ''] || 'confirmed',
     date: normalizedLog.date,
     startTime: scheduledTimeData.startTime,
     endTime: scheduledTimeData.endTime,
@@ -434,24 +472,26 @@ export const processWorkLogData = async (
     location: location,
     ...(jobPostingData?.detailedAddress && { detailedAddress: jobPostingData.detailedAddress }),
     role: normalizedLog.role || '',
-    status: normalizedLog.status as AttendanceStatus || 'not_started',
+    status: (normalizedLog.status as AttendanceStatus) || 'not_started',
     notes: normalizedLog.notes || '',
     sourceCollection: 'workLogs' as const,
     sourceId: docId,
     workLogId: docId,
     // 급여 계산 정보 추가 (정산 상태 없이)
     ...(totalWorkMinutes > 0 && {
-      payrollAmount: payrollAmount
+      payrollAmount: payrollAmount,
     }),
     // 🔥 스냅샷 데이터 포함 (공고 삭제 대비) - JobPosting에서 생성된 스냅샷 포함
-    ...(snapshotData && { snapshotData })
+    ...(snapshotData && { snapshotData }),
   };
 };
 
 /**
  * 스케줄 통계 계산
  */
-export const calculateStats = (events: ScheduleEvent[]): {
+export const calculateStats = (
+  events: ScheduleEvent[]
+): {
   totalEvents: number;
   pendingCount: number;
   confirmedCount: number;
@@ -467,10 +507,10 @@ export const calculateStats = (events: ScheduleEvent[]): {
     rejectedCount: 0,
     byRole: {} as { [key: string]: number },
     byLocation: {} as { [key: string]: number },
-    byDate: {} as { [key: string]: number }
+    byDate: {} as { [key: string]: number },
   };
-  
-  events.forEach(event => {
+
+  events.forEach((event) => {
     // 상태별 카운트 - applicationStatus 사용
     if (event.applicationStatus === 'applied') {
       stats.pendingCount++;
@@ -482,22 +522,22 @@ export const calculateStats = (events: ScheduleEvent[]): {
       // workLogs 등의 확정된 일정
       stats.confirmedCount++;
     }
-    
+
     // 역할별 카운트
     if (event.role) {
       stats.byRole[event.role] = (stats.byRole[event.role] || 0) + 1;
     }
-    
+
     // 위치별 카운트
     if (event.location) {
       stats.byLocation[event.location] = (stats.byLocation[event.location] || 0) + 1;
     }
-    
+
     // 날짜별 카운트
     if (event.date) {
       stats.byDate[event.date] = (stats.byDate[event.date] || 0) + 1;
     }
   });
-  
+
   return stats;
 };

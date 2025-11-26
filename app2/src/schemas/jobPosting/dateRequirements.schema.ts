@@ -19,7 +19,7 @@ export const roleRequirementSchema = z.object({
   name: z
     .string({
       required_error: '역할 이름을 입력해주세요',
-      invalid_type_error: '역할 이름은 문자열이어야 합니다'
+      invalid_type_error: '역할 이름은 문자열이어야 합니다',
     })
     .min(1, { message: '역할 이름을 입력해주세요' })
     .trim(),
@@ -32,11 +32,11 @@ export const roleRequirementSchema = z.object({
   count: z
     .number({
       required_error: '필요 인원을 입력해주세요',
-      invalid_type_error: '필요 인원은 숫자여야 합니다'
+      invalid_type_error: '필요 인원은 숫자여야 합니다',
     })
     .int({ message: '필요 인원은 정수여야 합니다' })
     .min(1, { message: '최소 1명 이상 필요합니다' })
-    .max(100, { message: '최대 100명까지 가능합니다' })
+    .max(100, { message: '최대 100명까지 가능합니다' }),
 });
 
 /**
@@ -49,7 +49,7 @@ export const timeSlotSchema = z.object({
   time: z
     .string({
       required_error: '시작 시간을 입력해주세요',
-      invalid_type_error: '시작 시간은 문자열이어야 합니다'
+      invalid_type_error: '시작 시간은 문자열이어야 합니다',
     })
     .trim()
     .refine(
@@ -68,7 +68,7 @@ export const timeSlotSchema = z.object({
   roles: z
     .array(roleRequirementSchema, {
       required_error: '역할별 인원을 입력해주세요',
-      invalid_type_error: '역할은 배열이어야 합니다'
+      invalid_type_error: '역할은 배열이어야 합니다',
     })
     .min(1, { message: '최소 1개 이상의 역할을 추가해주세요' }),
 
@@ -84,9 +84,7 @@ export const timeSlotSchema = z.object({
   /**
    * 시간 미정 여부 (선택)
    */
-  isTimeToBeAnnounced: z
-    .boolean()
-    .optional(),
+  isTimeToBeAnnounced: z.boolean().optional(),
 
   /**
    * 미정 시 추가 설명 (선택)
@@ -102,7 +100,9 @@ export const timeSlotSchema = z.object({
    */
   endTime: z
     .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: '종료 시간은 HH:mm 형식이어야 합니다 (예: 18:00)' })
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+      message: '종료 시간은 HH:mm 형식이어야 합니다 (예: 18:00)',
+    })
     .trim()
     .optional(),
 
@@ -118,16 +118,12 @@ export const timeSlotSchema = z.object({
   /**
    * 당일 전체 운영 여부 (선택)
    */
-  isFullDay: z
-    .boolean()
-    .optional(),
+  isFullDay: z.boolean().optional(),
 
   /**
    * 다음날 종료 여부 (선택)
    */
-  endsNextDay: z
-    .boolean()
-    .optional(),
+  endsNextDay: z.boolean().optional(),
 
   /**
    * 기간 설정 (선택)
@@ -139,9 +135,9 @@ export const timeSlotSchema = z.object({
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/, { message: '종료 날짜는 yyyy-MM-dd 형식이어야 합니다' })
         .trim()
-        .optional()
+        .optional(),
     })
-    .optional()
+    .optional(),
 });
 
 /**
@@ -153,7 +149,7 @@ export const dateSpecificRequirementSchema = z.object({
    */
   date: z.union([
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: '날짜는 yyyy-MM-dd 형식이어야 합니다' }),
-    z.object({ seconds: z.number() }) // Firebase Timestamp 지원
+    z.object({ seconds: z.number() }), // Firebase Timestamp 지원
   ]),
 
   /**
@@ -163,24 +159,19 @@ export const dateSpecificRequirementSchema = z.object({
   timeSlots: z
     .array(timeSlotSchema, {
       required_error: '시간대를 추가해주세요',
-      invalid_type_error: '시간대는 배열이어야 합니다'
+      invalid_type_error: '시간대는 배열이어야 합니다',
     })
     .min(1, { message: '최소 1개 이상의 시간대를 추가해주세요' }),
 
   /**
    * 메인 행사 날짜 여부 (선택)
    */
-  isMainDate: z
-    .boolean()
-    .optional(),
+  isMainDate: z.boolean().optional(),
 
   /**
    * 표시 순서 (선택)
    */
-  displayOrder: z
-    .number()
-    .int()
-    .optional()
+  displayOrder: z.number().int().optional(),
 });
 
 /**
@@ -195,10 +186,10 @@ export const dateRequirementsSchema = z.object({
   dateSpecificRequirements: z
     .array(dateSpecificRequirementSchema, {
       required_error: '최소 1개 이상의 날짜를 추가해주세요',
-      invalid_type_error: '날짜별 요구사항은 배열이어야 합니다'
+      invalid_type_error: '날짜별 요구사항은 배열이어야 합니다',
     })
     .min(1, { message: '최소 1개 이상의 날짜를 추가해주세요' })
-    .max(50, { message: '최대 50개까지 추가 가능합니다' })
+    .max(50, { message: '최대 50개까지 추가 가능합니다' }),
 });
 
 /**

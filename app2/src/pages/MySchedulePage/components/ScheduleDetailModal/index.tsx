@@ -35,7 +35,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   schedule,
   onCheckOut,
   onCancel,
-  onDelete: _onDelete
+  onDelete: _onDelete,
 }) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'work' | 'calculation'>('basic');
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
@@ -63,8 +63,8 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           hasSnapshotData: !!schedule.snapshotData,
           snapshotLocation: schedule.snapshotData?.location,
           scheduleLocation: schedule.location,
-          snapshotDataKeys: schedule.snapshotData ? Object.keys(schedule.snapshotData) : []
-        }
+          snapshotDataKeys: schedule.snapshotData ? Object.keys(schedule.snapshotData) : [],
+        },
       });
 
       setLoadingJobPosting(true);
@@ -73,7 +73,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         if (jobPostingDoc.exists()) {
           const jobPostingData = {
             id: jobPostingDoc.id,
-            ...jobPostingDoc.data()
+            ...jobPostingDoc.data(),
           } as JobPosting;
           setJobPosting(jobPostingData);
         } else {
@@ -82,15 +82,19 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             component: 'ScheduleDetailModal',
             data: {
               eventId: schedule.eventId,
-              hasSnapshot: !!schedule.snapshotData
-            }
+              hasSnapshot: !!schedule.snapshotData,
+            },
           });
         }
       } catch (error) {
-        logger.error('ScheduleDetailModal - JobPosting 조회 실패:', error instanceof Error ? error : new Error(String(error)), {
-          component: 'ScheduleDetailModal',
-          data: { eventId: schedule.eventId }
-        });
+        logger.error(
+          'ScheduleDetailModal - JobPosting 조회 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'ScheduleDetailModal',
+            data: { eventId: schedule.eventId },
+          }
+        );
         setJobPosting(null);
       } finally {
         setLoadingJobPosting(false);
@@ -117,18 +121,22 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     const unsubscribe = onSnapshot(
       workLogsQuery,
       (snapshot) => {
-        const workLogsData = snapshot.docs.map(doc => ({
+        const workLogsData = snapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as UnifiedWorkLog[];
 
         setRealTimeWorkLogs(workLogsData);
       },
       (error) => {
-        logger.error('ScheduleDetailModal - WorkLog 구독 오류:', error instanceof Error ? error : new Error(String(error)), {
-          component: 'ScheduleDetailModal',
-          data: { eventId: schedule.eventId }
-        });
+        logger.error(
+          'ScheduleDetailModal - WorkLog 구독 오류:',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'ScheduleDetailModal',
+            data: { eventId: schedule.eventId },
+          }
+        );
       }
     );
 
@@ -148,7 +156,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
     setReportTarget({
       id: createdBy,
-      name: '구인자'
+      name: '구인자',
     });
     setIsReportModalOpen(true);
   }, [schedule, jobPosting]);
@@ -166,30 +174,30 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
     // 1. workLogId로 직접 찾기
     if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
-      targetWorkLog = realTimeWorkLogs.find(log => log.id === schedule.workLogId);
+      targetWorkLog = realTimeWorkLogs.find((log) => log.id === schedule.workLogId);
     }
 
     // 2. sourceId로 찾기
     if (!targetWorkLog && schedule.sourceCollection === 'workLogs' && schedule.sourceId) {
-      targetWorkLog = realTimeWorkLogs.find(log => log.id === schedule.sourceId);
+      targetWorkLog = realTimeWorkLogs.find((log) => log.id === schedule.sourceId);
     }
 
     // 3. WorkLog ID 패턴 매칭
     if (!targetWorkLog) {
-      targetWorkLog = realTimeWorkLogs.find(log =>
-        log.id.startsWith(schedule.id) &&
-        log.date === schedule.date &&
-        log.type === 'schedule'
+      targetWorkLog = realTimeWorkLogs.find(
+        (log) =>
+          log.id.startsWith(schedule.id) && log.date === schedule.date && log.type === 'schedule'
       );
     }
 
     // 4. eventId + date로 찾기
     if (!targetWorkLog) {
-      targetWorkLog = realTimeWorkLogs.find(log =>
-        log.eventId === schedule.eventId &&
-        log.date === schedule.date &&
-        log.type === 'schedule' &&
-        (log.role === schedule.role || (!log.role && !schedule.role))
+      targetWorkLog = realTimeWorkLogs.find(
+        (log) =>
+          log.eventId === schedule.eventId &&
+          log.date === schedule.date &&
+          log.type === 'schedule' &&
+          (log.role === schedule.role || (!log.role && !schedule.role))
       );
     }
 
@@ -198,14 +206,15 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
   // 통합 급여 계산 유틸리티 사용
   const getSalaryInfo = useCallback(async () => {
-    if (!schedule) return {
-      salaryType: 'hourly' as const,
-      baseSalary: 10000,
-      totalHours: 0,
-      totalDays: 1,
-      basePay: 0,
-      allowances: { meal: 0, transportation: 0, accommodation: 0, bonus: 0, other: 0 }
-    };
+    if (!schedule)
+      return {
+        salaryType: 'hourly' as const,
+        baseSalary: 10000,
+        totalHours: 0,
+        totalDays: 1,
+        basePay: 0,
+        allowances: { meal: 0, transportation: 0, accommodation: 0, bonus: 0, other: 0 },
+      };
 
     // WorkLog 우선순위
     const targetWorkLog = getTargetWorkLog();
@@ -220,36 +229,46 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       scheduledEndTime: effectiveEndTime,
       date: schedule.date,
       role: effectiveRole,
-      eventId: schedule.eventId
+      eventId: schedule.eventId,
     };
 
-    const { calculateSingleWorkLogPayroll, calculateWorkHours } = await import('../../../../utils/payrollCalculations');
+    const { calculateSingleWorkLogPayroll, calculateWorkHours } = await import(
+      '../../../../utils/payrollCalculations'
+    );
 
     // 근무시간 계산
     const totalHours = calculateWorkHours(workLogData as any);
 
     // 스냅샷 우선: jobPosting이 없으면 스냅샷으로 가상 JobPosting 생성
-    const effectiveJobPosting = jobPosting || (schedule.snapshotData ? {
-      id: schedule.eventId,
-      title: schedule.snapshotData.title || '근무',
-      location: schedule.snapshotData.location,
-      detailedAddress: schedule.snapshotData.detailedAddress,
-      district: schedule.snapshotData.district,
-      salaryType: schedule.snapshotData.salary.type,
-      salaryAmount: String(schedule.snapshotData.salary.amount),
-      useRoleSalary: schedule.snapshotData.salary.useRoleSalary,
-      roleSalaries: schedule.snapshotData.salary.roleSalaries,
-      benefits: {
-        mealAllowance: schedule.snapshotData.allowances?.meal || 0,
-        transportation: schedule.snapshotData.allowances?.transportation || 0,
-        accommodation: schedule.snapshotData.allowances?.accommodation || 0
-      },
-      taxSettings: schedule.snapshotData.taxSettings,
-      createdBy: schedule.snapshotData.createdBy
-    } as any : null);
+    const effectiveJobPosting =
+      jobPosting ||
+      (schedule.snapshotData
+        ? ({
+            id: schedule.eventId,
+            title: schedule.snapshotData.title || '근무',
+            location: schedule.snapshotData.location,
+            detailedAddress: schedule.snapshotData.detailedAddress,
+            district: schedule.snapshotData.district,
+            salaryType: schedule.snapshotData.salary.type,
+            salaryAmount: String(schedule.snapshotData.salary.amount),
+            useRoleSalary: schedule.snapshotData.salary.useRoleSalary,
+            roleSalaries: schedule.snapshotData.salary.roleSalaries,
+            benefits: {
+              mealAllowance: schedule.snapshotData.allowances?.meal || 0,
+              transportation: schedule.snapshotData.allowances?.transportation || 0,
+              accommodation: schedule.snapshotData.allowances?.accommodation || 0,
+            },
+            taxSettings: schedule.snapshotData.taxSettings,
+            createdBy: schedule.snapshotData.createdBy,
+          } as any)
+        : null);
 
     // 급여 계산
-    const totalPay = calculateSingleWorkLogPayroll(workLogData as any, effectiveRole || 'staff', effectiveJobPosting);
+    const totalPay = calculateSingleWorkLogPayroll(
+      workLogData as any,
+      effectiveRole || 'staff',
+      effectiveJobPosting
+    );
 
     // 급여 정보 추출
     const { getRoleSalaryInfo } = await import('../../../../utils/payrollCalculations');
@@ -261,11 +280,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     );
 
     // 수당 계산
-    const allowances = calculateAllowances(
-      effectiveJobPosting,
-      1,
-      schedule.snapshotData
-    );
+    const allowances = calculateAllowances(effectiveJobPosting, 1, schedule.snapshotData);
 
     // 세금 계산
     const totalAmount = totalPay;
@@ -295,7 +310,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       allowances,
       ...(tax > 0 && { tax }),
       ...(taxRate !== undefined && { taxRate }),
-      ...(tax > 0 && { afterTaxAmount })
+      ...(tax > 0 && { afterTaxAmount }),
     };
   }, [schedule, jobPosting, realTimeWorkLogs]);
 
@@ -306,7 +321,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     totalHours: 0,
     totalDays: 1,
     basePay: 0,
-    allowances: { meal: 0, transportation: 0, accommodation: 0, bonus: 0, other: 0 }
+    allowances: { meal: 0, transportation: 0, accommodation: 0, bonus: 0, other: 0 },
   });
 
   // 급여 정보 업데이트
@@ -347,16 +362,24 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       try {
         workHoursValue = calculateWorkHours(log as any);
       } catch (error) {
-        logger.error('근무 시간 계산 오류:', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          '근무 시간 계산 오류:',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
 
-      return [{
-        label: dateStr,
-        value: workHoursValue.toFixed(1),
-        type: 'info'
-      }];
+      return [
+        {
+          label: dateStr,
+          value: workHoursValue.toFixed(1),
+          type: 'info',
+        },
+      ];
     } catch (error) {
-      logger.error('근무 내역 파싱 오류:', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        '근무 내역 파싱 오류:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return [];
     }
   }, [schedule, getTargetWorkLog]);
@@ -370,7 +393,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   const tabs = [
     { id: 'basic' as const, name: '정보', icon: '👤' },
     { id: 'work' as const, name: '근무', icon: '🕐' },
-    { id: 'calculation' as const, name: '급여', icon: '💰' }
+    { id: 'calculation' as const, name: '급여', icon: '💰' },
   ];
 
   return (
@@ -385,9 +408,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                일정 상세
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">일정 상세</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">{schedule?.role}</p>
             </div>
           </div>
@@ -420,11 +441,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         {/* 탭 콘텐츠 */}
         <div className="mt-6 min-h-96">
           {activeTab === 'basic' && (
-            <BasicInfoTab
-              schedule={schedule}
-              jobPosting={jobPosting}
-              isReadOnly={true}
-            />
+            <BasicInfoTab schedule={schedule} jobPosting={jobPosting} isReadOnly={true} />
           )}
 
           {activeTab === 'work' && (
@@ -437,10 +454,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           )}
 
           {activeTab === 'calculation' && (
-            <CalculationTab
-              salaryInfo={salaryInfo}
-              workHistory={workHistory}
-            />
+            <CalculationTab salaryInfo={salaryInfo} workHistory={workHistory} />
           )}
         </div>
 
@@ -475,7 +489,12 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               title="구인자 신고하기"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
               신고
             </button>
@@ -497,7 +516,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
           event={{
             id: schedule?.eventId || '',
             title: jobPosting?.title || schedule?.eventName || '',
-            date: schedule?.date || getTodayString()
+            date: schedule?.date || getTodayString(),
           }}
           reporterType="employee"
         />

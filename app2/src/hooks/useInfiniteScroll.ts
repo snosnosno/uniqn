@@ -17,14 +17,14 @@ export const useInfiniteScroll = ({
   isFetchingNextPage,
   fetchNextPage,
   rootMargin = '100px',
-  threshold = 0.1
+  threshold = 0.1,
 }: UseInfiniteScrollProps) => {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const handleIntersection = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
-      
+
       // Trigger fetch when element is visible and conditions are met
       if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
         fetchNextPage();
@@ -39,7 +39,7 @@ export const useInfiniteScroll = ({
 
     const observer = new IntersectionObserver(handleIntersection, {
       rootMargin,
-      threshold
+      threshold,
     });
 
     observer.observe(element);
@@ -50,6 +50,6 @@ export const useInfiniteScroll = ({
   }, [handleIntersection, rootMargin, threshold]);
 
   return {
-    loadMoreRef
+    loadMoreRef,
   };
 };

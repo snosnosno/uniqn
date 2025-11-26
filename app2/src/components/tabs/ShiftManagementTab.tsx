@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaCalendarAlt, FaClock, FaUsers, FaTable, FaPlus, FaCog } from '../Icons/ReactIconsReplacement';
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaUsers,
+  FaTable,
+  FaPlus,
+  FaCog,
+} from '../Icons/ReactIconsReplacement';
 import { toISODateString } from '../../utils/dateUtils';
 import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
 
@@ -11,10 +18,10 @@ interface ShiftManagementTabProps {
 const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
   const { staff, loading: contextLoading } = useJobPostingContext();
-  
+
   const [loading] = useState(false);
   const [error] = useState<string | null>(null);
-  
+
   // 현재 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
@@ -26,7 +33,9 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
     return (
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
-          <div className="text-lg text-gray-500 dark:text-gray-400 dark:text-gray-500">공고 정보를 불러올 수 없습니다.</div>
+          <div className="text-lg text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            공고 정보를 불러올 수 없습니다.
+          </div>
         </div>
       </div>
     );
@@ -57,9 +66,11 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
         </div>
       </div>
 
-      {error ? <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
+      {error ? (
+        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
           <p className="text-red-600">{error}</p>
-        </div> : null}
+        </div>
+      ) : null}
 
       {/* 날짜 선택 및 컨트롤 바 */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
@@ -79,27 +90,18 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           {/* 컨트롤 버튼들 */}
           <div className="flex items-center gap-2">
-            <button 
-              className="btn btn-outline btn-sm flex items-center gap-2"
-              disabled
-            >
+            <button className="btn btn-outline btn-sm flex items-center gap-2" disabled>
               <FaClock className="w-4 h-4" />
               {t('shiftSchedule.generateWorkLogs', '근무기록 생성')}
             </button>
-            <button 
-              className="btn btn-outline btn-sm flex items-center gap-2"
-              disabled
-            >
+            <button className="btn btn-outline btn-sm flex items-center gap-2" disabled>
               <FaCog className="w-4 h-4" />
               {t('shiftSchedule.settings', '설정')}
             </button>
-            <button 
-              className="btn btn-primary btn-sm flex items-center gap-2"
-              disabled
-            >
+            <button className="btn btn-primary btn-sm flex items-center gap-2" disabled>
               <FaPlus className="w-4 h-4" />
               {t('shiftSchedule.createSchedule', '스케줄 생성')}
             </button>
@@ -109,12 +111,11 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
       {/* 메인 콘텐츠 영역 */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-
         {/* 교대관리 메인 영역 (3/4) */}
         <div className="xl:col-span-3">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
-              <FaTable className="w-5 h-5 mr-2"/>
+              <FaTable className="w-5 h-5 mr-2" />
               교대관리
             </h4>
 
@@ -138,29 +139,38 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
         {/* 사이드바 - 스태프 목록 및 정보 (1/4) */}
         <div className="space-y-6">
-
           {/* 할당된 스태프 */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
-              <FaUsers className="w-5 h-5 mr-2"/>
+              <FaUsers className="w-5 h-5 mr-2" />
               할당된 스태프 ({staff.length})
             </h4>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {staff.length > 0 ? staff.map((staffMember: any) => (
-                <div key={staffMember.id} className="flex items-center bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg shadow-sm dark:shadow-blue-900/50">
-                  <div className="w-8 h-8 bg-blue-300 dark:bg-blue-600 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-100">
-                      {staffMember.name?.charAt(0) || 'S'}
-                    </span>
+              {staff.length > 0 ? (
+                staff.map((staffMember: any) => (
+                  <div
+                    key={staffMember.id}
+                    className="flex items-center bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg shadow-sm dark:shadow-blue-900/50"
+                  >
+                    <div className="w-8 h-8 bg-blue-300 dark:bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-sm font-semibold text-blue-700 dark:text-blue-100">
+                        {staffMember.name?.charAt(0) || 'S'}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {staffMember.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                        {(staffMember as any).assignedRole || staffMember.role} |{' '}
+                        {(staffMember as any).assignedTime ||
+                          staffMember.assignedTime ||
+                          '시간 미정'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">{staffMember.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                      {(staffMember as any).assignedRole || staffMember.role} | {(staffMember as any).assignedTime || staffMember.assignedTime || '시간 미정'}
-                    </p>
-                  </div>
-                </div>
-              )) : (
+                ))
+              ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   할당된 스태프가 없습니다.
                 </p>
@@ -171,7 +181,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 시간대 정보 */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/50">
             <h4 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
-              <FaClock className="w-5 h-5 mr-2"/>
+              <FaClock className="w-5 h-5 mr-2" />
               시간대 정보 ({selectedDate})
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -190,7 +200,10 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
                 if (dateReq && dateReq.timeSlots?.length > 0) {
                   return dateReq.timeSlots.map((timeSlot: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                    >
                       <span className="font-medium text-gray-700 dark:text-gray-300">
                         {timeSlot.time}
                       </span>
@@ -213,13 +226,15 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           {/* 교대 상태 */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/50">
             <h4 className="text-xl font-semibold mb-4 text-green-600 dark:text-green-400 flex items-center">
-              <FaTable className="w-5 h-5 mr-2"/>
+              <FaTable className="w-5 h-5 mr-2" />
               교대 상태
             </h4>
             <div className="text-center py-8">
               <div className="text-gray-400 dark:text-gray-500 text-4xl mb-3">🔄</div>
               <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                교대 상태 추적 기능이<br/>향후 추가될 예정입니다.
+                교대 상태 추적 기능이
+                <br />
+                향후 추가될 예정입니다.
               </p>
             </div>
           </div>
@@ -228,7 +243,9 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
       {/* 교대관리 기능 소개 */}
       <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-        <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">예정된 교대관리 기능</h4>
+        <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+          예정된 교대관리 기능
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">🔄 교대 일정</h5>

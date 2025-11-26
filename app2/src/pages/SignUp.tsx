@@ -74,9 +74,13 @@ const SignUp: React.FC = () => {
     if (value.length === 0) {
       setNicknameError('');
     } else if (value.length < 2) {
-      setNicknameError(t('signUp.validation.nicknameTooShort', '닉네임은 최소 2자 이상이어야 합니다.'));
+      setNicknameError(
+        t('signUp.validation.nicknameTooShort', '닉네임은 최소 2자 이상이어야 합니다.')
+      );
     } else if (value.length > 15) {
-      setNicknameError(t('signUp.validation.nicknameTooLong', '닉네임은 최대 15자까지 입력 가능합니다.'));
+      setNicknameError(
+        t('signUp.validation.nicknameTooLong', '닉네임은 최대 15자까지 입력 가능합니다.')
+      );
     } else {
       setNicknameError('');
     }
@@ -102,7 +106,10 @@ const SignUp: React.FC = () => {
     if (value.length > 0) {
       const validation = validateEmailRealtime(value);
       if (!validation.isValid) {
-        setEmailError(validation.errors?.[0] || t('signUp.validation.invalidEmail', '올바른 이메일 형식이 아닙니다.'));
+        setEmailError(
+          validation.errors?.[0] ||
+            t('signUp.validation.invalidEmail', '올바른 이메일 형식이 아닙니다.')
+        );
       } else {
         setEmailError('');
       }
@@ -128,7 +135,9 @@ const SignUp: React.FC = () => {
 
     // 비밀번호 확인 필드가 있으면 재검증
     if (confirmPassword.length > 0 && value !== confirmPassword) {
-      setConfirmPasswordError(t('signUp.validation.passwordMismatch', '비밀번호가 일치하지 않습니다.'));
+      setConfirmPasswordError(
+        t('signUp.validation.passwordMismatch', '비밀번호가 일치하지 않습니다.')
+      );
     } else if (confirmPassword.length > 0) {
       setConfirmPasswordError('');
     }
@@ -139,7 +148,9 @@ const SignUp: React.FC = () => {
     setConfirmPassword(value);
 
     if (value.length > 0 && value !== password) {
-      setConfirmPasswordError(t('signUp.validation.passwordMismatch', '비밀번호가 일치하지 않습니다.'));
+      setConfirmPasswordError(
+        t('signUp.validation.passwordMismatch', '비밀번호가 일치하지 않습니다.')
+      );
     } else {
       setConfirmPasswordError('');
     }
@@ -228,42 +239,56 @@ const SignUp: React.FC = () => {
 
         logger.info('이메일 인증 발송 성공', {
           component: 'SignUp',
-          data: { email }
+          data: { email },
         });
 
         // 로그아웃 (이메일 인증 완료 후 다시 로그인하도록)
         await auth.signOut();
       } catch (emailError) {
-        logger.error('이메일 인증 발송 실패', emailError instanceof Error ? emailError : new Error(String(emailError)), {
-          component: 'SignUp',
-          data: { email }
-        });
+        logger.error(
+          '이메일 인증 발송 실패',
+          emailError instanceof Error ? emailError : new Error(String(emailError)),
+          {
+            component: 'SignUp',
+            data: { email },
+          }
+        );
         // 이메일 발송 실패해도 회원가입은 성공했으므로 계속 진행
       }
 
       // 회원가입 성공 메시지
       setModalInfo({
         title: t('signUp.title'),
-        message: t('signUp.successMessage', '회원가입이 완료되었습니다.') + '\n\n' +
-                 t('signUp.emailVerificationNote', '가입한 이메일로 인증 메일이 발송됩니다.') + '\n\n' +
-                 t('signUp.emailVerificationInstruction', '이메일을 확인하여 인증을 완료한 후 로그인해주세요.'),
+        message:
+          t('signUp.successMessage', '회원가입이 완료되었습니다.') +
+          '\n\n' +
+          t('signUp.emailVerificationNote', '가입한 이메일로 인증 메일이 발송됩니다.') +
+          '\n\n' +
+          t(
+            'signUp.emailVerificationInstruction',
+            '이메일을 확인하여 인증을 완료한 후 로그인해주세요.'
+          ),
         isOpen: true,
       });
 
       logger.info('회원가입 성공', {
         component: 'SignUp',
-        data: { email, role }
+        data: { email, role },
       });
-
     } catch (err: unknown) {
-      logger.error('Registration request failed:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });
+      logger.error(
+        'Registration request failed:',
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'SignUp' }
+      );
 
       // TypeScript 타입 안전성 확보
       if (err instanceof FirebaseError) {
         if (err.code === 'functions/already-exists') {
           setError(t('signUp.emailInUseError'));
         } else if (err.code === 'functions/invalid-argument') {
-          const originalCode = (err as { details?: { originalCode?: string } }).details?.originalCode;
+          const originalCode = (err as { details?: { originalCode?: string } }).details
+            ?.originalCode;
           if (originalCode === 'auth/invalid-email') {
             setError(t('signUp.invalidEmailError'));
           } else if (originalCode === 'auth/weak-password') {
@@ -308,7 +333,7 @@ const SignUp: React.FC = () => {
 
       logger.info('Google 로그인 성공', {
         component: 'SignUp',
-        data: { email: user.email }
+        data: { email: user.email },
       });
 
       // 동의 여부 확인
@@ -320,7 +345,7 @@ const SignUp: React.FC = () => {
         // 동의 내역이 없으면 약관 동의 페이지로 이동
         logger.info('동의 내역 없음, 약관 동의 페이지로 이동', {
           component: 'SignUp',
-          data: { userId: user.uid }
+          data: { userId: user.uid },
         });
         navigate('/consent', { state: { from: '/app' } });
       } else {
@@ -329,7 +354,9 @@ const SignUp: React.FC = () => {
       }
     } catch (err: unknown) {
       setError(t('googleSignIn.error'));
-      logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'SignUp' });
+      logger.error('Google Sign-In Error:', err instanceof Error ? err : new Error(String(err)), {
+        component: 'SignUp',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -354,7 +381,9 @@ const SignUp: React.FC = () => {
               required
             />
             {nameError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{nameError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {nameError}
+              </p>
             )}
           </div>
 
@@ -368,7 +397,9 @@ const SignUp: React.FC = () => {
               maxLength={15}
             />
             {nicknameError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{nicknameError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {nicknameError}
+              </p>
             )}
           </div>
 
@@ -384,17 +415,51 @@ const SignUp: React.FC = () => {
               required
             />
             {phoneError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{phoneError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {phoneError}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('signUp.genderLabel', '성별')}</label>
-            <div className="flex items-center mt-2" role="radiogroup" aria-label={t('signUp.genderLabel', '성별')}>
-                <input type="radio" id="male" name="gender" value="male" checked={gender === 'male'} onChange={() => setGender('male')} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700" required aria-label={t('signUp.genderMale', '남성')}/>
-                <label htmlFor="male" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">{t('signUp.genderMale', '남성')}</label>
-                <input type="radio" id="female" name="gender" value="female" checked={gender === 'female'} onChange={() => setGender('female')} className="ml-4 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700" aria-label={t('signUp.genderFemale', '여성')}/>
-                <label htmlFor="female" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">{t('signUp.genderFemale', '여성')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('signUp.genderLabel', '성별')}
+            </label>
+            <div
+              className="flex items-center mt-2"
+              role="radiogroup"
+              aria-label={t('signUp.genderLabel', '성별')}
+            >
+              <input
+                type="radio"
+                id="male"
+                name="gender"
+                value="male"
+                checked={gender === 'male'}
+                onChange={() => setGender('male')}
+                className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                required
+                aria-label={t('signUp.genderMale', '남성')}
+              />
+              <label htmlFor="male" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
+                {t('signUp.genderMale', '남성')}
+              </label>
+              <input
+                type="radio"
+                id="female"
+                name="gender"
+                value="female"
+                checked={gender === 'female'}
+                onChange={() => setGender('female')}
+                className="ml-4 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                aria-label={t('signUp.genderFemale', '여성')}
+              />
+              <label
+                htmlFor="female"
+                className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
+              >
+                {t('signUp.genderFemale', '여성')}
+              </label>
             </div>
           </div>
 
@@ -409,7 +474,9 @@ const SignUp: React.FC = () => {
               required
             />
             {emailError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{emailError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {emailError}
+              </p>
             )}
           </div>
 
@@ -424,7 +491,9 @@ const SignUp: React.FC = () => {
               required
             />
             {passwordError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{passwordError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {passwordError}
+              </p>
             )}
             {/* 비밀번호 강도 표시 */}
             {password && (
@@ -445,19 +514,22 @@ const SignUp: React.FC = () => {
               required
             />
             {confirmPasswordError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{confirmPasswordError}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {confirmPasswordError}
+              </p>
             )}
           </div>
 
           {/* 동의 관리 */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <ConsentManager
-              isSignupMode={true}
-              onChange={setConsents}
-            />
+            <ConsentManager isSignupMode={true} onChange={setConsents} />
           </div>
 
-          {error ? <p className="text-red-500 dark:text-red-400 text-sm text-center" role="alert">{error}</p> : null}
+          {error ? (
+            <p className="text-red-500 dark:text-red-400 text-sm text-center" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <button
             type="submit"
@@ -481,7 +553,9 @@ const SignUp: React.FC = () => {
               <div className="w-full border-t border-gray-300 dark:border-gray-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">{t('login.orContinueWith')}</span>
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                {t('login.orContinueWith')}
+              </span>
             </div>
           </div>
 
@@ -502,14 +576,22 @@ const SignUp: React.FC = () => {
         </div>
 
         <div className="mt-4 text-sm text-center">
-          <Link to="/login" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">{t('signUp.backToLogin')}</Link>
+          <Link
+            to="/login"
+            className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+          >
+            {t('signUp.backToLogin')}
+          </Link>
         </div>
       </AuthLayout>
-      
+
       <Modal isOpen={modalInfo.isOpen} onClose={handleModalClose} title={modalInfo.title}>
         <p className="text-gray-900 dark:text-gray-100">{modalInfo.message}</p>
         <div className="text-right mt-4">
-          <button onClick={handleModalClose} className="bg-indigo-600 dark:bg-indigo-700 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600">
+          <button
+            onClick={handleModalClose}
+            className="bg-indigo-600 dark:bg-indigo-700 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
+          >
             {t('common.confirm')}
           </button>
         </div>

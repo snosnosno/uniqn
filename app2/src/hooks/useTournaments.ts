@@ -1,5 +1,16 @@
 import { useMemo } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDoc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  Timestamp,
+  getDoc,
+  setDoc,
+  getDocs,
+  writeBatch,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
@@ -82,7 +93,9 @@ export const useTournaments = (userId: string | null) => {
     });
   }, [tournamentList]);
 
-  const createTournament = async (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>) => {
+  const createTournament = async (
+    tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>
+  ) => {
     if (!userId) {
       throw new Error('사용자 ID가 필요합니다.');
     }
@@ -114,7 +127,10 @@ export const useTournaments = (userId: string | null) => {
     }, 'createTournament');
   };
 
-  const updateTournament = async (tournamentId: string, data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>>) => {
+  const updateTournament = async (
+    tournamentId: string,
+    data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>>
+  ) => {
     if (!userId) {
       throw new Error('사용자 ID가 필요합니다.');
     }
@@ -169,7 +185,7 @@ export const useTournaments = (userId: string | null) => {
       // 해당 날짜에 다른 토너먼트가 있는지 확인
       if (dateKey) {
         const tournamentsSnapshot = await getDocs(collection(db, `users/${userId}/tournaments`));
-        const otherTournamentsForDate = tournamentsSnapshot.docs.filter(doc => {
+        const otherTournamentsForDate = tournamentsSnapshot.docs.filter((doc) => {
           const data = doc.data();
           return data.dateKey === dateKey && !isDefaultTournament(doc.id);
         });
@@ -182,18 +198,20 @@ export const useTournaments = (userId: string | null) => {
 
           if (defaultTournamentSnap.exists()) {
             // 기본 토너먼트의 테이블들도 삭제
-            const tablesSnapshot = await getDocs(collection(db, `users/${userId}/tournaments/${defaultTournamentId}/tables`));
+            const tablesSnapshot = await getDocs(
+              collection(db, `users/${userId}/tournaments/${defaultTournamentId}/tables`)
+            );
 
             if (tablesSnapshot.docs.length > 0) {
               const batch = writeBatch(db);
-              tablesSnapshot.docs.forEach(tableDoc => {
+              tablesSnapshot.docs.forEach((tableDoc) => {
                 batch.delete(tableDoc.ref);
               });
               await batch.commit();
 
               logger.info('기본 토너먼트 테이블 삭제 완료', {
                 component: 'useTournaments',
-                data: { defaultTournamentId, tableCount: tablesSnapshot.docs.length }
+                data: { defaultTournamentId, tableCount: tablesSnapshot.docs.length },
               });
             }
 
@@ -202,7 +220,7 @@ export const useTournaments = (userId: string | null) => {
 
             logger.info('기본 토너먼트 자동 삭제 완료', {
               component: 'useTournaments',
-              data: { defaultTournamentId, dateKey, reason: '해당 날짜의 마지막 토너먼트 삭제' }
+              data: { defaultTournamentId, dateKey, reason: '해당 날짜의 마지막 토너먼트 삭제' },
             });
           }
         }

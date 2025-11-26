@@ -10,19 +10,12 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaPaperPlane,
-  FaExclamationTriangle
+  FaExclamationTriangle,
 } from '../components/Icons/ReactIconsReplacement';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../utils/logger';
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  onSnapshot,
-  Timestamp
-} from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 // getDocs, orderBy - 향후 사용 예정
 import { db } from '../firebase';
 import {
@@ -32,7 +25,7 @@ import {
   INQUIRY_CATEGORIES,
   INQUIRY_STATUS_STYLES,
   FAQ_ITEMS,
-  FAQItem
+  FAQItem,
 } from '../types/inquiry';
 
 interface FAQItemComponentProps {
@@ -50,9 +43,7 @@ const FAQItemComponent: React.FC<FAQItemComponentProps> = ({ faq, isOpen, onTogg
         onClick={onToggle}
         className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50 dark:bg-gray-900 transition-colors"
       >
-        <span className="font-medium text-gray-900 dark:text-gray-100">
-          {t(faq.questionKey)}
-        </span>
+        <span className="font-medium text-gray-900 dark:text-gray-100">{t(faq.questionKey)}</span>
         {isOpen ? (
           <FaChevronUp className="w-5 h-5 text-gray-400 dark:text-gray-500" />
         ) : (
@@ -62,9 +53,7 @@ const FAQItemComponent: React.FC<FAQItemComponentProps> = ({ faq, isOpen, onTogg
 
       {isOpen && (
         <div className="px-4 pb-3 text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700">
-          <div className="pt-3">
-            {t(faq.answerKey)}
-          </div>
+          <div className="pt-3">{t(faq.answerKey)}</div>
         </div>
       )}
     </div>
@@ -84,7 +73,7 @@ const SupportPage: React.FC = () => {
   const [inquiryForm, setInquiryForm] = useState({
     category: 'general' as InquiryCategory,
     subject: '',
-    message: ''
+    message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,9 +88,9 @@ const SupportPage: React.FC = () => {
   // FAQ 필터링
   const filteredFAQs = useMemo(() => {
     if (selectedFAQCategory === 'all') {
-      return FAQ_ITEMS.filter(faq => faq.isActive);
+      return FAQ_ITEMS.filter((faq) => faq.isActive);
     }
-    return FAQ_ITEMS.filter(faq => faq.category === selectedFAQCategory && faq.isActive);
+    return FAQ_ITEMS.filter((faq) => faq.category === selectedFAQCategory && faq.isActive);
   }, [selectedFAQCategory]);
 
   // 내 문의 내역 구독
@@ -114,7 +103,7 @@ const SupportPage: React.FC = () => {
 
     logger.info('문의 내역 조회 시작', {
       userId: currentUser.uid,
-      component: 'SupportPage'
+      component: 'SupportPage',
     });
 
     // 타임아웃 설정 (10초)
@@ -128,7 +117,7 @@ const SupportPage: React.FC = () => {
     const trySimpleQuery = () => {
       logger.info('Simple query 시작', {
         userId: currentUser.uid,
-        component: 'SupportPage'
+        component: 'SupportPage',
       });
 
       const simpleQuery = query(
@@ -142,31 +131,32 @@ const SupportPage: React.FC = () => {
           logger.info('문의 내역 조회 성공 (simple query)', {
             docCount: snapshot.docs.length,
             component: 'SupportPage',
-            userId: currentUser.uid
+            userId: currentUser.uid,
           });
 
+          const inquiries = snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
 
-          const inquiries = snapshot.docs.map(doc => {
-            const data = doc.data();
-
-            return {
-              id: doc.id,
-              ...data,
-              // Timestamp 변환 확인
-              createdAt: data.createdAt || Timestamp.now(),
-              updatedAt: data.updatedAt || Timestamp.now(),
-              respondedAt: data.respondedAt || null
-            } as Inquiry;
-          }).sort((a, b) => {
-            // 클라이언트 사이드에서 정렬
-            const aTime = a.createdAt?.toMillis?.() || 0;
-            const bTime = b.createdAt?.toMillis?.() || 0;
-            return bTime - aTime;
-          });
+              return {
+                id: doc.id,
+                ...data,
+                // Timestamp 변환 확인
+                createdAt: data.createdAt || Timestamp.now(),
+                updatedAt: data.updatedAt || Timestamp.now(),
+                respondedAt: data.respondedAt || null,
+              } as Inquiry;
+            })
+            .sort((a, b) => {
+              // 클라이언트 사이드에서 정렬
+              const aTime = a.createdAt?.toMillis?.() || 0;
+              const bTime = b.createdAt?.toMillis?.() || 0;
+              return bTime - aTime;
+            });
 
           logger.info('문의 내역 조회 완료', {
             count: inquiries.length,
-            component: 'SupportPage'
+            component: 'SupportPage',
           });
 
           setMyInquiries(inquiries);
@@ -175,17 +165,22 @@ const SupportPage: React.FC = () => {
           clearTimeout(timeoutId);
         },
         (error) => {
-          logger.error('Simple 쿼리도 실패:', error instanceof Error ? error : new Error(String(error)), {
-            userId: currentUser.uid,
-            errorCode: error.code || 'unknown',
-            errorMessage: error.message || String(error),
-            component: 'SupportPage'
-          });
+          logger.error(
+            'Simple 쿼리도 실패:',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              userId: currentUser.uid,
+              errorCode: error.code || 'unknown',
+              errorMessage: error.message || String(error),
+              component: 'SupportPage',
+            }
+          );
 
           // 더 구체적인 에러 메시지
-          const errorMessage = error.code === 'permission-denied'
-            ? '문의 내역에 접근할 권한이 없습니다.'
-            : '문의 내역을 불러오는데 실패했습니다.';
+          const errorMessage =
+            error.code === 'permission-denied'
+              ? '문의 내역에 접근할 권한이 없습니다.'
+              : '문의 내역을 불러오는데 실패했습니다.';
 
           setInquiriesError(errorMessage);
           showError(errorMessage);
@@ -198,7 +193,7 @@ const SupportPage: React.FC = () => {
     // 단순한 쿼리부터 시작 (인덱스 문제 방지)
     logger.info('단순 쿼리로 문의 내역 조회 시작', {
       userId: currentUser.uid,
-      component: 'SupportPage'
+      component: 'SupportPage',
     });
 
     const unsubscribe = trySimpleQuery();
@@ -243,14 +238,14 @@ const SupportPage: React.FC = () => {
         userName: currentUser.displayName || '사용자',
         category: inquiryForm.category,
         subject: inquiryForm.subject.trim(),
-        message: inquiryForm.message.trim()
+        message: inquiryForm.message.trim(),
       };
 
       await addDoc(collection(db, 'inquiries'), {
         ...inquiryData,
         status: 'open',
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       });
 
       showSuccess('문의가 성공적으로 접수되었습니다.');
@@ -259,15 +254,14 @@ const SupportPage: React.FC = () => {
       setInquiryForm({
         category: 'general',
         subject: '',
-        message: ''
+        message: '',
       });
 
       // 내 문의 탭으로 이동
       setActiveTab('my-inquiries');
-
     } catch (error) {
       logger.error('문의 제출 실패:', error instanceof Error ? error : new Error(String(error)), {
-        component: 'SupportPage'
+        component: 'SupportPage',
       });
       showError('문의 제출에 실패했습니다.');
     } finally {
@@ -401,16 +395,21 @@ const SupportPage: React.FC = () => {
             ) : (
               <form onSubmit={handleSubmitInquiry} className="space-y-6">
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
+                  >
                     {t('support.inquiry.category', '문의 분류')}
                   </label>
                   <select
                     id="category"
                     value={inquiryForm.category}
-                    onChange={(e) => setInquiryForm(prev => ({
-                      ...prev,
-                      category: e.target.value as InquiryCategory
-                    }))}
+                    onChange={(e) =>
+                      setInquiryForm((prev) => ({
+                        ...prev,
+                        category: e.target.value as InquiryCategory,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-400"
                   >
                     {INQUIRY_CATEGORIES.map((category) => (
@@ -422,29 +421,45 @@ const SupportPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <label
+                    htmlFor="subject"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
+                  >
                     {t('support.inquiry.subject', '제목')}
                   </label>
                   <input
                     type="text"
                     id="subject"
                     value={inquiryForm.subject}
-                    onChange={(e) => setInquiryForm(prev => ({ ...prev, subject: e.target.value }))}
-                    placeholder={t('support.inquiry.subjectPlaceholder', '문의 제목을 입력해주세요')}
+                    onChange={(e) =>
+                      setInquiryForm((prev) => ({ ...prev, subject: e.target.value }))
+                    }
+                    placeholder={t(
+                      'support.inquiry.subjectPlaceholder',
+                      '문의 제목을 입력해주세요'
+                    )}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-400"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <label
+                    htmlFor="message"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
+                  >
                     {t('support.inquiry.message', '내용')}
                   </label>
                   <textarea
                     id="message"
                     value={inquiryForm.message}
-                    onChange={(e) => setInquiryForm(prev => ({ ...prev, message: e.target.value }))}
-                    placeholder={t('support.inquiry.messagePlaceholder', '문의 내용을 자세히 작성해주세요')}
+                    onChange={(e) =>
+                      setInquiryForm((prev) => ({ ...prev, message: e.target.value }))
+                    }
+                    placeholder={t(
+                      'support.inquiry.messagePlaceholder',
+                      '문의 내용을 자세히 작성해주세요'
+                    )}
                     rows={6}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-400 resize-none"
                     required
@@ -476,11 +491,12 @@ const SupportPage: React.FC = () => {
         {/* 내 문의 탭 */}
         {activeTab === 'my-inquiries' && currentUser && (
           <div className="space-y-4">
-
             {loadingInquiries ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-300">{t('support.myInquiries.loading', '문의 내역을 불러오는 중...')}</p>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {t('support.myInquiries.loading', '문의 내역을 불러오는 중...')}
+                </p>
               </div>
             ) : inquiriesError ? (
               <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg">
@@ -507,18 +523,26 @@ const SupportPage: React.FC = () => {
                   {t('support.myInquiries.empty', '문의 내역이 없습니다')}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  {t('support.myInquiries.emptyMessage', '문의사항이 있으시면 언제든지 문의해주세요.')}
+                  {t(
+                    'support.myInquiries.emptyMessage',
+                    '문의사항이 있으시면 언제든지 문의해주세요.'
+                  )}
                 </p>
               </div>
             ) : (
               myInquiries.map((inquiry) => {
                 const statusStyle = INQUIRY_STATUS_STYLES[inquiry.status];
                 return (
-                  <div key={inquiry.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                  <div
+                    key={inquiry.id}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6"
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center mb-1">
-                          <h3 className="font-medium text-gray-900 dark:text-gray-100">{inquiry.subject}</h3>
+                          <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                            {inquiry.subject}
+                          </h3>
                           {inquiry.category === 'report' && (
                             <span className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
                               🚨 신고
@@ -531,11 +555,13 @@ const SupportPage: React.FC = () => {
                             month: 'long',
                             day: 'numeric',
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
                           })}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} ${statusStyle.bgColor}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} ${statusStyle.bgColor}`}
+                      >
                         {t(statusStyle.labelKey)}
                       </span>
                     </div>
@@ -548,19 +574,33 @@ const SupportPage: React.FC = () => {
                     {inquiry.category === 'report' && inquiry.reportMetadata && (
                       <div className="mb-4">
                         <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
-                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 text-sm">신고 상세 정보</h4>
+                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2 text-sm">
+                            신고 상세 정보
+                          </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                             <div>
-                              <span className="font-medium text-red-700 dark:text-red-300">신고 대상:</span>
-                              <span className="ml-1 text-red-800 dark:text-red-200">{inquiry.reportMetadata.targetName}</span>
+                              <span className="font-medium text-red-700 dark:text-red-300">
+                                신고 대상:
+                              </span>
+                              <span className="ml-1 text-red-800 dark:text-red-200">
+                                {inquiry.reportMetadata.targetName}
+                              </span>
                             </div>
                             <div>
-                              <span className="font-medium text-red-700 dark:text-red-300">이벤트:</span>
-                              <span className="ml-1 text-red-800 dark:text-red-200">{inquiry.reportMetadata.eventTitle}</span>
+                              <span className="font-medium text-red-700 dark:text-red-300">
+                                이벤트:
+                              </span>
+                              <span className="ml-1 text-red-800 dark:text-red-200">
+                                {inquiry.reportMetadata.eventTitle}
+                              </span>
                             </div>
                             <div className="sm:col-span-2">
-                              <span className="font-medium text-red-700 dark:text-red-300">날짜:</span>
-                              <span className="ml-1 text-red-800 dark:text-red-200">{inquiry.reportMetadata.date}</span>
+                              <span className="font-medium text-red-700 dark:text-red-300">
+                                날짜:
+                              </span>
+                              <span className="ml-1 text-red-800 dark:text-red-200">
+                                {inquiry.reportMetadata.date}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -572,7 +612,9 @@ const SupportPage: React.FC = () => {
                         <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
                           {t('support.myInquiries.response', '답변')}
                         </h4>
-                        <p className="text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{inquiry.response}</p>
+                        <p className="text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
+                          {inquiry.response}
+                        </p>
                         {inquiry.respondedAt && (
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                             {inquiry.respondedAt.toDate().toLocaleDateString('ko-KR', {
@@ -580,7 +622,7 @@ const SupportPage: React.FC = () => {
                               month: 'long',
                               day: 'numeric',
                               hour: '2-digit',
-                              minute: '2-digit'
+                              minute: '2-digit',
                             })}
                           </p>
                         )}

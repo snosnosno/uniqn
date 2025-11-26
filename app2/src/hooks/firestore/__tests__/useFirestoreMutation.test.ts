@@ -60,9 +60,7 @@ describe('useFirestoreMutation', () => {
 
       addDoc.mockResolvedValue({ id: mockDocId });
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       let docId: string = '';
 
@@ -88,9 +86,7 @@ describe('useFirestoreMutation', () => {
 
       addDoc.mockRejectedValue(mockError);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       let thrownError: Error | null = null;
       try {
@@ -172,9 +168,7 @@ describe('useFirestoreMutation', () => {
 
       updateDoc.mockResolvedValue(undefined);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       await act(async () => {
         await result.current.update('staff/doc-id', updateData);
@@ -195,9 +189,7 @@ describe('useFirestoreMutation', () => {
 
       updateDoc.mockRejectedValue(mockError);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       let thrownError: Error | null = null;
       try {
@@ -242,9 +234,7 @@ describe('useFirestoreMutation', () => {
 
       deleteDoc.mockResolvedValue(undefined);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       await act(async () => {
         await result.current.delete('staff/doc-id');
@@ -261,9 +251,7 @@ describe('useFirestoreMutation', () => {
 
       deleteDoc.mockRejectedValue(mockError);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       let thrownError: Error | null = null;
       try {
@@ -315,9 +303,7 @@ describe('useFirestoreMutation', () => {
 
       addDoc.mockReturnValue(addDocPromise);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       // loading은 너무 빠르게 변하므로 생략
       let createPromise: Promise<void>;
@@ -343,9 +329,7 @@ describe('useFirestoreMutation', () => {
       updateDoc.mockResolvedValue(undefined);
       deleteDoc.mockResolvedValue(undefined);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       // 1. Create
       let docId: string = '';
@@ -388,9 +372,7 @@ describe('useFirestoreMutation', () => {
       const { addDoc } = require('firebase/firestore');
       addDoc.mockResolvedValue({ id: 'new-id' });
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       await act(async () => {
         await result.current.create('staff', newStaff);
@@ -405,9 +387,7 @@ describe('useFirestoreMutation', () => {
       const { updateDoc } = require('firebase/firestore');
       updateDoc.mockResolvedValue(undefined);
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       await act(async () => {
         await result.current.update('staff/doc-id', partialUpdate);
@@ -425,9 +405,7 @@ describe('useFirestoreMutation', () => {
       // 두 번째 호출은 성공
       addDoc.mockResolvedValueOnce({ id: 'new-id' });
 
-      const { result } = renderHook(() =>
-        useFirestoreMutation<Staff>()
-      );
+      const { result } = renderHook(() => useFirestoreMutation<Staff>());
 
       // 첫 번째 시도 (실패)
       try {

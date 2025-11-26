@@ -77,12 +77,15 @@ export const useTableAssignment = (
       setLoading(true);
       try {
         const batch = writeBatch(db);
-        const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+        const tablesCollectionRef = collection(
+          db,
+          `users/${userId}/tournaments/${tournamentId}/tables`
+        );
         const tablesSnapshot = await getDocs(tablesCollectionRef);
 
         const openTables: Table[] = tablesSnapshot.docs
-          .map(d => ({ id: d.id, ...d.data() } as Table))
-          .filter(t => t.status === 'open');
+          .map((d) => ({ id: d.id, ...d.data() }) as Table)
+          .filter((t) => t.status === 'open');
 
         if (openTables.length === 0) {
           logger.error('No open tables for seat assignment', new Error('No open tables'), {
@@ -92,18 +95,27 @@ export const useTableAssignment = (
           return [];
         }
 
-        const totalSeats = openTables.reduce((sum, table) => sum + (table.seats?.length || maxSeatsSetting), 0);
+        const totalSeats = openTables.reduce(
+          (sum, table) => sum + (table.seats?.length || maxSeatsSetting),
+          0
+        );
         if (participants.length > totalSeats) {
-          logger.error('Too many participants for available seats', new Error(`Participants: ${participants.length}, Seats: ${totalSeats}`), {
-            component: 'useTableAssignment',
-          });
-          toast.error(`참가자 수(${participants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`);
+          logger.error(
+            'Too many participants for available seats',
+            new Error(`Participants: ${participants.length}, Seats: ${totalSeats}`),
+            {
+              component: 'useTableAssignment',
+            }
+          );
+          toast.error(
+            `참가자 수(${participants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`
+          );
           return [];
         }
 
         const shuffledParticipants = shuffleArray(participants);
         const tablePlayerGroups: { [key: string]: Participant[] } = {};
-        openTables.forEach(table => {
+        openTables.forEach((table) => {
           tablePlayerGroups[table.id] = [];
         });
 
@@ -119,7 +131,8 @@ export const useTableAssignment = (
         });
 
         const newTableSeatArrays: { [key: string]: (string | null)[] } = {};
-        const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } = {};
+        const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } =
+          {};
         const assignmentResults: AssignmentResult[] = [];
 
         for (const table of openTables) {
@@ -163,7 +176,11 @@ export const useTableAssignment = (
         for (const participantId in participantUpdates) {
           const updateData = participantUpdates[participantId];
           if (updateData) {
-            const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
+            const participantRef = doc(
+              db,
+              `users/${userId}/tournaments/${tournamentId}/participants`,
+              participantId
+            );
             batch.update(participantRef, updateData);
           }
         }
@@ -182,9 +199,13 @@ export const useTableAssignment = (
           errorMessage: e instanceof Error ? e.message : String(e),
         };
         logAction('action_failed', errorContext);
-        logger.error('좌석 자동 재배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), {
-          component: 'useTableAssignment',
-        });
+        logger.error(
+          '좌석 자동 재배정 중 오류가 발생했습니다:',
+          e instanceof Error ? e : new Error(String(e)),
+          {
+            component: 'useTableAssignment',
+          }
+        );
         toast.error('좌석 자동 배정 중 오류가 발생했습니다.');
         setError(e as Error);
         return [];
@@ -205,12 +226,15 @@ export const useTableAssignment = (
       setLoading(true);
       try {
         const batch = writeBatch(db);
-        const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+        const tablesCollectionRef = collection(
+          db,
+          `users/${userId}/tournaments/${tournamentId}/tables`
+        );
         const tablesSnapshot = await getDocs(tablesCollectionRef);
 
         const openTables: Table[] = tablesSnapshot.docs
-          .map(d => ({ id: d.id, ...d.data() } as Table))
-          .filter(t => t.status === 'open');
+          .map((d) => ({ id: d.id, ...d.data() }) as Table)
+          .filter((t) => t.status === 'open');
 
         if (openTables.length === 0) {
           logger.error('No open tables for seat assignment', new Error('No open tables'), {
@@ -221,40 +245,50 @@ export const useTableAssignment = (
         }
 
         // 각 테이블의 현재 인원수 계산
-        const mutableTables = openTables.map(table => ({
+        const mutableTables = openTables.map((table) => ({
           ...table,
           seats: [...(table.seats || Array(maxSeatsSetting).fill(null))],
-          playerCount: (table.seats || []).filter(s => s !== null).length,
+          playerCount: (table.seats || []).filter((s) => s !== null).length,
         }));
 
         // 빈 자리 총합 확인
         const totalEmptySeats = mutableTables.reduce(
-          (sum, table) => sum + table.seats.filter(s => s === null).length,
+          (sum, table) => sum + table.seats.filter((s) => s === null).length,
           0
         );
 
         if (participants.length > totalEmptySeats) {
-          logger.error('Too many participants for available seats', new Error(`Participants: ${participants.length}, Seats: ${totalEmptySeats}`), {
-            component: 'useTableAssignment',
-          });
-          toast.error(`참가자 수(${participants.length}명)가 빈 좌석 수(${totalEmptySeats}석)보다 많아 배정할 수 없습니다.`);
+          logger.error(
+            'Too many participants for available seats',
+            new Error(`Participants: ${participants.length}, Seats: ${totalEmptySeats}`),
+            {
+              component: 'useTableAssignment',
+            }
+          );
+          toast.error(
+            `참가자 수(${participants.length}명)가 빈 좌석 수(${totalEmptySeats}석)보다 많아 배정할 수 없습니다.`
+          );
           return [];
         }
 
-        const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } = {};
+        const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } =
+          {};
         const assignmentResults: AssignmentResult[] = [];
 
         // 각 참가자를 가장 인원이 적은 테이블에 배정
         for (const participant of participants) {
-          const minPlayerCount = Math.min(...mutableTables.map(t => t.playerCount));
-          const leastPopulatedTables = mutableTables.filter(t => t.playerCount === minPlayerCount);
+          const minPlayerCount = Math.min(...mutableTables.map((t) => t.playerCount));
+          const leastPopulatedTables = mutableTables.filter(
+            (t) => t.playerCount === minPlayerCount
+          );
 
-          const targetTable = leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
+          const targetTable =
+            leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
           if (!targetTable) continue;
 
           const emptySeatIndexes = targetTable.seats
             .map((seat, index) => (seat === null ? index : -1))
-            .filter(index => index !== -1);
+            .filter((index) => index !== -1);
 
           if (emptySeatIndexes.length === 0) {
             logger.error('No empty seats available', new Error('No empty seats'), {
@@ -264,7 +298,8 @@ export const useTableAssignment = (
             continue;
           }
 
-          const targetSeatIndex = emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
+          const targetSeatIndex =
+            emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
           if (targetSeatIndex === undefined) continue;
 
           targetTable.seats[targetSeatIndex] = participant.id;
@@ -293,7 +328,11 @@ export const useTableAssignment = (
         for (const participantId in participantUpdates) {
           const updateData = participantUpdates[participantId];
           if (updateData) {
-            const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
+            const participantRef = doc(
+              db,
+              `users/${userId}/tournaments/${tournamentId}/participants`,
+              participantId
+            );
             batch.update(participantRef, updateData);
           }
         }
@@ -312,9 +351,13 @@ export const useTableAssignment = (
           errorMessage: e instanceof Error ? e.message : String(e),
         };
         logAction('action_failed', errorContext);
-        logger.error('대기 참가자 배정 중 오류가 발생했습니다:', e instanceof Error ? e : new Error(String(e)), {
-          component: 'useTableAssignment',
-        });
+        logger.error(
+          '대기 참가자 배정 중 오류가 발생했습니다:',
+          e instanceof Error ? e : new Error(String(e)),
+          {
+            component: 'useTableAssignment',
+          }
+        );
         toast.error('대기 참가자 배정 중 오류가 발생했습니다.');
         setError(e as Error);
         return [];
@@ -328,7 +371,7 @@ export const useTableAssignment = (
   const autoBalanceByChips = useCallback(
     async (participants: Participant[]): Promise<AssignmentResult[]> => {
       if (!userId || !tournamentId) return [];
-      const activeParticipants = participants.filter(p => p.status === 'active');
+      const activeParticipants = participants.filter((p) => p.status === 'active');
       if (activeParticipants.length === 0) {
         toast.warning('칩 균형 재배치할 활성 참가자가 없습니다.');
         return [];
@@ -337,12 +380,15 @@ export const useTableAssignment = (
       setLoading(true);
       try {
         const batch = writeBatch(db);
-        const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+        const tablesCollectionRef = collection(
+          db,
+          `users/${userId}/tournaments/${tournamentId}/tables`
+        );
         const tablesSnapshot = await getDocs(tablesCollectionRef);
 
         const openTables: Table[] = tablesSnapshot.docs
-          .map(d => ({ id: d.id, ...d.data() } as Table))
-          .filter(t => t.status === 'open')
+          .map((d) => ({ id: d.id, ...d.data() }) as Table)
+          .filter((t) => t.status === 'open')
           .sort((a, b) => a.tableNumber - b.tableNumber);
 
         if (openTables.length === 0) {
@@ -353,22 +399,34 @@ export const useTableAssignment = (
           return [];
         }
 
-        const totalSeats = openTables.reduce((sum, table) => sum + (table.seats?.length || maxSeatsSetting), 0);
+        const totalSeats = openTables.reduce(
+          (sum, table) => sum + (table.seats?.length || maxSeatsSetting),
+          0
+        );
         if (activeParticipants.length > totalSeats) {
-          logger.error('Too many active participants for chip balance', new Error(`Participants: ${activeParticipants.length}, Seats: ${totalSeats}`), {
-            component: 'useTableAssignment',
-          });
-          toast.error(`활성 참가자 수(${activeParticipants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`);
+          logger.error(
+            'Too many active participants for chip balance',
+            new Error(`Participants: ${activeParticipants.length}, Seats: ${totalSeats}`),
+            {
+              component: 'useTableAssignment',
+            }
+          );
+          toast.error(
+            `활성 참가자 수(${activeParticipants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`
+          );
           return [];
         }
 
         // 참가자를 칩 수 기준으로 정렬 (내림차순)
-        const sortedParticipants = [...activeParticipants].sort((a, b) => (b.chips || 0) - (a.chips || 0));
+        const sortedParticipants = [...activeParticipants].sort(
+          (a, b) => (b.chips || 0) - (a.chips || 0)
+        );
 
         const totalTables = openTables.length;
 
         const assignmentResults: AssignmentResult[] = [];
-        const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } = {};
+        const participantUpdates: { [key: string]: { tableNumber: number; seatNumber: number } } =
+          {};
 
         // 테이블 상태 초기화
         interface TableState {
@@ -380,7 +438,7 @@ export const useTableAssignment = (
           chipGroups: { top: number; middle: number; bottom: number };
         }
 
-        const tableStates: TableState[] = openTables.map(table => ({
+        const tableStates: TableState[] = openTables.map((table) => ({
           id: table.id,
           tableNumber: table.tableNumber,
           participants: [],
@@ -441,7 +499,7 @@ export const useTableAssignment = (
 
         // 각 테이블의 좌석 배치
         for (const tableState of tableStates) {
-          const table = openTables.find(t => t.id === tableState.id);
+          const table = openTables.find((t) => t.id === tableState.id);
           if (!table) continue;
 
           const seatCount = table.seats?.length || maxSeatsSetting;
@@ -465,8 +523,10 @@ export const useTableAssignment = (
                   toTableNumber: table.tableNumber,
                   toSeatNumber: seatIndex + 1,
                 };
-                if (participant.tableNumber !== undefined) result.fromTableNumber = participant.tableNumber;
-                if (participant.seatNumber !== undefined) result.fromSeatNumber = participant.seatNumber;
+                if (participant.tableNumber !== undefined)
+                  result.fromTableNumber = participant.tableNumber;
+                if (participant.seatNumber !== undefined)
+                  result.fromSeatNumber = participant.seatNumber;
                 assignmentResults.push(result);
               }
             }
@@ -480,7 +540,11 @@ export const useTableAssignment = (
         for (const participantId in participantUpdates) {
           const updateData = participantUpdates[participantId];
           if (updateData) {
-            const participantRef = doc(db, `users/${userId}/tournaments/${tournamentId}/participants`, participantId);
+            const participantRef = doc(
+              db,
+              `users/${userId}/tournaments/${tournamentId}/participants`,
+              participantId
+            );
             batch.update(participantRef, updateData);
           }
         }
@@ -488,7 +552,7 @@ export const useTableAssignment = (
         await batch.commit();
 
         // 균형 검증
-        const playerCounts = tableStates.map(t => t.participants.length);
+        const playerCounts = tableStates.map((t) => t.participants.length);
         const maxPlayers = Math.max(...playerCounts);
         const minPlayers = Math.min(...playerCounts);
         const playerCountDiff = maxPlayers - minPlayers;
@@ -508,13 +572,17 @@ export const useTableAssignment = (
       } catch (e) {
         const errorContext = {
           failedAction: 'auto_balance_by_chips',
-          participantsCount: participants.filter(p => p.status === 'active').length,
+          participantsCount: participants.filter((p) => p.status === 'active').length,
           errorMessage: e instanceof Error ? e.message : String(e),
         };
         logAction('action_failed', errorContext);
-        logger.error('칩 균형 재배치 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), {
-          component: 'useTableAssignment',
-        });
+        logger.error(
+          '칩 균형 재배치 중 오류 발생:',
+          e instanceof Error ? e : new Error(String(e)),
+          {
+            component: 'useTableAssignment',
+          }
+        );
         toast.error('칩 균형 재배치 중 오류가 발생했습니다.');
         setError(e as Error);
         return [];
@@ -535,9 +603,9 @@ export const useTableAssignment = (
       if (from.tableId === to.tableId && from.seatIndex === to.seatIndex) return;
 
       try {
-        await runTransaction(db, async transaction => {
-          const fromTable = tables.find(t => t.id === from.tableId);
-          const toTable = tables.find(t => t.id === to.tableId);
+        await runTransaction(db, async (transaction) => {
+          const fromTable = tables.find((t) => t.id === from.tableId);
+          const toTable = tables.find((t) => t.id === to.tableId);
 
           if (!fromTable || !toTable) {
             toast.error('테이블을 찾을 수 없습니다.');
@@ -549,7 +617,11 @@ export const useTableAssignment = (
 
           if (from.tableId === to.tableId) {
             // Same table move
-            const tableRef = doc(db, `users/${userId}/tournaments/${fromTournamentId}/tables`, from.tableId);
+            const tableRef = doc(
+              db,
+              `users/${userId}/tournaments/${fromTournamentId}/tables`,
+              from.tableId
+            );
             const tableSnap = await transaction.get(tableRef);
             if (!tableSnap.exists()) {
               logger.error('Table not found during seat move', new Error('Table not found'), {
@@ -574,8 +646,16 @@ export const useTableAssignment = (
             transaction.update(tableRef, { seats });
           } else {
             // Different table move
-            const fromTableRef = doc(db, `users/${userId}/tournaments/${fromTournamentId}/tables`, from.tableId);
-            const toTableRef = doc(db, `users/${userId}/tournaments/${toTournamentId}/tables`, to.tableId);
+            const fromTableRef = doc(
+              db,
+              `users/${userId}/tournaments/${fromTournamentId}/tables`,
+              from.tableId
+            );
+            const toTableRef = doc(
+              db,
+              `users/${userId}/tournaments/${toTournamentId}/tables`,
+              to.tableId
+            );
 
             const [fromTableSnap, toTableSnap] = await Promise.all([
               transaction.get(fromTableRef),
@@ -583,9 +663,13 @@ export const useTableAssignment = (
             ]);
 
             if (!fromTableSnap.exists() || !toTableSnap.exists()) {
-              logger.error('Table information not found during cross-table move', new Error('Table not found'), {
-                component: 'useTableAssignment',
-              });
+              logger.error(
+                'Table information not found during cross-table move',
+                new Error('Table not found'),
+                {
+                  component: 'useTableAssignment',
+                }
+              );
               toast.error('테이블 정보를 찾을 수 없습니다.');
               return;
             }
@@ -594,9 +678,13 @@ export const useTableAssignment = (
             const toSeats = [...toTableSnap.data().seats];
 
             if (toSeats[to.seatIndex] !== null) {
-              logger.error('Target seat already occupied in cross-table move', new Error('Seat occupied'), {
-                component: 'useTableAssignment',
-              });
+              logger.error(
+                'Target seat already occupied in cross-table move',
+                new Error('Seat occupied'),
+                {
+                  component: 'useTableAssignment',
+                }
+              );
               toast.error('해당 좌석에 이미 참가자가 있습니다.');
               return;
             }
@@ -608,17 +696,21 @@ export const useTableAssignment = (
             transaction.update(toTableRef, { seats: toSeats });
           }
         });
-        const fromTable = tables.find(t => t.id === from.tableId);
-        const toTable = tables.find(t => t.id === to.tableId);
+        const fromTable = tables.find((t) => t.id === from.tableId);
+        const toTable = tables.find((t) => t.id === to.tableId);
         logAction('seat_moved', {
           participantId,
           from: `${fromTable?.tableNumber}-${from.seatIndex + 1}`,
           to: `${toTable?.tableNumber}-${to.seatIndex + 1}`,
         });
       } catch (e) {
-        logger.error('An error occurred while moving the seat:', e instanceof Error ? e : new Error(String(e)), {
-          component: 'useTableAssignment',
-        });
+        logger.error(
+          'An error occurred while moving the seat:',
+          e instanceof Error ? e : new Error(String(e)),
+          {
+            component: 'useTableAssignment',
+          }
+        );
         setError(e as Error);
         toast.error('좌석 이동 중 오류가 발생했습니다.');
       }
@@ -630,17 +722,27 @@ export const useTableAssignment = (
     async (participantId: string) => {
       if (!userId || !tournamentId) return;
       try {
-        await runTransaction(db, async transaction => {
-          const table = tables.find(t => (t.seats || []).includes(participantId));
+        await runTransaction(db, async (transaction) => {
+          const table = tables.find((t) => (t.seats || []).includes(participantId));
           if (!table) return;
 
           const actualTournamentId = getActualTournamentId(table, tournamentId);
 
-          const participantRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/participants`, participantId);
+          const participantRef = doc(
+            db,
+            `users/${userId}/tournaments/${actualTournamentId}/participants`,
+            participantId
+          );
           transaction.update(participantRef, { status: 'busted' });
 
-          const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, table.id);
-          const newSeats = (table.seats || []).map(seat => (seat === participantId ? null : seat));
+          const tableRef = doc(
+            db,
+            `users/${userId}/tournaments/${actualTournamentId}/tables`,
+            table.id
+          );
+          const newSeats = (table.seats || []).map((seat) =>
+            seat === participantId ? null : seat
+          );
           transaction.update(tableRef, { seats: newSeats });
         });
         logAction('participant_busted', { participantId });

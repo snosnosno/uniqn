@@ -114,7 +114,6 @@ export function toDateString(input: DateInput): string {
 
     // yyyy-MM-dd 형식으로 반환
     return formatDateToISO(date);
-
   } catch {
     return formatDateToISO(new Date());
   }
@@ -167,7 +166,7 @@ export function getKoreanDate(): string {
   try {
     // 한국 시간대 (UTC+9)
     const now = new Date();
-    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
     const year = koreaTime.getUTCFullYear();
     const month = String(koreaTime.getUTCMonth() + 1).padStart(2, '0');
@@ -186,12 +185,12 @@ export function getKoreanDate(): string {
  */
 export function toTimeString(input: DateInput): string {
   if (!input) return '';
-  
+
   // 이미 HH:mm 형식인 경우
   if (typeof input === 'string' && /^\d{1,2}:\d{2}$/.test(input)) {
     return input;
   }
-  
+
   try {
     let date: Date;
 
@@ -206,11 +205,9 @@ export function toTimeString(input: DateInput): string {
     // Date, string, number 처리
     else if (input instanceof Date) {
       date = input;
-    }
-    else if (typeof input === 'string' || typeof input === 'number') {
+    } else if (typeof input === 'string' || typeof input === 'number') {
       date = new Date(input);
-    }
-    else {
+    } else {
       return '';
     }
 
@@ -235,7 +232,7 @@ export function formatDateDisplay(dateString: string): string {
   try {
     const [year, month, day] = dateString.split('-').map(Number);
     if (!year || !month || !day) return dateString;
-    
+
     const date = new Date(year, month - 1, day);
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
     const weekday = weekdays[date.getDay()] || '';
@@ -277,7 +274,7 @@ export function parseShortDateFormat(dateStr: string): string {
       const yearPart = parts[0];
       const monthPart = parts[1];
       const dayPart = parts[2];
-      
+
       if (yearPart && monthPart && dayPart) {
         const year = 2000 + parseInt(yearPart, 10);
         const month = monthPart.padStart(2, '0');
@@ -309,13 +306,13 @@ export function formatTime(
   } = {}
 ): string {
   const { defaultValue = '', format = 'HH:MM' } = options;
-  
+
   if (!timestamp) return defaultValue;
-  
+
   if (format === 'korean') {
     const time = toTimeString(timestamp);
     if (!time) return defaultValue;
-    
+
     const parts = time.split(':').map(Number);
     const hours = parts[0] || 0;
     const minutes = parts[1] || 0;
@@ -323,13 +320,13 @@ export function formatTime(
     const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     return `${ampm} ${displayHour}:${String(minutes).padStart(2, '0')}`;
   }
-  
+
   if (format === 'full') {
     const dateStr = toDateString(timestamp);
     const timeStr = toTimeString(timestamp);
     return dateStr && timeStr ? `${dateStr} ${timeStr}` : defaultValue;
   }
-  
+
   return toTimeString(timestamp) || defaultValue;
 }
 
@@ -362,9 +359,7 @@ export function formatTimeKorean(timestamp: DateInput): string {
  * toISODateString(null); // null
  * toISODateString("invalid"); // null (logger 경고)
  */
-export function toISODateString(
-  date: Date | string | null | undefined
-): string | null {
+export function toISODateString(date: Date | string | null | undefined): string | null {
   if (!date) return null;
 
   try {
@@ -380,7 +375,7 @@ export function toISODateString(
     logger.warn('toISODateString: Conversion error', {
       component: 'dateUtils',
       data: { date },
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     return null;
   }
@@ -410,7 +405,7 @@ export function formatDate(
     if (!isValidDate(dateObj)) {
       logger.warn('formatDate: Invalid date', {
         component: 'dateUtils',
-        data: { date, format }
+        data: { date, format },
       });
       return null;
     }
@@ -429,7 +424,7 @@ export function formatDate(
     logger.warn('formatDate: Conversion error', {
       component: 'dateUtils',
       data: { date, format },
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     return null;
   }
@@ -446,9 +441,7 @@ export function formatDate(
  * parseDate("invalid"); // null (logger 경고)
  * parseDate(null); // null
  */
-export function parseDate(
-  dateString: string | null | undefined
-): Date | null {
+export function parseDate(dateString: string | null | undefined): Date | null {
   if (!dateString) return null;
 
   try {
@@ -457,7 +450,7 @@ export function parseDate(
     if (!isValidDate(date)) {
       logger.warn('parseDate: Invalid date string', {
         component: 'dateUtils',
-        data: { dateString }
+        data: { dateString },
       });
       return null;
     }
@@ -467,7 +460,7 @@ export function parseDate(
     logger.warn('parseDate: Parse error', {
       component: 'dateUtils',
       data: { dateString },
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     return null;
   }

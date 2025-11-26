@@ -1,5 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { collection, query, where, orderBy, type Query, type DocumentData } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  type Query,
+  type DocumentData,
+} from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { JobPosting } from '../types/jobPosting/jobPosting';
@@ -35,12 +42,12 @@ export const useJobPostingApproval = () => {
     onSuccess: () => {
       logger.info('승인 대기 공고 조회 완료', {
         component: 'useJobPostingApproval',
-        data: { count: pendingPostingsData.length }
+        data: { count: pendingPostingsData.length },
       });
     },
     onError: (err) => {
       logger.error('승인 대기 공고 조회 실패', err, {
-        component: 'useJobPostingApproval'
+        component: 'useJobPostingApproval',
       });
     },
   });
@@ -141,6 +148,6 @@ export const useJobPostingApproval = () => {
     error,
     processing,
     approve,
-    reject
+    reject,
   };
 };

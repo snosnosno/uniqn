@@ -1,7 +1,7 @@
 /**
  * payrollCalculator.worker.ts - 정산 계산 전용 Web Worker
  * Week 4 성능 최적화: 복잡한 정산 계산을 백그라운드 스레드로 이동
- * 
+ *
  * @version 4.0
  * @since 2025-02-02 (Week 4)
  */
@@ -45,15 +45,15 @@ export interface PayrollCalculationError {
 
 // 기본 급여율 (임포트할 수 없으므로 복사)
 const DEFAULT_HOURLY_RATES: { [role: string]: number } = {
-  'dealer': 18000,
-  'manager': 25000,
-  'tournament_director': 30000,
-  'floor_supervisor': 22000,
-  'cashier': 16000,
-  'server': 15000,
-  'security': 20000,
-  'tech_support': 24000,
-  'default': 15000
+  dealer: 18000,
+  manager: 25000,
+  tournament_director: 30000,
+  floor_supervisor: 22000,
+  cashier: 16000,
+  server: 15000,
+  security: 20000,
+  tech_support: 24000,
+  default: 15000,
 };
 
 // 유틸리티 함수들 (외부 의존성 제거)
@@ -86,22 +86,22 @@ const convertAssignedTimeToScheduled = (timeSlot: string, date: string) => {
     const minutes = Number(timeParts[1] || 0);
     const timestamp = new Date(baseDate);
     timestamp.setHours(hours, minutes, 0, 0);
-    return { 
+    return {
       seconds: Math.floor(timestamp.getTime() / 1000),
-      nanoseconds: 0
+      nanoseconds: 0,
     };
   };
 
   return {
     scheduledStartTime: parseTime(startTime),
-    scheduledEndTime: parseTime(endTime)
+    scheduledEndTime: parseTime(endTime),
   };
 };
 
 const calculateWorkHours = (log: UnifiedWorkLog): number => {
   const startTime = log.scheduledStartTime;
   const endTime = log.scheduledEndTime;
-  
+
   if (!startTime || !endTime) {
     return 0;
   }
@@ -110,7 +110,7 @@ const calculateWorkHours = (log: UnifiedWorkLog): number => {
     // Firebase Timestamp 형태 처리 개선 (payrollCalculations.ts와 동일)
     let startDate: Date | null = null;
     let endDate: Date | null = null;
-    
+
     // startTime 처리
     if (startTime) {
       if (typeof startTime === 'object' && 'toDate' in startTime) {
@@ -124,7 +124,7 @@ const calculateWorkHours = (log: UnifiedWorkLog): number => {
         startDate = new Date(startTime);
       }
     }
-    
+
     // endTime 처리
     if (endTime) {
       if (typeof endTime === 'object' && 'toDate' in endTime) {
@@ -138,7 +138,7 @@ const calculateWorkHours = (log: UnifiedWorkLog): number => {
         endDate = new Date(endTime);
       }
     }
-      
+
     if (!startDate || !endDate) {
       return 0;
     }
@@ -153,9 +153,11 @@ const calculateWorkHours = (log: UnifiedWorkLog): number => {
 };
 
 // 메인 계산 함수
-const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Promise<PayrollCalculationResult['payload']> => {
+const calculatePayroll = async (
+  data: PayrollCalculationMessage['payload']
+): Promise<PayrollCalculationResult['payload']> => {
   const startTime = performance.now();
-  
+
   const {
     workLogs,
     confirmedStaff,
@@ -163,14 +165,14 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     startDate,
     endDate,
     roleSalaryOverrides = {},
-    staffAllowanceOverrides = {}
+    staffAllowanceOverrides = {},
   } = data;
 
   // 스태프 식별자 수집
   const staffIdentifiers = getUniqueStaffIdentifiers(confirmedStaff);
 
   // 날짜 필터링
-  const filteredWorkLogs = workLogs.filter(log => {
+  const filteredWorkLogs = workLogs.filter((log) => {
     const matchesStaff = matchStaffIdentifier(log, staffIdentifiers);
     const matchesDate = (!startDate || log.date >= startDate) && (!endDate || log.date <= endDate);
     return matchesStaff && matchesDate;
@@ -182,7 +184,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     if (override) {
       return {
         salaryType: override.salaryType,
-        salaryAmount: override.salaryAmount
+        salaryAmount: override.salaryAmount,
       };
     }
 
@@ -191,22 +193,24 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       if (roleSalary) {
         return {
           salaryType: roleSalary.salaryType === 'negotiable' ? 'other' : roleSalary.salaryType,
-          salaryAmount: parseFloat(roleSalary.salaryAmount) || 0
+          salaryAmount: parseFloat(roleSalary.salaryAmount) || 0,
         };
       }
     }
 
     const baseSalaryType = jobPosting?.salaryType || 'hourly';
     const salaryType = baseSalaryType === 'negotiable' ? 'other' : baseSalaryType;
-    const salaryAmount = jobPosting?.salaryAmount 
+    const salaryAmount = jobPosting?.salaryAmount
       ? parseFloat(jobPosting.salaryAmount)
-      : (DEFAULT_HOURLY_RATES[role] || DEFAULT_HOURLY_RATES['default'] || 15000);
+      : DEFAULT_HOURLY_RATES[role] || DEFAULT_HOURLY_RATES['default'] || 15000;
 
     return { salaryType, salaryAmount };
   };
 
   // 기본 수당 가져오기 (일당 계산 로직 추가)
-  const getDefaultAllowances = (totalDays: number): {
+  const getDefaultAllowances = (
+    totalDays: number
+  ): {
     meal: number;
     transportation: number;
     accommodation: number;
@@ -220,10 +224,11 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     const isPerDay = benefits?.isPerDay !== false; // 기본값은 true (일당 계산)
 
     // 일당 정보 추출
-    const mealDaily = benefits?.mealAllowance ? (parseInt(benefits.mealAllowance) || 0) : 0;
-    const transportationDaily = benefits?.transportation ? (parseInt(benefits.transportation) || 0) : 0;
-    const accommodationDaily = benefits?.accommodation ? (parseInt(benefits.accommodation) || 0) : 0;
-
+    const mealDaily = benefits?.mealAllowance ? parseInt(benefits.mealAllowance) || 0 : 0;
+    const transportationDaily = benefits?.transportation
+      ? parseInt(benefits.transportation) || 0
+      : 0;
+    const accommodationDaily = benefits?.accommodation ? parseInt(benefits.accommodation) || 0 : 0;
 
     const baseAllowances = {
       meal: isPerDay ? mealDaily * totalDays : mealDaily,
@@ -231,7 +236,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       accommodation: isPerDay ? accommodationDaily * totalDays : accommodationDaily,
       bonus: 0,
       other: 0,
-      isManualEdit: false
+      isManualEdit: false,
     };
 
     // 일당 정보가 있을 때만 추가
@@ -244,7 +249,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       return {
         ...baseAllowances,
         dailyRates,
-        workDays: totalDays
+        workDays: totalDays,
       };
     }
 
@@ -284,8 +289,8 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     if (processedStaffRoles.has(staffRoleKey)) continue;
 
     // 해당 스태프의 특정 날짜 WorkLog 찾기
-    const staffWorkLogs = filteredWorkLogs.filter(log => 
-      matchStaffIdentifier(log, [staffId]) && log.date === staff.date
+    const staffWorkLogs = filteredWorkLogs.filter(
+      (log) => matchStaffIdentifier(log, [staffId]) && log.date === staff.date
     );
 
     const log = staffWorkLogs[0];
@@ -302,9 +307,11 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       if (!finalScheduledStart || !finalScheduledEnd) {
         const timeSlot = staff.timeSlot;
         if (timeSlot && timeSlot !== '미정' && timeSlot.includes('-')) {
-          const { scheduledStartTime, scheduledEndTime } = 
-            convertAssignedTimeToScheduled(timeSlot, log.date);
-          
+          const { scheduledStartTime, scheduledEndTime } = convertAssignedTimeToScheduled(
+            timeSlot,
+            log.date
+          );
+
           if (!finalScheduledStart && scheduledStartTime) {
             finalScheduledStart = scheduledStartTime as any;
           }
@@ -319,21 +326,23 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
         scheduledStartTime: finalScheduledStart,
         scheduledEndTime: finalScheduledEnd,
         role: staff.role,
-        displayKey: `${log.staffId}_${staff.role}`
+        displayKey: `${log.staffId}_${staff.role}`,
       } as UnifiedWorkLog & { displayKey: string };
 
       roleBasedWorkLogs.push(enhancedLog);
     } else if (!processedStaffRoles.has(staffRoleKey)) {
       // WorkLog가 없는 경우 가상 WorkLog 생성
       const timeSlot = staff.timeSlot;
-      
+
       if (!timeSlot || timeSlot === '미정' || !timeSlot.includes('-')) {
         continue; // 유효하지 않은 timeSlot은 건너뛰기
       }
 
       const virtualDate = staff.date || toISODateString(new Date()) || '';
-      const { scheduledStartTime, scheduledEndTime } =
-        convertAssignedTimeToScheduled(timeSlot, virtualDate!);
+      const { scheduledStartTime, scheduledEndTime } = convertAssignedTimeToScheduled(
+        timeSlot,
+        virtualDate!
+      );
 
       if (scheduledStartTime && scheduledEndTime) {
         const virtualLog = {
@@ -350,7 +359,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
           status: 'not_started' as const,
           isVirtual: true,
           assignedTime: timeSlot,
-          displayKey: `${staff.userId}_${staff.role}`
+          displayKey: `${staff.userId}_${staff.role}`,
         } as UnifiedWorkLog & { displayKey: string };
 
         roleBasedWorkLogs.push(virtualLog);
@@ -360,17 +369,20 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
   }
 
   // 스태프 + 역할별 그룹화 및 계산
-  const staffRoleMap = new Map<string, {
-    staffId: string;
-    staffName: string;
-    role: string;
-    workLogs: UnifiedWorkLog[];
-  }>();
+  const staffRoleMap = new Map<
+    string,
+    {
+      staffId: string;
+      staffName: string;
+      role: string;
+      workLogs: UnifiedWorkLog[];
+    }
+  >();
 
   for (const log of roleBasedWorkLogs) {
     const role = (log as any).role;
     const staffName = (log as any).staffName || '';
-    
+
     if (!role) continue;
 
     const logStaffId = getStaffIdentifier(log);
@@ -381,7 +393,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
         staffId: logStaffId,
         staffName: staffName,
         role: role,
-        workLogs: []
+        workLogs: [],
       });
     }
 
@@ -412,10 +424,8 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
 
     // 각 스태프의 totalDays에 맞게 개별적으로 계산
     const defaultAllowances = getDefaultAllowances(totalDays);
-    const baseAllowances = staffAllowanceOverrides[key] ||
-                          staffAllowanceOverrides[data.staffId] ||
-                          defaultAllowances;
-
+    const baseAllowances =
+      staffAllowanceOverrides[key] || staffAllowanceOverrides[data.staffId] || defaultAllowances;
 
     // 일당 정보는 항상 유지 (수동 편집 시에도)
     const allowances = { ...baseAllowances };
@@ -428,8 +438,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       allowances.workDays = defaultAllowances.workDays;
     }
 
-
-    const allowanceTotal = 
+    const allowanceTotal =
       allowances.meal +
       allowances.transportation +
       allowances.accommodation +
@@ -453,8 +462,8 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
       totalAmount,
       period: {
         start: startDate,
-        end: endDate
-      }
+        end: endDate,
+      },
     };
 
     results.push(result);
@@ -473,7 +482,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     hourly: 0,
     daily: 0,
     monthly: 0,
-    other: 0
+    other: 0,
   };
 
   let totalHours = 0;
@@ -511,8 +520,8 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
     bySalaryType,
     period: {
       start: startDate,
-      end: endDate
-    }
+      end: endDate,
+    },
   };
 
   const calculationTime = performance.now() - startTime;
@@ -520,7 +529,7 @@ const calculatePayroll = async (data: PayrollCalculationMessage['payload']): Pro
   return {
     payrollData: results,
     summary,
-    calculationTime
+    calculationTime,
   };
 };
 
@@ -530,10 +539,10 @@ self.onmessage = async (event: MessageEvent<PayrollCalculationMessage>) => {
   try {
     if (event.data.type === 'CALCULATE_PAYROLL') {
       const result = await calculatePayroll(event.data.payload);
-      
+
       const response: PayrollCalculationResult = {
         type: 'PAYROLL_RESULT',
-        payload: result
+        payload: result,
       };
 
       // eslint-disable-next-line no-restricted-globals
@@ -541,16 +550,16 @@ self.onmessage = async (event: MessageEvent<PayrollCalculationMessage>) => {
     }
   } catch (error) {
     const payload: { error: string; stack?: string } = {
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
-    
+
     if (error instanceof Error && error.stack) {
       payload.stack = error.stack;
     }
-    
+
     const errorResponse: PayrollCalculationError = {
       type: 'PAYROLL_ERROR',
-      payload
+      payload,
     };
 
     // eslint-disable-next-line no-restricted-globals

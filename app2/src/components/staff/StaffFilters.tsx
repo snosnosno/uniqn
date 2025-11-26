@@ -24,7 +24,7 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
   onGroupByDateChange,
   onQRCodeClick,
   totalStaffCount,
-  filteredStaffCount
+  filteredStaffCount,
 }) => {
   const { t } = useTranslation();
 
@@ -49,13 +49,14 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
       searchTerm: '',
       selectedDate: 'all',
       selectedRole: 'all',
-      selectedStatus: 'all'
+      selectedStatus: 'all',
     });
   };
 
-  const hasActiveFilters = filters.searchTerm || 
-    filters.selectedDate !== 'all' || 
-    filters.selectedRole !== 'all' || 
+  const hasActiveFilters =
+    filters.searchTerm ||
+    filters.selectedDate !== 'all' ||
+    filters.selectedRole !== 'all' ||
     filters.selectedStatus !== 'all';
 
   return (
@@ -101,7 +102,7 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
             onChange={(e) => handleDateChange(e.target.value)}
           >
             <option value="all">모든 날짜</option>
-            {availableDates.map(date => (
+            {availableDates.map((date) => (
               <option key={date} value={date}>
                 {date === '날짜 미정' ? '날짜 미정' : date}
               </option>
@@ -117,7 +118,7 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
             onChange={(e) => handleRoleChange(e.target.value)}
           >
             <option value="all">모든 역할</option>
-            {availableRoles.map(role => (
+            {availableRoles.map((role) => (
               <option key={role} value={role}>
                 {role}
               </option>
@@ -152,7 +153,10 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
               onChange={(e) => onGroupByDateChange(e.target.checked)}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
             />
-            <label htmlFor="groupByDate" className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+            <label
+              htmlFor="groupByDate"
+              className="text-sm text-gray-700 dark:text-gray-300 font-medium"
+            >
               날짜별 그룹화
             </label>
           </div>
@@ -165,7 +169,12 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
             className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white text-sm font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h-4.01M12 12V8H8v4h4z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h-4.01M12 12V8H8v4h4z"
+              />
             </svg>
             {t('attendance.actions.generateQR')}
           </button>

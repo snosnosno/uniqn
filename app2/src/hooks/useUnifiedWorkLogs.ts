@@ -11,7 +11,7 @@ import {
   orderBy,
   limit,
   Query,
-  DocumentData
+  DocumentData,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
@@ -21,14 +21,14 @@ import {
   WorkLogFilter,
   WorkLogCreateInput,
   WorkLogUpdateInput,
-  WorkLogSortOption
+  WorkLogSortOption,
 } from '../types/unified/workLog';
 import {
   normalizeWorkLogs,
   prepareWorkLogForCreate,
   prepareWorkLogForUpdate,
   validateWorkLog,
-  filterWorkLogs
+  filterWorkLogs,
 } from '../utils/workLogMapper';
 
 interface UseUnifiedWorkLogsOptions {
@@ -44,21 +44,21 @@ interface UseUnifiedWorkLogsReturn {
   workLogs: UnifiedWorkLog[];
   loading: boolean;
   error: Error | null;
-  
+
   // CRUD operations
   createWorkLog: (input: WorkLogCreateInput) => Promise<string>;
   updateWorkLog: (id: string, updates: WorkLogUpdateInput) => Promise<void>;
   deleteWorkLog: (id: string) => Promise<void>;
-  
+
   // Batch operations
   createMultipleWorkLogs: (inputs: WorkLogCreateInput[]) => Promise<string[]>;
   updateMultipleWorkLogs: (updates: { id: string; data: WorkLogUpdateInput }[]) => Promise<void>;
-  
+
   // Query helpers
   refetch: () => void;
   applyFilter: (filter: WorkLogFilter) => void;
   clearFilter: () => void;
-  
+
   // Utility
   getWorkLogById: (id: string) => UnifiedWorkLog | undefined;
   getWorkLogsByStaffId: (staffId: string) => UnifiedWorkLog[];
@@ -78,7 +78,7 @@ export function useUnifiedWorkLogs(
     limit: queryLimit = 1000,
     realtime = true,
     autoNormalize = true,
-    skipSubscription = false // 구독을 완전히 건너뛸지 여부
+    skipSubscription = false, // 구독을 완전히 건너뛸지 여부
   } = options;
 
   const [filter, setFilter] = useState<WorkLogFilter>(initialFilter);
@@ -132,14 +132,27 @@ export function useUnifiedWorkLogs(
       }
     } else if (initialSort.field && initialSort.field.length > 0) {
       // 빈 문자열이 아닌 경우에만 정렬 적용
-      constraints.push(orderBy(initialSort.field as Exclude<typeof initialSort.field, ''>, initialSort.direction));
+      constraints.push(
+        orderBy(initialSort.field as Exclude<typeof initialSort.field, ''>, initialSort.direction)
+      );
     }
 
     // 제한
     constraints.push(limit(queryLimit));
 
     return query(collection(db, 'workLogs'), ...constraints);
-  }, [filter.eventId, filter.date, filter.dateFrom, filter.dateTo, filter.status, initialSort.field, initialSort.direction, queryLimit, realtime, skipSubscription]);
+  }, [
+    filter.eventId,
+    filter.date,
+    filter.dateFrom,
+    filter.dateTo,
+    filter.status,
+    initialSort.field,
+    initialSort.direction,
+    queryLimit,
+    realtime,
+    skipSubscription,
+  ]);
 
   // useFirestoreQuery로 구독
   const {
@@ -153,12 +166,12 @@ export function useUnifiedWorkLogs(
       onSuccess: () => {
         logger.debug('WorkLogs 실시간 업데이트', {
           component: 'useUnifiedWorkLogs',
-          data: { count: rawWorkLogs.length }
+          data: { count: rawWorkLogs.length },
         });
       },
       onError: (err) => {
         logger.error('WorkLogs 구독 오류', err, {
-          component: 'useUnifiedWorkLogs'
+          component: 'useUnifiedWorkLogs',
         });
       },
     }
@@ -174,9 +187,7 @@ export function useUnifiedWorkLogs(
     const typedData = rawWorkLogs.map((doc) => doc as unknown as UnifiedWorkLog);
 
     // 자동 정규화
-    const normalized = autoNormalize
-      ? normalizeWorkLogs(typedData)
-      : typedData;
+    const normalized = autoNormalize ? normalizeWorkLogs(typedData) : typedData;
 
     // 클라이언트 사이드 필터링 (staffId는 Firestore에서 직접 쿼리 불가)
     let filtered = normalized;
@@ -187,7 +198,7 @@ export function useUnifiedWorkLogs(
 
     return filtered;
   }, [rawWorkLogs, autoNormalize, filter.staffId]);
-  
+
   // WorkLog 생성
   const createWorkLog = useCallback(async (input: WorkLogCreateInput): Promise<string> => {
     try {
@@ -196,40 +207,43 @@ export function useUnifiedWorkLogs(
       if (!validation.valid) {
         throw new Error(`검증 실패: ${validation.errors.join(', ')}`);
       }
-      
+
       // 문서 ID 생성 (eventId_staffId_date)
       const docId = `${input.eventId}_${input.staffId}_${input.date}`;
       const docRef = doc(db, 'workLogs', docId);
-      
+
       // 데이터 준비
       const data = prepareWorkLogForCreate(input);
-      
+
       // Firestore에 저장
       await setDoc(docRef, data);
       return docId;
     } catch (error) {
       logger.error('WorkLog 생성 실패', error as Error, {
-        component: 'useUnifiedWorkLogs'
+        component: 'useUnifiedWorkLogs',
       });
       throw error;
     }
   }, []);
-  
+
   // WorkLog 업데이트
-  const updateWorkLog = useCallback(async (id: string, updates: WorkLogUpdateInput): Promise<void> => {
-    try {
-      const docRef = doc(db, 'workLogs', id);
-      const data = prepareWorkLogForUpdate(updates);
-      
-      await updateDoc(docRef, data);
-    } catch (error) {
-      logger.error('WorkLog 업데이트 실패', error as Error, {
-        component: 'useUnifiedWorkLogs'
-      });
-      throw error;
-    }
-  }, []);
-  
+  const updateWorkLog = useCallback(
+    async (id: string, updates: WorkLogUpdateInput): Promise<void> => {
+      try {
+        const docRef = doc(db, 'workLogs', id);
+        const data = prepareWorkLogForUpdate(updates);
+
+        await updateDoc(docRef, data);
+      } catch (error) {
+        logger.error('WorkLog 업데이트 실패', error as Error, {
+          component: 'useUnifiedWorkLogs',
+        });
+        throw error;
+      }
+    },
+    []
+  );
+
   // WorkLog 삭제
   const deleteWorkLog = useCallback(async (id: string): Promise<void> => {
     try {
@@ -237,75 +251,88 @@ export function useUnifiedWorkLogs(
       await deleteDoc(docRef);
     } catch (error) {
       logger.error('WorkLog 삭제 실패', error as Error, {
-        component: 'useUnifiedWorkLogs'
+        component: 'useUnifiedWorkLogs',
       });
       throw error;
     }
   }, []);
-  
+
   // 여러 WorkLog 생성
-  const createMultipleWorkLogs = useCallback(async (inputs: WorkLogCreateInput[]): Promise<string[]> => {
-    const ids: string[] = [];
-    
-    for (const input of inputs) {
-      try {
-        const id = await createWorkLog(input);
-        ids.push(id);
-      } catch (error) {
-        logger.error('일괄 생성 중 오류', error as Error, {
-          component: 'useUnifiedWorkLogs'
-        });
+  const createMultipleWorkLogs = useCallback(
+    async (inputs: WorkLogCreateInput[]): Promise<string[]> => {
+      const ids: string[] = [];
+
+      for (const input of inputs) {
+        try {
+          const id = await createWorkLog(input);
+          ids.push(id);
+        } catch (error) {
+          logger.error('일괄 생성 중 오류', error as Error, {
+            component: 'useUnifiedWorkLogs',
+          });
+        }
       }
-    }
-    
-    return ids;
-  }, [createWorkLog]);
-  
+
+      return ids;
+    },
+    [createWorkLog]
+  );
+
   // 여러 WorkLog 업데이트
-  const updateMultipleWorkLogs = useCallback(async (
-    updates: { id: string; data: WorkLogUpdateInput }[]
-  ): Promise<void> => {
-    for (const { id, data } of updates) {
-      try {
-        await updateWorkLog(id, data);
-      } catch (error) {
-        logger.error('일괄 업데이트 중 오류', error as Error, {
-          component: 'useUnifiedWorkLogs'
-        });
+  const updateMultipleWorkLogs = useCallback(
+    async (updates: { id: string; data: WorkLogUpdateInput }[]): Promise<void> => {
+      for (const { id, data } of updates) {
+        try {
+          await updateWorkLog(id, data);
+        } catch (error) {
+          logger.error('일괄 업데이트 중 오류', error as Error, {
+            component: 'useUnifiedWorkLogs',
+          });
+        }
       }
-    }
-  }, [updateWorkLog]);
-  
+    },
+    [updateWorkLog]
+  );
+
   // 재조회 (실시간 구독이므로 필터 업데이트로 트리거)
   const refetch = useCallback(() => {
-    setFilter(prev => ({ ...prev }));
+    setFilter((prev) => ({ ...prev }));
   }, []);
-  
+
   // 필터 적용
   const applyFilter = useCallback((newFilter: WorkLogFilter) => {
     setFilter(newFilter);
   }, []);
-  
+
   // 필터 초기화
   const clearFilter = useCallback(() => {
     setFilter({});
   }, []);
-  
+
   // ID로 WorkLog 찾기
-  const getWorkLogById = useCallback((id: string): UnifiedWorkLog | undefined => {
-    return workLogs.find(log => log.id === id);
-  }, [workLogs]);
-  
+  const getWorkLogById = useCallback(
+    (id: string): UnifiedWorkLog | undefined => {
+      return workLogs.find((log) => log.id === id);
+    },
+    [workLogs]
+  );
+
   // staffId로 WorkLog 찾기
-  const getWorkLogsByStaffId = useCallback((staffId: string): UnifiedWorkLog[] => {
-    return workLogs.filter(log => log.staffId === staffId);
-  }, [workLogs]);
-  
+  const getWorkLogsByStaffId = useCallback(
+    (staffId: string): UnifiedWorkLog[] => {
+      return workLogs.filter((log) => log.staffId === staffId);
+    },
+    [workLogs]
+  );
+
   // eventId로 WorkLog 찾기
-  const getWorkLogsByEventId = useCallback((eventId: string): UnifiedWorkLog[] => {
-    return workLogs.filter(log => log.eventId === eventId);
-  }, [workLogs]);
-  
+  const getWorkLogsByEventId = useCallback(
+    (eventId: string): UnifiedWorkLog[] => {
+      return workLogs.filter((log) => log.eventId === eventId);
+    },
+    [workLogs]
+  );
+
   return {
     workLogs,
     loading,
@@ -320,7 +347,7 @@ export function useUnifiedWorkLogs(
     clearFilter,
     getWorkLogById,
     getWorkLogsByStaffId,
-    getWorkLogsByEventId
+    getWorkLogsByEventId,
   };
 }
 
@@ -332,7 +359,7 @@ export function useJobPostingWorkLogs(eventId?: string) {
     filter: eventId ? { eventId: eventId } : {},
     sort: { field: '', direction: 'desc' }, // 정렬 비활성화
     realtime: true,
-    autoNormalize: true
+    autoNormalize: true,
   });
 }
 
@@ -344,7 +371,7 @@ export function useStaffWorkLogs(staffId?: string) {
     filter: staffId ? { staffId } : {},
     sort: { field: '', direction: 'desc' }, // 정렬 비활성화
     realtime: true,
-    autoNormalize: true
+    autoNormalize: true,
   });
 }
 
@@ -355,11 +382,11 @@ export function useDateRangeWorkLogs(dateFrom?: string, dateTo?: string) {
   const filter: WorkLogFilter = {};
   if (dateFrom) filter.dateFrom = dateFrom;
   if (dateTo) filter.dateTo = dateTo;
-  
+
   return useUnifiedWorkLogs({
     filter,
     sort: { field: '', direction: 'desc' }, // 정렬 비활성화
     realtime: true,
-    autoNormalize: true
+    autoNormalize: true,
   });
 }

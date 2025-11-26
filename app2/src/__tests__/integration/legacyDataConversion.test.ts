@@ -19,8 +19,8 @@ jest.mock('../../utils/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
     info: jest.fn(),
-    debug: jest.fn()
-  }
+    debug: jest.fn(),
+  },
 }));
 
 describe('레거시 데이터 변환 통합 테스트', () => {
@@ -39,7 +39,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
         id: 'legacy-001',
         title: '레거시 지원 공고',
         type: 'application',
-        status: 'open'
+        status: 'open',
       };
 
       // When: normalizePostingType 호출
@@ -53,7 +53,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
         '레거시 application 타입을 regular로 변환',
         expect.objectContaining({
           component: 'jobPostingHelpers',
-          operation: 'normalizePostingType'
+          operation: 'normalizePostingType',
         })
       );
     });
@@ -63,7 +63,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
       const modernPosting: Partial<JobPosting> = {
         id: 'modern-001',
         postingType: 'urgent',
-        type: 'application' // 레거시 필드도 있지만 무시됨
+        type: 'application', // 레거시 필드도 있지만 무시됨
       };
 
       // When
@@ -87,7 +87,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
         id: 'legacy-fixed-001',
         title: '레거시 고정 공고',
         recruitmentType: 'fixed',
-        status: 'open'
+        status: 'open',
       };
 
       // When
@@ -101,7 +101,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
         '레거시 fixed 타입을 fixed로 유지',
         expect.objectContaining({
           component: 'jobPostingHelpers',
-          operation: 'normalizePostingType'
+          operation: 'normalizePostingType',
         })
       );
     });
@@ -111,7 +111,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
       const legacyPosting: Partial<JobPosting> = {
         id: 'legacy-002',
         type: 'application',
-        recruitmentType: 'fixed'
+        recruitmentType: 'fixed',
       };
 
       // When
@@ -131,7 +131,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
       const emptyPosting: Partial<JobPosting> = {
         id: 'no-type-001',
         title: '타입 필드 없는 공고',
-        status: 'open'
+        status: 'open',
       };
 
       // When
@@ -146,7 +146,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
         expect.any(Error),
         expect.objectContaining({
           component: 'jobPostingHelpers',
-          operation: 'normalizePostingType'
+          operation: 'normalizePostingType',
         })
       );
     });
@@ -176,43 +176,43 @@ describe('레거시 데이터 변환 통합 테스트', () => {
       {
         description: 'postingType="regular"',
         input: { postingType: 'regular' },
-        expected: 'regular'
+        expected: 'regular',
       },
       {
         description: 'postingType="fixed"',
         input: { postingType: 'fixed' },
-        expected: 'fixed'
+        expected: 'fixed',
       },
       {
         description: 'postingType="tournament"',
         input: { postingType: 'tournament' },
-        expected: 'tournament'
+        expected: 'tournament',
       },
       {
         description: 'postingType="urgent"',
         input: { postingType: 'urgent' },
-        expected: 'urgent'
+        expected: 'urgent',
       },
       {
         description: 'type="application" (레거시)',
         input: { type: 'application' },
-        expected: 'regular'
+        expected: 'regular',
       },
       {
         description: 'recruitmentType="application" (레거시)',
         input: { recruitmentType: 'application' },
-        expected: 'regular'
+        expected: 'regular',
       },
       {
         description: 'type="fixed" (레거시)',
         input: { type: 'fixed' },
-        expected: 'fixed'
+        expected: 'fixed',
       },
       {
         description: 'recruitmentType="fixed" (레거시)',
         input: { recruitmentType: 'fixed' },
-        expected: 'fixed'
-      }
+        expected: 'fixed',
+      },
     ];
 
     testCases.forEach(({ description, input, expected }) => {
@@ -230,7 +230,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
     it('잘못된 type 값은 기본값 "regular" 반환', () => {
       // Given: 잘못된 type 값
       const invalidPosting: Partial<JobPosting> = {
-        type: 'invalid-type' as any
+        type: 'invalid-type' as any,
       };
 
       // When
@@ -255,7 +255,7 @@ describe('레거시 데이터 변환 통합 테스트', () => {
     it('null 값도 기본값 "regular" 반환', () => {
       // Given: null
       const nullPosting: Partial<JobPosting> = {
-        type: null as any
+        type: null as any,
       };
 
       // When

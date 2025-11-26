@@ -21,11 +21,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
     // 메타 태그 설정
     const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement;
     if (metaDescription) {
-      metaDescription.content = 'Smart platform for tournament management, staff management, and job postings all in one place';
+      metaDescription.content =
+        'Smart platform for tournament management, staff management, and job postings all in one place';
     } else {
       const meta = document.createElement('meta');
       meta.name = 'description';
-      meta.content = 'Smart platform for tournament management, staff management, and job postings all in one place';
+      meta.content =
+        'Smart platform for tournament management, staff management, and job postings all in one place';
       document.head.appendChild(meta);
     }
 
@@ -43,7 +45,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content, onCtaClick }) => {
     };
 
     setOgMeta('og:title', 'UNIQN - Tournament Management Platform');
-    setOgMeta('og:description', 'Smart platform for tournament management, staff management, and job postings all in one place');
+    setOgMeta(
+      'og:description',
+      'Smart platform for tournament management, staff management, and job postings all in one place'
+    );
     setOgMeta('og:type', 'website');
   }, []);
 

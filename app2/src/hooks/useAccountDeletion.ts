@@ -15,18 +15,9 @@ import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreQuery } from './firestore';
-import {
-  requestAccountDeletion,
-  cancelDeletionRequest,
-} from '../services/accountDeletionService';
-import {
-  calculateRemainingDays,
-  convertDeletionTimestamp,
-} from '../types/accountDeletion';
-import type {
-  DeletionRequest,
-  DeletionRequestInput,
-} from '../types/accountDeletion';
+import { requestAccountDeletion, cancelDeletionRequest } from '../services/accountDeletionService';
+import { calculateRemainingDays, convertDeletionTimestamp } from '../types/accountDeletion';
+import type { DeletionRequest, DeletionRequestInput } from '../types/accountDeletion';
 
 export interface UseAccountDeletionReturn {
   // 데이터
@@ -93,19 +84,20 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
     loading,
     error: hookError,
   } = useFirestoreQuery<Omit<DeletionRequest, 'id'>>(
-    deletionQuery || query(collection(db, 'deletionRequests'), where('__name__', '==', '__non_existent__')),
+    deletionQuery ||
+      query(collection(db, 'deletionRequests'), where('__name__', '==', '__non_existent__')),
     {
       enabled: deletionQuery !== null,
       onSuccess: () => {
         logger.debug('삭제 요청 실시간 업데이트', {
           component: 'useAccountDeletion',
-          data: { userId: currentUser?.uid, count: deletionRequestList.length }
+          data: { userId: currentUser?.uid, count: deletionRequestList.length },
         });
       },
       onError: (err) => {
         logger.error('삭제 요청 구독 실패', err, {
           component: 'useAccountDeletion',
-          data: { userId: currentUser?.uid }
+          data: { userId: currentUser?.uid },
         });
         setError(err);
       },
@@ -198,7 +190,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
   const refreshDeletionStatus = useCallback(async (): Promise<void> => {
     // useFirestoreQuery는 실시간 구독이므로 별도 새로고침 불필요
     logger.info('실시간 구독 중이므로 자동 업데이트됩니다', {
-      component: 'useAccountDeletion'
+      component: 'useAccountDeletion',
     });
   }, []);
 

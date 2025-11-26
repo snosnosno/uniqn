@@ -1,17 +1,17 @@
 /**
  * 통합 WorkLog 인터페이스
- * 
+ *
  * 이 파일은 T-HOLDEM 프로젝트의 모든 WorkLog 관련 데이터를 통합하는 표준 형식을 정의합니다.
- * 
+ *
  * @version 2.0
  * @since 2025-01-01
  * @author T-HOLDEM Development Team
- * 
+ *
  * 주요 특징:
  * - 모든 WorkLog 관련 데이터의 표준 형식
  * - 레거시 필드와의 호환성 보장
  * - 타입 안전성 및 유효성 검사 포함
- * 
+ *
  * 표준 필드:
  * - staffId: 스태프 식별자
  * - eventId: 이벤트 식별자
@@ -25,14 +25,14 @@ import { Timestamp } from 'firebase/firestore';
 /**
  * 통합 WorkLog 인터페이스
  * @description 모든 WorkLog 관련 데이터의 표준 형식입니다. 새로운 개발에서는 이 타입을 우선 사용하세요.
- * 
+ *
  * 표준 필드:
  * - staffId: 스태프 식별자
  * - eventId: 이벤트 식별자
  * - staffName: 스태프 이름
  * - scheduledStartTime/EndTime: 예정 근무 시간
  * - actualStartTime/EndTime: 실제 근무 시간
- * 
+ *
  * @example
  * ```typescript
  * const workLog: UnifiedWorkLog = {
@@ -51,37 +51,37 @@ export interface UnifiedWorkLog {
   // 기본 식별자
   /** 근무 로그 고유 ID */
   id: string;
-  
+
   /** 스태프 ID */
   staffId: string;
-  
+
   /** 이벤트 ID */
   eventId: string;
-  
+
   // 스태프 정보
   /** 스태프 이름 */
   staffName: string;
-  
+
   /** 역할 */
   role?: string;
-  
+
   // 일정 정보
   /** 근무 날짜 (YYYY-MM-DD 형식) */
   date: string;
-  
+
   /** 근무 타입 */
   type?: 'schedule' | 'qr' | 'manual';
-  
+
   // 시간 정보 (string 또는 Timestamp 지원)
   /** 예정 시작 시간 (표준 필드) */
   scheduledStartTime?: string | Timestamp | null;
-  
+
   /** 예정 종료 시간 (표준 필드) */
   scheduledEndTime?: string | Timestamp | null;
-  
+
   /** 실제 시작 시간 */
   actualStartTime?: string | Timestamp | null;
-  
+
   /** 실제 종료 시간 */
   actualEndTime?: string | Timestamp | null;
 
@@ -103,28 +103,28 @@ export interface UnifiedWorkLog {
 
   /** 원본 예정 종료 시간 (퇴근 시 라운드업 전) */
   originalScheduledEndTime?: Timestamp | string | null;
-  
+
   // 근무 정보
   /** 총 근무시간 (분 단위) */
   totalWorkMinutes?: number;
-  
+
   /** 총 휴게시간 (분 단위) */
   totalBreakMinutes?: number;
-  
+
   /** 근무시간 (시간 단위) */
   hoursWorked?: number;
-  
+
   /** 초과근무시간 (시간 단위) */
   overtime?: number;
-  
+
   // 상태
   /** 근무 상태 - 출석 상태와 통합 */
   status?: 'not_started' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
-  
+
   // 테이블/위치 정보 (딜러용)
   /** 테이블 배정 정보 */
   tableAssignments?: string[];
-  
+
   // 메타데이터
   /** 비고 */
   notes?: string;
@@ -163,7 +163,7 @@ export interface UnifiedWorkLog {
 /**
  * 레거시 호환성을 위한 타입
  * @description 표준 WorkLog 사용 가이드입니다.
- * 
+ *
  * 사용 예시:
  * ```typescript
  * // ✅ 표준 필드 사용
@@ -210,7 +210,7 @@ export interface WorkLogFilter {
  * WorkLog 정렬 옵션
  */
 export interface WorkLogSortOption {
-  field: 'date' | 'staffName' | 'createdAt' | 'updatedAt' | '';  // 빈 문자열 허용 (정렬 비활성화)
+  field: 'date' | 'staffName' | 'createdAt' | 'updatedAt' | ''; // 빈 문자열 허용 (정렬 비활성화)
   direction: 'asc' | 'desc';
 }
 
@@ -223,7 +223,7 @@ export interface WorkLogSortOption {
  * UnifiedWorkLog 타입 가드
  * @param data 확인할 데이터
  * @returns UnifiedWorkLog 타입인지 여부
- * 
+ *
  * @example
  * ```typescript
  * if (isUnifiedWorkLog(data)) {
@@ -233,19 +233,20 @@ export interface WorkLogSortOption {
  * ```
  */
 export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
-  return data && 
-    typeof data.staffId === 'string' && 
+  return (
+    data &&
+    typeof data.staffId === 'string' &&
     typeof data.eventId === 'string' &&
     typeof data.date === 'string' &&
-    typeof data.staffName === 'string';
+    typeof data.staffName === 'string'
+  );
 };
-
 
 /**
  * WorkLog 데이터 유효성 검사
  * @param data 검사할 WorkLog 데이터
  * @returns 유효성 검사 결과
- * 
+ *
  * @example
  * ```typescript
  * const validation = validateWorkLog(data);
@@ -256,32 +257,32 @@ export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
  */
 export const validateWorkLog = (data: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
-  
+
   if (!data) {
     errors.push('WorkLog 데이터가 없습니다.');
     return { isValid: false, errors };
   }
-  
+
   if (!data.id || typeof data.id !== 'string') {
     errors.push('id는 필수 문자열 필드입니다.');
   }
-  
+
   if (!data.staffId) {
     errors.push('staffId는 필수 필드입니다.');
   }
-  
+
   if (!data.eventId) {
     errors.push('eventId는 필수 필드입니다.');
   }
-  
+
   if (!data.staffName) {
     errors.push('staffName은 필수 필드입니다.');
   }
-  
+
   if (!data.date || typeof data.date !== 'string') {
     errors.push('date는 필수 문자열 필드입니다(YYYY-MM-DD 형식).');
   }
-  
+
   return { isValid: errors.length === 0, errors };
 };
 
@@ -293,10 +294,10 @@ export const WORKLOG_STATUS = {
   CHECKED_IN: 'checked_in',
   CHECKED_OUT: 'checked_out',
   COMPLETED: 'completed',
-  CANCELLED: 'cancelled'
+  CANCELLED: 'cancelled',
 } as const;
 
-export type WorkLogStatus = typeof WORKLOG_STATUS[keyof typeof WORKLOG_STATUS];
+export type WorkLogStatus = (typeof WORKLOG_STATUS)[keyof typeof WORKLOG_STATUS];
 
 /**
  * WorkLog 타입 관련 유틸리티
@@ -304,7 +305,7 @@ export type WorkLogStatus = typeof WORKLOG_STATUS[keyof typeof WORKLOG_STATUS];
 export const WORKLOG_TYPE = {
   SCHEDULE: 'schedule',
   QR: 'qr',
-  MANUAL: 'manual'
+  MANUAL: 'manual',
 } as const;
 
-export type WorkLogType = typeof WORKLOG_TYPE[keyof typeof WORKLOG_TYPE];
+export type WorkLogType = (typeof WORKLOG_TYPE)[keyof typeof WORKLOG_TYPE];

@@ -8,7 +8,12 @@
 import React, { useEffect, useCallback, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLandingAnalytics } from './hooks/useLandingAnalytics';
-import { HeroContent, FeatureSection as FeatureSectionType, TargetGroup, CTASection as CTASectionType } from './types';
+import {
+  HeroContent,
+  FeatureSection as FeatureSectionType,
+  TargetGroup,
+  CTASection as CTASectionType,
+} from './types';
 import { logger } from '../../utils/logger';
 import performanceMonitor from './utils/performanceMonitor';
 import './styles/LandingPage.css';
@@ -92,12 +97,7 @@ const targetGroups: TargetGroup[] = [
     name: 'Poker Rooms',
     title: 'New Standard for Poker Room Operations',
     description: '효율적인 게임 관리와 고객 서비스로 매출을 극대화하세요.',
-    benefits: [
-      '테이블 관리 시스템',
-      '고객 등급 관리',
-      '자동 정산 시스템',
-      '예약 관리 기능',
-    ],
+    benefits: ['테이블 관리 시스템', '고객 등급 관리', '자동 정산 시스템', '예약 관리 기능'],
     icon: 'home',
     ctaText: 'View Poker Room Solution',
   },
@@ -106,12 +106,7 @@ const targetGroups: TargetGroup[] = [
     name: '스태프',
     title: '스태프를 위한 스마트 워크 플랫폼',
     description: '편리한 스케줄 관리와 투명한 급여 시스템으로 더 나은 근무환경을 경험하세요.',
-    benefits: [
-      '유연한 스케줄 관리',
-      '실시간 급여 확인',
-      '간편한 출퇴근 체크',
-      '커리어 성장 지원',
-    ],
+    benefits: ['유연한 스케줄 관리', '실시간 급여 확인', '간편한 출퇴근 체크', '커리어 성장 지원'],
     icon: 'user-group',
     ctaText: '스태프 지원하기',
   },
@@ -119,7 +114,8 @@ const targetGroups: TargetGroup[] = [
 
 const ctaContent: CTASectionType = {
   title: '지금 바로 시작하세요',
-  description: 'Experience more efficient and systematic tournament management with UNIQN. Start with a free trial.',
+  description:
+    'Experience more efficient and systematic tournament management with UNIQN. Start with a free trial.',
   primaryCTA: {
     text: '무료로 시작하기',
     link: '/signup',
@@ -146,7 +142,9 @@ const LandingPage: React.FC = () => {
 
     // 페이지 성능 메트릭 수집 (기존 로직 유지 + 성능 모니터 연동)
     const collectPerformanceMetrics = () => {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const navigation = performance.getEntriesByType(
+        'navigation'
+      )[0] as PerformanceNavigationTiming;
 
       if (navigation) {
         const performanceData = {
@@ -229,91 +227,103 @@ const LandingPage: React.FC = () => {
   }, [analytics, activeSection]);
 
   // CTA 클릭 핸들러
-  const handleCtaClick = useCallback((link: string) => {
-    const ctaText = link === '/signup' ? '무료로 시작하기' : '데모 보기';
+  const handleCtaClick = useCallback(
+    (link: string) => {
+      const ctaText = link === '/signup' ? '무료로 시작하기' : '데모 보기';
 
-    analytics.trackCtaClick(ctaText, link, {
-      section: activeSection,
-      timestamp: Date.now(),
-    });
+      analytics.trackCtaClick(ctaText, link, {
+        section: activeSection,
+        timestamp: Date.now(),
+      });
 
-    // 네비게이션
-    navigate(link);
-  }, [analytics, navigate, activeSection]);
+      // 네비게이션
+      navigate(link);
+    },
+    [analytics, navigate, activeSection]
+  );
 
   // 기능 클릭 핸들러
-  const handleFeatureClick = useCallback((featureId: string) => {
-    analytics.trackInteraction('feature_click', {
-      feature_id: featureId,
-      section: 'features',
-    });
+  const handleFeatureClick = useCallback(
+    (featureId: string) => {
+      analytics.trackInteraction('feature_click', {
+        feature_id: featureId,
+        section: 'features',
+      });
 
-    // 기능별 실제 페이지로 이동
-    const routeMap: Record<string, string> = {
-      'job-posting': '/admin/job-postings',
-      'staff-management': '/admin/shift-schedule',
-      'payroll': '/admin/job-postings',
-      'tournament-management': '/admin/participants',
-    };
+      // 기능별 실제 페이지로 이동
+      const routeMap: Record<string, string> = {
+        'job-posting': '/admin/job-postings',
+        'staff-management': '/admin/shift-schedule',
+        payroll: '/admin/job-postings',
+        'tournament-management': '/admin/participants',
+      };
 
-    const route = routeMap[featureId];
-    if (route) {
-      navigate(route);
-    } else {
-      logger.info('Feature clicked', { featureId });
-    }
-  }, [analytics, navigate]);
+      const route = routeMap[featureId];
+      if (route) {
+        navigate(route);
+      } else {
+        logger.info('Feature clicked', { featureId });
+      }
+    },
+    [analytics, navigate]
+  );
 
   // 타겟 클릭 핸들러
-  const handleTargetClick = useCallback((targetId: string) => {
-    analytics.trackInteraction('target_click', {
-      target_id: targetId,
-      section: 'targets',
-    });
+  const handleTargetClick = useCallback(
+    (targetId: string) => {
+      analytics.trackInteraction('target_click', {
+        target_id: targetId,
+        section: 'targets',
+      });
 
-    // 타겟별 실제 기능으로 이동
-    const routeMap: Record<string, string> = {
-      'tournament-organizers': '/admin/job-postings',
-      'poker-rooms': '/admin/job-postings',
-      'staff': '/jobs',
-    };
+      // 타겟별 실제 기능으로 이동
+      const routeMap: Record<string, string> = {
+        'tournament-organizers': '/admin/job-postings',
+        'poker-rooms': '/admin/job-postings',
+        staff: '/jobs',
+      };
 
-    const route = routeMap[targetId];
-    if (route) {
-      navigate(route);
-    } else {
-      // fallback to solutions page
-      navigate(`/solutions/${targetId}`);
-    }
-  }, [analytics, navigate]);
+      const route = routeMap[targetId];
+      if (route) {
+        navigate(route);
+      } else {
+        // fallback to solutions page
+        navigate(`/solutions/${targetId}`);
+      }
+    },
+    [analytics, navigate]
+  );
 
   // 스킵 링크 핸들러
-  const handleSkipToMain = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const mainContent = document.getElementById('main-content');
-      if (mainContent) {
-        mainContent.focus();
-        analytics.trackInteraction('skip_link_used', {
-          accessibility: true,
-        });
+  const handleSkipToMain = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+          mainContent.focus();
+          analytics.trackInteraction('skip_link_used', {
+            accessibility: true,
+          });
+        }
       }
-    }
-  }, [analytics]);
+    },
+    [analytics]
+  );
 
   // 네비게이션 섹션 클릭 핸들러
-  const handleNavigationSectionClick = useCallback((sectionId: string) => {
-    analytics.trackInteraction('nav_section_click', {
-      section: sectionId,
-      navigation_type: 'landing_nav',
-    });
-  }, [analytics]);
+  const handleNavigationSectionClick = useCallback(
+    (sectionId: string) => {
+      analytics.trackInteraction('nav_section_click', {
+        section: sectionId,
+        navigation_type: 'landing_nav',
+      });
+    },
+    [analytics]
+  );
 
   return (
-    <div
-      data-testid="landing-page"
-      className="min-h-screen scroll-smooth landing-page"
-    >
+    <div data-testid="landing-page" className="min-h-screen scroll-smooth landing-page">
       {/* 네비게이션 바 */}
       <LandingNavigation onSectionClick={handleNavigationSectionClick} />
 
@@ -330,34 +340,22 @@ const LandingPage: React.FC = () => {
       <main id="main-content" role="main" tabIndex={-1}>
         {/* Hero 섹션 */}
         <Suspense fallback={<SectionLoader />}>
-          <HeroSection
-            content={heroContent}
-            onCtaClick={handleCtaClick}
-          />
+          <HeroSection content={heroContent} onCtaClick={handleCtaClick} />
         </Suspense>
 
         {/* Features 섹션 */}
         <Suspense fallback={<SectionLoader />}>
-          <FeatureSection
-            content={featureContent}
-            onFeatureClick={handleFeatureClick}
-          />
+          <FeatureSection content={featureContent} onFeatureClick={handleFeatureClick} />
         </Suspense>
 
         {/* Target 섹션 */}
         <Suspense fallback={<SectionLoader />}>
-          <TargetSection
-            targets={targetGroups}
-            onTargetClick={handleTargetClick}
-          />
+          <TargetSection targets={targetGroups} onTargetClick={handleTargetClick} />
         </Suspense>
 
         {/* CTA 섹션 */}
         <Suspense fallback={<SectionLoader />}>
-          <CTASection
-            content={ctaContent}
-            onCtaClick={handleCtaClick}
-          />
+          <CTASection content={ctaContent} onCtaClick={handleCtaClick} />
         </Suspense>
       </main>
 
@@ -390,9 +388,10 @@ const LandingPage: React.FC = () => {
               }}
               className={`
                 block w-3 h-3 rounded-full mb-3 last:mb-0 floating-nav-dot focus-visible
-                ${activeSection === section.id
-                  ? 'bg-blue-600 dark:bg-blue-500 scale-125 active'
-                  : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+                ${
+                  activeSection === section.id
+                    ? 'bg-blue-600 dark:bg-blue-500 scale-125 active'
+                    : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
                 }
               `}
               aria-label={`${section.label} 섹션으로 이동`}

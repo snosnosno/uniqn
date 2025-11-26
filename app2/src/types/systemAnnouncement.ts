@@ -214,7 +214,7 @@ export const validateSystemAnnouncement = (
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
 
@@ -225,7 +225,7 @@ export const getPriorityLabel = (priority: AnnouncementPriority): string => {
   const labels: Record<AnnouncementPriority, string> = {
     normal: '일반',
     important: '중요',
-    urgent: '긴급'
+    urgent: '긴급',
   };
   return labels[priority];
 };
@@ -237,7 +237,7 @@ export const getPriorityColor = (priority: AnnouncementPriority): string => {
   const colors: Record<AnnouncementPriority, string> = {
     normal: 'blue',
     important: 'orange',
-    urgent: 'red'
+    urgent: 'red',
   };
   return colors[priority];
 };
@@ -247,9 +247,12 @@ export const getPriorityColor = (priority: AnnouncementPriority): string => {
  */
 export const getPriorityBadgeStyle = (priority: AnnouncementPriority): string => {
   const styles: Record<AnnouncementPriority, string> = {
-    normal: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700',
-    important: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700',
-    urgent: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700'
+    normal:
+      'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700',
+    important:
+      'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700',
+    urgent:
+      'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700',
   };
   return styles[priority];
 };

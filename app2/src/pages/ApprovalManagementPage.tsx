@@ -64,9 +64,7 @@ const ApprovalManagementPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-300">
-            오류가 발생했습니다: {error.message}
-          </p>
+          <p className="text-red-800 dark:text-red-300">오류가 발생했습니다: {error.message}</p>
         </div>
       </div>
     );
@@ -88,8 +86,18 @@ const ApprovalManagementPage: React.FC = () => {
       {pendingPostings.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <div className="text-gray-400 dark:text-gray-500 mb-2">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="mx-auto h-12 w-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
           </div>
           <p className="text-gray-600 dark:text-gray-300 text-lg font-medium mb-1">
@@ -128,18 +136,26 @@ const ApprovalManagementPage: React.FC = () => {
                     </div>
                     <div>
                       <span className="font-medium">작성일:</span>{' '}
-                      {posting.createdAt && format(posting.createdAt.toDate(), 'yyyy.MM.dd HH:mm', { locale: ko })}
+                      {posting.createdAt &&
+                        format(posting.createdAt.toDate(), 'yyyy.MM.dd HH:mm', { locale: ko })}
                     </div>
                     <div>
                       <span className="font-medium">작성자 ID:</span> {posting.createdBy}
                     </div>
                     <div>
                       <span className="font-medium">모집 인원:</span>{' '}
-                      {posting.dateSpecificRequirements.reduce((sum, req) =>
-                        sum + req.timeSlots.reduce((slotSum, slot) =>
-                          slotSum + slot.roles.reduce((roleSum, role) => roleSum + role.count, 0), 0
-                        ), 0
-                      )}명
+                      {posting.dateSpecificRequirements.reduce(
+                        (sum, req) =>
+                          sum +
+                          req.timeSlots.reduce(
+                            (slotSum, slot) =>
+                              slotSum +
+                              slot.roles.reduce((roleSum, role) => roleSum + role.count, 0),
+                            0
+                          ),
+                        0
+                      )}
+                      명
                     </div>
                   </div>
 

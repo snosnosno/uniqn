@@ -1,6 +1,6 @@
 /**
  * Firebase Performance Monitoring 설정
- * 
+ *
  * 애플리케이션의 성능 메트릭을 추적하고 모니터링합니다.
  */
 
@@ -19,7 +19,7 @@ export const initializePerformance = () => {
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
       performance = getPerformance(app);
       logger.info('Firebase Performance 초기화 완료');
-      
+
       // 자동 추적 활성화
       // Performance SDK는 자동으로 다음을 추적합니다:
       // - 페이지 로드 시간
@@ -37,7 +37,7 @@ export const initializePerformance = () => {
  */
 export const startTrace = (traceName: string) => {
   if (!performance) return null;
-  
+
   try {
     const customTrace = trace(performance, traceName);
     customTrace.start();
@@ -60,7 +60,7 @@ export const putMetric = (
   value: number
 ) => {
   if (!customTrace) return;
-  
+
   try {
     customTrace.putMetric(metricName, value);
   } catch (error) {
@@ -80,7 +80,7 @@ export const putAttribute = (
   value: string
 ) => {
   if (!customTrace) return;
-  
+
   try {
     customTrace.putAttribute(attributeName, value);
   } catch (error) {
@@ -94,7 +94,7 @@ export const putAttribute = (
  */
 export const stopTrace = (customTrace: ReturnType<typeof trace> | null) => {
   if (!customTrace) return;
-  
+
   try {
     customTrace.stop();
   } catch (error) {
@@ -113,17 +113,17 @@ export const measureDatabaseOperation = async <T>(
 ): Promise<T> => {
   const trace = startTrace(`db_${operationName}`);
   const startTime = performance ? window.performance.now() : 0;
-  
+
   try {
     const result = await operation();
-    
+
     if (trace && performance) {
       const duration = window.performance.now() - startTime;
       putMetric(trace, 'duration', Math.round(duration));
       putAttribute(trace, 'operation', operationName);
       putAttribute(trace, 'status', 'success');
     }
-    
+
     return result;
   } catch (error) {
     if (trace) {
@@ -141,23 +141,20 @@ export const measureDatabaseOperation = async <T>(
  * @param apiName API 이름
  * @param apiCall API 호출 함수
  */
-export const measureApiCall = async <T>(
-  apiName: string,
-  apiCall: () => Promise<T>
-): Promise<T> => {
+export const measureApiCall = async <T>(apiName: string, apiCall: () => Promise<T>): Promise<T> => {
   const trace = startTrace(`api_${apiName}`);
   const startTime = performance ? window.performance.now() : 0;
-  
+
   try {
     const result = await apiCall();
-    
+
     if (trace && performance) {
       const duration = window.performance.now() - startTime;
       putMetric(trace, 'response_time', Math.round(duration));
       putAttribute(trace, 'api', apiName);
       putAttribute(trace, 'status', 'success');
     }
-    
+
     return result;
   } catch (error) {
     if (trace) {
@@ -176,7 +173,7 @@ export const measureApiCall = async <T>(
  */
 export const measureComponentRender = (componentName: string) => {
   const trace = startTrace(`component_${componentName}`);
-  
+
   return {
     start: () => {
       if (trace) {
@@ -185,7 +182,7 @@ export const measureComponentRender = (componentName: string) => {
     },
     stop: () => {
       stopTrace(trace);
-    }
+    },
   };
 };
 
@@ -195,23 +192,23 @@ export const measureComponentRender = (componentName: string) => {
  */
 export const measurePageLoad = (pageName: string) => {
   const trace = startTrace(`page_${pageName}`);
-  
+
   if (trace) {
     putAttribute(trace, 'page', pageName);
-    
+
     // 페이지 로드 관련 메트릭 추가
     if (window.performance && window.performance.timing) {
       const timing = window.performance.timing;
       const loadTime = timing.loadEventEnd - timing.navigationStart;
       const domReadyTime = timing.domContentLoadedEventEnd - timing.navigationStart;
       const renderTime = timing.domComplete - timing.domLoading;
-      
+
       putMetric(trace, 'page_load_time', loadTime);
       putMetric(trace, 'dom_ready_time', domReadyTime);
       putMetric(trace, 'render_time', renderTime);
     }
   }
-  
+
   return trace;
 };
 
@@ -221,11 +218,11 @@ export const measurePageLoad = (pageName: string) => {
  */
 export const measureImageLoad = (imageSrc: string) => {
   const trace = startTrace('image_load');
-  
+
   if (trace) {
     putAttribute(trace, 'image_src', imageSrc);
   }
-  
+
   return {
     onLoad: () => {
       if (trace) {
@@ -238,6 +235,6 @@ export const measureImageLoad = (imageSrc: string) => {
         putAttribute(trace, 'status', 'error');
       }
       stopTrace(trace);
-    }
+    },
   };
 };

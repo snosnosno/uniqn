@@ -55,9 +55,10 @@ const performanceTest = {
         tcpConnection: navigation.connectEnd - navigation.connectStart,
 
         // SSL 협상 시간 (HTTPS인 경우)
-        sslNegotiation: navigation.secureConnectionStart > 0
-          ? navigation.connectEnd - navigation.secureConnectionStart
-          : 0,
+        sslNegotiation:
+          navigation.secureConnectionStart > 0
+            ? navigation.connectEnd - navigation.secureConnectionStart
+            : 0,
 
         // 서버 응답 시간
         serverResponse: navigation.responseStart - navigation.requestStart,
@@ -72,7 +73,7 @@ const performanceTest = {
         domReady: navigation.domContentLoadedEventEnd - navigation.fetchStart,
 
         // 첫 바이트까지의 시간 (TTFB)
-        ttfb: navigation.responseStart - navigation.fetchStart
+        ttfb: navigation.responseStart - navigation.fetchStart,
       };
 
       logger.info('=== 페이지 로딩 성능 ===');
@@ -93,22 +94,26 @@ const performanceTest = {
       stylesheets: [],
       images: [],
       fonts: [],
-      others: []
+      others: [],
     };
 
-    resources.forEach(resource => {
+    resources.forEach((resource) => {
       const info = {
         name: resource.name.split('/').pop(),
         size: resource.transferSize || 0,
         loadTime: resource.responseEnd - resource.startTime,
-        type: resource.initiatorType
+        type: resource.initiatorType,
       };
 
       if (resource.name.includes('.js')) {
         analysis.scripts.push(info);
       } else if (resource.name.includes('.css')) {
         analysis.stylesheets.push(info);
-      } else if (resource.name.includes('.png') || resource.name.includes('.jpg') || resource.name.includes('.svg')) {
+      } else if (
+        resource.name.includes('.png') ||
+        resource.name.includes('.jpg') ||
+        resource.name.includes('.svg')
+      ) {
         analysis.images.push(info);
       } else if (resource.name.includes('.woff') || resource.name.includes('.ttf')) {
         analysis.fonts.push(info);
@@ -124,15 +129,22 @@ const performanceTest = {
     logger.info(`Fonts: ${analysis.fonts.length}개`);
 
     // 가장 큰 리소스들
-    const allResources = [...analysis.scripts, ...analysis.stylesheets, ...analysis.images, ...analysis.others];
+    const allResources = [
+      ...analysis.scripts,
+      ...analysis.stylesheets,
+      ...analysis.images,
+      ...analysis.others,
+    ];
     const largestResources = allResources
-      .filter(r => r.size > 0)
+      .filter((r) => r.size > 0)
       .sort((a, b) => b.size - a.size)
       .slice(0, 5);
 
     logger.info('=== 가장 큰 리소스 5개 ===');
-    largestResources.forEach(resource => {
-      logger.info(`${resource.name}: ${(resource.size / 1024).toFixed(2)} KB (${resource.loadTime.toFixed(2)}ms)`);
+    largestResources.forEach((resource) => {
+      logger.info(
+        `${resource.name}: ${(resource.size / 1024).toFixed(2)} KB (${resource.loadTime.toFixed(2)}ms)`
+      );
     });
 
     return analysis;
@@ -145,7 +157,7 @@ const performanceTest = {
       const usage = {
         used: (memory.usedJSHeapSize / 1024 / 1024).toFixed(2),
         total: (memory.totalJSHeapSize / 1024 / 1024).toFixed(2),
-        limit: (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)
+        limit: (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2),
       };
 
       logger.info('=== 메모리 사용량 ===');
@@ -184,7 +196,7 @@ const performanceTest = {
 
     logger.info('=====================================');
     logger.info('✅ 성능 테스트 완료');
-  }
+  },
 };
 
 // 브라우저 콘솔에서 사용 가능하도록 전역으로 노출

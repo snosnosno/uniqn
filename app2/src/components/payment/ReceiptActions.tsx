@@ -20,7 +20,7 @@ import type { Receipt } from '../../types/payment/receipt';
 interface ReceiptActionsProps {
   orderId: string;
   receiptType: 'payment' | 'subscription' | 'refund';
-  receipt?: Receipt;  // 영수증 데이터가 있으면 전달
+  receipt?: Receipt; // 영수증 데이터가 있으면 전달
   className?: string;
 }
 

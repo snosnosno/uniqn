@@ -13,12 +13,12 @@ export const mockAuthContextValue = {
     tenantId: null,
     delete: async () => {},
     getIdToken: async () => '',
-    getIdTokenResult: async () => ({} as any),
+    getIdTokenResult: async () => ({}) as any,
     reload: async () => {},
     toJSON: () => ({}),
     phoneNumber: null,
     providerId: 'firebase',
-    region: 'kr'
+    region: 'kr',
   },
   loading: false,
   isAdmin: true,
@@ -26,7 +26,7 @@ export const mockAuthContextValue = {
   signOut: jest.fn(),
   signIn: jest.fn(),
   sendPasswordReset: jest.fn(),
-  signInWithGoogle: jest.fn()
+  signInWithGoogle: jest.fn(),
 };
 
 export const useAuth = () => mockAuthContextValue;

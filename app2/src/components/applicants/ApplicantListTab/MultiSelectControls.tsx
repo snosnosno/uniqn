@@ -10,7 +10,7 @@ import {
   getApplicantSelections,
   groupSingleDaySelections,
   formatDateDisplay,
-  getStaffCounts
+  getStaffCounts,
 } from '@/utils/applicants';
 
 /**
@@ -91,12 +91,12 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
   onConfirm,
   canEdit,
   _onRefresh,
-  applications = []
+  applications = [],
 }) => {
   const { t } = useTranslation();
-  
+
   // 디버깅: applications 배열 확인
-  
+
   // 🔥 새로운 checkMethod 기반 그룹화 로직 - 날짜 범위 유지
   const groupedSelections = useMemo(() => {
     const allSelections = getApplicantSelections(applicant, jobPosting);
@@ -109,9 +109,9 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
 
     allSelections.forEach((selection) => {
       // checkMethod 또는 isGrouped로 판단
-      const isGroup = selection.checkMethod === 'group' ||
-                     (selection.isGrouped && selection.dates && selection.dates.length > 1);
-
+      const isGroup =
+        selection.checkMethod === 'group' ||
+        (selection.isGrouped && selection.dates && selection.dates.length > 1);
 
       if (isGroup) {
         groupSelections.push(selection);
@@ -121,22 +121,26 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     });
 
     // 그룹 선택: 날짜 범위를 유지하면서 시간대별로 그룹화
-    const dateRangeGroups = new Map<string, Omit<DateRangeGroup, 'timeSlotGroups'> & { timeSlotGroups: Map<string, TimeSlotGroup> }>();
+    const dateRangeGroups = new Map<
+      string,
+      Omit<DateRangeGroup, 'timeSlotGroups'> & { timeSlotGroups: Map<string, TimeSlotGroup> }
+    >();
 
     groupSelections.forEach((selection) => {
       // dates 배열이 있으면 날짜 범위로 키 생성
       const dates = selection.dates || (selection.date ? [selection.date] : []);
-      const sortedDates = [...dates].filter(d => d).sort();
+      const sortedDates = [...dates].filter((d) => d).sort();
       const dateRangeKey = sortedDates.join('|');
 
       if (!dateRangeGroups.has(dateRangeKey)) {
         dateRangeGroups.set(dateRangeKey, {
           dates: sortedDates,
           dayCount: sortedDates.length,
-          displayDateRange: sortedDates.length > 1
-            ? `${formatDateDisplay(sortedDates[0] || '')} ~ ${formatDateDisplay(sortedDates[sortedDates.length - 1] || '')}`
-            : formatDateDisplay(sortedDates[0] || ''),
-          timeSlotGroups: new Map()
+          displayDateRange:
+            sortedDates.length > 1
+              ? `${formatDateDisplay(sortedDates[0] || '')} ~ ${formatDateDisplay(sortedDates[sortedDates.length - 1] || '')}`
+              : formatDateDisplay(sortedDates[0] || ''),
+          timeSlotGroups: new Map(),
         });
       }
 
@@ -147,7 +151,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       if (!dateGroup.timeSlotGroups.has(timeSlot)) {
         dateGroup.timeSlotGroups.set(timeSlot, {
           timeSlot: timeSlot,
-          roles: []
+          roles: [],
         });
       }
 
@@ -156,12 +160,12 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
         timeGroup.roles.push(selection.role);
       }
     });
-    
+
     // Map을 배열로 변환하고 날짜순으로 정렬
     const finalGroupSelections: DateRangeGroup[] = Array.from(dateRangeGroups.values())
-      .map(dateGroup => ({
+      .map((dateGroup) => ({
         ...dateGroup,
-        timeSlotGroups: Array.from(dateGroup.timeSlotGroups.values())
+        timeSlotGroups: Array.from(dateGroup.timeSlotGroups.values()),
       }))
       .sort((a, b) => {
         // 날짜 배열에서 첫 번째 날짜 기준으로 정렬
@@ -178,20 +182,21 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       });
 
     // 개별 선택: 날짜별로 그룹화하고 날짜순 정렬 보장
-    const individualGroups: IndividualDateGroup[] = groupSingleDaySelections(individualSelections)
-      .sort((a, b) => {
-        // 날짜 없는 경우는 마지막으로
-        if (a.date === 'no-date' && b.date === 'no-date') return 0;
-        if (a.date === 'no-date') return 1;
-        if (b.date === 'no-date') return -1;
+    const individualGroups: IndividualDateGroup[] = groupSingleDaySelections(
+      individualSelections
+    ).sort((a, b) => {
+      // 날짜 없는 경우는 마지막으로
+      if (a.date === 'no-date' && b.date === 'no-date') return 0;
+      if (a.date === 'no-date') return 1;
+      if (b.date === 'no-date') return -1;
 
-        // 날짜순 정렬
-        return a.date.localeCompare(b.date);
-      });
+      // 날짜순 정렬
+      return a.date.localeCompare(b.date);
+    });
 
     return {
       groupSelections: finalGroupSelections,
-      individualGroups: individualGroups
+      individualGroups: individualGroups,
     };
   }, [applicant, jobPosting]);
 
@@ -202,14 +207,15 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     // 그룹 선택 카드들 추가
     groupedSelections.groupSelections.forEach((dateGroup: DateRangeGroup, index: number) => {
       dateGroup.timeSlotGroups.forEach((timeGroup: TimeSlotGroup, timeIndex: number) => {
-        const sortDate = (dateGroup.dates && dateGroup.dates.length > 0) ? (dateGroup.dates[0] || '') : '';
+        const sortDate =
+          dateGroup.dates && dateGroup.dates.length > 0 ? dateGroup.dates[0] || '' : '';
         cards.push({
           type: 'group',
           dateGroup,
           timeGroup,
           groupKey: `group-selection-${index}`,
           timeIndex,
-          sortDate // 시작 날짜 기준
+          sortDate, // 시작 날짜 기준
         });
       });
     });
@@ -220,7 +226,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       cards.push({
         type: 'individual',
         dateGroup,
-        sortDate // 해당 날짜 기준
+        sortDate, // 해당 날짜 기준
       });
     });
 
@@ -234,29 +240,29 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
       return a.sortDate.localeCompare(b.sortDate);
     });
   }, [groupedSelections]);
-  
+
   // 날짜별 그룹화된 선택 사항 (메모이제이션) - 기존 코드 호환성 유지
   const dateGroupedSelections = useMemo(() => {
     const groups = getApplicantSelectionsByDate(applicant, jobPosting);
-    
+
     // 각 그룹의 선택된 개수 계산
-    return groups.map(group => {
+    return groups.map((group) => {
       const stats = getDateSelectionStats(
-        group.selections, 
-        selectedAssignments.map(assignment => ({
+        group.selections,
+        selectedAssignments.map((assignment) => ({
           timeSlot: assignment.timeSlot,
           role: assignment.role || '',
-          date: assignment.dates?.[0] || ''
-        })), 
+          date: assignment.dates?.[0] || '',
+        })),
         group.date
       );
       return {
         ...group,
-        selectedCount: stats.selectedCount
+        selectedCount: stats.selectedCount,
       };
     });
   }, [applicant, selectedAssignments, jobPosting]);
-  
+
   if (allSortedCards.length === 0) {
     return null;
   }
@@ -271,11 +277,12 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     const normalizedDate = (date || '').trim();
     const normalizedTimeSlot = timeSlot.trim();
     const normalizedRole = role.trim();
-    
-    return selectedAssignments.some(assignment => 
-      assignment.timeSlot === normalizedTimeSlot && 
-      assignment.role === normalizedRole && 
-      (assignment.dates?.[0] || '') === normalizedDate
+
+    return selectedAssignments.some(
+      (assignment) =>
+        assignment.timeSlot === normalizedTimeSlot &&
+        assignment.role === normalizedRole &&
+        (assignment.dates?.[0] || '') === normalizedDate
     );
   };
 
@@ -287,35 +294,47 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     // 향후 필요시 구현 예정
     toast.info('시간 변경 기능은 준비 중입니다.');
   };
-  
+
   /**
    * 다중일 그룹의 특정 시간대-역할이 모두 선택되었는지 확인 (그룹 단위 비교)
    */
   const isMultiDayRoleSelected = (dates: string[], timeSlot: string, role: string): boolean => {
     // 날짜 배열을 정렬하여 비교용 키 생성
-    const targetDateSet = dates.filter(d => d).sort().join(',');
+    const targetDateSet = dates
+      .filter((d) => d)
+      .sort()
+      .join(',');
 
     // 같은 날짜 세트를 가진 그룹 assignment가 있는지 확인
-    return selectedAssignments.some(assignment => {
+    return selectedAssignments.some((assignment) => {
       const assignmentDateSet = (assignment.dates || []).sort().join(',');
-      return assignment.timeSlot === timeSlot &&
-             assignment.role === role &&
-             assignmentDateSet === targetDateSet &&
-             assignment.isGrouped === true; // 그룹 선택인지 확인
+      return (
+        assignment.timeSlot === timeSlot &&
+        assignment.role === role &&
+        assignmentDateSet === targetDateSet &&
+        assignment.isGrouped === true
+      ); // 그룹 선택인지 확인
     });
   };
-  
+
   /**
    * 다중일 그룹의 특정 시간대-역할 전체 선택/해제 (그룹 단위 처리)
    */
-  const handleMultiDayRoleToggle = (dates: string[], timeSlot: string, role: string, isChecked: boolean) => {
+  const handleMultiDayRoleToggle = (
+    dates: string[],
+    timeSlot: string,
+    role: string,
+    isChecked: boolean
+  ) => {
     // 그룹 선택을 하나의 단위로 처리
     if (isChecked) {
       // 체크: 각 날짜에 다른 선택이 있는지 확인
-      const hasConflict = dates.some(date =>
-        selectedAssignments.some(assignment =>
-          assignment.dates && assignment.dates.includes(date) &&
-          !(assignment.timeSlot === timeSlot && assignment.role === role)
+      const hasConflict = dates.some((date) =>
+        selectedAssignments.some(
+          (assignment) =>
+            assignment.dates &&
+            assignment.dates.includes(date) &&
+            !(assignment.timeSlot === timeSlot && assignment.role === role)
         )
       );
 
@@ -328,35 +347,39 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     } else {
       // 체크 해제: 해당 그룹 assignment 제거
       const targetDateSet = dates.sort().join(',');
-      const targetAssignment = selectedAssignments.find(assignment => {
+      const targetAssignment = selectedAssignments.find((assignment) => {
         const assignmentDateSet = (assignment.dates || []).sort().join(',');
-        return assignment.timeSlot === timeSlot &&
-               assignment.role === role &&
-               assignmentDateSet === targetDateSet &&
-               assignment.isGrouped === true;
+        return (
+          assignment.timeSlot === timeSlot &&
+          assignment.role === role &&
+          assignmentDateSet === targetDateSet &&
+          assignment.isGrouped === true
+        );
       });
 
       if (targetAssignment) {
-        const groupId = targetAssignment.groupId || `group_${dates.sort().join('_')}_${timeSlot}_${role}`;
+        const groupId =
+          targetAssignment.groupId || `group_${dates.sort().join('_')}_${timeSlot}_${role}`;
         const value = `group__${dates.join(',')}__${timeSlot}__${role}__${groupId}`;
         onAssignmentToggle(value, false);
       }
     }
   };
 
-
   return (
     <div className="space-y-3">
-
       {/* 통합된 그룹 및 개별 선택 - 날짜순으로 정렬된 2x2 그리드 */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
         {allSortedCards.map((card, cardIndex) => {
           if (card.type === 'group') {
             // 그룹 선택 카드 렌더링
             const { dateGroup, timeGroup, groupKey, timeIndex } = card;
-            
+
             return (
-              <div key={`${groupKey}-time-${timeIndex}-unified`} className="border border-green-300 dark:border-green-700 rounded-lg overflow-hidden">
+              <div
+                key={`${groupKey}-time-${timeIndex}-unified`}
+                className="border border-green-300 dark:border-green-700 rounded-lg overflow-hidden"
+              >
                 {/* 날짜 범위 헤더 */}
                 <div className="bg-green-100 dark:bg-green-900/30 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200 dark:border-green-700">
                   <div className="flex items-center justify-between">
@@ -369,14 +392,16 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                             const dates = dateGroup.dates || [];
                             const firstDate = dates[0];
                             const lastDate = dates[dates.length - 1];
-                            
+
                             if (firstDate && lastDate) {
                               const firstFormatted = formatDateDisplay(firstDate);
                               const lastFormatted = formatDateDisplay(lastDate);
                               return (
                                 <div className="leading-tight text-green-800 dark:text-green-300">
                                   <div>{firstFormatted} ~</div>
-                                  <div>{lastFormatted}({dateGroup.dayCount}일)</div>
+                                  <div>
+                                    {lastFormatted}({dateGroup.dayCount}일)
+                                  </div>
                                 </div>
                               );
                             }
@@ -388,48 +413,74 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                     </div>
                   </div>
                 </div>
-                
+
                 {/* 역할별 체크박스들 */}
                 <div className="p-2 sm:p-3 bg-white dark:bg-gray-800">
                   <div className="space-y-2">
                     {timeGroup.roles.map((role: string, roleIndex: number) => {
-                      const isRoleSelected = isMultiDayRoleSelected(dateGroup.dates, timeGroup.timeSlot, role);
+                      const isRoleSelected = isMultiDayRoleSelected(
+                        dateGroup.dates,
+                        timeGroup.timeSlot,
+                        role
+                      );
                       // 그룹 선택 충돌 체크: 같은 날짜를 포함하는 다른 선택이 있는지 확인 (그룹/개별 구분)
                       const hasConflict = dateGroup.dates.some((date: string) =>
-                        selectedAssignments.some(assignment => {
+                        selectedAssignments.some((assignment) => {
                           // 이 그룹과 다른 assignment가 같은 날짜를 포함하는지 확인
-                          const isOtherAssignment = !(assignment.timeSlot === timeGroup.timeSlot && assignment.role === role);
+                          const isOtherAssignment = !(
+                            assignment.timeSlot === timeGroup.timeSlot && assignment.role === role
+                          );
                           const hasSameDate = assignment.dates && assignment.dates.includes(date);
 
                           // 다른 assignment가 같은 날짜를 포함하고 있다면 충돌
                           return isOtherAssignment && hasSameDate;
                         })
                       );
-                      
+
                       return (
-                        <label key={`${groupKey}-time-${timeIndex}-role-${roleIndex}-unified`}
+                        <label
+                          key={`${groupKey}-time-${timeIndex}-role-${roleIndex}-unified`}
                           className={`flex items-center justify-between p-2 rounded border ${
-                            isRoleSelected ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
-                          } ${hasConflict ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                            isRoleSelected
+                              ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700'
+                              : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                          } ${hasConflict ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
                           <div className="flex items-center">
                             <input
                               type="checkbox"
                               checked={isRoleSelected}
-                              onChange={(e) => handleMultiDayRoleToggle(dateGroup.dates, timeGroup.timeSlot, role, e.target.checked)}
+                              onChange={(e) =>
+                                handleMultiDayRoleToggle(
+                                  dateGroup.dates,
+                                  timeGroup.timeSlot,
+                                  role,
+                                  e.target.checked
+                                )
+                              }
                               disabled={!canEdit || hasConflict}
                               className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded disabled:bg-gray-300 dark:disabled:bg-gray-600"
                             />
                             <span className="ml-2 text-xs sm:text-sm">
                               <span className="font-medium text-gray-800 dark:text-gray-200">
-                                {role ? (t(`roles.${role}`) || role) : ''}
+                                {role ? t(`roles.${role}`) || role : ''}
                               </span>
                               {(() => {
-                                const counts = getStaffCounts(jobPosting, applications, role, timeGroup.timeSlot || '');
+                                const counts = getStaffCounts(
+                                  jobPosting,
+                                  applications,
+                                  role,
+                                  timeGroup.timeSlot || ''
+                                );
                                 return (
-                                  <span className="text-gray-500 dark:text-gray-400 ml-1">({counts.confirmed}/{counts.required})</span>
+                                  <span className="text-gray-500 dark:text-gray-400 ml-1">
+                                    ({counts.confirmed}/{counts.required})
+                                  </span>
                                 );
                               })()}
-                              <span className="font-medium text-gray-700 dark:text-gray-300 ml-2">{timeGroup.timeSlot}</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 ml-2">
+                                {timeGroup.timeSlot}
+                              </span>
                             </span>
                           </div>
                         </label>
@@ -452,7 +503,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                 timeGroupsMap.set(time, {
                   time,
                   roles: [],
-                  selections: []
+                  selections: [],
                 });
               }
               const timeGroup = timeGroupsMap.get(time)!;
@@ -461,11 +512,14 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
               }
               timeGroup.selections.push(selection);
             });
-            
+
             const timeGroups = Array.from(timeGroupsMap.values());
-            
+
             return (
-              <div key={`${dateGroup.date}-unified-${cardIndex}`} className="border border-green-300 dark:border-green-700 rounded-lg overflow-hidden">
+              <div
+                key={`${dateGroup.date}-unified-${cardIndex}`}
+                className="border border-green-300 dark:border-green-700 rounded-lg overflow-hidden"
+              >
                 {/* 날짜 헤더 */}
                 <div className="bg-green-100 dark:bg-green-900/30 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-green-200 dark:border-green-700">
                   <div className="flex items-center justify-between">
@@ -484,54 +538,84 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
                 {/* 시간대별로 그룹화된 선택 항목들 */}
                 <div className="divide-y divide-green-100 dark:divide-green-800">
                   {timeGroups.map((timeGroup, timeGroupIndex: number) => (
-                    <div key={`${dateGroup.date}-${timeGroup.time}-unified-${timeGroupIndex}`} className="p-2 sm:p-3">
+                    <div
+                      key={`${dateGroup.date}-${timeGroup.time}-unified-${timeGroupIndex}`}
+                      className="p-2 sm:p-3"
+                    >
                       <div className="space-y-2">
                         {timeGroup.roles.map((role, roleIndex) => {
-                          const selection = timeGroup.selections.find(s => s.role === role);
+                          const selection = timeGroup.selections.find((s) => s.role === role);
                           if (!selection) return null;
-                          
+
                           const safeDateString = selection.date || '';
-                          const optionValue = safeDateString.trim() !== '' 
-                            ? `${safeDateString}__${selection.time}__${selection.role}`
-                            : `${selection.time}__${selection.role}`;
-                          
-                          const isSelected = isAssignmentSelected(selection.time, selection.role, safeDateString);
-                          
+                          const optionValue =
+                            safeDateString.trim() !== ''
+                              ? `${safeDateString}__${selection.time}__${selection.role}`
+                              : `${selection.time}__${selection.role}`;
+
+                          const isSelected = isAssignmentSelected(
+                            selection.time,
+                            selection.role,
+                            safeDateString
+                          );
+
                           // 개별 선택 충돌 체크: 같은 날짜를 포함하는 다른 assignment가 있는지 확인
-                          const hasOtherSelectionInSameDate = safeDateString.trim() !== '' &&
-                            selectedAssignments.some(assignment => {
+                          const hasOtherSelectionInSameDate =
+                            safeDateString.trim() !== '' &&
+                            selectedAssignments.some((assignment) => {
                               // 다른 assignment인지 확인
-                              const isOtherAssignment = !(assignment.timeSlot === selection.time && assignment.role === selection.role);
+                              const isOtherAssignment = !(
+                                assignment.timeSlot === selection.time &&
+                                assignment.role === selection.role
+                              );
                               // 같은 날짜를 포함하는지 확인
-                              const hasSameDate = assignment.dates && assignment.dates.includes(safeDateString);
+                              const hasSameDate =
+                                assignment.dates && assignment.dates.includes(safeDateString);
 
                               return isOtherAssignment && hasSameDate;
                             });
-                          
+
                           return (
-                            <label key={`${timeGroup.time}-${role}-unified-${roleIndex}`}
+                            <label
+                              key={`${timeGroup.time}-${role}-unified-${roleIndex}`}
                               className={`flex items-center justify-between p-2 rounded border ${
-                                isSelected ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
-                              } ${hasOtherSelectionInSameDate ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                isSelected
+                                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
+                                  : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                              } ${hasOtherSelectionInSameDate ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
                               <div className="flex items-center">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={(e) => onAssignmentToggle(optionValue, e.target.checked)}
+                                  onChange={(e) =>
+                                    onAssignmentToggle(optionValue, e.target.checked)
+                                  }
                                   disabled={!canEdit || hasOtherSelectionInSameDate}
                                   className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded disabled:bg-gray-300 dark:disabled:bg-gray-600"
                                 />
                                 <span className="ml-2 text-xs sm:text-sm">
                                   <span className="font-medium text-gray-800 dark:text-gray-200">
-                                    {role ? (t(`roles.${role}`) || role) : ''}
+                                    {role ? t(`roles.${role}`) || role : ''}
                                   </span>
-                                  {role && (() => {
-                                    const counts = getStaffCounts(jobPosting, applications, role, timeGroup.time || '', safeDateString);
-                                    return (
-                                      <span className="text-gray-500 dark:text-gray-400 ml-1">({counts.confirmed}/{counts.required})</span>
-                                    );
-                                  })()}
-                                  <span className="font-medium text-gray-700 dark:text-gray-300 ml-2">{timeGroup.time}</span>
+                                  {role &&
+                                    (() => {
+                                      const counts = getStaffCounts(
+                                        jobPosting,
+                                        applications,
+                                        role,
+                                        timeGroup.time || '',
+                                        safeDateString
+                                      );
+                                      return (
+                                        <span className="text-gray-500 dark:text-gray-400 ml-1">
+                                          ({counts.confirmed}/{counts.required})
+                                        </span>
+                                      );
+                                    })()}
+                                  <span className="font-medium text-gray-700 dark:text-gray-300 ml-2">
+                                    {timeGroup.time}
+                                  </span>
                                 </span>
                               </div>
                             </label>
@@ -546,7 +630,7 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
           }
         })}
       </div>
-      
+
       {/* 확정 버튼 */}
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button

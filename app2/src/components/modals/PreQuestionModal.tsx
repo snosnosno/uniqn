@@ -21,15 +21,15 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   onComplete,
   questions,
   eventId,
-  existingAnswers
+  existingAnswers,
 }) => {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
-  
+
   // 답변 상태 관리
   const [answers, setAnswers] = useState<{ [questionId: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // localStorage 키 생성
   const getStorageKey = useCallback(() => {
     return `preQuestionAnswers_${eventId || 'default'}`;
@@ -41,7 +41,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
       // 1. 먼저 existingAnswers prop에서 답변 확인
       if (existingAnswers && existingAnswers.length > 0) {
         const answersMap: { [questionId: string]: string } = {};
-        existingAnswers.forEach(answer => {
+        existingAnswers.forEach((answer) => {
           answersMap[answer.questionId] = answer.answer;
         });
         setAnswers(answersMap);
@@ -53,7 +53,11 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
             const parsed = JSON.parse(savedAnswers);
             setAnswers(parsed);
           } catch (error) {
-            logger.error('Failed to parse saved answers:', error instanceof Error ? error : new Error(String(error)), { component: 'PreQuestionModal' });
+            logger.error(
+              'Failed to parse saved answers:',
+              error instanceof Error ? error : new Error(String(error)),
+              { component: 'PreQuestionModal' }
+            );
           }
         }
       }
@@ -69,26 +73,24 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
 
   // 답변 업데이트 핸들러
   const handleAnswerChange = (questionId: string, value: string) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: value
+      [questionId]: value,
     }));
   };
 
   // 유효성 검사
   const validateAnswers = (): boolean => {
-    const requiredQuestions = questions.filter(q => q.required);
-    
+    const requiredQuestions = questions.filter((q) => q.required);
+
     for (const question of requiredQuestions) {
       const answer = answers[question.id];
       if (!answer || answer.trim() === '') {
-        showError(
-          `"${question.question}" ${t('jobBoard.preQuestion.requiredField')}`
-        );
+        showError(`"${question.question}" ${t('jobBoard.preQuestion.requiredField')}`);
         return false;
       }
     }
-    
+
     return true;
   };
 
@@ -99,27 +101,30 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // PreQuestionAnswer 형식으로 변환 (질문 텍스트도 함께 저장)
-      const formattedAnswers: PreQuestionAnswer[] = questions.map(question => ({
+      const formattedAnswers: PreQuestionAnswer[] = questions.map((question) => ({
         questionId: question.id,
         question: question.question, // 질문 텍스트 추가
         answer: answers[question.id] || '',
-        required: question.required // 필수 여부도 추가
+        required: question.required, // 필수 여부도 추가
       }));
 
       // 완료 콜백 호출
       onComplete(formattedAnswers);
-      
+
       // localStorage 정리
       localStorage.removeItem(getStorageKey());
-      
+
       showSuccess(t('jobBoard.preQuestion.success'));
       onClose();
-      
     } catch (error) {
-      logger.error('Failed to submit pre-questions:', error instanceof Error ? error : new Error(String(error)), { component: 'PreQuestionModal' });
+      logger.error(
+        'Failed to submit pre-questions:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'PreQuestionModal' }
+      );
       showError(t('jobBoard.preQuestion.error'));
     } finally {
       setIsSubmitting(false);
@@ -129,11 +134,11 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
   // 진행률 계산
   const getProgress = (): number => {
     if (questions.length === 0) return 100;
-    
-    const answeredCount = questions.filter(q => 
-      answers[q.id] && answers[q.id]?.trim() !== ''
+
+    const answeredCount = questions.filter(
+      (q) => answers[q.id] && answers[q.id]?.trim() !== ''
     ).length;
-    
+
     return Math.round((answeredCount / questions.length) * 100);
   };
 
@@ -142,9 +147,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
 
   const modalTitle = (
     <div>
-      <h2 className="text-xl font-bold">
-        {t('jobBoard.preQuestion.modalTitle')}
-      </h2>
+      <h2 className="text-xl font-bold">{t('jobBoard.preQuestion.modalTitle')}</h2>
       {questions.length > 0 && (
         <div className="mt-2">
           <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
@@ -152,7 +155,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
             <span>{questions.length}개 질문</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-            <div 
+            <div
               className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${getProgress()}%` }}
             />
@@ -179,10 +182,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
         disabled={isSubmitting}
         className="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isSubmitting 
-          ? t('common.messages.submitting')
-          : t('jobBoard.preQuestion.submit')
-        }
+        {isSubmitting ? t('common.messages.submitting') : t('jobBoard.preQuestion.submit')}
       </button>
     </ModalFooter>
   );
@@ -196,7 +196,6 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
       footer={footerButtons}
       aria-label={t('jobBoard.preQuestion.modalTitle')}
     >
-        
       {questions.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
           {t('jobBoard.preQuestion.noQuestions')}
@@ -207,11 +206,15 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
             <div key={question.id} className="space-y-2">
               {/* 질문 제목 */}
               <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">Q{index + 1}.</span>{' '}
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  Q{index + 1}.
+                </span>{' '}
                 {question.question}
-                {question.required ? <span className="text-red-500 dark:text-red-400 ml-1">*</span> : null}
+                {question.required ? (
+                  <span className="text-red-500 dark:text-red-400 ml-1">*</span>
+                ) : null}
               </label>
-              
+
               {/* 질문 타입별 입력 컴포넌트 */}
               {question.type === 'text' && (
                 <input
@@ -222,7 +225,7 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 />
               )}
-              
+
               {question.type === 'textarea' && (
                 <textarea
                   value={answers[question.id] || ''}
@@ -232,16 +235,14 @@ const PreQuestionModal: React.FC<PreQuestionModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
                 />
               )}
-              
+
               {question.type === 'select' && question.options && (
                 <select
                   value={answers[question.id] || ''}
                   onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 >
-                  <option value="">
-                    {t('jobBoard.preQuestion.selectOption')}
-                  </option>
+                  <option value="">{t('jobBoard.preQuestion.selectOption')}</option>
                   {question.options.map((option, optionIndex) => (
                     <option key={optionIndex} value={option}>
                       {option}

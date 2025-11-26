@@ -6,13 +6,7 @@
  * - 트랜잭션 기반 안전한 참가자 재배치
  */
 
-import {
-  collection,
-  collectionGroup,
-  getDocs,
-  doc,
-  runTransaction,
-} from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, doc, runTransaction } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { logger } from '@/utils/logger';
 import { toast } from '@/utils/toast';
@@ -59,7 +53,7 @@ export async function moveParticipantsToOpenTables(
         // 전체 모드: collectionGroup으로 모든 테이블 조회
         const tablesGroupRef = collectionGroup(db, 'tables');
         const tablesSnapshot = await getDocs(tablesGroupRef);
-        const foundDoc = tablesSnapshot.docs.find(d => d.id === tableIdToProcess);
+        const foundDoc = tablesSnapshot.docs.find((d) => d.id === tableIdToProcess);
 
         if (foundDoc) {
           const pathParts = foundDoc.ref.path.split('/');
@@ -67,27 +61,30 @@ export async function moveParticipantsToOpenTables(
           tableToProcess = {
             id: foundDoc.id,
             ...foundDoc.data(),
-            tournamentId: actualTournamentId
+            tournamentId: actualTournamentId,
           } as Table;
         }
       } else {
         // 일반 모드: 먼저 현재 토너먼트에서 찾기
-        const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${tournamentId}/tables`);
+        const tablesCollectionRef = collection(
+          db,
+          `users/${userId}/tournaments/${tournamentId}/tables`
+        );
         const tablesSnapshot = await getDocs(tablesCollectionRef);
-        const foundDoc = tablesSnapshot.docs.find(d => d.id === tableIdToProcess);
+        const foundDoc = tablesSnapshot.docs.find((d) => d.id === tableIdToProcess);
 
         if (foundDoc) {
           actualTournamentId = tournamentId;
           tableToProcess = {
             id: foundDoc.id,
             ...foundDoc.data(),
-            tournamentId: tournamentId
+            tournamentId: tournamentId,
           } as Table;
         } else {
           // 현재 토너먼트에 없으면 collectionGroup으로 전체 검색
           const tablesGroupRef = collectionGroup(db, 'tables');
           const allTablesSnapshot = await getDocs(tablesGroupRef);
-          const foundInAll = allTablesSnapshot.docs.find(d => {
+          const foundInAll = allTablesSnapshot.docs.find((d) => {
             const pathParts = d.ref.path.split('/');
             const pathUserId = pathParts[1];
             return d.id === tableIdToProcess && pathUserId === userId;
@@ -99,7 +96,7 @@ export async function moveParticipantsToOpenTables(
             tableToProcess = {
               id: foundInAll.id,
               ...foundInAll.data(),
-              tournamentId: actualTournamentId
+              tournamentId: actualTournamentId,
             } as Table;
           }
         }
@@ -116,18 +113,24 @@ export async function moveParticipantsToOpenTables(
       }
 
       // 2. 같은 토너먼트의 다른 테이블들 조회
-      const tablesCollectionRef = collection(db, `users/${userId}/tournaments/${actualTournamentId}/tables`);
+      const tablesCollectionRef = collection(
+        db,
+        `users/${userId}/tournaments/${actualTournamentId}/tables`
+      );
       const tablesSnapshot = await getDocs(tablesCollectionRef);
-      const allTables = tablesSnapshot.docs.map(d => ({
-        id: d.id,
-        ...d.data(),
-        tournamentId: actualTournamentId
-      } as Table));
+      const allTables = tablesSnapshot.docs.map(
+        (d) =>
+          ({
+            id: d.id,
+            ...d.data(),
+            tournamentId: actualTournamentId,
+          }) as Table
+      );
 
       // 3. 이동할 참가자 목록 추출
       const participantsToMove = (tableToProcess.seats || [])
         .map((pId, index) => ({ pId, fromSeatIndex: index }))
-        .filter(item => item.pId !== null) as { pId: string; fromSeatIndex: number }[];
+        .filter((item) => item.pId !== null) as { pId: string; fromSeatIndex: number }[];
 
       // 4. 참가자 정보 가져오기 (이름 표시용)
       const participantsCollectionRef = collection(
@@ -136,15 +139,21 @@ export async function moveParticipantsToOpenTables(
       );
       const participantsSnapshot = await getDocs(participantsCollectionRef);
       const participantsMap = new Map(
-        participantsSnapshot.docs.map(d => [d.id, { id: d.id, ...d.data() }])
+        participantsSnapshot.docs.map((d) => [d.id, { id: d.id, ...d.data() }])
       );
 
       // 5. 참가자가 없는 경우 - 테이블만 처리
       if (participantsToMove.length === 0) {
-        const tableRef = doc(db, `users/${userId}/tournaments/${actualTournamentId}/tables`, tableIdToProcess);
+        const tableRef = doc(
+          db,
+          `users/${userId}/tournaments/${actualTournamentId}/tables`,
+          tableIdToProcess
+        );
 
         if (mode === 'close') {
-          const emptySeats = Array((tableToProcess.seats || []).length || maxSeatsSetting).fill(null);
+          const emptySeats = Array((tableToProcess.seats || []).length || maxSeatsSetting).fill(
+            null
+          );
           transaction.update(tableRef, { status: 'standby', seats: emptySeats });
           logAction('table_closed', {
             tableId: tableIdToProcess,
@@ -164,9 +173,7 @@ export async function moveParticipantsToOpenTables(
       }
 
       // 6. 활성화된 다른 테이블 찾기
-      const openTables = allTables.filter(
-        t => t.id !== tableIdToProcess && t.status === 'open'
-      );
+      const openTables = allTables.filter((t) => t.id !== tableIdToProcess && t.status === 'open');
 
       if (openTables.length === 0) {
         logger.error(
@@ -179,49 +186,51 @@ export async function moveParticipantsToOpenTables(
       }
 
       // 7. 가변 테이블 상태 준비 (참가자 수 추적)
-      const mutableOpenTables = openTables.map(t => ({
+      const mutableOpenTables = openTables.map((t) => ({
         ...t,
         seats: [...(t.seats || Array(maxSeatsSetting).fill(null))],
-        playerCount: (t.seats || []).filter(s => s !== null).length,
+        playerCount: (t.seats || []).filter((s) => s !== null).length,
       }));
 
       // 8. 각 참가자를 가장 인원이 적은 테이블에 배정
       for (const participantToMove of participantsToMove) {
-        const minPlayerCount = Math.min(...mutableOpenTables.map(t => t.playerCount));
+        const minPlayerCount = Math.min(...mutableOpenTables.map((t) => t.playerCount));
         const leastPopulatedTables = mutableOpenTables.filter(
-          t => t.playerCount === minPlayerCount
+          (t) => t.playerCount === minPlayerCount
         );
 
         // 랜덤 선택
-        let targetTable = leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
+        let targetTable =
+          leastPopulatedTables[Math.floor(Math.random() * leastPopulatedTables.length)];
         if (!targetTable) continue;
 
         let emptySeatIndexes = targetTable.seats
           .map((seat, index) => (seat === null ? index : -1))
-          .filter(index => index !== -1);
+          .filter((index) => index !== -1);
 
         // 빈 자리가 없으면 대체 테이블 찾기
         if (emptySeatIndexes.length === 0) {
           const alternativeTables = mutableOpenTables.filter(
-            t => t.id !== targetTable?.id && t.seats.some(s => s === null)
+            (t) => t.id !== targetTable?.id && t.seats.some((s) => s === null)
           );
 
           if (alternativeTables.length === 0) {
-            logger.error(
-              'Balancing failed: No seats available',
-              new Error('No seats available'),
-              { component: 'participantMover' }
-            );
+            logger.error('Balancing failed: No seats available', new Error('No seats available'), {
+              component: 'participantMover',
+            });
             toast.error('참가자를 배치할 빈 좌석이 없습니다.');
             return { balancingResult: [], movedParticipantsDetails: [] };
           }
 
           targetTable = alternativeTables[Math.floor(Math.random() * alternativeTables.length)];
           if (!targetTable) continue;
-          emptySeatIndexes = targetTable.seats.map((s, i) => (s === null ? i : -1)).filter(i => i !== -1);
+          emptySeatIndexes = targetTable.seats
+            .map((s, i) => (s === null ? i : -1))
+            .filter((i) => i !== -1);
         }
 
-        const targetSeatIndex = emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
+        const targetSeatIndex =
+          emptySeatIndexes[Math.floor(Math.random() * emptySeatIndexes.length)];
         if (targetSeatIndex === undefined) continue;
 
         // 자리 배정
@@ -239,7 +248,9 @@ export async function moveParticipantsToOpenTables(
         };
 
         const participant = participantsMap.get(participantToMove.pId);
-        const participantName = participant ? ((participant as { name?: string }).name || '이름 없음') : '이름 없음';
+        const participantName = participant
+          ? (participant as { name?: string }).name || '이름 없음'
+          : '이름 없음';
 
         balancingResult.push({
           participantId: participantToMove.pId,
@@ -258,9 +269,13 @@ export async function moveParticipantsToOpenTables(
       }
 
       // 9. 변경된 테이블 좌석 배열 업데이트
-      mutableOpenTables.forEach(t => {
+      mutableOpenTables.forEach((t) => {
         const targetTableTournamentId = t.tournamentId || tournamentId;
-        const tableRef = doc(db, `users/${userId}/tournaments/${targetTableTournamentId}/tables`, t.id);
+        const tableRef = doc(
+          db,
+          `users/${userId}/tournaments/${targetTableTournamentId}/tables`,
+          t.id
+        );
         transaction.update(tableRef, { seats: t.seats });
       });
 

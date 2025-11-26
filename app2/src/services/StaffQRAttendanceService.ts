@@ -22,15 +22,10 @@ import {
   where,
   getDocs,
   Timestamp,
-  addDoc
+  addDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import {
-  QRScanContext,
-  ScanCooldown,
-  ScanHistory,
-  QRScanResult
-} from '../types/staffQR';
+import { QRScanContext, ScanCooldown, ScanHistory, QRScanResult } from '../types/staffQR';
 import { UnifiedWorkLog } from '../types/unified/workLog';
 import { ConfirmedStaff } from '../types/jobPosting/base';
 import { normalizeDate } from '../utils/dateUtils';
@@ -60,7 +55,7 @@ export async function checkStaffConfirmed(
 
     if (!staff) {
       logger.warn('확정되지 않은 스태프', {
-        data: { staffId, eventId }
+        data: { staffId, eventId },
       });
       return { isConfirmed: false };
     }
@@ -70,18 +65,18 @@ export async function checkStaffConfirmed(
         staffId,
         staffName: staff.name,
         role: staff.role,
-        eventId
-      }
+        eventId,
+      },
     });
 
     return {
       isConfirmed: true,
       staffName: staff.name,
-      role: staff.role
+      role: staff.role,
     };
   } catch (error) {
     logger.error('스태프 확정 검증 실패', error as Error, {
-      data: { eventId, staffId }
+      data: { eventId, staffId },
     });
     return { isConfirmed: false };
   }
@@ -122,8 +117,8 @@ export async function checkScanCooldown(
         staffId,
         eventId,
         mode,
-        remainingSeconds
-      }
+        remainingSeconds,
+      },
     });
 
     return { allowed: false, remainingSeconds };
@@ -132,8 +127,8 @@ export async function checkScanCooldown(
       data: {
         staffId,
         eventId,
-        mode
-      }
+        mode,
+      },
     });
     // 에러 시 스캔 허용 (안전장치)
     return { allowed: true };
@@ -163,7 +158,7 @@ async function setScanCooldown(
       date,
       mode,
       lastScanAt: now,
-      expiresAt
+      expiresAt,
     };
 
     await setDoc(cooldownRef, cooldown);
@@ -173,16 +168,16 @@ async function setScanCooldown(
         staffId,
         eventId,
         mode,
-        expiresAt: expiresAt.toDate().toISOString()
-      }
+        expiresAt: expiresAt.toDate().toISOString(),
+      },
     });
   } catch (error) {
     logger.error('스캔 쿨다운 설정 실패', error as Error, {
       data: {
         staffId,
         eventId,
-        mode
-      }
+        mode,
+      },
     });
     // 쿨다운 설정 실패는 치명적이지 않으므로 throw하지 않음
   }
@@ -209,8 +204,8 @@ export async function findWorkLog(
       data: {
         staffId,
         eventId,
-        date: normalizedDate
-      }
+        date: normalizedDate,
+      },
     });
 
     const workLogsRef = collection(db, 'workLogs');
@@ -228,7 +223,7 @@ export async function findWorkLog(
     // 2차 시도: staffId에 _0 접미사 추가하여 검색 (배정 인덱스 패턴)
     if (querySnapshot.empty && !staffId.match(/_\d+$/)) {
       logger.debug('배정 인덱스 패턴으로 재검색', {
-        data: { staffId: `${staffId}_0`, eventId, date: normalizedDate }
+        data: { staffId: `${staffId}_0`, eventId, date: normalizedDate },
       });
 
       q = query(
@@ -244,7 +239,7 @@ export async function findWorkLog(
     // 3차 시도: userId 필드로 검색 (fallback)
     if (querySnapshot.empty) {
       logger.debug('userId 필드로 재검색', {
-        data: { userId: staffId, eventId, date: normalizedDate }
+        data: { userId: staffId, eventId, date: normalizedDate },
       });
 
       q = query(
@@ -262,8 +257,8 @@ export async function findWorkLog(
         data: {
           staffId,
           eventId,
-          date: normalizedDate
-        }
+          date: normalizedDate,
+        },
       });
       return null;
     }
@@ -275,28 +270,30 @@ export async function findWorkLog(
           eventId,
           date: normalizedDate,
           count: querySnapshot.docs.length,
-          workLogIds: querySnapshot.docs.map(doc => doc.id)
-        }
+          workLogIds: querySnapshot.docs.map((doc) => doc.id),
+        },
       });
     }
 
     const workLogDoc = querySnapshot.docs[0];
     if (!workLogDoc) {
-      logger.error('WorkLog 문서를 찾을 수 없음', undefined, { data: { staffId, eventId, date: normalizedDate } });
+      logger.error('WorkLog 문서를 찾을 수 없음', undefined, {
+        data: { staffId, eventId, date: normalizedDate },
+      });
       return null;
     }
 
     const workLog = {
       id: workLogDoc.id,
-      ...workLogDoc.data()
+      ...workLogDoc.data(),
     } as UnifiedWorkLog;
 
     logger.info('WorkLog 찾기 성공', {
       data: {
         staffId,
         eventId,
-        workLogId: workLog.id
-      }
+        workLogId: workLog.id,
+      },
     });
 
     return workLog;
@@ -305,8 +302,8 @@ export async function findWorkLog(
       data: {
         staffId,
         eventId,
-        date
-      }
+        date,
+      },
     });
     return null;
   }
@@ -337,7 +334,7 @@ export async function saveScanHistory(
       scannedAt: Timestamp.now(),
       workLogId,
       scannedBy,
-      ...(location && { location })
+      ...(location && { location }),
     };
 
     await addDoc(scanHistoryRef, history);
@@ -348,8 +345,8 @@ export async function saveScanHistory(
         staffName,
         eventId,
         mode,
-        workLogId
-      }
+        workLogId,
+      },
     });
   } catch (error) {
     logger.error('스캔 이력 저장 실패', error as Error, {
@@ -357,8 +354,8 @@ export async function saveScanHistory(
         staffId,
         eventId,
         mode,
-        workLogId
-      }
+        workLogId,
+      },
     });
     // 이력 저장 실패는 치명적이지 않으므로 throw하지 않음
   }
@@ -381,14 +378,14 @@ async function updateQRMetadata(staffId: string): Promise<void> {
 
     await updateDoc(qrMetadataRef, {
       lastUsedAt: Timestamp.now(),
-      totalScanCount: currentCount + 1
+      totalScanCount: currentCount + 1,
     });
 
     logger.debug('QR 메타데이터 업데이트 완료', {
       data: {
         staffId,
-        newCount: currentCount + 1
-      }
+        newCount: currentCount + 1,
+      },
     });
   } catch (error) {
     logger.error('QR 메타데이터 업데이트 실패', error as Error, { data: { staffId } });
@@ -410,8 +407,8 @@ export async function handleCheckIn(
         staffId,
         staffName,
         eventId: context.eventId,
-        date: context.date
-      }
+        date: context.date,
+      },
     });
 
     // 1. 스태프 확정 검증
@@ -420,7 +417,7 @@ export async function handleCheckIn(
     if (!confirmCheck.isConfirmed) {
       return {
         success: false,
-        message: '이 공고에 확정된 스태프가 아닙니다.'
+        message: '이 공고에 확정된 스태프가 아닙니다.',
       };
     }
 
@@ -441,7 +438,9 @@ export async function handleCheckIn(
       return {
         success: false,
         message: `${cooldownCheck.remainingSeconds}초 후에 다시 시도해주세요.`,
-        ...(cooldownCheck.remainingSeconds !== undefined && { remainingCooldown: cooldownCheck.remainingSeconds })
+        ...(cooldownCheck.remainingSeconds !== undefined && {
+          remainingCooldown: cooldownCheck.remainingSeconds,
+        }),
       };
     }
 
@@ -451,7 +450,7 @@ export async function handleCheckIn(
     if (!workLog) {
       return {
         success: false,
-        message: '오늘 근무 일정이 없습니다.'
+        message: '오늘 근무 일정이 없습니다.',
       };
     }
 
@@ -459,21 +458,21 @@ export async function handleCheckIn(
     if (workLog.status === 'checked_in') {
       return {
         success: false,
-        message: '이미 출근 처리되었습니다.'
+        message: '이미 출근 처리되었습니다.',
       };
     }
 
     if (workLog.status === 'checked_out' || workLog.status === 'completed') {
       return {
         success: false,
-        message: '이미 퇴근한 근무입니다.'
+        message: '이미 퇴근한 근무입니다.',
       };
     }
 
     if (workLog.status === 'cancelled') {
       return {
         success: false,
-        message: '취소된 근무입니다.'
+        message: '취소된 근무입니다.',
       };
     }
 
@@ -486,9 +485,9 @@ export async function handleCheckIn(
       status: 'checked_in',
       qrCheckIn: {
         token: `${staffId}_${Date.now()}`,
-        scannedAt: now
+        scannedAt: now,
       },
-      updatedAt: now
+      updatedAt: now,
     });
 
     // 6. 쿨다운 설정
@@ -514,8 +513,8 @@ export async function handleCheckIn(
         staffId,
         staffName,
         workLogId: workLog.id,
-        actualTime: now.toDate().toISOString()
-      }
+        actualTime: now.toDate().toISOString(),
+      },
     });
 
     return {
@@ -523,19 +522,19 @@ export async function handleCheckIn(
       message: '출근 처리가 완료되었습니다.',
       workLogId: workLog.id,
       actualTime: now,
-      staffName
+      staffName,
     };
   } catch (error) {
     logger.error('출근 처리 실패', error as Error, {
       data: {
         staffId,
-        eventId: context.eventId
-      }
+        eventId: context.eventId,
+      },
     });
 
     return {
       success: false,
-      message: '출근 처리 중 오류가 발생했습니다.'
+      message: '출근 처리 중 오류가 발생했습니다.',
     };
   }
 }
@@ -555,8 +554,8 @@ export async function handleCheckOut(
         staffName,
         eventId: context.eventId,
         date: context.date,
-        roundUpInterval: context.roundUpInterval
-      }
+        roundUpInterval: context.roundUpInterval,
+      },
     });
 
     // 1. 스태프 확정 검증
@@ -565,7 +564,7 @@ export async function handleCheckOut(
     if (!confirmCheck.isConfirmed) {
       return {
         success: false,
-        message: '이 공고에 확정된 스태프가 아닙니다.'
+        message: '이 공고에 확정된 스태프가 아닙니다.',
       };
     }
 
@@ -586,7 +585,9 @@ export async function handleCheckOut(
       return {
         success: false,
         message: `${cooldownCheck.remainingSeconds}초 후에 다시 시도해주세요.`,
-        ...(cooldownCheck.remainingSeconds !== undefined && { remainingCooldown: cooldownCheck.remainingSeconds })
+        ...(cooldownCheck.remainingSeconds !== undefined && {
+          remainingCooldown: cooldownCheck.remainingSeconds,
+        }),
       };
     }
 
@@ -596,7 +597,7 @@ export async function handleCheckOut(
     if (!workLog) {
       return {
         success: false,
-        message: '오늘 근무 일정이 없습니다.'
+        message: '오늘 근무 일정이 없습니다.',
       };
     }
 
@@ -604,16 +605,13 @@ export async function handleCheckOut(
     if (workLog.status !== 'checked_in') {
       return {
         success: false,
-        message: '출근 처리가 되지 않았습니다.'
+        message: '출근 처리가 되지 않았습니다.',
       };
     }
 
     // 5. 퇴근 시간 계산 (라운드업)
     const now = Timestamp.now();
-    const roundedTimestamp = roundUpTimestamp(
-      now.toMillis(),
-      context.roundUpInterval
-    );
+    const roundedTimestamp = roundUpTimestamp(now.toMillis(), context.roundUpInterval);
     const adjustedScheduledEndTime = Timestamp.fromMillis(roundedTimestamp);
 
     // 6. 퇴근 시간 기록
@@ -626,9 +624,9 @@ export async function handleCheckOut(
       status: 'checked_out',
       qrCheckOut: {
         token: `${staffId}_${Date.now()}`,
-        scannedAt: now
+        scannedAt: now,
       },
-      updatedAt: now
+      updatedAt: now,
     });
 
     // 7. 쿨다운 설정
@@ -656,8 +654,8 @@ export async function handleCheckOut(
         workLogId: workLog.id,
         actualTime: now.toDate().toISOString(),
         adjustedTime: adjustedScheduledEndTime.toDate().toISOString(),
-        roundUpInterval: context.roundUpInterval
-      }
+        roundUpInterval: context.roundUpInterval,
+      },
     });
 
     return {
@@ -666,19 +664,19 @@ export async function handleCheckOut(
       workLogId: workLog.id,
       actualTime: now,
       adjustedScheduledTime: adjustedScheduledEndTime,
-      staffName
+      staffName,
     };
   } catch (error) {
     logger.error('퇴근 처리 실패', error as Error, {
       data: {
         staffId,
-        eventId: context.eventId
-      }
+        eventId: context.eventId,
+      },
     });
 
     return {
       success: false,
-      message: '퇴근 처리 중 오류가 발생했습니다.'
+      message: '퇴근 처리 중 오류가 발생했습니다.',
     };
   }
 }

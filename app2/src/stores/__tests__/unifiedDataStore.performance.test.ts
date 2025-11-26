@@ -349,7 +349,7 @@ describe('UnifiedDataStore - 성능 테스트', () => {
 
       // 초기 데이터 설정
       const initialMap = new Map<string, Staff>();
-      staffList.forEach(staff => initialMap.set(staff.id, staff));
+      staffList.forEach((staff) => initialMap.set(staff.id, staff));
       act(() => {
         result.current.setStaff(initialMap);
       });
@@ -357,7 +357,7 @@ describe('UnifiedDataStore - 성능 테스트', () => {
       // 개별 update 10회 성능 측정
       const startIndividual = performance.now();
       act(() => {
-        staffList.forEach(staff => {
+        staffList.forEach((staff) => {
           result.current.updateStaff({ ...staff, name: `${staff.name} (개별)` });
         });
       });
@@ -372,7 +372,7 @@ describe('UnifiedDataStore - 성능 테스트', () => {
       const startBatch = performance.now();
       act(() => {
         result.current.updateStaffBatch(
-          staffList.map(staff => ({ ...staff, name: `${staff.name} (배치)` }))
+          staffList.map((staff) => ({ ...staff, name: `${staff.name} (배치)` }))
         );
       });
       const batchTime = performance.now() - startBatch;

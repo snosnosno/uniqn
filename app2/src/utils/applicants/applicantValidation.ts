@@ -24,9 +24,11 @@ export const hasMultipleSelections = (applicant: Applicant): boolean => {
   }
 
   // 레거시 필드 확인
-  return !!(applicant.assignedRoles?.length ||
-            applicant.assignedTimes?.length ||
-            applicant.assignedDates?.length);
+  return !!(
+    applicant.assignedRoles?.length ||
+    applicant.assignedTimes?.length ||
+    applicant.assignedDates?.length
+  );
 };
 
 /**
@@ -36,10 +38,11 @@ export const isDuplicateInSameDate = (
   existingSelections: Selection[],
   newSelection: Selection
 ): boolean => {
-  return existingSelections.some(existing =>
-    existing.date === newSelection.date &&
-    existing.time === newSelection.time &&
-    existing.role === newSelection.role
+  return existingSelections.some(
+    (existing) =>
+      existing.date === newSelection.date &&
+      existing.time === newSelection.time &&
+      existing.role === newSelection.role
   );
 };
 
@@ -48,15 +51,15 @@ export const isDuplicateInSameDate = (
  */
 export const getDateSelectionStats = (
   selections: Selection[],
-  selectedAssignments: Array<{timeSlot: string, role: string, date: string}>,
+  selectedAssignments: Array<{ timeSlot: string; role: string; date: string }>,
   targetDate: string
 ) => {
-  const dateSelections = selections.filter(s => s.date === targetDate);
-  const selectedInDate = selectedAssignments.filter(s => s.date === targetDate);
+  const dateSelections = selections.filter((s) => s.date === targetDate);
+  const selectedInDate = selectedAssignments.filter((s) => s.date === targetDate);
 
   return {
     totalCount: dateSelections.length,
-    selectedCount: selectedInDate.length
+    selectedCount: selectedInDate.length,
   };
 };
 
@@ -71,14 +74,15 @@ export const getStaffCounts = (
   date?: string
 ): { confirmed: number; required: number } => {
   // 확정된 인원 계산
-  const confirmed = applications.filter(app =>
-    app.status === 'confirmed' &&
-    app.assignments?.some((a: any) => {
-      const roleMatch = a.role === role || a.roles?.includes(role);
-      const timeMatch = a.timeSlot === timeSlot;
-      const dateMatch = !date || a.dates?.includes(date);
-      return roleMatch && timeMatch && dateMatch;
-    })
+  const confirmed = applications.filter(
+    (app) =>
+      app.status === 'confirmed' &&
+      app.assignments?.some((a: any) => {
+        const roleMatch = a.role === role || a.roles?.includes(role);
+        const timeMatch = a.timeSlot === timeSlot;
+        const dateMatch = !date || a.dates?.includes(date);
+        return roleMatch && timeMatch && dateMatch;
+      })
   ).length;
 
   // 필요 인원 계산

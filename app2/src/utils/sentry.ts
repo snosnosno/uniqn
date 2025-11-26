@@ -24,30 +24,30 @@ export const initSentry = () => {
 
       // 환경 설정
       environment: process.env.REACT_APP_ENV || process.env.NODE_ENV || 'production',
-      
+
       // 에러 필터링
       beforeSend(event) {
         // 개발자 확장 프로그램 에러 무시
         if (event.exception?.values?.[0]?.value?.includes('extension://')) {
           return null;
         }
-        
+
         // 네트워크 에러 중 일부 무시
         if (event.exception?.values?.[0]?.type === 'NetworkError') {
           const message = event.exception.values[0].value || '';
           if (message.includes('Load failed') || message.includes('Failed to fetch')) {
             // 일시적인 네트워크 에러는 로그만 남기고 Sentry에 보내지 않음
-            logger.warn('Network error ignored by Sentry', { 
+            logger.warn('Network error ignored by Sentry', {
               component: 'Sentry',
-              data: { message }
+              data: { message },
             });
             return null;
           }
         }
-        
+
         return event;
       },
-      
+
       // 무시할 에러 패턴
       ignoreErrors: [
         // 브라우저 확장 프로그램 관련
@@ -68,7 +68,7 @@ export const initSentry = () => {
         'INTERNAL ASSERTION FAILED',
         'Firebase: Error',
       ],
-      
+
       // 추가 컨텍스트 설정
       initialScope: {
         tags: {
@@ -79,8 +79,9 @@ export const initSentry = () => {
 
     logger.info('Sentry initialized successfully', { component: 'Sentry' });
   } catch (error) {
-    logger.error('Failed to initialize Sentry', 
-      error instanceof Error ? error : new Error(String(error)), 
+    logger.error(
+      'Failed to initialize Sentry',
+      error instanceof Error ? error : new Error(String(error)),
       { component: 'Sentry' }
     );
   }
@@ -89,10 +90,10 @@ export const initSentry = () => {
 // 사용자 정보 설정
 export const setSentryUser = (user: { id: string; email?: string; username?: string } | null) => {
   if (process.env.NODE_ENV !== 'production') return;
-  
+
   if (user) {
     const sentryUser: { id: string; email?: string; username?: string } = {
-      id: user.id
+      id: user.id,
     };
     if (user.email) sentryUser.email = user.email;
     if (user.username) sentryUser.username = user.username;
@@ -105,7 +106,7 @@ export const setSentryUser = (user: { id: string; email?: string; username?: str
 // 추가 컨텍스트 설정
 export const setSentryContext = (key: string, context: Record<string, any>) => {
   if (process.env.NODE_ENV !== 'production') return;
-  
+
   Sentry.setContext(key, context);
 };
 
@@ -114,17 +115,17 @@ export const captureError = (error: Error, context?: Record<string, any>) => {
   if (process.env.NODE_ENV === 'production') {
     if (context) {
       Sentry.captureException(error, {
-        contexts: { custom: context }
+        contexts: { custom: context },
       });
     } else {
       Sentry.captureException(error);
     }
   }
-  
+
   // 로컬에서도 로깅
-  logger.error('Error captured', error, { 
+  logger.error('Error captured', error, {
     component: 'Sentry',
-    data: context 
+    data: context,
   });
 };
 
@@ -137,7 +138,7 @@ export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'i
   // 로컬에서도 로깅
   logger.info('Message captured', {
     component: 'Sentry',
-    data: { message, level }
+    data: { message, level },
   });
 };
 
@@ -158,10 +159,7 @@ export const addBreadcrumb = (
 };
 
 // 성능 측정 헬퍼 (단순 에러 캡처)
-export const measurePerformance = async <T>(
-  name: string,
-  fn: () => Promise<T>
-): Promise<T> => {
+export const measurePerformance = async <T>(name: string, fn: () => Promise<T>): Promise<T> => {
   try {
     const result = await fn();
     return result;
@@ -170,4 +168,3 @@ export const measurePerformance = async <T>(
     throw error;
   }
 };
-

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { DateSpecificRequirement, TimeSlot } from '../../types/jobPosting';
 import { useDateUtils } from '../../hooks/useDateUtils';
-import { createNewDateSpecificRequirement, PREDEFINED_ROLES, getRoleDisplayName } from '../../utils/jobPosting/jobPostingHelpers';
+import {
+  createNewDateSpecificRequirement,
+  PREDEFINED_ROLES,
+  getRoleDisplayName,
+} from '../../utils/jobPosting/jobPostingHelpers';
 import { convertToDateString } from '../../utils/jobPosting/dateUtils';
 import Button from '../ui/Button';
 import DateDropdownSelector from '../time/DateDropdownSelector';
@@ -12,9 +16,23 @@ interface DateSpecificRequirementsProps {
   requirements: DateSpecificRequirement[];
   onRequirementsChange: (requirements: DateSpecificRequirement[]) => void;
   onDateSpecificTimeSlotChange: (dateIndex: number, timeSlotIndex: number, value: string) => void;
-  onDateSpecificTimeToBeAnnouncedToggle: (dateIndex: number, timeSlotIndex: number, isAnnounced: boolean) => void;
-  onDateSpecificTentativeDescriptionChange: (dateIndex: number, timeSlotIndex: number, description: string) => void;
-  onDateSpecificRoleChange: (dateIndex: number, timeSlotIndex: number, roleIndex: number, field: 'name' | 'count', value: string | number) => void;
+  onDateSpecificTimeToBeAnnouncedToggle: (
+    dateIndex: number,
+    timeSlotIndex: number,
+    isAnnounced: boolean
+  ) => void;
+  onDateSpecificTentativeDescriptionChange: (
+    dateIndex: number,
+    timeSlotIndex: number,
+    description: string
+  ) => void;
+  onDateSpecificRoleChange: (
+    dateIndex: number,
+    timeSlotIndex: number,
+    roleIndex: number,
+    field: 'name' | 'count',
+    value: string | number
+  ) => void;
 }
 
 /**
@@ -35,13 +53,13 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   const { toDropdownValue, fromDropdownValue } = useDateUtils();
   const [customRoleNames, setCustomRoleNames] = useState<Record<string, string>>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   // 오늘 날짜를 기본값으로 설정 (월/일 패딩 추가)
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState({
     year: today.getFullYear().toString(),
     month: (today.getMonth() + 1).toString().padStart(2, '0'),
-    day: today.getDate().toString().padStart(2, '0')
+    day: today.getDate().toString().padStart(2, '0'),
   });
 
   // 날짜를 문자열로 변환
@@ -65,17 +83,21 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const dateStr = fromDropdownValue(selectedDate);
     const selectedDateObj = new Date(dateStr);
     const today = new Date();
-    
+
     // 오늘 날짜를 기준으로 시간 제거 (날짜만 비교)
     const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const selectedMidnight = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate());
-    
+    const selectedMidnight = new Date(
+      selectedDateObj.getFullYear(),
+      selectedDateObj.getMonth(),
+      selectedDateObj.getDate()
+    );
+
     // 과거 날짜 체크 (오늘은 선택 가능)
     if (selectedMidnight < todayMidnight) {
       toast.error('과거 날짜는 선택할 수 없습니다.');
       return;
     }
-    
+
     // 90일 이후 날짜 체크
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + 90);
@@ -83,58 +105,63 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       toast.error('최대 90일 이내의 날짜만 선택할 수 있습니다.');
       return;
     }
-    
+
     // 중복 체크
-    const isDuplicate = requirements.some(req => 
-      getDateString(req.date) === dateStr
-    );
-    
+    const isDuplicate = requirements.some((req) => getDateString(req.date) === dateStr);
+
     if (isDuplicate) {
       toast.warning('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
       return;
     }
-    
+
     const newRequirement = createNewDateSpecificRequirement(dateStr);
     // 기본 종료 시간 추가
     if (newRequirement.timeSlots[0]) {
       newRequirement.timeSlots[0].endTime = '18:00';
       newRequirement.timeSlots[0].duration = { type: 'single' };
     }
-    
+
     // 날짜순 자동 정렬
-    const updatedRequirements = [...requirements, newRequirement].sort((a, b) => 
+    const updatedRequirements = [...requirements, newRequirement].sort((a, b) =>
       getDateString(a.date).localeCompare(getDateString(b.date))
     );
-    
+
     onRequirementsChange(updatedRequirements);
-    
+
     // 다음 날짜로 이동
     const nextDate = new Date(dateStr);
     nextDate.setDate(nextDate.getDate() + 1);
     setSelectedDate({
       year: nextDate.getFullYear().toString(),
       month: (nextDate.getMonth() + 1).toString(),
-      day: nextDate.getDate().toString()
+      day: nextDate.getDate().toString(),
     });
     setShowDatePicker(false);
   };
 
   // 날짜 변경 (중복 체크 포함)
-  const handleDateChange = (requirementIndex: number, value: { year?: string; month?: string; day?: string }) => {
+  const handleDateChange = (
+    requirementIndex: number,
+    value: { year?: string; month?: string; day?: string }
+  ) => {
     const newDate = fromDropdownValue(value);
     const selectedDateObj = new Date(newDate);
     const today = new Date();
-    
+
     // 오늘 날짜를 기준으로 시간 제거 (날짜만 비교)
     const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const selectedMidnight = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate());
-    
+    const selectedMidnight = new Date(
+      selectedDateObj.getFullYear(),
+      selectedDateObj.getMonth(),
+      selectedDateObj.getDate()
+    );
+
     // 과거 날짜 체크 (오늘은 선택 가능)
     if (selectedMidnight < todayMidnight) {
       toast.error('과거 날짜는 선택할 수 없습니다.');
       return;
     }
-    
+
     // 90일 이후 날짜 체크
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + 90);
@@ -142,25 +169,23 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       toast.error('최대 90일 이내의 날짜만 선택할 수 있습니다.');
       return;
     }
-    
+
     // 다른 요구사항과 중복 체크
-    const isDuplicate = requirements.some((req, idx) => 
-      idx !== requirementIndex && getDateString(req.date) === newDate
+    const isDuplicate = requirements.some(
+      (req, idx) => idx !== requirementIndex && getDateString(req.date) === newDate
     );
-    
+
     if (isDuplicate) {
       toast.warning('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
       return;
     }
-    
+
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     if (requirement) {
       requirement.date = newDate;
       // 날짜순 재정렬
-      newRequirements.sort((a, b) => 
-        getDateString(a.date).localeCompare(getDateString(b.date))
-      );
+      newRequirements.sort((a, b) => getDateString(a.date).localeCompare(getDateString(b.date)));
     }
     onRequirementsChange(newRequirements);
   };
@@ -171,7 +196,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       toast.warning('최소 하나의 날짜는 필요합니다.');
       return;
     }
-    
+
     const newRequirements = requirements.filter((_, i) => i !== index);
     onRequirementsChange(newRequirements);
   };
@@ -187,23 +212,22 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         roles: [{ name: 'dealer', count: 1 }],
         isTimeToBeAnnounced: false,
         tentativeDescription: '',
-        duration: { type: 'single' }
+        duration: { type: 'single' },
       };
       requirement.timeSlots.push(newTimeSlot);
     }
     onRequirementsChange(newRequirements);
   };
 
-
   // 날짜별 종료일 설정 - 다중 날짜 선택 시 개별 요구사항 생성
   const handleDurationTypeChange = (requirementIndex: number, type: 'single' | 'multi') => {
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
-    
+
     if (requirement) {
       if (type === 'single') {
         // 단일 날짜: duration 정보만 업데이트
-        requirement.timeSlots.forEach(slot => {
+        requirement.timeSlots.forEach((slot) => {
           slot.duration = { type: 'single' };
           delete slot.duration?.endDate;
         });
@@ -212,49 +236,51 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         const startDate = new Date(getDateString(requirement.date));
         startDate.setDate(startDate.getDate() + 1);
         const defaultEndDate = convertToDateString(startDate);
-        
-        requirement.timeSlots.forEach(slot => {
-          slot.duration = { 
+
+        requirement.timeSlots.forEach((slot) => {
+          slot.duration = {
             type: 'multi',
-            endDate: defaultEndDate
+            endDate: defaultEndDate,
           };
         });
       }
     }
-    
+
     onRequirementsChange(newRequirements);
   };
-  
+
   // 날짜별 종료일 변경 - UI 표시용으로만 사용, 자동 날짜 생성하지 않음
   const handleDurationEndDateChange = (requirementIndex: number, endDate: string) => {
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
-    
+
     if (requirement) {
       const startDateStr = getDateString(requirement.date);
       const startDate = new Date(startDateStr);
       const endDateObj = new Date(endDate);
-      
+
       // 종료일 검증
       if (endDateObj <= startDate) {
         toast.error('종료일은 시작일보다 이후여야 합니다.');
         return;
       }
-      
+
       // 날짜 범위 검증 (최대 90일)
-      const daysDiff = Math.ceil((endDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.ceil(
+        (endDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
       if (daysDiff > 90) {
         toast.warning('날짜 범위는 최대 90일까지만 선택할 수 있습니다.');
         return;
       }
-      
+
       // duration 정보만 업데이트 (UI 표시용)
-      requirement.timeSlots.forEach(slot => {
+      requirement.timeSlots.forEach((slot) => {
         if (slot.duration?.type === 'multi') {
           slot.duration.endDate = endDate;
         }
       });
-      
+
       onRequirementsChange(newRequirements);
     }
   };
@@ -264,9 +290,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     if (requirement) {
-      requirement.timeSlots = requirement.timeSlots.filter(
-        (_, i) => i !== timeSlotIndex
-      );
+      requirement.timeSlots = requirement.timeSlots.filter((_, i) => i !== timeSlotIndex);
     }
     onRequirementsChange(newRequirements);
   };
@@ -276,24 +300,28 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     const timeSlot = requirement?.timeSlots[timeSlotIndex];
-    
+
     if (requirement && timeSlot) {
       // 최대 역할 개수 제한 (10개)
       if (timeSlot.roles.length >= 10) {
         toast.warning('한 시간대에 최대 10개의 역할까지만 추가할 수 있습니다.');
         return;
       }
-      
+
       timeSlot.roles.push({
         name: 'dealer',
-        count: 1
+        count: 1,
       });
     }
     onRequirementsChange(newRequirements);
   };
 
   // 역할 제거
-  const removeRoleFromTimeSlot = (requirementIndex: number, timeSlotIndex: number, roleIndex: number) => {
+  const removeRoleFromTimeSlot = (
+    requirementIndex: number,
+    timeSlotIndex: number,
+    roleIndex: number
+  ) => {
     const newRequirements = [...requirements];
     const requirement = newRequirements[requirementIndex];
     const timeSlot = requirement?.timeSlots[timeSlotIndex];
@@ -315,16 +343,11 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                   setSelectedDate({
                     year: value.year || new Date().getFullYear().toString(),
                     month: value.month || (new Date().getMonth() + 1).toString(),
-                    day: value.day || new Date().getDate().toString()
+                    day: value.day || new Date().getDate().toString(),
                   });
                 }}
               />
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={addDateRequirement}
-              >
+              <Button type="button" variant="primary" size="sm" onClick={addDateRequirement}>
                 선택 완료
               </Button>
               <Button
@@ -351,9 +374,12 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
       {requirements.map((requirement, requirementIndex) => {
         const dateStr = getDateString(requirement.date);
-        
+
         return (
-          <div key={`${dateStr}-${requirementIndex}`} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+          <div
+            key={`${dateStr}-${requirementIndex}`}
+            className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden"
+          >
             <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
@@ -374,18 +400,20 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                   </button>
                 )}
               </div>
-              
+
               {/* 여러 날 선택 시 종료일 표시 */}
               {requirement.timeSlots[0]?.duration?.type === 'multi' && (
                 <div className="flex items-center space-x-2 mt-2 ml-6">
                   <span className="text-sm text-gray-600 dark:text-gray-300">~</span>
                   <DateDropdownSelector
                     value={toDropdownValue(requirement.timeSlots[0]?.duration?.endDate || dateStr)}
-                    onChange={(value) => handleDurationEndDateChange(requirementIndex, fromDropdownValue(value))}
+                    onChange={(value) =>
+                      handleDurationEndDateChange(requirementIndex, fromDropdownValue(value))
+                    }
                   />
                 </div>
               )}
-              
+
               {/* 날짜별 기간 설정 및 시간대 추가 버튼 */}
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -398,7 +426,10 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                       onChange={() => handleDurationTypeChange(requirementIndex, 'single')}
                       className="text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-600"
                     />
-                    <label htmlFor={`single-${requirementIndex}`} className="text-sm text-gray-700 dark:text-gray-200">
+                    <label
+                      htmlFor={`single-${requirementIndex}`}
+                      className="text-sm text-gray-700 dark:text-gray-200"
+                    >
                       단일 날짜
                     </label>
                   </div>
@@ -411,7 +442,10 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                       onChange={() => handleDurationTypeChange(requirementIndex, 'multi')}
                       className="text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-600"
                     />
-                    <label htmlFor={`multi-${requirementIndex}`} className="text-sm text-gray-700 dark:text-gray-200">
+                    <label
+                      htmlFor={`multi-${requirementIndex}`}
+                      className="text-sm text-gray-700 dark:text-gray-200"
+                    >
                       여러 날
                     </label>
                   </div>
@@ -430,7 +464,10 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
             <div className="p-4">
               <div className="space-y-4">
                 {requirement.timeSlots.map((timeSlot, timeSlotIndex) => (
-                  <div key={timeSlotIndex} className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-white dark:bg-gray-800">
+                  <div
+                    key={timeSlotIndex}
+                    className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-white dark:bg-gray-800"
+                  >
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center space-x-3">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -455,8 +492,12 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                         <input
                           type="checkbox"
                           checked={timeSlot.isTimeToBeAnnounced || false}
-                          onChange={(e) => 
-                            onDateSpecificTimeToBeAnnouncedToggle(requirementIndex, timeSlotIndex, e.target.checked)
+                          onChange={(e) =>
+                            onDateSpecificTimeToBeAnnouncedToggle(
+                              requirementIndex,
+                              timeSlotIndex,
+                              e.target.checked
+                            )
                           }
                           className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                         />
@@ -474,7 +515,11 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           type="text"
                           value={timeSlot.tentativeDescription || ''}
                           onChange={(e) =>
-                            onDateSpecificTentativeDescriptionChange(requirementIndex, timeSlotIndex, e.target.value)
+                            onDateSpecificTentativeDescriptionChange(
+                              requirementIndex,
+                              timeSlotIndex,
+                              e.target.value
+                            )
                           }
                           placeholder="예시 : 추후공지"
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xs"
@@ -489,7 +534,11 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                           type="time"
                           value={timeSlot.time}
                           onChange={(e) =>
-                            onDateSpecificTimeSlotChange(requirementIndex, timeSlotIndex, e.target.value)
+                            onDateSpecificTimeSlotChange(
+                              requirementIndex,
+                              timeSlotIndex,
+                              e.target.value
+                            )
                           }
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -499,7 +548,9 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                     {/* 역할 관리 */}
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <h5 className="text-sm font-medium text-gray-700 dark:text-gray-200">필요 역할</h5>
+                        <h5 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                          필요 역할
+                        </h5>
                         <Button
                           type="button"
                           variant="secondary"
@@ -512,11 +563,18 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
                       {timeSlot.roles.map((role, roleIndex) => {
                         const roleKey = `${requirementIndex}-${timeSlotIndex}-${roleIndex}`;
-                        const isCustomRole = role.name === 'other' || !PREDEFINED_ROLES.includes(role.name);
-                        const displayValue = isCustomRole && !PREDEFINED_ROLES.includes(role.name) ? 'other' : role.name;
-                        
+                        const isCustomRole =
+                          role.name === 'other' || !PREDEFINED_ROLES.includes(role.name);
+                        const displayValue =
+                          isCustomRole && !PREDEFINED_ROLES.includes(role.name)
+                            ? 'other'
+                            : role.name;
+
                         return (
-                          <div key={roleIndex} className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                          <div
+                            key={roleIndex}
+                            className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md"
+                          >
                             <div className="flex-1">
                               <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                 역할명
@@ -527,29 +585,53 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                   value={displayValue}
                                   onChange={(value) => {
                                     if (value === 'other') {
-                                      onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', value);
+                                      onDateSpecificRoleChange(
+                                        requirementIndex,
+                                        timeSlotIndex,
+                                        roleIndex,
+                                        'name',
+                                        value
+                                      );
                                     } else {
-                                      onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', value);
+                                      onDateSpecificRoleChange(
+                                        requirementIndex,
+                                        timeSlotIndex,
+                                        roleIndex,
+                                        'name',
+                                        value
+                                      );
                                       const newCustomNames = { ...customRoleNames };
                                       delete newCustomNames[roleKey];
                                       setCustomRoleNames(newCustomNames);
                                     }
                                   }}
-                                  options={PREDEFINED_ROLES.map(roleName => ({
+                                  options={PREDEFINED_ROLES.map((roleName) => ({
                                     value: roleName,
-                                    label: roleName === 'other' ? '기타 (직접입력)' : getRoleDisplayName(roleName)
+                                    label:
+                                      roleName === 'other'
+                                        ? '기타 (직접입력)'
+                                        : getRoleDisplayName(roleName),
                                   }))}
                                   className="text-sm"
                                 />
                                 {isCustomRole && (
                                   <input
                                     type="text"
-                                    value={customRoleNames[roleKey] || (!PREDEFINED_ROLES.includes(role.name) ? role.name : '')}
+                                    value={
+                                      customRoleNames[roleKey] ||
+                                      (!PREDEFINED_ROLES.includes(role.name) ? role.name : '')
+                                    }
                                     onChange={(e) => {
                                       const newCustomNames = { ...customRoleNames };
                                       newCustomNames[roleKey] = e.target.value;
                                       setCustomRoleNames(newCustomNames);
-                                      onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'name', e.target.value || 'other');
+                                      onDateSpecificRoleChange(
+                                        requirementIndex,
+                                        timeSlotIndex,
+                                        roleIndex,
+                                        'name',
+                                        e.target.value || 'other'
+                                      );
                                     }}
                                     placeholder="역할명을 입력하세요"
                                     className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -557,7 +639,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="w-20">
                               <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                 인원
@@ -577,7 +659,13 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                 onBlur={(e) => {
                                   // 포커스 아웃 시 빈 값이면 기본값 1로 복원
                                   if (e.target.value === '') {
-                                    onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', 1);
+                                    onDateSpecificRoleChange(
+                                      requirementIndex,
+                                      timeSlotIndex,
+                                      roleIndex,
+                                      'count',
+                                      1
+                                    );
                                   }
                                 }}
                                 onChange={(e) => {
@@ -596,16 +684,24 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                                     return;
                                   }
 
-                                  onDateSpecificRoleChange(requirementIndex, timeSlotIndex, roleIndex, 'count', numValue);
+                                  onDateSpecificRoleChange(
+                                    requirementIndex,
+                                    timeSlotIndex,
+                                    roleIndex,
+                                    'count',
+                                    numValue
+                                  );
                                 }}
                                 className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>
-                            
+
                             {timeSlot.roles.length > 1 && (
                               <button
                                 type="button"
-                                onClick={() => removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)}
+                                onClick={() =>
+                                  removeRoleFromTimeSlot(requirementIndex, timeSlotIndex, roleIndex)
+                                }
                                 className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm p-1"
                                 title="역할 삭제"
                               >

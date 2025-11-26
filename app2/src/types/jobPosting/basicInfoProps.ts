@@ -85,8 +85,5 @@ export type BasicInfoValidation = ValidationState<BasicInfoErrors>;
 /**
  * BasicInfoSection Props
  */
-export interface BasicInfoSectionProps extends SectionProps<
-  BasicInfoData,
-  BasicInfoHandlers,
-  BasicInfoValidation
-> {}
+export interface BasicInfoSectionProps
+  extends SectionProps<BasicInfoData, BasicInfoHandlers, BasicInfoValidation> {}

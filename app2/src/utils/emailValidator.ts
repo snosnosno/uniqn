@@ -191,7 +191,8 @@ export function validateEmailRealtime(email: string): Partial<EmailValidationRes
   const domain = parts.length === 2 && parts[1] ? parts[1] : '';
 
   // 도메인에 점이 있고, 점으로 시작하거나 끝나지 않아야 함
-  const hasDot = domain.length > 0 && domain.includes('.') && !domain.startsWith('.') && !domain.endsWith('.');
+  const hasDot =
+    domain.length > 0 && domain.includes('.') && !domain.startsWith('.') && !domain.endsWith('.');
 
   return {
     isValid: hasDot,
@@ -225,7 +226,13 @@ export function extractEmailDomain(email: string): string {
   }
 
   const parts = trimmed.split('@');
-  if (parts.length !== 2 || !parts[0] || !parts[1] || parts[0].length === 0 || parts[1].length === 0) {
+  if (
+    parts.length !== 2 ||
+    !parts[0] ||
+    !parts[1] ||
+    parts[0].length === 0 ||
+    parts[1].length === 0
+  ) {
     return '';
   }
 
@@ -269,5 +276,7 @@ export const COMMON_EMAIL_DOMAINS = [
  */
 export function isCommonEmailDomain(email: string): boolean {
   const domain = extractEmailDomain(email);
-  return COMMON_EMAIL_DOMAINS.includes(domain.toLowerCase() as typeof COMMON_EMAIL_DOMAINS[number]);
+  return COMMON_EMAIL_DOMAINS.includes(
+    domain.toLowerCase() as (typeof COMMON_EMAIL_DOMAINS)[number]
+  );
 }

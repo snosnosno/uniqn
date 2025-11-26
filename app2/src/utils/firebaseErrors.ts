@@ -40,7 +40,7 @@ const FIREBASE_ERROR_MESSAGES: Record<string, { ko: string; en: string }> = {
     ko: '요청한 데이터를 찾을 수 없습니다.',
     en: 'Document not found.',
   },
-  'unauthenticated': {
+  unauthenticated: {
     ko: '로그인이 필요합니다.',
     en: 'Authentication required.',
   },
@@ -52,11 +52,11 @@ const FIREBASE_ERROR_MESSAGES: Record<string, { ko: string; en: string }> = {
     ko: '요청 한도를 초과했습니다. 잠시 후 다시 시도하세요.',
     en: 'Request quota exceeded. Please try again later.',
   },
-  'cancelled': {
+  cancelled: {
     ko: '작업이 취소되었습니다.',
     en: 'Operation cancelled.',
   },
-  'unknown': {
+  unknown: {
     ko: '알 수 없는 오류가 발생했습니다.',
     en: 'An unknown error occurred.',
   },
@@ -76,10 +76,7 @@ const FIREBASE_ERROR_MESSAGES: Record<string, { ko: string; en: string }> = {
  * // => '권한이 없습니다. 관리자에게 문의하세요.'
  * ```
  */
-export function getFirebaseErrorMessage(
-  error: FirebaseError,
-  locale: 'ko' | 'en' = 'ko'
-): string {
+export function getFirebaseErrorMessage(error: FirebaseError, locale: 'ko' | 'en' = 'ko'): string {
   // Firebase 에러 코드가 정의된 메시지에 있는지 확인
   const errorMessage = FIREBASE_ERROR_MESSAGES[error.code];
 
@@ -150,18 +147,14 @@ export function handleFirebaseError(
   errorObject.name = error.name;
 
   // logger를 사용하여 에러 기록
-  logger.error(
-    'Firebase Error',
-    errorObject,
-    {
-      component: 'firebaseErrors',
-      data: {
-        code: error.code,
-        message: error.message,
-        context,
-      },
-    }
-  );
+  logger.error('Firebase Error', errorObject, {
+    component: 'firebaseErrors',
+    data: {
+      code: error.code,
+      message: error.message,
+      context,
+    },
+  });
 
   // 사용자 친화적 메시지 반환
   return getFirebaseErrorMessage(error, locale);

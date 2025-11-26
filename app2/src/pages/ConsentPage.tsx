@@ -73,7 +73,7 @@ const ConsentPage: React.FC = () => {
 
       logger.info('동의 내역 저장 성공', {
         component: 'ConsentPage',
-        data: { userId: currentUser.uid }
+        data: { userId: currentUser.uid },
       });
 
       // 원래 가려던 페이지로 이동, 없으면 홈으로
@@ -81,7 +81,7 @@ const ConsentPage: React.FC = () => {
       navigate(from);
     } catch (err) {
       logger.error('동의 내역 저장 실패', err instanceof Error ? err : new Error(String(err)), {
-        component: 'ConsentPage'
+        component: 'ConsentPage',
       });
       setError('동의 내역 저장에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -102,10 +102,7 @@ const ConsentPage: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <ConsentManager
-            isSignupMode={true}
-            onChange={setConsents}
-          />
+          <ConsentManager isSignupMode={true} onChange={setConsents} />
 
           {error && (
             <p className="mt-4 text-red-500 dark:text-red-400 text-sm text-center" role="alert">
@@ -119,7 +116,9 @@ const ConsentPage: React.FC = () => {
               disabled={isLoading || !consents}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:bg-indigo-400 dark:disabled:bg-indigo-600 disabled:cursor-not-allowed"
             >
-              {isLoading ? t('common.processing', '처리 중...') : t('consent.submit', '동의하고 계속하기')}
+              {isLoading
+                ? t('common.processing', '처리 중...')
+                : t('consent.submit', '동의하고 계속하기')}
             </button>
           </div>
         </div>

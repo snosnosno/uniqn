@@ -74,9 +74,7 @@ describe('useFirestoreQuery', () => {
 
       const mockQuery = {} as Query<DocumentData>;
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -90,9 +88,7 @@ describe('useFirestoreQuery', () => {
     it('null 쿼리일 때 구독하지 않아야 함', () => {
       const { onSnapshot } = require('firebase/firestore');
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(null)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(null));
 
       expect(result.current.loading).toBe(false);
       expect(result.current.data).toHaveLength(0);
@@ -112,9 +108,7 @@ describe('useFirestoreQuery', () => {
 
       const mockQuery = {} as Query<DocumentData>;
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -131,11 +125,7 @@ describe('useFirestoreQuery', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _query: unknown,
-          _onNext: unknown,
-          onError: (error: Error) => void
-        ) => {
+        (_query: unknown, _onNext: unknown, onError: (error: Error) => void) => {
           onError(mockError);
           return jest.fn();
         }
@@ -143,9 +133,7 @@ describe('useFirestoreQuery', () => {
 
       const mockQuery = {} as Query<DocumentData>;
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -161,11 +149,7 @@ describe('useFirestoreQuery', () => {
       const { onSnapshot } = require('firebase/firestore');
 
       onSnapshot.mockImplementation(
-        (
-          _query: unknown,
-          _onNext: unknown,
-          onError: (error: Error) => void
-        ) => {
+        (_query: unknown, _onNext: unknown, onError: (error: Error) => void) => {
           onError(mockError);
           return jest.fn();
         }
@@ -202,9 +186,7 @@ describe('useFirestoreQuery', () => {
     });
 
     it('onSuccess 콜백을 호출해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
 
       const onSuccessCallback = jest.fn();
       const mockUnsubscribe = jest.fn();
@@ -238,9 +220,7 @@ describe('useFirestoreQuery', () => {
 
   describe('refetch 기능', () => {
     it('refetch를 호출하면 재구독해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
 
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
@@ -261,9 +241,7 @@ describe('useFirestoreQuery', () => {
 
       const mockQuery = {} as Query<DocumentData>;
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -296,9 +274,7 @@ describe('useFirestoreQuery', () => {
 
       const mockQuery = {} as Query<DocumentData>;
 
-      const { unmount } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { unmount } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(mockUnsubscribe).not.toHaveBeenCalled();
@@ -325,10 +301,9 @@ describe('useFirestoreQuery', () => {
       const mockQuery1 = { id: 1 } as unknown as Query<DocumentData>;
       const mockQuery2 = { id: 2 } as unknown as Query<DocumentData>;
 
-      const { rerender } = renderHook(
-        ({ query }) => useFirestoreQuery<Staff>(query),
-        { initialProps: { query: mockQuery1 } }
-      );
+      const { rerender } = renderHook(({ query }) => useFirestoreQuery<Staff>(query), {
+        initialProps: { query: mockQuery1 },
+      });
 
       await waitFor(() => {
         expect(mockUnsubscribe1).not.toHaveBeenCalled();
@@ -346,9 +321,7 @@ describe('useFirestoreQuery', () => {
 
   describe('타입 안전성', () => {
     it('FirestoreDocument 타입 배열을 반환해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
 
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
@@ -367,9 +340,7 @@ describe('useFirestoreQuery', () => {
 
       const mockQuery = {} as Query<DocumentData>;
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
@@ -385,9 +356,7 @@ describe('useFirestoreQuery', () => {
 
   describe('실제 쿼리 시나리오', () => {
     it('조건부 쿼리를 처리해야 함', async () => {
-      const mockData = [
-        { id: '1', name: '홍길동', role: 'dealer', active: true },
-      ];
+      const mockData = [{ id: '1', name: '홍길동', role: 'dealer', active: true }];
 
       const mockUnsubscribe = jest.fn();
       const { onSnapshot } = require('firebase/firestore');
@@ -408,9 +377,7 @@ describe('useFirestoreQuery', () => {
       const userId = 'user123';
       const mockQuery = userId ? ({} as Query<DocumentData>) : null;
 
-      const { result } = renderHook(() =>
-        useFirestoreQuery<Staff>(mockQuery)
-      );
+      const { result } = renderHook(() => useFirestoreQuery<Staff>(mockQuery));
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);

@@ -65,6 +65,6 @@ export const useHapticFeedback = () => {
     errorFeedback,
     warningFeedback,
     selectionFeedback,
-    isSupported
+    isSupported,
   };
 };

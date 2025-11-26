@@ -45,12 +45,7 @@ describe('emailValidator', () => {
       });
 
       it('한국 이메일 제공자를 지원해야 한다', () => {
-        const emails = [
-          'user@naver.com',
-          'user@daum.net',
-          'user@kakao.com',
-          'user@gmail.com',
-        ];
+        const emails = ['user@naver.com', 'user@daum.net', 'user@kakao.com', 'user@gmail.com'];
 
         emails.forEach((email) => {
           const result = validateEmail(email);
@@ -158,9 +153,7 @@ describe('emailValidator', () => {
         const result = validateEmail(email);
 
         expect(result.isValid).toBe(false);
-        expect(result.errors).toContain(
-          '이메일은 최대 254자까지 입력 가능합니다.'
-        );
+        expect(result.errors).toContain('이메일은 최대 254자까지 입력 가능합니다.');
       });
 
       it('로컬 파트가 64자를 초과하면 에러를 반환해야 한다', () => {
@@ -169,9 +162,7 @@ describe('emailValidator', () => {
         const result = validateEmail(email);
 
         expect(result.isValid).toBe(false);
-        expect(result.errors).toContain(
-          '이메일 사용자명은 최대 64자까지 입력 가능합니다.'
-        );
+        expect(result.errors).toContain('이메일 사용자명은 최대 64자까지 입력 가능합니다.');
       });
     });
 
@@ -319,11 +310,7 @@ describe('emailValidator', () => {
 
     describe('기업 이메일', () => {
       it('기업 이메일을 false로 반환해야 한다', () => {
-        const corporateEmails = [
-          'user@company.co.kr',
-          'user@startup.io',
-          'user@mycompany.com',
-        ];
+        const corporateEmails = ['user@company.co.kr', 'user@startup.io', 'user@mycompany.com'];
 
         corporateEmails.forEach((email) => {
           expect(isCommonEmailDomain(email)).toBe(false);
@@ -353,13 +340,7 @@ describe('emailValidator', () => {
     });
 
     it('한국 이메일 제공자를 포함해야 한다', () => {
-      const koreanProviders = [
-        'naver.com',
-        'daum.net',
-        'kakao.com',
-        'hanmail.net',
-        'nate.com',
-      ];
+      const koreanProviders = ['naver.com', 'daum.net', 'kakao.com', 'hanmail.net', 'nate.com'];
 
       koreanProviders.forEach((provider) => {
         expect(COMMON_EMAIL_DOMAINS).toContain(provider);

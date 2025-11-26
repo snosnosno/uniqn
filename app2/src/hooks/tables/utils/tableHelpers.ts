@@ -30,10 +30,7 @@ export const shuffleArray = <T>(array: T[]): T[] => {
  * @param fallbackId fallback으로 사용할 tournamentId
  * @returns 실제 tournamentId
  */
-export const getActualTournamentId = (
-  table: Table,
-  fallbackId: string | null
-): string => {
+export const getActualTournamentId = (table: Table, fallbackId: string | null): string => {
   return table.tournamentId || fallbackId || '';
 };
 
@@ -44,11 +41,7 @@ export const getActualTournamentId = (
  * @param tableId 테이블 ID
  * @returns Firestore 경로
  */
-export const getTablePath = (
-  userId: string,
-  tournamentId: string,
-  tableId: string
-): string => {
+export const getTablePath = (userId: string, tournamentId: string, tableId: string): string => {
   return `users/${userId}/tournaments/${tournamentId}/tables/${tableId}`;
 };
 
@@ -58,10 +51,7 @@ export const getTablePath = (
  * @param tournamentId 토너먼트 ID
  * @returns Firestore 경로
  */
-export const getParticipantsPath = (
-  userId: string,
-  tournamentId: string
-): string => {
+export const getParticipantsPath = (userId: string, tournamentId: string): string => {
   return `users/${userId}/tournaments/${tournamentId}/participants`;
 };
 
@@ -98,7 +88,7 @@ export const getEmptySeatIndexes = (table: Table): number[] => {
   if (!table.seats) return [];
   return table.seats
     .map((seat, index) => (seat === null ? index : -1))
-    .filter(index => index !== -1);
+    .filter((index) => index !== -1);
 };
 
 /**
@@ -108,5 +98,5 @@ export const getEmptySeatIndexes = (table: Table): number[] => {
  */
 export const getPlayerCount = (table: Table): number => {
   if (!table.seats) return 0;
-  return table.seats.filter(seat => seat !== null).length;
+  return table.seats.filter((seat) => seat !== null).length;
 };

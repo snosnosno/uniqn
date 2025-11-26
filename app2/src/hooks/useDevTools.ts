@@ -1,7 +1,7 @@
 /**
  * useDevTools - 개발자 도구 통합 훅
  * Week 4 성능 최적화: 개발 환경에서만 활성화되는 개발자 도구
- * 
+ *
  * @version 4.0
  * @since 2025-02-02 (Week 4)
  */
@@ -21,16 +21,16 @@ interface DevToolsState {
 export const useDevTools = () => {
   const [state, setState] = useState<DevToolsState>(() => ({
     isOpen: false,
-    isEnabled: process.env.NODE_ENV === 'development'
+    isEnabled: process.env.NODE_ENV === 'development',
   }));
 
   // 개발자 도구 토글
   const toggleDevTools = useCallback(() => {
     if (!state.isEnabled) return;
-    
-    setState(prev => ({
+
+    setState((prev) => ({
       ...prev,
-      isOpen: !prev.isOpen
+      isOpen: !prev.isOpen,
     }));
   }, [state.isEnabled, state.isOpen]);
 
@@ -38,17 +38,17 @@ export const useDevTools = () => {
   const openDevTools = useCallback(() => {
     if (!state.isEnabled) return;
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      isOpen: true
+      isOpen: true,
     }));
   }, [state.isEnabled]);
 
   // 개발자 도구 닫기
   const closeDevTools = useCallback(() => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      isOpen: false
+      isOpen: false,
     }));
   }, []);
 
@@ -62,7 +62,7 @@ export const useDevTools = () => {
         event.preventDefault();
         toggleDevTools();
       }
-      
+
       // ESC 키로 개발자 도구 닫기
       if (event.key === 'Escape' && state.isOpen) {
         event.preventDefault();
@@ -71,7 +71,7 @@ export const useDevTools = () => {
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
@@ -84,10 +84,10 @@ export const useDevTools = () => {
         component: 'useDevTools',
         data: {
           shortcuts: ['Ctrl+Shift+D: 토글', 'ESC: 닫기'],
-          features: ['성능 모니터링', '캐시 상태', '로그 확인']
-        }
+          features: ['성능 모니터링', '캐시 상태', '로그 확인'],
+        },
       });
-      
+
       sessionStorage.setItem('devtools-intro-shown', 'true');
     }
   }, [state.isEnabled]);
@@ -97,26 +97,26 @@ export const useDevTools = () => {
     if (!state.isEnabled) return;
 
     let performanceWarningShown = false;
-    
+
     const checkPerformance = () => {
       if ((performance as any).memory && !performanceWarningShown) {
         const memoryMB = (performance as any).memory.usedJSHeapSize / 1024 / 1024;
-        
+
         // 메모리 사용량이 200MB를 넘으면 경고
         if (memoryMB > 200) {
           logger.warn('높은 메모리 사용량 감지', {
             memoryUsageMB: Math.round(memoryMB),
-            component: 'useDevTools'
+            component: 'useDevTools',
           });
-          
+
           // 추가 경고 로깅
           logger.warn('메모리 사용량 임계치 도달', {
             component: 'useDevTools',
             data: {
               currentUsageMB: Math.round(memoryMB),
               threshold: 200,
-              recommendation: '개발자 도구에서 상세 정보 확인'
-            }
+              recommendation: '개발자 도구에서 상세 정보 확인',
+            },
           });
           performanceWarningShown = true;
         }
@@ -124,7 +124,7 @@ export const useDevTools = () => {
     };
 
     const interval = setInterval(checkPerformance, 10000); // 10초마다 체크
-    
+
     return () => clearInterval(interval);
   }, [state.isEnabled]);
 
@@ -133,7 +133,7 @@ export const useDevTools = () => {
     isEnabled: state.isEnabled,
     toggleDevTools,
     openDevTools,
-    closeDevTools
+    closeDevTools,
   };
 };
 

@@ -1,8 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { 
-  UnifiedWorkLog, 
-  WorkLogCreateInput
-} from '../types/unified/workLog';
+import { UnifiedWorkLog, WorkLogCreateInput } from '../types/unified/workLog';
 import { logger } from './logger';
 
 /**
@@ -13,7 +10,7 @@ export function parseTimeToString(timeValue: any): string | null {
   if (!timeValue) {
     return null;
   }
-  
+
   try {
     let date: Date | null = null;
 
@@ -24,7 +21,11 @@ export function parseTimeToString(timeValue: any): string | null {
         date = timeValue.toDate();
       }
       // seconds/nanoseconds 형태의 Timestamp (Firebase SDK에서 생성한 Timestamp)
-      else if ('seconds' in timeValue && 'nanoseconds' in timeValue && typeof timeValue.seconds === 'number') {
+      else if (
+        'seconds' in timeValue &&
+        'nanoseconds' in timeValue &&
+        typeof timeValue.seconds === 'number'
+      ) {
         date = new Date(timeValue.seconds * 1000 + timeValue.nanoseconds / 1000000);
       }
       // seconds만 있는 경우
@@ -51,21 +52,21 @@ export function parseTimeToString(timeValue: any): string | null {
       if (isNaN(date.getTime())) {
         logger.warn('문자열 파싱 실패', {
           component: 'workLogMapper',
-          data: { timeValue }
+          data: { timeValue },
         });
         return null;
       }
     }
-    
+
     // date가 유효한지 확인
     if (!date || isNaN(date.getTime())) {
       logger.warn('유효하지 않은 날짜', {
         component: 'workLogMapper',
-        data: { timeValue, date }
+        data: { timeValue, date },
       });
       return null;
     }
-    
+
     // HH:mm 형식으로 반환
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -75,7 +76,7 @@ export function parseTimeToString(timeValue: any): string | null {
   } catch (error) {
     logger.error('시간 파싱 오류', error as Error, {
       component: 'workLogMapper',
-      data: { timeValue }
+      data: { timeValue },
     });
     return null;
   }
@@ -103,7 +104,7 @@ export function parseTimeToTimestamp(timeStr: string, baseDate: string): Timesta
   } catch (error) {
     logger.error('Timestamp 변환 오류', error as Error, {
       component: 'workLogMapper',
-      data: { timeStr, baseDate }
+      data: { timeStr, baseDate },
     });
     return null;
   }
@@ -122,27 +123,27 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
           workLogId: data.id,
           hasSnapshotData: true,
           snapshotLocation: data.snapshotData.location,
-          snapshotDataKeys: Object.keys(data.snapshotData)
-        }
+          snapshotDataKeys: Object.keys(data.snapshotData),
+        },
       });
     }
 
     // 기본 필드 매핑
     const normalized: UnifiedWorkLog = {
       id: data.id || '',
-      
+
       // 통합 필드
       staffId: data.staffId || '',
       eventId: data.eventId || '',
-      
+
       // 스태프 정보
       staffName: data.staffName || data.name || '',
       role: data.role || '',
-      
+
       // 날짜 정보
       date: data.date || '',
       type: data.type || 'manual',
-      
+
       // 시간 정보 - timeSlot 파싱 추가 (심야 근무 자동 조정)
       // 먼저 scheduledStartTime/scheduledEndTime 확인, 없으면 timeSlot에서 파싱
       scheduledStartTime: (() => {
@@ -173,19 +174,19 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       })(),
       actualStartTime: data.actualStartTime || null,
       actualEndTime: data.actualEndTime || null,
-      
+
       // 근무 정보
       totalWorkMinutes: data.totalWorkMinutes || 0,
       totalBreakMinutes: data.totalBreakMinutes || 0,
       hoursWorked: data.hoursWorked || data.workHours || 0,
       overtime: data.overtime || data.overtimeHours || 0,
-      
+
       // 상태
       status: data.status || 'scheduled',
-      
+
       // 테이블 정보
       tableAssignments: data.tableAssignments || [],
-      
+
       // 메타데이터
       notes: data.notes || '',
       createdAt: data.createdAt || Timestamp.now(),
@@ -193,13 +194,13 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       createdBy: data.createdBy || data.staffId || '',
 
       // 🔥 스냅샷 데이터 (공고 삭제 대비)
-      ...(data.snapshotData && { snapshotData: data.snapshotData })
+      ...(data.snapshotData && { snapshotData: data.snapshotData }),
     };
 
     return normalized;
   } catch (error) {
     logger.error('WorkLog 정규화 실패', error as Error, {
-      component: 'workLogMapper'
+      component: 'workLogMapper',
     });
     throw error;
   }
@@ -209,7 +210,7 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
  * 여러 WorkLog를 한번에 정규화
  */
 export function normalizeWorkLogs(dataArray: any[]): UnifiedWorkLog[] {
-  return dataArray.map(data => normalizeWorkLog(data));
+  return dataArray.map((data) => normalizeWorkLog(data));
 }
 
 /**
@@ -230,13 +231,13 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
   if (!input.role) {
     throw new Error('role은 필수입니다');
   }
-  
+
   const now = Timestamp.now();
-  
+
   // 시간 데이터 표준화 - Timestamp로 통일
   let scheduledStartTime = input.scheduledStartTime;
   let scheduledEndTime = input.scheduledEndTime;
-  
+
   // 문자열로 들어온 경우 Timestamp로 변환
   if (typeof scheduledStartTime === 'string') {
     scheduledStartTime = parseTimeToTimestamp(scheduledStartTime, input.date);
@@ -244,7 +245,7 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
   if (typeof scheduledEndTime === 'string') {
     scheduledEndTime = parseTimeToTimestamp(scheduledEndTime, input.date);
   }
-  
+
   return {
     // 필수 필드
     staffId: input.staffId,
@@ -253,28 +254,28 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
     date: input.date,
     role: input.role,
     type: input.type || 'manual',
-    
+
     // 시간 정보 (Timestamp로 통일)
     scheduledStartTime: scheduledStartTime || null,
     scheduledEndTime: scheduledEndTime || null,
     actualStartTime: null,
     actualEndTime: null,
-    
+
     // 초기값
     totalWorkMinutes: 0,
     totalBreakMinutes: 0,
     hoursWorked: 0,
     overtime: 0,
-    
+
     // 상태
     status: input.status || 'scheduled',
-    
+
     // 메타데이터
     tableAssignments: [],
     notes: '',
     createdAt: now,
     updatedAt: now,
-    createdBy: input.staffId
+    createdBy: input.staffId,
   };
 }
 
@@ -284,9 +285,9 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
 export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
   const prepared: any = {
     ...updates,
-    updatedAt: Timestamp.now()
+    updatedAt: Timestamp.now(),
   };
-  
+
   // 시간 데이터 표준화
   if (typeof prepared.scheduledStartTime === 'string' && updates.date) {
     prepared.scheduledStartTime = parseTimeToTimestamp(prepared.scheduledStartTime, updates.date);
@@ -294,7 +295,7 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
   if (typeof prepared.scheduledEndTime === 'string' && updates.date) {
     prepared.scheduledEndTime = parseTimeToTimestamp(prepared.scheduledEndTime, updates.date);
   }
-  
+
   return prepared;
 }
 
@@ -303,32 +304,32 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
  */
 export function validateWorkLog(data: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  
+
   // 필수 필드 체크
   if (!data.staffId) {
     errors.push('staffId가 없습니다');
   }
-  
+
   if (!data.eventId) {
     errors.push('eventId가 없습니다');
   }
-  
+
   if (!data.date) {
     errors.push('date가 없습니다');
   }
-  
+
   if (!data.role) {
     errors.push('role이 없습니다');
   }
-  
+
   // 날짜 형식 체크
   if (data.date && !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
     errors.push('날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)');
   }
-  
+
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -341,21 +342,23 @@ export function validateWorkLog(data: any): { valid: boolean; errors: string[] }
 export function calculateWorkHours(workLog: UnifiedWorkLog): number {
   const startTime = workLog.scheduledStartTime;
   const endTime = workLog.scheduledEndTime;
-  
+
   if (!startTime || !endTime) {
     return 0;
   }
-  
+
   try {
-    const startDate = startTime && typeof startTime === 'object' && 'toDate' in startTime ? 
-      startTime.toDate() : null;
-    const endDate = endTime && typeof endTime === 'object' && 'toDate' in endTime ? 
-      endTime.toDate() : null;
-      
+    const startDate =
+      startTime && typeof startTime === 'object' && 'toDate' in startTime
+        ? startTime.toDate()
+        : null;
+    const endDate =
+      endTime && typeof endTime === 'object' && 'toDate' in endTime ? endTime.toDate() : null;
+
     if (!startDate || !endDate) {
       return 0;
     }
-    
+
     // 심야 근무 케이스 처리: Timestamp가 이미 다음날로 조정된 상태인지 확인
     let adjustedEndDate = new Date(endDate);
 
@@ -366,7 +369,11 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
     // 날짜가 다르면 이미 조정된 것으로 판단하고, 같은 날이면서 종료시간이 이른 경우만 조정
     const sameDate = startDate.getDate() === endDate.getDate();
 
-    if (sameDate && (endHour < startHour || (endHour === startHour && endDate.getMinutes() < startDate.getMinutes()))) {
+    if (
+      sameDate &&
+      (endHour < startHour ||
+        (endHour === startHour && endDate.getMinutes() < startDate.getMinutes()))
+    ) {
       // 다음날 종료: 종료시간에 24시간 추가 (같은 날인 경우만)
       adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
 
@@ -378,8 +385,8 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
           endTime: endDate.toTimeString().slice(0, 8),
           adjustedEndTime: adjustedEndDate.toTimeString().slice(0, 8),
           nextDay: true,
-          sameDate: sameDate
-        }
+          sameDate: sameDate,
+        },
       });
     } else if (!sameDate) {
       logger.debug('이미 다음날로 조정된 Timestamp 감지', {
@@ -388,11 +395,11 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
           workLogId: workLog.id,
           startDate: startDate.toDateString(),
           endDate: endDate.toDateString(),
-          alreadyAdjusted: true
-        }
+          alreadyAdjusted: true,
+        },
       });
     }
-    
+
     const hoursWorked = (adjustedEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
     const result = Math.max(0, Math.round(hoursWorked * 100) / 100);
 
@@ -400,7 +407,7 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
   } catch (error) {
     logger.error('근무시간 계산 실패', error as Error, {
       component: 'workLogMapper',
-      data: { workLogId: workLog.id }
+      data: { workLogId: workLog.id },
     });
     return 0;
   }
@@ -410,30 +417,29 @@ export function calculateWorkHours(workLog: UnifiedWorkLog): number {
  * WorkLog 필터링 헬퍼
  */
 export function filterWorkLogs(
-  workLogs: UnifiedWorkLog[], 
-  staffIds?: string[], 
+  workLogs: UnifiedWorkLog[],
+  staffIds?: string[],
   eventId?: string,
   dateRange?: { start: string; end: string }
 ): UnifiedWorkLog[] {
   let filtered = [...workLogs];
-  
+
   // staffId 필터
   if (staffIds && staffIds.length > 0) {
-    filtered = filtered.filter(log => staffIds.includes(log.staffId));
+    filtered = filtered.filter((log) => staffIds.includes(log.staffId));
   }
-  
+
   // eventId 필터
   if (eventId) {
-    filtered = filtered.filter(log => log.eventId === eventId);
+    filtered = filtered.filter((log) => log.eventId === eventId);
   }
-  
+
   // 날짜 범위 필터
   if (dateRange) {
-    filtered = filtered.filter(log => {
+    filtered = filtered.filter((log) => {
       return log.date >= dateRange.start && log.date <= dateRange.end;
     });
   }
-  
+
   return filtered;
 }
-

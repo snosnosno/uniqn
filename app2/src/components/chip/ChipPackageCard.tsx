@@ -73,9 +73,10 @@ export const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
       {/* 배지 */}
       {(pkg.isPopular || pkg.isRecommended || pkg.isBestValue) && (
         <div className="mb-4">
-          <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${getBadgeStyle()}`}>
-            {pkg.badge}{' '}
-            {pkg.isPopular && '인기'}
+          <span
+            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${getBadgeStyle()}`}
+          >
+            {pkg.badge} {pkg.isPopular && '인기'}
             {pkg.isRecommended && '추천'}
             {pkg.isBestValue && '최대 할인'}
           </span>
@@ -83,12 +84,8 @@ export const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
       )}
 
       {/* 패키지 이름 */}
-      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-        {pkg.name}
-      </h3>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {pkg.nameEn}
-      </p>
+      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{pkg.name}</h3>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{pkg.nameEn}</p>
 
       {/* 가격 */}
       <div className="mt-4">
@@ -115,9 +112,7 @@ export const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
       {/* 칩 개수 */}
       <div className="mt-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            칩 개수
-          </span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">칩 개수</span>
           <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {pkg.chipCount}개
           </span>
@@ -137,15 +132,11 @@ export const ChipPackageCard: React.FC<ChipPackageCardProps> = ({
         </div>
         <div className="flex items-start">
           <CheckIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500 dark:text-green-400" />
-          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-            {pkg.usageDuration}
-          </span>
+          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{pkg.usageDuration}</span>
         </div>
         <div className="flex items-start">
           <CheckIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500 dark:text-green-400" />
-          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-            1년간 사용 가능
-          </span>
+          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">1년간 사용 가능</span>
         </div>
       </div>
 

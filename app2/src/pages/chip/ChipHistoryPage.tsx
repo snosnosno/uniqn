@@ -67,14 +67,14 @@ const ChipHistoryPage: React.FC = () => {
 
     // 타입 필터
     if (filterType !== 'all') {
-      filtered = filtered.filter(tx => tx.type === filterType);
+      filtered = filtered.filter((tx) => tx.type === filterType);
     }
 
     // 검색
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        tx =>
+        (tx) =>
           tx.description.toLowerCase().includes(query) ||
           tx.metadata?.packageId?.toLowerCase().includes(query) ||
           tx.metadata?.transactionId?.toLowerCase().includes(query)
@@ -124,12 +124,8 @@ const ChipHistoryPage: React.FC = () => {
           >
             ← 뒤로 가기
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            칩 사용 내역
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            칩 충전 및 사용 기록을 확인하세요
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">칩 사용 내역</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">칩 충전 및 사용 기록을 확인하세요</p>
         </div>
 
         {/* 필터 및 검색 */}
@@ -139,7 +135,7 @@ const ChipHistoryPage: React.FC = () => {
             <FunnelIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             <select
               value={filterType}
-              onChange={e => setFilterType(e.target.value as ChipTransactionType | 'all')}
+              onChange={(e) => setFilterType(e.target.value as ChipTransactionType | 'all')}
               className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
             >
               <option value="all">전체</option>
@@ -159,7 +155,7 @@ const ChipHistoryPage: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="검색..."
               className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 pl-10 pr-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
             />
@@ -207,7 +203,7 @@ const ChipHistoryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                  {filteredTransactions.map(tx => (
+                  {filteredTransactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         {format(tx.createdAt, 'yyyy-MM-dd HH:mm', { locale: ko })}

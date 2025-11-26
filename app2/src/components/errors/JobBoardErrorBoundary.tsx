@@ -14,14 +14,17 @@ interface State {
 }
 
 // Error Boundary Fallback Component
-const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({ error, onRetry }) => {
+const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
+  error,
+  onRetry,
+}) => {
   const { t } = useTranslation();
 
   const getErrorMessage = (error: Error | null) => {
     if (!error) return t('errors.general');
-    
+
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('network') || message.includes('fetch')) {
       return t('errors.network');
     }
@@ -31,7 +34,7 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
     if (message.includes('quota') || message.includes('limit')) {
       return t('errors.quota');
     }
-    
+
     return t('errors.general');
   };
 
@@ -41,24 +44,22 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
         <svg
           className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4"
           fill="none"
-          stroke="currentColor" 
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" 
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"
           />
         </svg>
         <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">
           {t('errors.title')}
         </h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
-          {getErrorMessage(error)}
-        </p>
+        <p className="text-gray-600 dark:text-gray-300 mb-4">{getErrorMessage(error)}</p>
       </div>
-      
+
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={onRetry}
@@ -73,15 +74,17 @@ const ErrorFallback: React.FC<{ error: Error | null; onRetry: () => void }> = ({
           {t('errors.refresh')}
         </button>
       </div>
-      
-      {process.env.NODE_ENV === 'development' && error ? <details className="mt-4 text-left">
+
+      {process.env.NODE_ENV === 'development' && error ? (
+        <details className="mt-4 text-left">
           <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
             {t('errors.details')}
           </summary>
           <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs overflow-auto">
             {error.stack}
           </pre>
-        </details> : null}
+        </details>
+      ) : null}
     </div>
   );
 };
@@ -102,11 +105,15 @@ class JobBoardErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('JobBoard Error Boundary caught an error:', error instanceof Error ? error : new Error(String(error)), { 
-      component: 'JobBoardErrorBoundary', 
-      data: errorInfo.componentStack 
-    });
-    
+    logger.error(
+      'JobBoard Error Boundary caught an error:',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'JobBoardErrorBoundary',
+        data: errorInfo.componentStack,
+      }
+    );
+
     this.setState({
       error,
       errorInfo,
@@ -123,11 +130,8 @@ class JobBoardErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <ErrorFallback 
-          error={this.state.error} 
-          onRetry={this.handleRetry}
-        />
+      return (
+        this.props.fallback || <ErrorFallback error={this.state.error} onRetry={this.handleRetry} />
       );
     }
 

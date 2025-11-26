@@ -7,46 +7,46 @@ import { Timestamp } from 'firebase/firestore';
 export interface WorkSession {
   // 기본 식별 정보
   id: string;
-  personId: string;  // Person.id 참조
-  personName: string;  // 캐시용
-  
+  personId: string; // Person.id 참조
+  personName: string; // 캐시용
+
   // 날짜 및 세션 정보
-  workDate: string;  // yyyy-MM-dd 형식
-  sessionNumber: number;  // 같은 날짜 내 순서 (1, 2, 3...)
-  
+  workDate: string; // yyyy-MM-dd 형식
+  sessionNumber: number; // 같은 날짜 내 순서 (1, 2, 3...)
+
   // 역할 및 시간
-  role: string;  // 이 세션의 역할 (딜러, 매니저 등)
-  scheduledStartTime: string;  // HH:mm
-  scheduledEndTime: string;  // HH:mm
-  actualStartTime?: string;  // HH:mm
-  actualEndTime?: string;  // HH:mm
-  
+  role: string; // 이 세션의 역할 (딜러, 매니저 등)
+  scheduledStartTime: string; // HH:mm
+  scheduledEndTime: string; // HH:mm
+  actualStartTime?: string; // HH:mm
+  actualEndTime?: string; // HH:mm
+
   // 이벤트 정보
   eventId: string;
   eventName: string;
   location?: string;
-  
+
   // 상태
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   attendanceStatus?: 'not_started' | 'checked_in' | 'checked_out';
-  
+
   // 급여 정보
   hourlyRate?: number;
   totalHours?: number;
   totalPay?: number;
   isPaid?: boolean;
   paidAt?: Timestamp;
-  
+
   // 메타데이터
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy?: string;
   updatedBy?: string;
-  
+
   // 기존 workLog와의 호환성
-  workLogId?: string;  // 기존 workLog 참조 (마이그레이션용)
-  applicationId?: string;  // 지원서 참조
-  
+  workLogId?: string; // 기존 workLog 참조 (마이그레이션용)
+  applicationId?: string; // 지원서 참조
+
   // 추가 정보
   notes?: string;
   metadata?: {
@@ -115,7 +115,7 @@ export interface WorkSessionGroup {
   sessions: WorkSession[];
   totalHours: number;
   totalPay: number;
-  roles: string[];  // 이 날짜의 모든 역할
+  roles: string[]; // 이 날짜의 모든 역할
 }
 
 /**
@@ -131,12 +131,12 @@ export function getNextSessionNumber(
   workDate: string
 ): number {
   const sameDaySessions = existingSessions.filter(
-    s => s.personId === personId && s.workDate === workDate
+    (s) => s.personId === personId && s.workDate === workDate
   );
-  
+
   if (sameDaySessions.length === 0) return 1;
-  
-  const maxNumber = Math.max(...sameDaySessions.map(s => s.sessionNumber));
+
+  const maxNumber = Math.max(...sameDaySessions.map((s) => s.sessionNumber));
   return maxNumber + 1;
 }
 
@@ -151,7 +151,7 @@ export function checkTimeOverlap(
   const end1 = timeToMinutes(session1.scheduledEndTime);
   const start2 = timeToMinutes(session2.scheduledStartTime);
   const end2 = timeToMinutes(session2.scheduledEndTime);
-  
+
   return !(end1 <= start2 || end2 <= start1);
 }
 
@@ -168,10 +168,10 @@ function timeToMinutes(time: string): number {
  */
 export function groupSessionsByDate(sessions: WorkSession[]): WorkSessionGroup[] {
   const groups = new Map<string, WorkSessionGroup>();
-  
-  sessions.forEach(session => {
+
+  sessions.forEach((session) => {
     const key = `${session.personId}-${session.workDate}`;
-    
+
     if (!groups.has(key)) {
       groups.set(key, {
         date: session.workDate,
@@ -180,24 +180,22 @@ export function groupSessionsByDate(sessions: WorkSession[]): WorkSessionGroup[]
         sessions: [],
         totalHours: 0,
         totalPay: 0,
-        roles: []
+        roles: [],
       });
     }
-    
+
     const group = groups.get(key)!;
     group.sessions.push(session);
     group.totalHours += session.totalHours || 0;
     group.totalPay += session.totalPay || 0;
-    
+
     if (!group.roles.includes(session.role)) {
       group.roles.push(session.role);
     }
   });
-  
+
   // 날짜 순으로 정렬
-  return Array.from(groups.values()).sort((a, b) => 
-    a.date.localeCompare(b.date)
-  );
+  return Array.from(groups.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -206,7 +204,7 @@ export function groupSessionsByDate(sessions: WorkSession[]): WorkSessionGroup[]
 export function sessionToWorkLog(session: WorkSession): any {
   return {
     id: session.workLogId || session.id,
-    staffId: session.personId,  // 하위 호환성
+    staffId: session.personId, // 하위 호환성
     personId: session.personId,
     staffName: session.personName,
     date: session.workDate,
@@ -224,7 +222,7 @@ export function sessionToWorkLog(session: WorkSession): any {
     totalPay: session.totalPay,
     isPaid: session.isPaid,
     createdAt: session.createdAt,
-    updatedAt: session.updatedAt
+    updatedAt: session.updatedAt,
   };
 }
 
@@ -258,6 +256,6 @@ export function workLogToSession(workLog: any, sessionNumber: number = 1): WorkS
     workLogId: workLog.id,
     applicationId: workLog.applicationId,
     notes: workLog.notes,
-    metadata: workLog.metadata
+    metadata: workLog.metadata,
   };
 }

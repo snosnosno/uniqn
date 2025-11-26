@@ -109,6 +109,6 @@ export interface JobDetailData {
  * ```
  */
 export type ViewCountError =
-  | { type: 'network'; message: string }       // 네트워크 오류
-  | { type: 'permission'; message: string }    // 권한 오류
-  | { type: 'unknown'; message: string };      // 알 수 없는 오류
+  | { type: 'network'; message: string } // 네트워크 오류
+  | { type: 'permission'; message: string } // 권한 오류
+  | { type: 'unknown'; message: string }; // 알 수 없는 오류

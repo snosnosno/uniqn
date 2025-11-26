@@ -21,7 +21,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
   title,
   message,
   className = '',
-  children
+  children,
 }) => {
   const getColorClasses = () => {
     switch (type) {
@@ -38,9 +38,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
 
   return (
     <div className={`p-3 border rounded-md ${getColorClasses()} ${className}`}>
-      {title && (
-        <p className="font-medium mb-1">{title}</p>
-      )}
+      {title && <p className="font-medium mb-1">{title}</p>}
       <p className="text-sm">{message}</p>
       {children}
     </div>

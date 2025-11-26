@@ -27,7 +27,10 @@ const PaymentFailPage: React.FC = () => {
       orderId,
     };
 
-    logger.error('결제 실패', undefined, { operation: 'processPaymentFail', additionalData: failInfo as unknown as Record<string, unknown> });
+    logger.error('결제 실패', undefined, {
+      operation: 'processPaymentFail',
+      additionalData: failInfo as unknown as Record<string, unknown>,
+    });
   }, [code, message, orderId, logger]);
 
   const handleRetry = () => {
@@ -46,9 +49,7 @@ const PaymentFailPage: React.FC = () => {
           <h2 className="mt-6 text-2xl font-bold text-gray-900 dark:text-gray-100">
             결제에 실패했습니다
           </h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {message}
-          </p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{message}</p>
 
           <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 w-full">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -57,9 +58,7 @@ const PaymentFailPage: React.FC = () => {
             <div className="space-y-2 text-left">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">오류 코드:</span>
-                <span className="text-gray-900 dark:text-gray-100 font-mono text-sm">
-                  {code}
-                </span>
+                <span className="text-gray-900 dark:text-gray-100 font-mono text-sm">{code}</span>
               </div>
               {orderId && (
                 <div className="flex justify-between">

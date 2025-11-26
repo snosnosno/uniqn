@@ -6,17 +6,16 @@ import { TIME_INTERVALS, TimeInterval } from '../../utils/timeUtils';
 interface TimeIntervalSelectorProps {
   // 현재 선택된 시간 간격 (분 단위)
   selectedInterval: number;
-  
+
   // 시간 간격 변경 콜백
   onIntervalChange: (interval: number) => void;
-  
-  
+
   // 컴포넌트 크기
   size?: 'sm' | 'md' | 'lg';
-  
+
   // 비활성화 상태
   disabled?: boolean;
-  
+
   // 추가 CSS 클래스
   className?: string;
 }
@@ -29,35 +28,35 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
   className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // 현재 선택된 간격 정보
-  const selectedIntervalInfo = TIME_INTERVALS.find(interval => interval.value === selectedInterval) || TIME_INTERVALS[2];
-  
-  
+  const selectedIntervalInfo =
+    TIME_INTERVALS.find((interval) => interval.value === selectedInterval) || TIME_INTERVALS[2];
+
   // 크기별 스타일
   const sizeClasses = {
     sm: 'text-sm py-2 px-3',
     md: 'text-base py-3 px-4',
     lg: 'text-lg py-4 px-5',
   };
-  
+
   const iconSizes = {
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
     lg: 'w-5 h-5',
   };
-  
+
   const handleIntervalSelect = (interval: TimeInterval) => {
     onIntervalChange(interval.value);
     setIsExpanded(false);
   };
-  
+
   const toggleExpanded = () => {
     if (!disabled) {
       setIsExpanded(!isExpanded);
     }
   };
-  
+
   return (
     <div className={`relative ${className}`}>
       {/* 선택기 버튼 */}
@@ -83,23 +82,24 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
               {selectedIntervalInfo?.icon} {selectedIntervalInfo?.label}
             </span>
           </div>
-          
         </div>
         <div className="flex items-center">
-          {isExpanded ?
-            <FaChevronUp className={`text-gray-400 dark:text-gray-500 ${iconSizes[size]}`} /> :
+          {isExpanded ? (
+            <FaChevronUp className={`text-gray-400 dark:text-gray-500 ${iconSizes[size]}`} />
+          ) : (
             <FaChevronDown className={`text-gray-400 dark:text-gray-500 ${iconSizes[size]}`} />
-          }
+          )}
         </div>
       </button>
-      
+
       {/* 드롭다운 옵션들 */}
-      {isExpanded ? <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+      {isExpanded ? (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
           <div className="py-1">
             {TIME_INTERVALS.map((interval) => {
               const isSelected = interval.value === selectedInterval;
               // const stats = startTime && endTime ? getTimeStatistics(startTime, endTime, interval.value) : null;
-              
+
               return (
                 <button
                   key={interval.value}
@@ -114,18 +114,18 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{interval.icon}</span>
                       <span className="font-medium">{interval.label}</span>
-                      {isSelected ? <span className="text-xs bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
+                      {isSelected ? (
+                        <span className="text-xs bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
                           선택됨
-                        </span> : null}
+                        </span>
+                      ) : null}
                     </div>
-                    
                   </div>
-                  
                 </button>
               );
             })}
           </div>
-          
+
           {/* 정보 섹션 */}
           <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-700">
             <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
@@ -140,13 +140,13 @@ const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
               </div>
             </div>
           </div>
-        </div> : null}
-      
+        </div>
+      ) : null}
+
       {/* 외부 클릭으로 닫기 */}
-      {isExpanded ? <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setIsExpanded(false)}
-        /> : null}
+      {isExpanded ? (
+        <div className="fixed inset-0 z-40" onClick={() => setIsExpanded(false)} />
+      ) : null}
     </div>
   );
 };

@@ -126,7 +126,12 @@ export const validateWorkLogTimeRange = (log: WorkLog): boolean => {
   const [startHour, startMinute] = log.startTime.split(':').map(Number);
   const [endHour, endMinute] = log.endTime.split(':').map(Number);
 
-  if (startHour === undefined || startMinute === undefined || endHour === undefined || endMinute === undefined) {
+  if (
+    startHour === undefined ||
+    startMinute === undefined ||
+    endHour === undefined ||
+    endMinute === undefined
+  ) {
     return false;
   }
 

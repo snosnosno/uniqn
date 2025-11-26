@@ -41,26 +41,49 @@ const PaymentHistoryPage: React.FC = () => {
   });
 
   // 실시간 결제 내역 조회
-  const { transactions, statistics, isLoading, error } = usePaymentHistory(currentUser?.uid || null, {
-    status: filterStatus,
-    startDate,
-    endDate,
-  });
+  const { transactions, statistics, isLoading, error } = usePaymentHistory(
+    currentUser?.uid || null,
+    {
+      status: filterStatus,
+      startDate,
+      endDate,
+    }
+  );
 
   const getStatusBadge = (status: PaymentStatus) => {
     const statusText = t(`paymentHistory.status.${status}`);
 
     switch (status) {
       case 'completed':
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">{statusText}</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+            {statusText}
+          </span>
+        );
       case 'failed':
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">{statusText}</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+            {statusText}
+          </span>
+        );
       case 'pending':
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">{statusText}</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+            {statusText}
+          </span>
+        );
       case 'refunded':
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">{statusText}</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
+            {statusText}
+          </span>
+        );
       default:
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">{status}</span>;
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+            {status}
+          </span>
+        );
     }
   };
 
@@ -76,7 +99,9 @@ const PaymentHistoryPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 mb-4">{t('paymentHistory.error.loadFailed')}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">
+            {t('paymentHistory.error.loadFailed')}
+          </p>
           <p className="text-gray-500 dark:text-gray-400">{error}</p>
         </div>
       </div>
@@ -92,7 +117,8 @@ const PaymentHistoryPage: React.FC = () => {
             {t('paymentHistory.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            총 {statistics.totalTransactions}건 | 완료 {statistics.completedCount}건 | 실패 {statistics.failedCount}건
+            총 {statistics.totalTransactions}건 | 완료 {statistics.completedCount}건 | 실패{' '}
+            {statistics.failedCount}건
           </p>
         </div>
 
@@ -107,7 +133,9 @@ const PaymentHistoryPage: React.FC = () => {
               <select
                 value={filterStatus || 'all'}
                 onChange={(e) => {
-                  setFilterStatus(e.target.value === 'all' ? undefined : (e.target.value as PaymentStatus));
+                  setFilterStatus(
+                    e.target.value === 'all' ? undefined : (e.target.value as PaymentStatus)
+                  );
                 }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
@@ -126,7 +154,9 @@ const PaymentHistoryPage: React.FC = () => {
               <input
                 type="date"
                 value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
-                onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : undefined)}
+                onChange={(e) =>
+                  setStartDate(e.target.value ? new Date(e.target.value) : undefined)
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
             </div>
@@ -184,7 +214,8 @@ const PaymentHistoryPage: React.FC = () => {
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {transactions.map((transaction) => {
                       // 영수증 타입 매핑
-                      const receiptType = transaction.itemType === 'chip_package' ? 'payment' : 'subscription';
+                      const receiptType =
+                        transaction.itemType === 'chip_package' ? 'payment' : 'subscription';
 
                       // 영수증 데이터 생성
                       const receipt: Receipt = {
@@ -210,12 +241,18 @@ const PaymentHistoryPage: React.FC = () => {
                       };
 
                       return (
-                        <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr
+                          key={transaction.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                            {format(transaction.createdAt.toDate(), 'yyyy.MM.dd HH:mm', { locale: ko })}
+                            {format(transaction.createdAt.toDate(), 'yyyy.MM.dd HH:mm', {
+                              locale: ko,
+                            })}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            {transaction.amount.toLocaleString()}{t('common.currency.krw')}
+                            {transaction.amount.toLocaleString()}
+                            {t('common.currency.krw')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             {transaction.paymentMethod}
@@ -270,7 +307,8 @@ const PaymentHistoryPage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 결제 금액</p>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {statistics.totalAmount.toLocaleString()}{t('common.currency.krw')}
+              {statistics.totalAmount.toLocaleString()}
+              {t('common.currency.krw')}
             </p>
           </div>
 

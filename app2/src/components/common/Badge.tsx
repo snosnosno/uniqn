@@ -21,7 +21,7 @@ const Badge: React.FC<BadgeProps> = ({
   size = 'md',
   children,
   className = '',
-  icon
+  icon,
 }) => {
   const getVariantClasses = () => {
     switch (variant) {

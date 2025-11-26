@@ -48,7 +48,7 @@ export const createMockJobPosting = (overrides: Partial<JobPosting> = {}): JobPo
   createdAt: Timestamp.now(),
   updatedAt: Timestamp.now(),
   isChipDeducted: false,
-  ...overrides
+  ...overrides,
 });
 
 // 사전 정의된 JobPosting Fixtures
@@ -67,10 +67,10 @@ export const mockJobPostings = {
         date: '2025-11-15',
         roles: [
           { role: '딜러', count: 2, salary: 50000 },
-          { role: '칩러너', count: 1, salary: 30000 }
-        ]
-      }
-    ]
+          { role: '칩러너', count: 1, salary: 30000 },
+        ],
+      },
+    ],
   }),
 
   // 고정 공고 (상단 고정)
@@ -81,7 +81,7 @@ export const mockJobPostings = {
     postingType: 'fixed',
     status: 'open',
     chipCost: 3,
-    contactPhone: '010-1234-5678'
+    contactPhone: '010-1234-5678',
   }),
 
   // 토너먼트 공고
@@ -97,10 +97,10 @@ export const mockJobPostings = {
         date: '2025-12-01',
         roles: [
           { role: '딜러', count: 10, salary: 80000 },
-          { role: '플로어 매니저', count: 2, salary: 100000 }
-        ]
-      }
-    ]
+          { role: '플로어 매니저', count: 2, salary: 100000 },
+        ],
+      },
+    ],
   }),
 
   // 긴급 공고
@@ -113,9 +113,9 @@ export const mockJobPostings = {
     dateSpecificRequirements: [
       {
         date: '2025-11-06',
-        roles: [{ role: '딜러', count: 1, salary: 60000 }]
-      }
-    ]
+        roles: [{ role: '딜러', count: 1, salary: 60000 }],
+      },
+    ],
   }),
 
   // 마감된 공고
@@ -124,7 +124,7 @@ export const mockJobPostings = {
     title: '마감된 공고',
     description: '이미 마감된 공고입니다.',
     status: 'closed',
-    postingType: 'regular'
+    postingType: 'regular',
   }),
 
   // 지원자 수 포함 공고
@@ -134,6 +134,6 @@ export const mockJobPostings = {
     description: '많은 지원자가 있는 공고입니다.',
     postingType: 'regular',
     status: 'open',
-    applicationCount: 15
-  })
+    applicationCount: 15,
+  }),
 };

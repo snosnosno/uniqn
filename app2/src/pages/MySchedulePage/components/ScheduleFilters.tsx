@@ -11,13 +11,13 @@ interface ScheduleFiltersProps {
 const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
   filters,
   onFiltersChange,
-  isMobile = false
+  isMobile = false,
 }) => {
   // 검색어 변경
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFiltersChange({
       ...filters,
-      searchTerm: e.target.value
+      searchTerm: e.target.value,
     });
   };
 
@@ -29,11 +29,10 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
       ...filters,
       dateRange: {
         ...filters.dateRange,
-        [field]: value
-      }
+        [field]: value,
+      },
     });
   };
-
 
   // 필터 초기화
   const handleReset = () => {
@@ -43,20 +42,18 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
     startDate.setMonth(today.getMonth() - 1);
     const endDate = new Date(today);
     endDate.setMonth(today.getMonth() + 3);
-    
+
     onFiltersChange({
       dateRange: {
         start: startDate.toISOString().substring(0, 10),
-        end: endDate.toISOString().substring(0, 10)
+        end: endDate.toISOString().substring(0, 10),
       },
-      searchTerm: ''
+      searchTerm: '',
     });
   };
 
   // 활성 필터 개수 (검색어만 체크)
-  const activeFilterCount = [
-    !!filters.searchTerm
-  ].filter(Boolean).length;
+  const activeFilterCount = [!!filters.searchTerm].filter(Boolean).length;
 
   if (isMobile) {
     // 모바일 레이아웃

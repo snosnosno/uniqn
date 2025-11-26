@@ -11,7 +11,7 @@ describe('TournamentStatusBadge', () => {
     it('승인 대기 배지를 렌더링', () => {
       const config: TournamentConfig = {
         approvalStatus: 'pending',
-        submittedAt: now
+        submittedAt: now,
       };
 
       render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -23,7 +23,7 @@ describe('TournamentStatusBadge', () => {
     it.skip('노란색 스타일 적용 확인', () => {
       const config: TournamentConfig = {
         approvalStatus: 'pending',
-        submittedAt: now
+        submittedAt: now,
       };
 
       const { container } = render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -40,7 +40,7 @@ describe('TournamentStatusBadge', () => {
         approvalStatus: 'approved',
         submittedAt: now,
         approvedBy: 'admin123',
-        approvedAt: now
+        approvedAt: now,
       };
 
       render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -54,7 +54,7 @@ describe('TournamentStatusBadge', () => {
         approvalStatus: 'approved',
         submittedAt: now,
         approvedBy: 'admin123',
-        approvedAt: now
+        approvedAt: now,
       };
 
       const { container } = render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -72,7 +72,7 @@ describe('TournamentStatusBadge', () => {
         submittedAt: now,
         rejectedBy: 'admin123',
         rejectedAt: now,
-        rejectionReason: '정보가 부족합니다'
+        rejectionReason: '정보가 부족합니다',
       };
 
       render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -87,7 +87,7 @@ describe('TournamentStatusBadge', () => {
         submittedAt: now,
         rejectedBy: 'admin123',
         rejectedAt: now,
-        rejectionReason: '정보가 부족합니다'
+        rejectionReason: '정보가 부족합니다',
       };
 
       const { container } = render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -102,7 +102,7 @@ describe('TournamentStatusBadge', () => {
     it.skip('커스텀 className 추가 가능', () => {
       const config: TournamentConfig = {
         approvalStatus: 'pending',
-        submittedAt: now
+        submittedAt: now,
       };
 
       const { container } = render(
@@ -118,7 +118,7 @@ describe('TournamentStatusBadge', () => {
     it.skip('pending 상태에 다크모드 클래스 포함', () => {
       const config: TournamentConfig = {
         approvalStatus: 'pending',
-        submittedAt: now
+        submittedAt: now,
       };
 
       const { container } = render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -133,7 +133,7 @@ describe('TournamentStatusBadge', () => {
         approvalStatus: 'approved',
         submittedAt: now,
         approvedBy: 'admin',
-        approvedAt: now
+        approvedAt: now,
       };
 
       const { container } = render(<TournamentStatusBadge tournamentConfig={config} />);
@@ -149,7 +149,7 @@ describe('TournamentStatusBadge', () => {
         submittedAt: now,
         rejectedBy: 'admin',
         rejectedAt: now,
-        rejectionReason: '테스트 사유'
+        rejectionReason: '테스트 사유',
       };
 
       const { container } = render(<TournamentStatusBadge tournamentConfig={config} />);

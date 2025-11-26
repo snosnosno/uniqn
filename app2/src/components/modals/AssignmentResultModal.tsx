@@ -71,10 +71,7 @@ const AssignmentResultModal: React.FC<AssignmentResultModalProps> = ({
 
         {/* 푸터 */}
         <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button
-            onClick={onClose}
-            className="btn btn-primary"
-          >
+          <button onClick={onClose} className="btn btn-primary">
             확인
           </button>
         </div>

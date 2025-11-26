@@ -52,12 +52,12 @@ function MyComponent({ jobPosting }) {
 
 ### 반환값
 
-| 속성 | 타입 | 설명 |
-|------|------|------|
-| `staffData` | `StaffData[]` | 변환된 스태프 데이터 배열 |
-| `groupedStaffData` | `GroupedStaffData` | 날짜별로 그룹화된 데이터 |
-| `uniqueStaffCount` | `number` | 고유 스태프 수 (이름 기준) |
-| `filteredStaffCount` | `number` | 필터링 후 고유 스태프 수 |
+| 속성                 | 타입               | 설명                       |
+| -------------------- | ------------------ | -------------------------- |
+| `staffData`          | `StaffData[]`      | 변환된 스태프 데이터 배열  |
+| `groupedStaffData`   | `GroupedStaffData` | 날짜별로 그룹화된 데이터   |
+| `uniqueStaffCount`   | `number`           | 고유 스태프 수 (이름 기준) |
+| `filteredStaffCount` | `number`           | 필터링 후 고유 스태프 수   |
 
 ---
 
@@ -106,14 +106,14 @@ function MyComponent() {
 
 ### API
 
-| 메서드 | 파라미터 | 설명 |
-|--------|----------|------|
-| `toggleMultiSelectMode` | - | 선택 모드 on/off |
-| `toggleStaffSelection` | `staffId: string` | 개별 스태프 선택/해제 |
-| `selectAll` | `staffIds: string[]` | 전체 선택 |
-| `deselectAll` | - | 전체 해제 |
-| `resetSelection` | - | 선택 초기화 및 모드 종료 |
-| `isAllSelected` | `staffIds: string[]` | 전체 선택 여부 확인 |
+| 메서드                  | 파라미터             | 설명                     |
+| ----------------------- | -------------------- | ------------------------ |
+| `toggleMultiSelectMode` | -                    | 선택 모드 on/off         |
+| `toggleStaffSelection`  | `staffId: string`    | 개별 스태프 선택/해제    |
+| `selectAll`             | `staffIds: string[]` | 전체 선택                |
+| `deselectAll`           | -                    | 전체 해제                |
+| `resetSelection`        | -                    | 선택 초기화 및 모드 종료 |
+| `isAllSelected`         | `staffIds: string[]` | 전체 선택 여부 확인      |
 
 ---
 
@@ -240,11 +240,11 @@ function MyComponent({ jobPosting, staffData }) {
 
 ### API
 
-| 메서드 | 설명 |
-|--------|------|
+| 메서드                                              | 설명                          |
+| --------------------------------------------------- | ----------------------------- |
 | `handleEditWorkTime(staffId, timeType, targetDate)` | 근무 시간 수정용 WorkLog 조회 |
-| `deleteStaff(staffId, staffName, date)` | 개별 스태프 삭제 (검증 포함) |
-| `handleBulkDelete(staffIds)` | 일괄 스태프 삭제 (검증 포함) |
+| `deleteStaff(staffId, staffName, date)`             | 개별 스태프 삭제 (검증 포함)  |
+| `handleBulkDelete(staffIds)`                        | 일괄 스태프 삭제 (검증 포함)  |
 
 ---
 

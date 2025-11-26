@@ -6,14 +6,7 @@ export type StaffRole = '딜러' | '플로어' | '서빙' | '매니저' | '직�
 /**
  * 역할 목록 상수
  */
-export const STAFF_ROLES: StaffRole[] = [
-  '딜러',
-  '플로어',
-  '서빙',
-  '매니저',
-  '직원',
-  '기타'
-];
+export const STAFF_ROLES: StaffRole[] = ['딜러', '플로어', '서빙', '매니저', '직원', '기타'];
 
 /**
  * 근무 일정 정보
@@ -88,7 +81,7 @@ export interface FixedWorkScheduleSectionProps {
     /** 역할별 필요 인원 목록 */
     requiredRolesWithCount: Array<{
       id: string;
-      role: string;  // JobPostingFormData 호환을 위해 string 사용
+      role: string; // JobPostingFormData 호환을 위해 string 사용
       count: number;
     }>;
   };

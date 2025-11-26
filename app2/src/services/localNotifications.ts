@@ -66,11 +66,11 @@ export const showNotification = async (notification: NotificationData): Promise<
       title: notification.title,
       body: notification.body,
       extra: notification.data,
-      ...(notification.schedule && { schedule: notification.schedule })
+      ...(notification.schedule && { schedule: notification.schedule }),
     };
 
     const options: ScheduleOptions = {
-      notifications: [notificationOptions]
+      notifications: [notificationOptions],
     };
 
     await LocalNotifications.schedule(options);
@@ -93,7 +93,7 @@ const showWebNotification = (notification: NotificationData) => {
     new Notification(notification.title, {
       body: notification.body,
       icon: '/favicon.ico',
-      tag: `uniqn-${notification.id}`
+      tag: `uniqn-${notification.id}`,
     });
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then((permission) => {
@@ -101,7 +101,7 @@ const showWebNotification = (notification: NotificationData) => {
         new Notification(notification.title, {
           body: notification.body,
           icon: '/favicon.ico',
-          tag: `uniqn-${notification.id}`
+          tag: `uniqn-${notification.id}`,
         });
       }
     });
@@ -117,7 +117,7 @@ export const scheduleNotification = async (
 ): Promise<void> => {
   const scheduledNotification: NotificationData = {
     ...notification,
-    schedule: { at: scheduleAt }
+    schedule: { at: scheduleAt },
   };
 
   await showNotification(scheduledNotification);
@@ -139,8 +139,8 @@ export const notifyApprovalRequest = async (
       type: 'approval_request',
       applicationId,
       applicantName,
-      jobTitle
-    }
+      jobTitle,
+    },
   };
 
   await showNotification(notification);
@@ -165,8 +165,8 @@ export const notifyScheduleReminder = async (
       type: 'schedule_reminder',
       eventTitle,
       eventDate: eventDate.toISOString(),
-      location
-    }
+      location,
+    },
   };
 
   await scheduleNotification(notification, reminderTime);
@@ -175,10 +175,7 @@ export const notifyScheduleReminder = async (
 /**
  * 급여 지급 알림
  */
-export const notifySalaryPayment = async (
-  amount: number,
-  period: string
-): Promise<void> => {
+export const notifySalaryPayment = async (amount: number, period: string): Promise<void> => {
   const notification: NotificationData = {
     id: Date.now(),
     title: '급여 지급 완료',
@@ -186,8 +183,8 @@ export const notifySalaryPayment = async (
     data: {
       type: 'salary_payment',
       amount,
-      period
-    }
+      period,
+    },
   };
 
   await showNotification(notification);
@@ -208,8 +205,8 @@ export const notifyAttendanceReminder = async (
     data: {
       type: 'attendance_reminder',
       eventTitle,
-      eventDate: eventDate.toISOString()
-    }
+      eventDate: eventDate.toISOString(),
+    },
   };
 
   await scheduleNotification(notification, eventDate);
@@ -271,7 +268,7 @@ export const cancelNotification = async (id: number): Promise<void> => {
 
   try {
     await LocalNotifications.cancel({
-      notifications: [{ id }]
+      notifications: [{ id }],
     });
     logger.info('알림 취소 완료', { data: { id } });
   } catch (error) {

@@ -27,9 +27,24 @@ export const exportTablesToExcel = async (
     const stats = calculateStatistics(tables, participants);
 
     // 통계 정보를 워크시트 최상단에 그리드 형식으로 추가
-    worksheetData.push(['전체 칩', formatChips(stats.totalChips), '총 인원', stats.totalParticipants]);
-    worksheetData.push(['평균 칩', formatChips(Math.round(stats.averageChips)), '총 테이블 수', stats.totalTables]);
-    worksheetData.push(['테이블 평균 칩', formatChips(Math.round(stats.tableAverageChips)), '빈자리', stats.totalEmptySeats]);
+    worksheetData.push([
+      '전체 칩',
+      formatChips(stats.totalChips),
+      '총 인원',
+      stats.totalParticipants,
+    ]);
+    worksheetData.push([
+      '평균 칩',
+      formatChips(Math.round(stats.averageChips)),
+      '총 테이블 수',
+      stats.totalTables,
+    ]);
+    worksheetData.push([
+      '테이블 평균 칩',
+      formatChips(Math.round(stats.tableAverageChips)),
+      '빈자리',
+      stats.totalEmptySeats,
+    ]);
 
     // 통계와 테이블 데이터 구분을 위한 빈 행 2개 추가
     worksheetData.push([]);
@@ -59,7 +74,7 @@ export const exportTablesToExcel = async (
       worksheetData.push(columnHeaderRow);
 
       // 각 테이블의 최대 좌석 수 구하기
-      const maxSeats = Math.max(...group.map(table => table.seats.length));
+      const maxSeats = Math.max(...group.map((table) => table.seats.length));
 
       // 좌석 데이터 행 추가
       for (let seatIndex = 0; seatIndex < maxSeats; seatIndex++) {
@@ -70,7 +85,7 @@ export const exportTablesToExcel = async (
           const participantId = table.seats[seatIndex];
 
           if (participantId) {
-            const participant = participants.find(p => p.id === participantId);
+            const participant = participants.find((p) => p.id === participantId);
             if (participant) {
               dataRow.push(
                 seatNumber,
@@ -113,7 +128,7 @@ export const exportTablesToExcel = async (
 
     // 테이블 데이터 영역을 위한 추가 열 설정
     const tablesPerRow = Math.min(3, tables.length);
-    const additionalColumns = Math.max(0, (tablesPerRow * 3) - 4); // 테이블 3개씩 배치시 필요한 추가 열 (구분열 제거)
+    const additionalColumns = Math.max(0, tablesPerRow * 3 - 4); // 테이블 3개씩 배치시 필요한 추가 열 (구분열 제거)
 
     for (let i = 0; i < additionalColumns; i++) {
       columnWidths.push({ width: 12 }); // 모든 열 통일
@@ -133,7 +148,10 @@ export const exportTablesToExcel = async (
 
     logger.info('테이블 엑셀 내보내기 완료', { data: { fileName, tableCount: tables.length } });
   } catch (error) {
-    logger.error('테이블 엑셀 내보내기 실패:', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      '테이블 엑셀 내보내기 실패:',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 };
@@ -184,11 +202,11 @@ const calculateStatistics = (tables: Table[], participants: Participant[]): Stat
   // 각 테이블별 칩 합계 계산
   const tableChips: { [tableId: string]: number } = {};
 
-  tables.forEach(table => {
+  tables.forEach((table) => {
     let tableTotal = 0;
-    table.seats.forEach(participantId => {
+    table.seats.forEach((participantId) => {
       if (participantId) {
-        const participant = participants.find(p => p.id === participantId);
+        const participant = participants.find((p) => p.id === participantId);
         if (participant && participant.chips) {
           tableTotal += participant.chips;
         }
@@ -199,7 +217,7 @@ const calculateStatistics = (tables: Table[], participants: Participant[]): Stat
 
   // 전체 통계 계산
   const totalChips = Object.values(tableChips).reduce((sum, chips) => sum + chips, 0);
-  const totalParticipants = participants.filter(p => p.status === 'active').length;
+  const totalParticipants = participants.filter((p) => p.status === 'active').length;
   const averageChips = totalParticipants > 0 ? totalChips / totalParticipants : 0;
   const tableAverageChips = tables.length > 0 ? totalChips / tables.length : 0;
 
@@ -208,8 +226,8 @@ const calculateStatistics = (tables: Table[], participants: Participant[]): Stat
 
   // 빈 자리 계산
   const totalEmptySeats = tables
-    .filter(t => t.status === 'open')
-    .reduce((sum, table) => sum + table.seats.filter(seat => seat === null).length, 0);
+    .filter((t) => t.status === 'open')
+    .reduce((sum, table) => sum + table.seats.filter((seat) => seat === null).length, 0);
 
   return {
     totalChips,
@@ -218,6 +236,6 @@ const calculateStatistics = (tables: Table[], participants: Participant[]): Stat
     totalParticipants,
     totalTables,
     totalEmptySeats,
-    tableChips
+    tableChips,
   };
 };

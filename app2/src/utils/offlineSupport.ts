@@ -36,16 +36,23 @@ export const initializeOfflineSupport = async (
     if (finalConfig.enablePersistence) {
       // Firebase v11에서는 initializeFirestore 시점에 cache 설정이 필요합니다.
       // 여기서는 네트워크 상태만 확인합니다.
-      logger.info(`Firebase 오프라인 지원 초기화됨 (v11 방식) - synchronizeTabs: ${finalConfig.synchronizeTabs}, cacheSizeBytes: ${finalConfig.cacheSizeBytes}`, {
-        component: 'offlineSupport',
-        operation: 'initializeOfflineSupport',
-      });
+      logger.info(
+        `Firebase 오프라인 지원 초기화됨 (v11 방식) - synchronizeTabs: ${finalConfig.synchronizeTabs}, cacheSizeBytes: ${finalConfig.cacheSizeBytes}`,
+        {
+          component: 'offlineSupport',
+          operation: 'initializeOfflineSupport',
+        }
+      );
     }
   } catch (error: any) {
-    logger.error('Firebase 오프라인 지원 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
-      errorCode: error.code,
-      component: 'offlineSupport',
-    });
+    logger.error(
+      'Firebase 오프라인 지원 초기화 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        errorCode: error.code,
+        component: 'offlineSupport',
+      }
+    );
   }
 };
 
@@ -79,13 +86,17 @@ export class NetworkManager {
       this.isOnline = isOnline;
       logger.info(`네트워크 상태 변경: ${isOnline ? '온라인' : '오프라인'}`);
 
-      this.listeners.forEach(listener => {
+      this.listeners.forEach((listener) => {
         try {
           listener(isOnline);
         } catch (error) {
-          logger.error('네트워크 상태 리스너 에러', error instanceof Error ? error : new Error(String(error)), {
-            component: 'NetworkManager'
-          });
+          logger.error(
+            '네트워크 상태 리스너 에러',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              component: 'NetworkManager',
+            }
+          );
         }
       });
 
@@ -109,7 +120,7 @@ export class NetworkManager {
     } catch (error) {
       logger.warn('Firestore 네트워크 동기화 실패', {
         component: 'NetworkManager',
-        errorInfo: String(error)
+        errorInfo: String(error),
       });
     }
   }
@@ -135,9 +146,13 @@ export class NetworkManager {
       await enableNetwork(db);
       logger.info('Firestore 네트워크 재연결됨');
     } catch (error) {
-      logger.error('Firestore 네트워크 재연결 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'NetworkManager'
-      });
+      logger.error(
+        'Firestore 네트워크 재연결 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'NetworkManager',
+        }
+      );
     }
   }
 
@@ -146,9 +161,13 @@ export class NetworkManager {
       await disableNetwork(db);
       logger.info('Firestore 네트워크 연결 해제됨');
     } catch (error) {
-      logger.error('Firestore 네트워크 연결 해제 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'NetworkManager'
-      });
+      logger.error(
+        'Firestore 네트워크 연결 해제 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'NetworkManager',
+        }
+      );
     }
   }
 
@@ -158,7 +177,7 @@ export class NetworkManager {
   }
 
   private clearRetryTimeouts(): void {
-    this.retryTimeouts.forEach(timeout => {
+    this.retryTimeouts.forEach((timeout) => {
       clearTimeout(timeout);
     });
     this.retryTimeouts.clear();
@@ -255,7 +274,7 @@ export class LocalCache {
       logger.warn('로컬 캐시 저장 실패', {
         component: 'LocalCache',
         value: key,
-        errorInfo: String(error)
+        errorInfo: String(error),
       });
     }
   }
@@ -278,7 +297,7 @@ export class LocalCache {
       logger.warn('로컬 캐시 조회 실패', {
         component: 'LocalCache',
         value: key,
-        errorInfo: String(error)
+        errorInfo: String(error),
       });
       return null;
     }
@@ -291,32 +310,28 @@ export class LocalCache {
       logger.warn('로컬 캐시 삭제 실패', {
         component: 'LocalCache',
         value: key,
-        errorInfo: String(error)
+        errorInfo: String(error),
       });
     }
   }
 
   public clear(): void {
     try {
-      const keys = Object.keys(localStorage).filter(key =>
-        key.startsWith(this.prefix)
-      );
-      keys.forEach(key => localStorage.removeItem(key));
+      const keys = Object.keys(localStorage).filter((key) => key.startsWith(this.prefix));
+      keys.forEach((key) => localStorage.removeItem(key));
     } catch (error) {
       logger.warn('로컬 캐시 전체 삭제 실패', {
         component: 'LocalCache',
-        errorInfo: String(error)
+        errorInfo: String(error),
       });
     }
   }
 
   public cleanExpired(): void {
     try {
-      const keys = Object.keys(localStorage).filter(key =>
-        key.startsWith(this.prefix)
-      );
+      const keys = Object.keys(localStorage).filter((key) => key.startsWith(this.prefix));
 
-      keys.forEach(key => {
+      keys.forEach((key) => {
         const item = localStorage.getItem(key);
         if (item) {
           try {
@@ -334,7 +349,7 @@ export class LocalCache {
     } catch (error) {
       logger.warn('만료된 캐시 정리 실패', {
         component: 'LocalCache',
-        errorInfo: String(error)
+        errorInfo: String(error),
       });
     }
   }
@@ -342,4 +357,3 @@ export class LocalCache {
 
 // 전역 로컬 캐시 인스턴스
 export const localCache = new LocalCache();
-

@@ -185,12 +185,16 @@ export function generateReceiptHTML(receipt: Receipt): string {
         <span class="info-label">주문번호</span>
         <span class="info-value">${receipt.orderId}</span>
       </div>
-      ${receipt.paymentKey ? `
+      ${
+        receipt.paymentKey
+          ? `
       <div class="info-row">
         <span class="info-label">결제키</span>
         <span class="info-value">${receipt.paymentKey}</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
       <div class="info-row">
         <span class="info-label">상품명</span>
         <span class="info-value">${receipt.orderName}</span>
@@ -199,42 +203,62 @@ export function generateReceiptHTML(receipt: Receipt): string {
         <span class="info-label">수량</span>
         <span class="info-value">${receipt.quantity}개</span>
       </div>
-      ${receipt.approvedAt ? `
+      ${
+        receipt.approvedAt
+          ? `
       <div class="info-row">
         <span class="info-label">승인일시</span>
         <span class="info-value">${approvedDate}</span>
       </div>
-      ` : ''}
-      ${receipt.refundedAt ? `
+      `
+          : ''
+      }
+      ${
+        receipt.refundedAt
+          ? `
       <div class="info-row">
         <span class="info-label">환불일시</span>
         <span class="info-value">${refundedDate}</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
 
     <!-- 결제 정보 -->
-    ${receipt.method ? `
+    ${
+      receipt.method
+        ? `
     <div class="section">
       <div class="section-title">결제 정보</div>
       <div class="info-row">
         <span class="info-label">결제수단</span>
         <span class="info-value">${getPaymentMethodName(receipt.method)}</span>
       </div>
-      ${receipt.cardNumber ? `
+      ${
+        receipt.cardNumber
+          ? `
       <div class="info-row">
         <span class="info-label">카드번호</span>
         <span class="info-value">${receipt.cardNumber}</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <!-- 칩 정보 -->
-    ${receipt.redChips || receipt.blueChips ? `
+    ${
+      receipt.redChips || receipt.blueChips
+        ? `
     <div class="chips-info">
       <div class="section-title">칩 정보</div>
-      ${receipt.redChips ? `
+      ${
+        receipt.redChips
+          ? `
       <div class="chip-item">
         <span class="chip-label">
           <span class="chip-icon">🔴</span>
@@ -242,8 +266,12 @@ export function generateReceiptHTML(receipt: Receipt): string {
         </span>
         <span>${receipt.redChips.toLocaleString()}칩</span>
       </div>
-      ` : ''}
-      ${receipt.blueChips ? `
+      `
+          : ''
+      }
+      ${
+        receipt.blueChips
+          ? `
       <div class="chip-item">
         <span class="chip-label">
           <span class="chip-icon">🔵</span>
@@ -251,12 +279,18 @@ export function generateReceiptHTML(receipt: Receipt): string {
         </span>
         <span>${receipt.blueChips.toLocaleString()}칩</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <!-- 환불 정보 -->
-    ${receipt.type === 'refund' && receipt.refundReason ? `
+    ${
+      receipt.type === 'refund' && receipt.refundReason
+        ? `
     <div class="section">
       <div class="section-title">환불 정보</div>
       <div class="info-row">
@@ -264,7 +298,9 @@ export function generateReceiptHTML(receipt: Receipt): string {
         <span class="info-value">${receipt.refundReason}</span>
       </div>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <!-- 총 금액 -->
     <div class="total-amount">
@@ -283,12 +319,16 @@ export function generateReceiptHTML(receipt: Receipt): string {
         <span class="info-label">이메일</span>
         <span class="info-value">${receipt.customerEmail}</span>
       </div>
-      ${receipt.customerPhone ? `
+      ${
+        receipt.customerPhone
+          ? `
       <div class="info-row">
         <span class="info-label">연락처</span>
         <span class="info-value">${receipt.customerPhone}</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
 
     <!-- 사업자 정보 -->

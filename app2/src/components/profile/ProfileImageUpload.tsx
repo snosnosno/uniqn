@@ -18,7 +18,7 @@ interface ProfileImageUploadProps {
 const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   currentImageUrl,
   onImageUpdate,
-  className = ''
+  className = '',
 }) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
@@ -35,101 +35,107 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 이미지 파일 선택 핸들러
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    // 파일 크기 체크 (5MB 제한)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(t('profileImage.fileSizeError', '파일 크기는 5MB 이하여야 합니다.'));
-      return;
-    }
+      // 파일 크기 체크 (5MB 제한)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(t('profileImage.fileSizeError', '파일 크기는 5MB 이하여야 합니다.'));
+        return;
+      }
 
-    // 파일 타입 체크
-    if (!file.type.startsWith('image/')) {
-      toast.error(t('profileImage.fileTypeError', '이미지 파일만 업로드할 수 있습니다.'));
-      return;
-    }
+      // 파일 타입 체크
+      if (!file.type.startsWith('image/')) {
+        toast.error(t('profileImage.fileTypeError', '이미지 파일만 업로드할 수 있습니다.'));
+        return;
+      }
 
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.addEventListener('load', () => {
-      const imageElement = new Image();
-      const imageUrl = reader.result?.toString() || '';
-      setImageSrc(imageUrl);
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        const imageElement = new Image();
+        const imageUrl = reader.result?.toString() || '';
+        setImageSrc(imageUrl);
 
-      imageElement.addEventListener('load', (e) => {
-        const { naturalWidth, naturalHeight } = e.currentTarget as HTMLImageElement;
+        imageElement.addEventListener('load', (e) => {
+          const { naturalWidth, naturalHeight } = e.currentTarget as HTMLImageElement;
 
-        // 1:1 비율로 자동 크롭 영역 설정
-        const crop = centerCrop(
-          makeAspectCrop(
-            {
-              unit: '%',
-              width: 90,
-            },
-            1,
+          // 1:1 비율로 자동 크롭 영역 설정
+          const crop = centerCrop(
+            makeAspectCrop(
+              {
+                unit: '%',
+                width: 90,
+              },
+              1,
+              naturalWidth,
+              naturalHeight
+            ),
             naturalWidth,
-            naturalHeight,
-          ),
-          naturalWidth,
-          naturalHeight,
-        );
-        setCrop(crop);
-        setShowCropper(true);
+            naturalHeight
+          );
+          setCrop(crop);
+          setShowCropper(true);
+        });
+        imageElement.src = imageUrl;
       });
-      imageElement.src = imageUrl;
-    });
-    reader.readAsDataURL(file);
-  }, [t]);
+      reader.readAsDataURL(file);
+    },
+    [t]
+  );
 
   // 캔버스에 크롭된 이미지 그리기
-  const drawCroppedImage = useCallback((
-    canvas: HTMLCanvasElement,
-    image: HTMLImageElement,
-    crop: PixelCrop,
-    scale = 1,
-    rotate = 0,
-  ) => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const drawCroppedImage = useCallback(
+    (
+      canvas: HTMLCanvasElement,
+      image: HTMLImageElement,
+      crop: PixelCrop,
+      scale = 1,
+      rotate = 0
+    ) => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    const pixelRatio = window.devicePixelRatio;
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
+      const pixelRatio = window.devicePixelRatio;
 
-    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
-    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
+      canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+      canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
-    ctx.scale(pixelRatio, pixelRatio);
-    ctx.imageSmoothingQuality = 'high';
+      ctx.scale(pixelRatio, pixelRatio);
+      ctx.imageSmoothingQuality = 'high';
 
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
+      const cropX = crop.x * scaleX;
+      const cropY = crop.y * scaleY;
 
-    const rotateRads = rotate * Math.PI / 180;
-    const centerX = image.naturalWidth / 2;
-    const centerY = image.naturalHeight / 2;
+      const rotateRads = (rotate * Math.PI) / 180;
+      const centerX = image.naturalWidth / 2;
+      const centerY = image.naturalHeight / 2;
 
-    ctx.save();
-    ctx.translate(-cropX, -cropY);
-    ctx.translate(centerX, centerY);
-    ctx.rotate(rotateRads);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX, -centerY);
-    ctx.drawImage(
-      image,
-      0,
-      0,
-      image.naturalWidth,
-      image.naturalHeight,
-      0,
-      0,
-      image.naturalWidth,
-      image.naturalHeight,
-    );
-    ctx.restore();
-  }, []);
+      ctx.save();
+      ctx.translate(-cropX, -cropY);
+      ctx.translate(centerX, centerY);
+      ctx.rotate(rotateRads);
+      ctx.scale(scale, scale);
+      ctx.translate(-centerX, -centerY);
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        image.naturalWidth,
+        image.naturalHeight,
+        0,
+        0,
+        image.naturalWidth,
+        image.naturalHeight
+      );
+      ctx.restore();
+    },
+    []
+  );
 
   // 크롭된 이미지를 Blob으로 변환
   const getCroppedImageBlob = useCallback((): Promise<Blob | null> => {
@@ -144,9 +150,13 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
 
       drawCroppedImage(canvas, image, completedCrop);
 
-      canvas.toBlob((blob) => {
-        resolve(blob);
-      }, 'image/jpeg', 0.9);
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob);
+        },
+        'image/jpeg',
+        0.9
+      );
     });
   }, [completedCrop, drawCroppedImage]);
 
@@ -181,12 +191,12 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
           await deleteObject(oldImageRef);
           logger.info('이전 프로필 이미지 삭제 완료', {
             component: 'ProfileImageUpload',
-            data: { oldImageUrl: currentImageUrl }
+            data: { oldImageUrl: currentImageUrl },
           });
         } catch (deleteError) {
           logger.warn('이전 이미지 삭제 실패 (계속 진행)', {
             component: 'ProfileImageUpload',
-            error: deleteError instanceof Error ? deleteError.message : String(deleteError)
+            error: deleteError instanceof Error ? deleteError.message : String(deleteError),
           });
         }
       }
@@ -202,7 +212,11 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
           setUploadProgress(Math.round(progress));
         },
         (error) => {
-          logger.error('이미지 업로드 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'ProfileImageUpload' });
+          logger.error(
+            '이미지 업로드 실패:',
+            error instanceof Error ? error : new Error(String(error)),
+            { component: 'ProfileImageUpload' }
+          );
           throw error;
         },
         async () => {
@@ -210,7 +224,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             logger.info('프로필 이미지 업로드 완료', {
               component: 'ProfileImageUpload',
-              data: { downloadURL }
+              data: { downloadURL },
             });
 
             onImageUpdate(downloadURL);
@@ -222,18 +236,34 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
             setShowCropper(false);
             setUploadProgress(0);
           } catch (urlError) {
-            logger.error('다운로드 URL 생성 실패:', urlError instanceof Error ? urlError : new Error(String(urlError)), { component: 'ProfileImageUpload' });
+            logger.error(
+              '다운로드 URL 생성 실패:',
+              urlError instanceof Error ? urlError : new Error(String(urlError)),
+              { component: 'ProfileImageUpload' }
+            );
             throw urlError;
           }
         }
       );
     } catch (error) {
-      logger.error('프로필 이미지 업로드 중 오류:', error instanceof Error ? error : new Error(String(error)), { component: 'ProfileImageUpload' });
+      logger.error(
+        '프로필 이미지 업로드 중 오류:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'ProfileImageUpload' }
+      );
       toast.error(t('profileImage.uploadError', '이미지 업로드 중 오류가 발생했습니다.'));
     } finally {
       setIsUploading(false);
     }
-  }, [currentUser, selectedFile, completedCrop, getCroppedImageBlob, currentImageUrl, onImageUpdate, t]);
+  }, [
+    currentUser,
+    selectedFile,
+    completedCrop,
+    getCroppedImageBlob,
+    currentImageUrl,
+    onImageUpdate,
+    t,
+  ]);
 
   // 이미지 삭제 함수
   const deleteImage = useCallback(async () => {
@@ -249,12 +279,16 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
 
       logger.info('프로필 이미지 삭제 완료', {
         component: 'ProfileImageUpload',
-        data: { deletedUrl: currentImageUrl }
+        data: { deletedUrl: currentImageUrl },
       });
 
       toast.success(t('profileImage.deleteSuccess'));
     } catch (error) {
-      logger.error('프로필 이미지 삭제 실패:', error instanceof Error ? error : new Error(String(error)), { component: 'ProfileImageUpload' });
+      logger.error(
+        '프로필 이미지 삭제 실패:',
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'ProfileImageUpload' }
+      );
       toast.error(t('profileImage.deleteError', '이미지 삭제 중 오류가 발생했습니다.'));
     } finally {
       setIsUploading(false);
@@ -287,8 +321,18 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <svg className="w-16 h-16 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-16 h-16 text-gray-400 dark:text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             )}
           </div>
@@ -383,8 +427,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
               >
                 {isUploading
                   ? t('profileImage.uploading', '업로드 중...')
-                  : t('profileImage.upload', '업로드')
-                }
+                  : t('profileImage.upload', '업로드')}
               </button>
             </div>
           </div>
@@ -392,10 +435,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       )}
 
       {/* 숨겨진 캔버스 (크롭 처리용) */}
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'none' }}
-      />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );
 };

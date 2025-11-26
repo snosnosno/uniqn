@@ -73,8 +73,8 @@ class AnalyticsIntegration {
         device_type: this.getDeviceType(),
         browser: this.getBrowserInfo(),
         screen_resolution: `${window.screen.width}x${window.screen.height}`,
-        viewport_size: `${window.innerWidth}x${window.innerHeight}`
-      }
+        viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+      },
     });
 
     this.isInitialized = true;
@@ -106,8 +106,8 @@ class AnalyticsIntegration {
         custom_map: {
           custom_dimension_1: 'landing_page_section',
           custom_dimension_2: 'user_journey_stage',
-          custom_dimension_3: 'conversion_funnel_step'
-        }
+          custom_dimension_3: 'conversion_funnel_step',
+        },
       });
     }
   }
@@ -142,7 +142,7 @@ class AnalyticsIntegration {
       ...event,
       timestamp: Date.now(),
       page_url: window.location.href,
-      user_agent: navigator.userAgent
+      user_agent: navigator.userAgent,
     };
 
     this.events.push(fullEvent);
@@ -160,7 +160,7 @@ class AnalyticsIntegration {
         custom_parameters: fullEvent.custom_parameters,
         timestamp: fullEvent.timestamp.toString(),
         page_url: fullEvent.page_url,
-        user_agent: fullEvent.user_agent
+        user_agent: fullEvent.user_agent,
       });
     }
   }
@@ -171,7 +171,7 @@ class AnalyticsIntegration {
   public trackConversion(conversion: Omit<ConversionEvent, 'timestamp'>): void {
     const fullConversion: ConversionEvent = {
       ...conversion,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.conversions.push(fullConversion);
@@ -184,15 +184,15 @@ class AnalyticsIntegration {
       event_value: conversion.conversion_value,
       custom_parameters: {
         conversion_type: conversion.conversion_type,
-        conversion_context: conversion.conversion_context
-      }
+        conversion_context: conversion.conversion_context,
+      },
     });
 
     logger.info('🎯 Conversion tracked', {
       conversion_type: fullConversion.conversion_type,
       conversion_value: fullConversion.conversion_value,
       conversion_context: fullConversion.conversion_context,
-      timestamp: fullConversion.timestamp.toString()
+      timestamp: fullConversion.timestamp.toString(),
     });
   }
 
@@ -207,8 +207,8 @@ class AnalyticsIntegration {
       custom_parameters: {
         cta_text: ctaText,
         target_url: targetUrl,
-        ...context
-      }
+        ...context,
+      },
     });
 
     this.trackConversion({
@@ -217,8 +217,8 @@ class AnalyticsIntegration {
       conversion_context: {
         cta_text: ctaText,
         target_url: targetUrl,
-        ...context
-      }
+        ...context,
+      },
     });
   }
 
@@ -234,8 +234,8 @@ class AnalyticsIntegration {
         scroll_depth: depth,
         current_section: section,
         time_on_page: timeOnPage,
-        engagement_level: this.calculateEngagementLevel(depth, timeOnPage)
-      }
+        engagement_level: this.calculateEngagementLevel(depth, timeOnPage),
+      },
     });
 
     // 깊은 스크롤은 전환으로 간주
@@ -246,8 +246,8 @@ class AnalyticsIntegration {
         conversion_context: {
           scroll_depth: depth,
           section: section,
-          time_on_page: timeOnPage
-        }
+          time_on_page: timeOnPage,
+        },
       });
     }
   }
@@ -267,9 +267,11 @@ class AnalyticsIntegration {
         load_complete: metrics.loadComplete,
         bundle_size: metrics.bundleSize,
         connection_type: metrics.connection?.effectiveType,
-        viewport_size: metrics.viewport ? `${metrics.viewport.width}x${metrics.viewport.height}` : undefined,
-        performance_score: this.calculatePerformanceScore(metrics)
-      }
+        viewport_size: metrics.viewport
+          ? `${metrics.viewport.width}x${metrics.viewport.height}`
+          : undefined,
+        performance_score: this.calculatePerformanceScore(metrics),
+      },
     });
   }
 
@@ -285,20 +287,21 @@ class AnalyticsIntegration {
         feature_id: featureId,
         interaction_type: interactionType,
         time_spent: timeSpent,
-        interest_level: this.calculateInterestLevel(timeSpent)
-      }
+        interest_level: this.calculateInterestLevel(timeSpent),
+      },
     });
 
     // 높은 관심도는 전환으로 간주
-    if (timeSpent > 5000) { // 5초 이상
+    if (timeSpent > 5000) {
+      // 5초 이상
       this.trackConversion({
         conversion_type: 'feature_interest',
         conversion_value: timeSpent,
         conversion_context: {
           feature_id: featureId,
           interaction_type: interactionType,
-          time_spent: timeSpent
-        }
+          time_spent: timeSpent,
+        },
       });
     }
   }
@@ -315,7 +318,7 @@ class AnalyticsIntegration {
       event_category: event.event_category,
       event_label: event.event_label,
       value: event.event_value,
-      custom_map: event.custom_parameters
+      custom_map: event.custom_parameters,
     });
   }
 
@@ -331,8 +334,8 @@ class AnalyticsIntegration {
       events: this.events,
       conversions: this.conversions,
       session_duration: sessionDuration,
-      page_views: this.events.filter(e => e.event_name === 'page_view').length || 1,
-      bounce_rate: bounceRate
+      page_views: this.events.filter((e) => e.event_name === 'page_view').length || 1,
+      bounce_rate: bounceRate,
     };
 
     // 개발 환경에서는 로거 출력
@@ -342,7 +345,7 @@ class AnalyticsIntegration {
         duration: `${Math.round(sessionDuration / 1000)}s`,
         events: this.events.length,
         conversions: this.conversions.length,
-        bounceRate: `${(bounceRate * 100)}%`
+        bounceRate: `${bounceRate * 100}%`,
       };
 
       // logger 사용 (import 필요시 추가)
@@ -363,8 +366,8 @@ class AnalyticsIntegration {
         events_count: this.events.length,
         conversions_count: this.conversions.length,
         bounce_rate: bounceRate,
-        engagement_score: this.calculateEngagementScore(userJourney)
-      }
+        engagement_score: this.calculateEngagementScore(userJourney),
+      },
     });
   }
 
@@ -379,8 +382,8 @@ class AnalyticsIntegration {
         data: {
           eventsCount: userJourney.events.length,
           conversionsCount: userJourney.conversions.length,
-          sessionDuration: userJourney.session_duration
-        }
+          sessionDuration: userJourney.session_duration,
+        },
       });
       return;
     }
@@ -395,9 +398,9 @@ class AnalyticsIntegration {
           method: 'POST',
           body: data,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          keepalive: true
+          keepalive: true,
         }).catch(() => {
           // 실패해도 조용히 처리
         });
@@ -438,15 +441,19 @@ class AnalyticsIntegration {
   private getCTAValue(ctaText: string): number {
     // CTA별 가치 점수 (비즈니스 로직에 따라 조정)
     switch (ctaText) {
-      case '무료로 시작하기': return 100;
-      case '데모 보기': return 50;
-      case '솔루션 보기': return 30;
-      default: return 10;
+      case '무료로 시작하기':
+        return 100;
+      case '데모 보기':
+        return 50;
+      case '솔루션 보기':
+        return 30;
+      default:
+        return 10;
     }
   }
 
   private calculateEngagementLevel(scrollDepth: number, timeOnPage: number): string {
-    const score = (scrollDepth * 0.4) + (Math.min(timeOnPage / 1000, 300) * 0.6);
+    const score = scrollDepth * 0.4 + Math.min(timeOnPage / 1000, 300) * 0.6;
     if (score > 80) return 'high';
     if (score > 40) return 'medium';
     return 'low';
@@ -503,7 +510,7 @@ class AnalyticsIntegration {
       sessionId: this.sessionId,
       eventsCount: this.events.length,
       conversionsCount: this.conversions.length,
-      sessionDuration: Date.now() - this.sessionStartTime
+      sessionDuration: Date.now() - this.sessionStartTime,
     };
   }
 

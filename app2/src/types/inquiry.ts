@@ -8,20 +8,20 @@ import { Timestamp } from 'firebase/firestore';
  * 문의 카테고리
  */
 export type InquiryCategory =
-  | 'general'   // 일반 문의
+  | 'general' // 일반 문의
   | 'technical' // 기술 문의
-  | 'payment'   // 결제 문의
-  | 'account'   // 계정 문의
-  | 'report'    // 신고
-  | 'other';    // 기타
+  | 'payment' // 결제 문의
+  | 'account' // 계정 문의
+  | 'report' // 신고
+  | 'other'; // 기타
 
 /**
  * 문의 상태
  */
 export type InquiryStatus =
-  | 'open'        // 열림
+  | 'open' // 열림
   | 'in_progress' // 처리중
-  | 'closed';     // 완료
+  | 'closed'; // 완료
 
 /**
  * 문의 인터페이스
@@ -53,13 +53,13 @@ export interface Inquiry {
 
   /** 신고 메타데이터 (카테고리가 'report'인 경우) */
   reportMetadata?: {
-    type: string;        // 신고 유형
+    type: string; // 신고 유형
     reporterType: string; // 신고자 유형
-    targetId: string;     // 신고 대상자 ID
-    targetName: string;   // 신고 대상자 이름
-    eventId: string;      // 이벤트 ID
-    eventTitle: string;   // 이벤트 제목
-    date: string;         // 날짜
+    targetId: string; // 신고 대상자 ID
+    targetName: string; // 신고 대상자 이름
+    eventId: string; // 이벤트 ID
+    eventTitle: string; // 이벤트 제목
+    date: string; // 날짜
   };
 
   /** 관리자 응답 (선택사항) */
@@ -121,63 +121,66 @@ export const INQUIRY_CATEGORIES: InquiryCategoryInfo[] = [
     key: 'general',
     labelKey: 'inquiry.categories.general.label',
     descriptionKey: 'inquiry.categories.general.description',
-    icon: '💬'
+    icon: '💬',
   },
   {
     key: 'technical',
     labelKey: 'inquiry.categories.technical.label',
     descriptionKey: 'inquiry.categories.technical.description',
-    icon: '🔧'
+    icon: '🔧',
   },
   {
     key: 'payment',
     labelKey: 'inquiry.categories.payment.label',
     descriptionKey: 'inquiry.categories.payment.description',
-    icon: '💳'
+    icon: '💳',
   },
   {
     key: 'account',
     labelKey: 'inquiry.categories.account.label',
     descriptionKey: 'inquiry.categories.account.description',
-    icon: '👤'
+    icon: '👤',
   },
   {
     key: 'report',
     labelKey: 'inquiry.categories.report.label',
     descriptionKey: 'inquiry.categories.report.description',
-    icon: '🚨'
+    icon: '🚨',
   },
   {
     key: 'other',
     labelKey: 'common.other',
     descriptionKey: 'inquiry.categories.other.description',
-    icon: '❓'
-  }
+    icon: '❓',
+  },
 ];
 
 /**
  * 문의 상태별 스타일 정보
  */
-export const INQUIRY_STATUS_STYLES: Record<InquiryStatus, {
-  color: string;
-  bgColor: string;
-  labelKey: string;
-}> = {
+export const INQUIRY_STATUS_STYLES: Record<
+  InquiryStatus,
+  {
+    color: string;
+    bgColor: string;
+    labelKey: string;
+  }
+> = {
   open: {
     color: 'text-blue-700 dark:text-blue-300',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    labelKey: 'inquiry.status.open'
+    labelKey: 'inquiry.status.open',
   },
   in_progress: {
     color: 'text-yellow-700 dark:text-yellow-300',
     bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    labelKey: 'inquiry.status.in_progress'
+    labelKey: 'inquiry.status.in_progress',
   },
   closed: {
     color: 'text-green-700 dark:text-green-300',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
-    labelKey: 'inquiry.status.closed'
-  }
+    labelKey: 'inquiry.status.closed',
+  },
 };
 
 /**
@@ -202,7 +205,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     questionKey: 'faq.general.q1.question',
     answerKey: 'faq.general.q1.answer',
     order: 1,
-    isActive: true
+    isActive: true,
   },
   {
     id: 'faq-2',
@@ -210,7 +213,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     questionKey: 'faq.general.q2.question',
     answerKey: 'faq.general.q2.answer',
     order: 2,
-    isActive: true
+    isActive: true,
   },
   {
     id: 'faq-3',
@@ -218,7 +221,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     questionKey: 'faq.account.q1.question',
     answerKey: 'faq.account.q1.answer',
     order: 1,
-    isActive: true
+    isActive: true,
   },
   {
     id: 'faq-4',
@@ -226,7 +229,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     questionKey: 'faq.payment.q1.question',
     answerKey: 'faq.payment.q1.answer',
     order: 1,
-    isActive: true
+    isActive: true,
   },
   {
     id: 'faq-5',
@@ -234,6 +237,6 @@ export const FAQ_ITEMS: FAQItem[] = [
     questionKey: 'faq.technical.q1.question',
     answerKey: 'faq.technical.q1.answer',
     order: 1,
-    isActive: true
-  }
+    isActive: true,
+  },
 ];

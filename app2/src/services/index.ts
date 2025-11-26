@@ -24,11 +24,8 @@
  */
 
 // =============================================================================
-// Event & Job Posting Services
+// Job Posting Services
 // =============================================================================
-
-/** 이벤트 서비스 */
-export { EventService } from './EventService';
 
 /** 고정공고 조회수 서비스 */
 export { incrementViewCount, viewCountService } from './fixedJobPosting';
@@ -38,7 +35,10 @@ export { incrementViewCount, viewCountService } from './fixedJobPosting';
 // =============================================================================
 
 /** 지원자 전환 서비스 */
-export { ApplicantConversionService, applicantConversionService } from './applicantConversionService';
+export {
+  ApplicantConversionService,
+  applicantConversionService,
+} from './applicantConversionService';
 
 /** 지원 이력 서비스 */
 export { ApplicationHistoryService } from './ApplicationHistoryService';
@@ -70,12 +70,6 @@ export {
 // Data Services
 // =============================================================================
 
-/** 최적화된 통합 데이터 서비스 */
-export {
-  default as OptimizedUnifiedDataService,
-  optimizedUnifiedDataService,
-} from './OptimizedUnifiedDataService';
-
 /** 대량 작업 서비스 */
 export { BulkOperationService } from './BulkOperationService';
 
@@ -100,12 +94,7 @@ export type { CameraOptions } from './camera';
 // =============================================================================
 
 /** QR 스캐너 서비스 */
-export {
-  scanQRCode,
-  parseAttendanceQR,
-  scanQRFromFile,
-  validateQRCode,
-} from './qrScanner';
+export { scanQRCode, parseAttendanceQR, scanQRFromFile, validateQRCode } from './qrScanner';
 export type { QRScanResult } from './qrScanner';
 
 // =============================================================================
@@ -142,20 +131,11 @@ export type { NotificationData } from './localNotifications';
 // =============================================================================
 
 /** 상태바 서비스 */
-export {
-  initializeStatusBar,
-  hideStatusBar,
-  showStatusBar,
-  getStatusBarInfo,
-} from './statusBar';
+export { initializeStatusBar, hideStatusBar, showStatusBar, getStatusBarInfo } from './statusBar';
 export type { StatusBarConfig } from './statusBar';
 
 /** 키보드 서비스 */
-export {
-  keyboardService,
-  initializeKeyboard,
-  useKeyboard,
-} from './keyboard';
+export { keyboardService, initializeKeyboard, useKeyboard } from './keyboard';
 export type { KeyboardEventHandler } from './keyboard';
 
 // =============================================================================

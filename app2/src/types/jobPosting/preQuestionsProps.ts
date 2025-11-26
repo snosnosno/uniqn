@@ -34,7 +34,11 @@ export interface PreQuestionsHandlers {
    * @param field - 변경할 필드명 (question, required, type)
    * @param value - 새로운 값 (string | boolean | string[])
    */
-  onQuestionChange: (index: number, field: keyof PreQuestion, value: string | boolean | string[]) => void;
+  onQuestionChange: (
+    index: number,
+    field: keyof PreQuestion,
+    value: string | boolean | string[]
+  ) => void;
 
   /**
    * 옵션 변경 핸들러 (select 타입 질문)
@@ -95,8 +99,5 @@ export interface PreQuestionsValidation {
 /**
  * PreQuestionsSection Props
  */
-export interface PreQuestionsSectionProps extends SectionProps<
-  PreQuestionsData,
-  PreQuestionsHandlers,
-  PreQuestionsValidation
-> {}
+export interface PreQuestionsSectionProps
+  extends SectionProps<PreQuestionsData, PreQuestionsHandlers, PreQuestionsValidation> {}

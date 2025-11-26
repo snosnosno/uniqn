@@ -49,8 +49,9 @@
 }
 
 .floating-nav-dot {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform, background-color;
 }
 
@@ -71,7 +72,8 @@
 }
 
 @keyframes smoothBounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
   25% {
@@ -87,8 +89,9 @@
 
 /* 버튼 애니메이션 최적화 */
 .cta-button {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform, box-shadow;
   transform: translateZ(0);
 }

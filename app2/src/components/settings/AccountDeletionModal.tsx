@@ -53,10 +53,7 @@ const DELETION_REASONS: Array<{
 /**
  * 계정 삭제 확인 모달 컴포넌트
  */
-export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -147,7 +144,17 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
         setIsSubmitting(false);
       }
     },
-    [isValid, currentUser, password, reasonCategory, reasonText, requestDeletion, handleClose, navigate, t]
+    [
+      isValid,
+      currentUser,
+      password,
+      reasonCategory,
+      reasonText,
+      requestDeletion,
+      handleClose,
+      navigate,
+      t,
+    ]
   );
 
   if (!isOpen) return null;
@@ -210,15 +217,11 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
               <select
                 id="reasonCategory"
                 value={reasonCategory}
-                onChange={(e) =>
-                  setReasonCategory(e.target.value as DeletionReasonCategory | '')
-                }
+                onChange={(e) => setReasonCategory(e.target.value as DeletionReasonCategory | '')}
                 disabled={isSubmitting}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                <option value="">
-                  {t('settings.account.selectReason')}
-                </option>
+                <option value="">{t('settings.account.selectReason')}</option>
                 {DELETION_REASONS.map((reason) => (
                   <option key={reason.value} value={reason.value}>
                     {t(reason.labelKey)}
@@ -294,9 +297,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
             {/* 유예 기간 안내 */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <p className="text-sm text-blue-900 dark:text-blue-300">
-                <span className="font-medium">
-                  {t('settings.account.gracePeriodNote')}
-                </span>
+                <span className="font-medium">{t('settings.account.gracePeriodNote')}</span>
                 <br />
                 {t('settings.account.gracePeriodNoteDescription')}
               </p>
@@ -334,9 +335,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                 disabled={!isValid || isSubmitting}
                 className="flex-1 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
               >
-                {isSubmitting
-                  ? t('common.processing')
-                  : t('settings.account.confirmDeletion')}
+                {isSubmitting ? t('common.processing') : t('settings.account.confirmDeletion')}
               </button>
             </div>
           </form>
