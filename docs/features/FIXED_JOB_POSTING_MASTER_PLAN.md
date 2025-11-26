@@ -2948,8 +2948,8 @@ npm run test:e2e             # E2E 테스트
 ## 📚 참고 자료
 
 ### 내부 문서
-- [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) - 개발 가이드
-- [TESTING_GUIDE.md](./TESTING_GUIDE.md) - 테스트 작성 가이드
+- [DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md) - 개발 가이드
+- [TESTING_GUIDE.md](../core/TESTING_GUIDE.md) - 테스트 작성 가이드
 - [DATA_SCHEMA.md](../reference/DATA_SCHEMA.md) - 데이터 스키마
 - [SECURITY.md](../operations/SECURITY.md) - 보안 가이드
 

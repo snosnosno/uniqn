@@ -91,6 +91,6 @@
 ---
 
 ## 📝 관련 문서
-- [개발 가이드](DEVELOPMENT_GUIDE.md)
-- [변경 이력](../CHANGELOG.md)
-- [프로젝트 가이드](../CLAUDE.md)
+- [개발 가이드](../../docs/core/DEVELOPMENT_GUIDE.md)
+- [변경 이력](../../CHANGELOG.md)
+- [프로젝트 가이드](../../CLAUDE.md)

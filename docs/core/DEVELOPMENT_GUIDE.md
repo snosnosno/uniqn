@@ -678,10 +678,10 @@ const BadComponent = ({ data }) => {
 ## 📚 참고 자료
 
 ### 내부 문서
-- [CLAUDE.md](../CLAUDE.md) - 프로젝트 기본 가이드
+- [CLAUDE.md](../../CLAUDE.md) - 프로젝트 기본 가이드
 - [CAPACITOR_MIGRATION_GUIDE.md](CAPACITOR_MIGRATION_GUIDE.md) - 네이티브 앱 개발 가이드
 - [TESTING_GUIDE.md](TESTING_GUIDE.md) - 테스트 작성 가이드
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - 기여 가이드
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) - 기여 가이드
 
 ### 외부 참조
 - [React TypeScript 가이드](https://react-typescript-cheatsheet.netlify.app/)

@@ -686,10 +686,10 @@ const memoizedActions = useCallback(() => ({
 
 ## 📚 관련 문서
 
-- **[DEVELOPMENT.md](./DEVELOPMENT.md)**: 개발 환경 설정 및 코딩 가이드
+- **[DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md)**: 개발 환경 설정 및 코딩 가이드
 - **[DATA_SCHEMA.md](./DATA_SCHEMA.md)**: Firebase 컬렉션 상세 스키마
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)**: 아키텍처 관련 이슈 해결
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)**: 배포 아키텍처 및 환경 설정
+- **[TROUBLESHOOTING.md](../operations/TROUBLESHOOTING.md)**: 아키텍처 관련 이슈 해결
+- **[DEPLOYMENT.md](../guides/DEPLOYMENT.md)**: 배포 아키텍처 및 환경 설정
 
 ---
 

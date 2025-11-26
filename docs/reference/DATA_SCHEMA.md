@@ -799,9 +799,9 @@ const isCompatibleVersion = (version: string): boolean => {
 ## 🔗 관련 문서
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)**: 데이터 흐름 및 아키텍처
-- **[DEVELOPMENT.md](./DEVELOPMENT.md)**: 데이터 타입 사용법
+- **[DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md)**: 데이터 타입 사용법
 - **[API_REFERENCE.md](./API_REFERENCE.md)**: Firebase Functions 및 API
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)**: 데이터 관련 이슈 해결
+- **[TROUBLESHOOTING.md](../operations/TROUBLESHOOTING.md)**: 데이터 관련 이슈 해결
 
 ---
 

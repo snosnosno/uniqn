@@ -784,10 +784,10 @@ match /loginAttempts/{attemptId} {
 
 ## 🔗 관련 문서
 
-- **인증 시스템**: [AUTHENTICATION.md](reference/AUTHENTICATION.md)
-- **개발 가이드**: [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)
-- **테스트 가이드**: [TESTING_GUIDE.md](TESTING_GUIDE.md)
-- **CLAUDE 가이드**: [CLAUDE.md](../CLAUDE.md)
+- **인증 시스템**: [AUTHENTICATION.md](../reference/AUTHENTICATION.md)
+- **개발 가이드**: [DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md)
+- **테스트 가이드**: [TESTING_GUIDE.md](../core/TESTING_GUIDE.md)
+- **CLAUDE 가이드**: [CLAUDE.md](../../CLAUDE.md)
 
 ---
 

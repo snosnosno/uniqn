@@ -208,9 +208,9 @@ npm start
 ### 📚 **핵심 학습 자료**
 
 #### **1주차: 아키텍처 이해**
-- [ ] **[ARCHITECTURE.md](./ARCHITECTURE.md)** - 시스템 구조
-- [ ] **[DATA_SCHEMA.md](./DATA_SCHEMA.md)** - 데이터베이스 스키마
-- [ ] **[DEVELOPMENT.md](./DEVELOPMENT.md)** - 개발 가이드
+- [ ] **[ARCHITECTURE.md](../reference/ARCHITECTURE.md)** - 시스템 구조
+- [ ] **[DATA_SCHEMA.md](../reference/DATA_SCHEMA.md)** - 데이터베이스 스키마
+- [ ] **[DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md)** - 개발 가이드
 
 #### **2주차: 코드베이스 파악**
 - [ ] **UnifiedDataContext** 패턴 이해 (5→1 구독 통합)

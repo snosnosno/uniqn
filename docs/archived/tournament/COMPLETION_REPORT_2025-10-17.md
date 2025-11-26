@@ -771,9 +771,9 @@ const handleCloseTable = async (tableId: string) => {
 
 ## 📚 참고 문서
 
-- [MULTI_TENANT_STATUS.md](../MULTI_TENANT_STATUS.md) - 멀티 테넌트 구현 상세
-- [DEVELOPMENT_GUIDE.md](../DEVELOPMENT_GUIDE.md) - 개발 가이드
-- [CLAUDE.md](../../CLAUDE.md) - 프로젝트 개발 규칙
+- [MULTI_TENANT_STATUS.md](../../features/MULTI_TENANT_STATUS.md) - 멀티 테넌트 구현 상세
+- [DEVELOPMENT_GUIDE.md](../../core/DEVELOPMENT_GUIDE.md) - 개발 가이드
+- [CLAUDE.md](../../../CLAUDE.md) - 프로젝트 개발 규칙
 
 ---
 

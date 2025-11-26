@@ -522,12 +522,12 @@ npm run build
 
 ### 관련 파일
 
-- **설정 파일**: [src/config/features.ts](../app2/src/config/features.ts)
-- **준비 중 페이지**: [src/components/ComingSoon.tsx](../app2/src/components/ComingSoon.tsx)
-- **라우팅**: [src/App.tsx](../app2/src/App.tsx)
-- **모바일 메뉴**: [src/components/navigation/MobileMenu.tsx](../app2/src/components/navigation/MobileMenu.tsx)
-- **하단 탭바**: [src/components/navigation/BottomTabBar.tsx](../app2/src/components/navigation/BottomTabBar.tsx)
-- **데스크톱 네비게이션**: [src/components/navigation/ResponsiveNav.tsx](../app2/src/components/navigation/ResponsiveNav.tsx)
+- **설정 파일**: [src/config/features.ts](../../app2/src/config/features.ts)
+- **준비 중 페이지**: [src/components/ComingSoon.tsx](../../app2/src/components/ComingSoon.tsx)
+- **라우팅**: [src/App.tsx](../../app2/src/App.tsx)
+- **모바일 메뉴**: [src/components/navigation/MobileMenu.tsx](../../app2/src/components/navigation/MobileMenu.tsx)
+- **하단 탭바**: [src/components/navigation/BottomTabBar.tsx](../../app2/src/components/navigation/BottomTabBar.tsx)
+- **데스크톱 네비게이션**: [src/components/navigation/ResponsiveNav.tsx](../../app2/src/components/navigation/ResponsiveNav.tsx)
 
 ### 외부 문서
 

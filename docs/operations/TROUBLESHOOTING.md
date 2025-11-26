@@ -771,10 +771,10 @@ firebase deploy --only firestore:rules
 
 ## 🔗 관련 문서
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)**: 시스템 아키텍처 이해
-- **[DEVELOPMENT.md](./DEVELOPMENT.md)**: 개발 환경 설정
-- **[DATA_SCHEMA.md](./DATA_SCHEMA.md)**: 데이터 구조 이해
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)**: 배포 환경 설정
+- **[ARCHITECTURE.md](../reference/ARCHITECTURE.md)**: 시스템 아키텍처 이해
+- **[DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md)**: 개발 환경 설정
+- **[DATA_SCHEMA.md](../reference/DATA_SCHEMA.md)**: 데이터 구조 이해
+- **[DEPLOYMENT.md](../guides/DEPLOYMENT.md)**: 배포 환경 설정
 
 ---
 

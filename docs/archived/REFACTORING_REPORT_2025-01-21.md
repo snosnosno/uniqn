@@ -854,8 +854,8 @@ const handleTableError = (error: TableError) => {
 
 - [ARCHITECTURE.md](../reference/ARCHITECTURE.md) - 전체 아키텍처
 - [DATA_SCHEMA.md](../reference/DATA_SCHEMA.md) - 데이터 스키마
-- [MULTI_TENANT_STATUS.md](MULTI_TENANT_STATUS.md) - 멀티테넌트 현황
-- [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) - 개발 가이드
+- [MULTI_TENANT_STATUS.md](../features/MULTI_TENANT_STATUS.md) - 멀티테넌트 현황
+- [DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md) - 개발 가이드
 
 ---
 

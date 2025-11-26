@@ -342,8 +342,7 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 
 ## 🔗 관련 문서
 
-- [USЕТABLES_REFACTORING_PLAN.md](./USЕТABLES_REFACTORING_PLAN.md) - useTables 리팩토링 상세 계획 (완료)
-- [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) - 개발 가이드
+- [DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md) - 개발 가이드
 - [CLAUDE.md](../../CLAUDE.md) - 프로젝트 전체 가이드
 
 ---

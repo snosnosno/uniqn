@@ -690,6 +690,6 @@ service cloud.firestore {
 
 ---
 
-**문의사항**: [CLAUDE.md](./CLAUDE.md) 참조
+**문의사항**: [CLAUDE.md](../../CLAUDE.md) 참조
 
 *마지막 업데이트: 2025-10-23*
