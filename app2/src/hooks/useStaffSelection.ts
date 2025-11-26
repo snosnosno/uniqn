@@ -2,6 +2,32 @@ import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 
+/**
+ * @deprecated 이 훅은 하위 호환성을 위해 유지됩니다.
+ * 새로운 코드에서는 `hooks/staff/useStaffSelection.ts`를 사용하세요.
+ *
+ * 이 버전의 특징:
+ * - localStorage 기반 선택 상태 저장
+ * - 대량 선택 경고 (100명 이상)
+ * - onSelectionChange 콜백 지원
+ *
+ * staff 폴더 버전과의 차이점:
+ * - 이 버전: 필수 인자 필요 ({ totalStaffCount, onSelectionChange })
+ * - staff 버전: 인자 없이 사용 가능 (권장)
+ *
+ * 마이그레이션 가이드:
+ * ```typescript
+ * // ❌ 기존 방식 (deprecated)
+ * import { useStaffSelection } from '@/hooks/useStaffSelection';
+ * const selection = useStaffSelection({ totalStaffCount: 100 });
+ *
+ * // ✅ 권장 방식
+ * import { useStaffSelection } from '@/hooks/staff/useStaffSelection';
+ * const selection = useStaffSelection();
+ * ```
+ *
+ * @see hooks/staff/useStaffSelection.ts - SSOT (권장)
+ */
 interface UseStaffSelectionProps {
   totalStaffCount: number;
   onSelectionChange?: (selectedCount: number) => void;
@@ -21,22 +47,24 @@ interface UseStaffSelectionReturn {
 }
 
 /**
- * 스태프 선택 관리를 위한 커스텀 훅
+ * 스태프 선택 관리를 위한 커스텀 훅 (확장 버전)
+ *
+ * @deprecated 새로운 코드에서는 hooks/staff/useStaffSelection 사용을 권장합니다.
+ * 이 버전은 localStorage 저장 및 대량 선택 경고 기능이 포함되어 있습니다.
  */
 export const useStaffSelection = ({
   totalStaffCount: _totalStaffCount,
-  onSelectionChange
+  onSelectionChange,
 }: UseStaffSelectionProps): UseStaffSelectionReturn => {
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
 
   // 선택 모드 토글
   const toggleMultiSelectMode = useCallback(() => {
-    setMultiSelectMode(prev => {
+    setMultiSelectMode((prev) => {
       if (prev) {
         // 선택 모드 종료 시 선택 초기화
         setSelectedStaff(new Set());
-
       }
       return !prev;
     });
@@ -44,21 +72,19 @@ export const useStaffSelection = ({
 
   // 개별 스태프 선택/해제
   const toggleStaffSelection = useCallback((staffId: string) => {
-    setSelectedStaff(prev => {
+    setSelectedStaff((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(staffId)) {
         newSet.delete(staffId);
-
       } else {
         // 대량 선택 경고
         if (newSet.size >= 100) {
-          logger.warn('대량 선택 경고: 100명 이상 선택', { 
+          logger.warn('대량 선택 경고: 100명 이상 선택', {
             component: 'useStaffSelection',
-            data: { currentCount: newSet.size }
+            data: { currentCount: newSet.size },
           });
         }
         newSet.add(staffId);
-
       }
       return newSet;
     });
@@ -80,25 +106,29 @@ export const useStaffSelection = ({
   // 전체 해제
   const deselectAll = useCallback(() => {
     setSelectedStaff(new Set());
-
   }, []);
 
   // 선택 여부 확인
-  const isSelected = useCallback((staffId: string) => {
-    return selectedStaff.has(staffId);
-  }, [selectedStaff]);
+  const isSelected = useCallback(
+    (staffId: string) => {
+      return selectedStaff.has(staffId);
+    },
+    [selectedStaff]
+  );
 
   // 전체 선택 여부 확인
-  const isAllSelected = useCallback((staffIds: string[]) => {
-    if (staffIds.length === 0) return false;
-    return staffIds.every(id => selectedStaff.has(id));
-  }, [selectedStaff]);
+  const isAllSelected = useCallback(
+    (staffIds: string[]) => {
+      if (staffIds.length === 0) return false;
+      return staffIds.every((id) => selectedStaff.has(id));
+    },
+    [selectedStaff]
+  );
 
   // 선택 초기화 (필터 변경 등에 사용)
   const resetSelection = useCallback(() => {
     setSelectedStaff(new Set());
     setMultiSelectMode(false);
-
   }, []);
 
   // 선택 변경 시 콜백 호출
@@ -114,9 +144,13 @@ export const useStaffSelection = ({
       try {
         localStorage.setItem('staffSelection', JSON.stringify(Array.from(selectedStaff)));
       } catch (error) {
-        logger.error('선택 상태 저장 실패', error instanceof Error ? error : new Error(String(error)), {
-          component: 'useStaffSelection'
-        });
+        logger.error(
+          '선택 상태 저장 실패',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useStaffSelection',
+          }
+        );
       }
     } else {
       localStorage.removeItem('staffSelection');
@@ -135,9 +169,13 @@ export const useStaffSelection = ({
         }
       }
     } catch (error) {
-      logger.error('선택 상태 복원 실패', error instanceof Error ? error : new Error(String(error)), {
-        component: 'useStaffSelection'
-      });
+      logger.error(
+        '선택 상태 복원 실패',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useStaffSelection',
+        }
+      );
       localStorage.removeItem('staffSelection');
     }
   }, []);
@@ -152,6 +190,6 @@ export const useStaffSelection = ({
     isSelected,
     selectedCount: selectedStaff.size,
     isAllSelected,
-    resetSelection
+    resetSelection,
   };
 };

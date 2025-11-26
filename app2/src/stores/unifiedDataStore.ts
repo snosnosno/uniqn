@@ -16,20 +16,10 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { devtools } from 'zustand/middleware';
 import { enableMapSet } from 'immer';
-import {
-  collection,
-  onSnapshot,
-  query,
-  Unsubscribe,
-} from 'firebase/firestore';
+import { collection, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
-import type {
-  Staff,
-  WorkLog,
-  AttendanceRecord,
-  JobPosting,
-} from '../types/unifiedData';
+import type { Staff, WorkLog, AttendanceRecord, JobPosting } from '../types/unifiedData';
 import type { Application } from '../types/application';
 
 // Immer Map/Set 지원 활성화
@@ -53,6 +43,14 @@ interface UnifiedDataState {
   jobPostings: Map<string, JobPosting>;
   isLoading: boolean;
   error: string | null;
+
+  // 🚀 인덱스 맵 (O(n) → O(1) 조회 성능 개선)
+  // workLogs 인덱스
+  workLogsByEventId: Map<string, Set<string>>; // eventId → Set<workLogId>
+  workLogsByStaffId: Map<string, Set<string>>; // staffId → Set<workLogId>
+  // applications 인덱스
+  applicationsByEventId: Map<string, Set<string>>; // eventId → Set<applicationId>
+  applicationsByApplicantId: Map<string, Set<string>>; // applicantId → Set<applicationId>
 }
 
 /**
@@ -157,6 +155,12 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       isLoading: false,
       error: null,
 
+      // 🚀 인덱스 맵 초기화
+      workLogsByEventId: new Map<string, Set<string>>(),
+      workLogsByStaffId: new Map<string, Set<string>>(),
+      applicationsByEventId: new Map<string, Set<string>>(),
+      applicationsByApplicantId: new Map<string, Set<string>>(),
+
       // ========== Selectors ==========
 
       /**
@@ -168,34 +172,54 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
 
       /**
        * staffId로 근무 기록 목록 조회
+       * 🚀 O(1) 인덱스 기반 조회 (기존 O(n) 필터링에서 개선)
        */
       getWorkLogsByStaffId: (staffId: string): WorkLog[] => {
-        const logs = Array.from(get().workLogs.values());
-        return logs.filter(log => log.staffId === staffId);
+        const state = get();
+        const logIds = state.workLogsByStaffId.get(staffId);
+        if (!logIds || logIds.size === 0) return [];
+        return Array.from(logIds)
+          .map((id) => state.workLogs.get(id))
+          .filter((log): log is WorkLog => log !== undefined);
       },
 
       /**
        * eventId로 근무 기록 목록 조회
+       * 🚀 O(1) 인덱스 기반 조회 (기존 O(n) 필터링에서 개선)
        */
       getWorkLogsByEventId: (eventId: string): WorkLog[] => {
-        const logs = Array.from(get().workLogs.values());
-        return logs.filter(log => log.eventId === eventId || log.assignmentInfo?.postingId === eventId);
+        const state = get();
+        const logIds = state.workLogsByEventId.get(eventId);
+        if (!logIds || logIds.size === 0) return [];
+        return Array.from(logIds)
+          .map((id) => state.workLogs.get(id))
+          .filter((log): log is WorkLog => log !== undefined);
       },
 
       /**
        * eventId로 지원서 목록 조회
+       * 🚀 O(1) 인덱스 기반 조회 (기존 O(n) 필터링에서 개선)
        */
       getApplicationsByEventId: (eventId: string): Application[] => {
-        const apps = Array.from(get().applications.values());
-        return apps.filter(app => app.eventId === eventId);
+        const state = get();
+        const appIds = state.applicationsByEventId.get(eventId);
+        if (!appIds || appIds.size === 0) return [];
+        return Array.from(appIds)
+          .map((id) => state.applications.get(id))
+          .filter((app): app is Application => app !== undefined);
       },
 
       /**
        * applicantId로 지원서 목록 조회
+       * 🚀 O(1) 인덱스 기반 조회 (기존 O(n) 필터링에서 개선)
        */
       getApplicationsByApplicantId: (applicantId: string): Application[] => {
-        const apps = Array.from(get().applications.values());
-        return apps.filter(app => app.applicantId === applicantId);
+        const state = get();
+        const appIds = state.applicationsByApplicantId.get(applicantId);
+        if (!appIds || appIds.size === 0) return [];
+        return Array.from(appIds)
+          .map((id) => state.applications.get(id))
+          .filter((app): app is Application => app !== undefined);
       },
 
       /**
@@ -203,7 +227,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
        */
       getAttendanceByStaffId: (staffId: string): AttendanceRecord[] => {
         const records = Array.from(get().attendanceRecords.values());
-        return records.filter(record => record.staffId === staffId);
+        return records.filter((record) => record.staffId === staffId);
       },
 
       /**
@@ -211,7 +235,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
        */
       getAttendanceByEventId: (eventId: string): AttendanceRecord[] => {
         const records = Array.from(get().attendanceRecords.values());
-        return records.filter(record => record.eventId === eventId);
+        return records.filter((record) => record.eventId === eventId);
       },
 
       /**
@@ -219,7 +243,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
        */
       getActiveJobPostings: (): JobPosting[] => {
         const postings = Array.from(get().jobPostings.values());
-        return postings.filter(posting => posting.status === 'open');
+        return postings.filter((posting) => posting.status === 'open');
       },
 
       /**
@@ -232,7 +256,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
         const staff = get().staff;
         const jobPostings = get().jobPostings;
 
-        return workLogs.map(log => {
+        return workLogs.map((log) => {
           const staffData = staff.get(log.staffId);
           const eventId = log.eventId || log.assignmentInfo?.postingId || '';
           const posting = jobPostings.get(eventId);
@@ -273,7 +297,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
             staffQuery,
             (snapshot) => {
               const staffMap = new Map<string, Staff>();
-              snapshot.docs.forEach(doc => {
+              snapshot.docs.forEach((doc) => {
                 const data = doc.data() as Omit<Staff, 'id' | 'staffId'>;
                 staffMap.set(doc.id, { ...data, id: doc.id, staffId: doc.id });
               });
@@ -300,24 +324,52 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
             workLogsQuery,
             (snapshot) => {
               const logsMap = new Map<string, WorkLog>();
-              snapshot.docs.forEach(doc => {
+              // 🚀 인덱스 맵 빌드 (O(n) → O(1) 조회 성능 개선)
+              const byEventId = new Map<string, Set<string>>();
+              const byStaffId = new Map<string, Set<string>>();
+
+              snapshot.docs.forEach((doc) => {
                 const data = doc.data() as Omit<WorkLog, 'id'>;
-                logsMap.set(doc.id, { ...data, id: doc.id });
+                const workLog = { ...data, id: doc.id };
+                logsMap.set(doc.id, workLog);
+
+                // eventId 인덱스 빌드
+                const eventId = workLog.eventId || workLog.assignmentInfo?.postingId;
+                if (eventId) {
+                  if (!byEventId.has(eventId)) {
+                    byEventId.set(eventId, new Set());
+                  }
+                  byEventId.get(eventId)!.add(doc.id);
+                }
+
+                // staffId 인덱스 빌드
+                if (workLog.staffId) {
+                  if (!byStaffId.has(workLog.staffId)) {
+                    byStaffId.set(workLog.staffId, new Set());
+                  }
+                  byStaffId.get(workLog.staffId)!.add(doc.id);
+                }
               });
 
               set((state) => {
                 state.workLogs = logsMap;
+                state.workLogsByEventId = byEventId;
+                state.workLogsByStaffId = byStaffId;
               });
 
               logger.info('[UnifiedDataStore] WorkLogs 데이터 업데이트', {
-                count: logsMap.size,
+                data: {
+                  count: logsMap.size,
+                  indexedByEvent: byEventId.size,
+                  indexedByStaff: byStaffId.size,
+                },
               });
             },
             (error) => {
               logger.error('[UnifiedDataStore] WorkLogs 구독 에러', error);
               set({
                 error: error.message,
-                isLoading: false
+                isLoading: false,
               });
             }
           );
@@ -328,24 +380,51 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
             applicationsQuery,
             (snapshot) => {
               const appsMap = new Map<string, Application>();
-              snapshot.docs.forEach(doc => {
+              // 🚀 인덱스 맵 빌드 (O(n) → O(1) 조회 성능 개선)
+              const byEventId = new Map<string, Set<string>>();
+              const byApplicantId = new Map<string, Set<string>>();
+
+              snapshot.docs.forEach((doc) => {
                 const data = doc.data() as Omit<Application, 'id'>;
-                appsMap.set(doc.id, { ...data, id: doc.id });
+                const application = { ...data, id: doc.id };
+                appsMap.set(doc.id, application);
+
+                // eventId 인덱스 빌드
+                if (application.eventId) {
+                  if (!byEventId.has(application.eventId)) {
+                    byEventId.set(application.eventId, new Set());
+                  }
+                  byEventId.get(application.eventId)!.add(doc.id);
+                }
+
+                // applicantId 인덱스 빌드
+                if (application.applicantId) {
+                  if (!byApplicantId.has(application.applicantId)) {
+                    byApplicantId.set(application.applicantId, new Set());
+                  }
+                  byApplicantId.get(application.applicantId)!.add(doc.id);
+                }
               });
 
               set((state) => {
                 state.applications = appsMap;
+                state.applicationsByEventId = byEventId;
+                state.applicationsByApplicantId = byApplicantId;
               });
 
               logger.info('[UnifiedDataStore] Applications 데이터 업데이트', {
-                count: appsMap.size,
+                data: {
+                  count: appsMap.size,
+                  indexedByEvent: byEventId.size,
+                  indexedByApplicant: byApplicantId.size,
+                },
               });
             },
             (error) => {
               logger.error('[UnifiedDataStore] Applications 구독 에러', error);
               set({
                 error: error.message,
-                isLoading: false
+                isLoading: false,
               });
             }
           );
@@ -356,7 +435,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
             attendanceQuery,
             (snapshot) => {
               const recordsMap = new Map<string, AttendanceRecord>();
-              snapshot.docs.forEach(doc => {
+              snapshot.docs.forEach((doc) => {
                 const data = doc.data() as Omit<AttendanceRecord, 'id'>;
                 recordsMap.set(doc.id, { ...data, id: doc.id });
               });
@@ -373,7 +452,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', error);
               set({
                 error: error.message,
-                isLoading: false
+                isLoading: false,
               });
             }
           );
@@ -384,7 +463,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
             jobPostingsQuery,
             (snapshot) => {
               const postingsMap = new Map<string, JobPosting>();
-              snapshot.docs.forEach(doc => {
+              snapshot.docs.forEach((doc) => {
                 const data = doc.data() as Omit<JobPosting, 'id'>;
                 postingsMap.set(doc.id, { ...data, id: doc.id });
               });
@@ -401,13 +480,15 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               logger.error('[UnifiedDataStore] JobPostings 구독 에러', error);
               set({
                 error: error.message,
-                isLoading: false
+                isLoading: false,
               });
             }
           );
-
         } catch (error) {
-          logger.error('[UnifiedDataStore] 구독 초기화 에러', error instanceof Error ? error : new Error(String(error)));
+          logger.error(
+            '[UnifiedDataStore] 구독 초기화 에러',
+            error instanceof Error ? error : new Error(String(error))
+          );
           set({
             error: error instanceof Error ? error.message : String(error),
             isLoading: false,
@@ -467,38 +548,99 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
 
       // Staff CRUD
       setStaff: (items: Map<string, Staff>): void => set({ staff: items }),
-      updateStaff: (item: Staff): void => set((state) => { state.staff.set(item.id, item); }),
-      deleteStaff: (id: string): void => set((state) => { state.staff.delete(id); }),
-      updateStaffBatch: (items: Staff[]): void => set((state) => { items.forEach(item => state.staff.set(item.id, item)); }),
-      deleteStaffBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.staff.delete(id)); }),
+      updateStaff: (item: Staff): void =>
+        set((state) => {
+          state.staff.set(item.id, item);
+        }),
+      deleteStaff: (id: string): void =>
+        set((state) => {
+          state.staff.delete(id);
+        }),
+      updateStaffBatch: (items: Staff[]): void =>
+        set((state) => {
+          items.forEach((item) => state.staff.set(item.id, item));
+        }),
+      deleteStaffBatch: (ids: string[]): void =>
+        set((state) => {
+          ids.forEach((id) => state.staff.delete(id));
+        }),
 
       // WorkLog CRUD
       setWorkLogs: (items: Map<string, WorkLog>): void => set({ workLogs: items }),
-      updateWorkLog: (item: WorkLog): void => set((state) => { state.workLogs.set(item.id, item); }),
-      deleteWorkLog: (id: string): void => set((state) => { state.workLogs.delete(id); }),
-      updateWorkLogsBatch: (items: WorkLog[]): void => set((state) => { items.forEach(item => state.workLogs.set(item.id, item)); }),
-      deleteWorkLogsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.workLogs.delete(id)); }),
+      updateWorkLog: (item: WorkLog): void =>
+        set((state) => {
+          state.workLogs.set(item.id, item);
+        }),
+      deleteWorkLog: (id: string): void =>
+        set((state) => {
+          state.workLogs.delete(id);
+        }),
+      updateWorkLogsBatch: (items: WorkLog[]): void =>
+        set((state) => {
+          items.forEach((item) => state.workLogs.set(item.id, item));
+        }),
+      deleteWorkLogsBatch: (ids: string[]): void =>
+        set((state) => {
+          ids.forEach((id) => state.workLogs.delete(id));
+        }),
 
       // Application CRUD
       setApplications: (items: Map<string, Application>): void => set({ applications: items }),
-      updateApplication: (item: Application): void => set((state) => { state.applications.set(item.id, item); }),
-      deleteApplication: (id: string): void => set((state) => { state.applications.delete(id); }),
-      updateApplicationsBatch: (items: Application[]): void => set((state) => { items.forEach(item => state.applications.set(item.id, item)); }),
-      deleteApplicationsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.applications.delete(id)); }),
+      updateApplication: (item: Application): void =>
+        set((state) => {
+          state.applications.set(item.id, item);
+        }),
+      deleteApplication: (id: string): void =>
+        set((state) => {
+          state.applications.delete(id);
+        }),
+      updateApplicationsBatch: (items: Application[]): void =>
+        set((state) => {
+          items.forEach((item) => state.applications.set(item.id, item));
+        }),
+      deleteApplicationsBatch: (ids: string[]): void =>
+        set((state) => {
+          ids.forEach((id) => state.applications.delete(id));
+        }),
 
       // AttendanceRecord CRUD
-      setAttendanceRecords: (items: Map<string, AttendanceRecord>): void => set({ attendanceRecords: items }),
-      updateAttendanceRecord: (item: AttendanceRecord): void => set((state) => { state.attendanceRecords.set(item.id, item); }),
-      deleteAttendanceRecord: (id: string): void => set((state) => { state.attendanceRecords.delete(id); }),
-      updateAttendanceRecordsBatch: (items: AttendanceRecord[]): void => set((state) => { items.forEach(item => state.attendanceRecords.set(item.id, item)); }),
-      deleteAttendanceRecordsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.attendanceRecords.delete(id)); }),
+      setAttendanceRecords: (items: Map<string, AttendanceRecord>): void =>
+        set({ attendanceRecords: items }),
+      updateAttendanceRecord: (item: AttendanceRecord): void =>
+        set((state) => {
+          state.attendanceRecords.set(item.id, item);
+        }),
+      deleteAttendanceRecord: (id: string): void =>
+        set((state) => {
+          state.attendanceRecords.delete(id);
+        }),
+      updateAttendanceRecordsBatch: (items: AttendanceRecord[]): void =>
+        set((state) => {
+          items.forEach((item) => state.attendanceRecords.set(item.id, item));
+        }),
+      deleteAttendanceRecordsBatch: (ids: string[]): void =>
+        set((state) => {
+          ids.forEach((id) => state.attendanceRecords.delete(id));
+        }),
 
       // JobPosting CRUD
       setJobPostings: (items: Map<string, JobPosting>): void => set({ jobPostings: items }),
-      updateJobPosting: (item: JobPosting): void => set((state) => { state.jobPostings.set(item.id, item); }),
-      deleteJobPosting: (id: string): void => set((state) => { state.jobPostings.delete(id); }),
-      updateJobPostingsBatch: (items: JobPosting[]): void => set((state) => { items.forEach(item => state.jobPostings.set(item.id, item)); }),
-      deleteJobPostingsBatch: (ids: string[]): void => set((state) => { ids.forEach(id => state.jobPostings.delete(id)); }),
+      updateJobPosting: (item: JobPosting): void =>
+        set((state) => {
+          state.jobPostings.set(item.id, item);
+        }),
+      deleteJobPosting: (id: string): void =>
+        set((state) => {
+          state.jobPostings.delete(id);
+        }),
+      updateJobPostingsBatch: (items: JobPosting[]): void =>
+        set((state) => {
+          items.forEach((item) => state.jobPostings.set(item.id, item));
+        }),
+      deleteJobPostingsBatch: (ids: string[]): void =>
+        set((state) => {
+          ids.forEach((id) => state.jobPostings.delete(id));
+        }),
 
       // ========== 로딩/에러 상태 관리 ==========
 

@@ -1,12 +1,12 @@
 /**
  * 스케줄 관리 관련 타입 정의
- * 
+ *
  * 이 파일은 T-HOLDEM 프로젝트의 스케줄 및 일정 관리를 위한 타입들을 정의합니다.
- * 
+ *
  * @version 2.0
  * @since 2025-01-01
  * @author T-HOLDEM Development Team
- * 
+ *
  * 주요 특징:
  * - 통합된 스케줄 이벤트 타입
  * - 출석 상태 및 일정 타입 표준화
@@ -15,13 +15,17 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
+import { AttendanceStatus } from './attendance';
 
-// 출석 상태 타입 (기존 시스템과 호환)
 /**
- * 출석 상태 열거형
- * @description 스태프의 출석 상태를 나타냅니다.
+ * AttendanceStatus - attendance.ts에서 re-export
+ *
+ * @description 출석 상태는 attendance.ts에서 단일 정의(SSOT)됩니다.
+ * 이 re-export는 기존 import 경로와의 하위 호환성을 위해 유지됩니다.
+ *
+ * @see types/attendance.ts - AttendanceStatus의 단일 정의(SSOT)
  */
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
+export type { AttendanceStatus };
 
 // 일정 타입 (지원/확정/완료/취소)
 /**
@@ -40,16 +44,16 @@ export type PayrollStatus = 'pending' | 'processing' | 'completed';
 /**
  * 통합 스케줄 이벤트 인터페이스
  * @description workLogs, applications, staff 데이터를 통합하여 표시하는 스케줄 이벤트입니다.
- * 
+ *
  * 데이터 소스 우선순위:
  * - workLogs: 확정된 근무 일정 (가장 높은 우선순위)
  * - applications: 지원한 일정
  * - staff: 기본 스태프 정보 (fallback)
- * 
+ *
  * 시간 정보:
  * - startTime/endTime: 예정 시간
  * - actualStartTime/EndTime: 실제 근무 시간
- * 
+ *
  * @example
  * ```typescript
  * const scheduleEvent: ScheduleEvent = {
@@ -71,68 +75,68 @@ export type PayrollStatus = 'pending' | 'processing' | 'completed';
 export interface ScheduleEvent {
   /** 스케줄 이벤트 고유 ID */
   id: string;
-  
+
   /** 스케줄 타입 */
   type: ScheduleType;
-  
+
   /** 스케줄 날짜 (YYYY-MM-DD 형식) */
   date: string;
-  
+
   /** 시작 시간 (표준 필드) */
   startTime: Timestamp | null;
-  
+
   /** 종료 시간 (표준 필드) */
   endTime: Timestamp | null;
-  
+
   /** 실제 시작 시간 */
   actualStartTime?: Timestamp | null;
-  
+
   /** 실제 종료 시간 */
   actualEndTime?: Timestamp | null;
-  
+
   /** 이벤트 ID */
   eventId: string;
-  
+
   /** 이벤트 이름 */
   eventName: string;
-  
+
   /** 위치 */
   location: string;
-  
+
   /** 상세 주소 */
   detailedAddress?: string;
-  
+
   /** 역할 */
   role: string;
-  
+
   /** 출석 상태 */
   status: AttendanceStatus;
-  
+
   /** 지원 상태 */
   applicationStatus?: 'applied' | 'confirmed' | 'rejected' | 'completed';
-  
+
   /** 정산 상태 */
   payrollStatus?: PayrollStatus;
-  
+
   /** 정산 금액 */
   payrollAmount?: number;
-  
+
   /** 정산 날짜 */
   payrollDate?: Timestamp;
-  
+
   /** 비고 */
   notes?: string;
-  
+
   // 원본 데이터 참조
   /** 데이터 소스 컬렉션 */
   sourceCollection: 'workLogs' | 'applications' | 'staff';
-  
+
   /** 소스 문서 ID */
   sourceId: string;
-  
+
   /** WorkLog ID (workLogs 소스인 경우) */
   workLogId?: string;
-  
+
   /** Application ID (applications 소스인 경우) */
   applicationId?: string;
 
@@ -159,10 +163,13 @@ export interface ScheduleEvent {
       type: 'hourly' | 'daily' | 'monthly' | 'other';
       amount: number;
       useRoleSalary?: boolean;
-      roleSalaries?: Record<string, {
-        type: string;
-        amount: number;
-      }>;
+      roleSalaries?: Record<
+        string,
+        {
+          type: string;
+          amount: number;
+        }
+      >;
     };
 
     /** 수당 정보 (Critical - 급여 계산 필수) */
@@ -258,23 +265,23 @@ export const SCHEDULE_COLORS: Record<ScheduleType, EventColorConfig> = {
   applied: {
     backgroundColor: '#FEF3C7', // 노란색 배경
     borderColor: '#F59E0B',
-    textColor: '#92400E'
+    textColor: '#92400E',
   },
   confirmed: {
     backgroundColor: '#D1FAE5', // 초록색 배경
     borderColor: '#10B981',
-    textColor: '#065F46'
+    textColor: '#065F46',
   },
   completed: {
     backgroundColor: '#DBEAFE', // 파란색 배경
     borderColor: '#3B82F6',
-    textColor: '#1E3A8A'
+    textColor: '#1E3A8A',
   },
   cancelled: {
     backgroundColor: '#FEE2E2', // 빨간색 배경
     borderColor: '#EF4444',
-    textColor: '#7F1D1D'
-  }
+    textColor: '#7F1D1D',
+  },
 };
 
 /**
@@ -284,23 +291,23 @@ export const SCHEDULE_COLORS_DARK: Record<ScheduleType, EventColorConfig> = {
   applied: {
     backgroundColor: 'rgba(251, 191, 36, 0.2)', // 노란색 배경 (다크)
     borderColor: '#FBBF24',
-    textColor: '#FCD34D'
+    textColor: '#FCD34D',
   },
   confirmed: {
     backgroundColor: 'rgba(16, 185, 129, 0.2)', // 초록색 배경 (다크)
     borderColor: '#10B981',
-    textColor: '#6EE7B7'
+    textColor: '#6EE7B7',
   },
   completed: {
     backgroundColor: 'rgba(59, 130, 246, 0.2)', // 파란색 배경 (다크)
     borderColor: '#3B82F6',
-    textColor: '#93C5FD'
+    textColor: '#93C5FD',
   },
   cancelled: {
     backgroundColor: 'rgba(239, 68, 68, 0.2)', // 빨간색 배경 (다크)
     borderColor: '#EF4444',
-    textColor: '#FCA5A5'
-  }
+    textColor: '#FCA5A5',
+  },
 };
 
 /**
@@ -316,7 +323,7 @@ export const getScheduleColors = (isDark: boolean): Record<ScheduleType, EventCo
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
   not_started: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
   checked_in: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
-  checked_out: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300'
+  checked_out: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
 };
 
 /**

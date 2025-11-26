@@ -58,11 +58,7 @@ export type { UseFixedJobPostingsReturn } from './useFixedJobPostings';
 
 /** 구인공고 목록 Hook */
 export { useJobPostings, useInfiniteJobPostings, JobPostingUtils } from './useJobPostings';
-export type {
-  JobPostingFilters,
-  JobPosting,
-  ConfirmedStaff,
-} from './useJobPostings';
+export type { JobPostingFilters, JobPosting, ConfirmedStaff } from './useJobPostings';
 
 /** 구인공고 폼 Hook */
 export { useJobPostingForm } from './useJobPostingForm';
@@ -93,10 +89,7 @@ export {
 } from './useUnifiedWorkLogs';
 
 /** 교대 스케줄 Hook */
-export {
-  useShiftSchedule,
-  generateTimeSlots,
-} from './useShiftSchedule';
+export { useShiftSchedule, generateTimeSlots } from './useShiftSchedule';
 export type { ShiftSchedule, ShiftDealer, WorkLog } from './useShiftSchedule';
 export { default as useShiftScheduleDefault } from './useShiftSchedule';
 
@@ -110,13 +103,24 @@ export { useStaffManagement } from './useStaffManagement';
 /** 스태프 QR Hook */
 export { useStaffQR } from './useStaffQR';
 
-/** 스태프 선택 Hook (루트 레벨) */
+/**
+ * 스태프 선택 Hook (확장 버전)
+ * @deprecated 새로운 코드에서는 useStaffSelectionV2 또는 hooks/staff/useStaffSelection 사용 권장
+ * 이 버전은 localStorage 저장 기능이 포함되어 있으나 필수 인자가 필요합니다.
+ */
 export { useStaffSelection } from './useStaffSelection';
 
 /** 스태프 근무 데이터 Hook */
 export { useStaffWorkData } from './useStaffWorkData';
 
-// Staff 하위 모듈 Hooks
+// ============================================================================
+// Staff 하위 모듈 Hooks (권장)
+// ============================================================================
+
+/**
+ * 스태프 선택 Hook (SSOT - 권장)
+ * @description 인자 없이 사용 가능한 표준 버전입니다.
+ */
 export { useStaffSelection as useStaffSelectionV2 } from './staff/useStaffSelection';
 export type { UseStaffSelectionReturn } from './staff/useStaffSelection';
 
@@ -192,9 +196,6 @@ export {
   usePageOptimizedData,
 } from './useUnifiedData';
 
-/** 데이터 집계 Hook */
-export { useDataAggregator } from './useDataAggregator';
-
 /** 날짜 필터 Hook */
 export { useDateFilter } from './useDateFilter';
 export type { DateFilterContextType } from './useDateFilter';
@@ -202,9 +203,6 @@ export type { DateFilterContextType } from './useDateFilter';
 /** 날짜별 그룹화 Hook */
 export { useGroupByDate } from './useGroupByDate';
 export type { GroupByDateOptions, GroupedData, UseGroupByDateReturn } from './useGroupByDate';
-
-/** 출석 맵 Hook */
-export { useAttendanceMap } from './useAttendanceMap';
 
 /** 출석 상태 Hook */
 export { useAttendanceStatus } from './useAttendanceStatus';
@@ -259,11 +257,7 @@ export {
 // =============================================================================
 
 /** 보안 Hook */
-export {
-  useSecurity,
-  useFrameBuster,
-  useSecureStorage,
-} from './useSecurity';
+export { useSecurity, useFrameBuster, useSecureStorage } from './useSecurity';
 export { default as useSecurityDefault } from './useSecurity';
 
 /** 보안 설정 Hook */
@@ -279,12 +273,6 @@ export { useDateUtils } from './useDateUtils';
 
 /** 캐시된 날짜 포맷 Hook */
 export { useCachedFormatDate } from './useCachedFormatDate';
-
-/** 디바운스 검색 Hook */
-export { useDebounceSearch } from './useDebounceSearch';
-
-/** 이벤트 서비스 Hook */
-export { useEventService } from './useEventService';
 
 /** 햅틱 피드백 Hook */
 export { useHapticFeedback } from './useHapticFeedback';
@@ -313,10 +301,6 @@ export { useSwipeGesture } from './useSwipeGesture';
 /** 토스트 Hook */
 export { useToast } from './useToast';
 
-/** 가상화 Hook */
-export { useVirtualization, getVirtualizationStats } from './useVirtualization';
-export { default as useVirtualizationDefault } from './useVirtualization';
-
 // =============================================================================
 // System & Performance Hooks
 // =============================================================================
@@ -327,12 +311,6 @@ export { logAction, useStructuredLogger, useLogger } from './useLogger';
 /** 시스템 공지 Hook */
 export { useSystemAnnouncements } from './useSystemAnnouncements';
 export type { UseSystemAnnouncementsReturn } from './useSystemAnnouncements';
-
-/** 시스템 성능 Hook */
-export { useSystemPerformance } from './useSystemPerformance';
-
-/** 스마트 캐시 Hook */
-export { useSmartCache } from './useSmartCache';
 
 /** 개발 도구 Hook */
 export { useDevTools } from './useDevTools';
