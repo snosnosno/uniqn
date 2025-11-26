@@ -111,6 +111,9 @@
     "specialChars": "Include special characters (Bonus +10 points)"
   },
   "modal": {},
+  "confirmModal": {
+    "inputMismatch": "Input does not match. Please enter \"{{value}}\" exactly."
+  },
   "nav": {
     "dashboard": "Dashboard",
     "jobBoard": "Job Board",

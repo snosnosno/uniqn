@@ -112,6 +112,9 @@
     "specialChars": "특수문자 포함 (보너스 +10점)"
   },
   "modal": {},
+  "confirmModal": {
+    "inputMismatch": "입력값이 일치하지 않습니다. \"{{value}}\"를 정확히 입력해주세요."
+  },
   "nav": {
     "dashboard": "대시보드",
     "jobBoard": "구인구직",
