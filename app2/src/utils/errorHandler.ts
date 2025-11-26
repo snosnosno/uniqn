@@ -1,14 +1,53 @@
 /**
- * 통합 에러 처리 유틸리티
- * 일관된 에러 처리 패턴을 제공합니다.
+ * 통합 에러 처리 유틸리티 (SSOT)
+ *
+ * 이 파일은 T-HOLDEM 프로젝트의 에러 처리 표준을 정의합니다.
+ * 모든 에러 처리는 이 모듈의 함수들을 사용해야 합니다.
+ *
+ * @version 2.0
+ * @since 2025-01-01
+ * @author T-HOLDEM Development Team
+ *
+ * 주요 함수:
+ * - extractErrorMessage: unknown 에러에서 메시지 추출
+ * - toError: unknown을 Error 객체로 변환
+ * - handleError: 표준화된 에러 처리 (로깅 + 알림)
+ * - withErrorHandler: 비동기 작업 에러 래퍼
+ * - withRetry: 재시도 로직 포함 에러 처리
+ *
+ * 사용 예시:
+ * ```typescript
+ * // ✅ 권장 패턴 - handleError 사용
+ * try {
+ *   await riskyOperation();
+ * } catch (error) {
+ *   handleError(error, {
+ *     component: 'MyComponent',
+ *     action: 'riskyOperation',
+ *     showAlert: true
+ *   });
+ * }
+ *
+ * // ✅ 권장 패턴 - withErrorHandler 사용
+ * const result = await withErrorHandler(
+ *   () => fetchData(),
+ *   { component: 'DataService', action: 'fetchData' }
+ * );
+ *
+ * // ✅ 권장 패턴 - withRetry 사용
+ * const result = await withRetry(
+ *   () => unstableApiCall(),
+ *   { component: 'ApiService', maxRetries: 3 }
+ * );
+ * ```
+ *
+ * @see utils/firebaseErrors.ts - Firebase 전용 에러 처리
+ * @see utils/logger.ts - 로깅 유틸리티
  */
 
 import { logger } from './logger';
 import { toast } from './toast';
-import {
-  handleFirebaseError as handleFirebaseErrorUtil,
-  FirebaseError
-} from './firebaseErrors';
+import { handleFirebaseError as handleFirebaseErrorUtil, FirebaseError } from './firebaseErrors';
 
 /**
  * unknown 타입의 에러에서 안전하게 메시지를 추출합니다.
@@ -72,16 +111,13 @@ export interface ErrorHandlerOptions {
 /**
  * 표준화된 에러 처리 함수
  */
-export const handleError = (
-  error: unknown,
-  options: ErrorHandlerOptions
-): string => {
+export const handleError = (error: unknown, options: ErrorHandlerOptions): string => {
   const { component, action, userId, data, showAlert = false, fallbackMessage } = options;
-  
+
   // 에러 메시지 추출
   let errorMessage: string;
   let errorObject: Error;
-  
+
   if (error instanceof Error) {
     errorMessage = error.message;
     errorObject = error;
@@ -92,7 +128,7 @@ export const handleError = (
     errorMessage = fallbackMessage || '알 수 없는 오류가 발생했습니다.';
     errorObject = new Error(errorMessage);
   }
-  
+
   // 로깅
   const logContext: any = {
     component,
@@ -100,13 +136,13 @@ export const handleError = (
     errorDetails: {
       message: errorMessage,
       stack: errorObject.stack,
-      name: errorObject.name
-    }
+      name: errorObject.name,
+    },
   };
-  
+
   if (action) logContext.action = action;
   if (userId) logContext.userId = userId;
-  
+
   logger.error(`[${component}] ${action || 'Error'}:`, errorObject, logContext);
 
   // 알림 표시 (옵션)
@@ -139,12 +175,12 @@ export class ErrorBoundaryHelper {
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
-  
+
   static logComponentError(error: Error, errorInfo: any, componentName: string) {
     handleError(error, {
       component: `${componentName} (ErrorBoundary)`,
       action: 'Component Error',
-      data: { errorInfo }
+      data: { errorInfo },
     });
   }
 }
@@ -161,7 +197,7 @@ export const handleFirebaseError = (error: any, options: ErrorHandlerOptions): s
     component: options.component,
     action: options.action,
     userId: options.userId,
-    ...options.data
+    ...options.data,
   };
 
   const userFriendlyMessage = handleFirebaseErrorUtil(
@@ -183,16 +219,16 @@ export const handleFirebaseError = (error: any, options: ErrorHandlerOptions): s
  */
 export const handleNetworkError = (error: any, options: ErrorHandlerOptions): string => {
   let userFriendlyMessage = '네트워크 연결을 확인해주세요.';
-  
+
   if (error?.message?.includes('fetch')) {
     userFriendlyMessage = '서버에 연결할 수 없습니다.';
   } else if (error?.message?.includes('timeout')) {
     userFriendlyMessage = '요청 시간이 초과되었습니다.';
   }
-  
+
   return handleError(error, {
     ...options,
-    fallbackMessage: userFriendlyMessage
+    fallbackMessage: userFriendlyMessage,
   });
 };
 
@@ -205,10 +241,10 @@ export const handleValidationError = (
   options: ErrorHandlerOptions
 ): string => {
   const errorMessage = `${field}: ${message}`;
-  
+
   return handleError(new Error(errorMessage), {
     ...options,
-    action: 'Validation Error'
+    action: 'Validation Error',
   });
 };
 
@@ -220,7 +256,7 @@ export const withRetry = async <T>(
   options: ErrorHandlerOptions & { maxRetries?: number; delay?: number }
 ): Promise<T | null> => {
   const { maxRetries = 3, delay = 1000, ...errorOptions } = options;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await asyncFn();
@@ -228,20 +264,20 @@ export const withRetry = async <T>(
       if (attempt === maxRetries) {
         handleError(error, {
           ...errorOptions,
-          data: { ...errorOptions.data, attempts: attempt }
+          data: { ...errorOptions.data, attempts: attempt },
         });
         return null;
       }
-      
+
       logger.warn(`[${errorOptions.component}] Retry attempt ${attempt}/${maxRetries}`, {
         component: errorOptions.component,
         attempt,
-        maxRetries
+        maxRetries,
       });
-      
-      await new Promise(resolve => setTimeout(resolve, delay * attempt));
+
+      await new Promise((resolve) => setTimeout(resolve, delay * attempt));
     }
   }
-  
+
   return null;
 };

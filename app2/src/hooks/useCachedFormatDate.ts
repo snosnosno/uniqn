@@ -1,3 +1,25 @@
+/**
+ * 캐시된 날짜/시간 포맷팅 훅 (SSOT)
+ *
+ * 이 파일은 날짜/시간 포맷팅 캐싱의 표준 구현입니다.
+ * 동일한 입력에 대해 포맷팅 결과를 캐시하여 성능을 최적화합니다.
+ *
+ * @version 2.0
+ * @since 2025-01-01
+ * @author T-HOLDEM Development Team
+ *
+ * 주요 함수:
+ * - useCachedFormatDate: 날짜 포맷팅 캐시
+ * - useCachedTimeDisplay: 시간 표시 포맷팅 캐시
+ * - useCachedTimeSlotColor: 시간대 색상 캐시
+ * - clearFormatCaches: 캐시 초기화
+ *
+ * @example
+ * ```typescript
+ * const formattedDate = useCachedFormatDate(timestamp);
+ * const timeDisplay = useCachedTimeDisplay(time, formatTimeDisplay);
+ * ```
+ */
 import { useMemo } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { formatDate } from '../utils/jobPosting/dateUtils';
@@ -28,27 +50,25 @@ export const useCachedFormatDate = (dateInput: DateInput): string => {
     if (!dateInput) {
       return '';
     }
-    
+
     // 캐시 키 생성 (입력값을 문자열로 변환)
-    const cacheKey = typeof dateInput === 'object' 
-      ? JSON.stringify(dateInput) 
-      : String(dateInput);
-    
+    const cacheKey = typeof dateInput === 'object' ? JSON.stringify(dateInput) : String(dateInput);
+
     // 캐시에서 결과 확인
     if (formatDateCache.has(cacheKey)) {
       return formatDateCache.get(cacheKey)!;
     }
-    
+
     // 새로운 포맷팅 수행
     const formatted = formatDate(dateInput);
-    
+
     // 캐시에 저장 (메모리 사용량 제한을 위해 최대 1000개까지만 저장)
     if (formatDateCache.size >= 1000) {
       // 가장 오래된 항목 제거 (FIFO)
       const firstKey = formatDateCache.keys().next().value;
       formatDateCache.delete(firstKey);
     }
-    
+
     formatDateCache.set(cacheKey, formatted);
     return formatted;
   }, [dateInput]);
@@ -67,21 +87,21 @@ export const useCachedTimeDisplay = (
     if (!timeInput) {
       return '';
     }
-    
+
     const cacheKey = timeInput;
-    
+
     if (timeDisplayCache.has(cacheKey)) {
       return timeDisplayCache.get(cacheKey)!;
     }
-    
+
     const formatted = formatTimeDisplay(timeInput);
-    
+
     // 메모리 관리
     if (timeDisplayCache.size >= 500) {
       const firstKey = timeDisplayCache.keys().next().value;
       timeDisplayCache.delete(firstKey);
     }
-    
+
     timeDisplayCache.set(cacheKey, formatted);
     return formatted;
   }, [timeInput, formatTimeDisplay]);
@@ -100,21 +120,21 @@ export const useCachedTimeSlotColor = (
     if (!timeInput) {
       return '';
     }
-    
+
     const cacheKey = timeInput;
-    
+
     if (timeSlotColorCache.has(cacheKey)) {
       return timeSlotColorCache.get(cacheKey)!;
     }
-    
+
     const color = getTimeSlotColor(timeInput);
-    
+
     // 메모리 관리
     if (timeSlotColorCache.size >= 200) {
       const firstKey = timeSlotColorCache.keys().next().value;
       timeSlotColorCache.delete(firstKey);
     }
-    
+
     timeSlotColorCache.set(cacheKey, color);
     return color;
   }, [timeInput, getTimeSlotColor]);
@@ -135,5 +155,5 @@ export const clearFormatCaches = () => {
 export const getCacheStats = () => ({
   formatDateCacheSize: formatDateCache.size,
   timeDisplayCacheSize: timeDisplayCache.size,
-  timeSlotColorCacheSize: timeSlotColorCache.size
+  timeSlotColorCacheSize: timeSlotColorCache.size,
 });

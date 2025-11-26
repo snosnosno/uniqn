@@ -1,4 +1,44 @@
-import React, { createContext, useContext, useEffect, ReactNode, useMemo, useCallback } from 'react';
+/**
+ * JobPostingContextAdapter
+ *
+ * @deprecated 이 Context Adapter는 하위 호환성을 위해 유지됩니다.
+ * 새로운 코드에서는 Zustand store를 직접 사용하세요.
+ *
+ * 마이그레이션 가이드:
+ * ```typescript
+ * // ❌ 기존 방식 (deprecated)
+ * import { useJobPostingContext } from '@/contexts/JobPostingContextAdapter';
+ * const { jobPosting, applicants, workLogs } = useJobPostingContext();
+ *
+ * // ✅ 권장 방식 - Zustand store 직접 사용
+ * import { useJobPostingStore } from '@/stores/jobPostingStore';
+ * import { useUnifiedDataStore } from '@/stores/unifiedDataStore';
+ * import { useShallow } from 'zustand/react/shallow';
+ *
+ * // 공고 정보
+ * const { jobPosting, applicants, staff } = useJobPostingStore(
+ *   useShallow(state => ({
+ *     jobPosting: state.jobPosting,
+ *     applicants: state.applicants,
+ *     staff: state.staff
+ *   }))
+ * );
+ *
+ * // WorkLogs 정보
+ * const workLogs = useUnifiedDataStore(state => state.getWorkLogsByEventId(eventId));
+ * ```
+ *
+ * @see stores/jobPostingStore.ts - 공고/지원자/스태프 데이터
+ * @see stores/unifiedDataStore.ts - WorkLogs 데이터
+ */
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 import { useJobPostingStore } from '../stores/jobPostingStore';
 import { useAuth } from './AuthContext';
 import { useUnifiedDataStore } from '../stores/unifiedDataStore';
@@ -64,11 +104,26 @@ const convertToUnifiedWorkLog = (workLog: WorkLog): UnifiedWorkLog => ({
 // Zustand store를 Context API로 감싸는 어댑터
 export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children, eventId }) => {
   const { currentUser } = useAuth();
-  const { setEventId, cleanup, refreshApplicants, refreshStaff, jobPosting, loading, error, applicants, staff } = useJobPostingStore();
+  const {
+    setEventId,
+    cleanup,
+    refreshApplicants,
+    refreshStaff,
+    jobPosting,
+    loading,
+    error,
+    applicants,
+    staff,
+  } = useJobPostingStore();
 
   // WorkLogs를 UnifiedDataStore에서 가져오기 (중복 구독 방지)
   // 기존: useUnifiedWorkLogs로 별도 Firebase 구독 → 이제: 전역 Store에서 필터링
-  const { workLogsMap, isLoading: workLogsLoading, error: storeError, getWorkLogsByEventId } = useUnifiedDataStore(
+  const {
+    workLogsMap,
+    isLoading: workLogsLoading,
+    error: storeError,
+    getWorkLogsByEventId,
+  } = useUnifiedDataStore(
     useShallow((state) => ({
       workLogsMap: state.workLogs,
       isLoading: state.isLoading,
@@ -115,31 +170,42 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     }
   }, [eventId, currentUser, refreshApplicants, refreshStaff]);
 
-  const value: JobPostingContextType = React.useMemo(() => ({
-    jobPosting,
-    loading,
-    error,
-    refreshJobPosting: useJobPostingStore.getState().refreshJobPosting,
-    applicants,
-    staff,
-    refreshApplicants,
-    refreshStaff: () => {
-      // 스태프 데이터와 WorkLogs 데이터를 함께 새로고침
-      refreshStaff();
-      refreshWorkLogs();
-    },
-    // WorkLogs 데이터 추가
-    workLogs: workLogs || [],
-    workLogsLoading: workLogsLoading || false,
-    workLogsError: workLogsError || null,
-    refreshWorkLogs,
-  }), [jobPosting, loading, error, applicants, staff, refreshApplicants, refreshStaff, workLogs, workLogsLoading, workLogsError, refreshWorkLogs]);
-
-  return (
-    <JobPostingContext.Provider value={value}>
-      {children}
-    </JobPostingContext.Provider>
+  const value: JobPostingContextType = React.useMemo(
+    () => ({
+      jobPosting,
+      loading,
+      error,
+      refreshJobPosting: useJobPostingStore.getState().refreshJobPosting,
+      applicants,
+      staff,
+      refreshApplicants,
+      refreshStaff: () => {
+        // 스태프 데이터와 WorkLogs 데이터를 함께 새로고침
+        refreshStaff();
+        refreshWorkLogs();
+      },
+      // WorkLogs 데이터 추가
+      workLogs: workLogs || [],
+      workLogsLoading: workLogsLoading || false,
+      workLogsError: workLogsError || null,
+      refreshWorkLogs,
+    }),
+    [
+      jobPosting,
+      loading,
+      error,
+      applicants,
+      staff,
+      refreshApplicants,
+      refreshStaff,
+      workLogs,
+      workLogsLoading,
+      workLogsError,
+      refreshWorkLogs,
+    ]
   );
+
+  return <JobPostingContext.Provider value={value}>{children}</JobPostingContext.Provider>;
 };
 
 // 기존 컨텍스트 hook 유지 (하위 호환성)

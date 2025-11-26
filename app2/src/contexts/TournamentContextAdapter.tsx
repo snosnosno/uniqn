@@ -1,3 +1,36 @@
+/**
+ * TournamentContextAdapter
+ *
+ * @deprecated 이 Context Adapter는 하위 호환성을 위해 유지됩니다.
+ * 새로운 코드에서는 Zustand store를 직접 사용하세요.
+ *
+ * 마이그레이션 가이드:
+ * ```typescript
+ * // ❌ 기존 방식 (deprecated)
+ * import { useTournament } from '@/contexts/TournamentContextAdapter';
+ * const { state, dispatch } = useTournament();
+ * dispatch({ type: 'SET_STATUS', payload: 'running' });
+ *
+ * // ✅ 권장 방식 - Zustand store 직접 사용
+ * import { useTournamentStore } from '@/stores/tournamentStore';
+ * import { useShallow } from 'zustand/react/shallow';
+ *
+ * // 상태 조회
+ * const { tournamentStatus, participants, tables } = useTournamentStore(
+ *   useShallow(state => ({
+ *     tournamentStatus: state.tournamentStatus,
+ *     participants: state.participants,
+ *     tables: state.tables
+ *   }))
+ * );
+ *
+ * // 액션 호출
+ * const setStatus = useTournamentStore(state => state.setStatus);
+ * setStatus('running');
+ * ```
+ *
+ * @see stores/tournamentStore.ts - 토너먼트 상태 및 액션
+ */
 import { logger } from '../utils/logger';
 import React, {
   createContext,

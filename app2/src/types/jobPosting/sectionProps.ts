@@ -1,9 +1,20 @@
 /**
- * Props Grouping 공통 타입 정의
+ * Props Grouping 공통 타입 정의 (SSOT)
  *
- * 섹션 컴포넌트의 Props를 data, handlers, validation 그룹으로 구조화
+ * 이 파일은 폼 섹션 컴포넌트 Props의 표준 구조를 정의합니다.
+ * 모든 폼 섹션 컴포넌트는 SectionProps 패턴을 따라야 합니다.
+ *
+ * @version 2.0
+ * @since 2025-01-01
+ * @author T-HOLDEM Development Team
+ *
+ * Props 구조:
+ * - data: 섹션의 데이터 (formData의 일부)
+ * - handlers: 섹션의 이벤트 핸들러들
+ * - validation: 검증 에러 및 touched 상태 (선택)
  *
  * @see app2/src/components/jobPosting/JobPostingForm/
+ * @see types/jobPosting/basicInfoProps.ts - 사용 예시
  */
 
 /**
