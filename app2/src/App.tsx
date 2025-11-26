@@ -51,15 +51,13 @@ import './i18n/config';
 // Capacitor 네이티브 서비스 초기화 컴포넌트
 import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
 
-
-
 // Import grouped lazy chunks for optimized bundle splitting
 import {
   adminChunk,
   staffChunk,
   jobManagementChunk,
   tournamentChunk,
-  coreChunk
+  coreChunk,
 } from './utils/lazyChunks';
 
 // Notification Pages
@@ -87,29 +85,19 @@ const RefundBlacklistPage = React.lazy(() => import('./pages/admin/RefundBlackli
 
 // Settings & Legal Pages
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
-const VerificationSettingsPage = React.lazy(() => import('./pages/settings/VerificationSettingsPage'));
+const VerificationSettingsPage = React.lazy(
+  () => import('./pages/settings/VerificationSettingsPage')
+);
 const TermsOfServicePage = React.lazy(() => import('./pages/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = React.lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 
 // Extract components from chunks
-const {
-  ApprovalPage,
-  UserManagementPage,
-  InquiryManagementPage,
-} = adminChunk;
+const { ApprovalPage, UserManagementPage, InquiryManagementPage } = adminChunk;
 
-const {
-  AttendancePage,
-  AvailableTimesPage,
-  MySchedulePage,
-} = staffChunk;
+const { AttendancePage, AvailableTimesPage, MySchedulePage } = staffChunk;
 
-const {
-  JobBoardPage,
-  JobPostingAdminPage,
-  JobPostingDetailPage,
-  StaffNewPage,
-} = jobManagementChunk;
+const { JobBoardPage, JobPostingAdminPage, JobPostingDetailPage, StaffNewPage } =
+  jobManagementChunk;
 
 const {
   ParticipantsPage,
@@ -119,20 +107,19 @@ const {
   ShiftSchedulePage,
 } = tournamentChunk;
 
-const {
-  LandingPage,
-  ProfilePage,
-  SupportPage,
-} = coreChunk;
+const { LandingPage, ProfilePage, SupportPage } = coreChunk;
 
 // 알림 페이지 (Lazy Load)
 const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
 
-
 // A component to handle role-based redirection for authenticated users
 const AppRedirect: React.FC = () => {
   const { isAdmin } = useAuth(); // isAdmin is kept for compatibility
-  return isAdmin ? <Navigate to="/app/admin/job-postings" replace /> : <Navigate to="/app/profile" replace />;
+  return isAdmin ? (
+    <Navigate to="/app/admin/job-postings" replace />
+  ) : (
+    <Navigate to="/app/profile" replace />
+  );
 };
 
 // Maintenance mode checker component
@@ -148,7 +135,7 @@ const MaintenanceModeCheck: React.FC<{ children: React.ReactNode }> = ({ childre
   if (
     FEATURE_FLAGS.MAINTENANCE_MODE &&
     currentUser &&
-    !MAINTENANCE_ALLOWED_ROLES.includes(role as typeof MAINTENANCE_ALLOWED_ROLES[number])
+    !MAINTENANCE_ALLOWED_ROLES.includes(role as (typeof MAINTENANCE_ALLOWED_ROLES)[number])
   ) {
     return <MaintenancePage />;
   }
@@ -189,7 +176,6 @@ const App: React.FC = () => {
       });
 
       // 성능 모니터링 시작
-      performanceMonitor.measureWebVitals();
       performanceMonitor.measureMemory();
 
       // Web Vitals 측정 (P3-3: 성능 메트릭)
@@ -229,128 +215,396 @@ const App: React.FC = () => {
                           {/* 네트워크 상태 표시 */}
                           <NetworkStatusIndicator position="top" />
 
-                <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
-                <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/consent" element={<ConsentPage />} />
+                          <Routes>
+                            {/* Public Routes */}
+                            <Route
+                              path="/"
+                              element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  <LandingPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/signup" element={<SignUp />} />
+                            <Route path="/forgot-password" element={<ForgotPassword />} />
+                            <Route path="/consent" element={<ConsentPage />} />
 
-                  {/* Legal Documents - Public Access (회원가입 시 확인 가능해야 함) */}
-                  <Route path="/terms-of-service" element={<Suspense fallback={<LoadingSpinner />}><TermsOfServicePage /></Suspense>} />
-                  <Route path="/privacy-policy" element={<Suspense fallback={<LoadingSpinner />}><PrivacyPolicyPage /></Suspense>} />
+                            {/* Legal Documents - Public Access (회원가입 시 확인 가능해야 함) */}
+                            <Route
+                              path="/terms-of-service"
+                              element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  <TermsOfServicePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/privacy-policy"
+                              element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  <PrivacyPolicyPage />
+                                </Suspense>
+                              }
+                            />
 
-                  {/* Payment Routes - Public (토스페이먼츠 리다이렉트) */}
-                  <Route path="/payment/terms" element={<Suspense fallback={<LoadingSpinner />}><PaymentTermsPage /></Suspense>} />
-                  <Route path="/payment/success" element={<Suspense fallback={<LoadingSpinner />}><PaymentSuccessPage /></Suspense>} />
-                  <Route path="/payment/fail" element={<Suspense fallback={<LoadingSpinner />}><PaymentFailPage /></Suspense>} />
+                            {/* Payment Routes - Public (토스페이먼츠 리다이렉트) */}
+                            <Route
+                              path="/payment/terms"
+                              element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  <PaymentTermsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/payment/success"
+                              element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  <PaymentSuccessPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/payment/fail"
+                              element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  <PaymentFailPage />
+                                </Suspense>
+                              }
+                            />
 
-                  {/* Authenticated Routes */}
-                  <Route path="/app" element={<PrivateRoute />}>
-                    <Route path="/app" element={
-                      <RequireEmailVerification>
-                        <Layout />
-                      </RequireEmailVerification>
-                    }>
-                      <Route index element={<AppRedirect />} />
-                      <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
-                      <Route path="profile/:userId" element={<Suspense fallback={<LoadingSpinner />}><ProfilePage /></Suspense>} />
+                            {/* Authenticated Routes */}
+                            <Route path="/app" element={<PrivateRoute />}>
+                              <Route
+                                path="/app"
+                                element={
+                                  <RequireEmailVerification>
+                                    <Layout />
+                                  </RequireEmailVerification>
+                                }
+                              >
+                                <Route index element={<AppRedirect />} />
+                                <Route
+                                  path="profile"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <ProfilePage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="profile/:userId"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <ProfilePage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* 알림 센터 */}
-                      <Route path="notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationsPage /></Suspense>} />
-                      <Route path="notification-settings" element={<Suspense fallback={<LoadingSpinner />}><NotificationSettingsPage /></Suspense>} />
-                      <Route path="test-notifications" element={<Suspense fallback={<LoadingSpinner />}><NotificationTestPage /></Suspense>} />
-                      <Route path="announcements" element={<Suspense fallback={<LoadingSpinner />}><AnnouncementsPage /></Suspense>} />
+                                {/* 알림 센터 */}
+                                <Route
+                                  path="notifications"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <NotificationsPage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="notification-settings"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <NotificationSettingsPage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="test-notifications"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <NotificationTestPage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="announcements"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <AnnouncementsPage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* 설정 */}
-                      <Route path="settings" element={<Suspense fallback={<LoadingSpinner />}><SettingsPage /></Suspense>} />
-                      <Route path="settings/verification" element={<Suspense fallback={<LoadingSpinner />}><VerificationSettingsPage /></Suspense>} />
+                                {/* 설정 */}
+                                <Route
+                                  path="settings"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <SettingsPage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="settings/verification"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <VerificationSettingsPage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* 칩 관련 */}
-                      <Route path="chip/recharge" element={<Suspense fallback={<LoadingSpinner />}><ChipRechargePage /></Suspense>} />
-                      <Route path="chip/history" element={<Suspense fallback={<LoadingSpinner />}><ChipHistoryPage /></Suspense>} />
+                                {/* 칩 관련 */}
+                                <Route
+                                  path="chip/recharge"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <ChipRechargePage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="chip/history"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <ChipHistoryPage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* 결제 관련 */}
-                      <Route path="payment/history" element={<Suspense fallback={<LoadingSpinner />}><PaymentHistoryPage /></Suspense>} />
+                                {/* 결제 관련 */}
+                                <Route
+                                  path="payment/history"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <PaymentHistoryPage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* 구독 관련 */}
-                      <Route path="subscription" element={<Suspense fallback={<LoadingSpinner />}><SubscriptionPage /></Suspense>} />
+                                {/* 구독 관련 */}
+                                <Route
+                                  path="subscription"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <SubscriptionPage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* Dealer facing routes */}
-                      <Route path="jobs" element={<Suspense fallback={<LoadingSpinner />}><JobBoardPage /></Suspense>} />
-                      <Route path="my-schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
-                      <Route path="schedule" element={<Suspense fallback={<LoadingSpinner />}><MySchedulePage /></Suspense>} />
-                      <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><AttendancePage /></Suspense>} />
-                      <Route path="available-times" element={<Suspense fallback={<LoadingSpinner />}><AvailableTimesPage /></Suspense>} />
-                      <Route path="support" element={<Suspense fallback={<LoadingSpinner />}><SupportPage /></Suspense>} />
+                                {/* Dealer facing routes */}
+                                <Route
+                                  path="jobs"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <JobBoardPage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="my-schedule"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <MySchedulePage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="schedule"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <MySchedulePage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="attendance"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <AttendancePage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="available-times"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <AvailableTimesPage />
+                                    </Suspense>
+                                  }
+                                />
+                                <Route
+                                  path="support"
+                                  element={
+                                    <Suspense fallback={<LoadingSpinner />}>
+                                      <SupportPage />
+                                    </Suspense>
+                                  }
+                                />
 
-                      {/* Tournament Management - All authenticated users */}
-                      <Route path="tournaments" element={
-                        FEATURE_FLAGS.TOURNAMENTS ? (
-                          <Suspense fallback={<LoadingSpinner />}><TournamentsPage /></Suspense>
-                        ) : (
-                          <ComingSoon feature="토너먼트 관리" />
-                        )
-                      } />
-                      <Route path="participants" element={
-                        FEATURE_FLAGS.PARTICIPANTS ? (
-                          <Suspense fallback={<LoadingSpinner />}><ParticipantsPage /></Suspense>
-                        ) : (
-                          <ComingSoon feature="참가자 관리" />
-                        )
-                      } />
-                      <Route path="tables" element={
-                        FEATURE_FLAGS.TABLES ? (
-                          <Suspense fallback={<LoadingSpinner />}><TablesPage /></Suspense>
-                        ) : (
-                          <ComingSoon feature="테이블 관리" />
-                        )
-                      } />
+                                {/* Tournament Management - All authenticated users */}
+                                <Route
+                                  path="tournaments"
+                                  element={
+                                    FEATURE_FLAGS.TOURNAMENTS ? (
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <TournamentsPage />
+                                      </Suspense>
+                                    ) : (
+                                      <ComingSoon feature="토너먼트 관리" />
+                                    )
+                                  }
+                                />
+                                <Route
+                                  path="participants"
+                                  element={
+                                    FEATURE_FLAGS.PARTICIPANTS ? (
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <ParticipantsPage />
+                                      </Suspense>
+                                    ) : (
+                                      <ComingSoon feature="참가자 관리" />
+                                    )
+                                  }
+                                />
+                                <Route
+                                  path="tables"
+                                  element={
+                                    FEATURE_FLAGS.TABLES ? (
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <TablesPage />
+                                      </Suspense>
+                                    ) : (
+                                      <ComingSoon feature="테이블 관리" />
+                                    )
+                                  }
+                                />
 
-                      {/* Admin & Manager Routes */}
-                      <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}>
-                        <Route path="staff/new" element={<Suspense fallback={<LoadingSpinner />}><StaffNewPage /></Suspense>} />
-                        <Route path="shift-schedule" element={
-                          FEATURE_FLAGS.SHIFT_SCHEDULE ? (
-                            <Suspense fallback={<LoadingSpinner />}><ShiftSchedulePage /></Suspense>
-                          ) : (
-                            <ComingSoon feature="교대 관리" />
-                          )
-                        } />
-                        {/* 상금관리 페이지 - 추후 업데이트 예정 */}
-                        <Route path="prizes" element={
-                          FEATURE_FLAGS.PRIZES ? (
-                            <ComingSoon feature="상금 관리" />
-                          ) : (
-                            <ComingSoon feature="상금 관리" />
-                          )
-                        } />
-                      </Route>
+                                {/* Admin & Manager Routes */}
+                                <Route
+                                  path="admin"
+                                  element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}
+                                >
+                                  <Route
+                                    path="staff/new"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <StaffNewPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="shift-schedule"
+                                    element={
+                                      FEATURE_FLAGS.SHIFT_SCHEDULE ? (
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                          <ShiftSchedulePage />
+                                        </Suspense>
+                                      ) : (
+                                        <ComingSoon feature="교대 관리" />
+                                      )
+                                    }
+                                  />
+                                  {/* 상금관리 페이지 - 추후 업데이트 예정 */}
+                                  <Route
+                                    path="prizes"
+                                    element={
+                                      FEATURE_FLAGS.PRIZES ? (
+                                        <ComingSoon feature="상금 관리" />
+                                      ) : (
+                                        <ComingSoon feature="상금 관리" />
+                                      )
+                                    }
+                                  />
+                                </Route>
 
-                      {/* Job Posting Management - Admin, Manager, Staff with permission */}
-                      <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />}>
-                        <Route path="job-postings" element={<Suspense fallback={<LoadingSpinner />}><JobPostingAdminPage /></Suspense>} />
-                        <Route path="job-posting/:id" element={<Suspense fallback={<LoadingSpinner />}><JobPostingDetailPage /></Suspense>} />
-                      </Route>
+                                {/* Job Posting Management - Admin, Manager, Staff with permission */}
+                                <Route
+                                  path="admin"
+                                  element={
+                                    <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />
+                                  }
+                                >
+                                  <Route
+                                    path="job-postings"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <JobPostingAdminPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="job-posting/:id"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <JobPostingDetailPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                </Route>
 
-                      {/* Admin Only Route */}
-                      <Route path="admin" element={<RoleBasedRoute allowedRoles={['admin']} />}>
-                          <Route path="approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalPage /></Suspense>} />
-                          <Route path="user-management" element={<Suspense fallback={<LoadingSpinner />}><UserManagementPage /></Suspense>} />
-                          <Route path="inquiries" element={<Suspense fallback={<LoadingSpinner />}><InquiryManagementPage /></Suspense>} />
-                          <Route path="job-posting-approvals" element={<Suspense fallback={<LoadingSpinner />}><ApprovalManagementPage /></Suspense>} />
-                          <Route path="chip-management" element={<Suspense fallback={<LoadingSpinner />}><ChipManagementPage /></Suspense>} />
-                          <Route path="refund-blacklist" element={<Suspense fallback={<LoadingSpinner />}><RefundBlacklistPage /></Suspense>} />
-                      </Route>
-                    </Route>
-                  </Route>
-                </Routes>
-                      </TournamentDataProvider>
-                    </TournamentProvider>
-                  </UnifiedDataInitializer>
-                </CapacitorInitializer>
-              </MaintenanceModeCheck>
+                                {/* Admin Only Route */}
+                                <Route
+                                  path="admin"
+                                  element={<RoleBasedRoute allowedRoles={['admin']} />}
+                                >
+                                  <Route
+                                    path="approvals"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <ApprovalPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="user-management"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <UserManagementPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="inquiries"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <InquiryManagementPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="job-posting-approvals"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <ApprovalManagementPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="chip-management"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <ChipManagementPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                  <Route
+                                    path="refund-blacklist"
+                                    element={
+                                      <Suspense fallback={<LoadingSpinner />}>
+                                        <RefundBlacklistPage />
+                                      </Suspense>
+                                    }
+                                  />
+                                </Route>
+                              </Route>
+                            </Route>
+                          </Routes>
+                        </TournamentDataProvider>
+                      </TournamentProvider>
+                    </UnifiedDataInitializer>
+                  </CapacitorInitializer>
+                </MaintenanceModeCheck>
               </ChipProvider>
             </AuthProvider>
             <ToastContainer />
@@ -359,6 +613,6 @@ const App: React.FC = () => {
       </FirebaseErrorBoundary>
     </ErrorBoundary>
   );
-}
+};
 
 export default App;

@@ -22,7 +22,7 @@ import {
   getDocs,
   Timestamp,
   type Query,
-  type DocumentData
+  type DocumentData,
 } from 'firebase/firestore';
 
 import { db } from '../firebase';
@@ -30,11 +30,7 @@ import { logger } from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './useToast';
 import { useFirestoreQuery } from './firestore';
-import type {
-  Notification,
-  NotificationFilter,
-  NotificationStats
-} from '../types';
+import type { Notification, NotificationFilter, NotificationStats } from '../types';
 
 export interface UseNotificationsReturn {
   // 데이터
@@ -51,6 +47,7 @@ export interface UseNotificationsReturn {
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
   deleteAllRead: () => Promise<void>;
+  deleteAll: () => Promise<void>;
 
   // 필터
   filter: NotificationFilter;
@@ -153,26 +150,26 @@ export const useNotifications = (): UseNotificationsReturn => {
     let filtered = notifications;
 
     if (filter.isRead !== undefined) {
-      filtered = filtered.filter(n => n.isRead === filter.isRead);
+      filtered = filtered.filter((n) => n.isRead === filter.isRead);
     }
 
     if (filter.category) {
-      filtered = filtered.filter(n => n.category === filter.category);
+      filtered = filtered.filter((n) => n.category === filter.category);
     }
 
     if (filter.priority) {
-      filtered = filtered.filter(n => n.priority === filter.priority);
+      filtered = filtered.filter((n) => n.priority === filter.priority);
     }
 
     if (filter.startDate) {
-      filtered = filtered.filter(n => {
+      filtered = filtered.filter((n) => {
         const createdAt = n.createdAt instanceof Date ? n.createdAt : convertTimestamp(n.createdAt);
         return createdAt >= filter.startDate!;
       });
     }
 
     if (filter.endDate) {
-      filtered = filtered.filter(n => {
+      filtered = filtered.filter((n) => {
         const createdAt = n.createdAt instanceof Date ? n.createdAt : convertTimestamp(n.createdAt);
         return createdAt <= filter.endDate!;
       });
@@ -185,22 +182,28 @@ export const useNotifications = (): UseNotificationsReturn => {
    * 읽지 않은 알림 개수
    */
   const unreadCount = useMemo(() => {
-    return notifications.filter(n => !n.isRead).length;
+    return notifications.filter((n) => !n.isRead).length;
   }, [notifications]);
 
   /**
    * 알림 통계
    */
   const stats = useMemo((): NotificationStats => {
-    const byCategory = notifications.reduce((acc, n) => {
-      acc[n.category] = (acc[n.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byCategory = notifications.reduce(
+      (acc, n) => {
+        acc[n.category] = (acc[n.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const byPriority = notifications.reduce((acc, n) => {
-      acc[n.priority] = (acc[n.priority] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byPriority = notifications.reduce(
+      (acc, n) => {
+        acc[n.priority] = (acc[n.priority] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       total: notifications.length,
@@ -213,23 +216,26 @@ export const useNotifications = (): UseNotificationsReturn => {
   /**
    * 알림 읽음 처리
    */
-  const markAsRead = useCallback(async (notificationId: string) => {
-    if (!currentUser) return;
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      if (!currentUser) return;
 
-    try {
-      const notificationRef = doc(db, 'notifications', notificationId);
-      await updateDoc(notificationRef, {
-        isRead: true,
-        readAt: Timestamp.now(),
-      });
+      try {
+        const notificationRef = doc(db, 'notifications', notificationId);
+        await updateDoc(notificationRef, {
+          isRead: true,
+          readAt: Timestamp.now(),
+        });
 
-      logger.info('알림 읽음 처리', { data: { notificationId } });
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      logger.error('알림 읽음 처리 실패', error, { data: { notificationId } });
-      showError('알림 읽음 처리에 실패했습니다.');
-    }
-  }, [currentUser, showError]);
+        logger.info('알림 읽음 처리', { data: { notificationId } });
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error('알림 읽음 처리 실패', error, { data: { notificationId } });
+        showError('알림 읽음 처리에 실패했습니다.');
+      }
+    },
+    [currentUser, showError]
+  );
 
   /**
    * 모든 알림 읽음 처리
@@ -265,7 +271,7 @@ export const useNotifications = (): UseNotificationsReturn => {
       await batch.commit();
 
       logger.info('모든 알림 읽음 처리', {
-        data: { count: snapshot.size }
+        data: { count: snapshot.size },
       });
       showSuccess(`${snapshot.size}개의 알림을 읽음 처리했습니다.`);
     } catch (err) {
@@ -278,21 +284,24 @@ export const useNotifications = (): UseNotificationsReturn => {
   /**
    * 알림 삭제
    */
-  const deleteNotification = useCallback(async (notificationId: string) => {
-    if (!currentUser) return;
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      if (!currentUser) return;
 
-    try {
-      const notificationRef = doc(db, 'notifications', notificationId);
-      await deleteDoc(notificationRef);
+      try {
+        const notificationRef = doc(db, 'notifications', notificationId);
+        await deleteDoc(notificationRef);
 
-      logger.info('알림 삭제', { data: { notificationId } });
-      showSuccess('알림이 삭제되었습니다.');
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      logger.error('알림 삭제 실패', error, { data: { notificationId } });
-      showError('알림 삭제에 실패했습니다.');
-    }
-  }, [currentUser, showSuccess, showError]);
+        logger.info('알림 삭제', { data: { notificationId } });
+        showSuccess('알림이 삭제되었습니다.');
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error('알림 삭제 실패', error, { data: { notificationId } });
+        showError('알림 삭제에 실패했습니다.');
+      }
+    },
+    [currentUser, showSuccess, showError]
+  );
 
   /**
    * 읽은 알림 모두 삭제
@@ -325,12 +334,48 @@ export const useNotifications = (): UseNotificationsReturn => {
       await batch.commit();
 
       logger.info('읽은 알림 모두 삭제', {
-        data: { count: snapshot.size }
+        data: { count: snapshot.size },
       });
       showSuccess(`${snapshot.size}개의 알림이 삭제되었습니다.`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error('읽은 알림 삭제 실패', error);
+      showError('알림 삭제에 실패했습니다.');
+    }
+  }, [currentUser, showSuccess, showError]);
+
+  /**
+   * 모든 알림 삭제
+   */
+  const deleteAll = useCallback(async () => {
+    if (!currentUser) return;
+
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(notificationsRef, where('userId', '==', currentUser.uid));
+
+    try {
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        showSuccess('삭제할 알림이 없습니다.');
+        return;
+      }
+
+      const batch = writeBatch(db);
+
+      snapshot.docs.forEach((docSnapshot) => {
+        batch.delete(docSnapshot.ref);
+      });
+
+      await batch.commit();
+
+      logger.info('모든 알림 삭제', {
+        data: { count: snapshot.size },
+      });
+      showSuccess(`${snapshot.size}개의 알림이 삭제되었습니다.`);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('모든 알림 삭제 실패', error);
       showError('알림 삭제에 실패했습니다.');
     }
   }, [currentUser, showSuccess, showError]);
@@ -350,6 +395,7 @@ export const useNotifications = (): UseNotificationsReturn => {
     markAllAsRead,
     deleteNotification,
     deleteAllRead,
+    deleteAll,
 
     // 필터
     filter,

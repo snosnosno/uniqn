@@ -139,10 +139,7 @@ export const trackPaymentPerformance = (step: 'checkout' | 'payment' | 'success'
  * @param fn API 호출 함수
  * @returns API 호출 결과
  */
-export const trackApiCall = async <T>(
-  apiName: string,
-  fn: () => Promise<T>
-): Promise<T> => {
+export const trackApiCall = async <T>(apiName: string, fn: () => Promise<T>): Promise<T> => {
   const timer = startTimer(`api.${apiName}`);
 
   try {
@@ -255,9 +252,10 @@ export const measureWebVitals = (): void => {
     // FID 측정 실패 (조용히 무시)
   }
 
-  // CLS (Cumulative Layout Shift)
+  // CLS (Cumulative Layout Shift) - 최종값만 기록
   try {
     let clsValue = 0;
+    let clsReported = false;
     const clsObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry: any) => {
@@ -265,16 +263,30 @@ export const measureWebVitals = (): void => {
           clsValue += entry.value;
         }
       });
-
-      recordMetric({
-        name: 'webvitals.CLS',
-        value: Math.round(clsValue * 1000) / 1000, // 소수점 3자리
-        unit: 'count',
-        timestamp: Date.now(),
-      });
     });
 
     clsObserver.observe({ type: 'layout-shift', buffered: true });
+
+    // 페이지 가시성 변경 또는 언로드 시점에 최종값 기록
+    const reportCLS = () => {
+      if (!clsReported) {
+        clsReported = true;
+        recordMetric({
+          name: 'webvitals.CLS',
+          value: Math.round(clsValue * 1000) / 1000,
+          unit: 'count',
+          timestamp: Date.now(),
+        });
+      }
+    };
+
+    // 페이지 숨김/언로드 시 CLS 기록
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        reportCLS();
+      }
+    });
+    window.addEventListener('pagehide', reportCLS);
   } catch (e) {
     // CLS 측정 실패 (조용히 무시)
   }
@@ -347,9 +359,8 @@ export const getMetricStats = (name: string) => {
   // 중앙값 계산
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  const median = sorted.length % 2 === 0
-    ? ((sorted[mid - 1] || 0) + (sorted[mid] || 0)) / 2
-    : (sorted[mid] || 0);
+  const median =
+    sorted.length % 2 === 0 ? ((sorted[mid - 1] || 0) + (sorted[mid] || 0)) / 2 : sorted[mid] || 0;
 
   return {
     name,
@@ -379,8 +390,9 @@ export const generatePerformanceReport = (): string => {
   const lines = [
     '=== 성능 메트릭 리포트 ===',
     '',
-    ...stats.map((s) =>
-      `${s!.name}: avg=${s!.avg}${s!.unit}, min=${s!.min}, max=${s!.max}, median=${s!.median}, count=${s!.count}`
+    ...stats.map(
+      (s) =>
+        `${s!.name}: avg=${s!.avg}${s!.unit}, min=${s!.min}, max=${s!.max}, median=${s!.median}, count=${s!.count}`
     ),
     '',
     `총 메트릭 수: ${metricsStore.length}`,
@@ -389,7 +401,7 @@ export const generatePerformanceReport = (): string => {
   return lines.join('\n');
 };
 
-export default {
+const performanceMetrics = {
   recordMetric,
   startTimer,
   trackPaymentPerformance,
@@ -402,3 +414,5 @@ export default {
   getMetricStats,
   generatePerformanceReport,
 };
+
+export default performanceMetrics;

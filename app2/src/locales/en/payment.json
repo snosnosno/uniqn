@@ -128,10 +128,7 @@
       "free": {
         "name": "Free",
         "price": "Free",
-        "features": [
-          "Basic chip recharge",
-          "Standard customer support"
-        ]
+        "features": ["Basic chip recharge", "Standard customer support"]
       },
       "premium": {
         "name": "Premium",

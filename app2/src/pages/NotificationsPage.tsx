@@ -32,6 +32,7 @@ const NotificationsPage: React.FC = () => {
     markAllAsRead,
     deleteNotification,
     deleteAllRead,
+    deleteAll,
   } = useNotifications();
 
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -45,14 +46,14 @@ const NotificationsPage: React.FC = () => {
 
     // 탭 필터링
     if (activeTab === 'unread') {
-      filtered = filtered.filter(n => !n.isRead);
+      filtered = filtered.filter((n) => !n.isRead);
     } else if (activeTab === 'read') {
-      filtered = filtered.filter(n => n.isRead);
+      filtered = filtered.filter((n) => n.isRead);
     }
 
     // 카테고리 필터링
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(n => n.category === selectedCategory);
+      filtered = filtered.filter((n) => n.category === selectedCategory);
     }
 
     return filtered;
@@ -78,13 +79,26 @@ const NotificationsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {t('notifications.title', '알림')}
             </h1>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-              >
-                {t('notifications.markAllAsRead', '모두 읽음')}
-              </button>
+            {stats.total > 0 && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={markAllAsRead}
+                  disabled={unreadCount === 0}
+                  className={`text-sm font-medium ${
+                    unreadCount > 0
+                      ? 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300'
+                      : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {t('notifications.markAllAsRead', '모두 읽음')}
+                </button>
+                <button
+                  onClick={deleteAll}
+                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+                >
+                  {t('notifications.deleteAll', '모두 삭제')}
+                </button>
+              </div>
             )}
           </div>
 
@@ -139,20 +153,22 @@ const NotificationsPage: React.FC = () => {
             >
               전체
             </button>
-            {(['system', 'work', 'schedule', 'finance'] as NotificationCategory[]).map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t(`notifications.categories.${category}`, category)}
-                {stats.byCategory[category] ? ` (${stats.byCategory[category]})` : ''}
-              </button>
-            ))}
+            {(['system', 'work', 'schedule', 'finance'] as NotificationCategory[]).map(
+              (category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    selectedCategory === category
+                      ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t(`notifications.categories.${category}`, category)}
+                  {stats.byCategory[category] ? ` (${stats.byCategory[category]})` : ''}
+                </button>
+              )
+            )}
           </div>
         </div>
 

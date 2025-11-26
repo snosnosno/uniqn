@@ -1282,6 +1282,7 @@
     "viewAll": "모두 보기",
     "notificationCenter": "알림센터",
     "deleteAllRead": "읽은 알림 모두 삭제",
+    "deleteAll": "모두 삭제",
     "filters": {
       "unread": "안읽음",
       "read": "읽음"
