@@ -1,39 +1,39 @@
-import { lazyWithRetry } from './lazyWithRetry';
+import { lazy } from 'react';
 
 // Admin 기능 그룹 - 하나의 청크로 묶음
 export const adminChunk = {
-  ApprovalPage: lazyWithRetry(() => import('../pages/admin/Approval')),
-  UserManagementPage: lazyWithRetry(() => import('../pages/admin/UserManagementPage')),
-  InquiryManagementPage: lazyWithRetry(() => import('../pages/admin/InquiryManagementPage')),
+  ApprovalPage: lazy(() => import('../pages/admin/Approval')),
+  UserManagementPage: lazy(() => import('../pages/admin/UserManagementPage')),
+  InquiryManagementPage: lazy(() => import('../pages/admin/InquiryManagementPage')),
 };
 
 // 직원 기능 그룹 - 하나의 청크로 묶음
 export const staffChunk = {
-  AttendancePage: lazyWithRetry(() => import('../pages/AttendancePage')),
-  AvailableTimesPage: lazyWithRetry(() => import('../pages/AvailableTimesPage')),
-  MySchedulePage: lazyWithRetry(() => import('../pages/MySchedulePage')),
+  AttendancePage: lazy(() => import('../pages/AttendancePage')),
+  AvailableTimesPage: lazy(() => import('../pages/AvailableTimesPage')),
+  MySchedulePage: lazy(() => import('../pages/MySchedulePage')),
 };
 
 // 구인/스태프 관리 그룹
 export const jobManagementChunk = {
-  JobBoardPage: lazyWithRetry(() => import('../pages/JobBoardPage')),
-  JobPostingAdminPage: lazyWithRetry(() => import('../pages/JobPostingAdminPage')),
-  JobPostingDetailPage: lazyWithRetry(() => import('../pages/JobPostingDetailPage')),
-  StaffNewPage: lazyWithRetry(() => import('../pages/StaffNewPage')),
+  JobBoardPage: lazy(() => import('../pages/JobBoardPage')),
+  JobPostingAdminPage: lazy(() => import('../pages/JobPostingAdminPage')),
+  JobPostingDetailPage: lazy(() => import('../pages/JobPostingDetailPage')),
+  StaffNewPage: lazy(() => import('../pages/StaffNewPage')),
 };
 
 // 토너먼트 운영 관리 그룹
 export const tournamentChunk = {
-  TournamentsPage: lazyWithRetry(() => import('../pages/TournamentsPage')),
-  ParticipantsPage: lazyWithRetry(() => import('../pages/ParticipantsPage')),
-  TablesPage: lazyWithRetry(() => import('../pages/TablesPage')),
-  PrizesPage: lazyWithRetry(() => import('../pages/PrizesPage')),
-  ShiftSchedulePage: lazyWithRetry(() => import('../pages/ShiftSchedulePage')),
+  TournamentsPage: lazy(() => import('../pages/TournamentsPage')),
+  ParticipantsPage: lazy(() => import('../pages/ParticipantsPage')),
+  TablesPage: lazy(() => import('../pages/TablesPage')),
+  PrizesPage: lazy(() => import('../pages/PrizesPage')),
+  ShiftSchedulePage: lazy(() => import('../pages/ShiftSchedulePage')),
 };
 
 // 기본 페이지 그룹
 export const coreChunk = {
-  LandingPage: lazyWithRetry(() => import('../pages/LandingPage')),
-  ProfilePage: lazyWithRetry(() => import('../pages/ProfilePage')),
-  SupportPage: lazyWithRetry(() => import('../pages/SupportPage')),
+  LandingPage: lazy(() => import('../pages/LandingPage')),
+  ProfilePage: lazy(() => import('../pages/ProfilePage')),
+  SupportPage: lazy(() => import('../pages/SupportPage')),
 };
