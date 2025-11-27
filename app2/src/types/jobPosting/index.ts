@@ -6,6 +6,9 @@ export * from './base';
 // 구인공고 관련 타입
 export * from './jobPosting';
 
+// Section Props 통합 (SSOT)
+export * from './props';
+
 // 유틸리티 클래스
 export * from './utils';
 

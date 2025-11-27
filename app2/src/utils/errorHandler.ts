@@ -49,6 +49,82 @@ import { logger } from './logger';
 import { toast } from './toast';
 import { handleFirebaseError as handleFirebaseErrorUtil, FirebaseError } from './firebaseErrors';
 
+// =============================================================================
+// Result 타입 정의 (Phase 5 에러 처리 표준화)
+// =============================================================================
+
+/**
+ * 성공 결과 타입
+ */
+export interface SuccessResult<T> {
+  success: true;
+  data: T;
+  error?: never;
+}
+
+/**
+ * 실패 결과 타입
+ */
+export interface ErrorResult {
+  success: false;
+  data?: never;
+  error: string;
+  originalError?: unknown;
+}
+
+/**
+ * Result 타입 - 성공 또는 실패를 명시적으로 나타냄
+ *
+ * @description
+ * 비동기 작업의 결과를 안전하게 처리하기 위한 타입입니다.
+ * null 대신 명시적인 성공/실패 구분을 제공합니다.
+ *
+ * @example
+ * ```typescript
+ * const result = await safeAsync(() => fetchData(), { component: 'MyComponent' });
+ *
+ * if (result.success) {
+ *   // result.data는 타입 안전하게 사용 가능
+ *   console.log(result.data);
+ * } else {
+ *   // result.error에서 에러 메시지 확인
+ *   console.error(result.error);
+ * }
+ * ```
+ */
+export type Result<T> = SuccessResult<T> | ErrorResult;
+
+/**
+ * 성공 결과 생성 헬퍼
+ */
+export const success = <T>(data: T): SuccessResult<T> => ({
+  success: true,
+  data,
+});
+
+/**
+ * 실패 결과 생성 헬퍼
+ */
+export const failure = (error: string, originalError?: unknown): ErrorResult => ({
+  success: false,
+  error,
+  originalError,
+});
+
+/**
+ * Result가 성공인지 확인하는 타입 가드
+ */
+export const isSuccess = <T>(result: Result<T>): result is SuccessResult<T> => {
+  return result.success === true;
+};
+
+/**
+ * Result가 실패인지 확인하는 타입 가드
+ */
+export const isFailure = <T>(result: Result<T>): result is ErrorResult => {
+  return result.success === false;
+};
+
 /**
  * unknown 타입의 에러에서 안전하게 메시지를 추출합니다.
  *
@@ -280,4 +356,130 @@ export const withRetry = async <T>(
   }
 
   return null;
+};
+
+// =============================================================================
+// safeAsync - Result 타입 기반 비동기 래퍼 (Phase 5)
+// =============================================================================
+
+/**
+ * 에러 컨텍스트 인터페이스
+ */
+export interface ErrorContext {
+  component: string;
+  action?: string;
+  userId?: string;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * 비동기 작업을 Result 타입으로 안전하게 래핑
+ *
+ * @description
+ * withErrorHandler와 달리 null 대신 명시적인 Result 타입을 반환합니다.
+ * 성공/실패를 타입 레벨에서 구분할 수 있습니다.
+ *
+ * @param asyncFn 실행할 비동기 함수
+ * @param context 에러 컨텍스트 정보
+ * @returns Result<T> - 성공 시 { success: true, data: T }, 실패 시 { success: false, error: string }
+ *
+ * @example
+ * ```typescript
+ * // 기본 사용
+ * const result = await safeAsync(
+ *   () => fetchUserData(userId),
+ *   { component: 'UserService', action: 'fetchUser' }
+ * );
+ *
+ * if (result.success) {
+ *   setUser(result.data);
+ * } else {
+ *   showError(result.error);
+ * }
+ *
+ * // 구조 분해 사용
+ * const { success, data, error } = await safeAsync(
+ *   () => saveData(payload),
+ *   { component: 'DataService' }
+ * );
+ * ```
+ */
+export const safeAsync = async <T>(
+  asyncFn: () => Promise<T>,
+  context: ErrorContext
+): Promise<Result<T>> => {
+  try {
+    const data = await asyncFn();
+    return success(data);
+  } catch (error) {
+    const errorMessage = extractErrorMessage(error);
+
+    // 로깅
+    logger.error(`[${context.component}] ${context.action || 'Error'}:`, toError(error), {
+      component: context.component,
+      operation: context.action,
+      userId: context.userId,
+    });
+
+    return failure(errorMessage, error);
+  }
+};
+
+/**
+ * safeAsync with 재시도 로직
+ *
+ * @param asyncFn 실행할 비동기 함수
+ * @param context 에러 컨텍스트
+ * @param options 재시도 옵션
+ * @returns Result<T>
+ *
+ * @example
+ * ```typescript
+ * const result = await safeAsyncWithRetry(
+ *   () => unstableApiCall(),
+ *   { component: 'ApiService' },
+ *   { maxRetries: 3, delay: 1000 }
+ * );
+ * ```
+ */
+export const safeAsyncWithRetry = async <T>(
+  asyncFn: () => Promise<T>,
+  context: ErrorContext,
+  options: { maxRetries?: number; delay?: number } = {}
+): Promise<Result<T>> => {
+  const { maxRetries = 3, delay = 1000 } = options;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const data = await asyncFn();
+      return success(data);
+    } catch (error) {
+      if (attempt === maxRetries) {
+        const errorMessage = extractErrorMessage(error);
+
+        logger.error(
+          `[${context.component}] ${context.action || 'Error'} (after ${attempt} attempts):`,
+          toError(error),
+          {
+            component: context.component,
+            operation: context.action,
+            userId: context.userId,
+          }
+        );
+
+        return failure(errorMessage, error);
+      }
+
+      logger.warn(`[${context.component}] Retry attempt ${attempt}/${maxRetries}`, {
+        component: context.component,
+        attempt,
+        maxRetries,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, delay * attempt));
+    }
+  }
+
+  // 이 코드에 도달하면 안 됨 (TypeScript 만족용)
+  return failure('최대 재시도 횟수를 초과했습니다.');
 };

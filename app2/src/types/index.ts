@@ -18,6 +18,25 @@
  * ```
  */
 
+// 시간 관련 타입 (SSOT)
+export type {
+  DateString,
+  TimeString,
+  DateTimeString,
+  StandardTimestamp,
+  OptionalTimestamp,
+  FlexibleTime,
+  DateRange,
+  TimeRange,
+  TimestampRange,
+  ScheduledTime,
+  ActualTime,
+  WorkTimeInfo,
+  TemporalMetadata,
+} from './temporal';
+
+export { isTimestamp, isValidDateString, isValidTimeString, extractTimeString } from './temporal';
+
 // 공통 타입 (기본 타입들)
 export type {
   FirebaseDocument,
