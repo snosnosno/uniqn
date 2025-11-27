@@ -1,8 +1,10 @@
 # 권한 시스템 전체 정리 (Permission System Overview)
 
-**T-HOLDEM 프로젝트 권한 관리 체계 문서**
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🚀 **Production Ready**
 
-마지막 업데이트: 2025-10-23
+T-HOLDEM 프로젝트 권한 관리 체계 문서
 
 ---
 

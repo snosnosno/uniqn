@@ -1,8 +1,8 @@
 # 📖 T-HOLDEM 사용자 매뉴얼
 
-**최종 업데이트**: 2025년 9월 20일
-**상태**: 🚀 **Production Ready 96% 완성**
-**버전**: v0.2.2 (Production Ready + 인증 고도화)
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🚀 **Production Ready**
 
 > [!SUCCESS]
 > **성과**: 실제 구현된 기능을 기반으로 작성된 사용자 매뉴얼입니다. UnifiedDataContext, Web Worker 급여 계산, Optimistic Updates, 국제화 지원 등 모든 고급 기능이 완전히 구현되어 사용 가능합니다.

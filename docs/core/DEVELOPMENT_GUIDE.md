@@ -1,7 +1,7 @@
 # T-HOLDEM 개발 가이드
 
-**최종 업데이트**: 2025년 9월 30일
-**프로젝트 버전**: v0.2.2 (Production Ready)
+**최종 업데이트**: 2025년 11월 27일
+**프로젝트 버전**: v0.2.4 (Production Ready)
 **대상**: T-HOLDEM 개발팀, Claude Code 사용자
 
 ---

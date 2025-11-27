@@ -1,8 +1,8 @@
 # Phase 3-3 Firestore Hook Library 마이그레이션 완료 보고서
 
+**문서 상태**: 📁 **Archived** (역사 기록용)
 **작성일**: 2025년 1월 23일
 **프로젝트**: UNIQN (T-HOLDEM)
-**버전**: v0.2.3
 **담당**: Claude Code AI Assistant
 
 ---
@@ -321,8 +321,8 @@ const { data: posts, loading, error } = useFirestoreQuery<Post>(postsQuery);
 - 타입 정의: `src/hooks/firestore/types.ts`
 
 ### 문서
-- [CLAUDE.md](../CLAUDE.md) - 프로젝트 개발 가이드
-- [CHANGELOG.md](../CHANGELOG.md) - 버전 히스토리
+- [CLAUDE.md](../../CLAUDE.md) - 프로젝트 개발 가이드
+- [CHANGELOG.md](../../CHANGELOG.md) - 버전 히스토리
 
 ### 커밋 히스토리
 - Phase 3-3 관련 커밋: 32개

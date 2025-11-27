@@ -1,8 +1,8 @@
 # 📊 T-HOLDEM 데이터 스키마 가이드
 
-**최종 업데이트**: 2025년 9월 20일
-**버전**: v0.2.2 (Production Ready + 인증 고도화)
-**상태**: 🚀 **Production Ready 96% 완성**
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🚀 **Production Ready 100% 완성**
 
 > [!SUCCESS]
 > **성과**: 실제 구현된 데이터 스키마를 기반으로 작성되었습니다. UnifiedDataContext 통합, 표준 필드명 완전 전환, Firebase 인덱스 최적화 완료.

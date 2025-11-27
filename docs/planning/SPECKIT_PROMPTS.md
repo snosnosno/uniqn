@@ -1,8 +1,9 @@
 # 📋 T-HOLDEM 프로젝트 개선 SpecKit 프롬프트 모음
 
-**작성일**: 2025-01-05
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🔄 **Phase 1-2 완료, Phase 3 진행 중**
 **대상 프로젝트**: T-HOLDEM (UNIQN)
-**목적**: 6개월 개선 로드맵 실행을 위한 SpecKit 워크플로우 프롬프트
 
 ---
 
@@ -1695,8 +1696,8 @@ npm run quality     # ✅ Lint, Format, TypeCheck 통과
 
 **참고 문서**:
 - [CRITICAL_ANALYSIS_V2.md](./CRITICAL_ANALYSIS_V2.md) - 초기 분석
-- [specs/001-zustand-migration/](../specs/001-zustand-migration/) - Phase 3-1 문서
-- [specs/002-phase3-integration/](../specs/002-phase3-integration/) - Phase 3-2 문서
+- [specs/001-zustand-migration/](../../specs/001-zustand-migration/) - Phase 3-1 문서
+- [specs/002-phase3-integration/](../../specs/002-phase3-integration/) - Phase 3-2 문서
 
 **최종 성과**:
 - ✅ TypeScript Strict Mode 100% (any 타입 67개 → 0개)

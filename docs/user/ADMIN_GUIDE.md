@@ -1,8 +1,8 @@
 # 👨‍💼 T-HOLDEM 관리자 가이드
 
-**최종 업데이트**: 2025년 9월 20일
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
 **상태**: 🚀 **Production Ready - 관리 시스템 완성**
-**버전**: v0.2.2 (Production Ready + 인증 고도화)
 
 > [!SUCCESS]
 > **성과**: 실제 운영 중인 Production 환경의 관리 기능을 반영합니다. UnifiedDataContext를 통한 실시간 데이터 관리, Web Worker 급여 계산, 고급 인증 시스템 등이 모두 구현되어 있습니다.

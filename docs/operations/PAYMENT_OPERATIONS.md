@@ -1,7 +1,8 @@
 # 💼 결제 시스템 운영 가이드
 
-**버전**: v1.0.0
-**작성일**: 2025-01-24
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🔧 **개발 중 (57% 완료)**
 **프로젝트**: UNIQN 결제 시스템
 
 ---
@@ -1064,10 +1065,10 @@ HAVING count > 3
 
 ### C. 관련 문서
 
-- [결제 시스템 개발 문서](../PAYMENT_SYSTEM_DEVELOPMENT.md)
+- [결제 시스템 개발 문서](../features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md)
 - [API 레퍼런스](../reference/API_REFERENCE.md)
 - [데이터 스키마](../reference/DATA_SCHEMA.md)
-- [보안 가이드](SECURITY.md)
+- [보안 가이드](./SECURITY.md)
 
 ---
 

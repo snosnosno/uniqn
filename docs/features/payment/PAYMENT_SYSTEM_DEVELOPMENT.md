@@ -1,9 +1,14 @@
 # 💳 T-HOLDEM 결제 시스템 개발 문서
 
-> **프로젝트**: T-HOLDEM 토스페이먼츠 결제 시스템
-> **버전**: 1.0.0
-> **작성일**: 2025-01-24
-> **완성도**: 57% (24/42 작업 완료)
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🔧 **개발 중 (57% 완료)**
+**프로젝트**: T-HOLDEM 토스페이먼츠 결제 시스템
+
+> ⚠️ **관련 문서**:
+> - 📊 **칩 정의 & 가격표**: [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md) (마스터 문서)
+> - 🔧 **구현 가이드**: [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](./CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md)
+> - 💰 **수익 분석**: [REVENUE_MODEL_ANALYSIS.md](./REVENUE_MODEL_ANALYSIS.md)
 
 ---
 
@@ -1258,7 +1263,7 @@ gcloud scheduler jobs run expireChips
 **증상**: SMS 미수신
 
 **원인**:
-- Twilio/AWS SNS 미연동 (TODO 상태)
+- Twilio/AWS SNS 미연동 ⚠️ **[PENDING]** 실제 SMS 서비스 연동 필요
 
 **해결**:
 ```typescript
@@ -1271,9 +1276,8 @@ console.log('개발 환경 인증 코드:', result.data.code);
 
 ## 📝 추가 문서
 
-- [PAYMENT_SYSTEM_CHECKLIST.md](../PAYMENT_SYSTEM_CHECKLIST.md) - 진행 상황
-- [API_REFERENCE.md](reference/API_REFERENCE.md) - API 명세서
-- [SECURITY.md](operations/SECURITY.md) - 보안 가이드
+- [API_REFERENCE.md](../../reference/API_REFERENCE.md) - API 명세서
+- [SECURITY.md](../../operations/SECURITY.md) - 보안 가이드
 
 ---
 

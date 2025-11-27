@@ -1,7 +1,7 @@
 # ⚡ T-HOLDEM 성능 최적화 가이드
 
-**최종 업데이트**: 2025년 9월 20일
-**버전**: v0.2.2 (Production Ready + 인증 고도화)
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
 **상태**: ✅ **완성 - Production Ready**
 
 > [!NOTE]

@@ -28,8 +28,8 @@
 - **프로젝트 ID**: tholdem-ebc18
 - **배포 URL**: https://tholdem-ebc18.web.app
 - **상태**: 🚀 **Production Ready (100% 완성)**
-- **버전**: 0.2.3
-- **핵심 기능**: 실시간 알림, 구인공고, 스태프 관리, 출석 추적, 급여 정산, 토너먼트 운영
+- **버전**: 0.2.4
+- **핵심 기능**: 실시간 알림, 구인공고(4타입), 스태프 관리, 출석 추적, 급여 정산, 토너먼트 운영
 
 ### 🗂️ 프로젝트 구조
 ```
@@ -278,9 +278,20 @@ const data: any = {};        // ❌ any 타입 금지
 - [ACCOUNT_MANAGEMENT_SYSTEM.md](docs/features/ACCOUNT_MANAGEMENT_SYSTEM.md) - 계정 관리
 - [PERMISSION_SYSTEM.md](docs/features/PERMISSION_SYSTEM.md) - 권한 시스템
 
+### 💳 결제/구인공고 시스템
+- [MODEL_B_CHIP_SYSTEM_FINAL.md](docs/features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 칩 시스템 설계
+- [PAYMENT_SYSTEM_DEVELOPMENT.md](docs/features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) - 결제 개발
+- [JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md](docs/features/jobposting/JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md) - 구인공고 명세
+
+### 📋 기획/분석
+- [REFACTORING_PLAN.md](docs/planning/REFACTORING_PLAN.md) - 리팩토링 계획
+- [CRITICAL_ANALYSIS_V2.md](docs/planning/CRITICAL_ANALYSIS_V2.md) - 프로젝트 분석
+
 ### 📖 운영 가이드
 - [DEPLOYMENT.md](docs/guides/DEPLOYMENT.md) - 배포
+- [ROLLBACK_PROCEDURES.md](docs/guides/ROLLBACK_PROCEDURES.md) - 롤백 절차 🆕
 - [MONITORING.md](docs/operations/MONITORING.md) - 모니터링
+- [NOTIFICATION_OPERATIONS.md](docs/operations/NOTIFICATION_OPERATIONS.md) - 알림 운영 🆕
 - [SECURITY.md](docs/operations/SECURITY.md) - 보안
 
 ### 📚 참조 문서
@@ -307,5 +318,6 @@ chore: 기타 변경
 
 ---
 
-*마지막 업데이트: 2025년 10월 30일*
-*프로젝트 버전: v0.2.3 (Production Ready - 실시간 알림 시스템 완성)*
+*마지막 업데이트: 2025년 11월 27일*
+*프로젝트 버전: v0.2.4 (Production Ready - 구인공고 4타입 완성)*
+*문서 총 46개 (13개 폴더)*

@@ -1,8 +1,8 @@
 # ☁️ API Reference (Firebase Functions)
 
-**Version**: v0.2.3
-**Status**: 🚀 Production Ready
-**Last Updated**: 2025-01-24
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🚀 **Production Ready**
 
 This document provides a reference for all Firebase Cloud Functions used in the T-HOLDEM project.
 
@@ -417,7 +417,7 @@ This document provides a reference for all Firebase Cloud Functions used in the 
     2. Fetches transaction data from Firestore
     3. Fetches user profile data
     4. Generates HTML receipt
-    5. Sends email (TODO: SendGrid/Nodemailer integration)
+    5. Sends email ⚠️ **[PENDING]** SendGrid/Nodemailer 미연동 (개발 환경에서는 콘솔 로그 출력)
     6. Records email sent in `users/{userId}/receipts/{orderId}`
 - **Error Codes**:
     - `unauthenticated`: User not logged in
@@ -442,7 +442,7 @@ This document provides a reference for all Firebase Cloud Functions used in the 
 ### `sendPhoneVerificationCode`
 
 - **Trigger**: HTTPS (onCall)
-- **Description**: Sends a 6-digit verification code to a phone number via SMS (TODO: Twilio/AWS SNS integration). Code expires after 5 minutes.
+- **Description**: Sends a 6-digit verification code to a phone number via SMS. Code expires after 5 minutes. ⚠️ **[PENDING]** Twilio/AWS SNS 미연동 (개발 환경에서는 코드 직접 반환)
 - **Parameters**:
     - `phoneNumber` (string): Phone number in format "010-1234-5678"
     - `userId` (string): User's UID
@@ -468,7 +468,7 @@ This document provides a reference for all Firebase Cloud Functions used in the 
     3. Enforces 1-minute cooldown
     4. Generates 6-digit code
     5. Creates verification record with 5-minute expiry
-    6. Sends SMS (TODO: actual SMS service integration)
+    6. Sends SMS ⚠️ **[PENDING]** 실제 SMS 서비스 연동 필요
     7. In development, returns code in response
 - **Error Codes**:
     - `unauthenticated`: User not logged in

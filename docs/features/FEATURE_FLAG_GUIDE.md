@@ -1,10 +1,10 @@
 # Feature Flag 시스템 가이드
 
-**T-HOLDEM 프로젝트의 기능 플래그 관리 시스템**
+**최종 업데이트**: 2025년 11월 27일
+**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**상태**: 🚀 **Production Ready**
 
-> 작성일: 2025-01-23
-> 버전: 1.0.0
-> 상태: ✅ Production Ready
+T-HOLDEM 프로젝트의 기능 플래그 관리 시스템
 
 ---
 
