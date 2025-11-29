@@ -23,7 +23,7 @@ interface NotificationTypeConfig {
   color: string;
   defaultPriority: NotificationPriority;
   category: NotificationCategory;
-  route: (relatedId?: string, data?: Record<string, any>) => string;
+  route: (relatedId?: string, data?: Record<string, unknown>) => string;
 }
 
 /**
@@ -137,7 +137,7 @@ export const getNotificationTypeConfig = (type: NotificationType): NotificationT
 export const getNotificationRoute = (
   type: NotificationType,
   relatedId?: string,
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 ): string => {
   const config = getNotificationTypeConfig(type);
   return config.route(relatedId, data);

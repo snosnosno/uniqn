@@ -11,6 +11,7 @@ import {
   // PayrollCalculationMessage, // 현재 사용하지 않음
   PayrollCalculationResult,
   PayrollCalculationError,
+  StaffAllowanceData,
 } from '../workers/payrollCalculator.worker';
 import { EnhancedPayrollCalculation, PayrollSummary } from '../types/payroll';
 import { UnifiedWorkLog } from '../types/unified/workLog';
@@ -41,7 +42,7 @@ interface PayrollCalculationParams {
   startDate: string;
   endDate: string;
   roleSalaryOverrides?: Record<string, { salaryType: string; salaryAmount: number }>;
-  staffAllowanceOverrides?: Record<string, any>;
+  staffAllowanceOverrides?: Record<string, StaffAllowanceData>;
 }
 
 export const usePayrollWorker = () => {
@@ -342,6 +343,7 @@ export const usePayrollWorker = () => {
         }
 
         // EnhancedPayrollCalculation 객체 생성 - phone이 있을 때만 포함
+        const validSalaryType = salaryType as 'hourly' | 'daily' | 'monthly' | 'other';
         const payrollCalculation: EnhancedPayrollCalculation = {
           staffId: data.staffId,
           staffName: data.staffName,
@@ -350,7 +352,7 @@ export const usePayrollWorker = () => {
           workLogs: data.workLogs,
           totalHours: Math.round(totalHours * 100) / 100,
           totalDays,
-          salaryType: salaryType as any,
+          salaryType: validSalaryType,
           baseSalary: salaryAmount,
           allowances,
           basePay,

@@ -12,6 +12,38 @@ import { ConfirmedStaff } from '../types/jobPosting/base';
 import { JobPosting } from '../types/jobPosting';
 import { toISODateString } from '../utils/dateUtils';
 
+// Firebase Timestamp 호환 인터페이스 (Web Worker 환경용)
+interface FirebaseTimestampLike {
+  seconds: number;
+  nanoseconds: number;
+  toDate?: () => Date;
+}
+
+// 스태프 식별자 추출용 인터페이스
+interface StaffIdentifiable {
+  userId?: string;
+  staffId?: string;
+}
+
+// 급여 타입
+type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
+
+// 수당 데이터 인터페이스
+export interface StaffAllowanceData {
+  meal: number;
+  transportation: number;
+  accommodation: number;
+  bonus: number;
+  other: number;
+  dailyRates?: {
+    meal?: number;
+    transportation?: number;
+    accommodation?: number;
+  };
+  workDays?: number;
+  isManualEdit?: boolean;
+}
+
 // Web Worker 메시지 타입 정의
 export interface PayrollCalculationMessage {
   type: 'CALCULATE_PAYROLL';
@@ -22,7 +54,7 @@ export interface PayrollCalculationMessage {
     startDate: string;
     endDate: string;
     roleSalaryOverrides?: Record<string, { salaryType: string; salaryAmount: number }>;
-    staffAllowanceOverrides?: Record<string, any>;
+    staffAllowanceOverrides?: Record<string, StaffAllowanceData>;
   };
 }
 
@@ -57,11 +89,11 @@ const DEFAULT_HOURLY_RATES: { [role: string]: number } = {
 };
 
 // 유틸리티 함수들 (외부 의존성 제거)
-const getStaffIdentifier = (staff: any): string => {
+const getStaffIdentifier = (staff: StaffIdentifiable): string => {
   return staff.userId || staff.staffId || '';
 };
 
-const matchStaffIdentifier = (log: any, identifiers: string[]): boolean => {
+const matchStaffIdentifier = (log: StaffIdentifiable, identifiers: string[]): boolean => {
   const logId = getStaffIdentifier(log);
   return identifiers.includes(logId);
 };
@@ -115,10 +147,14 @@ const calculateWorkHours = (log: UnifiedWorkLog): number => {
     if (startTime) {
       if (typeof startTime === 'object' && 'toDate' in startTime) {
         // Firebase Timestamp 객체 (toDate 메서드 있음)
-        startDate = (startTime as any).toDate();
+        const timestampWithMethod = startTime as FirebaseTimestampLike;
+        if (timestampWithMethod.toDate) {
+          startDate = timestampWithMethod.toDate();
+        }
       } else if (typeof startTime === 'object' && 'seconds' in startTime) {
         // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
-        startDate = new Date((startTime as any).seconds * 1000);
+        const timestampPlain = startTime as FirebaseTimestampLike;
+        startDate = new Date(timestampPlain.seconds * 1000);
       } else if (typeof startTime === 'string') {
         // 문자열 형태 시간
         startDate = new Date(startTime);
@@ -129,10 +165,14 @@ const calculateWorkHours = (log: UnifiedWorkLog): number => {
     if (endTime) {
       if (typeof endTime === 'object' && 'toDate' in endTime) {
         // Firebase Timestamp 객체 (toDate 메서드 있음)
-        endDate = (endTime as any).toDate();
+        const timestampWithMethod = endTime as FirebaseTimestampLike;
+        if (timestampWithMethod.toDate) {
+          endDate = timestampWithMethod.toDate();
+        }
       } else if (typeof endTime === 'object' && 'seconds' in endTime) {
         // Firebase Timestamp 플레인 객체 ({ seconds, nanoseconds })
-        endDate = new Date((endTime as any).seconds * 1000);
+        const timestampPlain = endTime as FirebaseTimestampLike;
+        endDate = new Date(timestampPlain.seconds * 1000);
       } else if (typeof endTime === 'string') {
         // 문자열 형태 시간
         endDate = new Date(endTime);
@@ -179,11 +219,13 @@ const calculatePayroll = async (
   });
 
   // 역할별 급여 정보 가져오기
-  const getSalaryInfo = (role: string) => {
+  const getSalaryInfo = (role: string): { salaryType: SalaryType; salaryAmount: number } => {
     const override = roleSalaryOverrides[role];
     if (override) {
+      const overrideSalaryType =
+        override.salaryType === 'negotiable' ? 'other' : (override.salaryType as SalaryType);
       return {
-        salaryType: override.salaryType,
+        salaryType: overrideSalaryType,
         salaryAmount: override.salaryAmount,
       };
     }
@@ -191,15 +233,18 @@ const calculatePayroll = async (
     if (jobPosting?.useRoleSalary && jobPosting.roleSalaries?.[role]) {
       const roleSalary = jobPosting.roleSalaries[role];
       if (roleSalary) {
+        const roleSalaryType =
+          roleSalary.salaryType === 'negotiable' ? 'other' : (roleSalary.salaryType as SalaryType);
         return {
-          salaryType: roleSalary.salaryType === 'negotiable' ? 'other' : roleSalary.salaryType,
+          salaryType: roleSalaryType,
           salaryAmount: parseFloat(roleSalary.salaryAmount) || 0,
         };
       }
     }
 
     const baseSalaryType = jobPosting?.salaryType || 'hourly';
-    const salaryType = baseSalaryType === 'negotiable' ? 'other' : baseSalaryType;
+    const salaryType: SalaryType =
+      baseSalaryType === 'negotiable' ? 'other' : (baseSalaryType as SalaryType);
     const salaryAmount = jobPosting?.salaryAmount
       ? parseFloat(jobPosting.salaryAmount)
       : DEFAULT_HOURLY_RATES[role] || DEFAULT_HOURLY_RATES['default'] || 15000;
@@ -313,10 +358,11 @@ const calculatePayroll = async (
           );
 
           if (!finalScheduledStart && scheduledStartTime) {
-            finalScheduledStart = scheduledStartTime as any;
+            // Worker 환경에서 Timestamp 객체 대신 plain object 사용
+            finalScheduledStart = scheduledStartTime as unknown as typeof log.scheduledStartTime;
           }
           if (!finalScheduledEnd && scheduledEndTime) {
-            finalScheduledEnd = scheduledEndTime as any;
+            finalScheduledEnd = scheduledEndTime as unknown as typeof log.scheduledEndTime;
           }
         }
       }
@@ -345,22 +391,22 @@ const calculatePayroll = async (
       );
 
       if (scheduledStartTime && scheduledEndTime) {
-        const virtualLog = {
+        const virtualLog: UnifiedWorkLog & { displayKey: string } = {
           id: `virtual_${staff.userId}_${virtualDate}`,
           staffId: staff.userId,
           staffName: staff.name,
           eventId: '',
           date: virtualDate,
           role: staff.role,
-          scheduledStartTime: scheduledStartTime as any,
-          scheduledEndTime: scheduledEndTime as any,
+          // Worker 환경에서 Timestamp 객체 대신 plain object 사용 (unknown 경유로 타입 변환)
+          scheduledStartTime: scheduledStartTime as unknown as UnifiedWorkLog['scheduledStartTime'],
+          scheduledEndTime: scheduledEndTime as unknown as UnifiedWorkLog['scheduledEndTime'],
           actualStartTime: null,
           actualEndTime: null,
           status: 'not_started' as const,
-          isVirtual: true,
           assignedTime: timeSlot,
           displayKey: `${staff.userId}_${staff.role}`,
-        } as UnifiedWorkLog & { displayKey: string };
+        };
 
         roleBasedWorkLogs.push(virtualLog);
         processedStaffRoles.add(staffRoleKey);
@@ -380,8 +426,8 @@ const calculatePayroll = async (
   >();
 
   for (const log of roleBasedWorkLogs) {
-    const role = (log as any).role;
-    const staffName = (log as any).staffName || '';
+    const role = log.role;
+    const staffName = log.staffName || '';
 
     if (!role) continue;
 
@@ -454,7 +500,7 @@ const calculatePayroll = async (
       workLogs: data.workLogs,
       totalHours: Math.round(totalHours * 100) / 100,
       totalDays,
-      salaryType: salaryType as any,
+      salaryType,
       baseSalary: salaryAmount,
       allowances,
       basePay,

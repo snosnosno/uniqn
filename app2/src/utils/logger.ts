@@ -105,14 +105,14 @@ export interface LogContext {
   event_category?: string | undefined;
   event_label?: string | undefined;
   event_value?: number | undefined;
-  custom_parameters?: Record<string, any> | undefined;
+  custom_parameters?: Record<string, unknown> | undefined;
   page_url?: string;
   user_agent?: string;
 
   // Conversion 관련 필드
   conversion_type?: string;
   conversion_value?: number | undefined;
-  conversion_context?: Record<string, any>;
+  conversion_context?: Record<string, unknown>;
 
   // 테스트 관련 필드
   userCount?: number;
@@ -349,8 +349,10 @@ class StructuredLogger {
             operation: operationName,
           });
           return retryResult;
-        } catch (retryError: any) {
-          this.critical(`Operation recovery failed: ${operationName}`, retryError, {
+        } catch (retryError: unknown) {
+          const retryErrorInstance =
+            retryError instanceof Error ? retryError : new Error(String(retryError));
+          this.critical(`Operation recovery failed: ${operationName}`, retryErrorInstance, {
             ...context,
             operation: operationName,
           });
