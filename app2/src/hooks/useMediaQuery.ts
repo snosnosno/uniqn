@@ -62,5 +62,3 @@ export const useBreakpoint = () => {
     isTabletOrDesktop: isTablet || isDesktop,
   };
 };
-
-export default useMediaQuery;

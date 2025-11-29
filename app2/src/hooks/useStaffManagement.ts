@@ -80,7 +80,7 @@ interface UseStaffManagementReturn {
 
   // 상태
   loading: boolean;
-  error: string | null;
+  error: Error | null;
 
   // 필터 상태
   filters: StaffFilters;
@@ -108,15 +108,15 @@ export const useStaffManagement = (
 ): UseStaffManagementReturn => {
   const { eventId, enableFiltering = true } = options;
 
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess: _showSuccess, showError: _showError } = useToast();
   const { staff: _staff, workLogs, workLogsLoading } = useJobPostingContext();
 
   // 기본 상태
   const [staffData, setStaffData] = useState<StaffData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // workLogs 상태 추가
   const [workLogsData, setWorkLogsData] = useState<UnifiedWorkLog[]>([]);
@@ -267,20 +267,17 @@ export const useStaffManagement = (
   }, []);
 
   // 🚫 메모이제이션된 스태프 삭제 비활성화 - WorkLog 통합
-  const deleteStaff = useCallback(
-    async (staffId: string): Promise<void> => {
-      logger.info('deleteStaff 호출됨 (비활성화됨 - WorkLog 통합)', {
-        component: 'useStaffManagement',
-        data: { staffId },
-      });
+  const deleteStaff = useCallback(async (staffId: string): Promise<void> => {
+    logger.info('deleteStaff 호출됨 (비활성화됨 - WorkLog 통합)', {
+      component: 'useStaffManagement',
+      data: { staffId },
+    });
 
-      // 🚫 실제 삭제 로직 비활성화
-      // WorkLog 기반 시스템에서는 StaffManagementTab에서 처리됩니다.
+    // 🚫 실제 삭제 로직 비활성화
+    // WorkLog 기반 시스템에서는 StaffManagementTab에서 처리됩니다.
 
-      return Promise.resolve(); // 빈 Promise 반환
-    },
-    [t, showSuccess, showError]
-  );
+    return Promise.resolve(); // 빈 Promise 반환
+  }, []);
 
   // 메모이제이션된 필터링된 스태프 데이터
   const filteredStaffData = useMemo(() => {

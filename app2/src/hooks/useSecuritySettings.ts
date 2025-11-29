@@ -121,19 +121,22 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
       };
 
       const settingsRef = doc(db, settingsPath);
-      setDoc(settingsRef, defaultSettings)
-        .then(() => {
+
+      // 비동기 작업을 즉시 실행 함수로 처리
+      (async () => {
+        try {
+          await setDoc(settingsRef, defaultSettings);
           logger.info('기본 로그인 알림 설정 생성', {
             component: 'useSecuritySettings',
             data: { userId: currentUser.uid },
           });
-        })
-        .catch((err) => {
+        } catch (err) {
           logger.error('기본 설정 생성 실패', err as Error, {
             component: 'useSecuritySettings',
             data: { userId: currentUser.uid },
           });
-        });
+        }
+      })();
 
       return defaultSettings;
     }

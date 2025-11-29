@@ -24,7 +24,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
   processing,
 }) => {
   const [rejectionReason, setRejectionReason] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +33,11 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
     // 거부 시 사유 검증
     if (mode === 'reject') {
       if (!rejectionReason.trim()) {
-        setError('거부 사유를 입력해주세요');
+        setError(new Error('거부 사유를 입력해주세요'));
         return;
       }
       if (rejectionReason.trim().length < 10) {
-        setError('거부 사유는 최소 10자 이상이어야 합니다');
+        setError(new Error('거부 사유는 최소 10자 이상이어야 합니다'));
         return;
       }
     }
@@ -47,8 +47,9 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
       await onConfirm(postingId, mode === 'reject' ? rejectionReason.trim() : undefined);
       logger.info('승인/거부 처리 완료');
     } catch (err) {
-      logger.error('승인/거부 처리 실패', err instanceof Error ? err : new Error(String(err)));
-      setError('처리 중 오류가 발생했습니다');
+      const error = err instanceof Error ? err : new Error('처리 중 오류가 발생했습니다');
+      logger.error('승인/거부 처리 실패', error);
+      setError(error);
     }
   };
 
@@ -124,7 +125,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
             {/* 에러 메시지 */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+                <p className="text-sm text-red-800 dark:text-red-300">{error.message}</p>
               </div>
             )}
 

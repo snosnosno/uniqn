@@ -118,7 +118,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
             />
           </svg>
           <p className="text-lg font-semibold">QR 코드 생성 실패</p>
-          <p className="text-sm mt-2">{error}</p>
+          <p className="text-sm mt-2">{error?.message}</p>
         </div>
         <button
           onClick={handleRefresh}

@@ -362,8 +362,6 @@ export function useStaffActions({
             });
 
             // workLogs, attendanceRecords 삭제
-            const deletionPromises = [];
-
             // WorkLog 삭제 (scheduled/not_started만)
             const workLogQuery = query(
               collection(db, 'workLogs'),
@@ -372,11 +370,8 @@ export function useStaffActions({
               where('date', '==', date),
               where('status', 'in', ['scheduled', 'not_started'])
             );
-            deletionPromises.push(
-              getDocs(workLogQuery).then((snapshot) => {
-                return Promise.all(snapshot.docs.map((doc) => deleteDoc(doc.ref)));
-              })
-            );
+            const workLogSnapshot = await getDocs(workLogQuery);
+            await Promise.all(workLogSnapshot.docs.map((doc) => deleteDoc(doc.ref)));
 
             // AttendanceRecord 삭제 (not_started만)
             const attendanceQuery = query(
@@ -386,13 +381,8 @@ export function useStaffActions({
               where('date', '==', date),
               where('status', '==', 'not_started')
             );
-            deletionPromises.push(
-              getDocs(attendanceQuery).then((snapshot) => {
-                return Promise.all(snapshot.docs.map((doc) => deleteDoc(doc.ref)));
-              })
-            );
-
-            await Promise.all(deletionPromises);
+            const attendanceSnapshot = await getDocs(attendanceQuery);
+            await Promise.all(attendanceSnapshot.docs.map((doc) => deleteDoc(doc.ref)));
 
             logger.info(`일괄 삭제 성공: ${staffName} (${staffId})`, {
               component: 'useStaffActions',

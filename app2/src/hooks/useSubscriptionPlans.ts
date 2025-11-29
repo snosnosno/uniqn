@@ -15,7 +15,7 @@ import type { SubscriptionPlan } from '../types/payment/subscription';
 export const useSubscriptionPlans = () => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -61,11 +61,12 @@ export const useSubscriptionPlans = () => {
           }
         },
         (err) => {
-          const errorMessage = err.message || '구독 플랜 조회 중 오류가 발생했습니다';
-          logger.error('구독 플랜 조회 실패', err, {
+          const error =
+            err instanceof Error ? err : new Error('구독 플랜 조회 중 오류가 발생했습니다');
+          logger.error('구독 플랜 조회 실패', error, {
             operation: 'useSubscriptionPlans',
           });
-          setError(errorMessage);
+          setError(error);
           setIsLoading(false);
         }
       );
@@ -74,12 +75,11 @@ export const useSubscriptionPlans = () => {
         unsubscribe();
       };
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '구독 플랜 조회 중 오류가 발생했습니다';
-      logger.error('구독 플랜 조회 초기화 실패', err instanceof Error ? err : undefined, {
+      const error = err instanceof Error ? err : new Error('구독 플랜 조회 중 오류가 발생했습니다');
+      logger.error('구독 플랜 조회 초기화 실패', error, {
         operation: 'useSubscriptionPlans',
       });
-      setError(errorMessage);
+      setError(error);
       setIsLoading(false);
       return undefined;
     }

@@ -512,5 +512,3 @@ export const usePayrollWorker = () => {
         : 0,
   };
 };
-
-export default usePayrollWorker;

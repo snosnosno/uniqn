@@ -78,7 +78,7 @@ export type { UseJobPostingAnnouncementReturn } from './useJobPostingAnnouncemen
 // =============================================================================
 
 /** 스케줄 데이터 Hook (메인) */
-export { default as useScheduleData } from './useScheduleData';
+export { useScheduleData } from './useScheduleData';
 
 /** 통합 WorkLog Hook */
 export {
@@ -91,7 +91,6 @@ export {
 /** 교대 스케줄 Hook */
 export { useShiftSchedule, generateTimeSlots } from './useShiftSchedule';
 export type { ShiftSchedule, ShiftDealer, WorkLog } from './useShiftSchedule';
-export { default as useShiftScheduleDefault } from './useShiftSchedule';
 
 // =============================================================================
 // Staff Hooks
@@ -139,7 +138,6 @@ export { useStaffModals } from './staff/useStaffModals';
 /** 테이블 관리 Hook (메인) */
 export { useTables } from './useTables';
 export type { Table, BalancingResult, UseTablesReturn } from './useTables';
-export { default as useTablesDefault } from './useTables';
 
 /** 테이블 구독 Hook */
 export { useTableSubscription } from './tables/useTableSubscription';
@@ -177,7 +175,6 @@ export { useParticipants } from './useParticipants';
 /** 설정 Hook */
 export { useSettings } from './useSettings';
 export type { TournamentSettings } from './useSettings';
-export { default as useSettingsDefault } from './useSettings';
 
 // =============================================================================
 // Data & State Hooks
@@ -256,7 +253,6 @@ export {
 
 /** 보안 Hook */
 export { useSecurity, useFrameBuster, useSecureStorage } from './useSecurity';
-export { default as useSecurityDefault } from './useSecurity';
 
 /** 보안 설정 Hook */
 export { useSecuritySettings } from './useSecuritySettings';
@@ -280,7 +276,6 @@ export { useInfiniteScroll } from './useInfiniteScroll';
 
 /** 미디어 쿼리 Hook */
 export { useMediaQuery, useBreakpoint } from './useMediaQuery';
-export { default as useMediaQueryDefault } from './useMediaQuery';
 
 /** 반응형 Hook */
 export {
@@ -312,7 +307,6 @@ export type { UseSystemAnnouncementsReturn } from './useSystemAnnouncements';
 
 /** 개발 도구 Hook */
 export { useDevTools } from './useDevTools';
-export { default as useDevToolsDefault } from './useDevTools';
 
 /** 템플릿 관리자 Hook */
 export { useTemplateManager } from './useTemplateManager';

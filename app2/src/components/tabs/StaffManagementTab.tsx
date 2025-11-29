@@ -11,7 +11,7 @@ import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
-import useUnifiedData from '../../hooks/useUnifiedData';
+import { useUnifiedData } from '../../hooks/useUnifiedData';
 import type { WorkLog } from '../../types/unifiedData';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';

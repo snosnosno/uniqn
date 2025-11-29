@@ -28,14 +28,14 @@ export const usePaymentHistory = (
 ) => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const isInitializedRef = useRef(false);
 
   // options를 ref로 저장하여 안정적인 참조 유지
   const optionsRef = useRef(options);
   useEffect(() => {
     optionsRef.current = options;
-  }, [options?.status, options?.startDate, options?.endDate]);
+  }, [options]);
 
   useEffect(() => {
     if (!userId) {
@@ -109,12 +109,13 @@ export const usePaymentHistory = (
           }
         },
         (err) => {
-          const errorMessage = err.message || '결제 내역 조회 중 오류가 발생했습니다';
-          logger.error('결제 내역 조회 실패', err, {
+          const error =
+            err instanceof Error ? err : new Error('결제 내역 조회 중 오류가 발생했습니다');
+          logger.error('결제 내역 조회 실패', error, {
             operation: 'usePaymentHistory',
             additionalData: { userId },
           });
-          setError(errorMessage);
+          setError(error);
           setIsLoading(false);
         }
       );
@@ -123,12 +124,11 @@ export const usePaymentHistory = (
         unsubscribe();
       };
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '결제 내역 조회 중 오류가 발생했습니다';
-      logger.error('결제 내역 조회 초기화 실패', err instanceof Error ? err : undefined, {
+      const error = err instanceof Error ? err : new Error('결제 내역 조회 중 오류가 발생했습니다');
+      logger.error('결제 내역 조회 초기화 실패', error, {
         operation: 'usePaymentHistory',
       });
-      setError(errorMessage);
+      setError(error);
       setIsLoading(false);
       return undefined;
     }

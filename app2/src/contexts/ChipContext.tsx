@@ -11,7 +11,7 @@ import type { ChipBalance } from '../types/payment/chip';
 interface ChipContextType {
   chipBalance: ChipBalance | null;
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
   refreshBalance: () => Promise<void>;
 }
 
@@ -33,7 +33,7 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [chipBalance, setChipBalance] = useState<ChipBalance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   /**
    * 칩 잔액 새로고침
@@ -50,11 +50,11 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // onSnapshot이 자동으로 업데이트를 감지하므로 별도 로직 불필요
       // 필요시 강제 재조회 로직 추가 가능
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
-      logger.error('칩 잔액 새로고침 실패', err instanceof Error ? err : undefined, {
+      const error = err instanceof Error ? err : new Error('알 수 없는 오류');
+      logger.error('칩 잔액 새로고침 실패', error, {
         operation: 'refreshBalance',
       });
-      setError(errorMessage);
+      setError(error);
     } finally {
       setIsLoading(false);
     }
@@ -122,12 +122,12 @@ export const ChipProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
       },
       (err) => {
-        const errorMessage = err.message || '칩 잔액 조회 중 오류가 발생했습니다';
-        logger.error('칩 잔액 구독 실패', err, {
+        const error = err instanceof Error ? err : new Error('칩 잔액 조회 중 오류가 발생했습니다');
+        logger.error('칩 잔액 구독 실패', error, {
           operation: 'chipBalance',
           additionalData: { userId: currentUser.uid },
         });
-        setError(errorMessage);
+        setError(error);
         setIsLoading(false);
       }
     );

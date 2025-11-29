@@ -117,16 +117,18 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
       const defaultSettings = getDefaultSettings(currentUser.uid);
       const settingsRef = doc(db, settingsPath);
 
-      setDoc(settingsRef, {
-        ...defaultSettings,
-        updatedAt: serverTimestamp(),
-      })
-        .then(() => {
+      // 비동기 작업을 즉시 실행 함수로 처리
+      (async () => {
+        try {
+          await setDoc(settingsRef, {
+            ...defaultSettings,
+            updatedAt: serverTimestamp(),
+          });
           logger.info('알림 설정 없음, 기본 설정 생성', { userId: currentUser.uid });
-        })
-        .catch((err) => {
+        } catch (err) {
           logger.error('알림 설정 기본값 생성 실패', err as Error);
-        });
+        }
+      })();
 
       return defaultSettings;
     }

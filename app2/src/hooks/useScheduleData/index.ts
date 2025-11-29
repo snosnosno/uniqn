@@ -356,7 +356,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
       );
 
       // 수당 계산
-      const allowancesResult = calculateAllowances(effectiveJobPosting, 1, event.snapshotData);
+      const _allowancesResult = calculateAllowances(effectiveJobPosting, 1, event.snapshotData);
 
       // 세금 계산
       const taxSettings = event.snapshotData?.taxSettings || jobPosting?.taxSettings;
@@ -536,4 +536,4 @@ const useScheduleData = (): UseScheduleDataReturn => {
   };
 };
 
-export default useScheduleData;
+export { useScheduleData };

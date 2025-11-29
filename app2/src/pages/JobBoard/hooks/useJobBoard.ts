@@ -10,7 +10,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import useUnifiedData from '@/hooks/useUnifiedData';
+import { useUnifiedData } from '@/hooks/useUnifiedData';
 // { useJobPostingData } - 향후 사용 예정
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
@@ -433,7 +433,7 @@ export const useJobBoard = () => {
       // Firebase 저장 성공
 
       // 즉시 캐시 업데이트를 위한 Application 객체 생성
-      const newApplication = {
+      const _newApplication = {
         id: docRef.id,
         ...applicationData,
         createdAt: new Date() as any, // Timestamp 대신 Date 사용

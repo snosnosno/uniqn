@@ -24,7 +24,7 @@ import { useUnifiedData } from '../hooks/useUnifiedData';
 import { WorkLog } from '../types/unifiedData';
 // import { db } from '../firebase'; // 향후 사용 예정
 import { useShiftSchedule, ShiftDealer } from '../hooks/useShiftSchedule';
-import useTables from '../hooks/useTables';
+import { useTables } from '../hooks/useTables';
 import { useToast } from '../hooks/useToast';
 import { useTournament } from '../contexts/TournamentContext';
 

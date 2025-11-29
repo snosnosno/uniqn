@@ -102,7 +102,7 @@ const PaymentHistoryPage: React.FC = () => {
           <p className="text-red-600 dark:text-red-400 mb-4">
             {t('paymentHistory.error.loadFailed')}
           </p>
-          <p className="text-gray-500 dark:text-gray-400">{error}</p>
+          <p className="text-gray-500 dark:text-gray-400">{error?.message}</p>
         </div>
       </div>
     );

@@ -69,5 +69,3 @@ export const useSettings = (userId: string | null, tournamentId: string | null) 
 
   return { settings, loading, error, updateSettings };
 };
-
-export default useSettings;

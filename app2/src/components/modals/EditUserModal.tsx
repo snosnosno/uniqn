@@ -77,7 +77,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
     bankAccount: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // 🎯 FormUtils 사용 (Phase 3-2 Integration)
   const { handleChange, handleSelectChange } = createFormHandler(setFormData);
@@ -111,11 +111,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
       await callFunctionLazy('updateUser', { uid: user.id, ...formData });
       toast.success(t('editUserModal.updateSuccess'));
       onClose();
-    } catch (err: any) {
-      logger.error('Error updating user:', err instanceof Error ? err : new Error(String(err)), {
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(t('editUserModal.updateError'));
+      logger.error('Error updating user:', error, {
         component: 'EditUserModal',
       });
-      setError(err.message || t('editUserModal.updateError'));
+      setError(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -334,7 +335,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ isOpen, onClose, user }) 
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error.message}</p>}
       </form>
     </Modal>
   );

@@ -308,5 +308,3 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
     addParticipantAndAssignToSeat,
   };
 };
-
-export default useParticipants;

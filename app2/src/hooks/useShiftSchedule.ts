@@ -451,5 +451,3 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
     checkWorkLogsExist,
   };
 };
-
-export default useShiftSchedule;

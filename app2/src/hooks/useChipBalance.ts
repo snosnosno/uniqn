@@ -24,7 +24,7 @@ export const useChipBalance = () => {
   const [chipBalance, setChipBalance] = useState<ChipBalance | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<ChipTransactionView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   /**
    * 칩 잔액 실시간 구독
@@ -89,11 +89,11 @@ export const useChipBalance = () => {
         setIsLoading(false);
       },
       (err) => {
-        const errorMessage = err.message || '칩 잔액 조회 중 오류가 발생했습니다';
-        logger.error('칩 잔액 구독 실패', err, {
+        const error = err instanceof Error ? err : new Error('칩 잔액 조회 중 오류가 발생했습니다');
+        logger.error('칩 잔액 구독 실패', error, {
           operation: 'chipBalance',
         });
-        setError(errorMessage);
+        setError(error);
         setIsLoading(false);
       }
     );

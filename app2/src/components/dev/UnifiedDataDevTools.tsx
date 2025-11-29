@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import useUnifiedData from '../../hooks/useUnifiedData';
+import { useUnifiedData } from '../../hooks/useUnifiedData';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import smartCache from '../../utils/smartCache';

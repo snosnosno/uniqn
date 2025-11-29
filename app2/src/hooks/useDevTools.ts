@@ -32,7 +32,7 @@ export const useDevTools = () => {
       ...prev,
       isOpen: !prev.isOpen,
     }));
-  }, [state.isEnabled, state.isOpen]);
+  }, [state.isEnabled]);
 
   // 개발자 도구 열기
   const openDevTools = useCallback(() => {
@@ -136,5 +136,3 @@ export const useDevTools = () => {
     closeDevTools,
   };
 };
-
-export default useDevTools;

@@ -238,5 +238,3 @@ export const useSecureStorage = () => {
     removeSecureItem,
   };
 };
-
-export default useSecurity;

@@ -31,7 +31,7 @@ interface UseStaffQRReturn {
   qrPayload: StaffQRPayload | null;
   qrString: string | null;
   loading: boolean;
-  error: string | null;
+  error: Error | null;
   regenerate: () => Promise<void>;
   refresh: () => Promise<void>;
   remainingSeconds: number;
@@ -49,7 +49,7 @@ export function useStaffQR({
   const [qrPayload, setQrPayload] = useState<StaffQRPayload | null>(null);
   const [qrString, setQrString] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(180); // 3분 = 180초
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -112,12 +112,12 @@ export function useStaffQR({
         },
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'QR 생성 중 오류가 발생했습니다.';
+      const error = err instanceof Error ? err : new Error('QR 생성 중 오류가 발생했습니다.');
 
-      setError(errorMessage);
+      setError(error);
       setLoading(false);
 
-      logger.error('스태프 QR 로딩 실패', err as Error, { data: { userId, userName } });
+      logger.error('스태프 QR 로딩 실패', error, { data: { userId, userName } });
     }
   }, [userId, userName, generateQRString]);
 
@@ -146,12 +146,12 @@ export function useStaffQR({
         },
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'QR 재생성 중 오류가 발생했습니다.';
+      const error = err instanceof Error ? err : new Error('QR 재생성 중 오류가 발생했습니다.');
 
-      setError(errorMessage);
+      setError(error);
       setLoading(false);
 
-      logger.error('스태프 QR 재생성 실패', err as Error, { data: { userId, userName } });
+      logger.error('스태프 QR 재생성 실패', error, { data: { userId, userName } });
     }
   }, [userId, userName, generateQRString]);
 
@@ -168,8 +168,9 @@ export function useStaffQR({
       logger.debug('QR 페이로드 새로고침', { data: { userId } });
       generateQRString(qrMetadata);
     } catch (err) {
-      logger.error('QR 새로고침 실패', err as Error, { data: { userId } });
-      setError('QR 새로고침에 실패했습니다.');
+      const error = err instanceof Error ? err : new Error('QR 새로고침에 실패했습니다.');
+      logger.error('QR 새로고침 실패', error, { data: { userId } });
+      setError(error);
     }
   }, [userId, qrMetadata, generateQRString]);
 

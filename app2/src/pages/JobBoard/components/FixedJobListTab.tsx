@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/useToast';
 import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
-import useUnifiedData from '@/hooks/useUnifiedData';
+import { useUnifiedData } from '@/hooks/useUnifiedData';
 
 /**
  * 고정공고 목록 탭 컴포넌트

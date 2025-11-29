@@ -16,7 +16,7 @@ import type { UserSubscription } from '../types/payment/subscription';
 export const useActiveSubscription = (userId: string | null) => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -83,12 +83,13 @@ export const useActiveSubscription = (userId: string | null) => {
           }
         },
         (err) => {
-          const errorMessage = err.message || '구독 정보 조회 중 오류가 발생했습니다';
-          logger.error('구독 정보 조회 실패', err, {
+          const error =
+            err instanceof Error ? err : new Error('구독 정보 조회 중 오류가 발생했습니다');
+          logger.error('구독 정보 조회 실패', error, {
             operation: 'useActiveSubscription',
             additionalData: { userId },
           });
-          setError(errorMessage);
+          setError(error);
           setIsLoading(false);
         }
       );
@@ -97,12 +98,11 @@ export const useActiveSubscription = (userId: string | null) => {
         unsubscribe();
       };
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '구독 정보 조회 중 오류가 발생했습니다';
-      logger.error('구독 정보 조회 초기화 실패', err instanceof Error ? err : undefined, {
+      const error = err instanceof Error ? err : new Error('구독 정보 조회 중 오류가 발생했습니다');
+      logger.error('구독 정보 조회 초기화 실패', error, {
         operation: 'useActiveSubscription',
       });
-      setError(errorMessage);
+      setError(error);
       setIsLoading(false);
       return undefined;
     }

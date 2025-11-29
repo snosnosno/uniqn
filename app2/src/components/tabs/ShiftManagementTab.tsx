@@ -20,7 +20,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
   const { staff, loading: contextLoading } = useJobPostingContext();
 
   const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [error] = useState<Error | null>(null);
 
   // 현재 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -68,7 +68,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
 
       {error ? (
         <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600">{error.message}</p>
         </div>
       ) : null}
 

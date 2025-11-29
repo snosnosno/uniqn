@@ -163,8 +163,3 @@ export const useTables = (userId: string | null, tournamentId: string | null): U
     bustOutParticipant: assignments.bustOutParticipant,
   };
 };
-
-/**
- * 기본 export (기존 코드 호환성)
- */
-export default useTables;

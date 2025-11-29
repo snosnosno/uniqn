@@ -279,5 +279,3 @@ export const useTournaments = (userId: string | null) => {
     ensureDefaultTournamentForDate,
   };
 };
-
-export default useTournaments;

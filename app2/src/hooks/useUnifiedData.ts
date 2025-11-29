@@ -895,6 +895,3 @@ export const useUnifiedDataDebug = () => {
     clearCache,
   };
 };
-
-// 기본 export
-export default useUnifiedData;

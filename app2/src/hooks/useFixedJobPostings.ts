@@ -138,7 +138,7 @@ export function useFixedJobPostings(): UseFixedJobPostingsReturn {
   }, []);
 
   // 추가 페이지 로드 (getDocs 일회성 조회)
-  const loadMore = useCallback(() => {
+  const loadMore = useCallback(async () => {
     if (isFetching || !hasMore || loading) {
       logger.info('useFixedJobPostings: loadMore 중단 (중복 방지)', {
         component: 'useFixedJobPostings',
@@ -173,58 +173,57 @@ export function useFixedJobPostings(): UseFixedJobPostingsReturn {
       limit(PAGE_SIZE)
     );
 
-    getDocs(q)
-      .then((snapshot) => {
-        const fetchedPostings: FixedJobPosting[] = [];
+    try {
+      const snapshot = await getDocs(q);
+      const fetchedPostings: FixedJobPosting[] = [];
 
-        snapshot.forEach((doc) => {
-          const data = doc.data();
+      snapshot.forEach((doc) => {
+        const data = doc.data();
 
-          // fixedData 검증 - 없으면 스킵
-          if (!data.fixedData || !data.fixedData.workSchedule) {
-            logger.warn('useFixedJobPostings: fixedData 또는 workSchedule 누락 (loadMore)', {
-              component: 'useFixedJobPostings',
-              additionalData: { postingId: doc.id },
-            });
-            return;
-          }
-
-          fetchedPostings.push({
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now(),
-          } as FixedJobPosting);
-        });
-
-        setPostings((prev) => [...prev, ...fetchedPostings]);
-        setHasMore(snapshot.docs.length === PAGE_SIZE);
-
-        // 마지막 문서 업데이트
-        if (snapshot.docs.length > 0) {
-          lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
-        } else {
-          lastDocRef.current = null;
+        // fixedData 검증 - 없으면 스킵
+        if (!data.fixedData || !data.fixedData.workSchedule) {
+          logger.warn('useFixedJobPostings: fixedData 또는 workSchedule 누락 (loadMore)', {
+            component: 'useFixedJobPostings',
+            additionalData: { postingId: doc.id },
+          });
+          return;
         }
 
-        logger.info('useFixedJobPostings: 추가 페이지 로드 성공', {
-          component: 'useFixedJobPostings',
-          additionalData: {
-            count: fetchedPostings.length,
-            hasMore: snapshot.docs.length === PAGE_SIZE,
-          },
-        });
-
-        setIsFetching(false);
-      })
-      .catch((err) => {
-        logger.error(
-          'useFixedJobPostings: 추가 페이지 로드 실패',
-          err instanceof Error ? err : new Error(String(err)),
-          { component: 'useFixedJobPostings' }
-        );
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setIsFetching(false);
+        fetchedPostings.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now(),
+        } as FixedJobPosting);
       });
+
+      setPostings((prev) => [...prev, ...fetchedPostings]);
+      setHasMore(snapshot.docs.length === PAGE_SIZE);
+
+      // 마지막 문서 업데이트
+      if (snapshot.docs.length > 0) {
+        lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+      } else {
+        lastDocRef.current = null;
+      }
+
+      logger.info('useFixedJobPostings: 추가 페이지 로드 성공', {
+        component: 'useFixedJobPostings',
+        additionalData: {
+          count: fetchedPostings.length,
+          hasMore: snapshot.docs.length === PAGE_SIZE,
+        },
+      });
+
+      setIsFetching(false);
+    } catch (err) {
+      logger.error(
+        'useFixedJobPostings: 추가 페이지 로드 실패',
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'useFixedJobPostings' }
+      );
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setIsFetching(false);
+    }
   }, [isFetching, hasMore, loading]);
 
   return {
