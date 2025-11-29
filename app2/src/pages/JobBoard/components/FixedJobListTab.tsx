@@ -8,7 +8,7 @@ import FixedApplyModal from './FixedApplyModal';
 import { logger } from '@/utils/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '@/stores/toastStore';
+import { useToast } from '@/hooks/useToast';
 import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
 import useUnifiedData from '@/hooks/useUnifiedData';

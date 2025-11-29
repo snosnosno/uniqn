@@ -23,7 +23,7 @@ import {
   normalizeUserRole,
   hasAdminPrivilege,
 } from '../types/unifiedData';
-import { ScheduleEvent, ScheduleStats } from '../types/schedule';
+import { ScheduleEvent } from '../types/schedule';
 // Timestamp는 향후 필터링 기능에서 사용 예정
 // import { Timestamp } from 'firebase/firestore';
 
@@ -49,7 +49,7 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
     getWorkLogsByStaffId,
     getWorkLogsByEventId,
     getAttendanceByStaffId,
-    getApplicationsByEventId,
+    getApplicationsByEventId: _getApplicationsByEventId,
   } = useUnifiedDataStore(
     useShallow((state) => ({
       staff: state.staff,
@@ -304,174 +304,13 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
 };
 
 /**
- * 스케줄 전용 훅 (Zustand 기반)
- * 스케줄 페이지에서 사용하는 모든 데이터와 함수들
- */
-export const useScheduleData = (options?: { userId?: string }) => {
-  const {
-    workLogs: workLogsMap,
-    applications: applicationsMap,
-    isLoading,
-    error,
-  } = useUnifiedDataStore(
-    useShallow((state) => ({
-      workLogs: state.workLogs,
-      applications: state.applications,
-      isLoading: state.isLoading,
-      error: state.error,
-    }))
-  );
-
-  // 스케줄 이벤트들 (필터링 적용, 사용자 필터링 포함)
-  const schedules = useMemo(() => {
-    const allSchedules: ScheduleEvent[] = [];
-
-    // WorkLog → ScheduleEvent 변환
-    Array.from(workLogsMap.values()).forEach((workLog) => {
-      allSchedules.push({
-        id: `worklog_${workLog.id}`,
-        date: workLog.date,
-        startTime: workLog.scheduledStartTime || null,
-        endTime: workLog.scheduledEndTime || null,
-        actualStartTime: workLog.actualStartTime || null,
-        actualEndTime: workLog.actualEndTime || null,
-        type: workLog.status === 'completed' ? 'completed' : 'confirmed',
-        eventId: workLog.eventId,
-        eventName: '',
-        location: '',
-        role: workLog.role || '',
-        status: workLog.status || 'not_started',
-        sourceCollection: 'workLogs',
-        sourceId: workLog.id,
-        workLogId: workLog.id,
-      } as ScheduleEvent);
-    });
-
-    // userId가 제공된 경우 해당 사용자의 스케줄만 필터링
-    if (options?.userId) {
-      return allSchedules.filter((schedule) => {
-        // WorkLog 기반 스케줄의 경우 staffId로 필터링
-        if (schedule.sourceCollection === 'workLogs' && schedule.workLogId) {
-          const workLog = workLogsMap.get(schedule.workLogId);
-          return workLog?.staffId === options.userId;
-        }
-
-        // Application 기반 스케줄의 경우 applicantId로 필터링
-        if (schedule.sourceCollection === 'applications') {
-          const scheduleId = schedule.id.replace('application_', '');
-          const application = applicationsMap.get(scheduleId);
-          return application?.applicantId === options.userId;
-        }
-
-        return false;
-      });
-    }
-
-    return allSchedules;
-  }, [workLogsMap, applicationsMap, options?.userId]);
-
-  // 스케줄 통계 계산
-  const stats = useMemo((): ScheduleStats => {
-    const allEvents = schedules;
-    const now = new Date();
-    const _currentMonth = now.getMonth(); // 미래 월별 통계용
-    const _currentYear = now.getFullYear(); // 미래 년별 통계용
-
-    return {
-      totalSchedules: allEvents.length,
-      completedSchedules: allEvents.filter((event) => event.type === 'completed').length,
-      upcomingSchedules: allEvents.filter(
-        (event) => event.type === 'confirmed' && new Date(event.date) >= now
-      ).length,
-      totalEarnings: 0, // 수입 계산 기능 (PayrollStatus 통합 필요)
-      thisMonthEarnings: 0, // 이번달 수입 계산 기능 (추후 구현)
-      hoursWorked: allEvents
-        .filter((event) => event.actualStartTime && event.actualEndTime)
-        .reduce((total, event) => {
-          if (event.actualStartTime && event.actualEndTime) {
-            const start = event.actualStartTime.toDate();
-            const end = event.actualEndTime.toDate();
-            const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-            return total + hours;
-          }
-          return total;
-        }, 0),
-    };
-  }, [schedules]);
-
-  // 특정 스케줄 이벤트 조회
-  const getScheduleById = useCallback(
-    (id: string): ScheduleEvent | undefined => {
-      return schedules.find((schedule) => schedule.id === id);
-    },
-    [schedules]
-  );
-
-  // 날짜별 스케줄 그룹화
-  const getSchedulesByDate = useCallback(() => {
-    const groupedSchedules = new Map<string, ScheduleEvent[]>();
-
-    schedules.forEach((schedule) => {
-      if (!groupedSchedules.has(schedule.date)) {
-        groupedSchedules.set(schedule.date, []);
-      }
-      groupedSchedules.get(schedule.date)!.push(schedule);
-    });
-
-    // 날짜순 정렬된 배열로 반환
-    return Array.from(groupedSchedules.entries())
-      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-      .map(([date, events]) => ({
-        date,
-        events: events.sort((a, b) => {
-          if (a.startTime && b.startTime) {
-            return a.startTime.toDate().getTime() - b.startTime.toDate().getTime();
-          }
-          return 0;
-        }),
-      }));
-  }, [schedules]);
-
-  // 새로고침
-  const refreshData = useCallback(async () => {
-    logger.info('스케줄 데이터 새로고침 시작 (Zustand Store 자동 구독)', {
-      component: 'useScheduleData',
-    });
-  }, []);
-
-  // 필터 관리 (임시)
-  const setFilters = useCallback((_filters: Partial<UnifiedFilters>) => {
-    logger.info('Filters 설정됨 (향후 구현 예정)', {
-      component: 'useScheduleData',
-    });
-  }, []);
-
-  return {
-    // 데이터
-    schedules,
-    stats,
-    loading: isLoading,
-    error,
-
-    // 함수들
-    getScheduleById,
-    getSchedulesByDate,
-    refreshData,
-
-    // 필터 관리
-    filters: {} as UnifiedFilters,
-    setFilters,
-  };
-};
-
-/**
  * 스태프 관리 전용 훅 (Zustand 기반)
  */
 export const useStaffData = () => {
   const {
     staff: staffMap,
     workLogsMap,
-    attendanceRecordsMap,
+    attendanceRecordsMap: _attendanceRecordsMap,
     isLoading,
     error,
     getWorkLogsByStaffId,
@@ -566,16 +405,21 @@ export const useStaffData = () => {
  * 구인공고 관리 전용 훅 (Zustand 기반)
  */
 export const useJobPostingData = () => {
-  const { jobPostingsMap, applicationsMap, isLoading, error, getApplicationsByEventId } =
-    useUnifiedDataStore(
-      useShallow((state) => ({
-        jobPostingsMap: state.jobPostings,
-        applicationsMap: state.applications,
-        isLoading: state.isLoading,
-        error: state.error,
-        getApplicationsByEventId: state.getApplicationsByEventId,
-      }))
-    );
+  const {
+    jobPostingsMap,
+    applicationsMap: _applicationsMap,
+    isLoading,
+    error,
+    getApplicationsByEventId,
+  } = useUnifiedDataStore(
+    useShallow((state) => ({
+      jobPostingsMap: state.jobPostings,
+      applicationsMap: state.applications,
+      isLoading: state.isLoading,
+      error: state.error,
+      getApplicationsByEventId: state.getApplicationsByEventId,
+    }))
+  );
 
   const jobPostings = useMemo(() => {
     return Array.from(jobPostingsMap.values());
@@ -791,59 +635,62 @@ export const useSmartUnifiedData = (customOptions?: Partial<UnifiedDataOptions>)
     }))
   );
 
-  // 역할별 기본 구독 설정
-  const defaultSubscriptionsByRole: Record<string, UnifiedDataOptions['subscriptions']> = {
-    admin: {
-      staff: true,
-      workLogs: true,
-      applications: true,
-      jobPostings: true,
-      attendance: true,
-      tournaments: true,
-    },
-    manager: {
-      staff: true,
-      workLogs: true,
-      applications: true,
-      jobPostings: true,
-      attendance: true,
-      tournaments: true,
-    },
-    staff: {
-      staff: 'myData', // 자신의 정보만
-      workLogs: 'myData', // 자신의 근무 기록만
-      applications: 'myData', // 자신의 지원만
-      jobPostings: true, // 구인공고는 모두 봐야 함
-      attendance: 'myData', // 자신의 출석만
-      tournaments: false, // 토너먼트는 필요 없음
-    },
-    user: {
-      staff: false, // 스태프 정보 불필요
-      workLogs: false, // 근무 기록 불필요
-      applications: 'myData', // 자신의 지원만
-      jobPostings: true, // 구인공고는 모두 봐야 함
-      attendance: false, // 출석 불필요
-      tournaments: false, // 토너먼트 불필요
-    },
-  };
-
-  // 옵션 병합 (Enum 검증 적용)
+  // 옵션 병합 (Enum 검증 적용) - useMemo로 래핑하여 안정적인 참조 유지
   const normalizedRole = normalizeUserRole(role) || UserRole.USER;
-  const finalOptions: UnifiedDataOptions = {
-    role: normalizedRole,
-    userId: currentUser?.uid || '',
-    subscriptions: customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'user'] || {},
-    cacheStrategy:
-      customOptions?.cacheStrategy ||
-      (hasAdminPrivilege(normalizedRole) ? 'minimal' : 'aggressive'),
-    performance: {
-      maxDocuments: normalizedRole === UserRole.STAFF ? 100 : 1000,
-      realtimeUpdates: hasAdminPrivilege(normalizedRole),
-      batchSize: 20,
-      ...customOptions?.performance,
-    },
-    ...customOptions,
-  };
+  const finalOptions = useMemo<UnifiedDataOptions>(() => {
+    // 역할별 기본 구독 설정 (useMemo 내부에서 정의하여 안정적인 참조 보장)
+    const defaultSubscriptionsByRole: Record<string, UnifiedDataOptions['subscriptions']> = {
+      admin: {
+        staff: true,
+        workLogs: true,
+        applications: true,
+        jobPostings: true,
+        attendance: true,
+        tournaments: true,
+      },
+      manager: {
+        staff: true,
+        workLogs: true,
+        applications: true,
+        jobPostings: true,
+        attendance: true,
+        tournaments: true,
+      },
+      staff: {
+        staff: 'myData', // 자신의 정보만
+        workLogs: 'myData', // 자신의 근무 기록만
+        applications: 'myData', // 자신의 지원만
+        jobPostings: true, // 구인공고는 모두 봐야 함
+        attendance: 'myData', // 자신의 출석만
+        tournaments: false, // 토너먼트는 필요 없음
+      },
+      user: {
+        staff: false, // 스태프 정보 불필요
+        workLogs: false, // 근무 기록 불필요
+        applications: 'myData', // 자신의 지원만
+        jobPostings: true, // 구인공고는 모두 봐야 함
+        attendance: false, // 출석 불필요
+        tournaments: false, // 토너먼트 불필요
+      },
+    };
+
+    return {
+      role: normalizedRole,
+      userId: currentUser?.uid || '',
+      subscriptions:
+        customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'user'] || {},
+      cacheStrategy:
+        customOptions?.cacheStrategy ||
+        (hasAdminPrivilege(normalizedRole) ? 'minimal' : 'aggressive'),
+      performance: {
+        maxDocuments: normalizedRole === UserRole.STAFF ? 100 : 1000,
+        realtimeUpdates: hasAdminPrivilege(normalizedRole),
+        batchSize: 20,
+        ...customOptions?.performance,
+      },
+      ...customOptions,
+    };
+  }, [normalizedRole, currentUser?.uid, customOptions, role]);
 
   // 필터링된 데이터 반환
   const filteredData = useMemo(() => {

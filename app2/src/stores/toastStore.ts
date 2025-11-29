@@ -57,37 +57,5 @@ export const useToastStore = create<ToastState>()(
   )
 );
 
-// Helper hooks for easier usage
-export const useToast = () => {
-  const { addToast } = useToastStore();
-
-  return {
-    showSuccess: (message: string, title?: string, duration?: number) => {
-      const toastData: Omit<Toast, 'id'> = { type: 'success', message };
-      if (title !== undefined) toastData.title = title;
-      if (duration !== undefined) toastData.duration = duration;
-      addToast(toastData);
-    },
-    showError: (message: string, title?: string, duration?: number) => {
-      const toastData: Omit<Toast, 'id'> = {
-        type: 'error',
-        message,
-        duration: duration || 5000, // Error messages stay longer by default
-      };
-      if (title !== undefined) toastData.title = title;
-      addToast(toastData);
-    },
-    showInfo: (message: string, title?: string, duration?: number) => {
-      const toastData: Omit<Toast, 'id'> = { type: 'info', message };
-      if (title !== undefined) toastData.title = title;
-      if (duration !== undefined) toastData.duration = duration;
-      addToast(toastData);
-    },
-    showWarning: (message: string, title?: string, duration?: number) => {
-      const toastData: Omit<Toast, 'id'> = { type: 'warning', message };
-      if (title !== undefined) toastData.title = title;
-      if (duration !== undefined) toastData.duration = duration;
-      addToast(toastData);
-    },
-  };
-};
+// NOTE: useToast hook은 hooks/useToast.ts에서 import하세요
+// import { useToast } from '../hooks/useToast';

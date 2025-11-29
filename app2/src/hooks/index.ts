@@ -186,8 +186,6 @@ export { default as useSettingsDefault } from './useSettings';
 /** 통합 데이터 Hook */
 export {
   useUnifiedData,
-  useScheduleData as useScheduleDataV2,
-  useStaffData as useStaffDataV2,
   useJobPostingData,
   useApplicationData,
   useAttendanceData,
