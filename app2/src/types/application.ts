@@ -119,7 +119,7 @@ export interface Application {
     district?: string;
     detailedAddress?: string;
     eventDate?: string;
-    [key: string]: any;
+    [key: string]: string | undefined;
   };
 
   // === 메타데이터 ===
@@ -145,7 +145,7 @@ export interface LegacyApplication {
   postId: string;
   postTitle: string;
   status: string;
-  appliedAt: any; // Timestamp | string | Date 등 다양한 형태
+  appliedAt: Timestamp | string | Date; // 다양한 형태 지원
 
   // 레거시 단일 필드들
   assignedDate?: string;
@@ -158,12 +158,12 @@ export interface LegacyApplication {
   assignedTimes?: string[];
 
   // 레거시 구조화 필드들
-  assignments?: any[]; // 기존 assignments 구조
-  dateAssignments?: any[]; // 날짜별 그룹 구조
+  assignments?: Partial<Assignment>[]; // 기존 assignments 구조
+  dateAssignments?: { date: string; selections: { timeSlot: string; role: string }[] }[]; // 날짜별 그룹 구조
 
   // 기타 필드들
-  preQuestionAnswers?: any[];
-  [key: string]: any; // 기타 예상치 못한 필드들
+  preQuestionAnswers?: PreQuestionAnswer[];
+  [key: string]: unknown; // 기타 예상치 못한 필드들
 }
 
 /**
@@ -219,57 +219,59 @@ export interface MigrationResult {
 /**
  * Assignment 타입 검증
  */
-export function isValidAssignment(obj: any): obj is Assignment {
+export function isValidAssignment(obj: unknown): obj is Assignment {
+  if (!obj || typeof obj !== 'object') return false;
+  const candidate = obj as Record<string, unknown>;
   return (
-    obj &&
-    typeof obj === 'object' &&
     // role 또는 roles 중 하나는 있어야 함
-    (typeof obj.role === 'string' || (Array.isArray(obj.roles) && obj.roles.length > 0)) &&
-    typeof obj.timeSlot === 'string' &&
-    Array.isArray(obj.dates) &&
-    typeof obj.isGrouped === 'boolean'
+    (typeof candidate.role === 'string' ||
+      (Array.isArray(candidate.roles) && candidate.roles.length > 0)) &&
+    typeof candidate.timeSlot === 'string' &&
+    Array.isArray(candidate.dates) &&
+    typeof candidate.isGrouped === 'boolean'
   );
 }
 
 /**
  * Application 타입 검증
  */
-export function isValidApplication(obj: any): obj is Application {
+export function isValidApplication(obj: unknown): obj is Application {
+  if (!obj || typeof obj !== 'object') return false;
+  const candidate = obj as Record<string, unknown>;
   return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.id === 'string' &&
-    typeof obj.applicantId === 'string' &&
-    typeof obj.applicantName === 'string' &&
-    typeof obj.eventId === 'string' &&
-    typeof obj.postId === 'string' &&
-    ['applied', 'confirmed', 'cancelled'].includes(obj.status) &&
-    Array.isArray(obj.assignments) &&
-    obj.assignments.every(isValidAssignment)
+    typeof candidate.id === 'string' &&
+    typeof candidate.applicantId === 'string' &&
+    typeof candidate.applicantName === 'string' &&
+    typeof candidate.eventId === 'string' &&
+    typeof candidate.postId === 'string' &&
+    ['applied', 'confirmed', 'cancelled'].includes(candidate.status as string) &&
+    Array.isArray(candidate.assignments) &&
+    (candidate.assignments as unknown[]).every(isValidAssignment)
   );
 }
 
 /**
  * 레거시 Application 타입 검증
  */
-export function isLegacyApplication(obj: any): obj is LegacyApplication {
+export function isLegacyApplication(obj: unknown): obj is LegacyApplication {
+  if (!obj || typeof obj !== 'object') return false;
+  const candidate = obj as Record<string, unknown>;
   return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.id === 'string' &&
-    typeof obj.applicantId === 'string' &&
+    typeof candidate.id === 'string' &&
+    typeof candidate.applicantId === 'string' &&
     // 레거시 필드 중 하나라도 존재하면 레거시로 판단
-    (obj.assignedDate ||
-      obj.assignedRole ||
-      obj.assignedTime ||
-      obj.assignedDates ||
-      obj.assignedRoles ||
-      obj.assignedTimes ||
-      obj.dateAssignments ||
+    (!!candidate.assignedDate ||
+      !!candidate.assignedRole ||
+      !!candidate.assignedTime ||
+      !!candidate.assignedDates ||
+      !!candidate.assignedRoles ||
+      !!candidate.assignedTimes ||
+      !!candidate.dateAssignments ||
       // 🎯 최신 구조지만 checkMethod가 없는 경우도 마이그레이션 필요
-      (obj.assignments &&
-        Array.isArray(obj.assignments) &&
-        obj.assignments.length > 0 &&
-        obj.assignments.some((assignment: any) => !assignment.checkMethod)))
+      (Array.isArray(candidate.assignments) &&
+        candidate.assignments.length > 0 &&
+        (candidate.assignments as Partial<Assignment>[]).some(
+          (assignment) => !assignment.checkMethod
+        )))
   );
 }

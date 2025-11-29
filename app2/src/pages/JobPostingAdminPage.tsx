@@ -35,10 +35,10 @@ const JobPostingAdminPage = () => {
   const handleCreate = async (formData: any) => {
     try {
       await handleCreateJobPosting(formData);
-      toast.success('공고가 성공적으로 등록되었습니다.');
+      toast.success(t('toast.jobPosting.createSuccess'));
       setIsCreateFormVisible(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '공고 등록 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : t('toast.jobPosting.createError'));
       throw error; // JobPostingForm에서 로딩 상태 해제를 위해
     }
   };
@@ -47,9 +47,9 @@ const JobPostingAdminPage = () => {
   const handleUpdate = async (postId: string, formData: any) => {
     try {
       await handleUpdateJobPosting(postId, formData);
-      toast.success('공고가 성공적으로 수정되었습니다.');
+      toast.success(t('toast.jobPosting.updateSuccess'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : t('toast.jobPosting.updateError'));
       throw error;
     }
   };
@@ -114,7 +114,9 @@ const JobPostingAdminPage = () => {
           onConfirm={async () => {
             const success = await handleDeleteJobPostingConfirm();
             if (success) {
-              toast.success(`"${deleteConfirmPost?.title}" 공고가 삭제되었습니다.`);
+              toast.success(
+                t('toast.jobPosting.deleteSuccess', { title: deleteConfirmPost?.title })
+              );
             }
           }}
           title="공고 삭제"

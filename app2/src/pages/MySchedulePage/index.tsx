@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
 import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
 import {
@@ -36,6 +37,7 @@ import { doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 const MySchedulePage: React.FC = () => {
+  const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -102,7 +104,7 @@ const MySchedulePage: React.FC = () => {
       try {
         const schedule = schedules.find((s) => s.id === scheduleId);
         if (!schedule || !schedule.workLogId) {
-          throw new Error('스케줄 정보를 찾을 수 없습니다.');
+          throw new Error(t('errors.scheduleNotFound'));
         }
 
         // workLogs 업데이트 - 통합 시스템 사용
@@ -112,17 +114,17 @@ const MySchedulePage: React.FC = () => {
         });
         await updateDoc(doc(db, 'workLogs', schedule.workLogId), updateData);
 
-        showSuccess('퇴근 처리되었습니다.');
+        showSuccess(t('toast.schedule.checkOutSuccess'));
       } catch (error) {
         logger.error(
           '❌ 퇴근 처리 오류:',
           error instanceof Error ? error : new Error(String(error)),
           { component: 'index' }
         );
-        showError('퇴근 처리 중 오류가 발생했습니다.');
+        showError(t('toast.schedule.checkOutError'));
       }
     },
-    [schedules, showSuccess, showError]
+    [schedules, showSuccess, showError, t]
   );
 
   // 지원 취소 (ApplicationHistory 서비스 연동)
@@ -130,13 +132,13 @@ const MySchedulePage: React.FC = () => {
     try {
       const schedule = schedules.find((s) => s.id === scheduleId);
       if (!schedule || !schedule.applicationId) {
-        throw new Error('지원 정보를 찾을 수 없습니다.');
+        throw new Error(t('errors.applicationInfoNotFound'));
       }
 
       // ApplicationHistory 서비스를 통한 지원 취소 (데이터 일관성 보장)
       await ApplicationHistoryService.cancelApplication(schedule.applicationId);
 
-      showSuccess('지원이 취소되었습니다.');
+      showSuccess(t('toast.schedule.cancelApplicationSuccess'));
 
       // 🔄 자동 새로고침으로 즉시 UI 업데이트
       refreshData();
@@ -149,7 +151,7 @@ const MySchedulePage: React.FC = () => {
           data: { scheduleId },
         }
       );
-      showError('지원 취소 중 오류가 발생했습니다.');
+      showError(t('toast.schedule.cancelApplicationError'));
     }
   };
 
@@ -158,18 +160,18 @@ const MySchedulePage: React.FC = () => {
     try {
       const schedule = schedules.find((s) => s.id === scheduleId);
       if (!schedule) {
-        throw new Error('스케줄 정보를 찾을 수 없습니다.');
+        throw new Error(t('errors.scheduleNotFound'));
       }
 
       // 삭제 가능한 일정인지 확인 (완료된 일정은 삭제 불가)
       if (schedule.type === 'completed') {
-        showError('완료된 일정은 삭제할 수 없습니다.');
+        showError(t('toast.schedule.completedCannotDelete'));
         return;
       }
 
       // 이미 출근한 일정은 삭제 제한 (선택적)
       if (schedule.status === 'checked_in') {
-        showError('이미 출근한 일정은 삭제할 수 없습니다.');
+        showError(t('toast.schedule.checkedInCannotDelete'));
         return;
       }
 
@@ -191,7 +193,7 @@ const MySchedulePage: React.FC = () => {
         error instanceof Error ? error : new Error(String(error)),
         { component: 'index' }
       );
-      showError('일정 삭제 중 오류가 발생했습니다.');
+      showError(t('toast.schedule.deleteError'));
     }
   };
 
@@ -213,13 +215,13 @@ const MySchedulePage: React.FC = () => {
       } else if (schedule.sourceCollection === 'staff' && schedule.sourceId) {
         // staff: 해당 일정 정보만 제거 (전체 문서는 보존)
         // 실제 구현은 staff 문서 구조에 따라 달라질 수 있음
-        showError('직원 일정 삭제는 관리자에게 문의하세요.');
+        showError(t('toast.schedule.staffScheduleContactAdmin'));
         return;
       } else {
-        throw new Error('지원되지 않는 일정 타입입니다.');
+        throw new Error(t('errors.unsupportedScheduleType'));
       }
 
-      showSuccess('일정이 삭제되었습니다.');
+      showSuccess(t('toast.schedule.deleteSuccess'));
       setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     } catch (error) {
       logger.error(
@@ -227,7 +229,7 @@ const MySchedulePage: React.FC = () => {
         error instanceof Error ? error : new Error(String(error)),
         { component: 'index' }
       );
-      showError('일정 삭제 중 오류가 발생했습니다.');
+      showError(t('toast.schedule.deleteError'));
     } finally {
       setIsProcessing(false);
     }
@@ -334,6 +336,7 @@ const MySchedulePage: React.FC = () => {
           </div>
         );
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [handleEventClick, handleCheckOut]
   );
 
@@ -345,7 +348,7 @@ const MySchedulePage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">{error.message}</p>
           <button
             onClick={refreshData}
             className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-500"

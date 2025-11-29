@@ -75,6 +75,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
       resetForm();
       // 포커스 설정 제거 - 사용자가 직접 클릭하여 입력하도록 함
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // 모달 닫기
@@ -90,7 +91,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
     e.preventDefault();
 
     if (!currentUser) {
-      showError('로그인이 필요합니다.');
+      showError(t('toast.common.loginRequired'));
       return;
     }
 
@@ -99,13 +100,13 @@ const ReportModal: React.FC<ReportModalProps> = ({
     const actualLength = actualDescription.trim().length;
 
     if (actualLength === 0) {
-      showError('신고 사유를 입력해주세요.');
+      showError(t('toast.report.reasonRequired'));
       return;
     }
 
     // 기타 유형의 경우 더 자세한 설명 요구
     if (reportType === 'other' && actualLength < 10) {
-      showError('기타 유형의 경우 10자 이상의 자세한 설명이 필요합니다.');
+      showError(t('toast.report.otherTypeMinLength'));
       return;
     }
 
@@ -155,7 +156,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
         updatedAt: Timestamp.now(),
       });
 
-      showSuccess('신고가 접수되었습니다. 검토 후 처리하겠습니다.');
+      showSuccess(t('toast.report.submitSuccess'));
 
       logger.info('신고 접수 완료', {
         component: 'ReportModal',
@@ -172,7 +173,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
       logger.error('신고 제출 실패:', error instanceof Error ? error : new Error(String(error)), {
         component: 'ReportModal',
       });
-      showError('신고 제출에 실패했습니다. 다시 시도해주세요.');
+      showError(t('toast.report.submitError'));
     } finally {
       setIsSubmitting(false);
     }

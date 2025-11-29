@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PrinterIcon, ArrowDownTrayIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../firebase';
@@ -30,6 +31,7 @@ const ReceiptActions: React.FC<ReceiptActionsProps> = ({
   receipt,
   className = '',
 }) => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [sending, setSending] = useState(false);
 
@@ -38,7 +40,7 @@ const ReceiptActions: React.FC<ReceiptActionsProps> = ({
    */
   const handlePrint = () => {
     if (!receipt) {
-      toast.warning('영수증 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      toast.warning(t('toast.receipt.dataLoading'));
       return;
     }
 
@@ -47,7 +49,7 @@ const ReceiptActions: React.FC<ReceiptActionsProps> = ({
       logger.info('ReceiptActions: 인쇄 시작');
     } catch (error) {
       logger.error('ReceiptActions: 인쇄 실패', error as Error);
-      toast.error('인쇄 중 오류가 발생했습니다.');
+      toast.error(t('toast.receipt.printError'));
     }
   };
 
@@ -56,17 +58,17 @@ const ReceiptActions: React.FC<ReceiptActionsProps> = ({
    */
   const handleDownload = () => {
     if (!receipt) {
-      toast.warning('영수증 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      toast.warning(t('toast.receipt.dataLoading'));
       return;
     }
 
     try {
       downloadReceiptHTML(receipt);
       logger.info('ReceiptActions: 다운로드 완료');
-      toast.success('영수증이 다운로드되었습니다.');
+      toast.success(t('toast.receipt.downloadSuccess'));
     } catch (error) {
       logger.error('ReceiptActions: 다운로드 실패', error as Error);
-      toast.error('다운로드 중 오류가 발생했습니다.');
+      toast.error(t('toast.receipt.downloadError'));
     }
   };
 
@@ -75,12 +77,12 @@ const ReceiptActions: React.FC<ReceiptActionsProps> = ({
    */
   const handleSendEmail = async () => {
     if (!currentUser) {
-      toast.warning('로그인이 필요합니다.');
+      toast.warning(t('toast.common.loginRequired'));
       return;
     }
 
     setSending(true);
-    toast.info('영수증을 이메일로 발송하는 중입니다...');
+    toast.info(t('toast.receipt.emailSending'));
 
     try {
       const sendReceiptEmail = httpsCallable(functions, 'sendReceiptEmail');
@@ -93,14 +95,14 @@ const ReceiptActions: React.FC<ReceiptActionsProps> = ({
       const data = result.data as { success: boolean; message: string; email?: string };
 
       if (data.success) {
-        toast.success(`영수증이 ${data.email || '이메일'}로 발송되었습니다.`);
+        toast.success(t('toast.receipt.emailSuccess', { email: data.email || '이메일' }));
         logger.info('ReceiptActions: 이메일 발송 완료');
       } else {
         throw new Error(data.message || '이메일 발송 실패');
       }
     } catch (error) {
       logger.error('ReceiptActions: 이메일 발송 실패', error as Error);
-      toast.error('이메일 발송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      toast.error(t('toast.receipt.emailError'));
     } finally {
       setSending(false);
     }

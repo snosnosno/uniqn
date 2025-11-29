@@ -405,7 +405,7 @@ const LandingPage: React.FC = () => {
       {analytics.error && process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 right-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg shadow-lg z-50">
           <strong className="font-bold">분석 오류:</strong>
-          <span className="block sm:inline ml-1">{analytics.error}</span>
+          <span className="block sm:inline ml-1">{analytics.error.message}</span>
         </div>
       )}
     </div>

@@ -43,7 +43,7 @@ interface WorkTimeEditorProps {
 }
 
 const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLog, onUpdate }) => {
-  const { t: _t } = useTranslation();
+  const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const { updateWorkLogOptimistic } = useUnifiedData();
   useAttendanceStatus({
@@ -84,7 +84,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
   // 시간 수정 함수
   const handleUpdateTime = async () => {
     if (!workLog) {
-      showError('작업 로그 정보가 없습니다.');
+      showError(t('toast.workTime.workLogNotFound'));
       return;
     }
 
@@ -256,7 +256,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
         setEndMinute(endParts.minute);
       }
 
-      showSuccess('시간이 성공적으로 업데이트되었습니다.');
+      showSuccess(t('toast.workTime.updateSuccess'));
 
       // 🚀 즉시 동기화 - Firebase 저장과 동시에 Context 갱신
       // setTimeout 지연 제거: Firebase onSnapshot이 자동으로 동기화 처리
@@ -303,7 +303,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
       // 원래 상태로 롤백
       updateWorkLogOptimistic(rollbackWorkLog as WorkLog);
 
-      showError('시간 업데이트 중 오류가 발생했습니다.');
+      showError(t('toast.workTime.updateError'));
     } finally {
       setIsUpdating(false);
     }

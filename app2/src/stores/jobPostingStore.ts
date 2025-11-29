@@ -21,7 +21,7 @@ interface JobPostingState {
   eventId: string | null;
   jobPosting: JobPosting | null;
   loading: boolean;
-  error: string | null;
+  error: Error | null;
   applicants: Applicant[];
   staff: Staff[];
 
@@ -100,21 +100,19 @@ export const useJobPostingStore = create<JobPostingState>()(
               });
             } else {
               set({
-                error: '공고를 찾을 수 없습니다.',
+                error: new Error('공고를 찾을 수 없습니다.'),
                 loading: false,
               });
             }
           },
-          (error) => {
-            logger.error(
-              '공고 데이터 로딩 오류:',
-              error instanceof Error ? error : new Error(String(error)),
-              {
-                component: 'jobPostingStore',
-              }
-            );
+          (err) => {
+            const errorObj =
+              err instanceof Error ? err : new Error('공고 데이터를 불러오는데 실패했습니다.');
+            logger.error('공고 데이터 로딩 오류:', errorObj, {
+              component: 'jobPostingStore',
+            });
             set({
-              error: '공고 데이터를 불러오는데 실패했습니다.',
+              error: errorObj,
               loading: false,
             });
           }
@@ -153,17 +151,15 @@ export const useJobPostingStore = create<JobPostingState>()(
               error: null,
             });
           } else {
-            set({ error: '공고를 찾을 수 없습니다.' });
+            set({ error: new Error('공고를 찾을 수 없습니다.') });
           }
-        } catch (error) {
-          logger.error(
-            '공고 새로고침 오류:',
-            error instanceof Error ? error : new Error(String(error)),
-            {
-              component: 'jobPostingStore',
-            }
-          );
-          set({ error: '공고를 새로고침하는데 실패했습니다.' });
+        } catch (err) {
+          const errorObj =
+            err instanceof Error ? err : new Error('공고를 새로고침하는데 실패했습니다.');
+          logger.error('공고 새로고침 오류:', errorObj, {
+            component: 'jobPostingStore',
+          });
+          set({ error: errorObj });
         }
       },
 

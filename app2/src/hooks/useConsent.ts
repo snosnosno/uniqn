@@ -107,7 +107,7 @@ export const useConsent = (): UseConsentReturn => {
       try {
         setError(null);
         await createConsent(currentUser.uid, input);
-        toast.success('동의 내역이 저장되었습니다.');
+        toast.success(i18n.t('toast.account.consentSaved'));
       } catch (err) {
         const error = err as Error;
         setError(error);
@@ -115,7 +115,7 @@ export const useConsent = (): UseConsentReturn => {
           component: 'useConsent',
           data: { userId: currentUser.uid },
         });
-        toast.error(error.message || '동의 내역 저장에 실패했습니다.');
+        toast.error(error.message || i18n.t('toast.account.consentSaveFailed'));
         throw error;
       }
     },
@@ -138,7 +138,7 @@ export const useConsent = (): UseConsentReturn => {
         };
         await updateConsent(currentUser.uid, updates);
         toast.success(
-          agreed ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.'
+          i18n.t(agreed ? 'toast.account.marketingAgreed' : 'toast.account.marketingWithdrawn')
         );
       } catch (err) {
         const error = err as Error;
@@ -147,7 +147,7 @@ export const useConsent = (): UseConsentReturn => {
           component: 'useConsent',
           data: { userId: currentUser.uid, agreed },
         });
-        toast.error(error.message || '동의 설정 변경에 실패했습니다.');
+        toast.error(error.message || i18n.t('toast.account.consentChangeFailed'));
         throw error;
       }
     },
@@ -170,7 +170,11 @@ export const useConsent = (): UseConsentReturn => {
         };
         await updateConsent(currentUser.uid, updates);
         toast.success(
-          agreed ? '위치 서비스 이용에 동의했습니다.' : '위치 서비스 이용 동의를 철회했습니다.'
+          i18n.t(
+            agreed
+              ? 'toast.account.locationServiceAgreed'
+              : 'toast.account.locationServiceWithdrawn'
+          )
         );
       } catch (err) {
         const error = err as Error;
@@ -179,7 +183,7 @@ export const useConsent = (): UseConsentReturn => {
           component: 'useConsent',
           data: { userId: currentUser.uid, agreed },
         });
-        toast.error(error.message || '동의 설정 변경에 실패했습니다.');
+        toast.error(error.message || i18n.t('toast.account.consentChangeFailed'));
         throw error;
       }
     },
@@ -202,7 +206,11 @@ export const useConsent = (): UseConsentReturn => {
         };
         await updateConsent(currentUser.uid, updates);
         toast.success(
-          agreed ? '푸시 알림 수신에 동의했습니다.' : '푸시 알림 수신 동의를 철회했습니다.'
+          i18n.t(
+            agreed
+              ? 'toast.account.pushNotificationAgreed'
+              : 'toast.account.pushNotificationWithdrawn'
+          )
         );
       } catch (err) {
         const error = err as Error;
@@ -211,7 +219,7 @@ export const useConsent = (): UseConsentReturn => {
           component: 'useConsent',
           data: { userId: currentUser.uid, agreed },
         });
-        toast.error(error.message || '동의 설정 변경에 실패했습니다.');
+        toast.error(error.message || i18n.t('toast.account.consentChangeFailed'));
         throw error;
       }
     },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal, { ModalFooter } from '../ui/Modal';
 import { parseParticipantsText, ParsedParticipant } from '../../utils/csvParser';
 import { FaCheckCircle, FaExclamationTriangle } from '../Icons/ReactIconsReplacement';
@@ -16,6 +17,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { t } = useTranslation();
   const [inputText, setInputText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedParticipant[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -32,7 +34,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
   const handleConfirm = async () => {
     const validParticipants = parsedData.filter((p) => p.isValid);
     if (validParticipants.length === 0) {
-      toast.warning('추가할 유효한 참가자가 없습니다.');
+      toast.warning(t('toast.participants.noValidParticipants'));
       return;
     }
 
@@ -47,7 +49,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
         component: 'BulkAddParticipantsModal',
         data: { count: validParticipants.length },
       });
-      toast.error('참가자 추가 중 오류가 발생했습니다.');
+      toast.error(t('toast.participants.addError'));
     } finally {
       setIsProcessing(false);
     }

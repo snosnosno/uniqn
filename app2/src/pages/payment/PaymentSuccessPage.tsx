@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useLogger } from '../../hooks/useLogger';
 import { useToast } from '../../hooks/useToast';
+import i18n from '../../i18n';
 import type { TossPaymentSuccessQuery } from '../../types/payment';
 import PaymentStepIndicator from '../../components/payment/PaymentStepIndicator';
 import {
@@ -49,7 +50,7 @@ const PaymentSuccessPage: React.FC = () => {
             operation: 'processPayment',
             additionalData: { paymentKey, orderId, amount },
           });
-          toast.showError('결제 정보가 올바르지 않습니다', 'error');
+          toast.showError(i18n.t('toast.payment.invalidInfo'));
           navigate('/');
           return;
         }
@@ -82,7 +83,7 @@ const PaymentSuccessPage: React.FC = () => {
         const resultData = result.data as { success: boolean; message: string; data: unknown };
 
         if (!resultData.success) {
-          throw new Error('결제 승인 실패');
+          throw new Error(i18n.t('errors.paymentApprovalFailed'));
         }
 
         logger.info('결제 승인 완료', {
@@ -97,7 +98,7 @@ const PaymentSuccessPage: React.FC = () => {
           status: 'success',
         });
 
-        toast.showSuccess('결제가 완료되었습니다! 칩이 충전되었습니다.');
+        toast.showSuccess(i18n.t('toast.payment.successWithChip'));
         setIsProcessing(false);
 
         // 3초 후 대시보드로 이동
@@ -115,7 +116,7 @@ const PaymentSuccessPage: React.FC = () => {
           operation: 'processPayment',
           additionalData: { error },
         });
-        toast.showError('결제 처리 중 오류가 발생했습니다', 'error');
+        toast.showError(i18n.t('toast.payment.processError'));
         navigate('/');
       }
     };

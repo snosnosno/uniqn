@@ -13,6 +13,7 @@ import { JobPosting } from '../types/jobPosting/jobPosting';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useFirestoreQuery } from './firestore';
+import i18n from '../i18n/config';
 
 /**
  * 대회 공고 승인 시스템 Hook
@@ -62,7 +63,7 @@ export const useJobPostingApproval = () => {
    */
   const approve = useCallback(async (postingId: string) => {
     if (!postingId) {
-      toast.error('공고 ID가 필요합니다');
+      toast.error(i18n.t('toast.jobPosting.idRequired'));
       return;
     }
 
@@ -72,22 +73,23 @@ export const useJobPostingApproval = () => {
       const approveFunction = httpsCallable(functions, 'approveJobPosting');
       await approveFunction({ postingId });
 
-      toast.success('공고가 승인되었습니다');
+      toast.success(i18n.t('toast.jobPosting.approveSuccess'));
       logger.info('공고 승인 완료');
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('공고 승인 실패', err instanceof Error ? err : new Error(String(err)));
 
       // Firebase Functions 에러 처리
-      if (err.code === 'permission-denied') {
-        toast.error('Admin 권한이 필요합니다');
-      } else if (err.code === 'not-found') {
-        toast.error('공고를 찾을 수 없습니다');
-      } else if (err.code === 'failed-precondition') {
-        toast.error('이미 승인/거부된 공고입니다');
-      } else if (err.code === 'invalid-argument') {
-        toast.error('대회 공고만 승인 가능합니다');
+      const errorCode = (err as { code?: string }).code;
+      if (errorCode === 'permission-denied') {
+        toast.error(i18n.t('toast.jobPosting.adminRequired'));
+      } else if (errorCode === 'not-found') {
+        toast.error(i18n.t('toast.jobPosting.notFound'));
+      } else if (errorCode === 'failed-precondition') {
+        toast.error(i18n.t('toast.jobPosting.alreadyProcessed'));
+      } else if (errorCode === 'invalid-argument') {
+        toast.error(i18n.t('toast.jobPosting.onlyTournamentCanApprove'));
       } else {
-        toast.error('공고 승인 중 오류가 발생했습니다');
+        toast.error(i18n.t('toast.jobPosting.approveError'));
       }
 
       throw err;
@@ -101,12 +103,12 @@ export const useJobPostingApproval = () => {
    */
   const reject = useCallback(async (postingId: string, reason: string) => {
     if (!postingId) {
-      toast.error('공고 ID가 필요합니다');
+      toast.error(i18n.t('toast.jobPosting.idRequired'));
       return;
     }
 
     if (!reason || reason.trim().length < 10) {
-      toast.error('거부 사유는 최소 10자 이상이어야 합니다');
+      toast.error(i18n.t('toast.jobPosting.rejectReasonMinLength'));
       return;
     }
 
@@ -116,24 +118,26 @@ export const useJobPostingApproval = () => {
       const rejectFunction = httpsCallable(functions, 'rejectJobPosting');
       await rejectFunction({ postingId, reason: reason.trim() });
 
-      toast.success('공고가 거부되었습니다');
+      toast.success(i18n.t('toast.jobPosting.rejectSuccess'));
       logger.info('공고 거부 완료');
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('공고 거부 실패', err instanceof Error ? err : new Error(String(err)));
 
       // Firebase Functions 에러 처리
-      if (err.code === 'permission-denied') {
-        toast.error('Admin 권한이 필요합니다');
-      } else if (err.code === 'not-found') {
-        toast.error('공고를 찾을 수 없습니다');
-      } else if (err.code === 'invalid-argument') {
-        if (err.message.includes('거부 사유')) {
-          toast.error('거부 사유는 최소 10자 이상이어야 합니다');
+      const errorCode = (err as { code?: string }).code;
+      const errorMessage = (err as { message?: string }).message;
+      if (errorCode === 'permission-denied') {
+        toast.error(i18n.t('toast.jobPosting.adminRequired'));
+      } else if (errorCode === 'not-found') {
+        toast.error(i18n.t('toast.jobPosting.notFound'));
+      } else if (errorCode === 'invalid-argument') {
+        if (errorMessage?.includes('거부 사유')) {
+          toast.error(i18n.t('toast.jobPosting.rejectReasonMinLength'));
         } else {
-          toast.error('대회 공고만 거부 가능합니다');
+          toast.error(i18n.t('toast.jobPosting.onlyTournamentCanReject'));
         }
       } else {
-        toast.error('공고 거부 중 오류가 발생했습니다');
+        toast.error(i18n.t('toast.jobPosting.rejectError'));
       }
 
       throw err;

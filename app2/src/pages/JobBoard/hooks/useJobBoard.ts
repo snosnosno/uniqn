@@ -269,7 +269,7 @@ export const useJobBoard = () => {
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        showError('프로필 조회 권한이 없습니다. 로그인 상태를 확인해주세요.');
+        showError(t('toast.application.profilePermissionDenied'));
         return;
       }
 
@@ -283,7 +283,7 @@ export const useJobBoard = () => {
         'ko'
       );
 
-      showError(`프로필 정보 확인 실패: ${message}`);
+      showError(t('toast.application.profileCheckFailed', { message }));
       return;
     }
 
@@ -322,7 +322,7 @@ export const useJobBoard = () => {
       return;
     }
     if (!selectedPost || selectedAssignments.length === 0) {
-      showWarning('최소 1개 이상의 시간대/역할을 선택해주세요.');
+      showWarning(t('toast.application.selectAtLeastOneSlot'));
       return;
     }
 
@@ -445,14 +445,14 @@ export const useJobBoard = () => {
 
       // 지원서 즉시 업데이트 완료
 
-      showSuccess(`지원이 완료되었습니다! (선택한 항목: ${selectedAssignments.length}개)`);
+      showSuccess(t('toast.application.submitSuccess', { count: selectedAssignments.length }));
       setAppliedJobs((prev) => new Map(prev).set(selectedPost.id, 'applied'));
       setIsApplyModalOpen(false);
       setSelectedPost(null);
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        showError('지원서 제출 권한이 없습니다. 로그인 상태를 확인해주세요.');
+        showError(t('toast.application.submitPermissionDenied'));
         return;
       }
 
@@ -468,7 +468,7 @@ export const useJobBoard = () => {
         'ko'
       );
 
-      showError(`지원서 제출 실패: ${message}`);
+      showError(t('toast.application.submitFailed', { message }));
     } finally {
       setIsProcessing(null);
     }
@@ -532,7 +532,7 @@ export const useJobBoard = () => {
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        showError('지원서 취소 권한이 없습니다. 본인이 제출한 지원서만 취소할 수 있습니다.');
+        showError(t('toast.application.cancelPermissionDenied'));
         return;
       }
 
@@ -547,7 +547,7 @@ export const useJobBoard = () => {
         'ko'
       );
 
-      showError(`지원서 취소 실패: ${message}`);
+      showError(t('toast.application.cancelFailed', { message }));
     } finally {
       setIsProcessing(null);
     }
@@ -571,7 +571,7 @@ export const useJobBoard = () => {
           component: 'useJobBoard',
           value: postOrId,
         });
-        showError('구인공고 정보를 찾을 수 없습니다.');
+        showError(t('toast.application.postingNotFound'));
         return;
       }
     } else {

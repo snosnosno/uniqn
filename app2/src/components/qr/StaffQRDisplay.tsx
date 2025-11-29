@@ -13,6 +13,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useStaffQR } from '../../hooks/useStaffQR';
 import { logger } from '../../utils/logger';
@@ -32,6 +33,7 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
   userName,
   autoRefresh = true,
 }) => {
+  const { t } = useTranslation();
   const { qrMetadata, qrString, loading, error, regenerate, refresh, remainingSeconds } =
     useStaffQR({ userId, userName, autoRefresh });
 
@@ -42,11 +44,12 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
     try {
       await regenerate();
       logger.info('QR 재생성 완료', { data: { userId, userName } });
-      toast.success('QR 코드가 재생성되었습니다. 기존 QR 코드는 사용할 수 없습니다.');
+      toast.success(t('toast.qr.regenerateSuccess'));
     } catch (err) {
       logger.error('QR 재생성 실패', err as Error, { data: { userId } });
-      toast.error('QR 코드 재생성에 실패했습니다.');
+      toast.error(t('toast.qr.regenerateError'));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regenerate, userId, userName]);
 
   /**
@@ -78,11 +81,12 @@ export const StaffQRDisplay: React.FC<StaffQRDisplayProps> = ({
     navigator.clipboard
       .writeText(qrString)
       .then(() => {
-        toast.success('QR 주소가 복사되었습니다.');
+        toast.success(t('toast.qr.copySuccess'));
       })
       .catch(() => {
-        toast.error('복사에 실패했습니다.');
+        toast.error(t('toast.common.copyFailed'));
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrString]);
 
   /**

@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
+import type { JobPosting } from '@/types/jobPosting';
 
 // Types
 import { Assignment, SelectedAssignments } from './types';
@@ -18,7 +19,7 @@ import ConfirmModal from '../../modals/ConfirmModal';
 // Utils - hasMultipleSelections 제거 (더 이상 필요 없음)
 
 interface ApplicantListTabProps {
-  jobPosting?: any;
+  jobPosting?: JobPosting | null;
 }
 
 /**
@@ -26,7 +27,7 @@ interface ApplicantListTabProps {
  */
 const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
 
   // 지원자 데이터 관리
   const { applicants, loadingApplicants, refreshApplicants } = useApplicantData(jobPosting?.id);
@@ -46,6 +47,7 @@ const ApplicantListTab: React.FC<ApplicantListTabProps> = ({ jobPosting }) => {
   } = useApplicantActions({
     jobPosting,
     currentUser,
+    isAdmin,
     onRefresh: refreshApplicants,
   });
 

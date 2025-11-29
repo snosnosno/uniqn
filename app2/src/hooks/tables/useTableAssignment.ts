@@ -15,6 +15,7 @@ import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import { logAction } from '../useLogger';
+import i18n from '../../i18n/config';
 
 import { Table } from '../useTables';
 import { Participant } from '../useParticipants';
@@ -71,7 +72,7 @@ export const useTableAssignment = (
     async (participants: Participant[]): Promise<AssignmentResult[]> => {
       if (!userId || !tournamentId) return [];
       if (participants.length === 0) {
-        toast.warning('배정할 참가자가 없습니다.');
+        toast.warning(i18n.t('toast.assignment.noParticipants'));
         return [];
       }
       setLoading(true);
@@ -91,7 +92,7 @@ export const useTableAssignment = (
           logger.error('No open tables for seat assignment', new Error('No open tables'), {
             component: 'useTableAssignment',
           });
-          toast.error('좌석을 배정할 수 있는 활성화된 테이블이 없습니다.');
+          toast.error(i18n.t('toast.assignment.noActiveTablesForSeat'));
           return [];
         }
 
@@ -108,7 +109,10 @@ export const useTableAssignment = (
             }
           );
           toast.error(
-            `참가자 수(${participants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`
+            i18n.t('toast.assignment.tooManyParticipants', {
+              count: participants.length,
+              seats: totalSeats,
+            })
           );
           return [];
         }
@@ -206,7 +210,7 @@ export const useTableAssignment = (
             component: 'useTableAssignment',
           }
         );
-        toast.error('좌석 자동 배정 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.assignment.autoAssignError'));
         setError(e as Error);
         return [];
       } finally {
@@ -220,7 +224,7 @@ export const useTableAssignment = (
     async (participants: Participant[]): Promise<AssignmentResult[]> => {
       if (!userId || !tournamentId) return [];
       if (participants.length === 0) {
-        toast.warning('배정할 참가자가 없습니다.');
+        toast.warning(i18n.t('toast.assignment.noParticipants'));
         return [];
       }
       setLoading(true);
@@ -240,7 +244,7 @@ export const useTableAssignment = (
           logger.error('No open tables for seat assignment', new Error('No open tables'), {
             component: 'useTableAssignment',
           });
-          toast.error('좌석을 배정할 수 있는 활성화된 테이블이 없습니다.');
+          toast.error(i18n.t('toast.assignment.noActiveTablesForSeat'));
           return [];
         }
 
@@ -266,7 +270,10 @@ export const useTableAssignment = (
             }
           );
           toast.error(
-            `참가자 수(${participants.length}명)가 빈 좌석 수(${totalEmptySeats}석)보다 많아 배정할 수 없습니다.`
+            i18n.t('toast.assignment.tooManyForEmptySeats', {
+              count: participants.length,
+              seats: totalEmptySeats,
+            })
           );
           return [];
         }
@@ -294,7 +301,7 @@ export const useTableAssignment = (
             logger.error('No empty seats available', new Error('No empty seats'), {
               component: 'useTableAssignment',
             });
-            toast.error('빈 좌석이 없습니다.');
+            toast.error(i18n.t('toast.assignment.noEmptySeats'));
             continue;
           }
 
@@ -358,7 +365,7 @@ export const useTableAssignment = (
             component: 'useTableAssignment',
           }
         );
-        toast.error('대기 참가자 배정 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.assignment.waitingAssignError'));
         setError(e as Error);
         return [];
       } finally {
@@ -373,7 +380,7 @@ export const useTableAssignment = (
       if (!userId || !tournamentId) return [];
       const activeParticipants = participants.filter((p) => p.status === 'active');
       if (activeParticipants.length === 0) {
-        toast.warning('칩 균형 재배치할 활성 참가자가 없습니다.');
+        toast.warning(i18n.t('toast.assignment.noActiveForBalance'));
         return [];
       }
 
@@ -395,7 +402,7 @@ export const useTableAssignment = (
           logger.error('No open tables for chip balance', new Error('No open tables'), {
             component: 'useTableAssignment',
           });
-          toast.error('칩 균형 재배치를 할 수 있는 활성화된 테이블이 없습니다.');
+          toast.error(i18n.t('toast.assignment.noActiveTablesForBalance'));
           return [];
         }
 
@@ -412,7 +419,10 @@ export const useTableAssignment = (
             }
           );
           toast.error(
-            `활성 참가자 수(${activeParticipants.length}명)가 전체 좌석 수(${totalSeats}석)보다 많아 배정할 수 없습니다.`
+            i18n.t('toast.assignment.tooManyParticipants', {
+              count: activeParticipants.length,
+              seats: totalSeats,
+            })
           );
           return [];
         }
@@ -559,9 +569,9 @@ export const useTableAssignment = (
         const playerCountBalanced = playerCountDiff <= 1;
 
         if (!playerCountBalanced) {
-          toast.warning(`⚠️ 인원 불균형: 테이블 간 최대 ${playerCountDiff}명 차이가 발생했습니다.`);
+          toast.warning(i18n.t('toast.assignment.imbalanceWarning', { diff: playerCountDiff }));
         } else {
-          toast.success(`✅ 칩 균형 재배치가 완료되었습니다.`);
+          toast.success(i18n.t('toast.assignment.balanceComplete'));
         }
 
         logAction('seats_reassigned_with_balancing', {
@@ -583,7 +593,7 @@ export const useTableAssignment = (
             component: 'useTableAssignment',
           }
         );
-        toast.error('칩 균형 재배치 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.assignment.balanceError'));
         setError(e as Error);
         return [];
       } finally {
@@ -608,7 +618,7 @@ export const useTableAssignment = (
           const toTable = tables.find((t) => t.id === to.tableId);
 
           if (!fromTable || !toTable) {
-            toast.error('테이블을 찾을 수 없습니다.');
+            toast.error(i18n.t('toast.tables.notFound'));
             return;
           }
 
@@ -627,7 +637,7 @@ export const useTableAssignment = (
               logger.error('Table not found during seat move', new Error('Table not found'), {
                 component: 'useTableAssignment',
               });
-              toast.error('테이블을 찾을 수 없습니다.');
+              toast.error(i18n.t('toast.tables.notFound'));
               return;
             }
 
@@ -636,7 +646,7 @@ export const useTableAssignment = (
               logger.error('Target seat already occupied', new Error('Seat occupied'), {
                 component: 'useTableAssignment',
               });
-              toast.error('해당 좌석에 이미 참가자가 있습니다.');
+              toast.error(i18n.t('toast.tables.seatOccupied'));
               return;
             }
 
@@ -670,7 +680,7 @@ export const useTableAssignment = (
                   component: 'useTableAssignment',
                 }
               );
-              toast.error('테이블 정보를 찾을 수 없습니다.');
+              toast.error(i18n.t('toast.tables.infoNotFound'));
               return;
             }
 
@@ -685,7 +695,7 @@ export const useTableAssignment = (
                   component: 'useTableAssignment',
                 }
               );
-              toast.error('해당 좌석에 이미 참가자가 있습니다.');
+              toast.error(i18n.t('toast.tables.seatOccupied'));
               return;
             }
 
@@ -712,7 +722,7 @@ export const useTableAssignment = (
           }
         );
         setError(e as Error);
-        toast.error('좌석 이동 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.assignment.seatMoveError'));
       }
     },
     [userId, tournamentId, tables]
@@ -751,7 +761,7 @@ export const useTableAssignment = (
           component: 'useTableAssignment',
         });
         setError(e as Error);
-        toast.error('참가자 탈락 처리 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.assignment.eliminationError'));
       }
     },
     [userId, tournamentId, tables]

@@ -32,7 +32,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
   // 스케줄 데이터 상태
   const [schedules, setSchedules] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // UnifiedDataContext 데이터를 스케줄 이벤트로 변환
   useEffect(() => {
@@ -148,7 +148,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
           userId: currentUser?.uid,
           fallbackMessage: '스케줄 데이터를 불러오는 중 오류가 발생했습니다.',
         });
-        setError(errorMessage);
+        setError(new Error(errorMessage));
         setLoading(false);
       }
     };

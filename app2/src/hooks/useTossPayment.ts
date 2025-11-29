@@ -4,6 +4,7 @@ import { loadTossPayments, type TossPaymentsInstance } from '@tosspayments/payme
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { useToast } from './useToast';
+import i18n from '../i18n';
 import type { TossPaymentRequest, ChipPackageId } from '../types/payment';
 import { CHIP_PACKAGES } from '../config/chipPricing';
 
@@ -52,7 +53,7 @@ export const useTossPayment = () => {
             operation: 'initializeTossPayments',
             additionalData: { env: process.env.NODE_ENV },
           });
-          toastRef.current.showError('결제 시스템 설정 오류');
+          toastRef.current.showError(i18n.t('toast.payment.systemConfigError'));
           return;
         }
 
@@ -64,7 +65,7 @@ export const useTossPayment = () => {
         logger.error('토스페이먼츠 SDK 초기화 실패', error instanceof Error ? error : undefined, {
           operation: 'initializeTossPayments',
         });
-        toastRef.current.showError('결제 시스템 초기화 실패');
+        toastRef.current.showError(i18n.t('toast.payment.systemInitError'));
       }
     };
 
@@ -91,13 +92,13 @@ export const useTossPayment = () => {
     async (packageId: ChipPackageId) => {
       try {
         if (!currentUser) {
-          toast.showError('로그인이 필요합니다');
+          toast.showError(i18n.t('toast.payment.loginRequired'));
           navigate('/login');
           return;
         }
 
         if (!isInitialized || !tossPayments) {
-          toast.showError('결제 시스템이 초기화되지 않았습니다');
+          toast.showError(i18n.t('toast.payment.systemNotInitialized'));
           return;
         }
 
@@ -139,7 +140,7 @@ export const useTossPayment = () => {
           operation: 'requestChipPayment',
           additionalData: { packageId },
         });
-        toast.showError('결제 요청에 실패했습니다');
+        toast.showError(i18n.t('toast.payment.requestError'));
       } finally {
         setIsLoading(false);
       }
@@ -156,7 +157,7 @@ export const useTossPayment = () => {
         operation: 'requestSubscriptionPayment',
         additionalData: { planType },
       });
-      toast.showInfo('구독 플랜 결제는 준비 중입니다');
+      toast.showInfo(i18n.t('toast.payment.subscriptionComingSoon'));
     },
     [toast]
   );

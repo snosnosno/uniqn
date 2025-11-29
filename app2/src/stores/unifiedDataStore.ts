@@ -42,7 +42,7 @@ interface UnifiedDataState {
   attendanceRecords: Map<string, AttendanceRecord>;
   jobPostings: Map<string, JobPosting>;
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
 
   // 🚀 인덱스 맵 (O(n) → O(1) 조회 성능 개선)
   // workLogs 인덱스
@@ -118,7 +118,7 @@ interface UnifiedDataActions {
 
   // 로딩/에러 상태 관리
   setLoading: (isLoading: boolean) => void;
-  setError: (error: string | null) => void;
+  setError: (error: Error | null) => void;
 }
 
 /**
@@ -312,9 +312,9 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
                 count: staffMap.size,
               });
             },
-            (error) => {
-              logger.error('[UnifiedDataStore] Staff 구독 에러', error);
-              set({ error: error.message, isLoading: false });
+            (err) => {
+              logger.error('[UnifiedDataStore] Staff 구독 에러', err);
+              set({ error: err, isLoading: false });
             }
           );
 
@@ -365,10 +365,10 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
                 },
               });
             },
-            (error) => {
-              logger.error('[UnifiedDataStore] WorkLogs 구독 에러', error);
+            (err) => {
+              logger.error('[UnifiedDataStore] WorkLogs 구독 에러', err);
               set({
-                error: error.message,
+                error: err,
                 isLoading: false,
               });
             }
@@ -420,10 +420,10 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
                 },
               });
             },
-            (error) => {
-              logger.error('[UnifiedDataStore] Applications 구독 에러', error);
+            (err) => {
+              logger.error('[UnifiedDataStore] Applications 구독 에러', err);
               set({
-                error: error.message,
+                error: err,
                 isLoading: false,
               });
             }
@@ -448,10 +448,10 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
                 count: recordsMap.size,
               });
             },
-            (error) => {
-              logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', error);
+            (err) => {
+              logger.error('[UnifiedDataStore] AttendanceRecords 구독 에러', err);
               set({
-                error: error.message,
+                error: err,
                 isLoading: false,
               });
             }
@@ -476,21 +476,19 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
                 count: postingsMap.size,
               });
             },
-            (error) => {
-              logger.error('[UnifiedDataStore] JobPostings 구독 에러', error);
+            (err) => {
+              logger.error('[UnifiedDataStore] JobPostings 구독 에러', err);
               set({
-                error: error.message,
+                error: err,
                 isLoading: false,
               });
             }
           );
-        } catch (error) {
-          logger.error(
-            '[UnifiedDataStore] 구독 초기화 에러',
-            error instanceof Error ? error : new Error(String(error))
-          );
+        } catch (err) {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          logger.error('[UnifiedDataStore] 구독 초기화 에러', errorObj);
           set({
-            error: error instanceof Error ? error.message : String(error),
+            error: errorObj,
             isLoading: false,
           });
         }
@@ -648,7 +646,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
         set({ isLoading });
       },
 
-      setError: (error: string | null): void => {
+      setError: (error: Error | null): void => {
         set({ error });
       },
     })),

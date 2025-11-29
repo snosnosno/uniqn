@@ -152,7 +152,7 @@ const ShiftSchedulePage: React.FC = () => {
 
   // 설정 저장 함수 - 업데이트 예정
   const handleSaveSettings = async () => {
-    showError('이 기능은 현재 업데이트 중입니다.');
+    showError(t('toast.shift.featureInProgress'));
     setIsSettingsModalOpen(false);
     return;
   };
@@ -185,7 +185,7 @@ const ShiftSchedulePage: React.FC = () => {
 
   // 새 스케줄 생성 핸들러 - 업데이트 예정
   const handleCreateSchedule = async () => {
-    showError('이 기능은 현재 업데이트 중입니다.');
+    showError(t('toast.shift.featureInProgress'));
     return;
   };
 
@@ -205,7 +205,7 @@ const ShiftSchedulePage: React.FC = () => {
       // Handle Firebase Timestamp object
       if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
         // Firebase Timestamp object
-        date = new Date((dateInput as any).seconds * 1000);
+        date = new Date((dateInput as { seconds: number }).seconds * 1000);
       } else if (dateInput instanceof Date) {
         // Already a Date object
         date = dateInput;

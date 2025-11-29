@@ -112,7 +112,7 @@ const FixedJobListTab: React.FC = () => {
       return;
     }
     if (!selectedPosting || selectedRoles.length === 0) {
-      showWarning('최소 1개 이상의 역할을 선택해주세요.');
+      showWarning(t('toast.application.selectAtLeastOneRole'));
       return;
     }
 
@@ -158,7 +158,7 @@ const FixedJobListTab: React.FC = () => {
       setSelectedRoles([]);
     } catch (err) {
       logger.error('지원 제출 오류:', err as Error);
-      showError('지원서 제출 중 오류가 발생했습니다.');
+      showError(t('toast.application.submitError'));
     } finally {
       setIsProcessing(false);
     }

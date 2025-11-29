@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { getDocs, DocumentSnapshot } from 'firebase/firestore';
+import { getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 import { buildFilteredQuery } from '../firebase';
 import {
@@ -83,19 +83,22 @@ export const useJobPostings = (filters: JobPostingFilters) => {
 
 // Infinite scroll implementation
 export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
-  return useInfiniteQuery<{ jobs: JobPosting[]; nextCursor: any | null }, Error>({
+  return useInfiniteQuery<
+    { jobs: JobPosting[]; nextCursor: QueryDocumentSnapshot<DocumentData> | null },
+    Error
+  >({
     queryKey: ['jobPostings', 'infinite', filters],
     queryFn: async ({ pageParam }) => {
-      return withFirebaseErrorHandling(async () => {
+      const result = (await withFirebaseErrorHandling(async () => {
         const paginationOptions: {
           limit: number;
-          startAfterDoc?: DocumentSnapshot;
+          startAfterDoc?: QueryDocumentSnapshot<DocumentData>;
         } = {
           limit: 20,
         };
 
         if (pageParam) {
-          paginationOptions.startAfterDoc = pageParam as DocumentSnapshot;
+          paginationOptions.startAfterDoc = pageParam as QueryDocumentSnapshot<DocumentData>;
         }
 
         const query = buildFilteredQuery(filters, paginationOptions);
@@ -151,11 +154,18 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
           jobs,
           nextCursor: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
         };
-      }, 'fetchInfiniteJobPostings');
+      }, 'fetchInfiniteJobPostings')) as {
+        jobs: JobPosting[];
+        nextCursor: QueryDocumentSnapshot<DocumentData> | null;
+      };
+      // withFirebaseErrorHandling이 undefined를 반환할 수 있으므로 기본값 제공
+      return result ?? { jobs: [], nextCursor: null };
     },
     initialPageParam: null,
-    getNextPageParam: (lastPage: { jobs: JobPosting[]; nextCursor: any | null }) =>
-      lastPage.nextCursor,
+    getNextPageParam: (lastPage: {
+      jobs: JobPosting[];
+      nextCursor: QueryDocumentSnapshot<DocumentData> | null;
+    }) => lastPage.nextCursor,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,

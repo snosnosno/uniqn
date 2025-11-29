@@ -167,7 +167,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
 
     // 출근 상태로 변경 시 출근 시간이 미정인지 확인
     if (newStatus === 'checked_in' && (!scheduledStartTime || scheduledStartTime === '미정')) {
-      showError('출근 시간이 설정되지 않았습니다. 먼저 출근 시간을 설정해주세요.');
+      showError(t('toast.attendance.checkInTimeNotSet'));
       // 실패 시 원래 상태로 복원
       setLocalStatus(currentStatus);
       return;
@@ -383,7 +383,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         onStatusChange(normalizedStatus);
       }
 
-      showError('출석 상태 변경 중 오류가 발생했습니다.');
+      showError(t('toast.attendance.statusChangeError'));
     } finally {
       setIsUpdating(false);
     }

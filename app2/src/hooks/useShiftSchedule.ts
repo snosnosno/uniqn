@@ -225,7 +225,8 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
 
       try {
         const scheduleRef = doc(db, 'shiftSchedules', scheduleId);
-        const updates: any = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const updates: Record<string, any> = {
           updatedAt: serverTimestamp(),
         };
 
@@ -234,7 +235,8 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
           updates.timeInterval = newInterval;
 
           // 기존 할당 데이터 변환
-          const convertedScheduleData: any = {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const convertedScheduleData: Record<string, any> = {};
           Object.entries(schedule.scheduleData).forEach(([staffId, dealerData]) => {
             convertedScheduleData[staffId] = {
               ...dealerData,

@@ -11,6 +11,7 @@ import { db } from '@/firebase';
 import { logger } from '@/utils/logger';
 import { toast } from '@/utils/toast';
 import { logAction } from '../../useLogger';
+import i18n from '@/i18n/config';
 
 import { Table, BalancingResult } from '../../useTables';
 
@@ -108,7 +109,9 @@ export async function moveParticipantsToOpenTables(
           new Error(`Table with id ${tableIdToProcess} not found`),
           { component: 'participantMover' }
         );
-        toast.error(`${mode === 'close' ? '닫' : '삭제하'}으려는 테이블을 찾을 수 없습니다.`);
+        toast.error(
+          i18n.t(mode === 'close' ? 'toast.tables.closeNotFound' : 'toast.tables.deleteNotFound')
+        );
         return { balancingResult: [], movedParticipantsDetails: [] };
       }
 
@@ -181,7 +184,7 @@ export async function moveParticipantsToOpenTables(
           new Error('No open tables'),
           { component: 'participantMover' }
         );
-        toast.error('참가자를 이동시킬 수 있는 활성화된 테이블이 없습니다.');
+        toast.error(i18n.t('toast.participants.noActiveTablesForMove'));
         return { balancingResult: [], movedParticipantsDetails: [] };
       }
 
@@ -218,7 +221,7 @@ export async function moveParticipantsToOpenTables(
             logger.error('Balancing failed: No seats available', new Error('No seats available'), {
               component: 'participantMover',
             });
-            toast.error('참가자를 배치할 빈 좌석이 없습니다.');
+            toast.error(i18n.t('toast.participants.noEmptySeatsForMove'));
             return { balancingResult: [], movedParticipantsDetails: [] };
           }
 
@@ -324,7 +327,7 @@ export async function moveParticipantsToOpenTables(
       e instanceof Error ? e : new Error(String(e)),
       { component: 'participantMover' }
     );
-    toast.error(`테이블 ${mode === 'close' ? '닫기' : '삭제'} 중 오류가 발생했습니다.`);
+    toast.error(i18n.t(mode === 'close' ? 'toast.tables.closeError' : 'toast.tables.deleteError'));
     return [];
   }
 }

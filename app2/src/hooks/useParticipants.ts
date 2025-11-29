@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { useState, useEffect, useMemo } from 'react';
+import i18n from '../i18n';
 
 import { db } from '../firebase';
 // 향후 안전한 구독 기능 사용 예정
@@ -179,7 +180,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
 
   const addParticipant = async (participant: Omit<Participant, 'id'>) => {
     if (!userId || !tournamentId) {
-      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdAndTournamentIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {
@@ -192,7 +193,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
 
   const updateParticipant = async (id: string, data: Partial<Participant>) => {
     if (!userId || !tournamentId) {
-      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdAndTournamentIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {
@@ -208,7 +209,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
 
   const deleteParticipant = async (id: string) => {
     if (!userId || !tournamentId) {
-      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdAndTournamentIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {
@@ -255,7 +256,7 @@ export const useParticipants = (userId: string | null, tournamentId: string | nu
     seatIndex: number
   ) => {
     if (!userId || !tournamentId) {
-      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdAndTournamentIdRequired'));
     }
 
     try {

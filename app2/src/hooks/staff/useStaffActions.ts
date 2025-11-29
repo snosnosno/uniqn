@@ -21,6 +21,7 @@ import { db } from '../../firebase';
 import { toISODateString } from '../../utils/dateUtils';
 import { logger } from '../../utils/logger';
 import { useToast } from '../useToast';
+import i18n from '../../i18n';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
 import type { ConfirmedStaff } from '../../types/jobPosting/base';
@@ -74,13 +75,13 @@ export function useStaffActions({
     ): Promise<any | null> => {
       // 권한 체크
       if (!canEdit) {
-        showError('이 공고를 수정할 권한이 없습니다.');
+        showError(i18n.t('toast.staff.noEditPermission'));
         return null;
       }
 
       const staff = staffData.find((s) => s.id === staffId);
       if (!staff) {
-        showError('스태프 정보를 찾을 수 없습니다.');
+        showError(i18n.t('toast.staff.notFound'));
         return null;
       }
 
@@ -127,15 +128,13 @@ export function useStaffActions({
             }
           );
 
-          showError(
-            `${staff.name}님의 ${workDate} 근무 기록을 찾을 수 없습니다. 스태프 확정 시 자동 생성되어야 합니다.`
-          );
+          showError(i18n.t('toast.staff.workLogNotFound', { name: staff.name, date: workDate }));
           return null;
         }
       } catch (error) {
         // 🎯 Firebase Error Handling (Phase 3-2 Integration)
         if (isPermissionDenied(error)) {
-          showError('근무 기록 조회 권한이 없습니다. 관리자에게 문의하세요.');
+          showError(i18n.t('toast.staff.noWorkLogPermission'));
           return null;
         }
 
@@ -150,7 +149,7 @@ export function useStaffActions({
           'ko'
         );
 
-        showError(`${staff.name}님의 근무 기록 조회 실패: ${message}`);
+        showError(i18n.t('toast.staff.workLogFetchFailed', { name: staff.name, message }));
         return null;
       }
     },
@@ -164,7 +163,7 @@ export function useStaffActions({
     async (staffId: string, staffName: string, date: string) => {
       try {
         if (!jobPosting?.id) {
-          showError('공고 정보를 찾을 수 없습니다.');
+          showError(i18n.t('toast.staff.postingNotFound'));
           return;
         }
 
@@ -194,7 +193,7 @@ export function useStaffActions({
           const jobPostingDoc = await transaction.get(jobPostingRef);
 
           if (!jobPostingDoc.exists()) {
-            throw new Error('공고를 찾을 수 없습니다.');
+            throw new Error(i18n.t('errors.postingNotFound'));
           }
 
           const currentData = jobPostingDoc.data();
@@ -265,12 +264,12 @@ export function useStaffActions({
           roleInfo = ` (${staffRole} ${staffTimeSlot}: ${currentCount + 1} → ${currentCount}명)`;
         }
 
-        showSuccess(`${staffName} 스태프가 ${date} 날짜에서 삭제되었습니다.${roleInfo}`);
+        showSuccess(i18n.t('toast.staff.deleteSuccess', { name: staffName, date, roleInfo }));
         refresh();
       } catch (error) {
         // 🎯 Firebase Error Handling (Phase 3-2 Integration)
         if (isPermissionDenied(error)) {
-          showError('스태프 삭제 권한이 없습니다. 공고 작성자만 삭제할 수 있습니다.');
+          showError(i18n.t('toast.staff.noDeletePermission'));
           return;
         }
 
@@ -287,7 +286,7 @@ export function useStaffActions({
           'ko'
         );
 
-        showError(`스태프 삭제 실패: ${message}`);
+        showError(i18n.t('toast.staff.deleteFailed', { message }));
       }
     },
     [jobPosting, refresh, showSuccess, showError]
@@ -300,7 +299,7 @@ export function useStaffActions({
     async (staffIds: string[]) => {
       try {
         if (!jobPosting?.id) {
-          showError('공고 정보를 찾을 수 없습니다.');
+          showError(i18n.t('toast.staff.postingNotFound'));
           return;
         }
 
@@ -323,11 +322,14 @@ export function useStaffActions({
           const hasDeleteableStaff = deletable.length > 0;
 
           if (!hasDeleteableStaff) {
-            showError(`선택한 모든 스태프를 삭제할 수 없습니다:\n\n${nonDeletableMessage}`);
+            showError(i18n.t('toast.staff.cannotDeleteAll', { reasons: nonDeletableMessage }));
             return;
           } else {
             showError(
-              `일부 스태프는 삭제할 수 없습니다:\n${nonDeletableMessage}\n\n나머지 ${deletable.length}명만 삭제합니다.`
+              i18n.t('toast.staff.partialDeleteWarning', {
+                reasons: nonDeletableMessage,
+                count: deletable.length,
+              })
             );
           }
         }
@@ -398,23 +400,21 @@ export function useStaffActions({
         }
 
         // 4. 결과 메시지
-        let resultMessage = '';
         if (successCount > 0 && failCount === 0) {
-          resultMessage = `${successCount}명의 스태프가 삭제되었습니다. 인원 카운트가 업데이트되었습니다.`;
-          showSuccess(resultMessage);
+          showSuccess(i18n.t('toast.staff.bulkDeleteSuccess', { count: successCount }));
         } else if (successCount > 0 && failCount > 0) {
-          resultMessage = `${successCount}명 삭제 완료, ${failCount}명 삭제 실패했습니다.`;
-          showError(resultMessage);
+          showError(
+            i18n.t('toast.staff.bulkDeletePartial', { success: successCount, fail: failCount })
+          );
         } else {
-          resultMessage = '선택한 스태프를 삭제할 수 없습니다.';
-          showError(resultMessage);
+          showError(i18n.t('toast.staff.bulkDeleteFailed'));
         }
 
         refresh();
       } catch (error) {
         // 🎯 Firebase Error Handling (Phase 3-2 Integration)
         if (isPermissionDenied(error)) {
-          showError('일괄 삭제 권한이 없습니다. 공고 작성자만 삭제할 수 있습니다.');
+          showError(i18n.t('toast.staff.noBulkDeletePermission'));
           return;
         }
 
@@ -429,7 +429,7 @@ export function useStaffActions({
           'ko'
         );
 
-        showError(`스태프 일괄 삭제 실패: ${message}`);
+        showError(i18n.t('toast.staff.bulkDeleteError', { message }));
       }
     },
     [jobPosting, staffData, refresh, showSuccess, showError]

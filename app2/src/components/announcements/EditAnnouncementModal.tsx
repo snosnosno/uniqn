@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
 import { useToast } from '../../hooks/useToast';
 import { useSystemAnnouncements } from '../../hooks/useSystemAnnouncements';
@@ -33,6 +34,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
   onSuccess,
   announcement,
 }) => {
+  const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const { updateAnnouncement } = useSystemAnnouncements();
 
@@ -144,7 +146,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
         data: { id: announcement.id, title: updateInput.title },
       });
 
-      showSuccess('공지사항이 수정되었습니다.');
+      showSuccess(t('toast.announcement.updateSuccess'));
       onSuccess();
       onClose();
     } catch (error) {
@@ -155,7 +157,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
           component: 'EditAnnouncementModal',
         }
       );
-      showError('공지사항 수정에 실패했습니다.');
+      showError(t('toast.announcement.updateError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -172,6 +174,7 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
     showError,
     onSuccess,
     onClose,
+    t,
   ]);
 
   /**

@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   collection,
   query,
@@ -44,6 +45,7 @@ interface UserRefundHistory {
 }
 
 const RefundBlacklistPage: React.FC = () => {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const [blacklist, setBlacklist] = useState<RefundBlacklistEntry[]>([]);
   const [refundHistory, setRefundHistory] = useState<UserRefundHistory[]>([]);
@@ -61,6 +63,7 @@ const RefundBlacklistPage: React.FC = () => {
     }
 
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const loadData = async () => {
@@ -165,12 +168,12 @@ const RefundBlacklistPage: React.FC = () => {
       });
 
       logger.info('RefundBlacklistPage: 블랙리스트 추가 완료', { userId: user.userId });
-      toast.success(`${user.userEmail}이(가) 블랙리스트에 추가되었습니다.`);
+      toast.success(t('toast.blacklist.addSuccess', { email: user.userEmail }));
 
       await loadBlacklist();
     } catch (error) {
       logger.error('RefundBlacklistPage: 블랙리스트 추가 실패', error as Error);
-      toast.error('블랙리스트 추가에 실패했습니다.');
+      toast.error(t('toast.blacklist.addFailed'));
     }
   };
 
@@ -179,12 +182,12 @@ const RefundBlacklistPage: React.FC = () => {
       await deleteDoc(doc(db, 'refundBlacklist', entry.id));
 
       logger.info('RefundBlacklistPage: 블랙리스트 제거 완료', { userId: entry.userId });
-      toast.success(`${entry.userEmail}이(가) 블랙리스트에서 제거되었습니다.`);
+      toast.success(t('toast.blacklist.removeSuccess', { email: entry.userEmail }));
 
       await loadBlacklist();
     } catch (error) {
       logger.error('RefundBlacklistPage: 블랙리스트 제거 실패', error as Error);
-      toast.error('블랙리스트 제거에 실패했습니다.');
+      toast.error(t('toast.blacklist.removeFailed'));
     }
   };
 

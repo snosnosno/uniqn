@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTournament } from '../contexts/TournamentContext';
 import { useTournamentData } from '../contexts/TournamentDataContext';
 import { Tournament, isDefaultTournament } from '../hooks/useTournaments';
@@ -19,6 +20,7 @@ import { useGroupByDate } from '../hooks/useGroupByDate';
 import { formatDateDisplay, toISODateString } from '../utils/dateUtils';
 
 const TournamentsPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state, dispatch } = useTournament();
   const { tournaments, loading, error, createTournament, updateTournament, deleteTournament } =
@@ -75,7 +77,7 @@ const TournamentsPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.date) {
-      toast.warning('토너먼트 이름과 날짜를 입력해주세요.');
+      toast.warning(t('toast.tournament.inputRequired'));
       return;
     }
 
@@ -88,14 +90,14 @@ const TournamentsPage: React.FC = () => {
         status: formData.status,
         color: formData.color,
       });
-      toast.success('토너먼트가 생성되었습니다.');
+      toast.success(t('toast.tournament.createSuccess'));
       setIsCreateModalOpen(false);
       resetForm();
     } catch (err) {
       logger.error('토너먼트 생성 실패:', err instanceof Error ? err : new Error(String(err)), {
         component: 'TournamentsPage',
       });
-      toast.error('토너먼트 생성에 실패했습니다.');
+      toast.error(t('toast.tournament.createError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +107,7 @@ const TournamentsPage: React.FC = () => {
     e.preventDefault();
     if (!editingTournament) return;
     if (!formData.name || !formData.date) {
-      toast.warning('토너먼트 이름과 날짜를 입력해주세요.');
+      toast.warning(t('toast.tournament.inputRequired'));
       return;
     }
 
@@ -118,7 +120,7 @@ const TournamentsPage: React.FC = () => {
         status: formData.status,
         color: formData.color,
       });
-      toast.success('토너먼트가 수정되었습니다.');
+      toast.success(t('toast.tournament.updateSuccess'));
       setIsEditModalOpen(false);
       setEditingTournament(null);
       resetForm();
@@ -126,7 +128,7 @@ const TournamentsPage: React.FC = () => {
       logger.error('토너먼트 수정 실패:', err instanceof Error ? err : new Error(String(err)), {
         component: 'TournamentsPage',
       });
-      toast.error('토너먼트 수정에 실패했습니다.');
+      toast.error(t('toast.tournament.updateError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -150,14 +152,14 @@ const TournamentsPage: React.FC = () => {
         localStorage.removeItem('lastTournamentId');
       }
 
-      toast.success('토너먼트가 삭제되었습니다.');
+      toast.success(t('toast.tournament.deleteSuccess'));
       setIsDeleteConfirmOpen(false);
       setDeletingTournamentId(null);
     } catch (err) {
       logger.error('토너먼트 삭제 실패:', err instanceof Error ? err : new Error(String(err)), {
         component: 'TournamentsPage',
       });
-      toast.error('토너먼트 삭제에 실패했습니다.');
+      toast.error(t('toast.tournament.deleteError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -166,7 +168,7 @@ const TournamentsPage: React.FC = () => {
   const handleSelectTournament = (tournamentId: string) => {
     dispatch({ type: 'SET_TOURNAMENT', payload: { tournamentId } });
     localStorage.setItem('lastTournamentId', tournamentId);
-    toast.success('토너먼트가 선택되었습니다.');
+    toast.success(t('toast.tournament.selectSuccess'));
     navigate('/app/participants');
   };
 

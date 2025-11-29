@@ -41,7 +41,7 @@ type ActionType =
   | 'tables_assigned_to_tournament'
   | 'action_failed';
 
-export const logAction = async (action: ActionType, details: Record<string, any> = {}) => {
+export const logAction = async (action: ActionType, details: Record<string, unknown> = {}) => {
   const context: LogContext = {
     operation: 'logAction',
     additionalData: { action, details },

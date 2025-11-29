@@ -42,7 +42,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
   eventId,
   onComplete,
 }) => {
-  useTranslation();
+  const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
 
   const [isUpdating, setIsUpdating] = useState(false);
@@ -290,18 +290,19 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       // ⚠️ WorkLog가 없는 스태프가 있으면 경고 메시지 표시
       if (missingWorkLogs.length > 0) {
         showError(
-          `⚠️ 다음 스태프는 WorkLog가 없어 수정할 수 없습니다:\n${missingWorkLogs.join(', ')}\n\n` +
-            `성공: ${successCount}명 / 실패: ${errorCount}명`
+          t('toast.bulk.missingWorkLogs', {
+            names: missingWorkLogs.join(', '),
+            success: successCount,
+            fail: errorCount,
+          })
         );
       } else if (errorCount === 0) {
         // 성공 메시지를 더 구체적으로 표시
         if (editMode === 'time') {
           const startTime = combineTime(startHour, startMinute);
           const endTime = combineTime(endHour, endMinute);
-          showSuccess(
-            `✅ ${successCount}명의 근무 시간이 성공적으로 수정되었습니다.\n` +
-              `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`
-          );
+          const timeInfo = `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`;
+          showSuccess(t('toast.bulk.timeUpdateSuccess', { count: successCount, timeInfo }));
         } else {
           const statusText =
             attendanceStatus === 'not_started'
@@ -309,10 +310,12 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               : attendanceStatus === 'checked_in'
                 ? '출근'
                 : '퇴근';
-          showSuccess(`✅ ${successCount}명의 출석 상태가 "${statusText}"(으)로 변경되었습니다.`);
+          showSuccess(
+            t('toast.bulk.statusUpdateSuccess', { count: successCount, status: statusText })
+          );
         }
       } else {
-        showError(`⚠️ 일부 업데이트 실패\n성공: ${successCount}명 / 실패: ${errorCount}명`);
+        showError(t('toast.bulk.partialError', { success: successCount, fail: errorCount }));
       }
 
       if (onComplete) {
@@ -323,7 +326,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        showError('일괄 수정 권한이 없습니다. 공고 작성자만 수정할 수 있습니다.');
+        showError(t('toast.bulk.noPermission'));
         logger.error(
           '일괄 수정 권한 거부',
           error instanceof Error ? error : new Error(String(error)),
@@ -347,7 +350,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         'ko'
       );
 
-      showError(`일괄 수정 실패: ${message}`);
+      showError(t('toast.bulk.updateFailed', { message }));
     } finally {
       setIsUpdating(false);
     }

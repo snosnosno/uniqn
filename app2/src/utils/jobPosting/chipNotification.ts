@@ -1,6 +1,7 @@
 import { PostingType } from '../../types/jobPosting/jobPosting';
 import { toast } from '../toast';
 import { formatChipCost } from './chipCalculator';
+import i18n from '../../i18n';
 
 /**
  * 칩 차감 예정 알림 표시
@@ -24,7 +25,7 @@ export const notifyChipDeduction = (postingType: PostingType, chipCost: number):
   const typeName = typeNames[postingType] || '공고';
   const costText = formatChipCost(chipCost);
 
-  toast.info(`${typeName} 생성 시 ${costText}이 차감될 예정입니다.`);
+  toast.info(i18n.t('toast.chip.deductionInfo', { type: typeName, cost: costText }));
 };
 
 /**
@@ -37,6 +38,6 @@ export const notifyInsufficientChips = (requiredChips: number, currentChips: num
   const shortage = requiredChips - currentChips;
 
   toast.error(
-    `칩이 부족합니다. ${shortage}칩이 더 필요합니다. (보유: ${currentChips}칩, 필요: ${requiredChips}칩)`
+    i18n.t('toast.chip.insufficient', { shortage, current: currentChips, required: requiredChips })
   );
 };

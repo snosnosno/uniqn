@@ -7,14 +7,9 @@ import {
 // import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
 
 import { JobPosting, JobPostingFormData } from '../types/jobPosting';
-import {
-  DateSpecificRequirement,
-  Benefits,
-  TimeSlot,
-  RoleRequirement,
-} from '../types/jobPosting/base';
-import { Timestamp } from 'firebase/firestore';
+import { DateSpecificRequirement, Benefits } from '../types/jobPosting/base';
 import { toast } from '../utils/toast';
+import i18n from '../i18n';
 
 export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
   const [formData, setFormData] = useState<JobPostingFormData>(() =>
@@ -132,7 +127,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
             (prev.preQuestions || []).length === 0 ? [createNewPreQuestion()] : prev.preQuestions,
         } as JobPostingFormData;
       } else {
-        const { preQuestions, ...rest } = prev;
+        const { preQuestions: _preQuestions, ...rest } = prev;
         return {
           ...rest,
           usesPreQuestions: false,
@@ -322,7 +317,7 @@ export const useJobPostingForm = (initialData?: Partial<JobPosting>) => {
       const availableRoles = PREDEFINED_ROLES.filter((r) => !existingRoles.includes(r));
 
       if (availableRoles.length === 0) {
-        toast.warning('모든 역할이 이미 추가되었습니다.');
+        toast.warning(i18n.t('toast.jobPosting.allRolesAdded'));
         return prev;
       }
 

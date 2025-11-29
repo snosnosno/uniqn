@@ -5,10 +5,12 @@
  * 803줄의 복잡한 비즈니스 로직을 검증합니다.
  */
 
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useApplicantActions } from '../useApplicantActions';
 import { mockUpdateDoc, resetFirebaseMocks } from '@/__tests__/mocks/firebase';
 import { createMockApplicant } from '@/__tests__/mocks/testData';
+import type { JobPosting } from '@/types/jobPosting';
+import type { User } from 'firebase/auth';
 
 // ========================================
 // Mock Setup
@@ -48,17 +50,16 @@ jest.mock('../../../../../services/ApplicationHistoryService', () => ({
 // ========================================
 
 describe('useApplicantActions', () => {
-  // Mock data
+  // Mock data - 최소 필수 필드만 포함하여 부분 모킹
   const mockJobPosting = {
     id: 'posting-1',
     createdBy: 'user-1',
     title: 'Test Job Posting',
-  };
+  } as unknown as JobPosting;
 
   const mockCurrentUser = {
     uid: 'user-1',
-    role: 'user',
-  };
+  } as unknown as User;
 
   const mockOnRefresh = jest.fn();
 
@@ -96,13 +97,13 @@ describe('useApplicantActions', () => {
     test('권한이 없는 사용자는 canEdit이 false다', () => {
       const differentUser = {
         uid: 'user-2', // 다른 사용자
-        role: 'user',
-      };
+      } as unknown as User;
 
       const { result } = renderHook(() =>
         useApplicantActions({
           jobPosting: mockJobPosting,
           currentUser: differentUser,
+          isAdmin: false,
           onRefresh: mockOnRefresh,
         })
       );
@@ -113,13 +114,13 @@ describe('useApplicantActions', () => {
     test('관리자는 항상 canEdit이 true다', () => {
       const adminUser = {
         uid: 'admin-1',
-        role: 'admin',
-      };
+      } as unknown as User;
 
       const { result } = renderHook(() =>
         useApplicantActions({
           jobPosting: mockJobPosting,
           currentUser: adminUser,
+          isAdmin: true,
           onRefresh: mockOnRefresh,
         })
       );
@@ -135,13 +136,13 @@ describe('useApplicantActions', () => {
     test('권한이 없는 사용자가 확정을 시도하면 에러가 발생한다', async () => {
       const differentUser = {
         uid: 'user-2',
-        role: 'user',
-      };
+      } as unknown as User;
 
       const { result } = renderHook(() =>
         useApplicantActions({
           jobPosting: mockJobPosting,
           currentUser: differentUser,
+          isAdmin: false,
           onRefresh: mockOnRefresh,
         })
       );

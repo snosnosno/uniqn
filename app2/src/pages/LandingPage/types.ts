@@ -170,7 +170,7 @@ export interface LandingAnalyticsHook {
   trackPageView: (section: string) => void;
   trackCtaClick: (ctaText: string, link: string) => void;
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
 }
 
 // 5. 상수 타입 정의

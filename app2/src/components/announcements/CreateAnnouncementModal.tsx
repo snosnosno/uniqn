@@ -28,7 +28,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { t: _t } = useTranslation();
+  const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const { createAnnouncement } = useSystemAnnouncements();
 
@@ -113,7 +113,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
         data: { title: input.title, priority: input.priority },
       });
 
-      showSuccess('공지사항이 등록되고 모든 사용자에게 알림이 전송되었습니다.');
+      showSuccess(t('toast.announcement.createSuccess'));
       resetForm();
       onSuccess();
       onClose();
@@ -125,7 +125,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
           component: 'CreateAnnouncementModal',
         }
       );
-      showError('공지사항 등록에 실패했습니다.');
+      showError(t('toast.announcement.createError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -142,6 +142,7 @@ const CreateAnnouncementModal: React.FC<CreateAnnouncementModalProps> = ({
     resetForm,
     onSuccess,
     onClose,
+    t,
   ]);
 
   /**

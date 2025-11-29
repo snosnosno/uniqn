@@ -14,7 +14,7 @@ import {
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { JobPostingTemplate } from '../types/jobPosting';
+import { JobPostingTemplate, JobPostingFormData } from '../types/jobPosting';
 import { templateToFormData } from '../utils/jobPosting/jobPostingHelpers';
 import { useMemo } from 'react';
 
@@ -48,7 +48,7 @@ export const useTemplateManager = () => {
 
   // 템플릿 저장
   const handleSaveTemplate = useCallback(
-    async (formData: any) => {
+    async (formData: Partial<JobPostingFormData>) => {
       if (!currentUser || !templateName.trim()) {
         throw new Error(i18n.t('errors.templateNameRequired'));
       }

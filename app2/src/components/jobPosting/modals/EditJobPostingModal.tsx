@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useJobPostingForm } from '@/hooks/useJobPostingForm';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import {
@@ -32,6 +33,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
   onUpdate,
   isUpdating = false,
 }) => {
+  const { t } = useTranslation();
   const {
     formData,
     handleFormChange,
@@ -742,7 +744,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
         onConfirm={async () => {
           const success = await handleDeleteTemplateConfirm();
           if (success) {
-            toast.success(`"${deleteConfirmTemplate?.name}" 템플릿이 삭제되었습니다.`);
+            toast.success(t('toast.template.deleteSuccess', { name: deleteConfirmTemplate?.name }));
           }
         }}
         title="템플릿 삭제"

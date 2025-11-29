@@ -30,6 +30,7 @@ import { logger } from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './useToast';
 import { useFirestoreQuery } from './firestore';
+import i18n from '../i18n';
 import type { Notification, NotificationFilter, NotificationStats } from '../types';
 
 export interface UseNotificationsReturn {
@@ -231,7 +232,7 @@ export const useNotifications = (): UseNotificationsReturn => {
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         logger.error('알림 읽음 처리 실패', error, { data: { notificationId } });
-        showError('알림 읽음 처리에 실패했습니다.');
+        showError(i18n.t('toast.notification.markReadFailed'));
       }
     },
     [currentUser, showError]
@@ -255,7 +256,7 @@ export const useNotifications = (): UseNotificationsReturn => {
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        showSuccess('읽지 않은 알림이 없습니다.');
+        showSuccess(i18n.t('toast.notification.noUnread'));
         return;
       }
 
@@ -273,11 +274,11 @@ export const useNotifications = (): UseNotificationsReturn => {
       logger.info('모든 알림 읽음 처리', {
         data: { count: snapshot.size },
       });
-      showSuccess(`${snapshot.size}개의 알림을 읽음 처리했습니다.`);
+      showSuccess(i18n.t('toast.notification.markedAllRead', { count: snapshot.size }));
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error('모든 알림 읽음 처리 실패', error);
-      showError('알림 읽음 처리에 실패했습니다.');
+      showError(i18n.t('toast.notification.markReadFailed'));
     }
   }, [currentUser, showSuccess, showError]);
 
@@ -293,11 +294,11 @@ export const useNotifications = (): UseNotificationsReturn => {
         await deleteDoc(notificationRef);
 
         logger.info('알림 삭제', { data: { notificationId } });
-        showSuccess('알림이 삭제되었습니다.');
+        showSuccess(i18n.t('toast.notification.deleted'));
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         logger.error('알림 삭제 실패', error, { data: { notificationId } });
-        showError('알림 삭제에 실패했습니다.');
+        showError(i18n.t('toast.notification.deleteFailed'));
       }
     },
     [currentUser, showSuccess, showError]
@@ -321,7 +322,7 @@ export const useNotifications = (): UseNotificationsReturn => {
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        showSuccess('읽은 알림이 없습니다.');
+        showSuccess(i18n.t('toast.notification.noReadToDelete'));
         return;
       }
 
@@ -336,11 +337,11 @@ export const useNotifications = (): UseNotificationsReturn => {
       logger.info('읽은 알림 모두 삭제', {
         data: { count: snapshot.size },
       });
-      showSuccess(`${snapshot.size}개의 알림이 삭제되었습니다.`);
+      showSuccess(i18n.t('toast.notification.deletedCount', { count: snapshot.size }));
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error('읽은 알림 삭제 실패', error);
-      showError('알림 삭제에 실패했습니다.');
+      showError(i18n.t('toast.notification.deleteFailed'));
     }
   }, [currentUser, showSuccess, showError]);
 
@@ -357,7 +358,7 @@ export const useNotifications = (): UseNotificationsReturn => {
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        showSuccess('삭제할 알림이 없습니다.');
+        showSuccess(i18n.t('toast.notification.noToDelete'));
         return;
       }
 
@@ -372,11 +373,11 @@ export const useNotifications = (): UseNotificationsReturn => {
       logger.info('모든 알림 삭제', {
         data: { count: snapshot.size },
       });
-      showSuccess(`${snapshot.size}개의 알림이 삭제되었습니다.`);
+      showSuccess(i18n.t('toast.notification.deletedCount', { count: snapshot.size }));
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error('모든 알림 삭제 실패', error);
-      showError('알림 삭제에 실패했습니다.');
+      showError(i18n.t('toast.notification.deleteFailed'));
     }
   }, [currentUser, showSuccess, showError]);
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DateSpecificRequirement, TimeSlot } from '../../types/jobPosting';
 import { useDateUtils } from '../../hooks/useDateUtils';
 import {
@@ -50,6 +51,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   onDateSpecificTentativeDescriptionChange,
   onDateSpecificRoleChange,
 }) => {
+  const { t } = useTranslation();
   const { toDropdownValue, fromDropdownValue } = useDateUtils();
   const [customRoleNames, setCustomRoleNames] = useState<Record<string, string>>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -76,7 +78,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
     // 최대 날짜 개수 제한 (30개)
     if (requirements.length >= 30) {
-      toast.warning('최대 30개의 날짜까지만 추가할 수 있습니다.');
+      toast.warning(t('toast.dateRequirements.maxDates'));
       return;
     }
 
@@ -94,7 +96,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
     // 과거 날짜 체크 (오늘은 선택 가능)
     if (selectedMidnight < todayMidnight) {
-      toast.error('과거 날짜는 선택할 수 없습니다.');
+      toast.error(t('toast.dateRequirements.pastDateNotAllowed'));
       return;
     }
 
@@ -102,7 +104,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + 90);
     if (selectedMidnight > maxDate) {
-      toast.error('최대 90일 이내의 날짜만 선택할 수 있습니다.');
+      toast.error(t('toast.dateRequirements.maxDaysRange'));
       return;
     }
 
@@ -110,7 +112,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const isDuplicate = requirements.some((req) => getDateString(req.date) === dateStr);
 
     if (isDuplicate) {
-      toast.warning('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
+      toast.warning(t('toast.dateRequirements.duplicateDate'));
       return;
     }
 
@@ -158,7 +160,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
     // 과거 날짜 체크 (오늘은 선택 가능)
     if (selectedMidnight < todayMidnight) {
-      toast.error('과거 날짜는 선택할 수 없습니다.');
+      toast.error(t('toast.dateRequirements.pastDateNotAllowed'));
       return;
     }
 
@@ -166,7 +168,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + 90);
     if (selectedMidnight > maxDate) {
-      toast.error('최대 90일 이내의 날짜만 선택할 수 있습니다.');
+      toast.error(t('toast.dateRequirements.maxDaysRange'));
       return;
     }
 
@@ -176,7 +178,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     );
 
     if (isDuplicate) {
-      toast.warning('이미 추가된 날짜입니다. 다른 날짜를 선택해주세요.');
+      toast.warning(t('toast.dateRequirements.duplicateDate'));
       return;
     }
 
@@ -193,7 +195,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   // 날짜 제거
   const removeDateRequirement = (index: number) => {
     if (requirements.length === 1) {
-      toast.warning('최소 하나의 날짜는 필요합니다.');
+      toast.warning(t('toast.dateRequirements.minOneDate'));
       return;
     }
 
@@ -261,7 +263,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
       // 종료일 검증
       if (endDateObj <= startDate) {
-        toast.error('종료일은 시작일보다 이후여야 합니다.');
+        toast.error(t('toast.dateRequirements.endDateAfterStart'));
         return;
       }
 
@@ -270,7 +272,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
         (endDateObj.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
       );
       if (daysDiff > 90) {
-        toast.warning('날짜 범위는 최대 90일까지만 선택할 수 있습니다.');
+        toast.warning(t('toast.dateRequirements.maxRangeWarning'));
         return;
       }
 
@@ -304,7 +306,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     if (requirement && timeSlot) {
       // 최대 역할 개수 제한 (10개)
       if (timeSlot.roles.length >= 10) {
-        toast.warning('한 시간대에 최대 10개의 역할까지만 추가할 수 있습니다.');
+        toast.warning(t('toast.dateRequirements.maxRolesPerTimeSlot'));
         return;
       }
 
@@ -680,7 +682,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
 
                                   // 인원수 범위 검증 (1-200명)
                                   if (isNaN(numValue) || numValue < 1 || numValue > 200) {
-                                    toast.error('인원수는 1명에서 200명 사이로 입력해주세요.');
+                                    toast.error(t('toast.dateRequirements.countRange'));
                                     return;
                                   }
 

@@ -6,9 +6,11 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 
 const FooterSection: React.FC = () => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -152,7 +154,7 @@ const FooterSection: React.FC = () => {
               <button
                 onClick={() => {
                   // 이용약관 모달 또는 페이지 이동
-                  toast.info('이용약관 페이지가 준비 중입니다.');
+                  toast.info(t('toast.common.termsComingSoon'));
                 }}
                 className="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
               >
@@ -161,7 +163,7 @@ const FooterSection: React.FC = () => {
               <button
                 onClick={() => {
                   // 개인정보처리방침 모달 또는 페이지 이동
-                  toast.info('개인정보처리방침 페이지가 준비 중입니다.');
+                  toast.info(t('toast.common.privacyComingSoon'));
                 }}
                 className="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-200 transition-colors duration-300"
               >

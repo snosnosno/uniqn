@@ -13,6 +13,7 @@ import { collection, query, where, type Query, type DocumentData } from 'firebas
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreQuery } from './firestore';
 import { requestAccountDeletion, cancelDeletionRequest } from '../services/accountDeletionService';
@@ -76,6 +77,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
       where('userId', '==', currentUser.uid),
       where('status', '==', 'pending')
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.uid]);
 
   // useFirestoreQuery로 실시간 구독
@@ -116,7 +118,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
   const handleRequestDeletion = useCallback(
     async (input: DeletionRequestInput): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -141,7 +143,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
           component: 'useAccountDeletion',
           data: { userId: currentUser.uid },
         });
-        toast.error(error.message || '계정 삭제 요청에 실패했습니다.');
+        toast.error(error.message || i18n.t('toast.account.deletionRequestFailed'));
         throw error;
       }
     },
@@ -154,7 +156,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
   const handleCancelDeletion = useCallback(
     async (requestId: string): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -162,7 +164,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
 
         await cancelDeletionRequest({ requestId });
 
-        toast.success('계정 삭제가 취소되었습니다.', '삭제 취소');
+        toast.success(i18n.t('toast.account.deletionCancelled'));
 
         logger.info('계정 삭제 취소 성공', {
           component: 'useAccountDeletion',
@@ -175,7 +177,7 @@ export const useAccountDeletion = (): UseAccountDeletionReturn => {
           component: 'useAccountDeletion',
           data: { userId: currentUser.uid, requestId },
         });
-        toast.error(error.message || '계정 삭제 취소에 실패했습니다.');
+        toast.error(error.message || i18n.t('toast.account.deletionCancelFailed'));
         throw error;
       }
     },

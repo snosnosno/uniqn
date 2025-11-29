@@ -14,7 +14,7 @@
 // Firebase 모킹
 import { renderHook, act } from '@testing-library/react';
 import { useUnifiedDataStore } from '../unifiedDataStore';
-import type { Staff, WorkLog, Application } from '../../types/unifiedData';
+import type { Staff } from '../../types/unifiedData';
 import { Timestamp } from 'firebase/firestore';
 
 jest.mock('../../firebase', () => ({
@@ -26,6 +26,7 @@ jest.mock('../../firebase', () => ({
 describe('UnifiedDataStore - 단위 테스트', () => {
   beforeEach(() => {
     // 각 테스트 전에 Store 초기화
+    // eslint-disable-next-line testing-library/no-render-in-setup
     const { result } = renderHook(() => useUnifiedDataStore());
     act(() => {
       result.current.setStaff(new Map());
@@ -210,12 +211,14 @@ describe('UnifiedDataStore - 단위 테스트', () => {
 
     it('setError로 에러 상태를 변경할 수 있어야 함', () => {
       const { result } = renderHook(() => useUnifiedDataStore());
+      const testError = new Error('테스트 에러');
 
       act(() => {
-        result.current.setError('테스트 에러');
+        result.current.setError(testError);
       });
 
-      expect(result.current.error).toBe('테스트 에러');
+      expect(result.current.error).toBe(testError);
+      expect(result.current.error?.message).toBe('테스트 에러');
 
       act(() => {
         result.current.setError(null);

@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../../contexts/AuthContext';
+import i18n from '../../i18n';
 import { useActiveSubscription } from '../../hooks/useActiveSubscription';
 import { useToast } from '../../hooks/useToast';
 import type { SubscriptionPlanType } from '../../types/payment/subscription';
@@ -114,7 +115,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
 };
 
 const SubscriptionPage: React.FC = () => {
-  const { t } = useTranslation('payment');
+  const { t: _t } = useTranslation('payment');
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -129,7 +130,7 @@ const SubscriptionPage: React.FC = () => {
 
     if (plan.price === 0) {
       // Free 플랜은 즉시 적용 (다운그레이드)
-      toast.showInfo('무료 플랜으로 변경하려면 현재 구독을 취소해주세요.');
+      toast.showInfo(i18n.t('toast.payment.freePlanCancelRequired'));
       return;
     }
 

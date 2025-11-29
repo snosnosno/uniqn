@@ -7,8 +7,9 @@
  */
 
 import { logger } from './logger';
+import i18n from '../i18n';
 
-interface CacheEntry<T = any> {
+interface CacheEntry<T = unknown> {
   id: string;
   data: T;
   timestamp: number;
@@ -155,7 +156,7 @@ class SmartCache {
     await this.waitForInit();
 
     if (!this.db) {
-      throw new Error('IndexedDB가 초기화되지 않았습니다.');
+      throw new Error(i18n.t('errors.indexedDBNotInitialized'));
     }
 
     const cacheId = this.generateCacheKey(namespace, key);

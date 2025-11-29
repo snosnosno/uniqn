@@ -176,7 +176,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
         // 크롭된 이미지 사용
         const croppedBlob = await getCroppedImageBlob();
         if (!croppedBlob) {
-          throw new Error('크롭된 이미지를 생성할 수 없습니다.');
+          throw new Error(t('errors.croppedImageFailed'));
         }
         uploadBlob = croppedBlob;
       } else {

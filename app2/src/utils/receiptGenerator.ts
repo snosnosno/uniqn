@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import type { Receipt } from '../types/payment/receipt';
 import { logger } from './logger';
+import i18n from '../i18n';
 
 /**
  * 영수증 HTML 생성
@@ -407,7 +408,7 @@ export function printReceipt(receipt: Receipt): void {
     // 새 창 열기
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
-      throw new Error('팝업 차단으로 인해 영수증을 열 수 없습니다.');
+      throw new Error(i18n.t('errors.popupBlocked'));
     }
 
     // HTML 작성

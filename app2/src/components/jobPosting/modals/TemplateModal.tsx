@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
 import Input from '../../ui/Input';
@@ -25,18 +26,20 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
   onSave,
   isSaving = false,
 }) => {
+  const { t } = useTranslation();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!templateName.trim()) {
-      toast.warning('템플릿 이름을 입력해주세요.');
+      toast.warning(t('toast.jobPosting.templateNameRequired'));
       return;
     }
 
     try {
       await onSave();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '템플릿 저장 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : t('toast.template.saveError'));
     }
   };
 

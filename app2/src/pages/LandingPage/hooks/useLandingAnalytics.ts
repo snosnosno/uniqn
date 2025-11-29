@@ -10,9 +10,12 @@ import { logger } from '@/utils/logger';
 import analyticsIntegration from '../utils/analyticsIntegration';
 import performanceMonitor from '../utils/performanceMonitor';
 
+/** 분석 이벤트 파라미터 타입 */
+type AnalyticsParams = Record<string, string | number | boolean | object | null | undefined>;
+
 interface AnalyticsEvent {
   eventName: string;
-  parameters: Record<string, any>;
+  parameters: AnalyticsParams;
   timestamp: number;
   sessionId: string;
 }
@@ -25,19 +28,16 @@ interface PerformanceMetrics {
   LCP?: number;
   FID?: number;
   CLS?: number;
-  [key: string]: any;
+  timeOrigin?: number;
+  [key: string]: number | undefined;
 }
 
 interface UseLandingAnalyticsReturn {
   isLoading: boolean;
-  error: string | null;
-  trackPageView: (page: string, properties?: Record<string, any>) => Promise<void>;
-  trackInteraction: (eventName: string, properties?: Record<string, any>) => Promise<void>;
-  trackCtaClick: (
-    ctaText: string,
-    ctaLink: string,
-    properties?: Record<string, any>
-  ) => Promise<void>;
+  error: Error | null;
+  trackPageView: (page: string, properties?: AnalyticsParams) => Promise<void>;
+  trackInteraction: (eventName: string, properties?: AnalyticsParams) => Promise<void>;
+  trackCtaClick: (ctaText: string, ctaLink: string, properties?: AnalyticsParams) => Promise<void>;
   trackScroll: (scrollDepth: number, section?: string) => Promise<void>;
   trackPerformance: (metricType: string, metrics: PerformanceMetrics) => Promise<void>;
 }
@@ -47,8 +47,19 @@ const generateSessionId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+/** Navigator Network Information API */
+interface NetworkInformation {
+  effectiveType?: '2g' | '3g' | '4g' | 'slow-2g';
+}
+
+/** Navigator with network info */
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation;
+}
+
 // 사용자 환경 정보 수집
 const getUserEnvironment = () => {
+  const navigatorWithConnection = navigator as NavigatorWithConnection;
   return {
     userAgent: navigator.userAgent,
     language: navigator.language,
@@ -60,14 +71,14 @@ const getUserEnvironment = () => {
       width: window.screen.width,
       height: window.screen.height,
     },
-    connection: (navigator as any).connection?.effectiveType || 'unknown',
+    connection: navigatorWithConnection.connection?.effectiveType || 'unknown',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 };
 
 export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const sessionIdRef = useRef<string>(generateSessionId());
   const eventQueueRef = useRef<AnalyticsEvent[]>([]);
   const lastScrollDepthRef = useRef<number>(0);
@@ -115,12 +126,9 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Analytics service error';
-      setError(errorMessage);
-      logger.error(
-        'Failed to process analytics events',
-        err instanceof Error ? err : new Error(errorMessage)
-      );
+      const errorObj = err instanceof Error ? err : new Error('Analytics service error');
+      setError(errorObj);
+      logger.error('Failed to process analytics events', errorObj);
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +147,7 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
   // 이벤트 추가
   const addEvent = useCallback(
-    (eventName: string, parameters: Record<string, any>) => {
+    (eventName: string, parameters: AnalyticsParams) => {
       if (!hasAnalyticsConsent()) {
         logger.info('Analytics consent not given, skipping event', { operation: eventName });
         return;
@@ -187,7 +195,7 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
   // 페이지뷰 추적
   const trackPageView = useCallback(
-    async (page: string, properties?: Record<string, any>) => {
+    async (page: string, properties?: AnalyticsParams) => {
       addEvent('page_view', {
         page_title: document.title,
         page_location: window.location.href,
@@ -201,7 +209,7 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
   // 상호작용 추적
   const trackInteraction = useCallback(
-    async (eventName: string, properties?: Record<string, any>) => {
+    async (eventName: string, properties?: AnalyticsParams) => {
       addEvent('interaction', {
         interaction_type: eventName,
         ...properties,
@@ -212,7 +220,7 @@ export const useLandingAnalytics = (): UseLandingAnalyticsReturn => {
 
   // CTA 클릭 추적 (고도화된 분석 통합)
   const trackCtaClick = useCallback(
-    async (ctaText: string, ctaLink: string, properties?: Record<string, any>) => {
+    async (ctaText: string, ctaLink: string, properties?: AnalyticsParams) => {
       // 기존 분석 시스템
       addEvent('cta_click', {
         cta_text: ctaText,

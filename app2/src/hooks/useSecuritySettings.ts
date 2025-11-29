@@ -169,17 +169,17 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
         // 2. 비밀번호 변경
         await firebaseUpdatePassword(currentUser, input.newPassword);
 
-        toast.success('비밀번호가 변경되었습니다.', '비밀번호 변경');
+        toast.success(i18n.t('toast.account.passwordChanged'));
 
         logger.info('비밀번호 변경 성공', {
           component: 'useSecuritySettings',
           data: { userId: currentUser.uid },
         });
       } catch (err) {
-        const error = err as any;
+        const error = err as { code?: string; message?: string };
 
         if (error.code === 'auth/wrong-password') {
-          const validationError = new ValidationError('현재 비밀번호가 올바르지 않습니다.');
+          const validationError = new ValidationError(i18n.t('toast.account.wrongCurrentPassword'));
           setError(validationError);
           toast.error(validationError.message);
           throw validationError;
@@ -191,11 +191,11 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
           throw error;
         }
 
-        const serviceError = new ServiceError('비밀번호 변경에 실패했습니다.');
+        const serviceError = new ServiceError(i18n.t('toast.account.passwordChangeFailed'));
         setError(serviceError);
-        logger.error('비밀번호 변경 실패', error, {
+        logger.error('비밀번호 변경 실패', new Error(error.message || 'Unknown error'), {
           component: 'useSecuritySettings',
-          data: { userId: currentUser.uid },
+          data: { userId: currentUser.uid, errorCode: error.code },
         });
         toast.error(serviceError.message);
         throw serviceError;
@@ -229,7 +229,7 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
           updatedAt: new Date(),
         });
 
-        toast.success('로그인 알림 설정이 변경되었습니다.');
+        toast.success(i18n.t('toast.account.loginAlertChanged'));
 
         logger.info('로그인 알림 설정 업데이트', {
           component: 'useSecuritySettings',
@@ -242,7 +242,7 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
           component: 'useSecuritySettings',
           data: { userId: currentUser.uid },
         });
-        toast.error('설정 변경에 실패했습니다.');
+        toast.error(i18n.t('toast.account.settingChangeFailed'));
         throw error;
       }
     },

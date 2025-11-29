@@ -245,7 +245,7 @@ const TablesPage: React.FC = () => {
           { tableId: toTableId, seatIndex: toSeatIndex }
         );
         handleCloseMoveSeatModal();
-        toast.success('참가자가 성공적으로 이동되었습니다.');
+        toast.success(t('toast.participants.moveSuccess'));
         logger.info('자리 이동 성공', {
           component: 'TablesPage',
           additionalData: { participantId: selectedPlayer.participant.id },
@@ -256,7 +256,7 @@ const TablesPage: React.FC = () => {
           error instanceof Error ? error : new Error(String(error)),
           { component: 'TablesPage' }
         );
-        toast.error('참가자 이동 중 오류가 발생했습니다.');
+        toast.error(t('toast.participants.moveError'));
       }
     } else {
       logger.warn('자리 이동 확정 실패: 필요한 정보가 없음', {
@@ -315,12 +315,12 @@ const TablesPage: React.FC = () => {
 
   const handleAssignTables = async () => {
     if (selectedTableIds.length === 0) {
-      toast.warning('할당할 테이블을 선택해주세요.');
+      toast.warning(t('toast.assignment.selectTable'));
       return;
     }
 
     if (!targetTournamentId) {
-      toast.warning('목적지 토너먼트를 선택해주세요.');
+      toast.warning(t('toast.assignment.selectDestTournament'));
       return;
     }
 
@@ -358,7 +358,7 @@ const TablesPage: React.FC = () => {
             error instanceof Error ? error : new Error(String(error)),
             { component: 'TablesPage' }
           );
-          toast.error('자동 배정 중 오류가 발생했습니다.');
+          toast.error(t('toast.assignment.autoError'));
         }
       },
     });
@@ -389,7 +389,7 @@ const TablesPage: React.FC = () => {
               results: assignmentResults,
             });
           } else {
-            toast.success('테이블이 닫혔습니다.');
+            toast.success(t('toast.tables.closeSuccess'));
           }
         } catch (error) {
           logger.error(
@@ -397,7 +397,7 @@ const TablesPage: React.FC = () => {
             error instanceof Error ? error : new Error(String(error)),
             { component: 'TablesPage' }
           );
-          toast.error('테이블 닫기 중 오류가 발생했습니다.');
+          toast.error(t('toast.tables.closeError'));
         }
       },
     });
@@ -429,7 +429,7 @@ const TablesPage: React.FC = () => {
               results: assignmentResults,
             });
           } else {
-            toast.success('테이블이 삭제되었습니다.');
+            toast.success(t('toast.tables.deleteSuccess'));
           }
         } catch (error) {
           logger.error(
@@ -437,7 +437,7 @@ const TablesPage: React.FC = () => {
             error instanceof Error ? error : new Error(String(error)),
             { component: 'TablesPage' }
           );
-          toast.error('테이블 삭제 중 오류가 발생했습니다.');
+          toast.error(t('toast.tables.deleteError'));
         }
       },
     });
@@ -457,7 +457,7 @@ const TablesPage: React.FC = () => {
       // 테이블의 seats 배열 업데이트
       const table = tables.find((t) => t.id === tableId);
       if (!table) {
-        toast.error('테이블을 찾을 수 없습니다.');
+        toast.error(t('toast.tables.notFound'));
         return;
       }
 
@@ -472,13 +472,13 @@ const TablesPage: React.FC = () => {
         const tableSnap = await transaction.get(tableRef);
 
         if (!tableSnap.exists()) {
-          toast.error('테이블 정보를 찾을 수 없습니다.');
+          toast.error(t('toast.tables.infoNotFound'));
           return;
         }
 
         const seats = [...tableSnap.data().seats];
         if (seats[seatIndex] !== null) {
-          toast.error('해당 좌석에 이미 참가자가 있습니다.');
+          toast.error(t('toast.tables.seatOccupied'));
           return;
         }
 
@@ -499,7 +499,11 @@ const TablesPage: React.FC = () => {
       });
 
       toast.success(
-        `${waitingParticipantForAssignment.name}이(가) ${table.name || `테이블 ${table.tableNumber}`} - ${seatIndex + 1}번 자리에 배정되었습니다.`
+        t('toast.participants.manualAssignSuccess', {
+          name: waitingParticipantForAssignment.name,
+          table: table.name || `테이블 ${table.tableNumber}`,
+          seat: seatIndex + 1,
+        })
       );
       setIsWaitingAssignmentModalOpen(false);
       setWaitingParticipantForAssignment(null);
@@ -509,7 +513,7 @@ const TablesPage: React.FC = () => {
         error instanceof Error ? error : new Error(String(error)),
         { component: 'TablesPage' }
       );
-      toast.error('수동 배정 중 오류가 발생했습니다.');
+      toast.error(t('toast.tables.manualAssignError'));
     }
   };
 
@@ -519,7 +523,7 @@ const TablesPage: React.FC = () => {
       // 전체 보기 모드에서는 선택된 날짜의 기본 토너먼트에 테이블 추가
       try {
         if (!selectedDate) {
-          toast.error('날짜를 먼저 선택해주세요.');
+          toast.error(t('toast.tables.selectDateFirst'));
           return;
         }
         const defaultTournamentId = await ensureDefaultTournamentForDate(selectedDate);
@@ -534,7 +538,7 @@ const TablesPage: React.FC = () => {
           error instanceof Error ? error : new Error(String(error)),
           { component: 'TablesPage' }
         );
-        toast.error('테이블 추가 중 오류가 발생했습니다.');
+        toast.error(t('toast.tables.addError'));
       }
     } else {
       openNewTable();
@@ -1122,7 +1126,7 @@ const TablesPage: React.FC = () => {
                             setIsParticipantEditModalOpen(false);
                             setMoveSeatModalOpen(true);
                           } else {
-                            toast.error('테이블에 배정되지 않은 참가자입니다.');
+                            toast.error(t('toast.tables.notAssigned'));
                           }
                         }}
                         className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"

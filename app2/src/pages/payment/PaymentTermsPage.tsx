@@ -9,6 +9,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import PaymentStepIndicator from '../../components/payment/PaymentStepIndicator';
@@ -21,6 +22,7 @@ interface TermsAgreement {
 }
 
 const PaymentTermsPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,7 +61,7 @@ const PaymentTermsPage: React.FC = () => {
 
   const handleProceed = () => {
     if (!isAllRequiredAgreed) {
-      toast.warning('필수 약관에 모두 동의해주세요.');
+      toast.warning(t('toast.payment.termsRequired'));
       return;
     }
 

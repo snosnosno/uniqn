@@ -1,6 +1,7 @@
 import { Timestamp, doc, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import i18n from '../i18n';
 import {
   Application,
   Assignment,
@@ -51,7 +52,7 @@ export class ApplicationHistoryService {
         // 현재 지원서 데이터 가져오기
         const applicationDoc = await transaction.get(applicationRef);
         if (!applicationDoc.exists()) {
-          throw new Error('지원서를 찾을 수 없습니다.');
+          throw new Error(i18n.t('errors.applicationNotFound'));
         }
 
         const currentData = applicationDoc.data();
@@ -119,7 +120,7 @@ export class ApplicationHistoryService {
         // 현재 지원서 데이터 가져오기
         const applicationDoc = await transaction.get(applicationRef);
         if (!applicationDoc.exists()) {
-          throw new Error('지원서를 찾을 수 없습니다.');
+          throw new Error(i18n.t('errors.applicationNotFound'));
         }
 
         const currentData = applicationDoc.data();
@@ -130,7 +131,7 @@ export class ApplicationHistoryService {
         // 원본 지원 데이터 확인
         const originalApplication = processedData.originalApplication;
         if (!originalApplication) {
-          throw new Error('원본 지원 데이터를 찾을 수 없습니다.');
+          throw new Error(i18n.t('errors.originalApplicationNotFound'));
         }
 
         // 최신 확정 히스토리에 취소 시간 추가

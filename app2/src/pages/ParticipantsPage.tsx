@@ -119,14 +119,15 @@ const ParticipantsPage: React.FC = () => {
           { tableId: selectedPlayerForMove.table.id, seatIndex: selectedPlayerForMove.seatIndex },
           { tableId: toTableId, seatIndex: toSeatIndex }
         );
-        toast.success('자리 이동이 완료되었습니다.');
+        toast.success(t('toast.participants.seatMoveSuccess'));
         setMoveSeatModalOpen(false);
         setSelectedPlayerForMove(null);
       } catch (error) {
         logger.error('자리 이동 실패', error as Error, { component: 'ParticipantsPage' });
-        toast.error('자리 이동에 실패했습니다.');
+        toast.error(t('toast.participants.seatMoveError'));
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedPlayerForMove, moveSeat]
   );
 
@@ -179,7 +180,7 @@ const ParticipantsPage: React.FC = () => {
     setIsDeletingSingle(true);
     try {
       await deleteParticipant(deleteConfirmId);
-      toast.success('참가자가 삭제되었습니다.');
+      toast.success(t('toast.participants.deleteSuccess'));
       setDeleteConfirmId(null);
     } catch (error) {
       logger.error(
@@ -187,7 +188,7 @@ const ParticipantsPage: React.FC = () => {
         error instanceof Error ? error : new Error(String(error)),
         { component: 'ParticipantsPage' }
       );
-      toast.error('참가자 삭제에 실패했습니다.');
+      toast.error(t('toast.participants.deleteError'));
     } finally {
       setIsDeletingSingle(false);
     }
@@ -222,7 +223,7 @@ const ParticipantsPage: React.FC = () => {
   // 대량 추가 함수
   const handleBulkAdd = async (parsedParticipants: ParsedParticipant[]) => {
     if (!state.userId || !state.tournamentId) {
-      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      toast.error(t('toast.participants.userIdTournamentRequired'));
       return;
     }
 
@@ -247,7 +248,7 @@ const ParticipantsPage: React.FC = () => {
 
     try {
       await batch.commit();
-      toast.success(`${parsedParticipants.length}명의 참가자가 추가되었습니다.`);
+      toast.success(t('toast.participants.bulkAddSuccess', { count: parsedParticipants.length }));
       logger.info('대량 추가 완료', {
         component: 'ParticipantsPage',
         data: { count: parsedParticipants.length },
@@ -258,7 +259,7 @@ const ParticipantsPage: React.FC = () => {
         operation: 'handleBulkAdd',
         data: { count: parsedParticipants.length },
       });
-      toast.error('대량 추가 중 오류가 발생했습니다.');
+      toast.error(t('toast.participants.bulkAddError'));
       throw error;
     }
   };
@@ -266,7 +267,7 @@ const ParticipantsPage: React.FC = () => {
   // 선택 삭제 함수
   const handleDeleteSelected = () => {
     if (selectedIds.size === 0) {
-      toast.warning('삭제할 참가자를 선택해주세요.');
+      toast.warning(t('toast.participants.selectToDelete'));
       return;
     }
 
@@ -275,7 +276,7 @@ const ParticipantsPage: React.FC = () => {
 
   const handleBulkDeleteConfirm = async () => {
     if (!state.userId || !state.tournamentId) {
-      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      toast.error(t('toast.participants.userIdTournamentRequired'));
       return;
     }
 
@@ -318,7 +319,7 @@ const ParticipantsPage: React.FC = () => {
         await batch.commit();
       }
 
-      toast.success(`${selectedIds.size}명의 참가자가 삭제되었습니다.`);
+      toast.success(t('toast.participants.bulkDeleteSuccess', { count: selectedIds.size }));
       setSelectedIds(new Set());
       setIsBulkDeleteConfirmOpen(false);
     } catch (error) {
@@ -327,7 +328,7 @@ const ParticipantsPage: React.FC = () => {
         operation: 'handleDeleteSelected',
         data: { selectedCount: selectedIds.size },
       });
-      toast.error('삭제 중 오류가 발생했습니다.');
+      toast.error(t('toast.participants.bulkDeleteError'));
     } finally {
       setIsDeleting(false);
     }
@@ -336,7 +337,7 @@ const ParticipantsPage: React.FC = () => {
   // 전체 삭제 함수
   const handleDeleteAll = () => {
     if (!state.userId || !state.tournamentId) {
-      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      toast.error(t('toast.participants.userIdTournamentRequired'));
       return;
     }
 
@@ -345,7 +346,7 @@ const ParticipantsPage: React.FC = () => {
 
   const handleDeleteAllConfirm = async () => {
     if (!state.userId || !state.tournamentId) {
-      toast.error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      toast.error(t('toast.participants.userIdTournamentRequired'));
       return;
     }
 
@@ -380,7 +381,7 @@ const ParticipantsPage: React.FC = () => {
         await batch.commit();
       }
 
-      toast.success(`${totalCount}명의 참가자가 모두 삭제되었습니다.`);
+      toast.success(t('toast.participants.deleteAllSuccess', { count: totalCount }));
       setIsDeleteAllConfirmOpen(false);
     } catch (error) {
       logger.error('전체 삭제 실패', error instanceof Error ? error : new Error(String(error)), {
@@ -388,7 +389,7 @@ const ParticipantsPage: React.FC = () => {
         operation: 'handleDeleteAll',
         data: { totalCount: participants.length },
       });
-      toast.error('전체 삭제 중 오류가 발생했습니다.');
+      toast.error(t('toast.participants.deleteAllError'));
     } finally {
       setIsDeleting(false);
     }
@@ -766,7 +767,7 @@ const ParticipantsPage: React.FC = () => {
                             setIsModalOpen(false); // 수정 모달 닫기
                             setMoveSeatModalOpen(true); // 자리이동 모달 열기
                           } else {
-                            toast.error('테이블에 배정되지 않은 참가자입니다.');
+                            toast.error(t('toast.tables.notAssigned'));
                           }
                         }}
                         className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"

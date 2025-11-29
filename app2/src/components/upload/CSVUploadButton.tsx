@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { readCSVFile } from '../../utils/csvParser';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
@@ -9,6 +10,7 @@ interface CSVUploadButtonProps {
 }
 
 const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,7 +19,7 @@ const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled 
 
     // 파일 타입 확인
     if (!file.name.endsWith('.csv') && !file.name.endsWith('.txt')) {
-      toast.error('CSV 또는 TXT 파일만 업로드 가능합니다.');
+      toast.error(t('toast.common.csvTxtOnly'));
       return;
     }
 
@@ -29,7 +31,7 @@ const CSVUploadButton: React.FC<CSVUploadButtonProps> = ({ onFileRead, disabled 
         component: 'CSVUploadButton',
         data: { fileName: file.name },
       });
-      toast.error('파일을 읽는 중 오류가 발생했습니다.');
+      toast.error(t('toast.common.fileReadError'));
     }
 
     // 같은 파일 재선택 가능하도록 초기화

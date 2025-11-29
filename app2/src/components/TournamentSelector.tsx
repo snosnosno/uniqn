@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTournament } from '../contexts/TournamentContext';
 import { useTournamentData } from '../contexts/TournamentDataContext';
 import { isDefaultTournament, getDefaultTournamentId } from '../hooks/useTournaments';
@@ -16,6 +17,7 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({
   className = '',
   dateFilter = null,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state, dispatch } = useTournament();
   const { tournaments, loading } = useTournamentData();
@@ -44,7 +46,7 @@ const TournamentSelector: React.FC<TournamentSelectorProps> = ({
       data: { tournamentId },
     });
 
-    toast.success('토너먼트가 변경되었습니다.');
+    toast.success(t('toast.tournament.changeSuccess'));
   };
 
   const handleManageTournaments = () => {

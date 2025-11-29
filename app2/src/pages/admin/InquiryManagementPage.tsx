@@ -112,12 +112,13 @@ const InquiryManagementPage: React.FC = () => {
             component: 'InquiryManagementPage',
           }
         );
-        showError('문의 목록을 불러오는데 실패했습니다.');
+        showError(t('toast.inquiry.loadError'));
         setLoading(false);
       }
     );
 
     return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]); // showError 제거: useCallback으로 메모이제이션되어 안정적임
 
   // 필터링된 문의 목록
@@ -213,7 +214,7 @@ const InquiryManagementPage: React.FC = () => {
         updatedAt: Timestamp.now(),
       });
 
-      showSuccess('문의 상태가 변경되었습니다.');
+      showSuccess(t('toast.inquiry.statusChangeSuccess'));
       logger.info('문의 상태 변경 성공', {
         inquiryId,
         newStatus,
@@ -230,7 +231,7 @@ const InquiryManagementPage: React.FC = () => {
           component: 'InquiryManagementPage',
         }
       );
-      showError('문의 상태 변경에 실패했습니다.');
+      showError(t('toast.inquiry.statusChangeError'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -251,7 +252,7 @@ const InquiryManagementPage: React.FC = () => {
         updatedAt: Timestamp.now(),
       });
 
-      showSuccess('답변이 저장되었습니다.');
+      showSuccess(t('toast.inquiry.responseSaveSuccess'));
       setShowModal(false);
       setResponse('');
       setSelectedInquiry(null);
@@ -270,7 +271,7 @@ const InquiryManagementPage: React.FC = () => {
           component: 'InquiryManagementPage',
         }
       );
-      showError('답변 저장에 실패했습니다.');
+      showError(t('toast.inquiry.responseSaveError'));
     } finally {
       setUpdatingStatus(false);
     }

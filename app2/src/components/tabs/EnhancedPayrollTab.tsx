@@ -667,7 +667,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6">
           <h3 className="text-lg font-medium text-red-800 dark:text-red-300 mb-2">오류 발생</h3>
           <p className="text-red-600 dark:text-red-400">
-            {error || '알 수 없는 오류가 발생했습니다.'}
+            {error?.message || '알 수 없는 오류가 발생했습니다.'}
           </p>
         </div>
       </div>

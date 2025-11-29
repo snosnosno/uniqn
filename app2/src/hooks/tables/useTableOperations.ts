@@ -20,6 +20,7 @@ import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import { logAction } from '../useLogger';
+import i18n from '../../i18n/config';
 
 import { Table, BalancingResult } from '../useTables';
 import { moveParticipantsToOpenTables } from './utils/participantMover';
@@ -75,7 +76,7 @@ export const useTableOperations = (
       try {
         await updateDoc(tableRef, data);
         logAction('table_details_updated', { tableId, ...data });
-        toast.success('테이블 정보가 성공적으로 업데이트되었습니다.');
+        toast.success(i18n.t('toast.tables.updateSuccess'));
       } catch (e) {
         logger.error(
           'Error updating table details:',
@@ -85,7 +86,7 @@ export const useTableOperations = (
           }
         );
         setError(e as Error);
-        toast.error('테이블 정보 업데이트 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.updateError'));
       }
     },
     [userId, tournamentId]
@@ -106,7 +107,7 @@ export const useTableOperations = (
           }
         );
         setError(e as Error);
-        toast.error('테이블 위치 업데이트 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.positionUpdateError'));
       }
     },
     [userId, tournamentId]
@@ -128,7 +129,7 @@ export const useTableOperations = (
           component: 'useTableOperations',
         });
         setError(e as Error);
-        toast.error('테이블 순서 업데이트 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.orderUpdateError'));
       }
     },
     [userId, tournamentId]
@@ -167,7 +168,7 @@ export const useTableOperations = (
         component: 'useTableOperations',
       });
       setError(e as Error);
-      toast.error('새 테이블 생성 중 오류가 발생했습니다.');
+      toast.error(i18n.t('toast.tables.createError'));
     } finally {
       setLoading(false);
     }
@@ -176,7 +177,7 @@ export const useTableOperations = (
   const openNewTableInTournament = useCallback(
     async (targetTournamentId: string) => {
       if (!userId || !targetTournamentId || targetTournamentId === 'ALL') {
-        toast.error('유효한 토너먼트를 선택해주세요.');
+        toast.error(i18n.t('toast.tables.selectTournament'));
         return;
       }
 
@@ -218,7 +219,7 @@ export const useTableOperations = (
 
         await addDoc(targetTablesRef, newTable);
 
-        toast.success('새 테이블이 성공적으로 추가되었습니다.');
+        toast.success(i18n.t('toast.tables.createSuccess'));
         logAction('table_created_standby', {
           tournamentId: targetTournamentId,
           tableNumber: newTable.tableNumber,
@@ -231,7 +232,7 @@ export const useTableOperations = (
           { component: 'useTableOperations' }
         );
         setError(e as Error);
-        toast.error('새 테이블 생성 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.createError'));
       } finally {
         setLoading(false);
       }
@@ -247,7 +248,7 @@ export const useTableOperations = (
         // 테이블 정보를 먼저 찾아서 실제 tournamentId 사용
         const table = tables.find((t) => t.id === tableId);
         if (!table) {
-          toast.error('테이블을 찾을 수 없습니다.');
+          toast.error(i18n.t('toast.tables.notFound'));
           return;
         }
 
@@ -264,7 +265,7 @@ export const useTableOperations = (
           component: 'useTableOperations',
         });
         setError(e as Error);
-        toast.error('테이블 활성화 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.activateError'));
       }
     },
     [userId, tournamentId, tables]
@@ -277,7 +278,7 @@ export const useTableOperations = (
       // 닫으려는 테이블 찾기
       const tableToClose = tables.find((t) => t.id === tableIdToClose);
       if (!tableToClose) {
-        toast.error('닫으려는 테이블을 찾을 수 없습니다.');
+        toast.error(i18n.t('toast.tables.closeNotFound'));
         return [];
       }
 
@@ -295,9 +296,7 @@ export const useTableOperations = (
         );
 
         if (otherOpenTables.length === 0) {
-          toast.error(
-            '참가자를 이동시킬 수 있는 다른 열린 테이블이 없습니다. 먼저 새 테이블을 추가하거나 참가자를 제거해주세요.'
-          );
+          toast.error(i18n.t('toast.tables.noOpenTablesForMove'));
           return [];
         }
       }
@@ -326,7 +325,7 @@ export const useTableOperations = (
       // 삭제하려는 테이블 찾기
       const tableToDelete = tables.find((t) => t.id === tableIdToDelete);
       if (!tableToDelete) {
-        toast.error('삭제하려는 테이블을 찾을 수 없습니다.');
+        toast.error(i18n.t('toast.tables.deleteNotFound'));
         return [];
       }
 
@@ -344,9 +343,7 @@ export const useTableOperations = (
         );
 
         if (otherOpenTables.length === 0) {
-          toast.error(
-            '참가자를 이동시킬 수 있는 다른 열린 테이블이 없습니다. 먼저 새 테이블을 추가하거나 참가자를 제거해주세요.'
-          );
+          toast.error(i18n.t('toast.tables.noOpenTablesForMove'));
           return [];
         }
       }
@@ -376,7 +373,7 @@ export const useTableOperations = (
           // 테이블의 실제 tournamentId 찾기
           const table = tables.find((t) => t.id === tableId);
           if (!table) {
-            toast.error('테이블을 찾을 수 없습니다.');
+            toast.error(i18n.t('toast.tables.notFound'));
             return;
           }
 
@@ -391,7 +388,7 @@ export const useTableOperations = (
             logger.error('Table not found for max seats update', new Error('Table not found'), {
               component: 'useTableOperations',
             });
-            toast.error('테이블을 찾을 수 없습니다.');
+            toast.error(i18n.t('toast.tables.notFound'));
             return;
           }
 
@@ -418,9 +415,7 @@ export const useTableOperations = (
                   component: 'useTableOperations',
                 }
               );
-              toast.error(
-                `좌석 수를 줄이려면 먼저 다음 플레이어를 이동시켜야 합니다: ${playerInfo}`
-              );
+              toast.error(i18n.t('toast.tables.movePlayersFirst', { players: playerInfo }));
               return;
             }
           }
@@ -443,7 +438,7 @@ export const useTableOperations = (
           }
         );
         setError(e as Error);
-        toast.error('최대 좌석 수 변경 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.maxSeatsError'));
       }
     },
     [userId, tournamentId, tables]
@@ -452,12 +447,12 @@ export const useTableOperations = (
   const assignTableToTournament = useCallback(
     async (tableIds: string[], targetTournamentId: string) => {
       if (!userId) {
-        toast.error('사용자 ID가 필요합니다.');
+        toast.error(i18n.t('toast.tables.userIdRequired'));
         return;
       }
 
       if (!targetTournamentId || targetTournamentId === 'ALL') {
-        toast.error('유효한 토너먼트를 선택해주세요.');
+        toast.error(i18n.t('toast.tables.selectTournament'));
         return;
       }
 
@@ -506,7 +501,7 @@ export const useTableOperations = (
 
         await batch.commit();
 
-        toast.success(`${tableIds.length}개의 테이블이 성공적으로 배정되었습니다.`);
+        toast.success(i18n.t('toast.tables.assignedCount', { count: tableIds.length }));
         logAction('tables_assigned_to_tournament', {
           tableCount: tableIds.length,
           targetTournamentId,
@@ -515,7 +510,7 @@ export const useTableOperations = (
         logger.error('테이블 배정 중 오류 발생:', e instanceof Error ? e : new Error(String(e)), {
           component: 'useTableOperations',
         });
-        toast.error('테이블 배정 중 오류가 발생했습니다.');
+        toast.error(i18n.t('toast.tables.assignError'));
         setError(e as Error);
       } finally {
         setLoading(false);

@@ -31,7 +31,7 @@ interface PayrollWorkerState {
   payrollData: EnhancedPayrollCalculation[];
   summary: PayrollSummary | null;
   loading: boolean;
-  error: string | null;
+  error: Error | null;
   calculationTime: number;
 }
 
@@ -96,7 +96,7 @@ export const usePayrollWorker = () => {
           setState((prev) => ({
             ...prev,
             loading: false,
-            error,
+            error: new Error(error), // Worker에서 문자열로 받아 Error 객체로 변환
           }));
 
           logger.error('Web Worker 정산 계산 오류', new Error(error), {
@@ -111,7 +111,7 @@ export const usePayrollWorker = () => {
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: 'Web Worker 실행 오류가 발생했습니다.',
+          error: new Error('Web Worker 실행 오류가 발생했습니다.'),
         }));
 
         logger.error('Web Worker 오류', new Error(error.message || 'Unknown error'), {
@@ -131,7 +131,7 @@ export const usePayrollWorker = () => {
 
       setState((prev) => ({
         ...prev,
-        error: 'Web Worker를 지원하지 않는 브라우저입니다.',
+        error: new Error('Web Worker를 지원하지 않는 브라우저입니다.'),
       }));
     }
 
@@ -415,21 +415,19 @@ export const usePayrollWorker = () => {
       });
     } catch (error) {
       const requestTime = performance.now() - startTime;
+      const errorObj =
+        error instanceof Error ? error : new Error('정산 계산 중 오류가 발생했습니다.');
 
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: '정산 계산 중 오류가 발생했습니다.',
+        error: errorObj,
       }));
 
-      logger.error(
-        '메인 스레드 정산 계산 실패',
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          component: 'usePayrollWorker',
-          data: { requestTime },
-        }
-      );
+      logger.error('메인 스레드 정산 계산 실패', errorObj, {
+        component: 'usePayrollWorker',
+        data: { requestTime },
+      });
     }
   }, []);
 
@@ -458,19 +456,18 @@ export const usePayrollWorker = () => {
 
         // 재시작 로그 제거 (성능 최적화)
       } catch (error) {
+        const errorObj =
+          error instanceof Error ? error : new Error('Worker 재시작에 실패했습니다.');
+
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: 'Worker 재시작에 실패했습니다.',
+          error: errorObj,
         }));
 
-        logger.error(
-          'Worker 재시작 실패',
-          error instanceof Error ? error : new Error(String(error)),
-          {
-            component: 'usePayrollWorker',
-          }
-        );
+        logger.error('Worker 재시작 실패', errorObj, {
+          component: 'usePayrollWorker',
+        });
       }
     }
   }, [state.loading]);

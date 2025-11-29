@@ -179,8 +179,8 @@ const SupportPage: React.FC = () => {
           // 더 구체적인 에러 메시지
           const errorMessage =
             error.code === 'permission-denied'
-              ? '문의 내역에 접근할 권한이 없습니다.'
-              : '문의 내역을 불러오는데 실패했습니다.';
+              ? t('toast.support.permissionDenied')
+              : t('toast.support.loadFailed');
 
           setInquiriesError(errorMessage);
           showError(errorMessage);
@@ -202,6 +202,7 @@ const SupportPage: React.FC = () => {
       unsubscribe();
       clearTimeout(timeoutId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, activeTab]); // showError 제거: useCallback으로 메모이제이션되어 안정적임
 
   // FAQ 토글
@@ -220,12 +221,12 @@ const SupportPage: React.FC = () => {
     e.preventDefault();
 
     if (!currentUser) {
-      showError('로그인이 필요합니다.');
+      showError(t('toast.support.loginRequired'));
       return;
     }
 
     if (!inquiryForm.subject.trim() || !inquiryForm.message.trim()) {
-      showError('제목과 내용을 입력해주세요.');
+      showError(t('toast.support.subjectAndMessageRequired'));
       return;
     }
 
@@ -248,7 +249,7 @@ const SupportPage: React.FC = () => {
         updatedAt: Timestamp.now(),
       });
 
-      showSuccess('문의가 성공적으로 접수되었습니다.');
+      showSuccess(t('toast.support.inquirySuccess'));
 
       // 폼 초기화
       setInquiryForm({
@@ -263,7 +264,7 @@ const SupportPage: React.FC = () => {
       logger.error('문의 제출 실패:', error instanceof Error ? error : new Error(String(error)), {
         component: 'SupportPage',
       });
-      showError('문의 제출에 실패했습니다.');
+      showError(t('toast.support.inquiryError'));
     } finally {
       setIsSubmitting(false);
     }

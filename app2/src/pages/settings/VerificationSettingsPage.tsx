@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { httpsCallable } from 'firebase/functions';
 import { sendEmailVerification } from 'firebase/auth';
 import { functions } from '../../firebase';
@@ -23,6 +24,7 @@ interface VerificationStatus {
 }
 
 const VerificationSettingsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
     emailVerified: false,
@@ -36,6 +38,7 @@ const VerificationSettingsPage: React.FC = () => {
     if (currentUser) {
       loadVerificationStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   /**
@@ -81,11 +84,11 @@ const VerificationSettingsPage: React.FC = () => {
 
     try {
       await sendEmailVerification(currentUser);
-      toast.success('인증 메일이 발송되었습니다. 이메일을 확인해주세요.');
+      toast.success(t('toast.account.emailVerificationSent'));
       logger.info('이메일 인증 메일 재발송 완료');
     } catch (error) {
       logger.error('이메일 인증 메일 발송 실패', error as Error);
-      toast.error('이메일 인증 메일 발송에 실패했습니다.');
+      toast.error(t('toast.account.emailVerificationFailed'));
     } finally {
       setSendingEmail(false);
     }
@@ -101,7 +104,7 @@ const VerificationSettingsPage: React.FC = () => {
       phoneNumber,
     }));
     setShowPhoneVerification(false);
-    toast.success('전화번호 인증이 완료되었습니다.');
+    toast.success(t('toast.account.phoneVerificationComplete'));
     logger.info('전화번호 인증 완료');
   };
 

@@ -131,11 +131,11 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
 
     try {
       await assignTableToTournament([table.id], newTournamentId);
-      toast.success('테이블이 토너먼트에 배정되었습니다.');
+      toast.success(t('toast.tables.assignedToTournament'));
     } catch (error) {
       // 🎯 Firebase Error Handling (Phase 3-2 Integration)
       if (isPermissionDenied(error)) {
-        toast.error('테이블 배정 권한이 없습니다. 토너먼트 생성자만 배정할 수 있습니다.');
+        toast.error(t('toast.tables.noAssignPermission'));
         return;
       }
 
@@ -150,7 +150,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
         'ko'
       );
 
-      toast.error(`테이블 배정 실패: ${message}`);
+      toast.error(t('toast.tables.assignFailed', { message }));
     }
   };
 

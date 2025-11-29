@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
 import { useToast } from '../../hooks/useToast';
 import type { ChipType } from '../../types/payment/chip';
@@ -21,6 +22,7 @@ interface ManualChipGrantProps {
  */
 export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) => {
   // logger is imported from utils/logger
+  const { t } = useTranslation();
   const toast = useToast();
 
   const [userId, setUserId] = useState('');
@@ -36,17 +38,17 @@ export const ManualChipGrant: React.FC<ManualChipGrantProps> = ({ onSuccess }) =
     e.preventDefault();
 
     if (!userId.trim()) {
-      toast.showError('사용자 ID를 입력해주세요', 'error');
+      toast.showError(t('toast.chip.userIdRequired'), 'error');
       return;
     }
 
     if (amount <= 0) {
-      toast.showError('칩 개수는 1개 이상이어야 합니다', 'error');
+      toast.showError(t('toast.chip.amountMustBePositive'), 'error');
       return;
     }
 
     if (!reason.trim()) {
-      toast.showError('지급 사유를 입력해주세요', 'error');
+      toast.showError(t('toast.chip.reasonRequired'), 'error');
       return;
     }
 

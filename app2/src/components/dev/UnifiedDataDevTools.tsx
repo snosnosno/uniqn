@@ -39,7 +39,7 @@ interface CacheStats {
  * 실시간 성능 모니터링, 캐시 상태, 데이터 플로우 추적
  */
 const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
-  const { t: _t } = useTranslation();
+  const { t } = useTranslation();
   const { state, loading, error, refresh } = useUnifiedData();
 
   const [activeTab, setActiveTab] = useState<
@@ -180,7 +180,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
       size: collection.size,
       isLoading: loading || false,
       hasError: error !== null,
-      errorMessage: error || null,
+      errorMessage: error?.message || null,
     }));
   }, [state, loading, error]);
 
@@ -191,13 +191,14 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
       logger.info('개발자 도구에서 캐시 초기화', {
         component: 'UnifiedDataDevTools',
       });
-      toast.success('캐시가 초기화되었습니다.');
+      toast.success(t('toast.dev.cacheCleared'));
     } catch (error) {
       logger.error('캐시 초기화 실패', error instanceof Error ? error : new Error(String(error)), {
         component: 'UnifiedDataDevTools',
       });
-      toast.error('캐시 초기화 중 오류가 발생했습니다.');
+      toast.error(t('toast.dev.cacheClearError'));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 데이터 강제 새로고침

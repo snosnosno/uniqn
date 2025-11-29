@@ -140,6 +140,7 @@ export const useTournaments = (userId: string | null) => {
       const tournamentDoc = doc(db, `users/${userId}/tournaments`, tournamentId);
 
       // date가 변경되면 dateKey도 자동 업데이트
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: Record<string, any> = {
         ...data,
         updatedAt: Timestamp.now(),

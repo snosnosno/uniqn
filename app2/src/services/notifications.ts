@@ -107,10 +107,17 @@ const saveFCMToken = async (userId: string, token: string, platform: 'ios' | 'an
   }
 };
 
+/** 알림 데이터 타입 */
+interface NotificationActionData {
+  type?: string;
+  eventId?: string;
+  notificationId?: string;
+}
+
 /**
  * 푸시 알림 액션 처리
  */
-const handleNotificationAction = (data: any) => {
+const handleNotificationAction = (data: NotificationActionData) => {
   logger.info('알림 데이터', { data });
 
   // 알림 유형에 따른 네비게이션 처리

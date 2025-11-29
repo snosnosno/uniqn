@@ -46,7 +46,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({
     const finalReason = selectedReason === 'other' ? reason : selectedReason;
 
     if (!finalReason || finalReason.trim() === '') {
-      toast.showWarning('환불 사유를 입력해주세요.');
+      toast.showWarning(t('toast.payment.refundReasonRequired', { ns: 'translation' }));
       return;
     }
 

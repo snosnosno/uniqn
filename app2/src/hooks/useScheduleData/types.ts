@@ -45,7 +45,7 @@ export interface TaxSettings {
 export interface UseScheduleDataReturn {
   schedules: ScheduleEvent[];
   loading: boolean;
-  error: string | null;
+  error: Error | null;
   stats: ScheduleStats;
   filters: ScheduleFilters;
   setFilters: React.Dispatch<React.SetStateAction<ScheduleFilters>>;

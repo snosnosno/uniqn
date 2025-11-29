@@ -3,11 +3,50 @@ import { UnifiedWorkLog, WorkLogCreateInput } from '../types/unified/workLog';
 import { logger } from './logger';
 import i18n from '../i18n';
 
+/** Timestamp 관련 타입 */
+export type TimestampLike =
+  | Timestamp
+  | Date
+  | string
+  | { seconds: number; nanoseconds?: number }
+  | { _seconds: number }
+  | { toDate: () => Date };
+
+/** Raw WorkLog 데이터 (Firebase에서 받아온 원시 데이터) */
+export interface RawWorkLogData {
+  id?: string;
+  staffId?: string;
+  eventId?: string;
+  staffName?: string;
+  name?: string;
+  role?: string;
+  date?: string;
+  type?: 'schedule' | 'qr' | 'manual';
+  scheduledStartTime?: TimestampLike | null;
+  scheduledEndTime?: TimestampLike | null;
+  actualStartTime?: TimestampLike | null;
+  actualEndTime?: TimestampLike | null;
+  timeSlot?: string;
+  totalWorkMinutes?: number;
+  totalBreakMinutes?: number;
+  hoursWorked?: number;
+  workHours?: number;
+  overtime?: number;
+  overtimeHours?: number;
+  status?: string;
+  tableAssignments?: string[];
+  notes?: string;
+  createdAt?: TimestampLike;
+  updatedAt?: TimestampLike;
+  createdBy?: string;
+  snapshotData?: UnifiedWorkLog['snapshotData'];
+}
+
 /**
  * Firebase Timestamp를 HH:mm 형식 문자열로 변환
  * 모든 시간 데이터 변환에 사용되는 통합 함수
  */
-export function parseTimeToString(timeValue: any): string | null {
+export function parseTimeToString(timeValue: TimestampLike | null | undefined): string | null {
   if (!timeValue) {
     return null;
   }
@@ -27,7 +66,9 @@ export function parseTimeToString(timeValue: any): string | null {
         'nanoseconds' in timeValue &&
         typeof timeValue.seconds === 'number'
       ) {
-        date = new Date(timeValue.seconds * 1000 + timeValue.nanoseconds / 1000000);
+        const nanoseconds =
+          (timeValue as { seconds: number; nanoseconds?: number }).nanoseconds ?? 0;
+        date = new Date(timeValue.seconds * 1000 + nanoseconds / 1000000);
       }
       // seconds만 있는 경우
       else if ('seconds' in timeValue && typeof timeValue.seconds === 'number') {
@@ -39,8 +80,8 @@ export function parseTimeToString(timeValue: any): string | null {
       }
     }
     // Date 객체 처리
-    else if (timeValue instanceof Date) {
-      date = timeValue;
+    else if (Object.prototype.toString.call(timeValue) === '[object Date]') {
+      date = timeValue as unknown as Date;
     }
     // 문자열 처리
     else if (typeof timeValue === 'string') {
@@ -114,7 +155,7 @@ export function parseTimeToTimestamp(timeStr: string, baseDate: string): Timesta
 /**
  * 레거시 WorkLog 데이터를 통합 형식으로 변환
  */
-export function normalizeWorkLog(data: any): UnifiedWorkLog {
+export function normalizeWorkLog(data: RawWorkLogData): UnifiedWorkLog {
   try {
     // 🔍 디버깅: snapshotData 확인
     if (data.snapshotData) {
@@ -150,7 +191,16 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       scheduledStartTime: (() => {
         // 이미 Timestamp 형태면 그대로 사용
         if (data.scheduledStartTime) {
-          return data.scheduledStartTime;
+          // Timestamp나 string으로 변환
+          if (typeof data.scheduledStartTime === 'string') {
+            return data.scheduledStartTime;
+          }
+          if (data.scheduledStartTime && 'toDate' in data.scheduledStartTime) {
+            return data.scheduledStartTime as Timestamp;
+          }
+          // Date나 기타 형태는 문자열로 변환
+          const timeStr = parseTimeToString(data.scheduledStartTime);
+          return timeStr;
         }
         // timeSlot에서 파싱 (심야 근무 자동 조정)
         if (data.timeSlot && data.date) {
@@ -163,7 +213,16 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       scheduledEndTime: (() => {
         // 이미 Timestamp 형태면 그대로 사용
         if (data.scheduledEndTime) {
-          return data.scheduledEndTime;
+          // Timestamp나 string으로 변환
+          if (typeof data.scheduledEndTime === 'string') {
+            return data.scheduledEndTime;
+          }
+          if (data.scheduledEndTime && 'toDate' in data.scheduledEndTime) {
+            return data.scheduledEndTime as Timestamp;
+          }
+          // Date나 기타 형태는 문자열로 변환
+          const timeStr = parseTimeToString(data.scheduledEndTime);
+          return timeStr;
         }
         // timeSlot에서 파싱 (심야 근무 자동 조정)
         if (data.timeSlot && data.date) {
@@ -173,8 +232,8 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
         }
         return null;
       })(),
-      actualStartTime: data.actualStartTime || null,
-      actualEndTime: data.actualEndTime || null,
+      actualStartTime: (data.actualStartTime as Timestamp | null) || null,
+      actualEndTime: (data.actualEndTime as Timestamp | null) || null,
 
       // 근무 정보
       totalWorkMinutes: data.totalWorkMinutes || 0,
@@ -183,15 +242,19 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
       overtime: data.overtime || data.overtimeHours || 0,
 
       // 상태
-      status: data.status || 'scheduled',
+      status: (data.status as UnifiedWorkLog['status']) || 'scheduled',
 
       // 테이블 정보
       tableAssignments: data.tableAssignments || [],
 
       // 메타데이터
       notes: data.notes || '',
-      createdAt: data.createdAt || Timestamp.now(),
-      updatedAt: data.updatedAt || Timestamp.now(),
+      createdAt: (data.createdAt && typeof data.createdAt === 'object' && 'toDate' in data.createdAt
+        ? data.createdAt
+        : Timestamp.now()) as Timestamp,
+      updatedAt: (data.updatedAt && typeof data.updatedAt === 'object' && 'toDate' in data.updatedAt
+        ? data.updatedAt
+        : Timestamp.now()) as Timestamp,
       createdBy: data.createdBy || data.staffId || '',
 
       // 🔥 스냅샷 데이터 (공고 삭제 대비)
@@ -210,15 +273,39 @@ export function normalizeWorkLog(data: any): UnifiedWorkLog {
 /**
  * 여러 WorkLog를 한번에 정규화
  */
-export function normalizeWorkLogs(dataArray: any[]): UnifiedWorkLog[] {
+export function normalizeWorkLogs(dataArray: RawWorkLogData[]): UnifiedWorkLog[] {
   return dataArray.map((data) => normalizeWorkLog(data));
+}
+
+/** 생성용 WorkLog 데이터 구조 */
+interface PreparedWorkLogData {
+  staffId: string;
+  eventId: string;
+  staffName?: string;
+  date: string;
+  role: string;
+  type: 'schedule' | 'qr' | 'manual';
+  scheduledStartTime: Timestamp | null;
+  scheduledEndTime: Timestamp | null;
+  actualStartTime: null;
+  actualEndTime: null;
+  totalWorkMinutes: number;
+  totalBreakMinutes: number;
+  hoursWorked: number;
+  overtime: number;
+  status: string;
+  tableAssignments: unknown[];
+  notes: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  createdBy: string;
 }
 
 /**
  * WorkLog 생성 데이터 준비 - 표준화된 필드만 사용
  * 필수 필드 검증 포함
  */
-export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
+export function prepareWorkLogForCreate(input: WorkLogCreateInput): PreparedWorkLogData {
   // 필수 필드 검증
   if (!input.staffId) {
     throw new Error(i18n.t('errors.staffIdRequired'));
@@ -283,8 +370,10 @@ export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
 /**
  * WorkLog 업데이트 데이터 준비
  */
-export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
-  const prepared: any = {
+export function prepareWorkLogForUpdate(
+  updates: Partial<UnifiedWorkLog>
+): Partial<UnifiedWorkLog> & { updatedAt: Timestamp } {
+  const prepared: Partial<UnifiedWorkLog> & { updatedAt: Timestamp } = {
     ...updates,
     updatedAt: Timestamp.now(),
   };
@@ -303,7 +392,10 @@ export function prepareWorkLogForUpdate(updates: Partial<UnifiedWorkLog>): any {
 /**
  * WorkLog 데이터 검증 - 엄격한 검증
  */
-export function validateWorkLog(data: any): { valid: boolean; errors: string[] } {
+export function validateWorkLog(data: Partial<RawWorkLogData>): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // 필수 필드 체크

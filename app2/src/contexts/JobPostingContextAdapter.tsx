@@ -50,7 +50,7 @@ import { WorkLog } from '../types/unifiedData';
 interface JobPostingContextType {
   jobPosting: unknown | null;
   loading: boolean;
-  error: string | null;
+  error: Error | null;
   refreshJobPosting: () => Promise<void>;
   applicants: unknown[];
   staff: unknown[];
@@ -137,12 +137,11 @@ export const JobPostingProvider: React.FC<JobPostingProviderProps> = ({ children
     if (!eventId) return [];
     const filtered = getWorkLogsByEventId(eventId);
     return filtered.map(convertToUnifiedWorkLog);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, getWorkLogsByEventId, workLogsMap]); // workLogsMap 의존성으로 실시간 업데이트
 
-  // 에러 변환
-  const workLogsError = useMemo(() => {
-    return storeError ? new Error(storeError) : null;
-  }, [storeError]);
+  // 에러 변환 불필요 (이미 Error 타입)
+  const workLogsError = storeError;
 
   // refreshWorkLogs는 이제 no-op (Zustand Store 자동 구독)
   const refreshWorkLogs = useCallback(() => {

@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 import { ZodError } from 'zod';
 import { useJobPostingForm } from '@/hooks/useJobPostingForm';
@@ -43,6 +44,7 @@ interface JobPostingFormProps {
  */
 const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
   ({ onSubmit, isSubmitting = false }) => {
+    const { t } = useTranslation();
     // Zod 검증 상태
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
@@ -138,7 +140,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
             errors[path] = err.message;
           });
           setValidationErrors(errors);
-          toast.error('입력 내용을 확인해주세요.');
+          toast.error(t('toast.jobPosting.checkInput'));
         } else {
           // 기타 에러는 부모 컴포넌트에서 처리
           throw error;
@@ -563,7 +565,9 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
           onConfirm={async () => {
             const success = await handleDeleteTemplateConfirm();
             if (success) {
-              toast.success(`"${deleteConfirmTemplate?.name}" 템플릿이 삭제되었습니다.`);
+              toast.success(
+                t('toast.template.deleteSuccess', { name: deleteConfirmTemplate?.name })
+              );
             }
           }}
           title="템플릿 삭제"
