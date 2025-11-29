@@ -1,6 +1,7 @@
 import AES from 'crypto-js/aes';
 import Utf8 from 'crypto-js/enc-utf8';
 import { logger } from './logger';
+import i18n from '../i18n';
 
 /**
  * SecureStorage - localStorage 암호화 유틸리티
@@ -62,7 +63,7 @@ const encrypt = (value: string): string => {
     logger.error('암호화 실패', error instanceof Error ? error : new Error(String(error)), {
       component: 'secureStorage',
     });
-    throw new Error('데이터 암호화에 실패했습니다.');
+    throw new Error(i18n.t('errors.encryptionFailed'));
   }
 };
 
@@ -77,7 +78,7 @@ const decrypt = (encryptedValue: string): string => {
     const decrypted = bytes.toString(Utf8);
 
     if (!decrypted) {
-      throw new Error('복호화 결과가 비어있습니다.');
+      throw new Error(i18n.t('errors.decryptionEmpty'));
     }
 
     return decrypted;
@@ -85,7 +86,7 @@ const decrypt = (encryptedValue: string): string => {
     logger.error('복호화 실패', error instanceof Error ? error : new Error(String(error)), {
       component: 'secureStorage',
     });
-    throw new Error('데이터 복호화에 실패했습니다.');
+    throw new Error(i18n.t('errors.decryptionFailed'));
   }
 };
 

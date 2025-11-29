@@ -27,6 +27,7 @@ import {
 
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './useToast';
 import { useFirestoreQuery } from './firestore';
@@ -172,7 +173,7 @@ export const useSystemAnnouncements = (
 
       return true;
     });
-  }, [announcements]);
+  }, [announcements, convertTimestamp]);
 
   /**
    * 전체 공지사항 수
@@ -185,7 +186,7 @@ export const useSystemAnnouncements = (
   const createAnnouncement = useCallback(
     async (input: CreateSystemAnnouncementInput): Promise<string> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -258,7 +259,7 @@ export const useSystemAnnouncements = (
   const updateAnnouncement = useCallback(
     async (id: string, input: UpdateSystemAnnouncementInput): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -307,7 +308,7 @@ export const useSystemAnnouncements = (
   const deleteAnnouncement = useCallback(
     async (id: string): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {

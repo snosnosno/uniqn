@@ -1,5 +1,6 @@
 import { ChipPricing } from '../types/jobPosting/chipPricing';
 import { PostingType } from '../types/jobPosting/jobPosting';
+import i18n from '../i18n';
 
 /**
  * 칩 가격 중앙 설정
@@ -40,7 +41,7 @@ export const getChipCost = (postingType: PostingType, durationDays?: 7 | 30 | 90
   // fixed는 기간에 따라 가격 변동
   if (postingType === 'fixed') {
     if (!durationDays) {
-      throw new Error('고정 공고는 노출 기간(durationDays)이 필요합니다');
+      throw new Error(i18n.t('errors.fixedPostingDurationRequired'));
     }
 
     const pricing = CHIP_PRICING.find(
@@ -48,13 +49,13 @@ export const getChipCost = (postingType: PostingType, durationDays?: 7 | 30 | 90
     );
 
     if (!pricing) {
-      throw new Error(`지원하지 않는 노출 기간입니다: ${durationDays}일`);
+      throw new Error(i18n.t('errors.unsupportedDuration', { days: durationDays }));
     }
 
     return pricing.chipCost;
   }
 
-  throw new Error(`지원하지 않는 공고 타입입니다: ${postingType}`);
+  throw new Error(i18n.t('errors.unsupportedPostingType', { type: postingType }));
 };
 
 // ================= 충전 패키지 & 구독 플랜 =================

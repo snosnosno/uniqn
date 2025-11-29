@@ -1,6 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { UnifiedWorkLog, WorkLogCreateInput } from '../types/unified/workLog';
 import { logger } from './logger';
+import i18n from '../i18n';
 
 /**
  * Firebase Timestamp를 HH:mm 형식 문자열로 변환
@@ -220,16 +221,16 @@ export function normalizeWorkLogs(dataArray: any[]): UnifiedWorkLog[] {
 export function prepareWorkLogForCreate(input: WorkLogCreateInput): any {
   // 필수 필드 검증
   if (!input.staffId) {
-    throw new Error('staffId는 필수입니다');
+    throw new Error(i18n.t('errors.staffIdRequired'));
   }
   if (!input.eventId) {
-    throw new Error('eventId는 필수입니다');
+    throw new Error(i18n.t('errors.eventIdRequired'));
   }
   if (!input.date) {
-    throw new Error('date는 필수입니다');
+    throw new Error(i18n.t('errors.dateRequired'));
   }
   if (!input.role) {
-    throw new Error('role은 필수입니다');
+    throw new Error(i18n.t('errors.roleRequired'));
   }
 
   const now = Timestamp.now();

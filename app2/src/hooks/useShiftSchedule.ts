@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import i18n from '../i18n';
 
 import { db } from '../firebase';
 import { useFirestoreDocument } from './firestore';
@@ -276,7 +277,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
   const timeSlots = useMemo(() => {
     if (!schedule) return [];
     return generateTimeSlots(schedule.startTime, schedule.endTime, schedule.timeInterval);
-  }, [schedule?.startTime, schedule?.endTime, schedule?.timeInterval]);
+  }, [schedule]);
 
   // 딜러 목록 (메모이제이션)
   const dealers = useMemo(() => {
@@ -285,7 +286,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
       id,
       ...data,
     }));
-  }, [schedule?.scheduleData]);
+  }, [schedule]);
 
   // 스케줄 검증 함수
   const validateCurrentSchedule = useCallback(() => {
@@ -323,7 +324,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
     }));
 
     return validateSchedule(dealerSchedules, timeSlots, validationSettings);
-  }, [schedule?.scheduleData, timeSlots, validationSettings]);
+  }, [schedule, dealers, timeSlots, validationSettings]);
 
   // 자동 검증 결과를 상태에 반영
   useEffect(() => {
@@ -333,7 +334,7 @@ export const useShiftSchedule = (eventId?: string, date?: string) => {
   // 근무기록 자동 생성 함수
   const generateWorkLogs = useCallback(async () => {
     if (!schedule || !eventId || !date) {
-      throw new Error('스케줄, 이벤트 ID, 날짜 정보가 필요합니다.');
+      throw new Error(i18n.t('errors.scheduleInfoRequired'));
     }
 
     try {

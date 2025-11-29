@@ -1,6 +1,7 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { useMemo } from 'react';
+import i18n from '../i18n';
 
 import { db } from '../firebase';
 import { useFirestoreDocument } from './firestore';
@@ -48,7 +49,7 @@ export const useSettings = (userId: string | null, tournamentId: string | null) 
 
   const updateSettings = async (newSettings: Partial<TournamentSettings>) => {
     if (!userId || !tournamentId) {
-      throw new Error('사용자 ID와 토너먼트 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.settingsIdRequired'));
     }
     const settingsDocRef = doc(
       db,

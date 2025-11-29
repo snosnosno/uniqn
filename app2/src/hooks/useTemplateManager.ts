@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { logger } from '../utils/logger';
+import i18n from '../i18n';
 import {
   collection,
   addDoc,
@@ -49,7 +50,7 @@ export const useTemplateManager = () => {
   const handleSaveTemplate = useCallback(
     async (formData: any) => {
       if (!currentUser || !templateName.trim()) {
-        throw new Error('템플릿 이름을 입력해주세요.');
+        throw new Error(i18n.t('errors.templateNameRequired'));
       }
 
       try {

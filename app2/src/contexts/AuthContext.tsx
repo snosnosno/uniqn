@@ -15,7 +15,15 @@ import {
 import { logger } from '../utils/logger';
 import { setSentryUser } from '../utils/sentry';
 import { secureStorage } from '../utils/secureStorage';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import i18n from '../i18n';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
 
 import { auth } from '../firebase';
 
@@ -110,50 +118,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
-    try {
-      // 로그인 상태 유지 설정
-      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
-      await setPersistence(auth, persistence);
+  const signIn = useCallback(
+    async (email: string, password: string, rememberMe: boolean = false) => {
+      try {
+        // 로그인 상태 유지 설정
+        const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+        await setPersistence(auth, persistence);
 
-      // secureStorage에 암호화하여 저장
-      secureStorage.setItem('rememberMe', JSON.stringify(rememberMe));
+        // secureStorage에 암호화하여 저장
+        secureStorage.setItem('rememberMe', JSON.stringify(rememberMe));
 
-      logger.info('로그인 persistence 설정 완료', {
-        component: 'AuthContext',
-        data: {
-          rememberMe,
-          persistence: rememberMe ? 'local' : 'session',
-        },
-      });
+        logger.info('로그인 persistence 설정 완료', {
+          component: 'AuthContext',
+          data: {
+            rememberMe,
+            persistence: rememberMe ? 'local' : 'session',
+          },
+        });
 
-      return signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      logger.error(
-        '로그인 persistence 설정 실패:',
-        error instanceof Error ? error : new Error(String(error)),
-        { component: 'AuthContext' }
-      );
-      throw error;
-    }
-  };
+        return signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        logger.error(
+          '로그인 persistence 설정 실패:',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'AuthContext' }
+        );
+        throw error;
+      }
+    },
+    []
+  );
 
-  const sendPasswordReset = (email: string) => {
+  const sendPasswordReset = useCallback((email: string) => {
     return sendPasswordResetEmail(auth, email);
-  };
+  }, []);
 
-  const signInWithGoogle = () => {
+  const signInWithGoogle = useCallback(() => {
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
-  };
+  }, []);
 
-  const signInWithKakao = async (kakaoToken: string, userInfo: unknown) => {
+  const signInWithKakao = useCallback(async (kakaoToken: string, userInfo: unknown) => {
     try {
       logger.info('카카오 토큰으로 Firebase Custom Auth 시도', {
         component: 'AuthContext',
         data: {
-          kakaoUserId: (userInfo as any)?.id,
-          hasEmail: !!(userInfo as any)?.kakao_account?.email,
+          kakaoUserId: (userInfo as Record<string, unknown>)?.id,
+          hasEmail: !!(userInfo as Record<string, Record<string, unknown>>)?.kakao_account?.email,
         },
       });
 
@@ -179,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return userCredential;
       } else {
-        throw new Error('Custom Token 생성에 실패했습니다.');
+        throw new Error(i18n.t('errors.customTokenFailed'));
       }
     } catch (error) {
       logger.error(
@@ -189,9 +200,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
       throw error;
     }
-  };
+  }, []);
 
-  const sendEmailVerificationToUser = async () => {
+  const sendEmailVerificationToUser = useCallback(async () => {
     if (auth.currentUser) {
       try {
         await sendEmailVerification(auth.currentUser);
@@ -208,11 +219,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw error;
       }
     } else {
-      throw new Error('로그인된 사용자가 없습니다.');
+      throw new Error(i18n.t('errors.noLoggedInUser'));
     }
-  };
+  }, []);
 
-  const reloadUser = async () => {
+  const reloadUser = useCallback(async () => {
     if (auth.currentUser) {
       try {
         await reload(auth.currentUser);
@@ -229,9 +240,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw error;
       }
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       // localStorage 설정 정리
       localStorage.removeItem('rememberMe');
@@ -247,7 +258,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
       throw error;
     }
-  };
+  }, []);
 
   const isAdmin = role === 'admin' || role === 'manager';
 

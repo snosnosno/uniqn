@@ -11,6 +11,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreDocument } from './firestore';
 import { createConsent, updateConsent, hasRequiredConsents } from '../services/consentService';
@@ -62,7 +63,7 @@ export const useConsent = (): UseConsentReturn => {
   const consentPath = useMemo(() => {
     if (!currentUser) return null;
     return `users/${currentUser.uid}/consents/current`;
-  }, [currentUser?.uid]);
+  }, [currentUser]);
 
   // useFirestoreDocument로 구독
   const {
@@ -100,7 +101,7 @@ export const useConsent = (): UseConsentReturn => {
   const handleCreateConsent = useCallback(
     async (input: ConsentCreateInput): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -127,7 +128,7 @@ export const useConsent = (): UseConsentReturn => {
   const updateMarketing = useCallback(
     async (agreed: boolean): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -159,7 +160,7 @@ export const useConsent = (): UseConsentReturn => {
   const updateLocationService = useCallback(
     async (agreed: boolean): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -191,7 +192,7 @@ export const useConsent = (): UseConsentReturn => {
   const updatePushNotification = useCallback(
     async (agreed: boolean): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {

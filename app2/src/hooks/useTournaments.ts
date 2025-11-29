@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import i18n from '../i18n';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
 import { getTournamentColor, UNASSIGNED_COLOR } from '../utils/tournamentColors';
 import { normalizeDate } from '../utils/dateUtils';
@@ -97,7 +98,7 @@ export const useTournaments = (userId: string | null) => {
     tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>
   ) => {
     if (!userId) {
-      throw new Error('사용자 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {
@@ -132,7 +133,7 @@ export const useTournaments = (userId: string | null) => {
     data: Partial<Omit<Tournament, 'id' | 'createdAt' | 'updatedAt' | 'dateKey'>>
   ) => {
     if (!userId) {
-      throw new Error('사용자 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {
@@ -159,7 +160,7 @@ export const useTournaments = (userId: string | null) => {
 
   const deleteTournament = async (tournamentId: string) => {
     if (!userId) {
-      throw new Error('사용자 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {
@@ -168,7 +169,7 @@ export const useTournaments = (userId: string | null) => {
       const tournamentSnap = await getDoc(tournamentDoc);
 
       if (!tournamentSnap.exists()) {
-        throw new Error('토너먼트를 찾을 수 없습니다.');
+        throw new Error(i18n.t('errors.tournamentNotFound'));
       }
 
       const tournamentData = tournamentSnap.data();
@@ -237,7 +238,7 @@ export const useTournaments = (userId: string | null) => {
    */
   const ensureDefaultTournamentForDate = async (dateKey: string) => {
     if (!userId) {
-      throw new Error('사용자 ID가 필요합니다.');
+      throw new Error(i18n.t('errors.userIdRequired'));
     }
 
     return withFirebaseErrorHandling(async () => {

@@ -18,6 +18,7 @@ import {
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreDocument } from './firestore';
 import {
@@ -82,7 +83,7 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
   const settingsPath = useMemo(() => {
     if (!currentUser) return null;
     return `users/${currentUser.uid}/securitySettings/loginNotifications`;
-  }, [currentUser?.uid]);
+  }, [currentUser]);
 
   // useFirestoreDocument로 구독
   const {
@@ -146,7 +147,7 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
   const handleChangePassword = useCallback(
     async (input: PasswordChangeInput): Promise<void> => {
       if (!currentUser || !currentUser.email) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -206,7 +207,7 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
   const handleUpdateLoginNotifications = useCallback(
     async (updates: Partial<LoginNotificationSettings>): Promise<void> => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {

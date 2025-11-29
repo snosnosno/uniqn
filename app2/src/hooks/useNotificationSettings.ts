@@ -15,6 +15,7 @@
 import { useCallback, useMemo } from 'react';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import i18n from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreDocument } from './firestore';
 import {
@@ -89,7 +90,7 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
   const settingsPath = useMemo(() => {
     if (!currentUser) return null;
     return `users/${currentUser.uid}/settings/notifications`;
-  }, [currentUser?.uid]);
+  }, [currentUser]);
 
   // useFirestoreDocument로 구독
   const {
@@ -139,7 +140,7 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
   const updateSettings = useCallback(
     async (updates: Partial<NotificationSettings>) => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -168,7 +169,7 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
       updates: { enabled?: boolean; pushEnabled?: boolean; emailEnabled?: boolean }
     ) => {
       if (!currentUser || !settings) {
-        throw new Error('로그인이 필요합니다');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -197,7 +198,7 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
   const updateTypeSettings = useCallback(
     async (type: string, enabled: boolean) => {
       if (!currentUser || !settings) {
-        throw new Error('로그인이 필요합니다');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -223,7 +224,7 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
   const updateQuietHours = useCallback(
     async (quietHours: QuietHours) => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -243,7 +244,7 @@ export const useNotificationSettings = (): UseNotificationSettingsReturn => {
    */
   const toggleGlobalEnabled = useCallback(async () => {
     if (!currentUser || !settings) {
-      throw new Error('로그인이 필요합니다');
+      throw new Error(i18n.t('errors.loginRequired'));
     }
 
     try {

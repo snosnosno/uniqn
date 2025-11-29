@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { logger } from '../utils/logger';
+import i18n from '../i18n';
 import { TournamentSettings } from '../stores/tournamentStore';
 import { useFirestoreCollection } from './firestore';
 
@@ -59,7 +60,7 @@ export const useTournamentList = (userId: string | null) => {
   const createTournament = useCallback(
     async (name: string, settings?: Partial<TournamentSettings>): Promise<string> => {
       if (!userId) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -110,7 +111,7 @@ export const useTournamentList = (userId: string | null) => {
   const updateTournament = useCallback(
     async (tournamentId: string, updates: Partial<Omit<Tournament, 'id'>>): Promise<void> => {
       if (!userId) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {
@@ -145,7 +146,7 @@ export const useTournamentList = (userId: string | null) => {
   const deleteTournament = useCallback(
     async (tournamentId: string): Promise<void> => {
       if (!userId) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       try {

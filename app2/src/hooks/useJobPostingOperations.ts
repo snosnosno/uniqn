@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { logger } from '../utils/logger';
+import i18n from '../i18n';
 import {
   collection,
   addDoc,
@@ -65,7 +66,7 @@ export const useJobPostingOperations = () => {
   const handleCreateJobPosting = useCallback(
     async (formData: JobPostingFormData) => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       // 폼 유효성 검증
@@ -127,7 +128,7 @@ export const useJobPostingOperations = () => {
   const handleUpdateJobPosting = useCallback(
     async (postId: string, formData: JobPostingFormData) => {
       if (!currentUser) {
-        throw new Error('로그인이 필요합니다.');
+        throw new Error(i18n.t('errors.loginRequired'));
       }
 
       // 폼 유효성 검증
